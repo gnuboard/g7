@@ -889,7 +889,7 @@ class NotificationDispatchIntegrationTest extends TestCase
      * 「건너뜀」 사유가 규칙을 사람 말로 적는다 — 관계 이름과 「이벤트 유발자 제외」 여부까지.
      *
      * 자기 글에 자기 댓글을 단 경우처럼 유발자 제외로 0명이 되면, 종전 사유는 `related_user` 만 적어
-     * 관계도 제외 여부도 읽을 수 없었다(2026-10-06 실측 O-G7). 기계 표기(괄호 안 규칙 코드)는 그대로 남긴다.
+     * 관계도 제외 여부도 읽을 수 없었다(2026-10-06 실측). 기계 표기(괄호 안 규칙 코드)는 그대로 남긴다.
      *
      * @effects zero_recipient_reason_names_rules_in_words
      *

@@ -35,7 +35,7 @@ class CleanupExtensionStaticCacheCommand extends Command
     {
         $deleted = $service->cleanup();
 
-        $this->info("오래된 정적 게시 디렉토리 {$deleted}건이 삭제되었습니다.");
+        $this->info(__('extensions.commands.ext_static_cleanup.done', ['count' => $deleted]));
 
         return self::SUCCESS;
     }

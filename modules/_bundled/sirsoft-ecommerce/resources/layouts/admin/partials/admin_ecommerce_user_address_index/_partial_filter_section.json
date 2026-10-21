@@ -358,7 +358,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
+                                                        "className": "text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
                                                         "aria-label": "$t:sirsoft-ecommerce.common.remove"
                                                     },
                                                     "children": [
@@ -422,7 +422,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "calendar",
-                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                                "className": "text-base text-gray-500 dark:text-gray-500"
                                             }
                                         },
                                         {
@@ -452,7 +452,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-400 dark:text-gray-500"
+                                                "className": "text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "~"
                                         },
@@ -490,7 +490,7 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "빠른 기간. 날짜 계산은 핸들러가 하고 결과를 $prev 로 받아 담는다 — 표현식에 날짜 산술을 두지 않는다. 오늘.",
@@ -516,13 +516,15 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.dateQuick === 'today'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.date.today"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "1주일. 눌린 표시는 dateQuick 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다.",
@@ -548,13 +550,15 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.dateQuick === 'week'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.date.week"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "3개월.",
@@ -580,13 +584,15 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.dateQuick === '3months'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.date.3months"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "1년. 배송지는 한 번 담아 두면 오래 남는 데이터라 긴 구간을 함께 둔다.",
@@ -612,7 +618,9 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.dateQuick === '1year'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.common.date.1year"
                                         }

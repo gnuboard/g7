@@ -561,6 +561,12 @@ return [
             'in' => 'status は active または inactive である必要があります。',
         ],
     ],
+    // 会員検索(会員選択ウィンドウ)の項目表示名
+    'user_search' => [
+        'attributes' => [
+            'uuid' => '会員',
+        ],
+    ],
     'menu' => [
         // 多言語フィールドの表示名 — 必須言語メッセージの項目名として使う
         'attributes' => [
@@ -1132,6 +1138,15 @@ return [
     'summary_more_errors' => '(他 :count 件のエラー)',
     'attributes' => [
         'layout_source' => 'レイアウトインストールソース',
+        'layout_meta_icon' => 'メニューアイコン',
+        'layout_meta_editor_label' => 'エディター表示名',
+        'layout_meta_authoring_note' => '作成ツール注記',
+        'layout_meta_leave_guard' => '離脱確認条件',
+        'layout_meta_leave_message' => '離脱確認メッセージ',
+        'layout_seo_title' => 'SEOタイトル',
+        'layout_seo_description' => 'SEO説明',
+        'layout_seo_twitter' => 'Twitterカード',
+        'exclude_withdrawn' => '退会会員を除外',
         'layout' => 'レイアウト',
         'module' => 'モジュール',
         'token' => 'トークン',

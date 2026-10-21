@@ -55,14 +55,14 @@ class PlaywrightSeedTotp extends Command
     {
         // ① CLI 한정 — production 웹 요청에서 절대 도달 불가
         if (php_sapi_name() !== 'cli') {
-            $this->error('CLI 전용 커맨드입니다. (현재 SAPI: '.php_sapi_name().')');
+            $this->error(__('sirsoft-totp::messages.console.seed_totp.cli_only', ['sapi' => php_sapi_name()]));
 
             return self::FAILURE;
         }
 
         // ② 명시 옵트인 — 호출자가 그 자리에서 넘기는 프로세스 환경변수라 config:cache 영향이 없다.
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다. (예: PowerShell — $env:G7_PLAYWRIGHT_BYPASS=\'1\')');
+            $this->error(__('sirsoft-totp::messages.console.seed_totp.bypass_required', ['example' => '$env:G7_PLAYWRIGHT_BYPASS=\'1\'']));
 
             return self::FAILURE;
         }
@@ -80,7 +80,7 @@ class PlaywrightSeedTotp extends Command
             return self::SUCCESS;
         }
 
-        $this->error('--enroll · --code 중 하나는 지정해야 합니다.');
+        $this->error(__('sirsoft-totp::messages.console.seed_totp.mode_required'));
 
         return self::FAILURE;
     }
@@ -99,7 +99,7 @@ class PlaywrightSeedTotp extends Command
         $user = User::where('email', $email)->first();
 
         if ($user === null) {
-            $this->error("계정을 찾을 수 없습니다: {$email}");
+            $this->error(__('sirsoft-totp::messages.console.seed_totp.account_not_found', ['email' => $email]));
 
             return false;
         }

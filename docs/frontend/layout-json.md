@@ -97,6 +97,10 @@
 | `permissions` | string[] | ❌ | 레이아웃 접근 권한 식별자 배열 (engine-v1.15.0+) |
 | `globalHeaders` | array | ❌ | 전역 HTTP 헤더 규칙 배열 (engine-v1.16.0+) |
 | `meta.seo` | object | ❌ | SEO 페이지 생성기 설정 (아래 참조) |
+| `meta.leave_guard` | string | ❌ | 저장하지 않은 변경 이탈 확인 식 `{{…}}` (engine-v1.82.0, 아래 참조) |
+| `meta.leave_message` | string | ❌ | 이탈 확인 문구(`$t:키` 또는 글자). 없으면 코어 기본 문구 |
+| `meta.icon` | string | ❌ | 레이아웃 편집기 라우트 트리의 메뉴 아이콘 (편집기 [기본 정보] 탭) |
+| `meta.editor_label` | string | ❌ | 레이아웃 편집기 트리·후보 목록의 표시 이름(`$t:키` 허용). 없으면 `title` |
 | `components` | array | ✅ | 컴포넌트 배열 |
 
 ### 한 객체에 같은 키를 두 번 쓰지 않는다
@@ -144,6 +148,7 @@ JSON 은 중복 키를 문법 오류로 보지 않는다. 브라우저(`JSON.par
 > - `permissions`: [아래 섹션](#레이아웃-권한-permissions)
 > - `globalHeaders`: [아래 섹션](#전역-헤더-globalheaders)
 > - `meta.seo`: [아래 섹션](#metaseo-seo-페이지-생성기)
+> - `meta.leave_guard`: [아래 섹션](#metaleave_guard-저장하지-않은-변경-이탈-확인)
 
 ### meta.seo (SEO 페이지 생성기)
 
@@ -159,6 +164,9 @@ JSON 은 중복 키를 문법 오류로 보지 않는다. 브라우저(`JSON.par
 | seo.changefreq | string | X | sitemap changefreq (daily/weekly 등) |
 | seo.og | object | X | Open Graph 메타태그 |
 | seo.structured_data | object | X | JSON-LD 구조화 데이터 |
+| seo.title | string | X | 편집기 SEO 탭 공유 미리보기의 제목 대체값(Open Graph 제목이 없을 때) |
+| seo.description | string | X | 편집기 SEO 탭 공유 미리보기의 설명 대체값 |
+| seo.twitter | object | X | Twitter 카드 메타태그 (없는 칸은 Open Graph 값으로 채운다) |
 
 #### seo.extensions
 
@@ -183,6 +191,37 @@ meta.seo 추가/변경 시 UpdateLayoutContentRequest 검증 규칙 동기화 �
 data_sources는 부모-자식 간 합집합 병합 (permissions와 동일 전략)
 
 > 상세: [seo-system.md](../backend/seo-system.md)
+
+### meta.leave_guard (저장하지 않은 변경 이탈 확인)
+
+폼 화면에서 입력을 저장하지 않고 다른 화면으로 떠나면 입력이 사라진다. `meta.leave_guard` 에 「지금 저장하지 않은 변경이 있는가」를 식으로 적으면, 엔진이 떠나는 순간 그 식을 한 번 평가해 참일 때 확인 창을 띄운다 (engine-v1.82.0).
+
+```html
+<meta leave_guard="{{_local.hasChanges === true}}" leave_message="$t:board.leave_confirm" title="…"/>
+```
+
+```json
+"meta": {
+  "leave_guard": "{{_local.hasChanges === true}}",
+  "leave_message": "$t:board.leave_confirm"
+}
+```
+
+| 떠나는 방법 | 묻는 방식 |
+| --- | --- |
+| `navigate` 액션·링크 클릭·`G7Core.dispatch` navigate | 주소를 바꾸기 **전에** 확인 창. 머무르면 아무 일도 없다(스크롤도 그대로) |
+| 브라우저 뒤로/앞으로·`navigateBack` | 주소가 바뀐 뒤 확인 창. 머무르면 떠나던 화면의 주소를 다시 쌓는다(앞으로 가기 기록은 잃을 수 있다) |
+| 새로고침·탭 닫기·같은 탭 전체 이동(`openWindow` `_self`·`redirect`) | 브라우저 자체 확인 창(`beforeunload`) — 문구는 브라우저가 정한다 |
+
+- 같은 경로로의 이동(쿼리·해시만 바뀜 — 탭·검색·쪽 번호)은 같은 화면이라 묻지 않는다. `navigate` 의 `replace: true`(같은 화면 쿼리 교체)도 묻지 않는다.
+- 식은 `{{…}}` 하나여야 한다. 문맥은 `_local`(`G7Core.state.getLocal()` 과 같은 값)·`_global`·`route`·`query`·데이터 소스·`_computed` 다. 평가는 읽기 전용이고 상태를 바꾸지 않는다. 식이 아니거나 평가에 실패하면 묻지 않는다(사용자를 화면에 가두지 않는다).
+- 판정 근거는 `_local` 의 변경 표시(`hasChanges` 등)를 쓴다. 자동바인딩(`data-key`)·`setState`·`G7Core.state.setLocal` 이 쓴 값이 보인다. 화면 렌더러 안에서만 다시 계산되는 `_computed` 는 이동 순간 최신이 아닐 수 있으니 판정 근거로 쓰지 않는다.
+- 디바운스 입력(`debounce`) 칸에 친 값이 아직 상태에 닿기 전(마지막 입력 뒤 디바운스 시간 안)이면, 식이 거짓이어도 「변경 있음」 으로 보고 묻는다(브라우저 뒤로 가기·새로고침·닫기 포함). 대기 입력은 그대로 두고 존재만 본다. 링크·단추로 떠나는 이동은 대기 입력을 먼저 반영한 뒤 판정한다. 그래서 디바운스 검색칸처럼 변경 표시와 무관한 칸도 친 직후 잠깐은 묻는다.
+- 저장 성공 뒤 이동·취소·삭제 뒤 이동처럼 **묻지 않아야 하는** 이동은 그 액션에 `bypassLeaveGuard: true` 를 준다(`navigate`·`navigateBack`·`openWindow`·`redirect` 공통 — [actions-handlers-navigation.md](actions-handlers-navigation.md#이탈-확인-건너뛰기-bypassleaveguard)). 저장 성공 뒤 화면에 머무르면 변경 표시도 내린다.
+- 한 번 떠나기로 한 이동(확인 승인 또는 우회)은 다음 화면이 그려질 때까지 다시 묻지 않는다(리다이렉트 라우트·로그인 리다이렉트에서 두 번 묻지 않는다). 세션 만료로 로그인 화면으로 옮기는 이동은 묻지 않는다.
+- 이 키는 브라우저 화면 전용이다. 검색엔진용 화면(SEO 렌더러)은 `meta.seo` 만 읽으므로 출력에 영향이 없다.
+- 상속 레이아웃은 `meta` 를 키 단위로 병합하므로 자식이 선언하면 그 화면에만 적용된다.
+- 확장 핸들러에서 확인 여부를 알아야 하면 `G7Core.navigation.isLeaveGuarded()` 를 쓴다([g7core-api.md](g7core-api.md#저장하지-않은-변경-확인--isleaveguarded)).
 
 ---
 

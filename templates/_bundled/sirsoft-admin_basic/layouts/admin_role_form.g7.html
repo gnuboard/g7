@@ -3,7 +3,7 @@
   (셋 다 `if` 로 서로 배타적이라 한 화면에서 둘이 동시에 돌지 않는다).
   권한 선택은 종류별 탭 + 트리 한 벌이고, 고른 값은 `_local.form.permission_values` 한 배열에 모인다. -->
 <layout name="admin_role_form" version="1.0.0" extends="_admin_base">
-  <meta title="{{route?.id ? '$t:admin.roles.form.edit_title' : '$t:admin.roles.form.create_title'}}" description="{{route?.id ? '$t:admin.roles.form.edit_description' : '$t:admin.roles.form.create_description'}}"/>
+  <meta leave_guard="{{_local.hasChanges === true}}" title="{{route?.id ? '$t:admin.roles.form.edit_title' : '$t:admin.roles.form.create_title'}}" description="{{route?.id ? '$t:admin.roles.form.edit_description' : '$t:admin.roles.form.create_description'}}"/>
   <!-- 수정 모드에서만 도는 대상 역할 조회. 응답을 폼 초기값으로 풀고(`initLocal`), 조회는 되지만
        수정 권한이 없으면 스스로 403 으로 접는다. `blocking` 인 이유는 값이 늦게 오면 빈 폼을
        먼저 보여 주게 되기 때문이다. -->
@@ -20,7 +20,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
     <fallback :data="null"/>
@@ -39,7 +47,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
     <fallback :data="null"/>
@@ -49,6 +65,19 @@
        등록 모드에서만 돈다(수정 중에 복제 쿼리가 붙어 있어도 무시). -->
   <data-source id="clone_source" label_key="$t:editor.data_source.clone_source" type="api" endpoint="/api/admin/roles/{{query.clone_from}}" method="GET" :auto_fetch="true" auth_mode="required" if="{{!!query?.clone_from &amp;&amp; !route?.id}}" initLocal="form">
     <fallback :data="null"/>
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
   </data-source>
   <!-- 선택 가능한 권한 전체(종류·기본 종류·범위 옵션 포함). 두 모드 모두에서 돈다.
        탭 목록도 이 응답의 `types` 에서 만들므로, 확장이 권한을 새로 실으면 탭이 저절로 늘어난다. -->
@@ -87,6 +116,8 @@
     <wait-for>role_menus_tree</wait-for>
   </transition-overlay>
   <init>
+    <!-- 들어올 때마다 「고친 것 있음」 을 끈다 — 이탈 확인(meta.leave_guard)이 읽는 값이라, 같은 레이아웃의 다른 역할로 넘어와도 직전 표시가 남지 않게 한다 -->
+    <set-state target="local" :hasChanges="false"/>
     <!-- 생성 모드: 역할 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_role_form)이라 엔진이 `_local` 을 비우지 않아 직전 역할의 form(id·identifier 등)이 등록 폼에 남는다. form=null 로 먼저 지운다(깊은 병합이 객체 대신 null 로 덮어써 완전 삭제). 복제 진입(clone_from)은 clone_source 의 initLocal 이 init_actions 뒤에 병합되므로 영향 없음. -->
     <set-state if="{{!route?.id}}" target="local" :form="null"/>
     <!-- 생성 모드 기본값 복원 — 레이아웃 `state.form` 은 같은 레이아웃 재진입에서 다시 적용되지 않으므로(기존 키 유지) 같은 값을 여기서 다시 쓴다. -->
@@ -131,9 +162,12 @@
                   <toast type="success" message="{{route?.id ? $t:admin.roles.modals.update_success : $t:admin.roles.modals.create_success}}"/>
                   <!-- 수정이면 화면에 머문다 — 역할을 다시 받아 폼을 서버 값(정규화된 범위·메뉴)으로 채우고 변경 표시를 푼다 -->
                   <refetch-data-source if="{{!!route?.id}}" dataSourceId="role"/>
-                  <!-- 등록·복제면 방금 만든 역할의 수정 화면으로 간다. 뒤로 가기로 빈 등록 폼에 돌아오지 않게 기록을 바꿔 낀다 -->
-                  <navigate if="{{!route?.id}}" path="{{'/admin/roles/' + response.data.id + '/edit'}}" :mergeQuery="true" :replace="true">
-                    <query/>
+                  <set-state if="{{!!route?.id}}" target="local" :hasChanges="false"/>
+                  <!-- 등록·복제면 방금 만든 역할의 수정 화면으로 간다(목록 조건은 잇고 복제 진입 쿼리 clone_from 은 버린다).
+                       `replace` 를 붙이지 않는다 — 엔진의 replace 는 같은 화면의 쿼리만 바꾸는 이동이라 route.id 가 등록 화면 값(없음)에
+                       머물러, 넘어간 수정 화면의 「저장」이 PUT 대신 등록(POST)으로 나갔다. 라우트 전환을 타야 route.id 가 생긴다. -->
+                  <navigate :bypassLeaveGuard="true" if="{{!route?.id}}" path="{{'/admin/roles/' + response.data.id + '/edit'}}" :mergeQuery="true">
+                    <query clone_from=""/>
                   </navigate>
                 </sequence>
               </success>
@@ -165,25 +199,25 @@
             <div data-ref="name_field">
               <label class="form-label">
                 <span>$t:admin.roles.form.name</span>
-                <span class="text-red-500 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               </label>
               <multilingual-input data-type="composite" name="name_raw" placeholder="$t:admin.roles.form.name_placeholder" :maxLength="100" :required="true" layout="tabs" error="{{_global.formErrors?.name || _global.formErrors?.name_raw}}"/>
-              <span data-if="{{_global.formErrors?.name || _global.formErrors?.name_raw}}" class="text-red-500 text-xs">{{_global.formErrors?.name?.[0] ?? _global.formErrors?.name_raw?.[0] ?? ''}}</span>
+              <span data-if="{{_global.formErrors?.name || _global.formErrors?.name_raw}}" class="text-red-600 dark:text-red-400 text-xs">{{_global.formErrors?.name?.[0] ?? _global.formErrors?.name_raw?.[0] ?? ''}}</span>
             </div>
             <div data-ref="identifier_field">
               <label class="form-label">
                 <span>$t:admin.roles.form.identifier</span>
-                <span data-if="{{!route?.id}}" class="text-red-500 ml-1">*</span>
+                <span data-if="{{!route?.id}}" class="text-red-600 dark:text-red-400 ml-1">*</span>
               </label>
               <input name="identifier" type="text" placeholder="$t:admin.roles.form.identifier_placeholder" :maxLength="100" disabled="{{!!route?.id}}" error="{{_global.formErrors?.identifier}}" class="input {{_global.formErrors?.identifier ? 'input-error' : ''}}"/>
-              <span data-if="{{_global.formErrors?.identifier}}" class="text-red-500 text-xs mt-1">{{_global.formErrors?.identifier?.[0] ?? ''}}</span>
+              <span data-if="{{_global.formErrors?.identifier}}" class="text-red-600 dark:text-red-400 text-xs mt-1">{{_global.formErrors?.identifier?.[0] ?? ''}}</span>
               <span data-if="{{!route?.id}}" class="text-tertiary mt-1">$t:admin.roles.form.identifier_hint</span>
               <span data-if="{{!!route?.id}}" class="text-tertiary mt-1">$t:admin.roles.form.identifier_readonly_hint</span>
             </div>
             <div data-ref="description_field">
               <label class="form-label">$t:admin.roles.form.description</label>
               <multilingual-input data-type="composite" name="description_raw" placeholder="$t:admin.roles.form.description_placeholder" :maxLength="500" :multiline="true" :rows="3" layout="tabs" error="{{_global.formErrors?.description || _global.formErrors?.description_raw}}"/>
-              <span data-if="{{_global.formErrors?.description || _global.formErrors?.description_raw}}" class="text-red-500 text-xs">{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}</span>
+              <span data-if="{{_global.formErrors?.description || _global.formErrors?.description_raw}}" class="text-red-600 dark:text-red-400 text-xs">{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}</span>
             </div>
             <!-- 비밀번호 만료(#736) — 이 역할을 가진 회원에게 사이트 적용 범위와 다르게 만료를 적용하거나 뺀다. 우선순위는
                  회원 개별 > 역할 > 사이트 범위이고, 한 회원의 역할끼리 부딪치면 「적용」이 이긴다(보안 우선). -->
@@ -271,7 +305,7 @@
         <!-- 취소하고 역할 목록으로. 보던 목록 상태를 이고 간다 -->
         <a data-ref="footer_cancel_button" href="/admin/roles" :mergeQuery="true" class="button px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">
-            <navigate :mergeQuery="true"><query/></navigate>
+            <navigate :bypassLeaveGuard="true" :mergeQuery="true"><query/></navigate>
           </on>
           $t:common.cancel
         </a>
@@ -284,9 +318,9 @@
       <div data-ref="mobile_bottom_buttons" class="hidden">
         <responsive on="portable" class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 flex gap-3 z-50"/>
         <!-- 저장. 폼 밖에 있는 버튼이라 form 속성으로 위쪽 역할 폼에 연결한다 — 그 폼에 같은 id 가 있어야 눌리므로 둘은 짝이다 -->
-        <a href="/admin/roles" :mergeQuery="true" class="button flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg">
+        <a data-ref="mobile_cancel_button" href="/admin/roles" :mergeQuery="true" class="button flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg">
           <on type="click">
-            <navigate :mergeQuery="true"><query/></navigate>
+            <navigate :bypassLeaveGuard="true" :mergeQuery="true"><query/></navigate>
           </on>
           $t:common.cancel
         </a>

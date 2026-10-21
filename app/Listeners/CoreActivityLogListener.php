@@ -451,7 +451,7 @@ class CoreActivityLogListener implements HookListenerInterface
      * 로그인 후 로그 기록 (사용자·관리자 로그인 공통 훅)
      *
      * 같은 훅이 사용자 로그인(`/api/auth/login…`)과 관리자 로그인(`/api/auth/admin/login…`)에서 모두 발화한다.
-     * 설명은 들어온 경로로 고른다 — 사용자 로그인에도 「관리자 로그인」이 찍히던 문제(7.1.0 실측 O-B3).
+     * 설명은 들어온 경로로 고른다 — 사용자 로그인에도 「관리자 로그인」이 찍히던 문제(7.1.0 실측).
      *
      * @param  User  $user  로그인한 사용자
      * @param  array  $loginData  로그인 데이터

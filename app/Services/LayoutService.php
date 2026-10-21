@@ -377,17 +377,18 @@ class LayoutService
     private function mergeDataSources(array $parentDataSources, array $childDataSources): array
     {
         $merged = $parentDataSources;
-        $existingIds = array_column($parentDataSources, 'id');
+        // 부모와 겹치는 id 만 막는다 — 자식 안에서 같은 id 를 조건(if·conditions)으로 여러 판 선언한 것은 엔진이 조건으로
+        // 고른다(7.1.1 출시 전). 자식 안의 조건 없는 중복은 설치·저장 검증이 이미 거부한다.
+        $parentIds = array_column($parentDataSources, 'id');
 
         foreach ($childDataSources as $childDataSource) {
-            if (in_array($childDataSource['id'], $existingIds, true)) {
+            if (in_array($childDataSource['id'], $parentIds, true)) {
                 throw new LayoutIncludeException(
                     __('exceptions.layout.duplicate_data_source_id', ['id' => $childDataSource['id']])
                 );
             }
 
             $merged[] = $childDataSource;
-            $existingIds[] = $childDataSource['id'];
         }
 
         return $merged;
@@ -970,7 +971,7 @@ class LayoutService
             }
 
             // 저장 원문을 다시 읽어 값 자리의 빈 객체 `{}` 를 보존한다 — 배열 캐스트는 `{}` 를 `[]` 로
-            // 바꿔 응답에서 화면 상태(initLocal 값·액션 인자)가 배열이 된다(7.1.0 실측 O-K3-4)
+            // 바꿔 응답에서 화면 상태(initLocal 값·액션 인자)가 배열이 된다(7.1.0 실측)
             $layoutData = LayoutEmptyObjects::decode($layout->getAttributes()['content'] ?? null, $layout->content ?? []);
 
             // 5. 상속 처리 (extends가 있는 경우)

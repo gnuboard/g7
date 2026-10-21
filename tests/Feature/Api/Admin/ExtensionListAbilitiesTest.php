@@ -10,12 +10,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 확장 목록·복구 경로의 abilities·권한 정렬 (G20·G24·core-admin-extensions #7·#8·#12).
+ * 확장 목록·복구 경로의 abilities·권한 정렬 (7.1.0 abilities 게이트 점검).
  *
- * - 모듈 목록은 결과가 0건이어도 컬렉션 abilities 를 싣는다(0건이면 빠져 권한자에게도 버튼이 굳던 G24).
- * - 플러그인 행은 설정 화면 저장 권한(can_update = core.plugins.update)을 싣는다(G20).
- * - 세 목록 모두 언어팩 관리 화면으로 갈 수 있는지(can_view_language_packs = core.language_packs.read)를 싣는다(#8).
- * - 자동 비활성 확장의 복구·닫기는 확장 종류의 활성화 권한을 요구한다(#7).
+ * - 모듈 목록은 결과가 0건이어도 컬렉션 abilities 를 싣는다(0건이면 빠져 권한자에게도 버튼이 굳던 결함).
+ * - 플러그인 행은 설정 화면 저장 권한(can_update = core.plugins.update)을 싣는다.
+ * - 세 목록 모두 언어팩 관리 화면으로 갈 수 있는지(can_view_language_packs = core.language_packs.read)를 싣는다.
+ * - 자동 비활성 확장의 복구·닫기는 확장 종류의 활성화 권한을 요구한다.
  */
 class ExtensionListAbilitiesTest extends TestCase
 {
@@ -51,7 +51,7 @@ class ExtensionListAbilitiesTest extends TestCase
     }
 
     /**
-     * 검색 결과가 0건이어도 모듈 목록 응답에 abilities 가 있다 (G24)
+     * 검색 결과가 0건이어도 모듈 목록 응답에 abilities 가 있다
      *
      * @scenario endpoint=admin.modules.index,result=empty,permission=install
      *
@@ -75,7 +75,7 @@ class ExtensionListAbilitiesTest extends TestCase
     }
 
     /**
-     * 플러그인·템플릿 목록 컬렉션 abilities 에 언어팩 관리 진입 권한이 실린다 (#8·#12)
+     * 플러그인·템플릿 목록 컬렉션 abilities 에 언어팩 관리 진입 권한이 실린다
      *
      * @scenario endpoint=admin.plugins.index|admin.templates.index,permission=read+language_packs.read
      *
@@ -98,7 +98,7 @@ class ExtensionListAbilitiesTest extends TestCase
     }
 
     /**
-     * 플러그인 행 abilities 에 설정 저장 권한(can_update)이 있다 — 「설정」 메뉴가 이 값으로 잠긴다 (G20)
+     * 플러그인 행 abilities 에 설정 저장 권한(can_update)이 있다 — 「설정」 메뉴가 이 값으로 잠긴다
      *
      * @scenario endpoint=admin.plugins.index,permission=read+update|read+activate
      *
@@ -116,7 +116,7 @@ class ExtensionListAbilitiesTest extends TestCase
     }
 
     /**
-     * 자동 비활성 확장의 복구·닫기는 그 종류의 활성화 권한을 요구한다 — 플러그인 활성화 권한만으로 모듈은 403 (#7)
+     * 자동 비활성 확장의 복구·닫기는 그 종류의 활성화 권한을 요구한다 — 플러그인 활성화 권한만으로 모듈은 403
      *
      * @scenario endpoint=admin.extensions.dismiss,type=module|plugin,permission=plugins.activate
      *
@@ -137,7 +137,7 @@ class ExtensionListAbilitiesTest extends TestCase
     }
 
     /**
-     * 모듈·플러그인 상세 응답에도 abilities 가 실린다 — 상세 창이 목록 행 전역을 덮어써도 권한 값이 남는다 (backend#15)
+     * 모듈·플러그인 상세 응답에도 abilities 가 실린다 — 상세 창이 목록 행 전역을 덮어써도 권한 값이 남는다
      *
      * @scenario endpoint=admin.modules.show|admin.plugins.show,permission=read
      *

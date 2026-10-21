@@ -34,13 +34,13 @@
           <responsive on="portable" class="w-full max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700"/>
           <!-- 클레임 추가결제 결과 안내 — 결제창에서 돌아온 직후에만 선다. 서버(ClaimPaymentRedirect)가 성공·실패·사용자 중단 셋을 `?claim_payment=` 로 구분해 실어 보낸다. 비회원 복귀 주소가 신청서 상세가 아니라 이 조회 화면인 이유는 결제창에서 돌아온 브라우저에 조회 토큰이 남아 있다고 보장할 수 없기 때문이다(알림 링크가 같은 이유로 이미 이 화면을 가리킨다). 이 자리가 없으면 구매자는 돈이 나갔는지 알 방법이 없고 실패도 사유 없이 지나간다. -->
           <div data-if="{{['success', 'failed', 'cancelled'].includes(query.claim_payment ?? '')}}" class="{{query.claim_payment === 'success' ? 'flex items-start gap-2 p-4 mb-4 rounded-lg bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800' : (query.claim_payment === 'failed' ? 'flex items-start gap-2 p-4 mb-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : 'flex items-start gap-2 p-4 mb-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700')}}">
-            <icon name="{{query.claim_payment === 'success' ? 'circle-check' : (query.claim_payment === 'failed' ? 'circle-exclamation' : 'circle-info')}}" class="{{query.claim_payment === 'success' ? 'text-base text-green-600 dark:text-green-400 flex-shrink-0' : (query.claim_payment === 'failed' ? 'text-base text-red-600 dark:text-red-400 flex-shrink-0' : 'text-base text-gray-500 dark:text-gray-400 flex-shrink-0')}}"/>
+            <icon name="{{query.claim_payment === 'success' ? 'circle-check' : (query.claim_payment === 'failed' ? 'circle-exclamation' : 'circle-info')}}" class="{{query.claim_payment === 'success' ? 'text-base text-green-700 dark:text-green-400 flex-shrink-0' : (query.claim_payment === 'failed' ? 'text-base text-red-600 dark:text-red-400 flex-shrink-0' : 'text-base text-gray-500 dark:text-gray-400 flex-shrink-0')}}"/>
             <div class="min-w-0">
               <p class="{{query.claim_payment === 'success' ? 'text-sm font-medium text-green-800 dark:text-green-200' : (query.claim_payment === 'failed' ? 'text-sm font-medium text-red-800 dark:text-red-200' : 'text-sm font-medium text-gray-800 dark:text-gray-200')}}">{{query.claim_payment === 'success' ? $t('claim.payment_result.success') : (query.claim_payment === 'failed' ? $t('claim.payment_result.failed') : $t('claim.payment_result.cancelled'))}}</p>
               <!-- 어느 신청서의 결제였는지 — 이 화면은 주소에 신청서 번호를 품지 않으므로 쿼리가 유일한 통로다. -->
               <p data-if="{{(query.claim_number ?? '') !== ''}}" class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">$t:claim.payment_result.claim_number|number={{query.claim_number ?? ''}}</p>
               <!-- 실패 코드 — 코드가 실린 실패에만. 구매자가 고객센터에 말할 것도, 운영자가 어느 실패인지 볼 것도 이 값이다. -->
-              <p data-if="{{query.claim_payment === 'failed' &amp;&amp; (query.error ?? '') !== ''}}" class="text-xs text-red-600 dark:text-red-400 mt-0.5">$t:claim.payment_result.error_code|code={{query.error ?? ''}}</p>
+              <p data-if="{{query.claim_payment === 'failed' &amp;&amp; (query.error ?? '') !== ''}}" class="text-xs text-red-700 dark:text-red-300 mt-0.5">$t:claim.payment_result.error_code|code={{query.error ?? ''}}</p>
               <!-- 조회 뒤에 어디로 가야 하는지 — 이 화면은 신청서 상세가 아니므로 안내가 없으면 구매자는 결과만 보고 멈춘다. -->
               <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">$t:claim.payment_result.guest_lookup_hint</p>
             </div>
@@ -78,7 +78,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 <span>$t:shop.guest_order_form.order_number</span>
-                <span class="text-red-500 dark:text-red-400 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               </label>
               <input aria-label="$t:shop.guest_order_form.order_number" type="text" name="order_number" value="{{_local.form?.order_number ?? ''}}" placeholder="$t:shop.guest_order_form.order_number_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :required="true" disabled="{{_local.isSubmitting}}">
                 <on type="change">
@@ -92,7 +92,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 <span>$t:shop.guest_order_form.orderer_phone</span>
-                <span class="text-red-500 dark:text-red-400 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               </label>
               <input aria-label="$t:shop.guest_order_form.orderer_phone" type="tel" name="orderer_phone" value="{{_local.form?.orderer_phone ?? ''}}" placeholder="$t:shop.guest_order_form.orderer_phone_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :required="true" disabled="{{_local.isSubmitting}}">
                 <on type="change">
@@ -106,7 +106,7 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 <span>$t:shop.guest_order_form.password</span>
-                <span class="text-red-500 dark:text-red-400 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               </label>
               <password-input aria-label="$t:shop.guest_order_form.password" name="guest_lookup_password" value="{{_local.form?.guest_lookup_password ?? ''}}" placeholder="$t:shop.guest_order_form.password_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :required="true" disabled="{{_local.isSubmitting}}" :showToggle="true">
                 <on type="change">
@@ -122,7 +122,7 @@
           <!-- 안내 — 조회 후 가능한 일(취소/배송지 변경) + 보안(주문마다 별도 인증, 30분 자동 표시) -->
           <div class="mt-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700 space-y-2">
             <p class="text-xs text-gray-600 dark:text-gray-400">$t:shop.guest_order_form.actions_notice</p>
-            <p class="text-xs text-gray-500 dark:text-gray-500">$t:shop.guest_order_form.notice</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">$t:shop.guest_order_form.notice</p>
           </div>
         </div>
       </flex>

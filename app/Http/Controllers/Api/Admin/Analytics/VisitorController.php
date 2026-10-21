@@ -226,7 +226,7 @@ class VisitorController extends AdminBaseController
             foreach ($profile['visits'] as $visit) {
                 // 시각 열은 화면·파일 이름과 같은 사이트 표준시로 싣는다. UTC 원값을 그대로 쓰면 파일 이름의
                 // 기간(사이트 날짜)과 행의 날짜가 다른 하루를 가리킨다 — 서울 사이트의 10-06 아침 방문이
-                // 「…_2026-10-06.csv」 안에 `2026-10-05T21:…` 로 찍혔다(7.1.0 실측 O-E4).
+                // 「…_2026-10-06.csv」 안에 `2026-10-05T21:…` 로 찍혔다(7.1.0 실측).
                 $base = [
                     $visit['visit_id'],
                     self::siteTime($visit['first_action_at'] ?? null),
@@ -311,7 +311,7 @@ class VisitorController extends AdminBaseController
 
             $visit['first_action_at'] = self::siteTime($visit['first_action_at'] ?? null);
             $visit['last_action_at'] = self::siteTime($visit['last_action_at'] ?? null);
-            // 그 방문의 주소가 지금 설정대로 가려진 값인지 — 설정 전 기록은 원래 주소다(7.1.0 실측 O-E8).
+            // 그 방문의 주소가 지금 설정대로 가려진 값인지 — 설정 전 기록은 원래 주소다(7.1.0 실측).
             $visit['ip_masked'] = IpAddress::isMaskedBy(is_string($visit['ip'] ?? null) ? $visit['ip'] : null, $maskOctets);
             // 저장 값(`desktop`·`search`)은 내보내기 파일이 그대로 싣는다 — 화면만 읽을 이름을 덧붙인다.
             $visit['device_type_label'] = CodeLabelTranslator::label('analytics.device_type', $visit['device_type'] ?? null);
@@ -331,7 +331,7 @@ class VisitorController extends AdminBaseController
      * 합니다 — 보는 사람 기준으로 보이면 「오늘 KPI」와 목록의 날짜가 서로 다른 하루를
      * 가리킵니다(#682 S3 라운드 6, 설계 결정). 정보주체 JSON 내보내기는 오프셋이 붙은 ISO8601 이
      * 정본이라 `DataSubjectService` 쪽은 그대로 두고 화면과 CSV 경로에서 바꿉니다 — CSV 는 파일 이름의
-     * 기간이 사이트 날짜이므로 행의 시각도 같은 기준이어야 합니다(7.1.0 실측 O-E4).
+     * 기간이 사이트 날짜이므로 행의 시각도 같은 기준이어야 합니다(7.1.0 실측).
      *
      * @param  mixed  $value  ISO8601 문자열 또는 null
      * @return string|null Y-m-d H:i:s 형식 (값이 없으면 null)

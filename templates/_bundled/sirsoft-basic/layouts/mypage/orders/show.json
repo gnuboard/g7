@@ -46,6 +46,33 @@
                     ]
                 }
             ],
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
             "comment": "주문 본체 — 상태·결제·배송·항목이 모두 여기 담겨 온다. 취소·확정·배송지 변경 뒤에는 다시 받는다\n       SPA 뒤로가기로 이 화면에 되돌아오면 캐시된 응답이 쓰여 onSuccess 가 발화하지 않는다 — 그러면 claimOrderId 를 세우고 claimable 을 부르는 체인이 통째로 건너뛰어져, 오류 없이 '신청할 수 있는 상품이 없습니다' 만 남는다(2026-08-31 실측). 클레임 가능 여부는 진입할 때마다 서버가 다시 판정해야 하는 값이기도 하다."
         },
         {
@@ -265,7 +292,7 @@
                                                 "props": {
                                                     "href": "/mypage/orders/{{route.order_number}}/claims/apply/refund?options={{(_local.selectedItemIds ?? []).join(',')}}&order_id={{order.data.id ?? ''}}",
                                                     "mergeQuery": true,
-                                                    "className": "inline-flex items-center justify-center px-5 py-2.5 bg-red-600 dark:bg-red-500 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-600 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed cursor-pointer",
+                                                    "className": "inline-flex items-center justify-center px-5 py-2.5 bg-red-600 dark:bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 dark:hover:bg-red-700 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed cursor-pointer",
                                                     "disabled": "{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('refund')) || claimable?.data?.abilities?.can_request !== true || ((_local.selectedItemIds ?? []).some(id => (claimable?.data?.options ?? []).find(o => o.option?.id === id)?.refund_branch === 'auto') && claimable?.data?.abilities?.can_cancel !== true)}}"
                                                 },
                                                 "text": "$t:claim.apply.entry_refund"
@@ -290,7 +317,7 @@
                                                 "props": {
                                                     "href": "/mypage/orders/{{route.order_number}}/claims/apply/return?options={{(_local.selectedItemIds ?? []).join(',')}}&order_id={{order.data.id ?? ''}}",
                                                     "mergeQuery": true,
-                                                    "className": "inline-flex items-center justify-center px-5 py-2.5 bg-orange-600 dark:bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed cursor-pointer",
+                                                    "className": "inline-flex items-center justify-center px-5 py-2.5 bg-orange-700 dark:bg-orange-700 text-white rounded-lg font-medium hover:bg-orange-800 dark:hover:bg-orange-800 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed cursor-pointer",
                                                     "disabled": "{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('return')) || claimable?.data?.abilities?.can_request !== true}}"
                                                 },
                                                 "text": "$t:claim.apply.entry_return"
@@ -315,7 +342,7 @@
                                                 "props": {
                                                     "href": "/mypage/orders/{{route.order_number}}/claims/apply/exchange?options={{(_local.selectedItemIds ?? []).join(',')}}&order_id={{order.data.id ?? ''}}",
                                                     "mergeQuery": true,
-                                                    "className": "inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed cursor-pointer",
+                                                    "className": "inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 dark:bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed cursor-pointer",
                                                     "disabled": "{{(_local.selectedItemIds ?? []).length === 0 || !(_local.selectedItemIds ?? []).every(id => ((claimable?.data?.options ?? []).find(o => o.option?.id === id)?.claimable_types ?? []).includes('exchange')) || claimable?.data?.abilities?.can_request !== true}}"
                                                 },
                                                 "text": "$t:claim.apply.entry_exchange"
@@ -328,7 +355,7 @@
                                         "name": "P",
                                         "if": "{{(claimable?.data?.options ?? []).some(o => (o.claimable_types ?? []).length > 0) && claimable?.data?.abilities?.can_request === false}}",
                                         "props": {
-                                            "className": "text-sm text-amber-600 dark:text-amber-400 text-center"
+                                            "className": "text-sm text-amber-700 dark:text-amber-400 text-center"
                                         },
                                         "text": "$t:claim.apply.no_request_permission"
                                     },
@@ -337,7 +364,7 @@
                                         "name": "P",
                                         "if": "{{claimable?.data?.abilities?.can_request === true && claimable?.data?.abilities?.can_cancel === false && (_local.selectedItemIds ?? []).some(id => (claimable?.data?.options ?? []).find(o => o.option?.id === id)?.refund_branch === 'auto')}}",
                                         "props": {
-                                            "className": "text-sm text-amber-600 dark:text-amber-400 text-center"
+                                            "className": "text-sm text-amber-700 dark:text-amber-400 text-center"
                                         },
                                         "text": "$t:claim.apply.no_cancel_permission"
                                     },

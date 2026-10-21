@@ -8,6 +8,7 @@
 
 1. [navigate](#navigate)
 2. [navigateBack](#navigateback)
+   - [이탈 확인 건너뛰기 (bypassLeaveGuard)](#이탈-확인-건너뛰기-bypassleaveguard) (engine-v1.82.0+)
 3. [openWindow](#openwindow)
 4. [reloadExtensions](#reloadextensions) ⭐ NEW (engine-v1.38.0+)
 5. [reloadRoutes](#reloadroutes) (deprecated)
@@ -50,6 +51,7 @@
 | `scroll` | string \| number \| object | `"top"` | 이동 후 스크롤 위치 (engine-v1.37.0+). `"top"` / `"preserve"` / 숫자 / `{x,y}` / `"#selector"` |
 | `scrollBehavior` | string | `"instant"` | 스크롤 애니메이션 (engine-v1.37.0+). `"instant"` (즉시) / `"smooth"` (부드럽게). 기본값 `"instant"`는 템플릿 CSS의 `scroll-behavior: smooth` 전역 설정을 무시하고 페이지 전환 시 즉시 이동 |
 | `fallback` | `false \| string \| object` | `openWindow`(`target: "_self"`) | 대상 경로가 현재 템플릿의 `routes.json`에 없을 때 실행할 fallback 핸들러 (engine-v1.40.0+). 기본값은 `openWindow` 를 **같은 탭**(`_self`)으로 — 그 주소로 페이지 전체를 불러온다. `false` 시 비활성화(기존 동작), 문자열은 핸들러명만 지정(`"openWindow"` 면 새 창), 객체는 `{handler, params}` 상세 지정. 관리자 ↔ 사용자 템플릿 교차 경로에 사용. 아래 `fallbackPath` 와 다른 인자다 |
+| `bypassLeaveGuard` | boolean | false | 레이아웃 이탈 확인(`meta.leave_guard`)을 이 이동에 한해 묻지 않는다 — 저장 성공 뒤 이동 등 (engine-v1.82.0+). [이탈 확인 건너뛰기](#이탈-확인-건너뛰기-bypassleaveguard) |
 | `fallbackPath` | string | - | 이동 주소(`path`)가 **비었거나 거부될 때**(실행 스킴·다른 사이트·`//host`) 대신 갈 경로 (engine-v1.80.1+). 같은 판정을 거치며 그것도 거부되면 이동하지 않는다. 쿼리·서버 값으로 이동하는 자리(로그인 복귀·본인 확인 복귀·알림 이동)에 쓴다 — [fallbackPath 옵션](#fallbackpath-옵션-engine-v1801) |
 
 ### transition_overlay_target 옵션 (engine-v1.36.0+)
@@ -851,6 +853,7 @@ replace: true는 같은 페이지 내에서만 사용
 | 필드 | 타입 | 기본값 | 설명 |
 |------|------|--------|------|
 | `path` | string | - | 새 창에서 열 경로 (필수) |
+| `bypassLeaveGuard` | boolean | false | `target: "_self"`(같은 탭 전체 이동)일 때 레이아웃 이탈 확인(브라우저 확인 창)을 이 이동에 한해 묻지 않는다 (engine-v1.82.0+) |
 
 ### 사용 사례
 
@@ -963,6 +966,38 @@ replace: true는 같은 페이지 내에서만 사용
   ]
 }
 ```
+
+### 이탈 확인 건너뛰기 (bypassLeaveGuard)
+
+> **버전**: engine-v1.82.0+
+
+레이아웃이 `meta.leave_guard` 로 「저장하지 않은 변경이 있으면 떠날 때 묻기」를 선언한 화면([layout-json.md](layout-json.md#metaleave_guard-저장하지-않은-변경-이탈-확인))에서, **묻지 않아야 하는** 이동에 `bypassLeaveGuard: true` 를 준다. 이름은 네 핸들러가 같다.
+
+| 핸들러 | 마크업 | 건너뛰는 확인 |
+| --- | --- | --- |
+| `navigate` | `<navigate path="/admin/users" :bypassLeaveGuard="true"/>` | 이 이동의 확인 창 |
+| `navigateBack` | `<navigate-back :bypassLeaveGuard="true"/>` | 바로 다음 뒤로 가기(또는 문서를 떠나면 브라우저 확인 창) 1회 |
+| `openWindow` | `<open-window path="/admin/boards/{{slug}}/edit" target="_self" :bypassLeaveGuard="true"/>` | 같은 탭 전체 이동의 브라우저 확인 창 1회 |
+| `redirect` | `<action handler="redirect" url="…" :bypassLeaveGuard="true"/>` | 같은 탭 전체 이동의 브라우저 확인 창 1회 |
+
+```html
+<!-- 저장 성공 뒤 목록으로: 방금 저장했으므로 묻지 않는다 -->
+<button type="button">
+  <on type="click">
+    <api-call auth_mode="required" target="/api/admin/users/{{route.id}}" method="PUT">
+      <success>
+        <navigate path="/admin/users" :bypassLeaveGuard="true"/>
+      </success>
+    </api-call>
+  </on>
+  $t:common.save
+</button>
+```
+
+- 쓰는 자리: 저장·삭제 성공 뒤 이동, 「취소」 단추, 기존 「변경사항 확인」 모달의 「페이지 나가기」 단추(이미 사용자에게 물었다).
+- `navigateBack`·`openWindow`·`redirect` 는 이동이 비동기라 「다음 1회」를 1초 동안 무장한다. 그 안에 이동이 일어나지 않으면(히스토리 첫 항목에서 뒤로 가기 등) 무장은 사라진다.
+- 확장 핸들러는 `G7Core.dispatch({ handler: navigate, params: { path, bypassLeaveGuard: true } })` 로 같은 효과를 낸다. 핸들러 문맥의 `context.navigate(path)` 는 확인을 거친다.
+- 사용자가 머무르기를 고르면 `navigate` 는 화면을 바꾸지 않고 스크롤도 옮기지 않는다. 같은 sequence 의 앞 액션(`setState` 등)은 이미 실행됐으므로, 이동 직전 상태 쓰기는 이동 뒤 화면에서 하거나 `bypassLeaveGuard` 와 함께 쓴다.
 
 ---
 

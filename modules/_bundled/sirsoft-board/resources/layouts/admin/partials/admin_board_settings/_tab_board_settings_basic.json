@@ -9,13 +9,6 @@
     "type": "basic",
     "name": "Div",
     "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
-    "classMap": {
-        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-        "variants": {
-            "readonly": "opacity-60",
-            "normal": ""
-        }
-    },
     "children": [
         {
             "comment": "========== 섹션 1: 기본 설정 ==========",
@@ -307,6 +300,7 @@
                                             "type": "basic",
                                             "name": "Select",
                                             "props": {
+                                                "aria-label": "$t:sirsoft-board.admin.settings.fields.secret_mode",
                                                 "name": "basic_defaults.secret_mode",
                                                 "className": "w-48 flex-shrink-0 text-sm",
                                                 "disabled": "{{_computed.isReadOnly}}",
@@ -398,6 +392,7 @@
                                             "type": "composite",
                                             "name": "Toggle",
                                             "props": {
+                                                "ariaLabel": "$t:sirsoft-board.admin.settings.fields.show_view_count",
                                                 "name": "basic_defaults.show_view_count",
                                                 "className": "flex-shrink-0",
                                                 "disabled": "{{_computed.isReadOnly}}"
@@ -475,6 +470,7 @@
                                             "type": "composite",
                                             "name": "Toggle",
                                             "props": {
+                                                "ariaLabel": "$t:sirsoft-board.admin.settings.fields.use_report",
                                                 "name": "basic_defaults.use_report",
                                                 "className": "flex-shrink-0",
                                                 "disabled": "{{_computed.isReadOnly}}"
@@ -552,6 +548,7 @@
                                             "type": "composite",
                                             "name": "Toggle",
                                             "props": {
+                                                "ariaLabel": "$t:sirsoft-board.admin.settings.fields.use_scrap",
                                                 "name": "basic_defaults.use_scrap",
                                                 "className": "flex-shrink-0",
                                                 "disabled": "{{_computed.isReadOnly}}"
@@ -629,6 +626,7 @@
                                             "type": "composite",
                                             "name": "Toggle",
                                             "props": {
+                                                "ariaLabel": "$t:sirsoft-board.admin.settings.fields.use_reaction",
                                                 "name": "basic_defaults.use_reaction",
                                                 "className": "flex-shrink-0",
                                                 "disabled": "{{_computed.isReadOnly}}"
@@ -844,6 +842,7 @@
                                                     "type": "composite",
                                                     "name": "Toggle",
                                                     "props": {
+                                                        "ariaLabel": "$t:sirsoft-board.admin.settings.fields.use_comment_reaction",
                                                         "name": "basic_defaults.use_comment_reaction",
                                                         "disabled": "{{_computed.isReadOnly || _local.form?.basic_defaults?.use_reaction !== true}}"
                                                     }

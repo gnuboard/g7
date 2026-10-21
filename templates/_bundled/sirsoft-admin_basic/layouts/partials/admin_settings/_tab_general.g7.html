@@ -11,16 +11,16 @@
           <div data-ref="field_site_name">
             <label class="form-label">
               <span>$t:admin.settings.general.site_name</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               <badge data-type="composite" data-if="{{_computed.envLocked?.['general.site_name'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
-            <input type="text" name="general.site_name" placeholder="그누보드7" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.site_name'] === true}}" class="input {{_local.errors?.['general.site_name'] ? 'input-error' : ''}}"/>
+            <input type="text" name="general.site_name" placeholder="$t:admin.brand_name" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.site_name'] === true}}" class="input {{_local.errors?.['general.site_name'] ? 'input-error' : ''}}"/>
             <span data-if="{{_local.errors?.['general.site_name']}}" class="form-error">{{_local.errors?.['general.site_name']?.[0] ?? ''}}</span>
           </div>
           <div data-ref="field_site_url">
             <label class="form-label">
               <span>$t:admin.settings.general.site_url</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               <badge data-type="composite" data-if="{{_computed.envLocked?.['general.site_url'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
             <input type="url" name="general.site_url" placeholder="https://example.com" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.site_url'] === true}}" class="input {{_local.errors?.['general.site_url'] ? 'input-error' : ''}}"/>
@@ -34,7 +34,7 @@
         <div data-ref="field_admin_email">
           <label class="form-label">
             <span>$t:admin.settings.general.admin_email</span>
-            <span class="text-red-500 ml-1">*</span>
+            <span class="text-red-600 dark:text-red-400 ml-1">*</span>
           </label>
           <input type="email" name="general.admin_email" placeholder="admin@example.com" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['general.admin_email'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['general.admin_email']}}" class="form-error">{{_local.errors?.['general.admin_email']?.[0] ?? ''}}</span>
@@ -89,7 +89,7 @@
           <div data-ref="field_language">
             <label class="form-label">
               <span>$t:admin.settings.general.default_language</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               <badge data-type="composite" data-if="{{_computed.envLocked?.['general.language'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
             <select name="general.language" class="w-full" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.language'] === true}}" placeholder="$t:admin.settings.general.select_language" options="{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}" error="{{_local.errors?.['general.language']?.[0] ?? ''}}"/>
@@ -98,7 +98,7 @@
           <div data-ref="field_timezone">
             <label class="form-label">
               <span>$t:admin.settings.general.timezone</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
               <badge data-type="composite" data-if="{{_computed.envLocked?.['general.timezone'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
             </label>
             <select name="general.timezone" class="w-full" disabled="{{_computed.isReadOnly || _computed.envLocked?.['general.timezone'] === true}}" placeholder="$t:admin.settings.general.select_timezone" options="{{_global.appConfig?.supportedTimezones ?? []}}" :searchable="true" searchPlaceholder="{{$t('common.search')}}" error="{{_local.errors?.['general.timezone']?.[0] ?? ''}}"/>
@@ -128,8 +128,8 @@
           </button>
         </div>
         <p data-ref="asset_url_mode_msg_detecting" data-if="{{_local.asset_url_mode_detect_status === 'detecting'}}" class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:admin.settings.general.asset_url_mode_detecting</p>
-        <p data-ref="asset_url_mode_msg_extension" data-if="{{_local.asset_url_mode_detect_status === 'extension'}}" class="mt-2 text-sm text-green-600 dark:text-green-400">$t:admin.settings.general.asset_url_mode_detect_extension</p>
-        <p data-ref="asset_url_mode_msg_extensionless" data-if="{{_local.asset_url_mode_detect_status === 'extensionless'}}" class="mt-2 text-sm text-amber-600 dark:text-amber-400">$t:admin.settings.general.asset_url_mode_detect_extensionless</p>
+        <p data-ref="asset_url_mode_msg_extension" data-if="{{_local.asset_url_mode_detect_status === 'extension'}}" class="mt-2 text-sm text-green-700 dark:text-green-400">$t:admin.settings.general.asset_url_mode_detect_extension</p>
+        <p data-ref="asset_url_mode_msg_extensionless" data-if="{{_local.asset_url_mode_detect_status === 'extensionless'}}" class="mt-2 text-sm text-amber-700 dark:text-amber-400">$t:admin.settings.general.asset_url_mode_detect_extensionless</p>
         <p data-ref="asset_url_mode_msg_unavailable" data-if="{{_local.asset_url_mode_detect_status === 'unavailable'}}" class="mt-2 text-sm text-red-600 dark:text-red-400">$t:admin.settings.general.asset_url_mode_detect_unavailable</p>
       </div>
     </div>
@@ -180,7 +180,7 @@
             <span class="text-heading">{{staticCacheStatus?.data?.process_user ?? '-'}}</span>
           </div>
           <div data-ref="static_cache_actions" class="ml-auto">
-            <button data-ref="static_cache_republish_button" type="button" disabled="{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}" aria-disabled="{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+            <button data-ref="static_cache_republish_button" type="button" disabled="{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}" aria-disabled="{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
               <on type="click">
                 <open-modal target="settings_static_cache_republish_modal"/>
               </on>

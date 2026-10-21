@@ -207,12 +207,25 @@
                     ]
                 },
                 {
+                    "comment": "받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「활동 로그가 없습니다」를 보이면 기록이 없는 줄 안다",
+                    "id": "log_load_failed",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{order_logs === null}}",
+                    "props": {
+                        "role": "alert",
+                        "className": "py-12 text-center text-sm text-red-600 dark:text-red-400"
+                    },
+                    "text": "$t:sirsoft-ecommerce.common.error.list_load_failed"
+                },
+                {
+                    "comment": "빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다",
                     "id": "log_empty",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{(order_logs.data?.data ?? []).length === 0}}",
+                    "if": "{{order_logs !== undefined && order_logs !== null && (order_logs.data?.data ?? []).length === 0}}",
                     "props": {
-                        "className": "py-12 text-center text-gray-400 dark:text-gray-500"
+                        "className": "py-12 text-center text-gray-500 dark:text-gray-400"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.order.detail.activity_log.empty"
                 },
@@ -276,7 +289,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
+                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
                                                             },
                                                             "children": [
                                                                 {
@@ -434,7 +447,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "w-28 text-center text-green-600 dark:text-green-400"
+                                                                        "className": "w-28 text-center text-green-700 dark:text-green-400"
                                                                     },
                                                                     "text": "{{change.new_label ?? change.new ?? '-'}}"
                                                                 }
@@ -527,7 +540,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "w-28 text-center text-green-600 dark:text-green-400"
+                                                                                "className": "w-28 text-center text-green-700 dark:text-green-400"
                                                                             },
                                                                             "text": "{{change.new_label ?? change.new ?? '-'}}"
                                                                         }
@@ -585,7 +598,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
+                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
                                                             },
                                                             "children": [
                                                                 {
@@ -746,7 +759,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "w-20 text-center text-green-600 dark:text-green-400"
+                                                        "className": "w-20 text-center text-green-700 dark:text-green-400"
                                                     },
                                                     "text": "{{change.new_label ?? change.new ?? '-'}}"
                                                 }
@@ -839,7 +852,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "w-20 text-center text-green-600 dark:text-green-400"
+                                                                "className": "w-20 text-center text-green-700 dark:text-green-400"
                                                             },
                                                             "text": "{{change.new_label ?? change.new ?? '-'}}"
                                                         }

@@ -211,7 +211,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-300"
                                                     },
                                                     "text": "$t:board.form.notice_description"
                                                 }
@@ -283,7 +283,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-300"
                                                     },
                                                     "text": "$t:board.form.secret_description"
                                                 }
@@ -349,7 +349,7 @@
                                                             "props": {
                                                                 "name": "lock",
                                                                 "size": "sm",
-                                                                "className": "text-amber-600 dark:text-amber-400"
+                                                                "className": "text-amber-700 dark:text-amber-400"
                                                             }
                                                         },
                                                         {
@@ -366,7 +366,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-gray-700 dark:text-gray-300"
                                                     },
                                                     "text": "$t:board.form.secret_always_description"
                                                 }
@@ -409,7 +409,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-1"
+                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                     },
                                     "text": "*"
                                 }
@@ -457,7 +457,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-1"
+                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                     },
                                     "text": "*"
                                 }
@@ -549,7 +549,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -765,6 +765,7 @@
             "children": [
                 {
                     "comment": "취소 버튼 (등록: 목록, 수정: 상세)",
+                    "id": "post_form_cancel_button",
                     "type": "basic",
                     "name": "A",
                     "actions": [
@@ -772,6 +773,7 @@
                             "type": "click",
                             "handler": "navigate",
                             "params": {
+                                "bypassLeaveGuard": true,
                                 "mergeQuery": true,
                                 "query": {}
                             }
@@ -835,6 +837,7 @@
                                         {
                                             "handler": "navigate",
                                             "params": {
+                                                "bypassLeaveGuard": true,
                                                 "path": "/board/{{route?.slug}}/{{result?.data?.id}}",
                                                 "mergeQuery": true,
                                                 "query": {}

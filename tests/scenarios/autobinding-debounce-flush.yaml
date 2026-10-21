@@ -1,0 +1,25 @@
+feature: 디바운스 폼(data-key + data-debounce)에서 디바운스가 끝나기 전에 누른 액션이 화면 입력과 같은 `_local` 을 읽는다 (engine-v1.81.2, 7.1.1)
+
+description: |
+  자동바인딩 칸의 디바운스 대기 쓰기는 입력칸 인스턴스의 지역 타이머라 비디바운스 액션 직전 flush(flushPendingDebounceTimers) 대상이 아니었고,
+  flush 를 해도 액션의 `_local` 은 렌더 시점 문맥이었다. 관리자 상품 수정 정가·쿠폰 최소주문금액을 빠르게 친 뒤 300ms 안에 「저장」 하면 본문이
+  옛 값이었고, 서버가 옛 값을 저장해 응답이 폼에 실리면 칸까지 옛 값으로 돌아갔다(7.1.0 에도 있음). 축 case 는 「액션 모양 × 디바운스 창 안/뒤」 가운데
+  다른 경로를 타는 조합이다. 실물 레이아웃 표본은 modules/_bundled/sirsoft-ecommerce/tests/scenarios/admin-debounce-form-quick-save.yaml.
+
+axes:
+  case: [click_sequence_within_debounce, click_sequence_server_echo, click_sequence_two_pending_fields, click_single_within_debounce, keydown_matching_key, keydown_other_key, click_sequence_after_debounce, no_action, timer_fired_change_action_while_other_field_pending, click_single_array_element_path]
+
+effects:
+  - action_reads_flushed_input          # 디바운스 창 안에서 누른 액션의 `_local`(본문·파라미터)이 마지막 입력이다
+  - store_b_holds_flushed_input         # 그 순간 저장소 B·getLocal 도 마지막 입력이다
+  - input_not_reverted_after_save       # 저장 뒤 늦게 끝나는 디바운스·렌더가 칸을 옛 값으로 되돌리지 않는다
+  - debounce_kept_for_non_matching_keys # 액션이 없거나 키 필터가 맞지 않으면 디바운스는 종전대로 미뤄진다
+  - flush_runs_each_pending_write_once  # 대기 쓰기 끝의 change 동작이 flush 를 다시 불러도 각 대기 쓰기·동작은 한 번만 실행된다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.autoBindingDebounceFlush.test.tsx
+
+validation:
+  browser_check: 재실측 — 관리자 data-debounce 폼 4곳(상품 수정 정가·쿠폰 수정 최소주문금액·배송 정책 폼·주문 상세 정보) 빠른 입력 직후(+100ms) 「저장」 본문과 저장 뒤 칸 표시
+  note: |
+    fail-first: 디스패처 예약을 끄면 5 failed / 7, flush 뒤 `_local` 최신화를 끄면 2 failed(단일 액션·Enter — sequence 는 setState 단계의 live B 반환으로 최신).

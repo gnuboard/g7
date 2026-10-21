@@ -35,7 +35,7 @@
                     <set-state target="local" detailIconBroken="{{[...(_local.detailIconBroken ?? []), language_pack_detail?.data?.identifier]}}"/>
                   </on>
                 </img>
-                <span data-if="{{language_pack_detail?.data?.icon_source !== 'manifest'}}" class="absolute -bottom-1 -right-1 px-1 rounded text-xs font-semibold uppercase whitespace-nowrap bg-blue-600 dark:bg-blue-500 text-white dark:text-white ring-2 ring-white dark:ring-gray-800" title="{{language_pack_detail?.data?.locale ?? ''}}" aria-label="$t:extensions.icon.locale_badge_sr|locale={{language_pack_detail?.data?.locale ?? ''}}">{{language_pack_detail?.data?.locale}}</span>
+                <span data-if="{{language_pack_detail?.data?.icon_source !== 'manifest'}}" class="absolute -bottom-1 -right-1 px-1 rounded text-xs font-semibold uppercase whitespace-nowrap bg-blue-600 dark:bg-blue-600 text-white dark:text-white ring-2 ring-white dark:ring-gray-800" title="{{language_pack_detail?.data?.locale ?? ''}}" aria-label="$t:extensions.icon.locale_badge_sr|locale={{language_pack_detail?.data?.locale ?? ''}}">{{language_pack_detail?.data?.locale}}</span>
               </div>
               <div class="min-w-0">
                 <p class="text-primary font-semibold truncate">{{language_pack_detail?.data?.name ?? ''}}</p>
@@ -81,7 +81,7 @@
               <div class="col-span-2">
                 <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.status</span>
                 <div class="flex-center gap-2 mt-1">
-                  <span data-if="{{language_pack_detail?.data?.status === 'active'}}" class="text-success-soft px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900">$t:admin.language_packs.status.active</span>
+                  <span data-if="{{language_pack_detail?.data?.status === 'active'}}" class="text-success-soft px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900">$t:admin.language_packs.status.active</span>
                   <span data-if="{{language_pack_detail?.data?.status === 'installed'}}" class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">$t:admin.language_packs.status.installed</span>
                   <span data-if="{{language_pack_detail?.data?.status === 'inactive'}}" class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">$t:admin.language_packs.status.inactive</span>
                   <span data-if="{{language_pack_detail?.data?.status === 'error'}}" class="text-danger-soft px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900">$t:admin.language_packs.status.error</span>

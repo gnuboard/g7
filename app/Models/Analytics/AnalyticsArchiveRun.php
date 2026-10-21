@@ -120,7 +120,7 @@ class AnalyticsArchiveRun extends Model
 
         // 건너뛴 이유는 기록 당시 언어의 문장으로 저장돼 있다. 화면이 「건너뜀」 배지 곁에 이유를
         // 그리려면 어떤 이유인지(코드)와 보는 사람의 언어로 된 문장이 함께 있어야 한다 — 다른 집계에
-        // 밀려 건너뛴 재집계를 화면이 그대로 알린다(7.1.0 실측 O-E5).
+        // 밀려 건너뛴 재집계를 화면이 그대로 알린다(7.1.0 실측).
         $row['skip_reason'] = null;
 
         if (($row['status'] ?? null) === ArchiveRunStatus::Skipped->value && is_string($row['error'] ?? null)) {

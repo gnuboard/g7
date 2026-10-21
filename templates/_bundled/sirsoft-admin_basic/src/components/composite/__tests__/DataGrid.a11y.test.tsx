@@ -1,6 +1,6 @@
 /**
  * @file DataGrid.a11y.test.tsx
- * @description DataGrid 선택 체크박스·펼침 단추 접근 가능한 이름 (7.1.0 영역 J D-J5, 관측 O-CF5)
+ * @description DataGrid 선택 체크박스·펼침 단추 접근 가능한 이름 (7.1.0)
  *
  * 목록 머리·행의 선택 체크박스에 접근 가능한 이름이 없어 화면 읽기 프로그램에 「체크박스」 만 읽혔다.
  * 펼침 단추는 언어와 무관하게 영어(「Expand row」·「Collapse card」)였다. 이름은 사람이 읽는 다국어 문구로 단다.
@@ -78,7 +78,7 @@ describe('DataGrid 접근성 — 내장 컬럼 선택', () => {
    * @scenario control=column_checkbox
    * @effects datagrid_checkboxes_named_by_locale
    */
-  it('내장 컬럼 선택 목록의 체크박스는 열 이름으로 읽힌다(7.1.0 J D-J13)', async () => {
+  it('내장 컬럼 선택 목록의 체크박스는 열 이름으로 읽힌다(7.1.0 실측)', async () => {
     const { fireEvent } = await import('@testing-library/react');
     const cols: DataGridColumn[] = [
       { field: 'name', header: '작업명', required: true },

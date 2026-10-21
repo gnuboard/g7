@@ -26,7 +26,7 @@
             "comment": "비활성화 안내 (mileage.enabled=false)",
             "type": "basic",
             "name": "Div",
-            "if": "{{!mileage_balance?.data?.mileage?.enabled}}",
+            "if": "{{mileage_balance !== undefined && !mileage_balance?.data?.mileage?.enabled}}",
             "responsive": {
                 "portable": {
                     "props": {
@@ -44,7 +44,7 @@
                     "props": {
                         "name": "coins",
                         "size": "3x",
-                        "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                        "className": "mx-auto text-gray-500 dark:text-gray-500 mb-3"
                     }
                 },
                 {
@@ -156,7 +156,7 @@
                             "name": "Span",
                             "if": "{{mileage_balance?.data?.mileage?.expiring_date}}",
                             "props": {
-                                "className": "block text-xs text-gray-400 dark:text-gray-500 mt-1"
+                                "className": "block text-xs text-gray-500 dark:text-gray-400 mt-1"
                             },
                             "text": "$t:mypage.mileage.summary.expiring_until|date={{mileage_balance?.data?.mileage?.expiring_date}}"
                         }
@@ -639,7 +639,7 @@
                                                         "base": "font-semibold",
                                                         "key": "{{tx.amount >= 0 ? 'plus' : 'minus'}}",
                                                         "variants": {
-                                                            "plus": "text-green-600 dark:text-green-400",
+                                                            "plus": "text-green-700 dark:text-green-400",
                                                             "minus": "text-blue-600 dark:text-blue-400"
                                                         },
                                                         "default": "text-gray-700 dark:text-gray-300"
@@ -725,7 +725,7 @@
                                                 "base": "font-semibold text-sm",
                                                 "key": "{{tx.amount >= 0 ? 'plus' : 'minus'}}",
                                                 "variants": {
-                                                    "plus": "text-green-600 dark:text-green-400",
+                                                    "plus": "text-green-700 dark:text-green-400",
                                                     "minus": "text-blue-600 dark:text-blue-400"
                                                 },
                                                 "default": "text-gray-700 dark:text-gray-300"
@@ -753,7 +753,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "{{tx.created_at_formatted ?? ''}}"
                                         },
@@ -762,7 +762,7 @@
                                             "name": "Span",
                                             "if": "{{tx.expires_at_formatted}}",
                                             "props": {
-                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "$t:mypage.mileage.expires_label|date={{tx.expires_at_formatted}}"
                                         }
@@ -778,7 +778,7 @@
             "comment": "내역 없음",
             "type": "basic",
             "name": "Div",
-            "if": "{{mileage_balance?.data?.mileage?.enabled && (!mileage_history.data.transactions.data || mileage_history.data.transactions.data.length === 0)}}",
+            "if": "{{mileage_balance?.data?.mileage?.enabled && mileage_history !== undefined && (!mileage_history.data.transactions.data || mileage_history.data.transactions.data.length === 0)}}",
             "responsive": {
                 "portable": {
                     "props": {
@@ -798,14 +798,14 @@
                             "props": {
                                 "name": "coins",
                                 "size": "2x",
-                                "className": "mx-auto text-gray-300 dark:text-gray-600 mb-2"
+                                "className": "mx-auto text-gray-500 dark:text-gray-500 mb-2"
                             }
                         }
                     },
                     "props": {
                         "name": "coins",
                         "size": "3x",
-                        "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                        "className": "mx-auto text-gray-500 dark:text-gray-500 mb-3"
                     }
                 },
                 {

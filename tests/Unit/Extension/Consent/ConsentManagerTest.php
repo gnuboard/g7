@@ -13,7 +13,7 @@ use Tests\Concerns\FakesConsentProviders;
 use Tests\TestCase;
 
 /**
- * 동의 제공자 매니저 — 선택 규칙과 fail-closed 판정 (#639, 결정 P3·P4·P5·D1·D12)
+ * 동의 제공자 매니저 — 선택 규칙과 fail-closed 판정 (#639, 결정)
  *
  * 제공자 수와 운영자 선택값으로 선택 상태가 정해지고, 판단할 수 없는 모든 경우는 `unknown` 이다.
  * 이 판정이 틀리면 동의하지 않은 방문자의 추적 스크립트가 열리거나(열림 쪽 오류), 동의 관리가 없는

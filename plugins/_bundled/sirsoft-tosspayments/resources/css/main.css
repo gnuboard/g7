@@ -60,7 +60,7 @@
 
 /* 경고 — 입금 기한 안내 */
 .pay-tosspayments-tone-warning {
-    color: oklch(66.6% 0.179 58.318); /* amber-600 */
+    color: oklch(55.5% 0.163 48.998); /* amber-700 */
 }
 
 .dark .pay-tosspayments-tone-warning {

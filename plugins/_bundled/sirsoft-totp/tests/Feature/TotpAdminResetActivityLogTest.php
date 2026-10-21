@@ -218,7 +218,7 @@ class TotpAdminResetActivityLogTest extends PluginTestCase
 
     /**
      * 관리자 화면(확장 관리자 API)의 강제 해제는 「관리자」 유형 로그다 — 코어 관리자 API 와 같은 분류
-     * (7.1.0 실측 O-B2: 종전에는 경로가 `api/admin/*` 가 아니라 「사용자」로 남았다).
+     * (7.1.0 실측: 종전에는 경로가 `api/admin/*` 가 아니라 「사용자」로 남았다).
      *
      * @effects admin_screen_reset_is_logged_as_admin_type
      *

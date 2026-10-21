@@ -10,7 +10,7 @@ use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
- * 국가 이름을 언어팩이 채우는 계약 테스트 (7.1.0 전수 실측 O-C1 · 결정 P2)
+ * 국가 이름을 언어팩이 채우는 계약 테스트 (7.1.0 전수 실측 · 결정)
  *
  * 국가 이름은 `config/countries.php` 의 ko·en 두 벌뿐이라, 일본어 화면의 회원 목록·상세 국가 열이
  * 기본 폴백(ko)으로 떨어져 「한국」「미국」 처럼 한국어로 보였다. 코어 내장 로케일(ko·en)은 그대로

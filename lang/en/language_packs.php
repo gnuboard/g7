@@ -48,6 +48,7 @@ return [
         'directory_not_writable' => 'The language pack install directory (:path) is not writable. Grant write permission to the web server user (e.g. www-data). Example: sudo chgrp www-data :path && sudo chmod g+w :path',
         'identifier_not_found' => 'Language pack not found (:identifier).',
         'unsupported_source' => 'Unsupported source (:source) — use one of bundled, github, url.',
+        'install_directory_replace_failed' => 'Could not replace the install folder of the language pack (:identifier) with the new files. Another program may have a file in that folder open. Try again shortly. The install record was not changed.',
     ],
 
     // 매니페스트 이름이 없는 내장(확장·코어 동봉) 언어팩의 표시 이름
@@ -67,5 +68,59 @@ return [
         'checksum_invalid' => 'SHA-256 checksum must be 64 hex characters.',
         'identifier_required' => 'Enter the language pack identifier.',
         'identifier_invalid' => 'Identifier may contain letters, numbers, dots, underscores and hyphens only.',
+    ],
+    // `language-pack:*` command output
+    'commands' => [
+        'activate' => [
+            'not_found' => 'Language pack not found: :identifier',
+            'done' => 'Language pack activated: :identifier',
+            'failed' => 'Failed to activate language pack: :error',
+        ],
+        'deactivate' => [
+            'not_found' => 'Language pack not found: :identifier',
+            'done' => 'Language pack deactivated: :identifier',
+            'failed' => 'Failed to deactivate language pack: :error',
+        ],
+        'cache_clear' => [
+            'done' => 'Language pack cache cleared:',
+            'failed' => 'Failed to clear language pack cache: :error',
+        ],
+        'check_updates' => [
+            'none' => 'There are no GitHub-based language packs to check.',
+            'entry_failed' => '[:identifier] Lookup failed: :error',
+            'entry_update_available' => '[:identifier] :current → :latest  (update available)',
+            'done' => 'Check complete (checked: :checked, updates available: :updates).',
+            'failed' => 'Update check failed: :error',
+        ],
+        'install' => [
+            'done' => 'Language pack installed: :identifier v:version (status=:status)',
+            'failed' => 'Failed to install language pack: :error',
+        ],
+        'list' => [
+            'empty' => 'No language packs found.',
+            'files_missing' => ':status (files missing)',
+        ],
+        'provision' => [
+            'no_target_locales' => 'No locales to provision (no supported_locales declared besides the base locale).',
+            'nothing_to_do' => 'There are no bundled language packs to install or repair (locales: :locales). Already provisioned.',
+            'skipped_blocked' => 'Skipped (cannot install: :reason): :identifier',
+            'installed_item' => 'Installed: :identifier v:version (status=:status)',
+            'repaired_item' => 'Repaired: :identifier v:version (status=:status)',
+            'item_failed' => 'Failed (skipped): :identifier — :error',
+            'summary' => 'Provisioning complete — installed :installed, repaired :repaired, skipped :skipped, failed :failed',
+        ],
+        'uninstall' => [
+            'not_found' => 'Language pack not found: :identifier',
+            'confirm' => 'Uninstall language pack \':identifier\'?',
+            'cancelled' => 'Cancelled.',
+            'done' => 'Language pack uninstalled: :identifier',
+            'failed' => 'Failed to uninstall language pack: :error',
+        ],
+        'update' => [
+            'invalid_source' => 'Unknown --source value: :source (choose one of auto|bundled|github)',
+            'not_found' => 'Language pack not found: :identifier',
+            'done' => 'Language pack updated: :identifier (:from → :to)',
+            'failed' => 'Failed to update language pack: :error',
+        ],
     ],
 ];

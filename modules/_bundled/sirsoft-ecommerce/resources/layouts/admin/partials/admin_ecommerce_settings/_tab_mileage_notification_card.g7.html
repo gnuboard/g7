@@ -24,15 +24,15 @@
         <div data-ref="template_status_list" class="space-y-2">
           <div data-ref="template_status_row_{{tplIndex}}" data-each="tpl, tplIndex in (((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'mileage_expiring_soon')?.templates) ?? [])" class="flex-between gap-2 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700/40">
             <div class="flex items-center gap-2 min-w-0">
-              <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+              <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
               <div class="min-w-0">
                 <span class="block text-xs font-medium text-gray-500 dark:text-gray-400">{{tpl.channel === 'mail' ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.channel_mail') : (tpl.channel === 'database' ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.channel_database') : tpl.channel)}}</span>
                 <span class="block text-sm text-gray-800 dark:text-gray-200 truncate">{{$localized(tpl.subject) || $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty')}}</span>
               </div>
             </div>
-            <span class="{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0">{{tpl.is_active ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_active') : $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_inactive')}}</span>
+            <span class="{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0">{{tpl.is_active ? $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_active') : $t('sirsoft-ecommerce.admin.mileage_settings.notification.template_status_inactive')}}</span>
           </div>
-          <div data-if="{{(((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'mileage_expiring_soon')?.templates) ?? []).length === 0}}" class="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty</div>
+          <div data-if="{{ecommerceNotificationDefinitions !== undefined &amp;&amp; ((((ecommerceNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'mileage_expiring_soon')?.templates) ?? []).length === 0)}}" class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_empty</div>
         </div>
         <div class="flex-between gap-2 flex-wrap mt-3">
           <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.notification.template_status_hint</p>

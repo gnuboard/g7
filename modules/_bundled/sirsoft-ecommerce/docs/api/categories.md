@@ -1293,7 +1293,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 공개 카테고리 트리를 조회합니다. 인증이 필요 없는 공개 엔드포인트이며, `Public\CategoryController@index`가 `CategoryService::getPublicCategoryTree()`를 호출해 활성 카테고리만 자식을 중첩한 트리로 반환합니다. 각 항목에는 로컬라이즈된 이름(`name_localized`)과 공개 상품 수(`products_count`)가 포함됩니다. 스토어프론트의 카테고리 내비게이션/메뉴를 렌더링하는 데 사용하며, 조회 실패 시 500을 반환합니다.
+**설명** 공개 카테고리 트리를 조회합니다. 인증이 필요 없는 공개 엔드포인트이며, `Public\CategoryController@index`가 `CategoryService::getPublicCategoryTree()`를 호출해 활성 카테고리만 자식을 중첩한 트리로 반환합니다. 각 항목에는 로컬라이즈된 이름(`name_localized`)과 공개 상품 수(`products_count`)가 포함됩니다 — 공개 상품 목록과 같은 기준으로 전시 중(`display_status=visible`)인 상품만 세며, 숨김 상품은 세지 않습니다(관리자 트리는 연결된 상품 전부를 셉니다). 스토어프론트의 카테고리 내비게이션/메뉴를 렌더링하는 데 사용하며, 조회 실패 시 500을 반환합니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/categories/{slug}
@@ -1370,6 +1370,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** slug로 단일 공개 카테고리와 직계 자식을 조회합니다. 인증이 필요 없는 공개 엔드포인트이며, `Public\CategoryController@show`가 `CategoryService::getPublicCategoryBySlug()`를 호출해 활성 자식(`activeChildren`)과 이미지를 함께 로드합니다. 조회된 카테고리가 비활성(`is_active=false`)이면 없는 것으로 간주해 404를 반환하며, 응답에는 상위 경로를 나타내는 `breadcrumb` 배열과 `products_count` 집계가 포함됩니다. 스토어프론트 카테고리 상세/목록 페이지 진입 시 사용합니다. 1.2.0 부터 `thumbnail_url` 필드(로드된 카테고리 이미지 첫 건의 URL, 없으면 `null`)가 추가되어 카테고리 페이지의 공유 미리보기 이미지(og:image)에 사용됩니다.
+**설명** slug로 단일 공개 카테고리와 직계 자식을 조회합니다. 인증이 필요 없는 공개 엔드포인트이며, `Public\CategoryController@show`가 `CategoryService::getPublicCategoryBySlug()`를 호출해 활성 자식(`activeChildren`)과 이미지를 함께 로드합니다. 조회된 카테고리가 비활성(`is_active=false`)이면 없는 것으로 간주해 404를 반환하며, 응답에는 상위 경로를 나타내는 `breadcrumb` 배열과 `products_count` 집계(자신·자식 모두 전시 중 상품만)가 포함됩니다. 스토어프론트 카테고리 상세/목록 페이지 진입 시 사용합니다. 1.2.0 부터 `thumbnail_url` 필드(로드된 카테고리 이미지 첫 건의 URL, 없으면 `null`)가 추가되어 카테고리 페이지의 공유 미리보기 이미지(og:image)에 사용됩니다.
 
 

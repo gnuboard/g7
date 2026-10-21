@@ -1,0 +1,43 @@
+# 시나리오 매니페스트 — 이커머스 관리자 창이 어느 갈래로 닫히든 개인정보를 담은 창 이름 공간을 비운다 (7.1.1)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스", docs/frontend/modal-usage.md 「창을 닫을 때 이름 공간 비우기」
+
+feature: admin_modal_close_clears_namespace
+
+description: >-
+  환불 실행 창(환불 계좌·예금주), 관리자 현금영수증 발급 창(식별번호), 쿠폰 직접 발급 창(회원 이름·검색어), 마일리지 수동
+  지급/차감 창(회원 이름·이메일), 관리자 직권 클레임 접수 창(환불 계좌)은 입력값을 `_global` 의 창 고유 이름 공간에 둔다.
+  창 머리 X·바깥 클릭·Esc 는 엔진 창 닫기로만 이어져 레이아웃 동작을 타지 않고, 취소 단추도 창만 닫아 값이 다음 열기까지
+  전역에 남았다(security.md 예외 「창 고유 이름 공간은 창을 닫을 때 비우면 허용」의 조건 미달 — 주문서 배송지 창과 같은 결함군).
+
+  관리자 Modal 도 basic 처럼 닫히면 본문을 그리지 않으므로(`if (!isOpen) return null`) 창이 열린 동안 늘 붙어 있는 본문
+  노드의 unmount 에서 비우고, 취소·성공 갈래는 창 닫기 뒤에 직접 비운다. 엔진·병합 옵션은 바꾸지 않았다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminModalCloseClearsNamespace.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminModalLateSearchResponse.test.ts
+
+coverage_strategy: pairwise
+
+axes:
+  surface:
+    - admin_modal   # 관리자 창 5개(환불 실행·현금영수증 발급·쿠폰 직접 발급·마일리지 수동 지급·직권 클레임 접수)
+  close_path:
+    - header_x_overlay_esc   # 레이아웃 동작을 타지 않는 갈래 — 본문 노드 unmount 가 덮는다
+    - cancel_button   # 창 안 취소 단추 — close-modal 뒤 직접 비우기
+    - late_response   # 창을 닫은 뒤 도착한 검색 응답(마일리지·쿠폰 직접 발급 회원 검색, 알림 문안 창 역할·회원 검색) — 이름 공간을 되살리지 않는다
+    - success   # 저장 성공 — 이미 비우던 창(현금영수증·마일리지·환불 실행·직권 접수 핸들러)은 그대로, 쿠폰 직접 발급은 추가
+
+exclusions:
+  - { surface: admin_modal, close_path: success, reason: "현금영수증·마일리지·환불 실행(핸들러)·직권 접수(핸들러)는 이미 성공 갈래에서 비운다 — 새로 더한 쿠폰 직접 발급만 단언하고 나머지는 unmount 단언이 함께 덮는다" }
+
+effects:
+  - admin_modal_namespace_cleared_on_every_close   # X·바깥·Esc·취소·성공 어느 갈래로 닫혀도 개인정보 키가 null
+  - admin_modal_late_response_does_not_revive_namespace   # 닫힌 뒤 도착한 응답이 null 이름 공간을 다시 만들지 않고, 열린 창에서는 종전대로 결과만 바꾼다
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: 7.1.1 출시 전 캠페인 재실측(창을 X·Esc·바깥 클릭·취소·성공으로 닫은 뒤 DevTools 콘솔 `G7Core.state.get().<키>` 가 null)
+  note: |
+    수정 전 red(2026-10-18): 16 failed / 16 — 창 5개 × (unmount 정리 없음 · 취소 단추 정리 없음 · 렌더 뒤 값 그대로) + 쿠폰 직접 발급 성공 갈래 정리 없음.
+    수정 후 green 16 / 16.
+    늦은 응답(close_path=late_response, 2026-10-20): 수정 전 6 failed / 13(마일리지 `{memberSearchResults: [], memberSearchResultsKeyword: null}`·쿠폰 결과 `[]`·알림 문안 창 회원·역할 결과 4갈래) → 수정 후 13 passed.

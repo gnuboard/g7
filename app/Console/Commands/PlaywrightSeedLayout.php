@@ -108,7 +108,7 @@ class PlaywrightSeedLayout extends Command
     {
         // ① CLI 한정 — production 웹 요청에서 절대 도달 불가
         if (php_sapi_name() !== 'cli') {
-            $this->error('CLI 전용 커맨드입니다. (현재 SAPI: '.php_sapi_name().')');
+            $this->error(__('common.console.playwright_guard.cli_only', ['sapi' => php_sapi_name()]));
 
             return self::FAILURE;
         }
@@ -118,7 +118,7 @@ class PlaywrightSeedLayout extends Command
         // 호출자가 그 자리에서 넘기는 프로세스 환경변수이고, config 로 캡처할 대상도 아니다.
         // (`.env` 유래 값을 런타임 `env()` 로 읽는 것은 금지다 — config 로 캡처해야 한다.)
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다. (예: PowerShell — $env:G7_PLAYWRIGHT_BYPASS=\'1\')');
+            $this->error(__('common.console.playwright_guard.bypass_required'));
 
             return self::FAILURE;
         }
@@ -131,7 +131,7 @@ class PlaywrightSeedLayout extends Command
         $targets = $this->resolveTargets();
 
         if ($targets === []) {
-            $this->error('대상 템플릿이 없습니다.');
+            $this->error(__('common.console.playwright_seed_layout.no_targets'));
 
             return self::FAILURE;
         }
@@ -169,7 +169,7 @@ class PlaywrightSeedLayout extends Command
 
         foreach ($requested as $identifier) {
             if (! isset($targets[$identifier])) {
-                $this->warn("활성 템플릿이 아니어서 건너뜁니다: {$identifier}");
+                $this->warn(__('common.console.playwright_seed_layout.not_active_skipped', ['identifier' => $identifier]));
             }
         }
 
@@ -192,14 +192,14 @@ class PlaywrightSeedLayout extends Command
         // 활성 디렉토리가 없으면 그 템플릿은 설치되지 않은 것 — 조용히 건너뛴다
         // (E2E 대상 템플릿이 환경마다 다를 수 있으므로 실패로 취급하지 않는다).
         if (! File::isDirectory($templateDir)) {
-            $this->warn("활성 템플릿 디렉토리가 없어 건너뜁니다: {$identifier}");
+            $this->warn(__('common.console.playwright_seed_layout.directory_missing_skipped', ['identifier' => $identifier]));
 
             return true;
         }
 
         $template = $this->templateRepository->findByIdentifier($identifier);
         if (! $template) {
-            $this->warn("템플릿이 DB 에 없어 건너뜁니다: {$identifier}");
+            $this->warn(__('common.console.playwright_seed_layout.not_in_db_skipped', ['identifier' => $identifier]));
 
             return true;
         }
@@ -217,7 +217,7 @@ class PlaywrightSeedLayout extends Command
                 'tests/Playwright/fixtures/seed-layouts/'.$type.'.'.self::LAYOUT_NAME.'.json'
             );
             if (! File::exists($fixturePath)) {
-                $this->error("시드 레이아웃 fixture 가 없습니다: {$fixturePath}");
+                $this->error(__('common.console.playwright_seed_layout.fixture_missing', ['path' => $fixturePath]));
 
                 return false;
             }
@@ -225,7 +225,7 @@ class PlaywrightSeedLayout extends Command
             // 빈 객체 `{}` 를 보존해 읽는다 — 캐스트로 저장할 때 `{}` 로 남는다 (#758)
             $content = EmptyMap::decodePreserving((string) File::get($fixturePath));
             if (json_last_error() !== JSON_ERROR_NONE || ! is_array($content)) {
-                $this->error("시드 레이아웃 fixture 파싱 실패: {$fixturePath}");
+                $this->error(__('common.console.playwright_seed_layout.fixture_parse_failed', ['path' => $fixturePath]));
 
                 return false;
             }
@@ -248,7 +248,8 @@ class PlaywrightSeedLayout extends Command
         // 편집기가 stale 문서를 계속 받는다.
         $this->forgetSeedLayoutCache($template->id, $identifier);
 
-        $this->info(($remove ? '제거' : '설치')." 완료: {$identifier} ({$routePath})");
+        $params = ['identifier' => $identifier, 'route' => $routePath];
+        $this->info($remove ? __('common.console.playwright_seed_layout.removed', $params) : __('common.console.playwright_seed_layout.installed', $params));
 
         return true;
     }
@@ -345,14 +346,14 @@ class PlaywrightSeedLayout extends Command
     private function readRoutes(string $identifier, string $path): ?array
     {
         if (! File::exists($path)) {
-            $this->warn("routes.json 이 없어 라우트 처리를 건너뜁니다: {$identifier}");
+            $this->warn(__('common.console.playwright_seed_layout.routes_missing_skipped', ['identifier' => $identifier]));
 
             return null;
         }
 
         $routes = json_decode((string) File::get($path), true);
         if (json_last_error() !== JSON_ERROR_NONE || ! is_array($routes)) {
-            $this->warn("routes.json 을 파싱할 수 없어 라우트 처리를 건너뜁니다: {$identifier}");
+            $this->warn(__('common.console.playwright_seed_layout.routes_parse_failed_skipped', ['identifier' => $identifier]));
 
             return null;
         }

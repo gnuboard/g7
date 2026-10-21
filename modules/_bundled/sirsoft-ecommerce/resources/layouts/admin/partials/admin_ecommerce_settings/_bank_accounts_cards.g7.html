@@ -8,7 +8,7 @@
   때문이다. 눈에 보이는 순서가 아니라 배열의 실제 위치여야 서버 오류가 맞는 칸에 붙는다. -->
 <partial description="무통장 계좌번호 설정 - Mobile 카드 뷰">
   <div data-ref="bank_accounts_cards" class="stack-tight">
-    <div data-if="{{!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0}}" class="text-center text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.empty</div>
+    <div data-if="{{settings !== undefined &amp;&amp; (!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0)}}" class="text-center text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.empty</div>
     <div data-each="account, accountIndex in (Array.isArray(_local.form?.order_settings?.bank_accounts) ? _local.form.order_settings.bank_accounts : []).map((a, i) => ({...a, _idx: i}))" class="excel-card">
       <div class="excel-card-header">
         <div class="flex-center gap-2 flex-1 min-w-0">
@@ -17,7 +17,7 @@
               <!-- 대표 계좌 지정. 하나만 대표일 수 있으므로 배열 전체를 다시 만들면서 고른 것만 참으로 둔다 — 끄는 동작은 없다(다른 것을 고르면 옮겨간다). -->
               <set-state target="local" form.order_settings.bank_accounts="{{(_local.form?.order_settings?.bank_accounts ?? []).map((a, i) => ({...a, is_default: i === account._idx}))}}" :hasChanges="true"/>
             </on>
-            <icon name="{{account.is_default ? 'circle-dot' : 'circle'}}" class="{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}}"/>
+            <icon name="{{account.is_default ? 'circle-dot' : 'circle'}}" class="{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"/>
           </button>
           <span class="font-medium text-gray-900 dark:text-gray-100">{{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number') + ' ' + (accountIndex + 1)}}</span>
         </div>

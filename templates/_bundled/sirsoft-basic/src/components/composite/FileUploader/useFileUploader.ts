@@ -277,7 +277,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
       for (const file of filesToAdd) {
         // 빈 파일(0바이트) — 서버가 받지 않으므로(코어 AttachmentFileContent) 고르는 자리에서 걸러 안내한다.
-        // 종전에는 목록에 「0.00 B」 로 올라가 제출 때에야 거부됐다(7.1.0 N O-N7).
+        // 종전에는 목록에 「0.00 B」 로 올라가 제출 때에야 거부됐다(7.1.0 실측).
         if (file.size === 0) {
           onUploadError?.(t('attachment.empty_file', { name: file.name }), file);
           continue;

@@ -19,7 +19,7 @@ use Modules\Sirsoft\Board\Services\ReactionTypeService;
  *
  * 유형 자체의 추가·수정·삭제는 전용 CRUD 엔드포인트가 아니라 게시판 환경설정 저장
  * (BoardSettingsController::store)이 ReactionTypeService::syncTypes() 로 일괄 반영합니다
- * (PO 결정 R2 — 기본 설정 안 인라인 편집).
+ * (기본 설정 안 인라인 편집).
  */
 class ReactionTypeController extends AdminBaseController
 {

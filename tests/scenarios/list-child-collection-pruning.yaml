@@ -49,7 +49,7 @@ exclusions:
   - { resource: notification_definition, endpoint: detail, observation: consumer_screen, reason: "단건 payload 무변경 — 설정 탭이 전 채널 템플릿을 종전대로 받는다" }
 
 effects:
-  # 7.1.0 abilities 게이트(core-admin-users #5) — 주소 ?mode=edit 진입도 수정 권한을 본다
+  # 7.1.0 abilities 게이트 — 주소 ?mode=edit 진입도 수정 권한을 본다
   - menu_url_edit_mode_requires_update_ability
   # 목록에서 빠졌는가
   - list_omits_layout_content

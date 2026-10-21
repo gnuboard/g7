@@ -41,4 +41,29 @@ return [
     'consent' => [
         'fetch_success' => '訪問者の同意状態を確認しました。',
     ],
+    // `privacy:*` コマンド出力
+    'console' => [
+        'process_retention' => [
+            'handler_required' => '--handler にハンドラー識別子を指定してください。すべてのハンドラーを実行する場合はオプションを省略してください。',
+            'registered_handlers' => '登録済みハンドラー: :handlers',
+            'none' => 'なし',
+            'unknown_handler' => '登録されていない保有期間ハンドラーです: :handler',
+            'no_handlers' => '登録済みの保有期間ハンドラーがありません。',
+            'handler_disabled' => ':id (:label): 無効のため実行しませんでした。',
+            'handler_locked' => ':id (:label): 管理者の職権実行が処理中のためスキップしました。',
+            'handler_failed' => ':id (:label): 失敗 — :error',
+            'handler_done' => ':id (:label): :count 件 (:mode)',
+            'total' => '合計: :count 件',
+        ],
+        'process_dormant' => [
+            'disabled' => '休眠アカウント機能が無効のため実行しませんでした。(privacy.dormant_enabled = false)',
+            'locked' => '管理者の職権実行が休眠段階を処理中のため、今回の周期はスキップしました。',
+            'pre_notice' => '休眠転換の事前通知: :count 件',
+            'converted' => '休眠転換: :count 件',
+            'withdraw_notice' => '退会予定の通知: :count 件',
+            'withdrawn' => '退会処理: :count 件',
+            'withdraw_disabled' => '休眠後の自動退会が無効のため実行しませんでした。(privacy.dormant_withdraw_enabled = false)',
+            'stage_failed' => '段階失敗 — :stage: :error',
+        ],
+    ],
 ];

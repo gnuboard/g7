@@ -186,7 +186,6 @@
             "cart_option_change_modal": "장바구니 옵션 변경",
             "cart_unavailable_modal": "구매불가 상품 안내",
             "coupon_download_modal": "쿠폰 다운로드",
-            "exclusiveCouponConfirm": "중복 불가 쿠폰 적용 확인",
             "tempOrderNotFoundModal": "주문 정보 없음 안내"
         },
         "mypage_orders": {

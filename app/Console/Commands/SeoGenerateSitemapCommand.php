@@ -38,7 +38,7 @@ class SeoGenerateSitemapCommand extends Command
         $mode = $this->resolveMode();
         if ($mode === null) {
             $allowed = implode(', ', array_map(fn (SitemapGenerationMode $m): string => $m->value, SitemapGenerationMode::cases()));
-            $this->error('잘못된 모드입니다. 허용: '.$allowed);
+            $this->error(__('seo.console.generate_sitemap.invalid_mode', ['allowed' => $allowed]));
 
             return Command::INVALID;
         }
@@ -51,10 +51,10 @@ class SeoGenerateSitemapCommand extends Command
 
         if ($forceSync || $isSyncDriver) {
             GenerateSitemapJob::dispatchSync($mode);
-            $this->info("Sitemap이 생성되었습니다. (모드: {$mode->value})");
+            $this->info(__('seo.console.generate_sitemap.generated', ['mode' => $mode->value]));
         } else {
             GenerateSitemapJob::dispatch($mode);
-            $this->info("Sitemap 생성이 큐에 디스패치되었습니다. (모드: {$mode->value})");
+            $this->info(__('seo.console.generate_sitemap.dispatched', ['mode' => $mode->value]));
         }
 
         return Command::SUCCESS;

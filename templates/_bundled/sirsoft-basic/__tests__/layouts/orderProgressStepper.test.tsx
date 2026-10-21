@@ -197,7 +197,8 @@ describe('주문 상세 — 상태 헤더 아래 진행단계 스텝퍼', () => 
 
     const offPath = document.querySelector('[data-step-value="cancelled"]')!;
     expect(offPath.getAttribute('data-step-state')).toBe('off_path');
-    expect(offPath.querySelector('.rounded-full')!.className).toContain('bg-red-500');
+    // 흰 아이콘 대비(7.1.1 대비 수정 G50): red-500 위 흰색 3.82 → red-600 4.76. 완료 칸도 green-600 → green-700.
+    expect(offPath.querySelector('.rounded-full')!.className).toContain('bg-red-600');
     expect(offPath.querySelector('i[data-icon="status-cancelled"]')).not.toBeNull();
   });
 
@@ -319,7 +320,7 @@ describe('주문 목록 상단 — 상태별 건수 칸', () => {
 
     expect(document.querySelector('[data-summary-key="shipping"] .rounded-full.border-2')!.className).toContain('border-indigo-600');
     expect(document.querySelector('[data-summary-key="shipping"] .rounded-full.border-2')!.className).toContain('shadow-md');
-    expect(document.querySelector('[data-summary-key="delivered"] .rounded-full.border-2')!.className).toContain('bg-green-600');
+    expect(document.querySelector('[data-summary-key="delivered"] .rounded-full.border-2')!.className).toContain('bg-green-700');
     expect(document.querySelector('[data-summary-key="preparing"] .rounded-full.border-2')!.className).toContain('border-gray-300');
   });
 

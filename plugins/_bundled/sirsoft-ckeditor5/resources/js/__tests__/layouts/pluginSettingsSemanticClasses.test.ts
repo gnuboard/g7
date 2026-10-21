@@ -1,4 +1,4 @@
-// e2e:allow 클래스 이름 교정의 구조 검증 — 같은 화면은 Playwright 브라우저로 칸 배치·글자색을 재실측해 이력(20261007_1905_710_KLM_M1)에 남김
+// e2e:allow 클래스 이름 교정의 구조 검증 — 같은 화면은 Playwright 브라우저로 칸 배치·글자색을 재실측해 작업 이력에 남김
 /**
  * @file pluginSettingsSemanticClasses.test.ts
  * @description 플러그인 환경설정 화면의 의미 클래스가 제자리에 붙어 있는지
@@ -45,6 +45,10 @@ function flatten(node: unknown): LayoutNode[] {
 const nodes = flatten(pluginSettingsLayout);
 
 describe('CKEditor5 환경설정 — 의미 클래스 위치', () => {
+    /**
+     * @scenario region=field_row
+     * @effects settings_field_rows_use_3col_grid
+     */
     it('입력 칸 줄(field_*)은 3열 그리드 클래스를 쓴다', () => {
         const fields = nodes.filter((n) => typeof n.id === 'string' && n.id.startsWith('field_'));
         expect(fields.length).toBeGreaterThanOrEqual(7);
@@ -56,19 +60,37 @@ describe('CKEditor5 환경설정 — 의미 클래스 위치', () => {
         }
     });
 
+    /**
+     * @scenario region=section_heading
+     * @effects settings_section_heading_class_without_error_color
+     */
     it('섹션 제목은 섹션 제목 클래스를 쓰고 오류 강조색을 쓰지 않는다', () => {
-        const headings = nodes.filter(
-            (n) => n.name === 'H3' && typeof n.text === 'string' && n.text.startsWith('$t:sirsoft-ckeditor5.settings.section_'),
-        );
-        expect(headings.length).toBeGreaterThanOrEqual(4);
+        const isSectionTitle = (n: LayoutNode): boolean =>
+            typeof n.text === 'string' && /^\$t:sirsoft-ckeditor5\.settings\.section_[a-z]+$/.test(n.text);
+        const headings = nodes.filter((n) => n.name === 'H3' && isSectionTitle(n));
+        // 「미리보기」 구역 제목은 접기 단추를 품은 h3 안의 글자(span)다(7.1.1 — 머리 줄 전체가 펼침 단추). 같은 클래스 계약을 진다
+        const buttonTitles = nodes
+            .filter((n) => n.name === 'H3' && !n.text)
+            .flatMap((h) => flatten(h.children).filter((n) => n.name === 'Span' && isSectionTitle(n)));
+        expect(headings.length + buttonTitles.length).toBeGreaterThanOrEqual(4);
         for (const heading of headings) {
             expect({ text: heading.text, className: heading.props?.className }).toEqual({
                 text: heading.text,
                 className: 'section-heading-md',
             });
         }
+        for (const title of buttonTitles) {
+            expect({ text: title.text, className: title.props?.className }).toEqual({
+                text: title.text,
+                className: 'block section-heading-md',
+            });
+        }
     });
 
+    /**
+     * @scenario region=error_box
+     * @effects settings_error_box_strong_title_soft_items
+     */
     it('저장 오류 상자는 제목에 강한 오류색, 목록 줄에 옅은 오류색을 쓴다', () => {
         const title = nodes.find((n) => n.text === '$t:admin.plugins.settings.validation_error');
         expect(title?.props?.className).toBe('text-error-strong');
@@ -77,6 +99,10 @@ describe('CKEditor5 환경설정 — 의미 클래스 위치', () => {
         expect(item?.props?.className).toBe('text-error-soft');
     });
 
+    /**
+     * @scenario region=field_row
+     * @effects settings_field_rows_use_3col_grid
+     */
     it('3열 그리드 클래스는 입력 칸 줄에만 쓴다', () => {
         const misplaced = nodes.filter(
             (n) => n.props?.className === 'grid-3col-responsive' && !(typeof n.id === 'string' && n.id.startsWith('field_')),

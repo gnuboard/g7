@@ -119,7 +119,7 @@ class AggregateBoardStatsCommandTest extends ModuleTestCase
     {
         // baseline: 트랜잭션 외부에 이전 테스트/수동 실행 잔존 게시글이 있을 수 있어
         // 절대값이 아닌 증가량으로 검증한다 (board_posts/board_comments 는 단일 테이블).
-        // 집계 행의 「오늘」은 사이트 표준시의 하루다(7.1.0 O-CF3) — 같은 하루를 UTC 범위로 풀어 센다.
+        // 집계 행의 「오늘」은 사이트 표준시의 하루다(7.1.0) — 같은 하루를 UTC 범위로 풀어 센다.
         $siteToday = app(BoardDashboardService::class)->siteToday();
         $range = [$siteToday->utc(), $siteToday->addDay()->utc()];
         $baselinePosts = Post::query()->whereNull('deleted_at')

@@ -88,6 +88,17 @@ class BoardRepository implements BoardRepositoryInterface
     }
 
     /**
+     * 슬러그의 게시판이 있는지 확인합니다(행을 읽지 않는 존재 확인).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return bool 게시판 존재 여부
+     */
+    public function existsBySlug(string $slug): bool
+    {
+        return Board::where('slug', $slug)->exists();
+    }
+
+    /**
      * 게시판을 수정합니다.
      *
      * @param  int  $id  게시판 ID
@@ -499,7 +510,7 @@ class BoardRepository implements BoardRepositoryInterface
 
         // 기간별 날짜 필터 계산
         $dateFilter = match ($period) {
-            // 인기글은 기간별 공용 캐시라 보는 사람마다 경계를 달리할 수 없다 — 사이트 표준시 자정(7.1.0 O-CF3)
+            // 인기글은 기간별 공용 캐시라 보는 사람마다 경계를 달리할 수 없다 — 사이트 표준시 자정(7.1.0)
             'today' => Carbon::now(TimezoneHelper::getSiteTimezone() ?: 'UTC')->startOfDay()->utc(),
             'week' => now()->subWeek(),
             'month' => now()->subMonth(),

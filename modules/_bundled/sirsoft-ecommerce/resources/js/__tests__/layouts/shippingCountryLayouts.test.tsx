@@ -5,7 +5,7 @@ import path from 'node:path';
 /**
  * 유저별 배송국가(preferred_shipping_country) — 레이아웃 구조 잠금 테스트 (MP08 후속)
  *
- * 헤더 공용 셀렉터(2섹션)·설정 카드·가입/관리자 필드·체크아웃 Select(B1)·주소록 분기(D10)·
+ * 헤더 공용 셀렉터(2섹션)·설정 카드·가입/관리자 필드·체크아웃 Select·주소록 분기(D10)·
  * B3 매핑·shippability 경고(3계층)·B8 상품상세를 JSON 구조 기준으로 회귀 차단한다.
  */
 
@@ -401,7 +401,7 @@ describe('마이페이지 설정/표시 카드', () => {
   });
 });
 
-describe('B1 — 체크아웃 국가 Select 데이터소스 경로 회귀', () => {
+describe('체크아웃 국가 Select 데이터소스 경로 회귀', () => {
   const raw = serialize('layouts/partials/shop/_checkout_shipping.json', templateRoot);
 
   /** @effects checkout_select_visible_when_intl_on */
@@ -473,8 +473,18 @@ describe('D10 — 주소록 추가/수정 폼 국가 Select + 국내/해외 분�
 
   /** @effects addressbook_country_branch_domestic_intl */
   it('국내(KR)/해외 입력 분기 조건', () => {
-    expect(raw).toContain("(_local.editingAddress?.country_code ?? 'KR') === 'KR'");
-    expect(raw).toContain("(_local.editingAddress?.country_code ?? 'KR') !== 'KR'");
+    // 편집 대상 배송지는 창 고유 전역 이름 공간 `_global.checkoutAddressModal.editing` 에 있다(7.1.1 — 영구 마운트 창 `_local` 두 겹 회피)
+    const domestic = "(_global.checkoutAddressModal?.editing?.country_code ?? 'KR') === 'KR'";
+    const intl = "(_global.checkoutAddressModal?.editing?.country_code ?? 'KR') !== 'KR'";
+    expect(raw).toContain(domestic);
+    expect(raw).toContain(intl);
+    // 국내 분기는 우편번호 칸, 해외 분기는 해외 주소 칸을 담는다
+    const domesticBlocks = walkAll(json, (n) => n.if === `{{${domestic}}}`);
+    const intlBlocks = walkAll(json, (n) => n.if === `{{${intl}}}`);
+    expect(domesticBlocks.some((b) => walk(b, (n) => n.name === 'Input' && n.props?.name === 'zipcode'))).toBe(true);
+    expect(intlBlocks.some((b) => walk(b, (n) => n.name === 'Input' && n.props?.name === 'address_line_1'))).toBe(true);
+    // 옛 창 지역 상태 키로 갈리던 분기가 남지 않는다
+    expect(raw).not.toContain('_local.editingAddress');
   });
 });
 

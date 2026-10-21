@@ -1,0 +1,24 @@
+feature: 관리자 대시보드 시스템 알림의 심각도별 배치와 색상
+
+description: |
+  대시보드 시스템 알림은 심각도(`type`)가 배치와 색을, 의미(`subtype`)가 행의 액션을 가른다.
+  경고 등급은 화면 맨 아래 카드에 묻히지 않도록 상단 배너로 올라가 amber 로 그려지고, 그 밖의 알림은
+  하단 카드에 남는다. 같은 알림이 두 곳에 함께 보이지 않고, 경고가 여러 건이면 모두 쌓인다.
+  비어 있는 영역은 그리지 않으며, 상단으로 올라간 경고도 닫기 버튼을 그대로 갖는다.
+  실제 admin_dashboard.g7.html 을 렌더해 확인한다.
+
+# axis 의미:
+#   severity — 알림의 심각도. warning 은 상단 배너, info 는 하단 카드, unspecified 는 type 이 없는 알림(하단 회색).
+axes:
+  severity: [warning, info, unspecified]
+
+effects:
+  - warning_alert_promoted_to_top_banner        # 경고 등급은 subtype 과 무관하게 상단 배너에 amber 로 그려지고 여러 건이 모두 쌓인다
+  - non_warning_alert_stays_in_bottom_card      # 경고가 아닌 알림만 하단 카드에 남고 같은 알림이 두 곳에 중복되지 않는다
+  - empty_alert_region_not_rendered             # 해당 등급 알림이 없으면 그 영역(상단 배너·하단 카드) 자체를 그리지 않는다
+  - unspecified_severity_falls_to_gray_bottom   # 심각도가 없는 알림은 하단 카드에 회색으로 그려진다
+  - recovery_button_follows_subtype             # 복구 버튼은 recovery_available subtype 에만 붙는다
+  - promoted_alert_keeps_dismiss_action         # 상단으로 올라간 경고도 닫기 버튼을 그대로 갖는다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-dashboard-alert-severity.test.tsx

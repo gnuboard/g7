@@ -166,6 +166,14 @@ class MileageTransactionController extends AdminBaseController
                 array_map('intval', $data['lot_ids']),
                 (int) $data['days'],
             );
+        } catch (MileageValidationException $e) {
+            // 탈퇴 회원 적립건 연장 거절 등 도메인 규칙 위반(7.1.1)
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.mileage.validation_failed',
+                422,
+                ['general' => [$e->getMessage()]]
+            );
         } catch (AccessDeniedHttpException $e) {
             return ResponseHelper::forbidden('auth.scope_denied');
         }

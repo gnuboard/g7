@@ -3,6 +3,7 @@
 namespace App\Extension\Layout;
 
 use App\Extension\Layout\DTO\LayoutMergeResult;
+use App\Support\LayoutDataSourceIds;
 use App\Support\LayoutMarkup\LayoutPartialOrigin;
 
 /**
@@ -722,7 +723,7 @@ final class LayoutThreeWayMerger
     }
 
     /**
-     * `data_sources` 항목이 전부 `id` 를 가져 항목 단위로 병합할 수 있는지 판정합니다.
+     * `data_sources` 항목이 전부 `id` 를 가져 항목 단위로 병합할 수 있는지 판정합니다 — 같은 id 가 둘 이상이면 키 통째 판정.
      *
      * @param  array<int, mixed>  $values  세 판의 값 (없으면 null)
      * @return bool 항목 단위 병합이 가능하면 true
@@ -740,6 +741,10 @@ final class LayoutThreeWayMerger
                 if (! is_array($item) || ! isset($item['id']) || ! is_scalar($item['id'])) {
                     return false;
                 }
+            }
+            // 같은 id 를 조건으로 여러 판 선언했으면 id 를 키로 묶을 수 없다 — 뒤 판이 앞 판을 덮어 한 판이 사라진다(7.1.1 출시 전)
+            if (LayoutDataSourceIds::hasRepeatedIds($value)) {
+                return false;
             }
         }
 

@@ -40,8 +40,8 @@
     </div>
     <div class="flex-1"/>
     <!-- B-006 -->
-    <button data-ref="b_006_bulk_apply_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedItems || _local.selectedItems.length === 0 || orders?.data?.abilities?.can_update !== true}}">
-      <responsive on="portable" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50">$t:sirsoft-ecommerce.admin.order.bulk.apply_full</responsive>
+    <button data-ref="b_006_bulk_apply_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedItems || _local.selectedItems.length === 0 || orders?.data?.abilities?.can_update !== true}}">
+      <responsive on="portable" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50">$t:sirsoft-ecommerce.admin.order.bulk.apply_full</responsive>
       <on type="click">
         <set-state target="global" bulkOrderStatus="{{_local.bulkOrderStatus}}" bulkCourier="{{_local.bulkCourier}}" bulkTrackingNumber="{{_local.bulkTrackingNumber}}" bulkSelectedItems="{{_local.selectedItems}}"/>
         <action handler="sirsoft-ecommerce.buildOrderBulkConfirmData"/>

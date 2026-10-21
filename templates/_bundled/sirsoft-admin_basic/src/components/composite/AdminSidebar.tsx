@@ -9,7 +9,7 @@ import { isSameOriginRequest } from '../../support/sameOriginRequest';
 import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
   const translated = (window as any).G7Core?.t?.(key, params);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
@@ -93,7 +93,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   id,
   editorAttrs,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
   const logoAlt = logoAltProp ?? tOr('common.logo', 'Logo');
   const [expandedItems, setExpandedItems] = useState<Set<string | number>>(new Set());
   const [locale, setLocale] = useState<string>(currentLocaleProp || G7Core()?.locale?.current?.() || 'ko');
@@ -401,7 +401,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   <I className="fas fa-cube admin-sidebar-module-icon" title="모듈 메뉴" />
                 )}
                 <I
-                  className={`fas fa-chevron-right w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                  className={`fas fa-chevron-right w-4 h-4 text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
                 />
               </Div>
             )}

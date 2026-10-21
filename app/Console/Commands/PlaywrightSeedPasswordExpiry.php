@@ -93,14 +93,14 @@ class PlaywrightSeedPasswordExpiry extends Command
     public function handle(): int
     {
         if (php_sapi_name() !== 'cli') {
-            $this->error('CLI 전용 커맨드입니다. (현재 SAPI: '.php_sapi_name().')');
+            $this->error(__('common.console.playwright_guard.cli_only', ['sapi' => php_sapi_name()]));
 
             return self::FAILURE;
         }
 
         // 여기의 `env()` 는 호출자가 그 자리에서 넘기는 프로세스 환경변수라 config:cache 무관.
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다. (예: PowerShell — $env:G7_PLAYWRIGHT_BYPASS=\'1\')');
+            $this->error(__('common.console.playwright_guard.bypass_required'));
 
             return self::FAILURE;
         }
@@ -130,7 +130,7 @@ class PlaywrightSeedPasswordExpiry extends Command
         $stage = (string) $this->option('stage');
 
         if (! in_array($stage, self::STAGES, true)) {
-            $this->error("알 수 없는 상태입니다: {$stage} (".implode('|', self::STAGES).')');
+            $this->error(__('common.console.playwright_seed_password_expiry.unknown_stage', ['stage' => $stage, 'stages' => implode('|', self::STAGES)]));
 
             return self::FAILURE;
         }
@@ -227,7 +227,7 @@ class PlaywrightSeedPasswordExpiry extends Command
     private function snapshotSettings(): int
     {
         if ($this->storage()->exists(self::SNAPSHOT_CATEGORY, self::SNAPSHOT_PATH)) {
-            $this->warn('보안 설정 스냅샷이 이미 있어 덮지 않았습니다: '.self::SNAPSHOT_PATH);
+            $this->warn(__('common.console.playwright_seed_password_expiry.snapshot_exists', ['path' => self::SNAPSHOT_PATH]));
 
             return self::SUCCESS;
         }
@@ -236,7 +236,7 @@ class PlaywrightSeedPasswordExpiry extends Command
 
         $this->storage()->put(self::SNAPSHOT_CATEGORY, self::SNAPSHOT_PATH, json_encode($security, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
-        $this->info('보안 설정 스냅샷을 저장했습니다: '.self::SNAPSHOT_PATH);
+        $this->info(__('common.console.playwright_seed_password_expiry.snapshot_saved', ['path' => self::SNAPSHOT_PATH]));
 
         return self::SUCCESS;
     }
@@ -249,7 +249,7 @@ class PlaywrightSeedPasswordExpiry extends Command
     private function restoreSettings(): int
     {
         if (! $this->storage()->exists(self::SNAPSHOT_CATEGORY, self::SNAPSHOT_PATH)) {
-            $this->error('되돌릴 보안 설정 스냅샷이 없습니다: '.self::SNAPSHOT_PATH);
+            $this->error(__('common.console.playwright_seed_password_expiry.snapshot_missing', ['path' => self::SNAPSHOT_PATH]));
 
             return self::FAILURE;
         }
@@ -257,7 +257,7 @@ class PlaywrightSeedPasswordExpiry extends Command
         $snapshot = json_decode((string) $this->storage()->get(self::SNAPSHOT_CATEGORY, self::SNAPSHOT_PATH), true);
 
         if (! is_array($snapshot)) {
-            $this->error('보안 설정 스냅샷을 읽지 못했습니다.');
+            $this->error(__('common.console.playwright_seed_password_expiry.snapshot_unreadable'));
 
             return self::FAILURE;
         }
@@ -265,7 +265,7 @@ class PlaywrightSeedPasswordExpiry extends Command
         app(SettingsService::class)->saveSettings(['_tab' => 'security', 'security' => $snapshot]);
         $this->storage()->delete(self::SNAPSHOT_CATEGORY, self::SNAPSHOT_PATH);
 
-        $this->info('보안 설정을 스냅샷으로 되돌렸습니다.');
+        $this->info(__('common.console.playwright_seed_password_expiry.settings_restored'));
 
         return self::SUCCESS;
     }
@@ -288,7 +288,7 @@ class PlaywrightSeedPasswordExpiry extends Command
         $days = app(PasswordExpiryService::class)->days();
         $settings->setSetting(PasswordExpiryService::STARTED_AT_KEY, now()->subDays($days + 1)->toIso8601String());
 
-        $this->info('비밀번호 만료를 켰습니다 (범위 전체·변경해야 로그인·시작일 '.($days + 1).'일 전).');
+        $this->info(__('common.console.playwright_seed_password_expiry.policy_enabled', ['days' => $days + 1]));
     }
 
     /**
@@ -311,7 +311,7 @@ class PlaywrightSeedPasswordExpiry extends Command
                 $deleted++;
             });
 
-        $this->info("비밀번호 만료 실측 테스트 계정 {$deleted}건을 제거했습니다.");
+        $this->info(__('common.console.playwright_seed_password_expiry.users_purged', ['count' => $deleted]));
     }
 
     /**

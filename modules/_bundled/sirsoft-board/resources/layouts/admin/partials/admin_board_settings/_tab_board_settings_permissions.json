@@ -8,13 +8,6 @@
     "type": "basic",
     "name": "Div",
     "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
-    "classMap": {
-        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-        "variants": {
-            "readonly": "opacity-60",
-            "normal": ""
-        }
-    },
     "children": [
         {
             "type": "basic",
@@ -64,7 +57,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-info-soft"
+                                        "className": "text-xs board-tone-info"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.permissions_table.bulk_apply_notice"
                                 }
@@ -222,6 +215,7 @@
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "aria-label": "{{$t('sirsoft-board.board.permissions.' + perm?.[0])}}",
                                                                 "value": "{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}",
                                                                 "options": "{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}",
                                                                 "placeholder": "$t:sirsoft-board.admin.settings.permissions_table.select_roles",
@@ -390,6 +384,7 @@
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "aria-label": "{{$t('sirsoft-board.board.permissions.' + perm?.[0])}}",
                                                                 "value": "{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}",
                                                                 "options": "{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}",
                                                                 "placeholder": "$t:sirsoft-board.admin.settings.permissions_table.select_roles",

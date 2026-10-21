@@ -41,7 +41,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "check",
-                                        "className": "text-green-600 dark:text-green-400",
+                                        "className": "text-green-700 dark:text-green-400",
                                         "size": "lg"
                                     }
                                 }
@@ -77,6 +77,15 @@
                             "handler": "sequence",
                             "actions": [
                                 {
+                                    "comment": "깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1)",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "$parent._local",
+                                        "currentSelection": null,
+                                        "additionalOptions": null
+                                    }
+                                },
+                                {
                                     "handler": "setState",
                                     "params": {
                                         "target": "$parent._local",
@@ -93,6 +102,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "flex-1 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isNavigatingToCart}}"
                     },

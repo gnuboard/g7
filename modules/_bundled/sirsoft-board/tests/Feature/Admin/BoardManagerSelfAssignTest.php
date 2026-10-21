@@ -314,7 +314,7 @@ class BoardManagerSelfAssignTest extends ModuleTestCase
 
     /**
      * 기본 ACL 밖 위임 관리자도 새 게시판을 만들며 **자기 한 명만** 관리자로 둘 수 있다 — 새로 만드는 게시판의
-     * 관리자가 되는 것은 기존 게시판에 대한 권한 상승이 아니다(7.1.0 실측 K4F-2, 결정 2026-10-08). 종전에는
+     * 관리자가 되는 것은 기존 게시판에 대한 권한 상승이 아니다(7.1.0 실측, 결정 2026-10-08). 종전에는
      * 누구를 지정해도 403, 비우면 422 라 게시판을 아예 만들 수 없었다.
      *
      * @scenario case=create_manager_self_only_allowed
@@ -443,7 +443,7 @@ class BoardManagerSelfAssignTest extends ModuleTestCase
     /**
      * 새 게시판의 기본 ACL 을 받지 못하는 위임 관리자에게는 생성 폼이 **본인 한 명만** 관리자로 미리 채운다 —
      * 그대로 저장할 수 있는 값이다. 다른 담당자는 지정할 수 없다는 사실을 `_meta.can_assign_board_members=false`
-     * 로 알려 화면이 이유를 보이고 명단 칸을 잠근다(K4F-2, 결정 2026-10-08).
+     * 로 알려 화면이 이유를 보이고 명단 칸을 잠근다(결정 2026-10-08).
      *
      * @scenario case=create_form_prefill_skipped_for_non_holder
      *

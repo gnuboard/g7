@@ -61,11 +61,11 @@ class ReactionScrapSampleSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('반응·스크랩 샘플 데이터 생성 중...');
+        $this->command->info(__('sirsoft-board::messages.seeders.reaction_scrap_sample.start'));
 
         $boards = Board::whereIn('slug', BoardSampleMarker::SAMPLE_BOARD_SLUGS)->get();
         if ($boards->isEmpty()) {
-            $this->command->warn('샘플 게시판이 없어 반응·스크랩 샘플을 건너뜁니다.');
+            $this->command->warn(__('sirsoft-board::messages.seeders.reaction_scrap_sample.skip_no_boards'));
 
             return;
         }
@@ -75,14 +75,14 @@ class ReactionScrapSampleSeeder extends Seeder
         $hasScraps = DB::table('board_post_scraps')->whereIn('board_id', $boardIds)->exists();
 
         if ($hasReactions || $hasScraps) {
-            $this->command->warn('샘플 게시판에 이미 반응·스크랩이 있습니다. 건너뜁니다.');
+            $this->command->warn(__('sirsoft-board::messages.seeders.reaction_scrap_sample.skip_exists'));
 
             return;
         }
 
         $userIds = User::where('status', UserStatus::Active->value)->orderBy('id')->limit(30)->pluck('id')->map(fn ($id) => (int) $id)->all();
         if (count($userIds) < 2) {
-            $this->command->warn('활성 회원이 2명 이상 필요합니다. 반응·스크랩 샘플을 건너뜁니다.');
+            $this->command->warn(__('sirsoft-board::messages.seeders.reaction_scrap_sample.skip_few_users'));
 
             return;
         }
@@ -116,7 +116,7 @@ class ReactionScrapSampleSeeder extends Seeder
         $this->syncReactionCounts($boardIds);
         $this->syncBoardCounts($boardIds);
 
-        $this->command->info('반응 '.count($reactionRows).'건, 스크랩 '.count($scrapRows).'건 생성 완료 (reaction_counts·scrap_count 재집계)');
+        $this->command->info(__('sirsoft-board::messages.seeders.reaction_scrap_sample.done', ['reactions' => count($reactionRows), 'scraps' => count($scrapRows)]));
     }
 
     /**

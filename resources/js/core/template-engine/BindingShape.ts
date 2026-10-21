@@ -195,7 +195,27 @@ export function scanBindings(template: string): ScannedBinding[] {
  * @returns 복잡한 표현식 여부
  */
 export function isComplexExpression(expr: string): boolean {
-  return /[?:|&!+\-*/<>=()[\]{}]/.test(expr);
+  return /[?:|&!+\-*/<>=()[\]{}]/.test(expr) || isLiteralExpression(expr);
+}
+
+/**
+ * 식 전체가 리터럴 하나인지 판정 — 숫자(`1`·`-2`·`1.5`), 따옴표 문자열(`'abc'`·`"x y"`), `true/false/null/undefined`.
+ *
+ * 리터럴은 경로가 아니다. 종전에는 `{{1}}`·`{{'abc'}}` 가 문자열 보간·`$t:` 인자에서 경로(`context['1']`)로 찾아져
+ * 빈 글자가 됐다(`$t:키|count={{1}}|max={{3}}` → 「{{count}}/{{max}}개」). 봇(SEO) 평가기는 값으로 푼다(7.1.1).
+ * 판정은 좁게 한다 — 따옴표 문자열은 같은 따옴표가 안에 없는 것만(`'a' + b`·`'a'.length` 는 리터럴이 아니다).
+ *
+ * @param expr 판정할 식 (`{{ }}` 제거된 상태)
+ * @returns 리터럴 하나면 true
+ * @since engine-v1.80.1
+ */
+export function isLiteralExpression(expr: string): boolean {
+  const trimmed = typeof expr === 'string' ? expr.trim() : '';
+  if (trimmed === '') return false;
+  if (LITERALS.has(trimmed)) return true;
+  // 앞자리 0 은 받지 않는다 — `007` 은 엄격 모드 평가에서 문법 오류다
+  if (/^-?(0|[1-9]\d*)(\.\d+)?$/.test(trimmed)) return true;
+  return /^'[^'\\]*'$/.test(trimmed) || /^"[^"\\]*"$/.test(trimmed);
 }
 
 /**

@@ -2812,7 +2812,7 @@ _단건 응답: `data` 객체의 필드 (접수된 신고 케이스 = `ReportRes
 | processed_at | null | `null` | 처리 일시 (미처리 시 null) |
 | metadata | null | `null` | 신고 메타(IP/User-Agent) — 상세 조회 라우트에서만 노출, 접수 응답에서는 null |
 | report_count | null | `null` | 케이스 누적 신고 건수 (목록 그룹 조회에서만 채워짐) |
-| last_reported_at | string | `2026-07-08 10:41:34` | 마지막 신고 접수 일시 (재접수 시 갱신) |
+| last_reported_at | string | `2026-07-08 10:41:34` | 마지막 신고 일시 — 이 케이스에 들어온 가장 늦은 신고 시각(추가 신고·재접수 때마다 갱신). 목록 정렬·기간 거르개 기준 |
 | is_reactivated | boolean | `false` | 반려/중단 후 재접수된 케이스인지 여부 |
 | target_status | null | `null` | 신고 대상의 현재 상태 (목록 그룹 조회에서만 채워짐) |
 | target_trigger_type | null | `null` | 신고 대상 상태 변경 주체 (목록 그룹 조회에서만 채워짐) |
@@ -3632,7 +3632,7 @@ _단건 응답: `data` 객체의 필드._
 | navigation | null | `null` | 이전/다음 글 정보 (상세 API에서는 기본 null — 별도 navigation 엔드포인트로 비동기 로딩) |
 | parent | null | `null` | 상위 항목 객체 (parent 관계 파생) |
 | comments | array | `[{"id":760,"post_id":237,"parent_id":null,"content":"API …` | 이 게시글의 댓글 목록 (CommentResource 배열 — 대댓글 계층 포함) |
-| attachments | array | `[{"id":155,"hash":"apidocsmpl1","original_filename":"apid…` | 이 게시글의 첨부파일 목록 (비밀글/삭제글은 권한에 따라 빈 배열 또는 cascade 항목만 노출) |
+| attachments | array | `[{"id":155,"hash":"apidocsmpl1","original_filename":"apid…` | 이 게시글의 첨부파일 목록 (비밀글/삭제글은 권한에 따라 빈 배열 또는 cascade 항목만 노출). 각 항목의 `meta` 는 이미지면 `{"width":…,"height":…}`, 정보가 없으면 `null`, 비어 있으면 `{}` 다 — 코어 첨부 응답과 같은 모양 |
 | replies | array | `[]` | 이 게시글에 달린 답변글 목록 (PostResource 배열 — use_reply 게시판에서만 로드) |
 | thread_password_available | boolean | `false` | 본문이 가려진 비밀 답변을 스레드 조상(비회원·비밀번호가 있는 글)의 비밀번호로 열 수 있는지. true 면 화면이 원글 비밀번호 폼을 보여 주고 `POST …/verify-thread-password` 를 부른다. 어떤 조상인지는 싣지 않는다 |
 | reply_locked_by_secret_ancestor | boolean | `false` | 이 글에 하위 글은 쓸 수 있지만 위쪽 비밀글을 지금 볼 수 없어 답변은 막히는지. true 면 답변 버튼을 숨긴다(직접 호출 시 답변 폼 404, 제출 422 `parent_id`) |
@@ -4517,7 +4517,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 게시글의 댓글 목록을 조회합니다. `auth:sanctum` + `sirsoft-board.{slug}.comments.read` 권한이 필요하며, 게시판의 댓글 기능이 꺼져 있으면 403을 반환합니다. 대댓글 계층(`depth`, `replies_count`)을 포함하며, 각 항목에 현재 사용자의 작성자 여부·소유 여부·신고 이력 등이 메타로 담깁니다.
+**설명** 게시글의 댓글 목록을 조회합니다. `auth:sanctum` + `sirsoft-board.{slug}.comments.read` 권한이 필요하며, 게시판의 댓글 기능이 꺼져 있으면 403을 반환합니다. 조회 범위는 사용자 문맥(`sirsoft-board.{slug}.comments.read` 의 범위 식별자)으로 판정해 글 상세에 실리는 댓글과 같습니다 — 「본인 댓글만」 범위의 회원에게 남의 댓글이 나가지 않습니다. 없는 게시판(`slug`)이면 권한 검사보다 먼저 404 를 반환합니다. 대댓글 계층(`depth`, `replies_count`)을 포함하며, 각 항목에 현재 사용자의 작성자 여부·소유 여부·신고 이력 등이 메타로 담깁니다.
 
 **비밀 댓글** `is_secret=true` 인 댓글의 `content` 는 댓글 작성자 · 대댓글이면 부모 댓글 작성자 · 원글을 열 수 있는 사람(원글 작성자 · 비밀번호를 맞혀 `X-Board-Secret-View-Token` 을 받은 사람 · 비밀글 읽기 권한자 · 게시판 관리자)에게만 실립니다. 그 밖에는 `content=null` 이고 `is_secret` 은 그대로 내려가 화면이 "비밀 댓글입니다" 를 표시합니다. 게시글 상세 응답의 `comments` 도 같은 규칙입니다.
 
@@ -4871,7 +4871,7 @@ _단건 응답: `data` 객체의 필드 (접수된 신고 케이스 = `ReportRes
 | processed_at | null | `null` | 처리 일시 (미처리 시 null) |
 | metadata | null | `null` | 신고 메타(IP/User-Agent) — 상세 조회 라우트에서만 노출 |
 | report_count | null | `null` | 케이스 누적 신고 건수 (목록 그룹 조회에서만 채워짐) |
-| last_reported_at | string | `2026-07-08 10:41:34` | 마지막 신고 접수 일시 |
+| last_reported_at | string | `2026-07-08 10:41:34` | 마지막 신고 일시 — 이 케이스에 들어온 가장 늦은 신고 시각(추가 신고·재접수 때마다 갱신). 목록 정렬·기간 거르개 기준 |
 | is_reactivated | boolean | `false` | 반려/중단 후 재접수된 케이스인지 여부 |
 | target_status | null | `null` | 신고 대상 현재 상태 (목록 그룹 조회에서만 채워짐) |
 | target_trigger_type | null | `null` | 신고 대상 상태 변경 주체 (목록 그룹 조회에서만 채워짐) |

@@ -68,6 +68,18 @@ const ariaLiveMessages = {
       : props.resultsMessage,
 };
 
+/**
+ * 여러 개를 새로 만드는 칸의 안내문 — 이미 붙은 행을 다시 골라도 태그를 그대로 두므로(handleMultiChange), react-select 가
+ * 그 고르기를 「해제」(deselect-option)로 알리는 대신 「선택됨」 으로 읽는다. 실제로 태그가 남아 있다.
+ */
+const createMultiAriaLiveMessages = {
+  ...ariaLiveMessages,
+  onChange: (props: any): string =>
+    props.action === 'deselect-option'
+      ? t('common.tag_input.selected', { label: props.label ?? '' })
+      : ariaLiveMessages.onChange(props),
+};
+
 /** 검색 결과 수 안내(react-select 기본값 「N results available」). */
 const screenReaderStatus = ({ count }: { count: number }): string => t('common.tag_input.results', { count });
 
@@ -164,6 +176,9 @@ const STYLES = {
     purple: 'bg-purple-100 dark:bg-purple-900/20 rounded px-1.5 py-0.5 flex items-center gap-1',
     gray: 'bg-gray-100 dark:bg-gray-700/50 rounded px-1.5 py-0.5 flex items-center gap-1',
   },
+  // ←·→ 로 고른 태그 표시 — Backspace·Delete 가 지울 태그다. unstyled 라 react-select 기본 표시가 없어, 키보드로
+  // 태그를 지우는 사람이 무엇이 지워질지 볼 수 없었다(× 단추는 포인터용이라 키보드 지우기는 이 길뿐이다)
+  multiValueFocused: 'ring-2 ring-blue-600 dark:ring-blue-400',
   multiValueLabel: {
     blue: 'text-blue-700 dark:text-blue-300 text-xs',
     green: 'text-green-700 dark:text-green-300 text-xs font-semibold',
@@ -173,15 +188,15 @@ const STYLES = {
     gray: 'text-gray-700 dark:text-gray-300 text-xs',
   },
   multiValueRemove: {
-    blue: 'text-blue-700 dark:text-blue-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 rounded px-1',
-    green: 'text-green-700 dark:text-green-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 rounded px-1',
-    amber: 'text-amber-700 dark:text-amber-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 rounded px-1',
-    red: 'text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 rounded px-1',
-    purple: 'text-purple-700 dark:text-purple-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 rounded px-1',
-    gray: 'text-gray-700 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 rounded px-1',
+    blue: 'text-blue-700 dark:text-blue-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-400 rounded px-1',
+    green: 'text-green-700 dark:text-green-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-400 rounded px-1',
+    amber: 'text-amber-700 dark:text-amber-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-400 rounded px-1',
+    red: 'text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-400 rounded px-1',
+    purple: 'text-purple-700 dark:text-purple-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-400 rounded px-1',
+    gray: 'text-gray-700 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-700 dark:hover:text-red-400 rounded px-1',
   },
   input: 'text-gray-900 dark:text-white text-sm',
-  placeholder: 'text-gray-400 dark:text-gray-500 text-sm',
+  placeholder: 'text-gray-600 dark:text-gray-300 text-sm',
   menu: 'mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg',
   menuList: 'py-1',
   option: {
@@ -260,7 +275,7 @@ export const TagInput: React.FC<TagInputProps> = ({
   onChange,
   creatable = false,
   placeholder = '검색 또는 입력...',
-  noOptionsMessage = '검색 결과가 없습니다',
+  noOptionsMessage: noOptionsMessageProp,
   formatCreateLabel,
   createLabelSuffix = '추가',
   maxItems,
@@ -285,6 +300,9 @@ export const TagInput: React.FC<TagInputProps> = ({
   // disabled prop을 boolean으로 정규화 (문자열 "true"/"false" 처리)
   const disabled = disabledProp === true || disabledProp === 'true';
 
+  // 레이아웃이 안내 문구를 줬는지는 아래 빈 메뉴 판정이 본다 — 그래서 기본값을 구조 분해에 두지 않는다
+  const noOptionsMessage = noOptionsMessageProp ?? '검색 결과가 없습니다';
+
   // valueProp을 내부 배열 형태로 정규화
   const normalizeValue = useCallback((val: typeof valueProp): (string | number)[] => {
     if (val === null || val === undefined) return [];
@@ -297,6 +315,20 @@ export const TagInput: React.FC<TagInputProps> = ({
 
   // 입력값 상태 (구분자 감지를 위한 제어 컴포넌트)
   const [inputValue, setInputValue] = useState('');
+
+  // 메뉴 열림 여부 — 이 부품이 쥔다(menuIsOpen 제어). react-select 가 열고 닫을 때 콜백으로 맞추고,
+  // 새 태그를 만든 뒤에는 이 부품이 닫는다(handleCreate 주석). ref 는 Enter 를 react-select 에 맡길지
+  // 정하는 키 처리기가 같은 틱에 읽는다.
+  const [menuIsOpen, setMenuIsOpen] = useState(false);
+  const menuOpenRef = useRef(false);
+  const handleMenuOpen = useCallback(() => {
+    menuOpenRef.current = true;
+    setMenuIsOpen(true);
+  }, []);
+  const handleMenuClose = useCallback(() => {
+    menuOpenRef.current = false;
+    setMenuIsOpen(false);
+  }, []);
 
   // 이전 valueProp 값을 추적하여 실제 값 변경만 감지
   const prevValueRef = useRef<(string | number)[] | undefined>(undefined);
@@ -350,9 +382,13 @@ export const TagInput: React.FC<TagInputProps> = ({
   }, [value, options]);
 
   // 드롭다운에 표시할 전체 옵션 (선택된 값 포함, 그룹 지원)
+  // 여러 개를 새로 만드는 칸은 직접 친 태그(옵션 목록에 없는 값)를 메뉴 행으로 되풀이하지 않는다. 그 행은 이미
+  // 칸에 태그로 보이는 값이고, 다시 고르면 react-select 가 해제한다. 칸에 포커스만 줘도 메뉴가 이 행들을 펼쳐
+  // 아래 칸을 덮었고, 아래 칸을 누르려던 클릭이 행에 닿아 기존 태그가 지워졌다(IP 규칙 편집 창). 레이아웃이 준
+  // 제안 옵션은 체크 표시와 함께 그대로 둔다(체크된 제안 행을 다시 골라도 태그는 남는다 — handleMultiChange).
   const allOptions = useMemo(() => {
     const existingValues = new Set(options.map(opt => opt.value));
-    const additionalOptions: TagOption[] = value
+    const additionalOptions: TagOption[] = value && !(creatable && isMulti)
       ? value
           .filter(v => !existingValues.has(v))
           .map(v => ({ value: v, label: String(v) }))
@@ -398,7 +434,13 @@ export const TagInput: React.FC<TagInputProps> = ({
     }
 
     return groupedOptions;
-  }, [options, value]);
+  }, [options, value, creatable, isMulti]);
+
+  // 여러 개를 새로 만드는 칸에 제안 옵션도, 레이아웃이 준 안내 문구도 없으면 빈 입력일 때 메뉴에 보일 것이 없다.
+  // 그대로 열면 「검색 결과가 없습니다」 한 줄이 아래 칸을 덮고, 화면에 메뉴가 없는데 칸은 「펼쳐짐」 으로 읽혀
+  // 창의 Esc 를 가로챈다. 이때는 열지 않고, 글자를 치면 「… 추가」 항목과 함께 연다.
+  const hideBlankMenu = creatable && isMulti && options.length === 0 && noOptionsMessageProp === undefined;
+  const menuShown = menuIsOpen && !(hideBlankMenu && inputValue === '');
 
   // 템플릿 엔진용 가짜 이벤트 생성 헬퍼
   const createFakeEvent = useCallback((outputValue: (string | number)[] | string | number | null) => ({
@@ -452,7 +494,9 @@ export const TagInput: React.FC<TagInputProps> = ({
       }
     }
     setInputValue('');
-  }, [delimiters, creatable, isMulti, splitByDelimiters, value, maxItems, onChange, createFakeEvent, onInputChangeProp]);
+    // 구분자로 만든 뒤에도 메뉴를 닫는다(handleCreate 주석 참조)
+    handleMenuClose();
+  }, [delimiters, creatable, isMulti, splitByDelimiters, value, maxItems, onChange, createFakeEvent, onInputChangeProp, handleMenuClose]);
 
   // 붙여넣기 핸들러
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
@@ -476,9 +520,12 @@ export const TagInput: React.FC<TagInputProps> = ({
         const newValues = [...value, ...tagsToAdd];
         setValue(newValues);
         onChange(createFakeEvent(newValues));
+        // 붙여넣어 만든 뒤에도 메뉴를 닫는다(handleCreate 주석 참조). 먼저 쳐 둔 글자가 남아 있으면 그 글자의
+        // 「… 추가」 항목이 메뉴에 있어야 Enter 로 만들 수 있으므로 열어 둔다.
+        if (!inputValue) handleMenuClose();
       }
     }
-  }, [splitOnPaste, creatable, isMulti, splitByDelimiters, value, maxItems, onChange, createFakeEvent]);
+  }, [splitOnPaste, creatable, isMulti, splitByDelimiters, value, maxItems, onChange, createFakeEvent, inputValue, handleMenuClose]);
 
   // 변경 핸들러 (멀티 모드)
   const handleMultiChange = useCallback(
@@ -493,6 +540,11 @@ export const TagInput: React.FC<TagInputProps> = ({
         }
       }
 
+      // 여러 개를 새로 만드는 칸에서 이미 붙은 행(✓)을 다시 고르면 react-select 는 그 태그를 해제한다(deselect-option).
+      // 마우스·화살표+Enter·친 글자에 맞은 행 Enter 어느 길이든 사용자가 고른 것이 사라지므로 그대로 둔다(이미 있으면 그대로).
+      // 태그를 빼는 길은 태그의 × 와 ←·→ 뒤 Backspace·Delete 다. 고르기 전용 칸은 체크 목록이라 다시 고르면 해제(종전).
+      if (creatable && actionMeta.action === 'deselect-option') return;
+
       // 최대 개수 제한
       if (maxItems && newValue.length > maxItems) return;
 
@@ -500,7 +552,7 @@ export const TagInput: React.FC<TagInputProps> = ({
       setValue(newValues);
       onChange(createFakeEvent(newValues));
     },
-    [onChange, onBeforeRemove, maxItems, createFakeEvent]
+    [onChange, onBeforeRemove, maxItems, createFakeEvent, creatable]
   );
 
   // 변경 핸들러 (싱글 모드)
@@ -533,8 +585,12 @@ export const TagInput: React.FC<TagInputProps> = ({
       const newValues = [...(value || []), inputValue];
       setValue(newValues);
       onChange(createFakeEvent(newValues));
+      // 만든 뒤 메뉴를 닫는다 — 여러 개 고르는 칸은 고른 뒤 메뉴를 열어 두는데(closeMenuOnSelect=false),
+      // 새 값 만들기도 같은 「고르기」 경로라 메뉴가 남았다. 입력이 비면 메뉴는 붙은 태그 전부를 펼쳐 아래 칸을
+      // 덮고 클릭을 가로챘다(IP 규칙 편집 창의 메모 칸 실측). 다음 값을 치면 react-select 가 다시 연다.
+      handleMenuClose();
     },
-    [onChange, onCreateOption, value, createFakeEvent]
+    [onChange, onCreateOption, value, createFakeEvent, handleMenuClose]
   );
 
   // 새 옵션 유효성 검사 (중복 방지)
@@ -546,16 +602,7 @@ export const TagInput: React.FC<TagInputProps> = ({
     [value]
   );
 
-  // 메뉴 열림 여부 — Enter 를 react-select 에 맡길지 정한다(메뉴는 비제어라 콜백으로만 안다)
-  const menuOpenRef = useRef(false);
-  const handleMenuOpen = useCallback(() => {
-    menuOpenRef.current = true;
-  }, []);
-  const handleMenuClose = useCallback(() => {
-    menuOpenRef.current = false;
-  }, []);
-
-  // 곁 라벨을 입력칸 이름으로 잇는다 — 라벨과 형제로 놓여 이름 없는 combobox 로 읽혔다(7.1.0 J D-J7)
+  // 곁 라벨을 입력칸 이름으로 잇는다 — 라벨과 형제로 놓여 이름 없는 combobox 로 읽혔다(7.1.0 실측)
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     // 레이아웃이 이름을 줬으면 그것이 이름이다 — 종전에는 aria-label 을 받지 않아 레이아웃이 줘도 버려졌다(#757)
@@ -579,6 +626,8 @@ export const TagInput: React.FC<TagInputProps> = ({
             setValue(newValues);
             onChange(createFakeEvent(newValues));
             setInputValue('');
+            // Tab 기본 동작을 막아 포커스가 칸에 남으므로 메뉴도 남는다 — 만든 뒤 닫는다(handleCreate 주석 참조)
+            handleMenuClose();
           }
         } else {
           // 중복 시 입력만 초기화
@@ -601,7 +650,8 @@ export const TagInput: React.FC<TagInputProps> = ({
           event.stopPropagation();
           return;
         }
-        if (menuOpenRef.current) {
+        // 빈 입력이라 메뉴를 그리지 않은 칸(hideBlankMenu)은 닫힌 것으로 본다 — 맡기면 폼 제출로 번진다
+        if (menuOpenRef.current && !(hideBlankMenu && !inputValue)) {
           return;
         }
         if (!currentInput) {
@@ -610,7 +660,7 @@ export const TagInput: React.FC<TagInputProps> = ({
         }
       }
     },
-    [value, inputValue, creatable, isMulti, maxItems, onChange, createFakeEvent]
+    [value, inputValue, creatable, isMulti, maxItems, onChange, createFakeEvent, handleMenuClose, hideBlankMenu]
   );
 
   // 태그 variant 가져오기 헬퍼
@@ -630,7 +680,7 @@ export const TagInput: React.FC<TagInputProps> = ({
     valueContainer: () => STYLES.valueContainer,
     multiValue: (state: any) => {
       const variant = getTagVariant(state.data.value);
-      return STYLES.multiValue[variant];
+      return state.isFocused ? `${STYLES.multiValue[variant]} ${STYLES.multiValueFocused}` : STYLES.multiValue[variant];
     },
     multiValueLabel: (state: any) => {
       const variant = getTagVariant(state.data.value);
@@ -655,8 +705,8 @@ export const TagInput: React.FC<TagInputProps> = ({
             : STYLES.option.default
       }`,
     noOptionsMessage: () => STYLES.noOptionsMessage,
-    clearIndicator: () => 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer px-1',
-    dropdownIndicator: () => 'text-gray-400 dark:text-gray-500 px-1',
+    clearIndicator: () => 'text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer px-1',
+    dropdownIndicator: () => 'text-gray-500 dark:text-gray-400 px-1',
   };
 
   // 공통 props
@@ -669,11 +719,11 @@ export const TagInput: React.FC<TagInputProps> = ({
     noOptionsMessage: () => noOptionsMessage,
     isDisabled: disabled,
     isSearchable,
-    menuIsOpen: undefined,
+    menuIsOpen: menuShown,
     openMenuOnClick: true,
     openMenuOnFocus: true,
     // 메뉴가 열린 채 Tab 으로 칸을 떠날 때 포커스된 옵션을 고르지 않는다(react-select 기본값은 고른다).
-    // 회원 역할 칸에서 Tab 한 번에 「관리자」 가 붙을 수 있었다(7.1.0 J D-J6). 만들기 칸의 Tab 태그화는 handleKeyDown 이 따로 처리.
+    // 회원 역할 칸에서 Tab 한 번에 「관리자」 가 붙을 수 있었다(7.1.0 실측). 만들기 칸의 Tab 태그화는 handleKeyDown 이 따로 처리.
     tabSelectsValue: false,
     // 드롭다운 메뉴를 body에 포탈로 렌더링하여 부모 컨테이너의 overflow에 의해 잘리지 않도록 함
     menuPortalTarget: typeof document !== 'undefined' ? document.body : null,
@@ -681,7 +731,7 @@ export const TagInput: React.FC<TagInputProps> = ({
     classNamePrefix: 'tag-input',
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledBy,
-    ariaLiveMessages,
+    ariaLiveMessages: creatable && isMulti ? createMultiAriaLiveMessages : ariaLiveMessages,
     screenReaderStatus,
     unstyled: true,
     classNames: commonClassNames,

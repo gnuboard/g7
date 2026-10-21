@@ -801,7 +801,8 @@ describe('다국어 키 경로 무결성', () => {
         allKeys.forEach(key => {
             // admin / enums / editor(데이터소스 라벨) 네임스페이스 허용.
             // 관리자 템플릿 공용 키(common.sort_order·common.per_page·common.row_cell 등 — 칸 이름 규칙 #757)도 허용
-            expect(key).toMatch(/^\$t:(sirsoft-ecommerce\.(admin|enums|editor)|common)\./);
+            // 코어 공용 오류 문구(다시 받기 실패 토스트 — engine-v1.82.0 오류 처리기 문맥)도 허용
+            expect(key).toMatch(/^\$t:(sirsoft-ecommerce\.(admin|enums|editor)|common|core\.errors)\./);
         });
     });
 

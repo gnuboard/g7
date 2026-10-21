@@ -292,9 +292,10 @@ class ExpressionEvaluator
      *
      * @param  string  $expression  평가 대상 표현식 (예: `'$t:seo.title'`, `'{{post.title | upper}}'`)
      * @param  array<string, mixed>  $context  바인딩 컨텍스트 (route/post/locale 등)
+     * @param  bool  $dropOrphanOperators  빈 바인딩 치환 뒤 남은 부호(`+`·`-`·`/`·`*`, 2글자 이하)를 지울지 — URL 자리(href·이동 경로)는 false
      * @return string 평가 결과 문자열 (해석 실패 시 원본 표현식 또는 빈 문자열)
      */
-    public function evaluate(string $expression, array $context): string
+    public function evaluate(string $expression, array $context, bool $dropOrphanOperators = true): string
     {
         // $t: 번역 키 처리 (전체가 $t:로 시작하는 경우)
         if (str_starts_with($expression, '$t:')) {
@@ -306,9 +307,10 @@ class ExpressionEvaluator
         // 번역하지 않는다(rawMarkers). 여기서 접두사를 그대로 두면 콜론이 식의
         // 일부로 파싱되어 평가가 실패하고, 봇 화면에서만 값이 사라진다.
         $rawExempt = false;
+        $hasEmptyBinding = false;
 
         // {{binding | pipe}} 패턴 치환 (파이프 표현식 지원)
-        $result = (string) preg_replace_callback('/\{\{(.+?)\}\}/', function ($matches) use ($context, &$rawExempt) {
+        $result = (string) preg_replace_callback('/\{\{(.+?)\}\}/', function ($matches) use ($context, &$rawExempt, &$hasEmptyBinding) {
             $expr = trim($matches[1]);
 
             if (str_starts_with($expr, self::RAW_PREFIX)) {
@@ -316,22 +318,12 @@ class ExpressionEvaluator
                 $expr = trim(substr($expr, strlen(self::RAW_PREFIX)));
             }
 
-            // 파이프 분리: expr | pipe1 | pipe2(arg)
-            if (PipeRegistry::hasPipes($expr)) {
-                [$baseExpr, $pipes] = PipeRegistry::splitPipes($expr);
-                $value = $this->resolveToValue($baseExpr, $context);
-
-                foreach ($pipes as $pipeExpr) {
-                    $parsed = PipeRegistry::parsePipeExpression($pipeExpr);
-                    if ($this->pipeRegistry->has($parsed['name'])) {
-                        $value = $this->pipeRegistry->execute($parsed['name'], $value, $parsed['args']);
-                    }
-                }
-
-                return $this->valueToString($value);
+            $value = $this->evaluateBinding($expr, $context);
+            if ($value === '') {
+                $hasEmptyBinding = true;
             }
 
-            return $this->evaluateExpression($expr, $context);
+            return $value;
         }, $expression);
 
         // 인라인 $t:key 토큰 해석 ({{}} 외부 텍스트 내 $t:key|param=value 패턴)
@@ -342,9 +334,11 @@ class ExpressionEvaluator
             }, $result);
         }
 
-        // 후처리: 빈 {{}} 치환으로 남은 고립된 연산자/부호 정리 (예: "+", "-")
+        // 후처리: 빈 {{}} 치환으로 남은 고립된 연산자/부호 정리 (예: "+{{미지원식()}}" → "")
+        // 빈 바인딩이 있었을 때만 한다 — 정적 `/`(홈 링크 href)·`-`(빈 칸 표시)와 `/` 로 풀린 바인딩은 사람 화면처럼
+        // 값 그대로다(7.1.1). URL 자리(호출자가 false)는 `/{{빈값}}` 의 `/` 도 남긴다.
         $cleaned = trim($result);
-        if ($cleaned !== '' && strlen($cleaned) <= 2 && preg_match('/^[+\-\/*]+$/', $cleaned)) {
+        if ($dropOrphanOperators && $hasEmptyBinding && $cleaned !== '' && strlen($cleaned) <= 2 && preg_match('/^[+\-\/*]+$/', $cleaned)) {
             return '';
         }
 
@@ -371,19 +365,40 @@ class ExpressionEvaluator
         }
 
         // 파라미터 분리: $t:key|param1=value1|param2=value2
+        // `{{…}}` 식 구간을 자리 표식으로 바꾼 뒤 나눈다 — 식 안의 파이프(`{{v | date}}`)·`||`·`=` 가 인자
+        // 구분자로 읽히지 않는다. 값은 나눈 뒤에 풀어서 값에 든 `&`·`|`·`=` 도 그대로 남는다(브라우저 렌더러
+        // engine-v1.80.1 과 같은 결과).
         $params = [];
         if (str_contains($key, '|')) {
-            $parts = explode('|', $key);
+            $bindings = [];
+            $protectedKey = (string) preg_replace_callback('/\{\{(?:[^}]|\}(?!\}))*\}\}/', function ($m) use (&$bindings) {
+                $bindings[] = $m[0];
+
+                return "\u{FDD3}".(count($bindings) - 1)."\u{FDD4}";
+            }, $key);
+            $restore = static fn (string $text): string => (string) preg_replace_callback(
+                '/\x{FDD3}(\d+)\x{FDD4}/u',
+                fn ($m) => $bindings[(int) $m[1]] ?? $m[0],
+                $text,
+            );
+
+            $parts = explode('|', $protectedKey);
             $key = $parts[0];
             foreach (array_slice($parts, 1) as $param) {
                 if (str_contains($param, '=')) {
                     [$paramKey, $paramValue] = explode('=', $param, 2);
-                    $paramValue = trim($paramValue);
+                    $paramValue = trim($restore($paramValue));
 
-                    // {{}} 표현식이 포함된 파라미터 값을 해석
+                    // {{}} 표현식이 포함된 파라미터 값을 해석 (파이프 포함 — evaluate() 와 같은 바인딩 규칙)
                     if (str_contains($paramValue, '{{') && ! empty($context)) {
-                        $paramValue = (string) preg_replace_callback('/\{\{(.+?)\}\}/', function ($m) use ($context) {
-                            return $this->evaluateExpression(trim($m[1]), $context);
+                        $paramValue = (string) preg_replace_callback('/\{\{(?:[^}]|\}(?!\}))*\}\}/', function ($m) use ($context) {
+                            $expr = trim(substr($m[0], 2, -2));
+
+                            if (str_starts_with($expr, self::RAW_PREFIX)) {
+                                $expr = trim(substr($expr, strlen(self::RAW_PREFIX)));
+                            }
+
+                            return $this->evaluateBinding($expr, $context);
                         }, $paramValue);
                     }
 
@@ -393,6 +408,33 @@ class ExpressionEvaluator
         }
 
         return $this->translateKey($key, $params);
+    }
+
+    /**
+     * `{{…}}` 바인딩 식 하나(중괄호·`raw:` 접두사를 뗀 식)를 문자열로 평가합니다 — 파이프 체인 포함.
+     *
+     * @param  string  $expr  바인딩 식 (예: `post.created_at | date`)
+     * @param  array<string, mixed>  $context  데이터 컨텍스트
+     * @return string 평가 결과 문자열
+     */
+    private function evaluateBinding(string $expr, array $context): string
+    {
+        // 파이프 분리: expr | pipe1 | pipe2(arg)
+        if (PipeRegistry::hasPipes($expr)) {
+            [$baseExpr, $pipes] = PipeRegistry::splitPipes($expr);
+            $value = $this->resolveToValue($baseExpr, $context);
+
+            foreach ($pipes as $pipeExpr) {
+                $parsed = PipeRegistry::parsePipeExpression($pipeExpr);
+                if ($this->pipeRegistry->has($parsed['name'])) {
+                    $value = $this->pipeRegistry->execute($parsed['name'], $value, $parsed['args']);
+                }
+            }
+
+            return $this->valueToString($value);
+        }
+
+        return $this->evaluateExpression($expr, $context);
     }
 
     /**

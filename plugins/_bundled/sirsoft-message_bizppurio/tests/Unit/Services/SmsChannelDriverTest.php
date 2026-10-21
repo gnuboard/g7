@@ -638,4 +638,32 @@ class SmsChannelDriverTest extends PluginTestCase
 
         $this->assertFalse(BizppurioDispatch::first()->is_test_mode);
     }
+
+    /**
+     * 발송하지 못한 사유 문구는 발송 이력 상태(「실패」)와 같은 말을 쓴다 — 「건너뛰었습니다」가 아니다 (7.1.1 출시 전).
+     *
+     * 이 사유(`send_skipped.*` — 본문 미설정·수신 번호 없음·승인 템플릿 없음)는 드라이버가
+     * NotificationSendSkippedException 으로 던져 코어 발송 이력에 `failed` 로 남는다(운영자가 고쳐야 할 설정 미비).
+     * 채널을 끈 경우의 `skipped` 와 같은 말을 쓰면 상태와 문구가 어긋난다.
+     *
+     * 번역은 설치본(활성 디렉토리)에서 읽히므로 번들 원본의 언어 파일을 직접 대조한다.
+     *
+     * @effects sms_skipped_when_body_empty_or_row_missing, sms_skipped_when_no_phone_number_resolves
+     *
+     * @return void 반환값 없음
+     */
+    public function test_발송하지_못한_사유_문구는_실패_상태와_맞는다(): void
+    {
+        $root = dirname(__DIR__, 3);
+
+        foreach (['ko' => ['발송하지 못했습니다', '건너뛰'], 'en' => ['Could not send', 'Skipped']] as $locale => [$must, $mustNot]) {
+            $messages = require $root.'/lang/'.$locale.'/messages.php';
+
+            $this->assertNotEmpty($messages['send_skipped'] ?? []);
+            foreach ($messages['send_skipped'] as $key => $text) {
+                $this->assertStringContainsString($must, $text, "{$locale}.send_skipped.{$key}");
+                $this->assertStringNotContainsString($mustNot, $text, "{$locale}.send_skipped.{$key}");
+            }
+        }
+    }
 }

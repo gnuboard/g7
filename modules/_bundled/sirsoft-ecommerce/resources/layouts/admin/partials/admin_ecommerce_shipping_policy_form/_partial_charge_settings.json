@@ -612,7 +612,7 @@
                             "name": "Div",
                             "if": "{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length === 0}}",
                             "props": {
-                                "className": "text-center text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg"
+                                "className": "text-center text-sm text-gray-500 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg"
                             },
                             "children": [
                                 {
@@ -1207,7 +1207,7 @@
                                             "name": "Div",
                                             "if": "{{_global.apiTestResult?.extracted_fee !== null && _global.apiTestResult?.extracted_fee !== undefined}}",
                                             "props": {
-                                                "className": "text-green-600 dark:text-green-400 font-semibold"
+                                                "className": "text-green-800 dark:text-green-400 font-semibold"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_extracted|fee={{_global.apiTestResult?.extracted_fee_formatted ?? _global.apiTestResult?.extracted_fee ?? '-'}}"
                                         },
@@ -1216,7 +1216,7 @@
                                             "name": "Div",
                                             "if": "{{(_global.apiTestResult?.extracted_fee === null || _global.apiTestResult?.extracted_fee === undefined) && !!_global.apiTestResult?.response}}",
                                             "props": {
-                                                "className": "text-amber-600 dark:text-amber-400 font-semibold"
+                                                "className": "text-amber-700 dark:text-amber-400 font-semibold"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_no_fee"
                                         },
@@ -1225,7 +1225,7 @@
                                             "name": "Div",
                                             "if": "{{!_global.apiTestResult?.response}}",
                                             "props": {
-                                                "className": "text-red-600 dark:text-red-400 font-semibold"
+                                                "className": "text-red-700 dark:text-red-400 font-semibold"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_failed"
                                         },
@@ -1292,7 +1292,7 @@
                                             "name": "Div",
                                             "if": "{{!!_global.apiTestResult?.error}}",
                                             "props": {
-                                                "className": "text-red-600 dark:text-red-400 break-all"
+                                                "className": "text-red-700 dark:text-red-400 break-all"
                                             },
                                             "text": "{{_global.apiTestResult?.error ?? ''}}"
                                         }

@@ -12,7 +12,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
     <init-local>
@@ -75,20 +83,20 @@
             <div data-ref="cd_002_header_meta" class="page-description flex-center gap-2 flex-wrap">
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.claim_number:</span>
               <span data-ref="cd_003_claim_number" class="font-medium text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.claim_number ?? ''}}</span>
-              <span class="text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-gray-500 dark:text-gray-400">|</span>
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.claim_type:</span>
               <span data-ref="cd_004_claim_type" class="font-medium text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.claim_type_label ?? ''}}</span>
-              <span class="text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-gray-500 dark:text-gray-400">|</span>
               <badge data-type="composite" data-ref="cd_005_status_badge" variant="{{claim?.data?.claim?.status_variant ?? 'default'}}">{{claim?.data?.claim?.status_label ?? ''}}</badge>
               <badge data-type="composite" data-ref="cd_006_guest_badge" data-if="{{claim?.data?.claim?.is_guest_request === true}}" variant="secondary">$t:sirsoft-ecommerce.admin.claim.column.guest_badge</badge>
               <!-- 재활성 뱃지(Q29) — 취소 유형만 값이 온다. 목록 행과 같은 서버 값을 읽는다. -->
               <badge data-type="composite" data-ref="cd_006b_reactivated_badge" data-if="{{!!claim?.data?.claim?.reactivated_at_formatted &amp;&amp; claim?.data?.claim?.is_partially_reactivated !== true}}" variant="info">$t:sirsoft-ecommerce.admin.claim.column.reactivated_badge|at={{claim?.data?.claim?.reactivated_at_formatted}}</badge>
               <!-- 일부만 되살린 취소의 뱃지 -->
               <badge data-type="composite" data-ref="cd_006c_reactivated_partial_badge" data-if="{{!!claim?.data?.claim?.reactivated_at_formatted &amp;&amp; claim?.data?.claim?.is_partially_reactivated === true}}" variant="info">$t:sirsoft-ecommerce.admin.claim.column.reactivated_partial_badge|at={{claim?.data?.claim?.reactivated_at_formatted}}</badge>
-              <span class="text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-gray-500 dark:text-gray-400">|</span>
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.requested_at:</span>
               <span data-ref="cd_007_requested_at" class="font-medium text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.requested_at_formatted ?? ''}}</span>
-              <span class="text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-gray-500 dark:text-gray-400">|</span>
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.claim.detail.requester:</span>
               <!-- e2e:allow 요청자 링크(계획 676) — 운영자가 신청자 이름에서 그 회원 화면으로 바로 간다. 링크 대상은 주문의 주인(`requester_user_uuid`)이다. 관리자 회원 화면은 **uuid** 로 연다 — 숫자 `requester_user_id` 로 만든 링크는 404 였다(주문 상세 `OrderResource.user.uuid` 와 같은 축) — 이 칸이 그리는 이름이 주문자명이므로, `requested_by` 로 걸면 운영자 대리 접수 건에서 화면에 보이는 사람과 다른 회원 상세로 간다. 비회원 주문은 null 이라 아래 Span 이 평문으로 서다 — 누를 곳 없는 링크를 보이면 운영자는 회원이 있다고 오해한다. 선례: `admin_ecommerce_product_review_index.json` 의 작성자 칸(A+if / Span+if 한 쌍). -->
               <a href="/admin/users/{{claim?.data?.claim?.requester_user_uuid}}" data-ref="cd_008_requester" data-if="{{!!claim?.data?.claim?.requester_user_uuid}}" class="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
@@ -98,7 +106,7 @@
                 {{claim?.data?.claim?.requester_name ?? '-'}}
               </a>
               <span data-ref="cd_008_requester_plain" data-if="{{!claim?.data?.claim?.requester_user_uuid}}" class="font-medium text-gray-900 dark:text-gray-100">{{claim?.data?.claim?.requester_name ?? '-'}}</span>
-              <!-- e2e:allow 출처 뱃지는 서버 필드(`request_source`) 하나를 그대로 그리는 표시 전용 노드다 — 판정 로직이 화면에 없다. 그 필드의 3분류(고객·비회원·운영자 접수)는 PHPUnit 이 조합 전건을 덮고(ClaimResourceRequestSourceTest), 렌더는 Vitest 3건이 잠근다(adminClaimDetailRender.test.tsx 「신청자 출처 뱃지·요청자 링크」 — 4차 라운드 D2 해소). 2026-09-16 브라우저로 3종 전건도 확인했다(RF20260915-1707536717 운영자 접수 · RT20260916-0302483148 고객 신청 · RT20260915-1425436901 비회원 신청). 출처 뱃지(계획 676) — 고객 신청·비회원 신청·운영자 접수. 운영자는 셋을 다르게 대한다: 고객 건은 연락처가 계정에 있고, 비회원 건은 주문서 연락처뿐이며, 대리 접수 건은 고객이 철회·수정할 수 없다. 라벨은 서버가 로케일로 풀어 내려준다(`request_source_label`) — 화면이 코드를 매핑하면 3로케일 사본이 하나 더 생긴다. -->
+              <!-- e2e:allow 출처 뱃지는 서버 필드(`request_source`) 하나를 그대로 그리는 표시 전용 노드다 — 판정 로직이 화면에 없다. 그 필드의 3분류(고객·비회원·운영자 접수)는 PHPUnit 이 조합 전건을 덮고(ClaimResourceRequestSourceTest), 렌더는 Vitest 3건이 잠근다(adminClaimDetailRender.test.tsx 「신청자 출처 뱃지·요청자 링크」 — 재검토에서 해소). 2026-09-16 브라우저로 3종 전건도 확인했다(RF20260915-1707536717 운영자 접수 · RT20260916-0302483148 고객 신청 · RT20260915-1425436901 비회원 신청). 출처 뱃지(계획 676) — 고객 신청·비회원 신청·운영자 접수. 운영자는 셋을 다르게 대한다: 고객 건은 연락처가 계정에 있고, 비회원 건은 주문서 연락처뿐이며, 대리 접수 건은 고객이 철회·수정할 수 없다. 라벨은 서버가 로케일로 풀어 내려준다(`request_source_label`) — 화면이 코드를 매핑하면 3로케일 사본이 하나 더 생긴다. -->
               <badge data-type="composite" data-ref="cd_008b_request_source" variant="{{claim?.data?.claim?.request_source === 'admin' ? 'warning' : (claim?.data?.claim?.request_source === 'guest' ? 'secondary' : 'info')}}" size="sm">{{claim?.data?.claim?.request_source_label}}</badge>
               <!-- 판매자 접수·대리 철회를 한 운영자 (계획 §3-11 「머리에 판매자 접수 뱃지와 접수 관리자 이름」) — 관리자 상세 응답에만 실리는 이름이다(고객 응답에는 없다). 누가 고객을 대신했는지 알아야 고객 문의에 답한다. -->
               <span data-ref="cd_008c_requested_by_admin" data-if="{{claim?.data?.claim?.request_source === 'admin' &amp;&amp; !!claim?.data?.claim?.requested_by_admin_name}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.claim.detail.requested_by_admin|name={{claim?.data?.claim?.requested_by_admin_name}}</span>

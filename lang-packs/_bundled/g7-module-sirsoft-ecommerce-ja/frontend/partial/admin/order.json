@@ -122,7 +122,8 @@
         "title": "キャンセル理由",
         "reason": "理由",
         "detail": "詳細理由"
-      }
+      },
+      "quantity_value": "{{count}}個"
     },
     "tabs": {
       "order_info": "注文情報",

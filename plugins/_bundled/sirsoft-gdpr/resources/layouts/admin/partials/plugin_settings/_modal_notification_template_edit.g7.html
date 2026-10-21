@@ -16,6 +16,11 @@
 <partial description="개인정보 연간 통지 채널별 템플릿과 수신자 편집">
   <modal data-type="composite" data-ref="modal_gdpr_notification_template_edit" title="$t:sirsoft-gdpr.notification_definitions.edit_modal.title" size="xl" :closeOnOverlayClick="false">
     <div data-ref="gdpr_template_form_container" data-blur-until-loaded="{{_global.gdpr_notification_template_form_modal?.isSaving}}" class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
+      <on event="unmount">
+        <!-- 창이 닫혀 본문이 내려갈 때(창 머리 닫기·Esc 포함, 어느 갈래로 닫든) 창 이름 공간을 비운다 — 「특정 회원」 검색 결과(이름·이메일)와
+             고른 회원 이름이 다음에 열 때까지 전역에 남지 않게(7.1.1). 이 틀은 조건·반복 없이 창이 열려 있는 동안 내내 붙어 있고, 여는 쪽이 매번 새로 채운다 -->
+        <set-state target="global" :gdpr_notification_template_form_modal="null"/>
+      </on>
       <div class="flex-1 overflow-y-auto space-y-5 pr-1">
         <div data-ref="gdpr_template_validation_error" data-if="{{_global.gdpr_notification_template_form_modal?.errors}}" class="alert-danger">
           <div class="flex gap-3">
@@ -31,8 +36,8 @@
         <div data-ref="gdpr_template_type_channel" class="flex-center flex-wrap gap-2">
           <span class="text-label-subtle font-medium">$t:sirsoft-gdpr.notification_definitions.edit_modal.type_label</span>
           <span class="text-primary text-sm font-semibold">{{$localized(_global.gdpr_notification_template_form_modal?.definition?.name)}}</span>
-          <span class="text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{_global.gdpr_notification_template_form_modal?.definition?.type ?? ''}}</span>
-          <span class="text-sm text-gray-400 dark:text-gray-500">·</span>
+          <span class="text-body font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{_global.gdpr_notification_template_form_modal?.definition?.type ?? ''}}</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400">·</span>
           <span class="text-label-subtle">$t:sirsoft-gdpr.notification_definitions.edit_modal.channel_label</span>
           <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">{{((gdprNotificationChannels?.data?.channels ?? []).find(c => c.id === _global.gdpr_notification_template_form_modal?.template?.channel)?.name ?? _global.gdpr_notification_template_form_modal?.template?.channel)}}</span>
         </div>
@@ -42,7 +47,7 @@
             <div data-each="rcpt, rcptIdx in {{_global.gdpr_notification_template_form_modal?.recipients ?? []}}" class="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2">
               <div class="flex-between">
                 <span class="text-xs font-medium text-purple-700 dark:text-purple-300">$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}</span>
-                <button aria-label="$t:admin.settings.notification_definitions.recipients.remove_rule|index={{rcptIdx + 1}}" type="button" class="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+                <button aria-label="$t:admin.settings.notification_definitions.recipients.remove_rule|index={{rcptIdx + 1}}" type="button" class="p-1 text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">
                   <on type="click">
                     <!-- 이 규칙 한 줄을 뺀다 — 자리(index)로 걸러 **새 배열을 만들어** 갈아 끼운다. -->
                     <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).filter((_, i) => i !== rcptIdx)}}"/>
@@ -103,10 +108,11 @@
                            실패하면 결과를 비워 옛 목록이 남지 않게 한다. -->
                       <api-call :debounce="300" :auth_required="true" target="/api/admin/roles" method="GET">
                         <success>
-                          <set-state target="global" gdpr_notification_template_form_modal.roleSearchResults="{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"/>
+                          <!-- 창이 닫힌 뒤(이름 공간 null) 도착한 응답은 쓰지 않는다 — 점 경로로 쓰면 닫힌 창의 이름 공간이 검색 결과(회원 이름·이메일)를 담은 채 다시 생긴다. 액션 if 는 요청 시점 상태를 보므로 값 식(평가 시점 최신 _global)에서 가른다(7.1.1) -->
+                          <set-state target="global" gdpr_notification_template_form_modal="{{_global.gdpr_notification_template_form_modal == null ? null : ({ roleSearchResults: (response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier })) })}}"/>
                         </success>
                         <fail>
-                          <set-state target="global" :gdpr_notification_template_form_modal.roleSearchResults="[]"/>
+                          <set-state target="global" gdpr_notification_template_form_modal="{{_global.gdpr_notification_template_form_modal == null ? null : ({ roleSearchResults: [] })}}"/>
                         </fail>
                         <query search="{{$args[0]}}" :per_page="50"/>
                       </api-call>
@@ -114,7 +120,7 @@
                     <on event="onChange">
                       <!-- 고른 역할(배열)을 이 규칙 줄에 담는다 — 역할도 여러 개를 고를 수 있어 회원 칸과 값 모양이 같다.
                            표시 이름(display_names)도 같은 순서로 함께 담는다 — 서버는 저장된 값에만 이름을 붙여 주므로, 방금 고른 항목은
-                           검색 결과의 이름을 옮겨 두지 않으면 식별자·UUID 로 보이고 검색어로 걸러지는 순간 목록에서 사라진다(게시판·코어 사본과 같은 결함, 7.1.0 영역 G). -->
+                           검색 결과의 이름을 옮겨 두지 않으면 식별자·UUID 로 보이고 검색어로 걸러지는 순간 목록에서 사라진다(게시판·코어 사본과 같은 결함, 7.1.0). -->
                       <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0], display_names: ($args[0] ?? []).map(v => (r.value ?? []).map(String).includes(String(v)) ? String((r.display_names ?? [])[(r.value ?? []).map(String).indexOf(String(v))] ?? v) : String(((_global.gdpr_notification_template_form_modal?.roleSearchResults ?? []).find(o => String(o.value) === String(v)) ?? {}).label ?? v))} : r)}}"/>
                     </on>
                   </searchable-dropdown>
@@ -138,21 +144,23 @@
                   <searchable-dropdown data-type="composite" aria-label="$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.users_label')}}" data-ref="gdpr_rcpt_users_{{rcptIdx}}" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((uid, i) => ({ value: uid, label: String((rcpt.display_names ?? [])[i] ?? uid) })) : []), ...(_global.gdpr_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.users_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.users_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.users_label" selectedCountLabel="$t:admin.settings.notification_definitions.recipients.users_selected_count|count={{(rcpt.value ?? []).length}}" class="w-full">
                     <on event="onSearch">
                       <!-- 회원 검색 — 역할 검색과 같은 형태다. 이쪽은 여러 명을 고를 수 있어(`multiple`)
-                           이미 고른 회원을 목록 **앞쪽**에 두고 검색 결과에서 그들을 걸러 낸다. 검색칸을 비우면 드롭다운이 빈 검색어로 부르는데, 코어 회원 검색은 keyword 가 비면(공백뿐이어도) 422 로 거절하므로 그때는 요청하지 않는다. -->
+                           이미 고른 회원을 목록 **앞쪽**에 두고 검색 결과에서 그들을 걸러 낸다. 검색칸을 비우면 드롭다운이 빈 검색어로 부르는데, 코어 회원 검색은 keyword 가 비면(공백뿐이어도) 422 로 거절하므로 그때는 요청하지 않는다.
+                           탈퇴 회원은 수신자로 고르지 않는다(exclude_withdrawn) — 연락처가 익명화되고 바깥 채널 발송이 막혀 골라도 받지 못한다(2026-10-18 관찰). -->
                       <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
                         <success>
-                          <set-state target="global" gdpr_notification_template_form_modal.userSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+                          <!-- 창이 닫힌 뒤(이름 공간 null) 도착한 응답은 쓰지 않는다 — 점 경로로 쓰면 닫힌 창의 이름 공간이 검색 결과(회원 이름·이메일)를 담은 채 다시 생긴다. 액션 if 는 요청 시점 상태를 보므로 값 식(평가 시점 최신 _global)에서 가른다(7.1.1) -->
+                          <set-state target="global" gdpr_notification_template_form_modal="{{_global.gdpr_notification_template_form_modal == null ? null : ({ userSearchResults: (response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email })) })}}"/>
                         </success>
                         <fail>
-                          <set-state target="global" :gdpr_notification_template_form_modal.userSearchResults="[]"/>
+                          <set-state target="global" gdpr_notification_template_form_modal="{{_global.gdpr_notification_template_form_modal == null ? null : ({ userSearchResults: [] })}}"/>
                         </fail>
-                        <query keyword="{{$args[0]}}"/>
+                        <query keyword="{{$args[0]}}" exclude_withdrawn="1"/>
                       </api-call>
                     </on>
                     <on event="onChange">
                       <!-- 고른 회원 목록(배열)을 이 규칙 줄에 담는다.
                            표시 이름(display_names)도 같은 순서로 함께 담는다 — 서버는 저장된 값에만 이름을 붙여 주므로, 방금 고른 항목은
-                           검색 결과의 이름을 옮겨 두지 않으면 식별자·UUID 로 보이고 검색어로 걸러지는 순간 목록에서 사라진다(게시판·코어 사본과 같은 결함, 7.1.0 영역 G). -->
+                           검색 결과의 이름을 옮겨 두지 않으면 식별자·UUID 로 보이고 검색어로 걸러지는 순간 목록에서 사라진다(게시판·코어 사본과 같은 결함, 7.1.0). -->
                       <set-state target="global" gdpr_notification_template_form_modal.recipients="{{(_global.gdpr_notification_template_form_modal?.recipients ?? []).map((r, i) => i === rcptIdx ? {...r, value: $args[0], display_names: ($args[0] ?? []).map(v => (r.value ?? []).map(String).includes(String(v)) ? String((r.display_names ?? [])[(r.value ?? []).map(String).indexOf(String(v))] ?? v) : String(((_global.gdpr_notification_template_form_modal?.userSearchResults ?? []).find(o => String(o.value) === String(v)) ?? {}).label ?? v))} : r)}}"/>
                     </on>
                   </searchable-dropdown>
@@ -282,9 +290,12 @@
           </button>
         </div>
         <div class="flex gap-2">
+          <!-- 취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다 -->
           <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.gdpr_notification_template_form_modal?.isSaving ?? false}}">
             <on type="click">
               <close-modal target="modal_gdpr_notification_template_edit"/>
+              <!-- 취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1) -->
+              <set-state target="global" :gdpr_notification_template_form_modal="null"/>
             </on>
             $t:common.cancel
           </button>

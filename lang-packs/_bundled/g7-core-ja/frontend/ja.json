@@ -5,6 +5,9 @@
     },
     "assets": {
       "$partial": "partial/assets.json"
+    },
+    "navigation": {
+      "leave_confirm": "保存されていない変更があります。このページを離れると入力した内容は失われます。移動しますか?"
     }
   },
   "layout_editor": {

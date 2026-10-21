@@ -1,7 +1,12 @@
+// e2e:allow 인라인 픽스처 렌더 시험 — 실 레이아웃 변경 없음(픽스처에서 미사용 창 제거만). 주문서 브라우저 축은 7.1.1 캠페인 재실측이 덮는다.
 /**
  * 체크아웃(주문서) 레이아웃 렌더링 테스트
  *
  * createLayoutTest() 유틸리티를 사용한 실제 렌더링 기반 테스트입니다.
+ * 실 레이아웃이 아니라 인라인 픽스처를 렌더한다(실 주문서 레이아웃은 sirsoft-basic 실구조 시험이 덮는다).
+ * 7.1.1: 어디서도 열리지 않던 중복 불가 쿠폰 확인 창(exclusiveCouponConfirm)을 실 레이아웃에서 지우며 픽스처의 같은 창·시험도 걷었다.
+ *
+ * @scenario-manifest tests/scenarios/checkout-layout-fixture.yaml
  *
  * @vitest-environment jsdom
  */
@@ -210,20 +215,6 @@ const checkoutLayout = {
             ],
         },
     ],
-    modals: {
-        exclusiveCouponConfirm: {
-            type: 'composite',
-            name: 'Modal',
-            props: { title: '$t:sirsoft-ecommerce.shop.checkout.exclusive_coupon_title', size: 'medium' },
-            children: [
-                {
-                    type: 'basic',
-                    name: 'P',
-                    text: '$t:sirsoft-ecommerce.shop.checkout.exclusive_coupon_message',
-                },
-            ],
-        },
-    },
     actions: [
         {
             id: 'submitOrder',
@@ -396,8 +387,6 @@ describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
                             pay_button: '결제하기',
                             payment_agreement: '위 내용을 확인하였으며, 결제에 동의합니다.',
                             points_used: '마일리지 사용',
-                            exclusive_coupon_title: '배타적 쿠폰 적용',
-                            exclusive_coupon_message: '이 쿠폰은 다른 쿠폰과 함께 사용할 수 없습니다.',
                             product_coupon_1: '상품 쿠폰 1 선택',
                             product_coupon_2: '상품 쿠폰 2 선택',
                         },
@@ -424,12 +413,16 @@ describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
     });
 
     describe('레이아웃 구조 검증', () => {
+        // @scenario aspect=structure
+        // @effects fixture_layout_loads
         it('레이아웃 정보가 올바르게 로드된다', () => {
             const info = testUtils.getLayoutInfo();
             expect(info.name).toBe('shop/checkout');
             expect(info.version).toBe('1.0.0');
         });
 
+        // @scenario aspect=structure
+        // @effects fixture_declares_data_sources
         it('checkoutData 데이터소스가 정의되어 있다', () => {
             const dataSources = testUtils.getDataSources();
             expect(dataSources.length).toBeGreaterThan(0);
@@ -441,6 +434,8 @@ describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
             expect(checkoutDs?.method).toBe('GET');
         });
 
+        // @scenario aspect=structure
+        // @effects fixture_declares_data_sources
         it('paymentMethods 정적 데이터소스가 정의되어 있다', () => {
             const dataSources = testUtils.getDataSources();
             const paymentDs = dataSources.find((ds: any) => ds.id === 'paymentMethods');
@@ -450,13 +445,8 @@ describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
             expect(paymentDs?.data).toHaveLength(2);
         });
 
-        it('modals에 exclusiveCouponConfirm이 정의되어 있다', () => {
-            const layout = checkoutLayout as any;
-            expect(layout.modals).toBeDefined();
-            expect(layout.modals.exclusiveCouponConfirm).toBeDefined();
-            expect(layout.modals.exclusiveCouponConfirm.name).toBe('Modal');
-        });
-
+        // @scenario aspect=structure
+        // @effects fixture_declares_submit_action
         it('submitOrder 액션이 정의되어 있다', () => {
             const layout = checkoutLayout as any;
             expect(Array.isArray(layout.actions)).toBe(true);
@@ -468,6 +458,8 @@ describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
     });
 
     describe('렌더링 및 상태 테스트', () => {
+        // @scenario aspect=render
+        // @effects fixture_renders_with_mocked_api
         it('API 모킹 후 렌더링이 성공한다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },
@@ -478,6 +470,8 @@ describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
             expect(testUtils.getState()._local).toBeDefined();
         });
 
+        // @scenario aspect=render
+        // @effects fixture_initial_state_applies
         it('초기 상태(paymentMethod)가 올바르게 설정된다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },
@@ -489,6 +483,8 @@ describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
             expect(state._local.paymentMethod).toBe('card');
         });
 
+        // @scenario aspect=state
+        // @effects fixture_state_updates
         it('결제 방법을 변경할 수 있다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },
@@ -502,6 +498,8 @@ describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
             expect(state._local.paymentMethod).toBe('vbank');
         });
 
+        // @scenario aspect=render
+        // @effects fixture_cart_button_navigates
         it('장바구니 버튼 클릭 시 /cart로 이동한다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },
@@ -519,33 +517,9 @@ describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
         });
     });
 
-    describe('모달 테스트', () => {
-        it('배타적 쿠폰 확인 모달을 열 수 있다', async () => {
-            testUtils.mockApi('checkoutData', {
-                response: { data: mockCheckoutData },
-            });
-
-            await testUtils.render();
-
-            testUtils.openModal('exclusiveCouponConfirm');
-            expect(testUtils.getModalStack()).toContain('exclusiveCouponConfirm');
-        });
-
-        it('모달을 닫을 수 있다', async () => {
-            testUtils.mockApi('checkoutData', {
-                response: { data: mockCheckoutData },
-            });
-
-            await testUtils.render();
-
-            testUtils.openModal('exclusiveCouponConfirm');
-            testUtils.closeModal('exclusiveCouponConfirm');
-
-            expect(testUtils.getModalStack()).not.toContain('exclusiveCouponConfirm');
-        });
-    });
-
     describe('API 에러 처리', () => {
+        // @scenario aspect=error
+        // @effects fixture_survives_api_error
         it('API 에러 시에도 레이아웃이 유지된다', async () => {
             testUtils.mockApiError('checkoutData', 500, '서버 오류');
 
@@ -555,6 +529,8 @@ describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
             expect(state._local).toBeDefined();
         });
 
+        // @scenario aspect=error
+        // @effects fixture_survives_api_error
         it('404 에러 시에도 레이아웃이 유지된다', async () => {
             testUtils.mockApiError('checkoutData', 404, '체크아웃 정보를 찾을 수 없습니다');
 
@@ -566,6 +542,8 @@ describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
     });
 
     describe('쿠폰 상태 관리', () => {
+        // @scenario aspect=state
+        // @effects fixture_state_updates
         it('상품별 쿠폰 상태를 설정할 수 있다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },
@@ -580,6 +558,8 @@ describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
             expect(state._local.itemCoupons).toEqual({ 101: [1] });
         });
 
+        // @scenario aspect=state
+        // @effects fixture_state_updates
         it('주문/배송 쿠폰 상태를 설정할 수 있다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },
@@ -597,6 +577,8 @@ describe('checkout.g7.html (체크아웃 메인 레이아웃)', () => {
     });
 
     describe('마일리지 상태 관리', () => {
+        // @scenario aspect=state
+        // @effects fixture_state_updates
         it('사용 마일리지 상태를 설정할 수 있다', async () => {
             testUtils.mockApi('checkoutData', {
                 response: { data: mockCheckoutData },

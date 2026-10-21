@@ -32,6 +32,19 @@
                 "type": "layout",
                 "name": "Flex",
                 "blur_until_loaded": "{{_global?.currentUser?.uuid}}",
+                "lifecycle": {
+                    "onUnmount": [
+                        {
+                            "comment": "화면을 떠날 때도 단계 상태(인증 요청 번호·비밀번호 변경 요청 번호)를 비운다 — 진입 때 되돌리는 것만으로는 다른 화면에 머무는 동안\n             전역에 남는다. 쓰임새(이 화면의 2·3단계 요청)가 끝난 값이다(7.1.1).",
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "twoFactor": null,
+                                "passwordChange": null
+                            }
+                        }
+                    ]
+                },
                 "props": {
                     "justify": "center",
                     "align": "start",
@@ -172,7 +185,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "mt-2 text-center text-xs text-gray-400 dark:text-gray-500"
+                                            "className": "mt-2 text-center text-xs text-gray-500 dark:text-gray-400"
                                         },
                                         "text": "$t:auth.guest_checkout.hint"
                                     }

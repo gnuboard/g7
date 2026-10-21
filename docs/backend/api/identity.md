@@ -92,7 +92,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | status | string | `verified` | 인증 시도 결과 상태 (requested/sent/processing/verified/failed/expired/cancelled/policy_violation_logged) |
 | attempts | integer | `2` | 현재까지 누적된 검증 시도 횟수 |
 | max_attempts | integer | `5` | 허용되는 최대 검증 시도 횟수 (초과 시 실패 처리) |
-| ip_address | string | `59.16.7.205` | 요청/행위가 발생한 IP 주소 |
+| ip_address | string | `203.0.113.10` | 요청/행위가 발생한 IP 주소 |
 | user_agent | string | `Mozilla/5.0 (Windows NT 10.0; Win64; …` | 요청 클라이언트의 User-Agent 문자열 |
 | origin_type | string | `policy` | 인증 트리거 출처 유형 (route/hook/policy/middleware/api/custom/system — IdentityOriginType) |
 | origin_identifier | string | `sirsoft-ecommerce` | 실제 트리거 경로/훅명 (예: PUT /api/me/password, core.user.before_update) |
@@ -125,7 +125,7 @@ HTTP/1.1 200
                 "status": "verified",
                 "attempts": 2,
                 "max_attempts": 5,
-                "ip_address": "59.16.7.205",
+                "ip_address": "203.0.113.10",
                 "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
                 "origin_type": "policy",
                 "origin_identifier": "sirsoft-ecommerce",
@@ -150,7 +150,7 @@ HTTP/1.1 200
                 "status": "verified",
                 "attempts": 3,
                 "max_attempts": 5,
-                "ip_address": "180.182.50.7",
+                "ip_address": "203.0.113.10",
                 "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
                 "origin_type": "policy",
                 "origin_identifier": "sirsoft-ecommerce",

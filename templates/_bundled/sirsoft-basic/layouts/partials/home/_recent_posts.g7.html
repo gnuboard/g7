@@ -22,19 +22,19 @@
         <div class="flex items-center justify-between gap-2 text-xs">
           <div class="flex items-center gap-2 flex-1 min-w-0">
             <span class="text-blue-600 dark:text-blue-400 shrink-0 truncate max-w-32">{{post.board_name}}</span>
-            <icon data-if="{{post.is_secret}}" name="lock" class="text-sm text-gray-400 dark:text-gray-500 shrink-0"/>
+            <icon data-if="{{post.is_secret}}" name="lock" class="text-sm text-gray-500 dark:text-gray-400 shrink-0"/>
             <span class="min-w-0 wrap-anywhere text-sm font-medium text-gray-900 dark:text-white text-left line-clamp-1">{{post.title}}</span>
             <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다 -->
             <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post.id}}" boardSlug="{{post.board_slug}}" context="home_recent"/>
-            <span data-if="{{post.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded shrink-0">N</span>
-            <span data-if="{{post.comment_count > 0}}" class="text-xs font-medium text-blue-500 dark:text-blue-400 shrink-0">[{{post.comment_count}}]</span>
-            <span data-if="{{(post.reaction_total ?? 0) > 0}}" class="text-rose-500 dark:text-rose-400 text-xs font-medium shrink-0 inline-flex items-center gap-0.5"><icon name="fa-solid fa-thumbs-up" class="text-xs"/><span>{{post.reaction_total}}</span></span>
+            <span data-if="{{post.is_new}}" class="px-1.5 py-0.5 text-xs bg-red-600 dark:bg-red-600 text-white rounded shrink-0">N</span>
+            <span data-if="{{post.comment_count > 0}}" class="text-xs font-medium text-blue-600 dark:text-blue-400 shrink-0">[{{post.comment_count}}]</span>
+            <span data-if="{{(post.reaction_total ?? 0) > 0}}" class="text-rose-700 dark:text-rose-300 text-xs font-medium shrink-0 inline-flex items-center gap-0.5"><icon name="fa-solid fa-thumbs-up" class="text-xs"/><span>{{post.reaction_total}}</span></span>
           </div>
           <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0" title="{{post.created_at ?? ''}}">{{post.created_at_formatted ?? ''}}</span>
         </div>
       </a>
     </div>
-    <div data-if="{{!recent_posts.data || recent_posts.data.length === 0}}" class="text-center py-8 text-gray-500 dark:text-gray-400 flex-grow flex flex-col items-center justify-center">
+    <div data-if="{{recent_posts !== undefined &amp;&amp; (!recent_posts.data || recent_posts.data.length === 0)}}" class="text-center py-8 text-gray-800 dark:text-gray-300 flex-grow flex flex-col items-center justify-center">
       <icon name="inbox" class="text-[2rem] mx-auto mb-2 opacity-50"/>
       <p class="text-sm">$t:home.no_posts</p>
     </div>

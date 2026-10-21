@@ -285,12 +285,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "text-xs text-gray-600 dark:text-gray-300"
                             }
                         }
                     },
                     "props": {
-                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                        "className": "text-sm text-gray-600 dark:text-gray-300"
                     },
                     "text": "$t:shop.checkout.card_payment_info"
                 }
@@ -516,7 +516,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-2"
+                                "className": "text-xs text-gray-600 dark:text-gray-400 mt-2"
                             },
                             "text": "$t:shop.checkout.refund_bank_partial_notice"
                         }
@@ -579,7 +579,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-1"
+                                        "className": "text-red-600 dark:text-red-300 ml-1"
                                     },
                                     "text": "*"
                                 }
@@ -635,7 +635,7 @@
                                                             "props": {
                                                                 "name": "{{_local.selectedDbank?.bank_code === bank.bank_code ? 'circle-check' : 'circle'}}",
                                                                 "iconStyle": "{{_local.selectedDbank?.bank_code === bank.bank_code ? 'solid' : 'regular'}}",
-                                                                "className": "{{_local.selectedDbank?.bank_code === bank.bank_code ? 'text-xl text-blue-500 flex-shrink-0' : 'text-xl text-gray-300 dark:text-gray-600 flex-shrink-0'}}"
+                                                                "className": "{{_local.selectedDbank?.bank_code === bank.bank_code ? 'text-xl text-blue-500 dark:text-blue-400 flex-shrink-0' : 'text-xl text-gray-500 dark:text-gray-400 flex-shrink-0'}}"
                                                             }
                                                         },
                                                         {
@@ -657,7 +657,7 @@
                                                                     "type": "basic",
                                                                     "name": "P",
                                                                     "props": {
-                                                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                                                        "className": "text-sm text-gray-600 dark:text-gray-300"
                                                                     },
                                                                     "text": "{{bank.account_number}} ({{bank.account_holder}})"
                                                                 }
@@ -676,7 +676,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['dbank.bank_code']}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1 block"
+                                "className": "text-red-600 dark:text-red-300 text-xs mt-1 block"
                             },
                             "text": "{{_local.errors?.['dbank.bank_code']?.[0] ?? ''}}"
                         }
@@ -713,7 +713,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-1"
+                                        "className": "text-red-600 dark:text-red-300 ml-1"
                                     },
                                     "text": "*"
                                 }
@@ -754,7 +754,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.depositor_name}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1 block"
+                                "className": "text-red-600 dark:text-red-300 text-xs mt-1 block"
                             },
                             "text": "{{_local.errors?.depositor_name?.[0] ?? ''}}"
                         }
@@ -909,7 +909,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-xs text-amber-600 dark:text-amber-400 mt-3"
+                        "className": "text-xs text-amber-700 dark:text-amber-400 mt-3"
                     },
                     "text": "$t:shop.checkout.dbank_due_notice|days={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}|count={{Number(paymentSettings.data?.order_settings?.auto_cancel_days) > 0 ? Number(paymentSettings.data?.order_settings?.auto_cancel_days) : 3}}"
                 }

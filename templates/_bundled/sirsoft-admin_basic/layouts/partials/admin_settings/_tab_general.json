@@ -68,7 +68,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-500 ml-1"
+                                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                                     },
                                                     "text": "*"
                                                 },
@@ -91,7 +91,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "name": "general.site_name",
-                                                "placeholder": "그누보드7",
+                                                "placeholder": "$t:admin.brand_name",
                                                 "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['general.site_name'] === true}}",
                                                 "className": "input {{_local.errors?.['general.site_name'] ? 'input-error' : ''}}"
                                             }
@@ -128,7 +128,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-500 ml-1"
+                                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                                     },
                                                     "text": "*"
                                                 },
@@ -216,7 +216,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-red-500 ml-1"
+                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                             },
                                             "text": "*"
                                         }
@@ -412,7 +412,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-500 ml-1"
+                                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                                     },
                                                     "text": "*"
                                                 },
@@ -473,7 +473,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-500 ml-1"
+                                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                                     },
                                                     "text": "*"
                                                 },
@@ -627,7 +627,7 @@
                             "name": "P",
                             "if": "{{_local.asset_url_mode_detect_status === 'extension'}}",
                             "props": {
-                                "className": "mt-2 text-sm text-green-600 dark:text-green-400"
+                                "className": "mt-2 text-sm text-green-700 dark:text-green-400"
                             },
                             "text": "$t:admin.settings.general.asset_url_mode_detect_extension"
                         },
@@ -637,7 +637,7 @@
                             "name": "P",
                             "if": "{{_local.asset_url_mode_detect_status === 'extensionless'}}",
                             "props": {
-                                "className": "mt-2 text-sm text-amber-600 dark:text-amber-400"
+                                "className": "mt-2 text-sm text-amber-700 dark:text-amber-400"
                             },
                             "text": "$t:admin.settings.general.asset_url_mode_detect_extensionless"
                         },
@@ -899,7 +899,7 @@
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}",
                                                 "aria-disabled": "{{_computed.isReadOnly || !(staticCacheStatus?.data?.publishable ?? false)}}",
-                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white dark:text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
                                             },
                                             "text": "$t:admin.settings.general.static_cache_republish_now"
                                         }

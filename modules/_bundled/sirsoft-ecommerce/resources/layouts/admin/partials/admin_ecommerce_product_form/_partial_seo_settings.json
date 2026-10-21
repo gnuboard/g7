@@ -13,7 +13,7 @@
     "children": [
         {
             "type": "basic",
-            "name": "Div",
+            "name": "Button",
             "actions": [
                 {
                     "comment": "구획 접기/펼치기",
@@ -26,7 +26,9 @@
                 }
             ],
             "props": {
-                "className": "card-header"
+                "type": "button",
+                "className": "flex w-full justify-start text-left card-header",
+                "aria-expanded": "{{_local.ui.seoExpanded !== false}}"
             },
             "children": [
                 {
@@ -50,7 +52,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.seoExpanded !== false ? 'rotate-180' : ''}}"
+                        "className": "admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.seoExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
             ]
@@ -138,7 +140,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-400 dark:text-gray-500"
+                                                "className": "text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "{{_local.form.seo_sync_title ? ($localized(_local.form.name) || '').length : ($localized(_local.form.meta_title) || '').length}}/70"
                                         }
@@ -166,7 +168,7 @@
                                                             "params": {
                                                                 "target": "local",
                                                                 "form.seo_sync_title": "{{!_local.form.seo_sync_title}}",
-                                                                "hasChanges": "{{!!route?.itemCode}}"
+                                                                "hasChanges": true
                                                             }
                                                         },
                                                         {
@@ -286,7 +288,7 @@
                                                             "params": {
                                                                 "target": "local",
                                                                 "form.seo_sync_description": "{{!_local.form.seo_sync_description}}",
-                                                                "hasChanges": "{{!!route?.itemCode}}"
+                                                                "hasChanges": true
                                                             }
                                                         },
                                                         {
@@ -346,7 +348,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": "{{!!route?.itemCode}}"
+                                                "hasChanges": true
                                             }
                                         }
                                     ],
@@ -389,7 +391,7 @@
                                     "params": {
                                         "target": "local",
                                         "form.use_main_image_for_og": "{{!(_local.form.use_main_image_for_og ?? true)}}",
-                                        "hasChanges": "{{!!route?.itemCode}}"
+                                        "hasChanges": true
                                     }
                                 }
                             ],

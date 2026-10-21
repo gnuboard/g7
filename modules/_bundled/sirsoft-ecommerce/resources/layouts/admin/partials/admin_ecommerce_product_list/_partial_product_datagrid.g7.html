@@ -10,12 +10,13 @@
   다른 쪽도 함께 고쳐야 한다(한쪽만 고치면 화면 폭에 따라 동작이 갈린다). -->
 <partial>
   <div data-ref="table_card" class="p-0 md:p-0">
-    <data-grid data-type="composite" pageHref="/admin/ecommerce/products?page={page}" :pageHrefMergeQuery="true" data-ref="product_datagrid" rowLabelField="name_localized" data="{{products?.data?.data}}" idField="id" :sortable="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{products?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{products?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{products?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" :showColumnSelector="false" visibleColumns="{{_local.visibleColumns}}" emptyMessage="$t:sirsoft-ecommerce.admin.product.table.no_data" actionsColumnHeader="$t:sirsoft-ecommerce.admin.product.table.column.actions" columnSelectorText="$t:common.column_selector" selectedCountText="" :responsiveBreakpoint="768">
+    <data-grid data-type="composite" pageHref="/admin/ecommerce/products?page={page}" :pageHrefMergeQuery="true" data-ref="product_datagrid" rowLabelField="name_localized" data="{{products?.data?.data}}" idField="id" :sortable="true" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{products?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{products?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{products?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" :showColumnSelector="false" visibleColumns="{{_local.visibleColumns}}" emptyMessage="{{products === undefined ? '' : $t('sirsoft-ecommerce.admin.product.table.no_data')}}" actionsColumnHeader="$t:sirsoft-ecommerce.admin.product.table.column.actions" columnSelectorText="$t:common.column_selector" selectedCountText="" :responsiveBreakpoint="768">
+      <blur-until-loaded sources="products"/>
       <column field="thumbnail" header="$t:sirsoft-ecommerce.admin.product.table.column.image" width="140px" :sortable="false" :required="true">
         <cell>
           <div class="w-full aspect-square md:w-20 md:h-20 flex-shrink-0 {{row.thumbnail_url ? '' : 'bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center'}}">
             <img data-if="{{row.thumbnail_url}}" src="{{row.thumbnail_url}}" alt="{{row.name_localized ?? ''}}" class="w-full h-full aspect-square object-cover rounded"/>
-            <icon data-if="{{!row.thumbnail_url}}" name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
+            <icon data-if="{{!row.thumbnail_url}}" name="image" class="text-2xl text-gray-500 dark:text-gray-400"/>
           </div>
         </cell>
       </column>
@@ -38,7 +39,7 @@
         <cell>
           <div class="stack-flush gap-0.5">
             <div data-if="{{row.categories_with_path &amp;&amp; row.categories_with_path.length > 0}}" data-each="cat in row.categories_with_path" class="text-xs text-gray-600 dark:text-gray-400 truncate">{{cat.path_string}}</div>
-            <span data-if="{{!row.categories_with_path || row.categories_with_path.length === 0}}" class="text-xs text-gray-400 dark:text-gray-500">-</span>
+            <span data-if="{{!row.categories_with_path || row.categories_with_path.length === 0}}" class="text-xs text-gray-500 dark:text-gray-400">-</span>
           </div>
         </cell>
       </column>
@@ -61,7 +62,7 @@
                 <action handler="sirsoft-ecommerce.updateProductField" :debounce="300" productId="{{row.id}}" field="selling_price" value="{{$event.target.value}}"/>
               </on>
             </input>
-            <span data-if="{{(_local.productFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.field === 'selling_price')}}" class="text-xs text-red-500 dark:text-red-400 mt-1">$t:sirsoft-ecommerce.admin.product.validation.selling_price_exceeds_list_price</span>
+            <span data-if="{{(_local.productFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.field === 'selling_price')}}" class="text-xs text-red-600 dark:text-red-400 mt-1">$t:sirsoft-ecommerce.admin.product.validation.selling_price_exceeds_list_price</span>
             <!-- 다통화 환산값 (읽기전용 — base 판매가 기준 환율 자동 계산, 장바구니 패턴) -->
             <div data-if="{{(_computed.currencyDisplayColumns ?? []).length > 0}}" class="flex flex-col gap-0.5 mt-1">
               <span data-each="currencyCol in {{_computed.currencyDisplayColumns}}" class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{row.multi_currency_selling_price?.[currencyCol.currencyCode]?.formatted ?? ''}}</span>
@@ -72,14 +73,14 @@
       <column field="stock_quantity" header="$t:sirsoft-ecommerce.admin.product.table.column.stock" width="120px" :sortable="true" :required="true">
         <cell>
           <div class="flex items-center gap-1">
-            <input type="number" aria-label="$t:defer:common.row_cell|row={{$rowLabel}}|column={{$t('sirsoft-ecommerce.admin.product.table.column.stock')}}" min="0" value="{{row.stock_quantity}}" disabled="{{row.has_options || row.abilities?.can_update !== true}}" class="{{row.has_options ? (row.stock_quantity !== row.option_stock_sum ? 'w-16 px-2 py-1 border border-orange-400 dark:border-orange-500 rounded text-sm text-right text-orange-600 dark:text-orange-400 font-medium bg-orange-50 dark:bg-orange-900/20 cursor-not-allowed opacity-60' : 'w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-right bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed') : (row.is_below_safe_stock ? 'w-16 px-2 py-1 border border-red-300 dark:border-red-600 rounded text-sm text-right text-red-500 dark:text-red-400 font-medium bg-white dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed' : 'w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-right bg-white dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed')}}" title="{{row.has_options ? '$t:sirsoft-ecommerce.admin.product.stock_options_hint' : ''}}">
+            <input type="number" aria-label="$t:defer:common.row_cell|row={{$rowLabel}}|column={{$t('sirsoft-ecommerce.admin.product.table.column.stock')}}" min="0" value="{{row.stock_quantity}}" disabled="{{row.has_options || row.abilities?.can_update !== true}}" class="{{row.has_options ? (row.stock_quantity !== row.option_stock_sum ? 'w-16 px-2 py-1 border border-orange-400 dark:border-orange-500 rounded text-sm text-right text-orange-600 dark:text-orange-400 font-medium bg-orange-50 dark:bg-orange-900/20 cursor-not-allowed opacity-60' : 'w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-right bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed') : (row.is_below_safe_stock ? 'w-16 px-2 py-1 border border-red-300 dark:border-red-600 rounded text-sm text-right text-red-600 dark:text-red-400 font-medium bg-white dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed' : 'w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm text-right bg-white dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed')}}" title="{{row.has_options ? '$t:sirsoft-ecommerce.admin.product.stock_options_hint' : ''}}">
               <on type="change">
                 <!-- 재고. 옵션이 있는 상품은 옵션별 재고가 정본이고 이 칸은 그 합계 자리다. -->
                 <action handler="sirsoft-ecommerce.updateProductField" :debounce="300" productId="{{row.id}}" field="stock_quantity" value="{{$event.target.value}}"/>
               </on>
             </input>
             <div data-ref="stock_mismatch_warning_{{row.id}}" data-if="{{row.has_options &amp;&amp; row.stock_quantity !== row.option_stock_sum}}" class="relative group">
-              <icon name="exclamation-triangle" class="text-base text-orange-500 dark:text-orange-400 cursor-help"/>
+              <icon name="exclamation-triangle" class="text-base text-orange-600 dark:text-orange-400 cursor-help"/>
               <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-900 dark:bg-gray-700 rounded whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity z-10">$t:sirsoft-ecommerce.admin.product.stock_mismatch_warning</div>
             </div>
           </div>
@@ -144,7 +145,7 @@
             </on>
             {{row.shipping_policy_name}}
           </a>
-          <span data-if="{{!row.shipping_policy_id}}" class="text-sm text-gray-400 dark:text-gray-500">-</span>
+          <span data-if="{{!row.shipping_policy_id}}" class="text-sm text-gray-500 dark:text-gray-400">-</span>
         </cell>
       </column>
       <column field="created_at" header="$t:sirsoft-ecommerce.admin.product.table.column.created_at" width="100px" :sortable="true" :required="true">
@@ -158,7 +159,7 @@
         </cell>
       </column>
       <prop name="rowActions">
-        <item id="edit" href="/admin/ecommerce/products/{{row.product_code ?? row.id}}/edit" label="$t:sirsoft-ecommerce.admin.product.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
+        <item id="edit" href="/admin/ecommerce/products/{{row.product_code ?? row.id}}/edit" :mergeQuery="true" label="$t:sirsoft-ecommerce.admin.product.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
         <item id="copy" label="$t:sirsoft-ecommerce.admin.product.action.copy" iconName="fa-regular fa-copy" disabled="{{products?.data?.abilities?.can_create !== true}}"/>
         <item id="divider" :divider="true"/>
         <item id="delete" label="$t:sirsoft-ecommerce.admin.product.action.delete" iconName="fa-regular fa-trash-can" variant="danger" disabledField="abilities.can_delete"/>
@@ -175,7 +176,7 @@
         <div class="admin-page-content-fluid-compact">
           <div data-ref="options_loading_{{row.id}}" data-if="{{(optionsLoadingIds || []).some(id => id + '' === row.id + '')}}" class="text-center py-4 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.loading</div>
           <div data-ref="options_error_{{row.id}}" data-if="{{(optionsErrorIds || []).some(id => id + '' === row.id + '')}}" class="flex items-center justify-center gap-3 py-4">
-            <span class="text-red-500 dark:text-red-400">$t:sirsoft-ecommerce.admin.product.table.options.load_failed</span>
+            <span class="text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.admin.product.table.options.load_failed</span>
             <!-- 옵션 목록을 다시 불러온다. 실패한 행만 다시 시도하므로 나머지 행의 펼침 상태는 건드리지 않는다 -->
             <button type="button" class="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
               <on type="click" event="onClick">
@@ -232,7 +233,7 @@
                         <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="selling_price" value="{{$event.target.value}}"/>
                       </on>
                     </input>
-                    <span data-if="{{(optionFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.optionId === String(option.id) &amp;&amp; e.field === 'selling_price')}}" class="text-xs text-red-500 dark:text-red-400 mt-1">$t:sirsoft-ecommerce.admin.product.validation.selling_price_exceeds_list_price</span>
+                    <span data-if="{{(optionFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.optionId === String(option.id) &amp;&amp; e.field === 'selling_price')}}" class="text-xs text-red-600 dark:text-red-400 mt-1">$t:sirsoft-ecommerce.admin.product.validation.selling_price_exceeds_list_price</span>
                   </div>
                 </div>
                 <div class="mb-2">
@@ -286,14 +287,14 @@
                       </on>
                     </checkbox>
                   </th>
-                  <th data-ref="option_default_header" class="px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 w-14">$t:sirsoft-ecommerce.admin.product.table.options.column.is_default</th>
-                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.name</th>
-                  <th data-if="{{(visibleColumns || []).includes('list_price_formatted')}}" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.list_price</th>
-                  <th data-if="{{(visibleColumns || []).includes('selling_price_formatted')}}" class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.selling_price</th>
-                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.sku</th>
-                  <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.stock</th>
-                  <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.safe_stock</th>
-                  <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.active</th>
+                  <th data-ref="option_default_header" class="px-3 py-2 text-center text-xs font-medium text-gray-600 dark:text-gray-400 w-14">$t:sirsoft-ecommerce.admin.product.table.options.column.is_default</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.name</th>
+                  <th data-if="{{(visibleColumns || []).includes('list_price_formatted')}}" class="px-3 py-2 text-left text-xs font-medium text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.list_price</th>
+                  <th data-if="{{(visibleColumns || []).includes('selling_price_formatted')}}" class="px-3 py-2 text-left text-xs font-medium text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.selling_price</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.sku</th>
+                  <th class="px-3 py-2 text-center text-xs font-medium text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.stock</th>
+                  <th class="px-3 py-2 text-center text-xs font-medium text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.safe_stock</th>
+                  <th class="px-3 py-2 text-center text-xs font-medium text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.table.options.column.active</th>
                 </tr>
               </thead>
               <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -339,9 +340,9 @@
                             <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="selling_price" value="{{$event.target.value}}"/>
                           </on>
                         </input>
-                        <span data-if="{{option.price_adjustment !== undefined &amp;&amp; option.price_adjustment !== 0}}" class="{{option.price_adjustment > 0 ? 'text-xs font-medium text-red-500 dark:text-red-400' : 'text-xs font-medium text-blue-500 dark:text-blue-400'}}">{{option.price_adjustment_formatted}}</span>
+                        <span data-if="{{option.price_adjustment !== undefined &amp;&amp; option.price_adjustment !== 0}}" class="{{option.price_adjustment > 0 ? 'text-xs font-medium text-red-600 dark:text-red-400' : 'text-xs font-medium text-blue-600 dark:text-blue-400'}}">{{option.price_adjustment_formatted}}</span>
                       </div>
-                      <span data-if="{{(optionFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.optionId === String(option.id) &amp;&amp; e.field === 'selling_price')}}" class="text-xs text-red-500 dark:text-red-400 mt-1">$t:sirsoft-ecommerce.admin.product.validation.selling_price_exceeds_list_price</span>
+                      <span data-if="{{(optionFieldErrors || []).some(e => e.productId === String(row.id) &amp;&amp; e.optionId === String(option.id) &amp;&amp; e.field === 'selling_price')}}" class="text-xs text-red-600 dark:text-red-400 mt-1">$t:sirsoft-ecommerce.admin.product.validation.selling_price_exceeds_list_price</span>
                       <!-- 다통화 환산값 (읽기전용 — base 판매가 기준 환율 자동 계산, 장바구니 패턴) -->
                       <div data-if="{{(currencyDisplayColumns ?? []).length > 0}}" class="flex flex-col gap-0.5 mt-1">
                         <span data-each="currencyCol in currencyDisplayColumns" class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{option.multi_currency_selling_price?.[currencyCol.currencyCode]?.formatted ?? ''}}</span>
@@ -357,7 +358,7 @@
                     </input>
                   </td>
                   <td class="px-3 py-2">
-                    <input type="number" aria-label="$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.stock')}}" min="0" value="{{option.stock_quantity}}" data-testid="option-stock-{{option.id}}" disabled="{{row.abilities?.can_update !== true}}" class="w-16 px-2 py-1 text-sm text-center border {{option.is_below_safe_stock ? 'border-red-300 dark:border-red-600 text-red-500 dark:text-red-400 font-medium' : 'border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'}} rounded bg-white dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <input type="number" aria-label="$t:defer:common.row_cell|row={{option.option_name_localized || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.table.options.column.stock')}}" min="0" value="{{option.stock_quantity}}" data-testid="option-stock-{{option.id}}" disabled="{{row.abilities?.can_update !== true}}" class="w-16 px-2 py-1 text-sm text-center border {{option.is_below_safe_stock ? 'border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 font-medium' : 'border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white'}} rounded bg-white dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
                       <on type="change">
                         <!-- 넓은 화면 표 — 옵션 재고. -->
                         <action handler="sirsoft-ecommerce.updateOptionField" :debounce="300" productId="{{row.id}}" optionId="{{option.id}}" field="stock_quantity" value="{{$event.target.value}}"/>

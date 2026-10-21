@@ -19,11 +19,21 @@
             상세를 따로 부르지 않는다.
             주소는 `replace-url` 로 갈아끼워 새로고침·공유에는 남기되 뒤로가기 이력은 늘리지 않는다. -->
           <sequence>
-            <set-state target="global" selectedCategoryId="{{$args[0]?.id}}" selectedCategory="{{$args[0]}}" panelMode="view"/>
-            <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75). -->
-            <replace-url :mergeQuery="true">
-              <query id="{{$args[0]?.id}}" mode="view"/>
-            </replace-url>
+            <!-- 편집·등록 중이면 곧바로 넘어가지 않고 고른 분류를 대기 자리(_global.pendingCategory*)에 두고 이탈 확인 창을 연다 —
+              이동을 완결하는 것은 그 창이다(브랜드·공통정보·고시 목록과 같은 규칙, 7.1.1 출시 전). -->
+            <switch on="{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}">
+              <case when="true">
+                <set-state target="global" pendingCategoryId="{{$args[0]?.id}}" pendingCategory="{{$args[0]}}"/>
+                <open-modal target="editing_confirm_modal"/>
+              </case>
+              <case when="false">
+                <set-state target="global" selectedCategoryId="{{$args[0]?.id}}" selectedCategory="{{$args[0]}}" panelMode="view"/>
+                <!-- 선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 조건은 그대로 둔다 (#75). -->
+                <replace-url :mergeQuery="true">
+                  <query id="{{$args[0]?.id}}" mode="view"/>
+                </replace-url>
+              </case>
+            </switch>
           </sequence>
         </on>
         <on type="action" event="onOrderChange">
@@ -70,8 +80,8 @@
         </on>
       </sortable-menu-list>
     </div>
-    <div data-ref="empty_category_state" data-if="{{(categories?.data?.data?.length ?? 0) === 0}}" class="flex-center flex-1 justify-center gap-3 px-4">
-      <icon name="folder" class="text-xl text-gray-400 dark:text-gray-500"/>
+    <div data-ref="empty_category_state" data-if="{{categories !== undefined &amp;&amp; ((categories?.data?.data?.length ?? 0) === 0)}}" class="flex-center flex-1 justify-center gap-3 px-4">
+      <icon name="folder" class="text-xl text-gray-500 dark:text-gray-500"/>
       <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.category.tree.empty</p>
     </div>
   </div>

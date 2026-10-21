@@ -103,7 +103,7 @@
                                                     "props": {
                                                         "className": "text-primary font-medium"
                                                     },
-                                                    "text": "박민수"
+                                                    "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -121,7 +121,7 @@
                                             "props": {
                                                 "className": "text-secondary text-sm mb-3"
                                             },
-                                            "text": "카카오뱅크 · 11:25"
+                                            "text": "$t:sirsoft-ecommerce.admin.sample.fmt.bank_time|bank=$t:sirsoft-ecommerce.admin.sample.banks.kakaobank|time=11:25"
                                         },
                                         {
                                             "type": "basic",
@@ -135,7 +135,7 @@
                                                     "name": "Input",
                                                     "props": {
                                                         "type": "text",
-                                                        "aria-label": "$t:common.row_cell|row=박민수|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
+                                                        "aria-label": "$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.park_minsu|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
                                                         "value": "ORD20251118-0003",
                                                         "className": "input pr-8"
                                                     }
@@ -146,7 +146,7 @@
                                                     "props": {
                                                         "aria-label": "$t:common.close",
                                                         "type": "button",
-                                                        "className": "absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+                                                        "className": "absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
                                                     },
                                                     "children": [
                                                         {
@@ -186,7 +186,7 @@
                                                             "props": {
                                                                 "className": "text-primary ml-1"
                                                             },
-                                                            "text": "박민수"
+                                                            "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                                         }
                                                     ]
                                                 },
@@ -206,7 +206,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 dark:text-red-400 ml-1"
+                                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                                             },
                                                             "text": "\\250,000"
                                                         }
@@ -218,7 +218,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 rounded-lg p-2 text-sm flex items-center gap-1"
+                                                "className": "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg p-2 text-sm flex items-center gap-1"
                                             },
                                             "children": [
                                                 {
@@ -259,7 +259,7 @@
                                                     "props": {
                                                         "className": "text-primary font-medium"
                                                     },
-                                                    "text": "최지은"
+                                                    "text": "$t:sirsoft-ecommerce.admin.sample.people.choi_jieun"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -277,14 +277,14 @@
                                             "props": {
                                                 "className": "text-secondary text-sm mb-3"
                                             },
-                                            "text": "신한은행 · 10:15"
+                                            "text": "$t:sirsoft-ecommerce.admin.sample.fmt.bank_time|bank=$t:sirsoft-ecommerce.admin.sample.banks.shinhan|time=10:15"
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Input",
                                             "props": {
                                                 "type": "text",
-                                                "aria-label": "$t:common.row_cell|row=최지은|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
+                                                "aria-label": "$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.choi_jieun|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder",
                                                 "className": "input"
                                             }
@@ -380,7 +380,7 @@
                                             "props": {
                                                 "className": "px-4 py-4 text-primary font-medium"
                                             },
-                                            "text": "박민수"
+                                            "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                         },
                                         {
                                             "type": "basic",
@@ -403,7 +403,7 @@
                                                     "props": {
                                                         "className": "text-primary"
                                                     },
-                                                    "text": "카카오뱅크"
+                                                    "text": "$t:sirsoft-ecommerce.admin.sample.banks.kakaobank"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -459,7 +459,7 @@
                                                             "name": "Input",
                                                             "props": {
                                                                 "type": "text",
-                                                                "aria-label": "$t:common.row_cell|row=박민수|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
+                                                                "aria-label": "$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.park_minsu|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
                                                                 "value": "ORD20251118-0003",
                                                                 "className": "input pr-8"
                                                             }
@@ -470,7 +470,7 @@
                                                             "props": {
                                                                 "aria-label": "$t:common.close",
                                                                 "type": "button",
-                                                                "className": "absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+                                                                "className": "absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
                                                             },
                                                             "children": [
                                                                 {
@@ -513,7 +513,7 @@
                                                                     "props": {
                                                                         "className": "text-primary ml-1"
                                                                     },
-                                                                    "text": "박민수"
+                                                                    "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                                                 }
                                                             ]
                                                         },
@@ -541,7 +541,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-red-500 dark:text-red-400 ml-2 inline-flex items-center gap-1"
+                                                                        "className": "text-red-600 dark:text-red-400 ml-2 inline-flex items-center gap-1"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -577,7 +577,7 @@
                                             "props": {
                                                 "className": "px-4 py-4 text-primary font-medium"
                                             },
-                                            "text": "강해린"
+                                            "text": "$t:sirsoft-ecommerce.admin.sample.people.kang_haerin"
                                         },
                                         {
                                             "type": "basic",
@@ -600,7 +600,7 @@
                                                     "props": {
                                                         "className": "text-primary"
                                                     },
-                                                    "text": "토스뱅크"
+                                                    "text": "$t:sirsoft-ecommerce.admin.sample.banks.tossbank"
                                                 },
                                                 {
                                                     "type": "basic",
@@ -649,7 +649,7 @@
                                                     "name": "Input",
                                                     "props": {
                                                         "type": "text",
-                                                        "aria-label": "$t:common.row_cell|row=강해린|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
+                                                        "aria-label": "$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.kang_haerin|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder",
                                                         "className": "input"
                                                     }

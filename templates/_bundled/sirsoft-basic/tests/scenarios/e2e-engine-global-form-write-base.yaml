@@ -1,0 +1,25 @@
+feature: 엔진 전역 data-key 폼 쓰기 base · setState 빈 객체 교체 브라우저 회귀 (7.1.1)
+
+description: |
+  비회원 홈 레이아웃 응답에 시험 노드를 주입해(이 브라우저에서만) 엔진 동작만 가른다.
+  ① `data-key="_global.e2eG19Form"` 폼 네 칸을 다시 그리기 전에 잇달아 채운다(한 작업 안 입력 이벤트 · 키보드 Tab).
+     수정 전에는 칸마다 렌더 시점 `_global` 사본을 통째로 써 마지막 칸만 남았다(4칸 중 1칸).
+  ② 지역·전역 setState 로 채운 객체 키에 `{}` 를 쓴다(레이아웃 `null` 선행 없이). 수정 전에는 깊은 병합이 `{}` 를 무시했다.
+
+axes:
+  case:
+    - global_form_same_tick_fields
+    - global_form_keyboard_tab
+    - setstate_empty_object_local
+    - setstate_empty_object_global
+
+effects:
+  - global_form_keeps_every_field
+  - global_form_screen_matches_state
+  - empty_object_replaces_previous_value
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/engine-global-form-write-base.spec.ts
+
+notes: |
+  수정 전 대조는 G7_E2E_ENGINE_BUNDLE 로 이전 엔진 번들을 이 브라우저에만 끼운다 — 53a3a088(직전)·6343c9d4(HEAD) 모두 4/4 실패.

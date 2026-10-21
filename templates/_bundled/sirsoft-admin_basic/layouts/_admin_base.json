@@ -166,6 +166,26 @@
             "id": "admin_layout_root",
             "type": "basic",
             "name": "Div",
+            "actions": [
+                {
+                    "comment": "모바일 사이드바 Esc 닫기 — 사이드바를 연 직후 초점은 머리 띠의 [메뉴] 단추에 있어 사이드바 자신은 키를 못 받는다.\n           사용자 템플릿(_user_base)처럼 뿌리에서 받되 열려 있을 때만 닫는다(닫혀 있을 때 Esc 마다 전역을 흔들지 않게). 종전에는\n           바깥 덮개 클릭으로만 닫혔다(7.1.1).",
+                    "type": "keydown",
+                    "key": "Escape",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{_global.sidebarOpen}}",
+                            "then": {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "sidebarOpen": false
+                                }
+                            }
+                        }
+                    ]
+                }
+            ],
             "props": {
                 "className": "admin_layout_root"
             },
@@ -241,7 +261,7 @@
                                             "if": "{{_global.settings?.general?.site_logo_url}}",
                                             "props": {
                                                 "src": "{{_global.settings?.general?.site_logo_url}}",
-                                                "alt": "{{_global.settings?.general?.site_name ?? '그누보드7'}}",
+                                                "alt": "{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}",
                                                 "className": "logo_image"
                                             }
                                         },
@@ -253,7 +273,7 @@
                                             "props": {
                                                 "className": "text-primary font-bold text-xl truncate"
                                             },
-                                            "text": "{{_global.settings?.general?.site_name ?? '그누보드7'}}"
+                                            "text": "{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}"
                                         }
                                     ]
                                 }
@@ -331,7 +351,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "chevron-down",
-                                                                "className": "{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"
+                                                                "className": "{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-500 dark:text-gray-500 transition-transform duration-200"
                                                             }
                                                         }
                                                     ]
@@ -915,7 +935,7 @@
                                                 "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
                                                 "unreadCount": "{{_global.adminNotificationCount ?? 0}}",
                                                 "hasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
-                                                "loading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
+                                                "loading": "{{_global.notificationsLoadingMore ?? (notifications === undefined)}}",
                                                 "titleText": "$t:admin.notifications",
                                                 "emptyText": "$t:admin.no_notifications",
                                                 "markAllReadText": "$t:admin.notifications_mark_all_read",
@@ -955,12 +975,14 @@
                                                             }
                                                         },
                                                         {
+                                                            "comment": "사진 없을 때의 대신 그림 — 옆에 이름이 있어 장식이다(읽지 않음). 원 바탕(gray-200 / 다크 gray-600) 위 3:1 이상인 단계(종전 icon-muted 다크 2.9)",
                                                             "id": "user_avatar_fallback",
                                                             "type": "basic",
                                                             "name": "I",
                                                             "if": "{{!current_user.data?.avatar_url}}",
                                                             "props": {
-                                                                "className": "fas fa-user icon-muted"
+                                                                "aria-hidden": "true",
+                                                                "className": "fas fa-user text-gray-600 dark:text-gray-300"
                                                             }
                                                         }
                                                     ]
@@ -980,7 +1002,7 @@
                                                             "props": {
                                                                 "className": "text-primary text-sm font-bold leading-none truncate max-w-xs"
                                                             },
-                                                            "text": "{{current_user.data?.name ?? '관리자'}}"
+                                                            "text": "{{current_user.data?.name ?? $t('admin.default_user_name')}}"
                                                         },
                                                         {
                                                             "id": "user_email",
@@ -1087,7 +1109,7 @@
                                                     "if": "{{_global.settings?.general?.site_logo_url}}",
                                                     "props": {
                                                         "src": "{{_global.settings?.general?.site_logo_url}}",
-                                                        "alt": "{{_global.settings?.general?.site_name ?? '그누보드7'}}",
+                                                        "alt": "{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}",
                                                         "className": "mobile_logo_image"
                                                     }
                                                 },
@@ -1098,7 +1120,7 @@
                                                     "props": {
                                                         "className": "text-primary font-bold text-lg leading-none truncate"
                                                     },
-                                                    "text": "{{_global.settings?.general?.site_name ?? '그누보드7'}}"
+                                                    "text": "{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}"
                                                 }
                                             ]
                                         }
@@ -1437,7 +1459,7 @@
                                                 "notifications": "{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}",
                                                 "unreadCount": "{{_global.adminNotificationCount ?? 0}}",
                                                 "hasMore": "{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}",
-                                                "loading": "{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}",
+                                                "loading": "{{_global.notificationsLoadingMore ?? (notifications === undefined)}}",
                                                 "titleText": "$t:admin.notifications",
                                                 "emptyText": "$t:admin.no_notifications",
                                                 "markAllReadText": "$t:admin.notifications_mark_all_read",
@@ -1477,7 +1499,7 @@
                                     "type": "composite",
                                     "name": "AdminFooter",
                                     "props": {
-                                        "copyright": "© {{_global.appConfig?.releaseYear ?? '2026'}} 그누보드7",
+                                        "copyright": "© {{_global.appConfig?.releaseYear ?? '2026'}} {{$t('admin.brand_name')}}",
                                         "version": "{{_global.appConfig?.version ?? ''}}",
                                         "copyrightModalId": "license_modal",
                                         "changelogModalId": "changelog_modal"

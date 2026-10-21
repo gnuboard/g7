@@ -43,7 +43,7 @@
       <div data-ref="target_products_section" data-if="{{_local.form?.target_scope === 'products'}}">
         <!-- 상품 검색 토글 버튼 + 선택삭제 -->
         <div class="flex-center gap-2 mb-4">
-          <button data-ref="toggle_product_search" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg flex-center gap-2 text-sm">
+          <button data-ref="toggle_product_search" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg flex-center gap-2 text-sm">
             <on type="click">
               <!-- 상품 검색 패널 접기/펴기. 옆 아이콘의 방향도 같은 값을 본다. -->
               <set-state target="_local" productSearchOpen="{{!_local.productSearchOpen}}"/>
@@ -51,7 +51,7 @@
             <icon name="{{_local.productSearchOpen ? 'caret-down' : 'caret-right'}}" size="sm"/>
             <span>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.products</span>
           </button>
-          <button data-ref="delete_selected_products" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700">
+          <button data-ref="delete_selected_products" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-700">
             <on type="click">
               <!-- 담긴 상품 중 표에서 체크한 것을 뺀다. 체크 목록도 함께 비운다 — 남겨 두면 없어진 id 를 가리킨 채로 다음 삭제가 아무것도 지우지 않는다. -->
               <set-state target="_local" form.products="{{(_local.form?.products ?? []).filter(p => !(_local.selectedProductIds ?? []).includes(p.id))}}" selectedProductIds="{{[]}}"/>
@@ -100,7 +100,7 @@
           <!-- 검색 결과 헤더 -->
           <div class="flex-between mb-2">
             <span class="text-body font-medium">$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.results ({{_local.productSearchTotal ?? (_local.productSearchResults ?? []).length}})</span>
-            <button data-ref="add_selected_products" type="button" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white text-sm rounded">
+            <button data-ref="add_selected_products" type="button" class="px-3 py-1.5 bg-green-700 hover:bg-green-800 dark:bg-green-700 dark:hover:bg-green-800 text-white text-sm rounded">
               <on type="click">
                 <!-- 검색 결과에서 체크한 상품을 아래 표로 옮긴다. **이미 담긴 것은 걸러 내고**(중복 행 방지) 각 항목에 `type: 'include'` 를 붙인다 — 담긴 목록이 포함·제외 두 성격을 함께 담을 수 있는 구조이기 때문이다. -->
                 <set-state target="_local" form.products="{{[...(_local.form?.products ?? []), ...(_local.productSearchResults ?? []).filter(r => (_local.productSearchSelected ?? []).includes(r.id) &amp;&amp; !(_local.form?.products ?? []).some(p => p.id === r.id)).map(r => ({...r, type: 'include'}))]}}"/>
@@ -165,7 +165,7 @@
       <div data-ref="target_categories_section" data-if="{{_local.form?.target_scope === 'categories'}}">
         <!-- 카테고리 검색 토글 버튼 + 선택삭제 -->
         <div class="flex-center gap-2 mb-4">
-          <button data-ref="toggle_category_search" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg flex-center gap-2 text-sm">
+          <button data-ref="toggle_category_search" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg flex-center gap-2 text-sm">
             <on type="click">
               <!-- 분류 검색 패널 접기/펴기 — 상품 쪽과 같은 형태이고 키만 다르다. -->
               <set-state target="_local" categorySearchOpen="{{!_local.categorySearchOpen}}"/>
@@ -173,7 +173,7 @@
             <icon name="{{_local.categorySearchOpen ? 'caret-down' : 'caret-right'}}" size="sm"/>
             <span>$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.categories</span>
           </button>
-          <button data-ref="delete_selected_categories" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700">
+          <button data-ref="delete_selected_categories" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-700">
             <on type="click">
               <!-- 담긴 분류 중 표에서 체크한 것을 뺀다. 체크 목록도 함께 비운다(상품 쪽과 같은 이유). -->
               <set-state target="_local" form.categories="{{(_local.form?.categories ?? []).filter(c => !(_local.selectedCategoryIds ?? []).includes(c.id))}}" selectedCategoryIds="{{[]}}"/>
@@ -203,7 +203,7 @@
           <!-- 트리 헤더 -->
           <div class="flex-between mb-2">
             <span class="text-body font-medium">$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.category_tree</span>
-            <button data-ref="add_selected_categories" type="button" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white text-sm rounded">
+            <button data-ref="add_selected_categories" type="button" class="px-3 py-1.5 bg-green-700 hover:bg-green-800 dark:bg-green-700 dark:hover:bg-green-800 text-white text-sm rounded">
               <on type="click">
                 <!-- 트리에서 체크한 분류를 아래 표로 옮긴다. 트리는 중첩이라 재귀로 훑어야 하고, 그러면서 '상위 › 하위' 경로를 함께 만든다 — 표에 이름만 적으면 같은 이름의 하위 분류를 구분할 수 없다. 상품 쪽과 마찬가지로 이미 담긴 것은 걸러 낸다. -->
                 <set-state target="_local" form.categories="{{[...(_local.form?.categories ?? []), ...(categories?.data?.data ?? categories?.data ?? []).reduce((acc, cat) => { const findSelected = (node, parentPath) => { const displayName = node.localized_name || node.name; const currentPath = parentPath ? parentPath + ' › ' + displayName : displayName; if ((_local.categorySearchSelected ?? []).includes(node.id) &amp;&amp; !(_local.form?.categories ?? []).some(c => c.id === node.id)) { acc.push({id: node.id, name: displayName, path: currentPath, products_count: node.products_count ?? 0, type: 'include'}); } (node.children ?? []).forEach(child => findSelected(child, currentPath)); }; findSelected(cat, ''); return acc; }, [])]}}"/>

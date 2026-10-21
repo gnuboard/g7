@@ -3,15 +3,15 @@
   `responsive` 로 한쪽만 남긴다. -->
 <partial description="Product Form - Sales Information Section">
   <div data-ref="sales" class="admin-card-accordion">
-    <div class="card-header">
+    <button type="button" class="flex w-full justify-start text-left card-header" aria-expanded="{{_local.ui.salesInfoExpanded !== false}}">
       <on type="click">
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.salesInfoExpanded="{{!_local.ui.salesInfoExpanded}}"/>
       </on>
       <icon name="coins" class="text-gray-500 dark:text-gray-400"/>
       <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.sales_info</span>
-      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.salesInfoExpanded !== false ? 'rotate-180' : ''}}"/>
-    </div>
+      <icon name="chevron-down" class="admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.salesInfoExpanded !== false ? 'rotate-180' : ''}}"/>
+    </button>
     <div data-ref="sales_info_body" data-if="{{_local.ui.salesInfoExpanded !== false}}" class="row-stack">
       <div data-ref="base_currency_row_desktop" class="flex-center form-group gap-4">
         <responsive on="portable" data-if="{{false}}"/>

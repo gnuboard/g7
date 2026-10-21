@@ -114,7 +114,8 @@
         "test_mode_settings_warning_title": "(주의!) 나이스페이먼츠 결제 설정이 현재 테스트결제로 되어 있습니다.",
         "test_mode_settings_warning_body": "테스트결제 시 실제 결제가 되지 않으므로, 쇼핑몰 운영 중이면 반드시 실결제로 설정하여 운영하세요.",
         "test_mode_settings_warning_action": "실결제로 설정",
-        "test_mode_orders_in_list": "테스트 결제 주문 포함"
+        "test_mode_orders_in_list": "테스트 결제 주문 포함",
+        "vbank_noti_count_value": "{{count}}회"
     },
     "easy_pay": {
         "section_title": "간편결제"

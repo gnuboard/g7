@@ -93,15 +93,35 @@ export function attachExternalContentSync(
          * 다른 템플릿으로 갈아탄 뒤에도 **이전 본문이 그대로 남는다**.
          */
         readExternal?: () => string | undefined;
+        /**
+         * 편집기에 넣은 초기값이 속한 화면의 경로. 기본은 지금 경로다.
+         *
+         * 편집기(또는 평문 입력칸)는 마운트 뒤 자산·생성을 기다린 다음에 선다. 그 사이 같은 레이아웃의 다른 경로로
+         * 옮기면 초기값은 **앞 화면** 것인데 지금 경로를 기준으로 붙이면 「편집 대상이 바뀌었다」를 영영 모른다
+         * (편집기 본체 404 로 평문 입력칸이 몇 초 뒤에 서는 동안 글 수정 → 새 글 쓰기 — 새 글에 앞 글 본문).
+         */
+        seedPath?: string;
+        /** `seedPath` 화면에서 초기값으로 쓴 원문 — 그 화면의 「이전 글 값」으로 기억한다 */
+        seedValue?: string;
     }
 ): ExternalContentSyncHandle {
     const { name, locale, multilingual } = options;
 
-    let pathAtSeed = location.pathname;
+    let pathAtSeed = options.seedPath ?? location.pathname;
     let lastEmitted: string | null = null;
     let awaitingReseed = false;
-    /** 재시딩을 기다리는 동안 편집기에 남아 있는 **이전 글**의 본문 */
-    let staleData: string | null = null;
+    /**
+     * 재시딩을 기다리는 동안 「아직 이전 글의 값」으로 볼 값들.
+     *
+     * 편집기에 보이는 값만으로는 모자란다 — 편집기는 받은 본문을 다듬어 돌려주므로(평문 → `<p>…</p>`, 서버가 정리한
+     * HTML 의 공백·속성 순서) 폼에 남아 있는 이전 글의 **원문**과 글자가 다르다. 그 원문을 「새 값」으로 오인하면
+     * 이전 글 본문으로 다시 세우고 대기를 끝내, 정작 새 글 값이 왔을 때 입력 중으로 보아 다시 세우지 않는다
+     * (글 수정 → 새 글 쓰기에서 새 글 화면 편집기에 앞 글 본문이 남음).
+     * 그래서 ① 편집기 값 ② 이전 경로에서 마지막으로 본 폼 값 ③ 마지막으로 내보낸 값을 모두 담는다.
+     */
+    let staleValues: Set<string> | null = null;
+    /** 이전 경로에서 마지막으로 읽은 폼 값 — 경로가 바뀐 순간의 「이전 글 원문」 */
+    let lastSeenExternal: string | undefined;
     /** 재시딩 대기 시작 시각 — 새 값이 끝내 오지 않는 경우를 위해 상한을 둔다 */
     let awaitingSince = 0;
 
@@ -127,6 +147,34 @@ export function attachExternalContentSync(
         return typeof value === 'string' ? value : undefined;
     };
 
+    lastSeenExternal = pathAtSeed !== location.pathname && options.seedValue !== undefined
+        ? options.seedValue
+        : readExternal();
+
+    /**
+     * 경로가 바뀌었으면 재시딩 대기로 들어갑니다.
+     *
+     * 감시 주기를 기다리지 않고 내보내기 판정(`shouldEmit`)에서도 부른다 — 주소가 바뀐 뒤 다음 감시 전에 편집기가
+     * 값을 내면(그 사이 입력) 이전 글 본문을 실은 값이 새 화면 폼으로 나가기 때문이다.
+     *
+     * @param current 지금 편집기에 보이는 값
+     * @return void
+     */
+    const enterAwaitingIfPathChanged = (current: string): void => {
+        if (location.pathname === pathAtSeed) {
+            return;
+        }
+
+        // 편집 대상이 바뀌었다. 새 본문이 도착할 때까지 내보내기를 막고, 「이전 글의 값」으로 볼 값들을 기억해 둔다.
+        pathAtSeed = location.pathname;
+        staleValues = new Set([current]);
+        if (lastSeenExternal !== undefined) staleValues.add(lastSeenExternal);
+        if (lastEmitted !== null) staleValues.add(lastEmitted);
+        lastEmitted = null;
+        awaitingReseed = true;
+        awaitingSince = Date.now();
+    };
+
     const timer = window.setInterval(() => {
         let current: string;
 
@@ -138,31 +186,29 @@ export function attachExternalContentSync(
             return;
         }
 
-        if (location.pathname !== pathAtSeed) {
-            // 편집 대상이 바뀌었다. 새 본문이 도착할 때까지 내보내기를 막고, 지금 편집기에
-            // 남아 있는 **이전 글**의 본문을 기억해 둔다.
-            pathAtSeed = location.pathname;
-            lastEmitted = null;
-            awaitingReseed = true;
-            awaitingSince = Date.now();
-            staleData = current;
-        }
+        enterAwaitingIfPathChanged(current);
 
         const external = readExternal();
 
         if (external === undefined) {
+            // 새 화면 폼에 이 칸 값이 없다 — 내보내기를 영구히 막아둘 수는 없다(다국어 칸 하나가 빠진 경우 등)
+            if (awaitingReseed && Date.now() - awaitingSince > RESEED_TIMEOUT_MS) {
+                awaitingReseed = false;
+                staleValues = null;
+            }
             return;
         }
 
         if (awaitingReseed) {
-            if (external === staleData) {
+            if (staleValues?.has(external)) {
                 // 폼이 아직 이전 글의 값을 들고 있다 — 새 데이터가 도착하지 않았다.
                 // 여기서 "같으니 정상" 으로 판정하면 도착 전에 대기가 풀려, 정작 새 본문이
                 // 왔을 때는 입력 중으로 오인해 영영 다시 세우지 않는다.
                 if (Date.now() - awaitingSince > RESEED_TIMEOUT_MS) {
                     // 새 값이 끝내 오지 않는 화면 — 내보내기를 영구히 막아둘 수는 없다
                     awaitingReseed = false;
-                    staleData = null;
+                    staleValues = null;
+                    lastSeenExternal = external;
                 }
                 return;
             }
@@ -178,11 +224,14 @@ export function attachExternalContentSync(
             }
 
             awaitingReseed = false;
-            staleData = null;
+            staleValues = null;
             lastEmitted = external;
+            lastSeenExternal = external;
 
             return;
         }
+
+        lastSeenExternal = external;
 
         if (external === lastEmitted || external === current) {
             // 우리가 쓴 값이 되돌아온 것 — 외부 변경이 아니다
@@ -195,7 +244,17 @@ export function attachExternalContentSync(
     }, POLL_INTERVAL_MS);
 
     return {
-        shouldEmit: () => !awaitingReseed,
+        shouldEmit: () => {
+            if (!awaitingReseed) {
+                try {
+                    enterAwaitingIfPathChanged(editor.getData());
+                } catch {
+                    // 파괴된 인스턴스 — 판정은 감시가 접는다
+                }
+            }
+
+            return !awaitingReseed;
+        },
         noteEmitted: (html: string) => {
             lastEmitted = html;
         },

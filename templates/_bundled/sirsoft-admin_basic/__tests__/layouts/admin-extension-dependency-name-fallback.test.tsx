@@ -1,6 +1,6 @@
 /**
  * @file admin-extension-dependency-name-fallback.test.tsx
- * @description 의존 확장 이름이 빈 문자열이면 식별자를 보여 준다 (7.1.0 전수 실측 #736 O-F10)
+ * @description 의존 확장 이름이 빈 문자열이면 식별자를 보여 준다 (7.1.0 전수 실측, #736)
  *
  * 7.1.0 CHANGELOG 는 「이름이 비면 식별자를 보여 줍니다」라고 약속했지만 화면은 `name ?? identifier` 로
  * null·undefined 만 걸렀다. 이름이 빈 문자열이면 카드에는 이름 없는 아이콘만, 상세·확인 창에는 빈 칸만 남았다.

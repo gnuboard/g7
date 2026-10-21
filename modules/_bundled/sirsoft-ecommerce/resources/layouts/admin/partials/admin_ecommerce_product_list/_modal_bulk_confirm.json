@@ -110,7 +110,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "{{product.changes}}"
                                         }
@@ -170,7 +170,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-500"
+                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "{{option.changes}}"
                                         }
@@ -192,7 +192,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-yellow-600 dark:text-yellow-400"
+                                "className": "text-yellow-700 dark:text-yellow-400"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_confirm.no_changes"
                         }

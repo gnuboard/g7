@@ -124,7 +124,7 @@
                                             "if": "{{post.is_secret}}",
                                             "props": {
                                                 "name": "lock",
-                                                "className": "text-sm text-gray-400 dark:text-gray-500 shrink-0"
+                                                "className": "text-sm text-gray-500 dark:text-gray-400 shrink-0"
                                             }
                                         },
                                         {
@@ -153,7 +153,7 @@
                                             "name": "Span",
                                             "if": "{{post.is_new}}",
                                             "props": {
-                                                "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded shrink-0"
+                                                "className": "px-1.5 py-0.5 text-xs bg-red-600 dark:bg-red-600 text-white rounded shrink-0"
                                             },
                                             "text": "N"
                                         },
@@ -162,7 +162,7 @@
                                             "name": "Span",
                                             "if": "{{post.comment_count > 0}}",
                                             "props": {
-                                                "className": "text-xs font-medium text-blue-500 dark:text-blue-400 shrink-0"
+                                                "className": "text-xs font-medium text-blue-600 dark:text-blue-400 shrink-0"
                                             },
                                             "text": "[{{post.comment_count}}]"
                                         },
@@ -171,7 +171,7 @@
                                             "name": "Span",
                                             "if": "{{(post.reaction_total ?? 0) > 0}}",
                                             "props": {
-                                                "className": "text-rose-500 dark:text-rose-400 text-xs font-medium shrink-0 inline-flex items-center gap-0.5"
+                                                "className": "text-rose-700 dark:text-rose-300 text-xs font-medium shrink-0 inline-flex items-center gap-0.5"
                                             },
                                             "children": [
                                                 {
@@ -209,9 +209,9 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{!recent_posts.data || recent_posts.data.length === 0}}",
+            "if": "{{recent_posts !== undefined && (!recent_posts.data || recent_posts.data.length === 0)}}",
             "props": {
-                "className": "text-center py-8 text-gray-500 dark:text-gray-400 flex-grow flex flex-col items-center justify-center"
+                "className": "text-center py-8 text-gray-800 dark:text-gray-300 flex-grow flex flex-col items-center justify-center"
             },
             "children": [
                 {

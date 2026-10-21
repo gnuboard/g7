@@ -7,6 +7,7 @@ use App\Models\Module;
 use App\Models\Plugin;
 use App\Models\Template;
 use App\Models\User;
+use App\Support\ApiDoc\ApiDocExampleSanitizer;
 use App\Support\ApiDoc\ApiDocSampleService;
 use App\Support\ApiDoc\ApiDocScaffolder;
 use App\Support\ApiDoc\ApiEndpointProbe;
@@ -67,12 +68,12 @@ class ApiDocgenCommand extends Command
         $routes = $inventory->collect($scope);
 
         if ($routes === []) {
-            $this->warn("범위 '{$scope}' 에 해당하는 API 라우트가 없습니다.");
+            $this->warn(__('common.console.api_docgen.no_routes', ['scope' => $scope]));
 
             return self::SUCCESS;
         }
 
-        $this->info(count($routes)."개 라우트 수집 (scope={$scope})");
+        $this->info(__('common.console.api_docgen.routes_collected', ['count' => count($routes), 'scope' => $scope]));
 
         // 도메인 파일 단위로 그룹핑
         $grouped = [];
@@ -95,7 +96,7 @@ class ApiDocgenCommand extends Command
         $sampleService = null;
         if ($this->option('seed')) {
             if (app()->environment('production')) {
-                $this->error('--seed 는 개발 환경 전용입니다 (production 차단).');
+                $this->error(__('common.console.api_docgen.seed_production_blocked'));
 
                 return self::FAILURE;
             }
@@ -103,14 +104,14 @@ class ApiDocgenCommand extends Command
             // 코어 샘플 우선 시드 — 확장 샘플의 소유자/actor 로 쓰이는 완전 사용자를 확보한다.
             $sampleService = new ApiDocSampleService;
             $sampleMap = $sampleService->seed();
-            $this->info('완전 샘플 시드: '.count($sampleMap).'개 도메인 (코어)');
+            $this->info(__('common.console.api_docgen.sample_seeded_core', ['count' => count($sampleMap)]));
 
             // 확장 소유 라우트가 있으면 그 확장의 규약 시더를 발견해 도메인 샘플을 병합한다.
             // 확장 시더가 만든 행도 같은 기록에 넣어 실측 뒤 함께 걷는다.
             foreach ($this->discoverExtensionSeeders($routes) as $label => $seeder) {
                 $extMap = $sampleService->track(fn () => $seeder->seed());
                 $sampleMap = array_merge($sampleMap, $extMap);
-                $this->info('완전 샘플 시드: '.count($extMap)."개 도메인 ({$label})");
+                $this->info(__('common.console.api_docgen.sample_seeded_extension', ['count' => count($extMap), 'label' => $label]));
             }
         }
 
@@ -122,9 +123,9 @@ class ApiDocgenCommand extends Command
         $probed = $probe->authenticate($authUserId);
 
         if (! $probed) {
-            $this->warn('실측 토큰 발급 실패 — 실측 없이 정적 추출만 진행합니다.');
+            $this->warn(__('common.console.api_docgen.token_failed'));
         } else {
-            $this->info('실측 기준 URL: '.$probe->baseUrl());
+            $this->info(__('common.console.api_docgen.base_url', ['url' => $probe->baseUrl()]));
         }
 
         $stats = ['files' => 0, 'endpoints' => 0, 'probed' => 0, 'skipped' => 0, 'examples' => 0];
@@ -207,12 +208,12 @@ class ApiDocgenCommand extends Command
 
             if ($this->option('check')) {
                 if (! File::exists($file)) {
-                    $checkFindings[] = "문서 파일 없음: {$file}";
+                    $checkFindings[] = __('common.console.api_docgen.check_doc_missing', ['file' => $file]);
                 } else {
                     // 실측 불가 자리를 사람이 채우지 않고 마커로 남겨 두면 문서가 미완이다.
                     // (규정: docs/backend/api-documentation.md "미채움 마커 5종")
                     foreach ($this->unfilledMarkers(File::get($file)) as $marker) {
-                        $checkFindings[] = "미채움 마커: {$file} — {$marker}";
+                        $checkFindings[] = __('common.console.api_docgen.check_unfilled_marker', ['file' => $file, 'marker' => $marker]);
                     }
                 }
 
@@ -224,7 +225,7 @@ class ApiDocgenCommand extends Command
             // TODO 로 되돌리므로, 예시 방출을 위해 재생성을 쓰지 않는다.
             if ($examplesOnly) {
                 if (! File::exists($file)) {
-                    $this->warn("문서 없음(예시 삽입 건너뜀): {$file}");
+                    $this->warn(__('common.console.api_docgen.doc_missing_skip_examples', ['file' => $file]));
 
                     continue;
                 }
@@ -262,9 +263,9 @@ class ApiDocgenCommand extends Command
         $probe->cleanup();
 
         // 실측이 끝났으면 샘플을 걷는다 — 남기면 관리자 메뉴·역할·사용자·권한 목록에 실제 데이터처럼 보이고
-        // 샘플 권한은 실제 역할에 배정될 수 있다(O-D2, O-E-4). 시드 중 만든 행과 앞선 실행이 남긴 샘플을 함께 지운다.
+        // 샘플 권한은 실제 역할에 배정될 수 있다. 시드 중 만든 행과 앞선 실행이 남긴 샘플을 함께 지운다.
         if ($sampleService !== null) {
-            $this->info('완전 샘플 정리: '.$sampleService->cleanup().'행');
+            $this->info(__('common.console.api_docgen.sample_cleaned', ['count' => $sampleService->cleanup()]));
         }
 
         // 대상별 API 문서 목차(README.md) 생성/갱신 — 확장 API 레퍼런스 발견성의 규약 진입점.
@@ -297,18 +298,18 @@ class ApiDocgenCommand extends Command
         if ($this->option('check')) {
             // 실측 제외는 정상 동작이므로 참고 정보로만 표시한다 (drift 아님).
             if ($skippedProbes !== []) {
-                $this->line('실측 제외 '.count($skippedProbes).'건 (정상 — 해당 자리는 사람이 작성):');
+                $this->line(__('common.console.api_docgen.skipped_probes', ['count' => count($skippedProbes)]));
                 foreach (array_slice($skippedProbes, 0, 10) as $s) {
                     $this->line('  · '.$s);
                 }
                 if (count($skippedProbes) > 10) {
-                    $this->line('  · ... 외 '.(count($skippedProbes) - 10).'건');
+                    $this->line('  · '.__('common.console.api_docgen.skipped_probes_more', ['count' => count($skippedProbes) - 10]));
                 }
                 $this->newLine();
             }
 
             if ($checkFindings !== []) {
-                $this->warn('drift '.count($checkFindings).'건:');
+                $this->warn(__('common.console.api_docgen.drift_found', ['count' => count($checkFindings)]));
                 foreach (array_slice($checkFindings, 0, 50) as $f) {
                     $this->line('  - '.$f);
                 }
@@ -316,31 +317,29 @@ class ApiDocgenCommand extends Command
                 return self::FAILURE;
             }
 
-            $this->info('drift 없음.');
+            $this->info(__('common.console.api_docgen.no_drift'));
 
             return self::SUCCESS;
         }
 
         $this->newLine();
         if ($examplesOnly) {
-            $this->info(sprintf(
-                '예시 삽입 완료: 파일 %d개, 예시 블록 %d개 (실측 %d, 제외 %d)',
-                $stats['files'],
-                $stats['examples'],
-                $stats['probed'],
-                $stats['skipped']
-            ));
+            $this->info(__('common.console.api_docgen.examples_done', [
+                'files' => $stats['files'],
+                'examples' => $stats['examples'],
+                'probed' => $stats['probed'],
+                'skipped' => $stats['skipped'],
+            ]));
 
             return self::SUCCESS;
         }
 
-        $this->info(sprintf(
-            '완료: 파일 %d개, 엔드포인트 %d개 (실측 %d, 제외 %d)',
-            $stats['files'],
-            $stats['endpoints'],
-            $stats['probed'],
-            $stats['skipped']
-        ));
+        $this->info(__('common.console.api_docgen.done', [
+            'files' => $stats['files'],
+            'endpoints' => $stats['endpoints'],
+            'probed' => $stats['probed'],
+            'skipped' => $stats['skipped'],
+        ]));
 
         return self::SUCCESS;
     }
@@ -475,7 +474,12 @@ class ApiDocgenCommand extends Command
             ]];
         }
 
-        return [$inferrer->infer($result['body']), [
+        // 필드 표 샘플값은 응답 예시 블록과 달리 원본 body 에서 추론되므로, 추론 전에 민감값과
+        // 식별정보(메일·설치 경로·APP_URL·실측 호스트·공인 IP)를 먼저 가린다.
+        $baseHost = parse_url((string) $baseUrl, PHP_URL_HOST);
+        $schemaBody = (new ApiDocExampleSanitizer)->sanitize($result['body'], is_string($baseHost) ? [$baseHost] : []);
+
+        return [$inferrer->infer($schemaBody), [
             'status' => $result['status'],
             'skipped_reason' => null,
             'base_url' => $baseUrl,
@@ -969,11 +973,11 @@ class ApiDocgenCommand extends Command
     private function unfilledMarkers(string $content): array
     {
         $markers = [
-            '실측 제외:' => '실측 제외 (응답 필드 표 / 응답 예시)',
-            'TODO: 용도' => '요청 파라미터 설명',
-            'TODO: 설명' => '응답 필드 설명',
-            '실측 응답에 필드 없음' => '빈 목록 관측 (응답 필드 표)',
-            '대표 에러 없음' => '도메인 특이 에러',
+            '실측 제외:' => __('common.console.api_docgen.markers.skipped'),
+            'TODO: 용도' => __('common.console.api_docgen.markers.param_todo'),
+            'TODO: 설명' => __('common.console.api_docgen.markers.field_todo'),
+            '실측 응답에 필드 없음' => __('common.console.api_docgen.markers.empty_fields'),
+            '대표 에러 없음' => __('common.console.api_docgen.markers.no_errors'),
         ];
 
         $found = [];
@@ -982,7 +986,7 @@ class ApiDocgenCommand extends Command
             $count = substr_count($content, $needle);
 
             if ($count > 0) {
-                $found[] = "{$label} {$count}건";
+                $found[] = __('common.console.api_docgen.marker_count', ['label' => $label, 'count' => $count]);
             }
         }
 

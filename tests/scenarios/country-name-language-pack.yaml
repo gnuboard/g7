@@ -1,4 +1,4 @@
-feature: 국가 이름을 언어팩이 채움 (7.1.0 전수 실측 O-C1 · 결정 P2)
+feature: 국가 이름을 언어팩이 채움 (7.1.0 전수 실측 · 결정)
 
 description: |
   국가 이름은 `config/countries.php` 의 ko·en 두 벌뿐이라 일본어 화면의 회원 목록·상세 국가 열이 기본 폴백(ko)으로

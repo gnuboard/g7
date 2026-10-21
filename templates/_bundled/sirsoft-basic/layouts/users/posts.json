@@ -82,7 +82,7 @@
                                 "comment": "로딩 상태",
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{userPosts.loading && !userPosts.data}}",
+                                "if": "{{userPosts === undefined}}",
                                 "props": {
                                     "className": "flex justify-center items-center py-20"
                                 },
@@ -100,7 +100,7 @@
                                 "comment": "게시글 목록",
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{userPosts.data && !userPosts.error}}",
+                                "if": "{{userPosts.data}}",
                                 "props": {
                                     "className": "space-y-6"
                                 },
@@ -212,7 +212,7 @@
                                                         "props": {
                                                             "name": "file-circle-xmark",
                                                             "size": "2xl",
-                                                            "className": "text-gray-300 dark:text-gray-600 mb-4"
+                                                            "className": "text-gray-500 dark:text-gray-500 mb-4"
                                                         }
                                                     },
                                                     {
@@ -327,7 +327,7 @@
                                                                         "name": "Span",
                                                                         "if": "{{post.category}}",
                                                                         "props": {
-                                                                            "className": "flex-shrink-0 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded whitespace-nowrap"
+                                                                            "className": "flex-shrink-0 truncate max-w-32 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded whitespace-nowrap"
                                                                         },
                                                                         "text": "{{post.category}}"
                                                                     },
@@ -339,7 +339,7 @@
                                                                         "props": {
                                                                             "name": "lock",
                                                                             "size": "xs",
-                                                                            "className": "flex-shrink-0 text-yellow-500 dark:text-yellow-400"
+                                                                            "className": "flex-shrink-0 text-yellow-700 dark:text-yellow-400"
                                                                         }
                                                                     },
                                                                     {
@@ -350,7 +350,7 @@
                                                                         "props": {
                                                                             "name": "eye-slash",
                                                                             "size": "xs",
-                                                                            "className": "flex-shrink-0 text-orange-500 dark:text-orange-400"
+                                                                            "className": "flex-shrink-0 text-orange-600 dark:text-orange-400"
                                                                         }
                                                                     },
                                                                     {

@@ -7,6 +7,12 @@ export interface AProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
     disabled?: boolean;
     /** 현재 주소의 쿼리를 href 에 합친다(목록 문맥 유지) — 보통 클릭과 새 탭이 같은 주소로 간다 */
     mergeQuery?: boolean;
+    /**
+     * 대체 주소 — href 가 비지 않았는데 이 사이트 주소가 아니면(실행 주소·다른 사이트·`//host`) 대신 이 주소를 href 로 단다.
+     * 알림 이동 주소처럼 바깥에서 정해지는 href 가 가운데 클릭·「새 탭에서 열기」로 그대로 열리지 않게 한다 — 보통 클릭의
+     * `navigate fallbackPath` 와 같은 착지점을 적는다(7.1.1). 비운 href 는 그대로 둔다(링크 아님).
+     */
+    fallbackHref?: string;
 }
 /**
  * 기본 a(링크) 컴포넌트

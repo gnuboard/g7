@@ -99,7 +99,7 @@ class DashboardApiTest extends ModuleTestCase
     public function test_overview_returns_today_counts_for_admin(): void
     {
         BoardStat::create([
-            // 집계 행의 「오늘」은 사이트 표준시의 하루(7.1.0 O-CF3)
+            // 집계 행의 「오늘」은 사이트 표준시의 하루(7.1.0)
             'date' => app(BoardDashboardService::class)->siteToday()->toDateString(),
             'post_count' => 5,
             'comment_count' => 12,

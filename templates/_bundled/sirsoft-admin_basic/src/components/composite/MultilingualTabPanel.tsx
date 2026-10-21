@@ -117,7 +117,7 @@ export const MultilingualTabPanel: React.FC<MultilingualTabPanelProps> = ({
     if (variant === 'pills') {
       return isActive
         ? `${baseClasses} bg-blue-600 text-white rounded-lg`
-        : `${baseClasses} text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg`;
+        : `${baseClasses} text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg`;
     }
 
     if (variant === 'underline') {
@@ -129,7 +129,7 @@ export const MultilingualTabPanel: React.FC<MultilingualTabPanelProps> = ({
     // default
     return isActive
       ? `${baseClasses} text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-600`
-      : `${baseClasses} text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border-b-2 border-transparent`;
+      : `${baseClasses} text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-b-2 border-transparent`;
   };
 
   return (

@@ -51,7 +51,7 @@ class NotificationLogSeeder extends AbstractNotificationLogSampleSeeder
      */
     protected function scopeLabel(): string
     {
-        return '[게시판]';
+        return '['.__('sirsoft-board::messages.seeders.notification_log.scope_label').']';
     }
 
     /**

@@ -54,6 +54,11 @@ class ComponentHtmlMapper
     ];
 
     /**
+     * URL 을 담는 속성 — 평가할 때 「빈 바인딩 뒤 남은 부호 정리」를 하지 않는다(`/{{빈값}}` → `/`, 사람 화면 href 와 같음)
+     */
+    private const URL_ATTRS = ['href', 'src'];
+
+    /**
      * 허용된 HTML 속성 목록 (seo-config.json의 allowed_attrs로 오버라이드 가능)
      */
     private array $allowedAttrs = [
@@ -506,6 +511,22 @@ class ComponentHtmlMapper
      */
     private function shouldRender(array $component, array $context, ExpressionEvaluator $evaluator): bool
     {
+        return $this->isRenderable($component, $context, $evaluator);
+    }
+
+    /**
+     * 정의의 렌더 조건(`if` / `condition` / `conditions`)을 평가합니다 — 노드 렌더와 데이터 소스 판 선택이 함께 쓰는 규칙.
+     *
+     * 봇 화면 데이터 소스 해석기({@see DataSourceResolver})가 같은 id 의 조건부 판을 고를 때도 이 판정을 쓴다(엔진은
+     * 노드·데이터 소스 모두 `evaluateRenderCondition` 하나를 쓴다, 7.1.1).
+     *
+     * @param  array  $component  컴포넌트·데이터 소스 정의 (조건 키만 있어도 된다)
+     * @param  array  $context  데이터 컨텍스트
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @return bool 조건을 만족하거나 조건이 없으면 true
+     */
+    public function isRenderable(array $component, array $context, ExpressionEvaluator $evaluator): bool
+    {
         if (isset($component['if'])) {
             return $this->evaluateBooleanExpression($component['if'], $context, $evaluator);
         }
@@ -703,7 +724,7 @@ class ComponentHtmlMapper
         }
 
         $props = $component['props'] ?? [];
-        $attrs = $this->buildAttributes($props, $context, $evaluator);
+        $attrs = $this->buildAttributes($props, $context, $evaluator, $tag);
 
         $innerHtml = match ($modeConfig['type'] ?? '') {
             'iterate' => $this->renderIterateMode($modeConfig, $configEntry, $component, $context, $evaluator),
@@ -740,7 +761,7 @@ class ComponentHtmlMapper
     private function renderTag(string $tag, array $component, array $context, ExpressionEvaluator $evaluator): string
     {
         $props = $component['props'] ?? [];
-        $attrs = $this->buildAttributes($props, $context, $evaluator);
+        $attrs = $this->buildAttributes($props, $context, $evaluator, $tag);
 
         if (in_array($tag, $this->selfClosing)) {
             return "<{$tag}{$attrs}>";
@@ -1784,16 +1805,39 @@ class ComponentHtmlMapper
      * @param  array  $props  컴포넌트 props
      * @param  array  $context  데이터 컨텍스트
      * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @param  string  $tag  그릴 HTML 태그 (`a` 면 정적 링크 규칙 적용 — 비우면 속성만 옮긴다)
      * @return string HTML 속성 문자열
      */
-    private function buildAttributes(array $props, array $context, ExpressionEvaluator $evaluator): string
+    private function buildAttributes(array $props, array $context, ExpressionEvaluator $evaluator, string $tag = ''): string
     {
         $attrs = '';
+
+        // 정적 링크는 템플릿 A 컴포넌트와 같은 규칙으로 이미 푼 값을 쓴다 (7.1.1)
+        $preset = $tag === 'a' ? $this->presetAnchorAttributes($props, $context, $evaluator) : [];
 
         foreach ($props as $key => $value) {
             $htmlAttr = $this->attrMap[$key] ?? $key;
 
             if (! in_array($htmlAttr, $this->allowedAttrs)) {
+                continue;
+            }
+
+            if (array_key_exists($htmlAttr, $preset)) {
+                $value = $preset[$htmlAttr];
+                unset($preset[$htmlAttr]);
+
+                if ($value === null) {
+                    continue;
+                }
+
+                if ($htmlAttr === 'href' && self::isExecutableUrl($value, true)) {
+                    $value = '#';
+                }
+
+                if ($value !== '') {
+                    $attrs .= " {$htmlAttr}=\"".e($value).'"';
+                }
+
                 continue;
             }
 
@@ -1804,7 +1848,7 @@ class ComponentHtmlMapper
             }
 
             if (is_string($value)) {
-                $evaluated = $evaluator->evaluate($value, $context);
+                $evaluated = $evaluator->evaluate($value, $context, ! in_array($htmlAttr, self::URL_ATTRS, true));
 
                 // URL 속성의 실행 스킴 무해화 — React 렌더러(DynamicRenderer 2.6)와 동형.
                 // href 는 링크 모양을 유지하려 `#`, src 는 data: 이미지를 살리고 스크립트 스킴만 제거.
@@ -1822,7 +1866,101 @@ class ComponentHtmlMapper
             }
         }
 
+        // props 에 없던 속성(새 창 링크의 rel, 비활성 링크의 role 등)
+        foreach ($preset as $htmlAttr => $value) {
+            if ($value !== null && $value !== '' && in_array($htmlAttr, $this->allowedAttrs)) {
+                $attrs .= " {$htmlAttr}=\"".e($value).'"';
+            }
+        }
+
         return $attrs;
+    }
+
+    /**
+     * 정적 링크(`a`)의 href·rel·role 을 템플릿 A 컴포넌트와 같은 규칙으로 미리 풉니다 (7.1.1).
+     *
+     * - `disabled` 가 참이면 href 를 빼고 `role="link"`·`aria-disabled="true"`(허용 속성만 나간다)
+     * - `fallbackHref` 가 있으면 비지 않은 href 가 이 사이트 주소가 아닐 때(다른 사이트·`//host`·
+     *   `https://이 사이트//다른호스트`·`#`·실행 스킴) 그 주소로 — A 의 `resolveLinkHref` 판정과 같다
+     * - `target` 이 `_blank` 면 rel 에 `noopener noreferrer` 를 합친다(받은 토큰 유지, 대소문자 무시 중복 없음)
+     *
+     * 대체 주소가 없는 href 는 손대지 않는다 — 사람 화면도 그대로 그린다(실행 스킴 `#` 무해화만 공통).
+     * 돌려준 값은 이미 푼 글자라 buildAttributes 가 다시 평가하지 않는다(값 속 `{{…}}` 재평가 방지).
+     *
+     * @param  array  $props  a 태그로 그릴 컴포넌트 props
+     * @param  array  $context  데이터 컨텍스트
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @return array<string, string|null> HTML 속성명 → 푼 값 (null 이면 그 속성을 내지 않는다)
+     */
+    private function presetAnchorAttributes(array $props, array $context, ExpressionEvaluator $evaluator): array
+    {
+        $preset = [];
+
+        if (array_key_exists('disabled', $props) && $this->isTruthyPropValue($props['disabled'], $context, $evaluator)) {
+            $preset['href'] = null;
+            $preset['role'] = 'link';
+            $preset['aria-disabled'] = 'true';
+        } elseif (isset($props['href'], $props['fallbackHref']) && is_string($props['href']) && is_string($props['fallbackHref'])) {
+            $href = $evaluator->evaluate($props['href'], $context, false);
+            $trimmed = trim($href);
+
+            if ($trimmed !== '' && ($trimmed === '#' || self::isExecutableUrl($href, true) || $this->toSameOriginLinkPath($href) === null)) {
+                $href = $evaluator->evaluate($props['fallbackHref'], $context, false);
+            }
+
+            $preset['href'] = $href;
+        }
+
+        $target = isset($props['target']) && is_string($props['target']) ? $evaluator->evaluate($props['target'], $context) : '';
+
+        if ($target === '_blank') {
+            $rel = isset($props['rel']) && is_string($props['rel']) ? $evaluator->evaluate($props['rel'], $context) : '';
+            $tokens = preg_split('/\s+/', trim($rel), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $lowered = array_map('strtolower', $tokens);
+
+            foreach (['noopener', 'noreferrer'] as $required) {
+                if (! in_array($required, $lowered, true)) {
+                    $tokens[] = $required;
+                }
+            }
+
+            $preset['rel'] = implode(' ', $tokens);
+        }
+
+        return $preset;
+    }
+
+    /**
+     * prop 값이 참인지 판정합니다 — 단일 바인딩은 원본 값으로, 글자는 `if` 와 같은 거짓 목록으로 본다.
+     *
+     * @param  mixed  $value  prop 값 (불리언·숫자·글자·식)
+     * @param  array  $context  데이터 컨텍스트
+     * @param  ExpressionEvaluator  $evaluator  표현식 평가기
+     * @return bool 참이면 true
+     */
+    private function isTruthyPropValue(mixed $value, array $context, ExpressionEvaluator $evaluator): bool
+    {
+        if (is_string($value)) {
+            $value = $evaluator->evaluateRaw($value, $context);
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if ($value === null) {
+            return false;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return $value != 0;
+        }
+
+        if (is_string($value)) {
+            return ! in_array(strtolower(trim($value)), ['', 'false', '0', 'null', 'undefined'], true);
+        }
+
+        return true;
     }
 
     /**
@@ -2111,7 +2249,7 @@ class ComponentHtmlMapper
             $href = $pathExpr;
         } else {
             // ExpressionEvaluator로 나머지 표현식 해석
-            $href = $evaluator->evaluate($pathExpr, $context);
+            $href = $evaluator->evaluate($pathExpr, $context, false);
 
             // 미해석 {{}} 토큰이 남아있으면 skip
             if (str_contains($href, '{{') || str_contains($href, '}}')) {

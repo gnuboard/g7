@@ -1,0 +1,29 @@
+feature: 배송지 창을 열 때 앞 창의 값이 남지 않는다 (7.1.1)
+
+description: |
+  마이페이지 배송지 「수정」 창을 열었다가 취소한 뒤 「새 주소 추가」 를 누르면 제목이 「배송지 수정」 이고 앞 주소 값이 채워진 채
+  열렸고, 저장하면 앞 배송지에 PUT 이 나가 덮어썼다. 「새 주소 추가」 가 편집 대상을 부분 객체로 쓰는데 setState 기본(deep) 병합이
+  이번 객체에 없는 키(id·이름·주소·입력해 둔 칸)를 남기기 때문이다. 닫기 단추·Esc 는 엔진이 closeModal 로만 이어 정리 동작을 붙일 수
+  없으므로, 창을 여는 쪽이 같은 액션 목록에서 그 상태를 null 로 먼저 비운다(엔진 계약 deep = 중첩 보존은 바꾸지 않는다).
+  주문서 「배송지 관리」 창·게시판 댓글 삭제(비밀번호)·글 신고(댓글 대상 칸)도 같은 결함군이라 함께 고쳤다.
+
+# axis 의미:
+#   case — 확인 대상 창과 사용자 순서(마이페이지 수정 → 취소 → 새로 / 마이페이지 새로 입력 → 취소 → 새로 / basic 창 전체 정적 판정).
+#          창과 순서는 서로 독립이 아니라 한 축으로 둔다. 주문서 「배송지 관리」 창은 실제 창 구조로 재는
+#          checkout-address-modal-real-structure.yaml 로 옮겼다(7.1.1 — 하네스 렌더는 창 두 겹 구조를 만들지 못한다).
+axes:
+  case: [mypage_edit_then_add, mypage_add_typed_then_cancel, static_all_basic_modals]
+
+effects:
+  - add_opens_blank_after_edit             # 수정 창을 닫은 뒤 새로 열면 id·이름·주소가 비고 제목이 등록이다
+  - add_save_posts_new_address             # 그 창의 저장이 POST(주소에 id 없음)다
+  - add_opens_blank_after_cancelled_input  # 새 창에 입력하고 취소한 뒤 다시 열면 칸이 비어 있다
+  - partial_open_preceded_by_null          # 창을 여는 부분 객체 쓰기 앞에 같은 상태의 null 쓰기가 있다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/address-modal-open-reset.test.tsx
+
+validation:
+  browser_check: 재실측 — 마이페이지 배송지 「수정」 → 취소 → 「새 주소 추가」(제목·칸·저장 요청 POST), 새 주소 입력 → 취소/Esc/닫기 → 다시 열기(빈 칸), 주문서 「배송지 관리」 수정 폼 → Esc → 다시 열기 → 「새 배송지」
+  note: |
+    정적 판정의 모집단은 basic 굽기 산출 JSON 전부에서 파생한다(새 창도 자동 편입).

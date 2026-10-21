@@ -6,9 +6,9 @@
     <blur-until-loaded sources="mileage_history"/>
     <responsive on="portable" class="mt-4"/>
     <!-- 비활성화 안내 (mileage.enabled=false) -->
-    <div data-if="{{!mileage_balance?.data?.mileage?.enabled}}" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+    <div data-if="{{mileage_balance !== undefined &amp;&amp; !mileage_balance?.data?.mileage?.enabled}}" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
       <responsive on="portable" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"/>
-      <icon name="coins" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+      <icon name="coins" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
       <p class="text-gray-500 dark:text-gray-400">$t:mypage.mileage.disabled_notice</p>
     </div>
     <!-- 요약 카드 4종 (사용가능/소멸예정/누적적립/누적사용) -->
@@ -31,7 +31,7 @@
           <responsive on="portable" class="block text-lg font-bold text-amber-600 dark:text-amber-400"/>
           {{(mileage_balance?.data?.mileage?.expiring_soon ?? 0).toLocaleString()}} P
         </span>
-        <span data-if="{{mileage_balance?.data?.mileage?.expiring_date}}" class="block text-xs text-gray-400 dark:text-gray-500 mt-1">$t:mypage.mileage.summary.expiring_until|date={{mileage_balance?.data?.mileage?.expiring_date}}</span>
+        <span data-if="{{mileage_balance?.data?.mileage?.expiring_date}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-1">$t:mypage.mileage.summary.expiring_until|date={{mileage_balance?.data?.mileage?.expiring_date}}</span>
       </div>
       <!-- 누적 적립 -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 shadow-sm">
@@ -152,7 +152,7 @@
             <td class="px-4 py-3 text-right whitespace-nowrap">
               <span>
                 <class-map base="font-semibold" key="{{tx.amount >= 0 ? 'plus' : 'minus'}}" default="text-gray-700 dark:text-gray-300">
-                  <variant when="plus">text-green-600 dark:text-green-400</variant>
+                  <variant when="plus">text-green-700 dark:text-green-400</variant>
                   <variant when="minus">text-blue-600 dark:text-blue-400</variant>
                 </class-map>
                 {{tx.amount >= 0 ? '+' : ''}}{{Number(tx.amount ?? 0).toLocaleString()}} P
@@ -180,7 +180,7 @@
             </span>
             <span>
               <class-map base="font-semibold text-sm" key="{{tx.amount >= 0 ? 'plus' : 'minus'}}" default="text-gray-700 dark:text-gray-300">
-                <variant when="plus">text-green-600 dark:text-green-400</variant>
+                <variant when="plus">text-green-700 dark:text-green-400</variant>
                 <variant when="minus">text-blue-600 dark:text-blue-400</variant>
               </class-map>
               {{tx.amount >= 0 ? '+' : ''}}{{Number(tx.amount ?? 0).toLocaleString()}} P
@@ -188,17 +188,17 @@
           </div>
           <p class="text-sm text-gray-700 dark:text-gray-300">{{tx.description ?? ''}}</p>
           <div class="flex items-center justify-between mt-1">
-            <span class="text-xs text-gray-400 dark:text-gray-500">{{tx.created_at_formatted ?? ''}}</span>
-            <span data-if="{{tx.expires_at_formatted}}" class="text-xs text-gray-400 dark:text-gray-500">$t:mypage.mileage.expires_label|date={{tx.expires_at_formatted}}</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{tx.created_at_formatted ?? ''}}</span>
+            <span data-if="{{tx.expires_at_formatted}}" class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.mileage.expires_label|date={{tx.expires_at_formatted}}</span>
           </div>
         </div>
       </div>
     </div>
     <!-- 내역 없음 -->
-    <div data-if="{{mileage_balance?.data?.mileage?.enabled &amp;&amp; (!mileage_history.data.transactions.data || mileage_history.data.transactions.data.length === 0)}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+    <div data-if="{{mileage_balance?.data?.mileage?.enabled &amp;&amp; mileage_history !== undefined &amp;&amp; (!mileage_history.data.transactions.data || mileage_history.data.transactions.data.length === 0)}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
       <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"/>
-      <icon name="coins" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3">
-        <responsive on="portable" name="coins" size="2x" class="mx-auto text-gray-300 dark:text-gray-600 mb-2"/>
+      <icon name="coins" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3">
+        <responsive on="portable" name="coins" size="2x" class="mx-auto text-gray-500 dark:text-gray-500 mb-2"/>
       </icon>
       <p class="text-gray-500 dark:text-gray-400">
         <responsive on="portable" class="text-sm text-gray-500 dark:text-gray-400"/>

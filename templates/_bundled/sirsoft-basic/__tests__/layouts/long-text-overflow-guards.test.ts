@@ -7,7 +7,7 @@
  * 줄지 않고, 블록 제목에는 단어 중간 줄바꿈이 없었다. 같은 결함이 이름·제목·본문을 그리는 화면 곳곳에 있어
  * 네 가지 표시 규칙으로 일괄 보호한다.
  *
- * - R1 상단 바 이름: 감싼 flex 자식 `min-w-0 flex-1`, 이름 `truncate`, 우측 단추 묶음 `shrink-0`
+ * - 상단 바 이름: 감싼 flex 자식 `min-w-0 flex-1`, 이름 `truncate`, 우측 단추 묶음 `shrink-0`
  * - R2 블록 글: `break-words`
  * - R3 flex 줄 안의 글: `min-w-0` + `wrap-anywhere` (`break-words` 는 flex 최소 폭 계산을 줄이지 못한다)
  * - R4 좁은 칸: `truncate` + 폭 상한(flex 자식이면 `min-w-0`, 줄지 않는 배지면 `max-w-32`)
@@ -555,12 +555,13 @@ describe('실측 발견 — 인기글·내 글·내 댓글 목록 (2026-10-13 Ch
    * validate-plan 라운드 3) — 한 줄 고정이던 때 297px 에서 제목이 0px 였고, 긴 게시판 이름이면 문서가 28px 넘쳤다.
    * 제목은 최소 3rem 을 지키고 배지가 줄어든다 — 배지가 줄지 않으면 360px·긴 이름에서 제목이 2px 였다.
    */
-  it('인기글 배지·제목 묶음은 한 줄(min-w-0 flex-1 basis-32), 제목 min-w-12·배지 줄어듦, 줄은 flex-wrap, N·시각 묶음 shrink-0', () => {
+  it('인기글 배지·제목 묶음은 한 줄(min-w-0 flex-1 basis-40), 제목 min-w-12·배지 줄어듦, 줄은 flex-wrap, N·시각 묶음 shrink-0', () => {
     const layout = loadLayout('partials/board/popular/_popular_item.json');
     const title = findOne(layout, (n) => n.text === '{{post.title}}', '인기글 제목');
     expectTokens(title, ['min-w-12', 'truncate', 'flex-1'], '인기글 제목');
     const group = findOne(layout, (n) => (n.children ?? []).includes(title), '인기글 배지·제목 묶음');
-    expectTokens(group, ['min-w-0', 'flex-1', 'basis-32'], '인기글 배지·제목 묶음');
+    // 기준 폭 8rem(basis-32)이면 320px 에서도 시각이 같은 줄에 남아 제목이 79px(4~5자)였다 — 10rem 이면 320px 에서 시각이 내려가고 제목 122px (7.1.1 실측)
+    expectTokens(group, ['min-w-0', 'flex-1', 'basis-40'], '인기글 배지·제목 묶음');
     expect(tokens(group)).not.toContain('flex-wrap');
     const badge = findOne(group.children ?? [], (c: Node) => c.text === '{{post.board_name}}', '인기글 배지');
     expectTokens(badge, ['min-w-0', 'truncate', 'max-w-32'], '인기글 배지');
@@ -569,6 +570,22 @@ describe('실측 발견 — 인기글·내 글·내 댓글 목록 (2026-10-13 Ch
     expectTokens(row, ['flex-wrap'], '인기글 제목 줄');
     const meta = findOne(row.children ?? [], (c: Node) => (c.children ?? []).some((k: Node) => String(k.text ?? '').includes('created_at_formatted')), '인기글 N·시각 묶음');
     expectTokens(meta, ['shrink-0'], '인기글 N·시각 묶음');
+  });
+
+  /**
+   * 320px 에서 작성자 묶음이 줄어들 수 없어(min-w-0 없음) 비회원 작성자 「관리자」·「비회원」 배지가 글자 단위로 접혔다(7.1.1).
+   * 작성자 묶음은 줄어들고 조회·댓글 수 묶음은 제 폭을 지킨다.
+   *
+   * @scenario case=home_popular_boards_long_name
+   * @effects flex_text_shrinks_and_wraps, narrow_label_ellipsis_with_cap
+   */
+  it('인기글 작성자 줄: 작성자 묶음 min-w-0, 조회·댓글 수 묶음 shrink-0', () => {
+    const layout = loadLayout('partials/board/popular/_popular_item.json');
+    const author = findOne(layout, (n) => (n.children ?? []).some((c: Node) => c.name === 'UserInfo'), '인기글 작성자 묶음');
+    expectTokens(author, ['min-w-0'], '인기글 작성자 묶음');
+    const row = findOne(layout, (n) => (n.children ?? []).includes(author), '인기글 작성자 줄');
+    const stats = findOne(row.children ?? [], (c: Node) => c !== author && findAll(c, (k) => String(k.text ?? '').includes('view_count')).length > 0, '조회·댓글 수 묶음');
+    expectTokens(stats, ['shrink-0'], '조회·댓글 수 묶음');
   });
 
   /**
@@ -600,5 +617,40 @@ describe('실측 발견 — 로고 이미지 비율 (2026-10-13 Chrome MCP)', ()
     const img = findOne(left, (n) => n.name === 'Img', '모바일 상단 로고');
     expectTokens(img, ['max-w-full', 'object-contain', 'object-left'], '모바일 상단 로고');
     expectTokens(findOne(left, (n) => (n.children ?? []).includes(img), '로고 감싼 칸'), ['min-w-0'], '로고 감싼 칸');
+  });
+});
+
+
+describe('게시글 분류 배지 전수 — 모집단을 레이아웃에서 파생 (7.1.1)', () => {
+  /**
+   * 글 보기의 분류 배지가 줄지 않는 배지 묶음 안에서 폭 상한이 없어, 띄어쓰기 없는 긴 분류 이름이 카드 밖으로 나가
+   * 390px 에서 문서가 628px 로 넓어졌다(basic 1.2.1 「카테고리 칩 같은 좁은 칸은 한 줄로 줄임」). 글 목록(일반·카드·갤러리)·
+   * 홈 게시판 요약·회원 작성글·문의 분류 배지도 같은 모양이라 함께 잠근다.
+   *
+   * @scenario case=post_title_long
+   * @effects narrow_label_ellipsis_with_cap, document_no_horizontal_overflow
+   */
+  it('분류 값만 그리는 노드는 truncate max-w-32', () => {
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) walk(p);
+        else if (e.name.endsWith('.json')) files.push(p);
+      }
+    };
+    walk(layoutsDir);
+    const seen: string[] = [];
+    for (const file of files) {
+      const rel = path.relative(layoutsDir, file).split(path.sep).join('/');
+      const nodes = findAll(JSON.parse(fs.readFileSync(file, 'utf-8')), (n) => typeof n.text === 'string' && /^\{\{\s*[\w?.]+\.category(\s*\?\?\s*'')?\s*\}\}$/.test(n.text.trim()));
+      for (const n of nodes) {
+        seen.push(rel);
+        expectTokens(n, ['truncate', 'max-w-32'], `${rel} 분류 배지 ${n.text}`);
+      }
+    }
+    // 글 보기 2(본문·원글) · 일반 목록 2 · 카드 · 갤러리 · 홈 요약 · 회원 작성글 2 · 문의 2
+    expect(seen.length).toBeGreaterThanOrEqual(11);
+    expect(seen).toContain('partials/board/types/basic/show.json');
   });
 });

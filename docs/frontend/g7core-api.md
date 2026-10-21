@@ -89,7 +89,7 @@ const toast = (window as any).G7Core?.toast;
 
 전역 상태를 관리하는 API입니다.
 
-> 상세 내용: [state-management.md](state-management.md#g7corestate-javascript-api)
+> 상세 내용: [state-management-advanced.md](state-management-advanced.md#g7corestate-javascript-api)
 
 ### API 목록
 
@@ -590,6 +590,10 @@ G7Core.modal.close();
 |--------|------|--------|
 | `isPending()` | 전환 진행 중 여부 | `boolean` |
 | `onComplete(callback)` | 전환 완료 시 콜백 실행 | 구독 해제 함수 |
+| `isPlainLeftClick(event)` | 「보통 클릭」(왼쪽 단추·수정키 없음·링크면 `target` 없음/`_self`·`download` 없음)인지 — 링크를 그리는 합성 컴포넌트가 참일 때만 기본 동작을 막는다 (engine-v1.80.1) | `boolean` |
+| `mergeQueryIntoHref(href)` | 현재 주소의 쿼리를 링크 주소에 합친다(링크 쪽 키가 이김). 같은 출처가 아니면 그대로 (engine-v1.80.1) | `string` |
+| `getRouteGeneration()` | 지금 경로 전환 세대 — 경로 전환이 시작될 때마다 1 씩 는다(같은 주소로 다시 들어와도 는다). 진행 중인 이동 뒤에 새 이동이 대기열에 들어와 진행 중인 화면 처리가 밀릴 때도 는다(engine-v1.82.0 — 값은 늘 같은 방향으로만 바뀐다). 엔진이 없으면 `0` (engine-v1.81.1) | `number` |
+| `isLeaveGuarded()` | 지금 화면을 떠나면 이탈 확인 창이 뜨는지 — 레이아웃 `meta.leave_guard` 식을 읽기 전용으로 평가한다. 선언이 없거나 이미 떠나기로 승인된 이동 중이면 `false` (engine-v1.82.0) | `boolean` |
 
 ### 사용 예시
 
@@ -608,6 +612,48 @@ const unsubscribe = G7Core.navigation.onComplete(() => {
 // 구독 해제
 unsubscribe();
 ```
+
+### 비동기 응답 뒤 화면을 바꾸는 핸들러 — getRouteGeneration
+
+자기 API 를 기다린 뒤 오류 화면·상태 쓰기·이동을 하는 확장 핸들러는 시작할 때 세대를 잡아 두고, 응답 뒤 값이 다르면 아무것도 하지 않는다. 사용자가 그사이 다른 화면으로 옮겼다가 **같은 주소로 돌아온 경우**(A → B → A)도 세대가 달라 지난 응답을 새 화면에 쓰지 않는다 — 주소 비교만으로는 가를 수 없다. 엔진의 `showErrorPage` 가 늦은 오류 화면을 거르는 것과 같은 값이다.
+
+```typescript
+export async function loadClaimForEdit(action: any, context: any) {
+  const G7Core = (window as any).G7Core;
+  const generation = G7Core?.navigation?.getRouteGeneration?.() ?? null; // 옛 엔진이면 null
+
+  const response = await fetchClaim(action.params.id);
+
+  if (generation !== null && G7Core.navigation.getRouteGeneration() !== generation) {
+    return; // 이미 다른 화면(같은 주소의 새 진입 포함) — 오류 화면도 상태 쓰기도 하지 않는다
+  }
+  if (!response.ok) {
+    G7Core.dispatch({ handler: 'showErrorPage', params: { errorCode: response.status } });
+    return;
+  }
+  G7Core.state.setLocal({ form: response.data });
+}
+```
+
+- `window.__templateApp` 같은 코어 내부를 읽지 않는다 — 이 API 가 공개 통로다.
+- 쿼리만 바뀌는 같은 화면 안 이동(검색·쪽 번호)은 세대가 바뀌지 않을 수 있다. 쿼리까지 출처로 보려면 주소 비교를 함께 쓴다.
+
+### 저장하지 않은 변경 확인 — isLeaveGuarded
+
+레이아웃이 `meta.leave_guard` 로 이탈 확인을 선언하면([layout-json.md](layout-json.md#metaleave_guard-저장하지-않은-변경-이탈-확인)) 엔진이 SPA 이동·뒤로/앞으로·새로고침·탭 닫기에서 묻는다. 확장 핸들러는 다음처럼 쓴다.
+
+```typescript
+// SPA 밖으로 직접 나가기 전에(예: 외부 결제·인증 창으로 같은 탭 이동) 물을지 판단한다
+if (G7Core.navigation.isLeaveGuarded?.() && !window.confirm(G7Core.t('core.navigation.leave_confirm'))) {
+  return;
+}
+
+// 저장에 성공한 뒤 이동은 확인을 건너뛴다 — 액션의 bypassLeaveGuard 를 쓴다
+G7Core.dispatch({ handler: 'navigate', params: { path: '/board/free', bypassLeaveGuard: true } });
+```
+
+- 핸들러 문맥의 `context.navigate(path)` 는 확인을 거친다(사용자가 머무르면 이동하지 않는다). 확인을 건너뛰어야 하면 위처럼 `navigate` 액션에 `bypassLeaveGuard: true` 를 준다.
+- 저장 성공 뒤에는 상태의 변경 표시(`hasChanges` 등)도 내린다. 내리지 않고 머무르면 다음 이탈에서 다시 묻는다.
 
 ### onComplete 동작 방식
 

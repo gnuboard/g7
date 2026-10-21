@@ -33,7 +33,7 @@ const NOTICE_KEY = '$t:sirsoft-board.admin.posts.detail.secret_comment_notice';
  */
 function findById(node: any, id: string): any {
     if (!node || typeof node !== 'object') return null;
-    // 댓글 조각은 반복 안에서 그려져 id 에 댓글 식별자 접미(`_{{comment.id}}`)가 붙는다(7.1.0 실측 K4 O-KF3-3)
+    // 댓글 조각은 반복 안에서 그려져 id 에 댓글 식별자 접미(`_{{comment.id}}`)가 붙는다(7.1.0 실측)
     if (node.id === id || node.id === `${id}_{{comment.id}}`) return node;
 
     if (Array.isArray(node.children)) {

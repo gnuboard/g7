@@ -12,7 +12,7 @@
       <h3 data-if="{{_global.panelMode === 'create'}}" class="text-heading">$t:sirsoft-ecommerce.admin.category.form.new_category_title</h3>
       <h3 data-if="{{_global.panelMode === 'edit'}}" class="text-heading">$t:sirsoft-ecommerce.admin.category.form.edit_category_title</h3>
       <div class="flex-center gap-2">
-        <button type="button" class="px-3 py-1.5 text-label hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors">
+        <button type="button" class="px-3 py-1.5 text-label dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
           <on type="click">
             <!-- 편집 취소 — 고른 분류가 있으면 그 보기로, 신규 등록 중이었으면 빈 패널로 돌아가고 입력·오류를 비운다. 이미 올라간 임시 이미지는 여기서 지우지 않는다(서버의 임시 키 정리 몫). -->
             <sequence>

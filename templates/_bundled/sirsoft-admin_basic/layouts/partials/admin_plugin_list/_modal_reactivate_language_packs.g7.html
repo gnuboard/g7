@@ -15,7 +15,7 @@
       </div>
     </div>
     <div class="modal-footer-buttons">
-      <button class="btn btn-secondary" disabled="{{_global.isBulkActivatingLanguagePacks}}">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isBulkActivatingLanguagePacks}}">
         <on type="click">
           <!-- 건너뛰기 — 목록을 다시 받지 않는다. 플러그인 활성은 이 창이 뜨기 전에 이미 끝났고 언어팩은 손대지 않았으므로 화면이 서버와 어긋나지 않는다. -->
           <sequence>
@@ -25,7 +25,7 @@
         </on>
         <span>$t:common.skip</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isBulkActivatingLanguagePacks}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isBulkActivatingLanguagePacks}}">
         <on type="click">
           <!-- 목록에 뜬 팩 전부를 한 번에 켠다 — 하나씩 고르는 칸이 없다. 여기서는 언어팩 목록을 다시 받지 않는데, 이 창은 플러그인 화면 위에 떠 있어 그 목록이 화면에 없기 때문이다. -->
           <sequence>

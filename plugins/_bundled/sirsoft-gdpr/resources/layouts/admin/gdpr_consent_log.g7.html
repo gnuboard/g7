@@ -105,7 +105,7 @@
               </on>
             </select>
             <div class="relative flex-1">
-              <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+              <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"/>
               <input name="search" type="text" placeholder="$t:sirsoft-gdpr.admin.consent_log.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
                 <on type="change">
                   <!-- 검색어 입력 — Enter 로 검색 액션이 실행된다 -->
@@ -116,7 +116,7 @@
                 </on>
               </input>
             </div>
-            <button type="button" class="px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-xl">
+            <button type="button" class="px-4 py-2.5 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white text-sm font-medium rounded-xl">
               <on type="click">
                 <action-ref name="searchConsentLogs"/>
               </on>
@@ -343,7 +343,7 @@
           </div>
         </div>
       </div>
-      <data-grid :pageHrefMergeQuery="true" pageHref="/admin/plugins/sirsoft-gdpr/consent-log?page={page}" data-type="composite" data-ref="gdpr_consent_log_datagrid" data="{{gdprConsentLog?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{gdprConsentLog?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{gdprConsentLog?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{gdprConsentLog?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" :expandable="true" emptyMessage="$t:sirsoft-gdpr.admin.consent_log.empty">
+      <data-grid :pageHrefMergeQuery="true" pageHref="/admin/plugins/sirsoft-gdpr/consent-log?page={page}" data-type="composite" data-ref="gdpr_consent_log_datagrid" data="{{gdprConsentLog?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{gdprConsentLog?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{gdprConsentLog?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{gdprConsentLog?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" :expandable="true" emptyMessage="{{gdprConsentLog === undefined ? '' : $t('sirsoft-gdpr.admin.consent_log.empty')}}">
         <blur-until-loaded sources="gdprConsentLog"/>
         <expand>
           <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-3">
@@ -362,7 +362,7 @@
                 <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded divide-y divide-gray-200 dark:divide-gray-700">
                   <div data-each="snapshot_item in row.categories_snapshot" class="flex-between gap-3 px-3 py-2 text-xs">
                     <span class="text-gray-700 dark:text-gray-300">{{$t(snapshot_item.label_key) ?? snapshot_item.key}}</span>
-                    <span data-if="{{snapshot_item.granted}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">$t:sirsoft-gdpr.admin.consent_log.detail.snapshot_granted</span>
+                    <span data-if="{{snapshot_item.granted}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300">$t:sirsoft-gdpr.admin.consent_log.detail.snapshot_granted</span>
                     <span data-if="{{!snapshot_item.granted}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.admin.consent_log.detail.snapshot_revoked</span>
                   </div>
                 </div>

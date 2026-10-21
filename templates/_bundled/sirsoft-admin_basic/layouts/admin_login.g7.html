@@ -33,10 +33,10 @@
     <div data-ref="login_card_container" class="max-w-md w-full space-y-8">
       <div data-ref="login_header" class="text-center">
         <div data-ref="logo_image_wrapper" data-if="{{_global.settings?.general?.site_logo_url}}" class="mb-4">
-          <img data-ref="logo_image" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? '그누보드7'}}" class="h-16 w-auto max-w-[200px] mx-auto object-contain"/>
+          <img data-ref="logo_image" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}" class="h-16 w-auto max-w-[200px] mx-auto object-contain"/>
         </div>
         <h1 data-ref="logo" data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary text-4xl font-bold mb-2 break-words">
-          <span data-ref="logo_text">{{_global.settings?.general?.site_name ?? '그누보드7'}}</span>
+          <span data-ref="logo_text">{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}</span>
         </h1>
         <p data-ref="subtitle" class="text-label">$t:auth.login.subtitle</p>
       </div>
@@ -142,10 +142,10 @@
         </on>
         <!-- API 에러 메시지 표시 -->
         <div data-ref="login_error_message" data-if="{{_local.loginError}}" class="alert-danger">
-          <p data-ref="login_error_text" class="text-sm text-red-600 dark:text-red-400">{{_local.loginError}}</p>
+          <p data-ref="login_error_text" class="text-sm text-red-700 dark:text-red-400">{{_local.loginError}}</p>
           <!-- 계정 잠금 해제 시각 — 언제 다시 시도할 수 있는지 알려주지 않으면 계속 눌러 보게 된다 -->
-          <p data-ref="login_error_locked_until" data-if="{{_local.loginErrors?.locked_until}}" class="mt-1 text-sm text-red-600 dark:text-red-400">$t:auth.login.locked_until|until={{_local.loginErrors?.locked_until | datetime}}</p>
-          <p data-ref="login_error_locked_permanent" data-if="{{_local.loginErrors?.permanent === true}}" class="mt-1 text-sm text-red-600 dark:text-red-400">$t:auth.login.locked_permanent</p>
+          <p data-ref="login_error_locked_until" data-if="{{_local.loginErrors?.locked_until}}" class="mt-1 text-sm text-red-700 dark:text-red-400">$t:auth.login.locked_until|until={{_local.loginErrors?.locked_until | datetime}}</p>
+          <p data-ref="login_error_locked_permanent" data-if="{{_local.loginErrors?.permanent === true}}" class="mt-1 text-sm text-red-700 dark:text-red-400">$t:auth.login.locked_permanent</p>
         </div>
         <!-- 이메일 입력 필드 -->
         <div data-ref="login_email_field" data-if="{{!_local.twoFactor?.required &amp;&amp; !_local.passwordChange?.required}}">
@@ -163,7 +163,7 @@
         </div>
         <!-- 비밀번호 찾기 링크 -->
         <div data-ref="login_forgot_password" data-if="{{!_local.twoFactor?.required &amp;&amp; !_local.passwordChange?.required}}" class="flex-center justify-end">
-          <a data-ref="login_forgot_link" href="/admin/forgot-password" class="button text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 cursor-pointer">
+          <a data-ref="login_forgot_link" href="/admin/forgot-password" class="button text-sm text-blue-600 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 cursor-pointer">
             <on type="click">
               <navigate/>
             </on>
@@ -171,7 +171,7 @@
           </a>
         </div>
         <!-- 로그인 버튼 -->
-        <button data-ref="login_submit_button" data-if="{{!_local.twoFactor?.required &amp;&amp; !_local.passwordChange?.required}}" type="submit" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2" disabled="{{_local.isLoggingIn}}">
+        <button data-ref="login_submit_button" data-if="{{!_local.twoFactor?.required &amp;&amp; !_local.passwordChange?.required}}" type="submit" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2" disabled="{{_local.isLoggingIn}}">
           <div data-ref="login_submit_spinner" data-if="{{_local.isLoggingIn}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
           <span data-ref="login_submit_text" data-if="{{!_local.isLoggingIn}}">$t:auth.login.submit</span>
           <span data-ref="login_submit_processing" data-if="{{_local.isLoggingIn}}">$t:auth.login.processing</span>
@@ -185,7 +185,7 @@
             <p data-ref="login_two_factor_notice_resent" data-if="{{_local.twoFactor?.resent && _local.twoFactor?.provider_id !== 'totp'}}" class="text-sm text-blue-700 dark:text-blue-300">$t:auth.login.two_factor.resent</p>
           </div>
           <div data-ref="login_two_factor_error" data-if="{{_local.twoFactor?.error}}" class="alert-danger" role="alert">
-            <p data-ref="login_two_factor_error_text" class="text-sm text-red-600 dark:text-red-400">{{_local.twoFactor?.error ?? ''}}</p>
+            <p data-ref="login_two_factor_error_text" class="text-sm text-red-700 dark:text-red-400">{{_local.twoFactor?.error ?? ''}}</p>
           </div>
           <div data-ref="login_two_factor_field">
             <label data-ref="login_two_factor_label" for="two_factor_code" data-if="{{_local.twoFactor?.provider_id !== 'totp'}}" class="form-label">$t:auth.login.two_factor.code_label</label>
@@ -203,7 +203,7 @@
             <p data-ref="login_two_factor_backup_hint" data-if="{{_local.twoFactor?.provider_id === 'totp'}}" class="mt-2 text-sm text-gray-500 dark:text-gray-400">$t:auth.login.two_factor.backup_hint</p>
           </div>
           <!-- 인증번호 확인 — submit 이라 Enter 키로도 제출된다 -->
-          <button data-ref="login_two_factor_submit" type="submit" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2" disabled="{{!_local.twoFactor?.code || _local.twoFactor.code.length < 4 || _local.isLoggingIn}}">
+          <button data-ref="login_two_factor_submit" type="submit" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2" disabled="{{!_local.twoFactor?.code || _local.twoFactor.code.length < 4 || _local.isLoggingIn}}">
             <div data-ref="login_two_factor_spinner" data-if="{{_local.isLoggingIn}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
             <span data-ref="login_two_factor_submit_text" data-if="{{!_local.isLoggingIn}}">$t:auth.login.two_factor.verify</span>
             <span data-ref="login_two_factor_submit_processing" data-if="{{_local.isLoggingIn}}">$t:auth.login.two_factor.verifying</span>
@@ -262,8 +262,8 @@
             <p data-ref="login_password_change_reason_admin" data-if="{{_local.passwordChange?.reason === 'admin_assigned'}}" class="text-sm text-yellow-700 dark:text-yellow-400">$t:auth.login.password_change.reason_admin_assigned</p>
           </div>
           <div data-ref="login_password_change_error" data-if="{{_local.passwordChange?.error}}" class="alert-danger" role="alert">
-            <p class="text-sm text-red-600 dark:text-red-400">{{_local.passwordChange?.error ?? ''}}</p>
-            <p data-if="{{_local.loginErrors?.locked_until}}" class="mt-1 text-sm text-red-600 dark:text-red-400">$t:auth.login.locked_until|until={{_local.loginErrors?.locked_until | datetime}}</p>
+            <p class="text-sm text-red-700 dark:text-red-400">{{_local.passwordChange?.error ?? ''}}</p>
+            <p data-if="{{_local.loginErrors?.locked_until}}" class="mt-1 text-sm text-red-700 dark:text-red-400">$t:auth.login.locked_until|until={{_local.loginErrors?.locked_until | datetime}}</p>
           </div>
           <div data-ref="login_password_change_new_field">
             <label for="password_change_new" class="form-label">$t:auth.login.password_change.new_password</label>
@@ -298,7 +298,7 @@
             <p data-ref="login_password_change_confirm_error" data-if="{{_local.passwordChange?.errors?.password_confirmation}}" class="mt-2 text-sm text-red-600 dark:text-red-400">{{Array.isArray(_local.passwordChange?.errors?.password_confirmation) ? _local.passwordChange.errors.password_confirmation[0] : _local.passwordChange?.errors?.password_confirmation}}</p>
           </div>
           <!-- 변경하고 로그인 — submit 이라 Enter 키로도 제출된다 -->
-          <button data-ref="login_password_change_submit" type="submit" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2" disabled="{{_local.isLoggingIn}}">
+          <button data-ref="login_password_change_submit" type="submit" class="flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2" disabled="{{_local.isLoggingIn}}">
             <div data-ref="login_password_change_spinner" data-if="{{_local.isLoggingIn}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
             <span data-if="{{!_local.isLoggingIn}}">$t:auth.login.password_change.submit</span>
             <span data-if="{{_local.isLoggingIn}}">$t:auth.login.processing</span>

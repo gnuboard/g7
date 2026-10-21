@@ -16,6 +16,18 @@
         {
             "type": "basic",
             "name": "Div",
+            "lifecycle": {
+                "onUnmount": [
+                    {
+                        "comment": "창 닫힘 정리 — X·바깥 클릭·Esc 는 엔진 창 닫기로만 이어져 레이아웃 동작을 타지 않는다. 창이 닫히면 본문을 그리지 않으므로 늘 붙어 있는 이 본문 틀이 내려갈 때 개인정보를 담은 창 이름 공간을 비운다(7.1.1)",
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "mileageManual": null
+                        }
+                    }
+                ]
+            },
             "props": {
                 "className": "space-y-4"
             },
@@ -122,6 +134,7 @@
                                             }
                                         },
                                         {
+                                            "comment": "받을 회원을 고르는 자리라 탈퇴 회원은 빼고 찾는다 — 서버는 탈퇴 회원에게도 그대로 지급·발급하지만 로그인할 수 없어 쓰지 못한다(7.1.1, 코어 exclude_withdrawn)",
                                             "handler": "apiCall",
                                             "target": "/api/admin/users/search",
                                             "if": "{{String($event.target.value ?? '').trim() !== ''}}",
@@ -129,16 +142,16 @@
                                             "params": {
                                                 "method": "GET",
                                                 "query": {
-                                                    "keyword": "{{$event.target.value}}"
+                                                    "keyword": "{{$event.target.value}}",
+                                                    "exclude_withdrawn": "1"
                                                 }
                                             },
                                             "onSuccess": {
-                                                "comment": "결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 3차 실측 T2-D1 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. 늦게 온 옛 응답은 저장하지 않는다 — 응답 키워드가 지금 검색어와 같을 때만 담고, 아니면 지금 값을 그대로 둔다 — 비교는 값 식 안에서 한다(액션 `if` 와 `$event` 는 요청 시점 문맥이고, 값 식의 `_global` 만 평가 시점 최신 상태다)(덮어쓰면 정답 목록이 사라지고 다시 오지 않는다).",
+                                                "comment": "결과를 만든 키워드는 **응답이 실어 온 값**(`meta.keyword`)을 쓴다 — `$event.target.value` 로 찍으면 그것은 **응답이 도착한 순간의 입력칸**이라, 가장 큰 옛 응답(한 글자가 부른 전체 회원)이 가장 늦게 와서 현재 키워드의 것으로 둔갑한다. 아래 가드가 그대로 통과해 엉뚱한 목록이 그려졌다(2026-09-22 #599 실측 — `MEAS599T-S2` 를 친 화면에 전체 회원 83행). 서버가 자기 키워드를 답하므로 화면은 그것과 지금 입력값을 견주기만 한다. 늦게 온 옛 응답은 저장하지 않는다 — 응답 키워드가 지금 검색어와 같을 때만 담고, 아니면 지금 값을 그대로 둔다 — 비교는 값 식 안에서 한다(액션 `if` 와 `$event` 는 요청 시점 문맥이고, 값 식의 `_global` 만 평가 시점 최신 상태다)(덮어쓰면 정답 목록이 사라지고 다시 오지 않는다). 창이 닫힌 뒤(이름 공간 null) 도착한 응답은 아무것도 쓰지 않는다 — 점 경로(`mileageManual.memberSearchResults`)로 쓰면 닫힌 창의 이름 공간이 다시 생겼다(7.1.1).",
                                                 "handler": "setState",
                                                 "params": {
                                                     "target": "global",
-                                                    "mileageManual.memberSearchResults": "{{((response?.meta?.keyword ?? '') === String(_global.mileageManual?.memberSearchKeyword ?? '').trim()) ? (response?.data ?? []) : (_global.mileageManual?.memberSearchResults ?? [])}}",
-                                                    "mileageManual.memberSearchResultsKeyword": "{{((response?.meta?.keyword ?? '') === String(_global.mileageManual?.memberSearchKeyword ?? '').trim()) ? (response?.meta?.keyword ?? '') : (_global.mileageManual?.memberSearchResultsKeyword ?? null)}}"
+                                                    "mileageManual": "{{_global.mileageManual == null ? null : ({ memberSearchResults: ((response?.meta?.keyword ?? '') === String(_global.mileageManual?.memberSearchKeyword ?? '').trim()) ? (response?.data ?? []) : (_global.mileageManual?.memberSearchResults ?? []), memberSearchResultsKeyword: ((response?.meta?.keyword ?? '') === String(_global.mileageManual?.memberSearchKeyword ?? '').trim()) ? (response?.meta?.keyword ?? '') : (_global.mileageManual?.memberSearchResultsKeyword ?? null) })}}"
                                                 }
                                             }
                                         }
@@ -164,8 +177,9 @@
                             },
                             "children": [
                                 {
+                                    "comment": "결과 행은 단추다 — Tab 으로 닿고 Enter·Space 로 고른다(종전 클릭만 받는 DIV 는 키보드로 고를 수 없었다, 7.1.1 출시 전 실측). 단추 이름은 아래 회원 이름·이메일 글자이고, 단추 안이라 블록 상자 대신 span 으로 줄을 나눈다.",
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Button",
                                     "iteration": {
                                         "source": "_global.mileageManual?.memberSearchResults ?? []",
                                         "item_var": "member",
@@ -187,12 +201,13 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "flex items-center gap-2 p-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        "type": "button",
+                                        "className": "flex w-full justify-start items-center gap-2 p-2 text-left cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Span",
                                             "props": {
                                                 "className": "w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0"
                                             },
@@ -203,16 +218,16 @@
                                                     "props": {
                                                         "name": "user",
                                                         "size": "sm",
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "text-gray-500 dark:text-gray-300"
                                                     }
                                                 }
                                             ]
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Span",
                                             "props": {
-                                                "className": "min-w-0 flex-1"
+                                                "className": "block min-w-0 flex-1"
                                             },
                                             "children": [
                                                 {
@@ -227,7 +242,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block text-xs text-gray-500 dark:text-gray-400 truncate"
+                                                        "className": "block text-xs text-gray-500 dark:text-gray-300 truncate"
                                                     },
                                                     "text": "{{member.email}}"
                                                 }
@@ -240,7 +255,7 @@
                                     "name": "Div",
                                     "if": "{{(_global.mileageManual?.memberSearchResults ?? []).length === 0}}",
                                     "props": {
-                                        "className": "p-3 text-sm text-center text-gray-400 dark:text-gray-500"
+                                        "className": "p-3 text-sm text-center text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.no_results"
                                 }
@@ -421,6 +436,7 @@
                                     ],
                                     "props": {
                                         "type": "number",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.amount",
                                         "value": "{{_global.mileageManual?.amount ?? ''}}",
                                         "min": "1",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.mileage_transactions.modal_manual.amount",
@@ -654,8 +670,21 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다)",
                             "type": "click",
-                            "handler": "closeModal"
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "closeModal"
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "mileageManual": null
+                                    }
+                                }
+                            ]
                         }
                     ],
                     "props": {
@@ -737,7 +766,7 @@
                     "props": {
                         "type": "button",
                         "disabled": "{{_global.mileageManual?.isSaving || !_global.mileageManual?.selectedMember || !(Number(_global.mileageManual?.amount ?? 0) > 0) || !(_global.mileageManual?.reason ?? '').trim() || (_global.mileageManual?.action === 'deduct' && _global.mileageManual?.selectedMember?.balance !== null && Number(_global.mileageManual?.amount ?? 0) > Number(_global.mileageManual?.selectedMember?.balance ?? 0))}}",
-                        "className": "flex items-center gap-2 btn text-sm bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        "className": "flex items-center gap-2 btn text-sm bg-red-600 dark:bg-red-600 text-white hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     },
                     "children": [
                         {

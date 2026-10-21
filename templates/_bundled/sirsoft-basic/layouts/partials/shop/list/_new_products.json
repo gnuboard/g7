@@ -34,7 +34,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "sparkles",
-                                "className": "text-xl text-yellow-500"
+                                "className": "text-xl text-yellow-700 dark:text-yellow-600"
                             }
                         },
                         {

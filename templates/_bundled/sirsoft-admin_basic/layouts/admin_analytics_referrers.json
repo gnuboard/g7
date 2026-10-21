@@ -475,7 +475,7 @@
                                         "id": "referrer_urls_grid",
                                         "type": "composite",
                                         "name": "DataGrid",
-                                        "if": "{{analytics_referrer_urls?.loading || (analytics_referrer_urls?.data?.data ?? []).length > 0}}",
+                                        "if": "{{analytics_referrer_urls === undefined || (analytics_referrer_urls?.data?.data ?? []).length > 0}}",
                                         "actions": [
                                             {
                                                 "comment": "유입 주소 목록의 쪽 이동. 이 목록은 원장을 직접 읽어 총 건수를 세지 않으므로 다음 쪽 여부는 응답의 `has_more` 로만 안다.",
@@ -507,7 +507,7 @@
                                             "idField": "url",
                                             "selectable": false,
                                             "sortable": false,
-                                            "emptyMessage": "$t:admin.analytics.common.empty_title",
+                                            "emptyMessage": "{{analytics_referrer_urls === undefined ? '' : $t('admin.analytics.common.empty_title')}}",
                                             "columns": [
                                                 {
                                                     "field": "url",
@@ -569,7 +569,7 @@
                                 "id": "referrer_urls_empty",
                                 "type": "composite",
                                 "name": "EmptyState",
-                                "if": "{{!analytics_referrer_urls?.loading && (analytics_referrer_urls?.data?.data ?? []).length === 0}}",
+                                "if": "{{analytics_referrer_urls !== undefined && (analytics_referrer_urls?.data?.data ?? []).length === 0}}",
                                 "props": {
                                     "iconName": "link",
                                     "title": "$t:admin.analytics.common.empty_title",

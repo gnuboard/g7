@@ -27,7 +27,7 @@ e2e:allow 항목 이름 접미사 중복 방지 표현식 2곳 — 표현식 평
         </div>
         <div class="flex items-center flex-wrap gap-2 sm:flex-shrink-0">
           <!-- 전체 항목 다시 동의 (#19) — 활성 선택형 동의를 새 버전으로 일괄 grant (재동의 의사 표명). isRenewingAll 플래그로 클릭 직후 spinner 노출 + 중복 클릭 차단. -->
-          <button type="button" disabled="{{_local.isRenewingAll}}" class="px-3 py-1.5 text-xs bg-amber-600 dark:bg-amber-700 text-white rounded hover:bg-amber-700 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center">
+          <button type="button" disabled="{{_local.isRenewingAll}}" class="px-3 py-1.5 text-xs bg-amber-700 dark:bg-amber-700 text-white rounded hover:bg-amber-800 dark:hover:bg-amber-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center">
             <on type="click">
               <set-state target="local" :isRenewingAll="true"/>
               <api-call :auth_required="true" target="/api/plugins/sirsoft-gdpr/consent/renew-all" method="POST">
@@ -92,13 +92,13 @@ e2e:allow 항목 이름 접미사 중복 방지 표현식 2곳 — 표현식 평
               <div class="flex items-center gap-2 flex-wrap">
                 <!-- 라벨 뒤에 '쿠키' 접미사 (이슈 #430) — label_suffix='{label} 쿠키'. 운영자 카탈로그 라벨이 '기능' 이어도 화면엔 '기능 쿠키' 로 노출. 기본 ko 라벨('필수 쿠키')처럼 이미 접미사로 끝나면 다시 붙이지 않는다(「필수 쿠키 쿠키」 방지). -->
                 <span class="text-gray-900 dark:text-white font-medium text-sm">{{String(consent?.consent_label ?? consent?.consent_key ?? '').trim().toLowerCase().endsWith($t('sirsoft-gdpr.mypage.privacy.label_suffix').replace('{label}', '').trim().toLowerCase()) ? (consent?.consent_label ?? consent?.consent_key ?? '') : $t('sirsoft-gdpr.mypage.privacy.label_suffix').replace('{label}', consent?.consent_label ?? consent?.consent_key ?? '')}}</span>
-                <span data-if="{{consent?.is_required === true}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">$t:sirsoft-gdpr.mypage.privacy.required_label</span>
+                <span data-if="{{consent?.is_required === true}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">$t:sirsoft-gdpr.mypage.privacy.required_label</span>
                 <!-- 이슈 #430 (3안) — 상태 배지를 라벨 옆으로. 서버 status_badge_label (필수=항상 적용 / 동의함 / 거부함 / 미설정). status 로 색 분기. -->
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{consent?.status === 'consented' ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : (consent?.status === 'required' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400')}}">{{consent?.status_badge_label ?? ''}}</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{consent?.status === 'consented' ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : (consent?.status === 'required' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300')}}">{{consent?.status_badge_label ?? ''}}</span>
               </div>
               <!-- 이슈 #430 (3안) + #509 16번 — 라벨 아래 이력 줄: '날짜 + 동의/철회'. 동의=초록, 철회=빨강으로 둘 다 강조해 균형을 맞춘다 (배지의 동의함=green-700/green-300, 관리자 「GDPR 동의 이력」의 revoked=red 관례와 동일 톤). 서버가 동의·철회 항목만 status_label·status_at_formatted 를 채워 내려주므로(거부/미설정은 null) 둘 다 있을 때만 렌더. -->
               <span data-if="{{!!consent?.consent_description}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">{{consent?.consent_description ?? ''}}</span>
-              <div data-if="{{!!consent?.status_label &amp;&amp; !!consent?.status_at_formatted}}" class="mt-1.5 text-xs font-medium {{consent?.status === 'revoked' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}}">
+              <div data-if="{{!!consent?.status_label &amp;&amp; !!consent?.status_at_formatted}}" class="mt-1.5 text-xs font-medium {{consent?.status === 'revoked' ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400'}}">
                 <span>{{consent?.status_at_formatted ?? ''}}</span>
                 <span class="ml-1">{{consent?.status_label ?? ''}}</span>
               </div>
@@ -111,7 +111,7 @@ e2e:allow 항목 이름 접미사 중복 방지 표현식 2곳 — 표현식 평
                 <span>$t:sirsoft-gdpr.mypage.privacy.locked_label</span>
               </button>
               <!-- 동의함(선택) — 철회 버튼. 클릭 시 철회 확인 모달 (즉시 철회 아님, 오조작 방지). -->
-              <button data-if="{{consent?.is_required !== true &amp;&amp; consent?.is_consented === true}}" type="button" aria-label="{{consent?.consent_label ?? consent?.consent_key}}" class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+              <button data-if="{{consent?.is_required !== true &amp;&amp; consent?.is_consented === true}}" type="button" aria-label="{{consent?.consent_label ?? consent?.consent_key}}" class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <on type="click">
                   <set-state target="global" gdprRevokeTargetKey="{{consent?.consent_key}}" gdprRevokeTargetLabel="{{consent?.consent_label ?? consent?.consent_key}}" gdprRevokeTargetDescription="{{consent?.consent_description ?? ''}}" gdprRevokeTargetDate="{{consent?.status_at_formatted ?? ''}}"/>
                   <open-modal target="revoke_confirm_modal"/>
@@ -146,9 +146,9 @@ e2e:allow 항목 이름 접미사 중복 방지 표현식 2곳 — 표현식 평
         <!-- 철회 대상 표시 — 라벨 + 카테고리 친화 설명. raw key (cookie_functional 등) 는 사용자에게 무의미하여 노출하지 않음. 모달은 별도 컨텍스트라 _global 사용 필수 (부모 _local 미해석) -->
         <div class="rounded-lg bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
           <span class="block font-medium">{{_global.gdprRevokeTargetLabel ?? _global.gdprRevokeTargetKey ?? ''}}</span>
-          <span data-if="{{!!_global.gdprRevokeTargetDescription}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{{_global.gdprRevokeTargetDescription ?? ''}}</span>
+          <span data-if="{{!!_global.gdprRevokeTargetDescription}}" class="block text-xs text-gray-500 dark:text-gray-300 mt-0.5 leading-relaxed">{{_global.gdprRevokeTargetDescription ?? ''}}</span>
           <!-- 이슈 #430 — 철회 대상의 마지막 동의일. 사용자가 언제 동의한 것을 철회하는지 인지 (informed). status_at_formatted 를 gdprRevokeTargetDate 로 전달받음. -->
-          <span data-if="{{!!_global.gdprRevokeTargetDate}}" class="block text-xs text-green-600 dark:text-green-400 mt-1.5">$t:sirsoft-gdpr.mypage.privacy.revoke_target_consented_at|date={{_global.gdprRevokeTargetDate ?? ''}}</span>
+          <span data-if="{{!!_global.gdprRevokeTargetDate}}" class="block text-xs text-green-700 dark:text-green-400 mt-1.5">$t:sirsoft-gdpr.mypage.privacy.revoke_target_consented_at|date={{_global.gdprRevokeTargetDate ?? ''}}</span>
         </div>
         <div class="flex justify-end gap-2">
           <button type="button" disabled="{{_local.isRevoking}}" class="px-4 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50">
@@ -192,7 +192,7 @@ e2e:allow 항목 이름 접미사 중복 방지 표현식 2곳 — 표현식 평
         <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.mypage.privacy.grant_confirm_message</p>
         <div class="rounded-lg bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm text-gray-700 dark:text-gray-200">
           <span class="block font-medium">{{String(_global.gdprGrantTargetLabel ?? _global.gdprGrantTargetKey ?? '').trim().toLowerCase().endsWith($t('sirsoft-gdpr.mypage.privacy.label_suffix').replace('{label}', '').trim().toLowerCase()) ? (_global.gdprGrantTargetLabel ?? _global.gdprGrantTargetKey ?? '') : $t('sirsoft-gdpr.mypage.privacy.label_suffix').replace('{label}', _global.gdprGrantTargetLabel ?? _global.gdprGrantTargetKey ?? '')}}</span>
-          <span data-if="{{!!_global.gdprGrantTargetDescription}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{{_global.gdprGrantTargetDescription ?? ''}}</span>
+          <span data-if="{{!!_global.gdprGrantTargetDescription}}" class="block text-xs text-gray-500 dark:text-gray-300 mt-0.5 leading-relaxed">{{_global.gdprGrantTargetDescription ?? ''}}</span>
         </div>
         <div class="flex justify-end gap-2">
           <button type="button" disabled="{{_local.isGranting}}" class="px-4 py-1.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50">

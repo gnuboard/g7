@@ -19,7 +19,7 @@ use RecursiveIteratorIterator;
 use ReflectionMethod;
 
 /**
- * 게시판 요청 검증 문구의 칸 이름 회귀 테스트 (7.1.0 전수 실측 O-K4F-1)
+ * 게시판 요청 검증 문구의 칸 이름 회귀 테스트 (7.1.0 전수 실측)
  *
  * 요청이 attributes() 로 이름을 주지 않은 칸은 검증 문구의 :attribute 자리에 필드 키가 그대로 보였다
  * (「선택한 sort 값이 올바르지 않습니다.」「The board id field must be an integer.」). 게시판 요청 54개를

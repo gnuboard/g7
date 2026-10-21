@@ -1,0 +1,14 @@
+feature: 마일리지 창을 다시 열 때 지난 실패의 오류 표시가 남지 않는다 (7.1.1)
+
+description: |
+  수동 지급/회수·만료일 연장 창은 입력값 객체로 열지만 errors·isSaving 이 객체에 없어, 기본(deep) 병합으로 지난 실패의 오류 표시가
+  취소 뒤 다시 연 창에 남았다. 여는 쪽이 같은 액션 목록에서 그 상태를 null 로 먼저 비운다.
+
+axes:
+  modal: [manual_transaction, extend_expiry]
+
+effects:
+  - mileage_modal_state_reset_on_open
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminMileageModalOpenReset.test.ts

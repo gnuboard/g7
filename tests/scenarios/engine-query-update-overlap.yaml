@@ -2,10 +2,10 @@ feature: 탭 전환 쿼리 갱신이 겹칠 때의 덮개·응답 적용과 목�
 
 description: |
   탭을 빠르게 오가 navigate replace(updateQueryParams)가 겹치면 먼저 시작한 호출이 끝나면서 뒤 호출의 덮개와
-  대기 표시를 걷었고, 늦게 끝난 옛 호출의 응답이 새 탭의 폼(initLocal)을 덮었다(7.1.0 조치 R1 ①, 게시판 환경설정
+  대기 표시를 걷었고, 늦게 끝난 옛 호출의 응답이 새 탭의 폼(initLocal)을 덮었다(7.1.0 브라우저 실측 조치, 게시판 환경설정
   실측: 덮개 해제 3450ms, 설정 응답 4012ms). 소스마다 가장 최근에 다시 받기 시작한 호출이면서 지금 쿼리에서 고른 소스의
   응답만 적용하고, 덮개는 현재 화면 소스를 받는 호출이 모두 끝난 뒤 걷는다. 같은 탭 목록의 검색·필터·쪽 넘김은
-  navigate 의 refetch_data_sources 로 목록 소스만 다시 받아 설정 폼을 건드리지 않는다(R1 ②, 2026-10-08 결정).
+  navigate 의 refetch_data_sources 로 목록 소스만 다시 받아 설정 폼을 건드리지 않는다(2026-10-08 결정).
 
 axes:
   case: [older_finishes_first, stale_same_source, newer_finishes_first, stale_previous_tab_source, route_change_during_update, scoped_list_refetch, scoped_during_full_refetch, newer_without_sources, single_call, navigate_param_string, navigate_param_array, navigate_param_absent, navigate_param_blank]

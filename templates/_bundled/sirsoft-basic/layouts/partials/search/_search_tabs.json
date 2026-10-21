@@ -54,7 +54,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "ml-1.5 {{(query?.type ?? 'all') === 'all' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
+                        "className": "ml-1.5 {{(query?.type ?? 'all') === 'all' ? 'text-blue-600 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'}}"
                     },
                     "text": "{{(searchResults.data.all_count ?? searchResults.data.total ?? 0) | number}}{{(searchResults.data.all_count_is_exact ?? true) ? '' : '+'}}"
                 }
@@ -103,7 +103,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "ml-1.5 {{query?.type === 'posts' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
+                        "className": "ml-1.5 {{query?.type === 'posts' ? 'text-blue-600 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'}}"
                     },
                     "text": "{{(searchResults.data.posts_count ?? 0) | number}}{{(searchResults.data.counts_are_exact?.posts ?? true) ? '' : '+'}}"
                 }
@@ -152,7 +152,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "ml-1.5 {{query?.type === 'products' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
+                        "className": "ml-1.5 {{query?.type === 'products' ? 'text-blue-600 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'}}"
                     },
                     "text": "{{(searchResults.data.products_count ?? 0) | number}}{{(searchResults.data.counts_are_exact?.products ?? true) ? '' : '+'}}"
                 }
@@ -201,7 +201,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "ml-1.5 {{query?.type === 'pages' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
+                        "className": "ml-1.5 {{query?.type === 'pages' ? 'text-blue-600 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'}}"
                     },
                     "text": "{{(searchResults.data.pages_count ?? 0) | number}}{{(searchResults.data.counts_are_exact?.pages ?? true) ? '' : '+'}}"
                 }

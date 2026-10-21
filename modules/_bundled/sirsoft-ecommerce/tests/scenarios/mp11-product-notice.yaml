@@ -40,8 +40,13 @@ effects:
   - per_page_over_bound_rejected_422   # 상한 없던 요청에 100 상한 부여
   - per_page_all_keyword_still_allowed # 'all' 은 기존 계약 유지
   - per_page_at_bound_passes           # 경계 100 통과
+  # 무한스크롤 로딩 표시·정지 판정 (mp11ProductNotice.test.tsx — 고시·공통정보·추가배송비 모달·쿠폰 상품검색)
+  - infinite_scroll_indicator_scrolls_into_view     # 다음 쪽 로딩 표시를 컨테이너 안에서 scrollIntoView(block end)
+  - infinite_scroll_scroll_trigger_kept             # scroll 이벤트 트리거 유지
+  - infinite_scroll_stops_on_server_has_more_pages  # hasMore 가 서버 pagination.has_more_pages — length>=20 휴리스틱 아님
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/ProductNoticeTemplateControllerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Settings/SettingsContractBoundaryTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/product-notice-list-toggle.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/mp11ProductNotice.test.tsx

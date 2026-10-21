@@ -1,0 +1,31 @@
+feature: 상품 상세 2단 옵션 — 줄 추가·줄 동작 뒤 옵션 칸 비우기 브라우저 회귀 (7.1.1)
+
+description: |
+  비회원 사용자 상품 상세(서버의 실제 옵션 2단 상품 — 공개 API GET 으로 찾는다)에서 첫 조합으로 줄을 담고, 줄에 동작을 한 뒤,
+  윗칸만 다시 고르고, 아랫칸까지 골라 두 번째 줄을 담는다(출시 전 실측과 같은 조작 순서·간격).
+  줄이 담긴 직후·줄 동작 뒤·두 번째 줄 뒤에는 두 칸이 「{윗칸} 선택」·「상위 옵션을 먼저 선택하세요」 이고
+  `G7Core.state.getLocal().currentSelection` 이 `{}` 여야 한다. 윗칸만 고르면 줄이 늘거나 바뀌지 않고 선택은 그 윗칸 값 하나뿐이다.
+  결함은 간헐(수정 전 번들 약 8% — 선행 조건 「줄이 담긴 직후 상태 `{}` 인데 색상 칸만 앞 값」)이라 동작마다 N 회
+  (기본 10, `G7_E2E_OPTION_REPEAT`) 새 탭으로 되풀이하고 한 번이라도 어긋나면 그 시험이 실패한다.
+  GET·HEAD 가 아닌 `/api/` 요청은 모두 가로채 가짜 200 으로 답한다(서버 장바구니·기록 불변).
+
+# axis 의미:
+#   action — 첫 줄이 담긴 뒤 그 줄에 하는 일: 아무것도 안 함 / 수량 「+」 / 「+」 뒤 「-」 / 줄 안 추가옵션 변경 / 줄 삭제
+axes:
+  action: [none, plus, minus, addopt, delete]
+
+effects:
+  - option_cells_cleared_after_line_added   # 줄이 담긴 직후·두 번째 줄 뒤 두 칸이 비고 currentSelection 이 {}
+  - line_action_does_not_revive_selection   # 줄 동작 뒤에도 두 칸이 비고 currentSelection 이 {} (앞 선택으로 되살아나지 않는다)
+  - upper_only_does_not_add_line            # 윗칸만 고르면 줄이 늘거나 바뀌지 않고 선택은 그 윗칸 하나뿐
+  - second_line_only_chosen_combo           # 아랫칸까지 고르면 그 조합 한 줄만 더 담긴다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/product-option-select-reset.spec.ts
+
+notes: |
+  계정 불필요(비회원). 옵션 2단 판매 중 상품이 공개 목록에 없으면 사유와 함께 건너뛴다. 추가옵션 축은 기본값 아닌 선택지가 있는
+  추가옵션 그룹을 가진 상품일 때만 돈다. `G7_E2E_PRODUCT` 로 상품 id 를 고정할 수 있다.
+  수정 전 대조는 G7_E2E_ENGINE_BUNDLE 로 엔진 수정 전 번들(44903535)을 이 브라우저에만 끼운다 — 간헐이라 시험 하나는 green
+  일 수 있고 파일 전체(동작 5종 × N)로 red 를 본다.
+  짝 Vitest: tests/scenarios/shop-option-select-reset-after-add.yaml (레이아웃 렌더 시험).

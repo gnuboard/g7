@@ -82,7 +82,7 @@
                                         "props": {
                                             "name": "flame",
                                             "size": "lg",
-                                            "className": "text-orange-500"
+                                            "className": "text-orange-600"
                                         }
                                     },
                                     {

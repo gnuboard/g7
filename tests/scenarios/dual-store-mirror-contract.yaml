@@ -1,0 +1,16 @@
+feature: 이중 저장소(A = React localDynamicState, B = globalState._local) 쓰기 경로마다 양방향 정합 계약
+
+description: |
+  `_local` 에 쓰는 경로마다 「A 의 쓰기가 B 에 도달한다(A→B)」 와 「B 에만 있던 값을 그 쓰기가 되돌리지 않는다(B→A)」 를 짝으로 잠근다
+  (engine-v1.63.5 — 트러블슈팅 setState 사례 41·42). 저장소 B 는 손으로 채우지 않고 실제 writer(ActionDispatcher·setLocal·
+  setParentLocal·자동바인딩)를 거친다. 축 path 는 쓰기 경로, direction 은 방향이다. engine-v1.81.1 에서 setState 빈 객체 교체 경로를, engine-v1.81.2 에서 커스텀 핸들러 shallow 비우기(늦은 렌더 사본) 경로, 액션 밖 setLocal shallow 교체 경로, 모달의 페이지 대상 $parent._local·setLocal scope parent 쓰기 경로, apiCall 로딩 플래그 해제 경로를 더했다.
+
+axes:
+  path: [setstate_local, setstate_local_dot, setstate_default, setstate_empty_object, custom_handler_setstate, custom_handler_shallow_clear, setlocal_outside_action_replace, modal_parent_local, apicall_loading_flags, result_to_local, setlocal_self_managed, autobinding, set_parent_local]
+  direction: [a_to_b, b_to_a]
+
+effects:
+  - dual_store_mirror_holds
+
+test_files:
+  - resources/js/core/template-engine/__tests__/dual-store-mirror-contract.test.tsx

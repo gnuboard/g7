@@ -43,7 +43,7 @@
                         "type": "basic",
                         "name": "H1",
                         "props": {
-                            "className": "text-2xl font-bold text-gray-900 mb-2"
+                            "className": "text-2xl font-bold text-gray-900 dark:text-white mb-2"
                         },
                         "text": "$t:user.home.welcome_title"
                     },
@@ -51,7 +51,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-base text-gray-700"
+                            "className": "text-base text-gray-700 dark:text-gray-300"
                         },
                         "text": "$t:user.home.welcome_description"
                     }
@@ -114,7 +114,7 @@
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-base font-semibold text-gray-900 mb-1 break-words"
+                                            "className": "text-base font-semibold text-gray-900 dark:text-white mb-1 break-words"
                                         },
                                         "text": "{{memo.title ?? ''}}"
                                     },
@@ -122,7 +122,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-sm text-gray-600 break-words"
+                                            "className": "text-sm text-gray-600 dark:text-gray-300 break-words"
                                         },
                                         "text": "{{memo.content ?? ''}}"
                                     }
@@ -152,7 +152,7 @@
                         ],
                         "props": {
                             "href": "/",
-                            "className": "inline-flex items-center justify-center px-4 py-2 rounded bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 cursor-pointer",
+                            "className": "inline-flex items-center justify-center px-4 py-2 rounded bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-700 cursor-pointer",
                             "data-testid": "home-button"
                         },
                         "text": "$t:user.home.back_to_home"

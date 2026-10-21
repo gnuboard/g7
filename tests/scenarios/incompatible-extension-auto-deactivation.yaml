@@ -5,11 +5,13 @@ description: |
   (W3) 비호환이 1건 이상이고 현재 코어 버전이 디스크 코드 버전(config/app.php 기본값)보다 낮으면 아무것도 끄지 않고 config 캐시를
   비우며 경고를 남기고 판정 캐시를 저장하지 않는다. (W4) 매니저가 실제로 끄지 못한 확장(의존 확장 경고)은 알림과 「자동 해제」 로그에
   넣지 않고 차단 경고를 남기며 그 회차의 판정 캐시를 저장하지 않는다. (W6) 여러 건을 꺼도 config·라우트 캐시 재생성은 한 번이다.
+  판정은 언어팩 번역 등록보다 먼저 돌므로 부팅 중 기록(자동 해제·못 끔·안전망 건너뜀·버전 판정 실패)은 언어팩 등록이 끝난 뒤
+  사이트 언어 문구로 한 번 남는다 — 언어팩이 없거나 레지스트리가 준비되지 않아 언어팩 공급자가 일찍 돌아가도 기록은 사라지지 않는다.
 
 coverage_strategy: full
 
 axes:
-  case: [stale_version, truly_incompatible, blocked_by_dependents, multiple_deactivations, templates, all_compatible]
+  case: [stale_version, truly_incompatible, blocked_by_dependents, multiple_deactivations, templates, all_compatible, boot_log_with_ja_pack, boot_log_without_pack, boot_log_registry_not_ready]
 
 effects:
   - stale_version_skips_auto_deactivation_and_clears_config_cache
@@ -17,6 +19,9 @@ effects:
   - blocked_deactivation_is_not_reported_as_deactivated
   - cache_rebuild_runs_once_per_deactivation_batch
   - compatible_site_only_stores_version_check_cache
+  - boot_time_logs_use_active_language_pack_translation
+  - boot_time_logs_written_once_without_language_pack
 
 test_files:
   - tests/Feature/Extension/IncompatibleExtensionDeactivatorTest.php
+  - tests/Feature/Extension/IncompatibleExtensionBootLogLocaleTest.php

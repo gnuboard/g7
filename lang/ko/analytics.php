@@ -339,4 +339,78 @@ return [
         'ch' => '브라우저 힌트',
         'wd' => '자동화 브라우저 표시',
     ],
+    // `analytics:*` 명령 출력
+    'console' => [
+        'anonymize' => [
+            'invalid_octets' => '가릴 옥텟 수는 0 에서 3 사이여야 합니다.',
+            'option_required' => '--mask-octets 또는 --hash 중 하나는 지정해야 합니다.',
+            'confirm' => '이미 쌓인 방문 기록을 되돌릴 수 없게 바꿉니다. 진행할까요?',
+            'cancelled' => '취소했습니다.',
+            'failed' => '소급 익명화 실패: :error',
+            'done' => '방문 :count건을 익명화했습니다.',
+        ],
+        'archive' => [
+            'invalid_period' => '집계 단위는 hour 또는 day 여야 합니다.',
+            'stale_closed' => '끝을 알리지 못하고 멈춘 실행 :count건을 실패로 닫았습니다.',
+            'invalid_date' => '기간은 Y-m-d 형식이어야 합니다.',
+            'range_reversed' => '시작일이 종료일보다 늦습니다.',
+            'range_dry_run' => '재집계 대상 기간 :from ~ :to (마른 실행 — 집계 표를 바꾸지 않았습니다)',
+            'range_done' => '재집계 :days일 수행 (실패 :failed일)',
+            'date_dry_run' => ':date 집계 대상 확인 (마른 실행 — 집계 표를 바꾸지 않았습니다)',
+            'date_failed' => ':date 집계 실패: :error',
+            'date_skipped' => ':date 집계를 건너뛰었습니다 — 같은 기간을 이미 집계 중입니다.',
+            'date_done' => ':date 집계 완료 — 방문 :visits건, 액션 :actions건, 청크 :chunks개',
+        ],
+        'broadcast_realtime' => [
+            'done' => '현재 접속자 :count명을 브로드캐스트했습니다.',
+        ],
+        'check_volume' => [
+            'rows' => '방문 :visits행 · 액션 :actions행',
+            'within_limit' => '경고 한계 안입니다.',
+            'exceeded_notified' => '경고 한계를 넘어 알림을 보냈습니다.',
+            'exceeded_already_notified' => '경고 한계를 넘었으나 오늘 이미 알린 뒤라 다시 보내지 않았습니다.',
+        ],
+        'prune' => [
+            'headers' => [
+                'target' => '대상',
+                'to_delete' => '삭제 대상',
+                'deleted' => '삭제',
+            ],
+            'dry_run' => '마른 실행 — 아무것도 지우지 않았습니다.',
+            'done' => '방문자 통계 :count건을 정리했습니다.',
+        ],
+        'purge' => [
+            'confirm_option_required' => '전체 삭제는 --confirm 을 붙여야 실행됩니다. 되돌릴 수 없습니다.',
+            'confirm' => '방문자 통계 기록과 집계를 모두 지웁니다. 되돌릴 수 없습니다. 진행할까요?',
+            'cancelled' => '취소했습니다.',
+            'headers' => [
+                'target' => '대상',
+                'deleted' => '삭제',
+            ],
+            'done' => '방문자 통계 :count건을 삭제했습니다.',
+        ],
+        'purge_extension' => [
+            'invalid_arguments' => '확장 종류는 module 또는 plugin 이고 식별자가 필요합니다.',
+            'extension_active' => ':type :identifier 는 켜져 있습니다. 끄거나 제거한 뒤 실행하거나, 켜진 채로 지우려면 --force 를 붙이세요.',
+            'confirm_option_required' => '확장 통계 정리는 --confirm 을 붙여야 실행됩니다. 되돌릴 수 없습니다.',
+            'not_installed' => ':type :identifier 는 설치되어 있지 않습니다. 데이터를 남기고 제거한 확장이면 그대로 진행하고, 식별자를 잘못 적었다면 취소하세요.',
+            'confirm' => ':type :identifier 의 방문자 통계 전환·차원 집계를 지웁니다. 되돌릴 수 없습니다. 진행할까요?',
+            'cancelled' => '취소했습니다.',
+            'failed' => '정리에 실패했습니다. 진단 화면의 실행 이력과 애플리케이션 로그에서 사유를 확인하세요.',
+            'headers' => [
+                'target' => '대상',
+                'deleted' => '삭제',
+            ],
+        ],
+        'report' => [
+            'invalid_period' => '기간은 weekly 또는 monthly 여야 합니다.',
+            'disabled' => '리포트 발송이 꺼져 있어 보내지 않았습니다.',
+            'sent' => ':period 리포트를 보냈습니다 — 방문 :visits건, 방문자 :visitors명, 페이지뷰 :pageviews건',
+        ],
+        'update_cloud_ranges' => [
+            'failed_sources' => '받지 못한 출처: :sources',
+            'none_received' => '대역을 하나도 받지 못해 기존 목록을 그대로 둡니다.',
+            'done' => '클라우드 IP 대역 :count건을 갱신했습니다.',
+        ],
+    ],
 ];

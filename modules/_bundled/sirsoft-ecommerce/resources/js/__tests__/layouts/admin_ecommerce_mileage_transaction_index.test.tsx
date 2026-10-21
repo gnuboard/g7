@@ -169,11 +169,12 @@ describe('마일리지 내역 메인 레이아웃', () => {
    *
    * @effects sort_and_per_page_navigate_immediately
    */
-  it('정렬 Select(최신순/금액↑↓) 이 query.sort 즉시 navigate 한다 (§14.2)', () => {
+  it('정렬 Select(최신순/오래된순/금액↑↓) 이 query.sort 즉시 navigate 한다 (§14.2)', () => {
     const sortSelect = findFirst(mainLayout.slots.content[0], (n) => n.id === 'sort_select');
     expect(sortSelect).toBeTruthy();
     const values = sortSelect.props.options.map((o: any) => o.value);
-    expect(values).toEqual(['created_at_desc', 'amount_desc', 'amount_asc']);
+    // 표 머리로 고를 수 있는 4값(서버 허용값)이 모두 있다 — 「일시」 머리 오름차순(created_at_asc)도 선택칸에 나타난다(7.1.1)
+    expect(values).toEqual(['created_at_desc', 'created_at_asc', 'amount_desc', 'amount_asc']);
     const nav = asArray(sortSelect?.actions).find((a: any) => a.handler === 'navigate');
     expect(nav.params.query.sort).toContain('$event.target.value');
     expect(nav.params.query.page).toBe(1);
@@ -1048,7 +1049,8 @@ describe('일괄 연장 진입 (메인 레이아웃)', () => {
   it('bulk_extend_button 이 선택한 적립건 묶음만 담고 회원(userId)은 담지 않는다', () => {
     const btn = findFirst(mainLayout.slots.content[0], (n) => n.id === 'bulk_extend_button');
     const seq = asArray(btn?.actions).find((a: any) => a.handler === 'sequence');
-    const setState = callbacksOf(seq, 'actions').find((a: any) => a.handler === 'setState');
+    // 앞의 null 비우기 단계(7.1.1)가 아니라 창 상태를 객체로 쓰는 단계를 본다
+    const setState = callbacksOf(seq, 'actions').find((a: any) => a.handler === 'setState' && a.params?.mileageExtend);
     expect(String(setState.params.mileageExtend.lotIds)).toContain('selectedItems');
     expect(setState.params.mileageExtend.userId).toBeUndefined();
   });

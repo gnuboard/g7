@@ -31,11 +31,11 @@
       <container data-type="layout" class="py-8">
         <responsive on="portable" class="py-4"/>
         <!-- 로딩/에러 상태 처리 -->
-        <div data-if="{{profile.loading}}" class="flex justify-center items-center py-20">
+        <div data-if="{{profile === undefined}}" class="flex justify-center items-center py-20">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"/>
         </div>
         <!-- 프로필 내용 -->
-        <div data-if="{{profile.data &amp;&amp; !profile.loading &amp;&amp; !profile.error}}" class="space-y-6">
+        <div data-if="{{profile.data}}" class="space-y-6">
           <!-- 페이지 헤더 -->
           <div class="flex items-center gap-2 mb-6">
             <icon name="user" size="xl" class="text-gray-900 dark:text-white"/>
@@ -72,8 +72,8 @@
               <div data-if="{{profile.data?.status === 'withdrawn'}}" class="flex-1 space-y-3">
                 <responsive on="portable" class="w-full space-y-3 text-center"/>
                 <!-- 탈퇴한 사용자 텍스트 -->
-                <h2 class="text-2xl font-bold text-gray-400 dark:text-gray-500 line-through">
-                  <responsive on="portable" class="text-xl font-bold text-gray-400 dark:text-gray-500 line-through"/>
+                <h2 class="text-2xl font-bold text-gray-500 dark:text-gray-500 line-through">
+                  <responsive on="portable" class="text-xl font-bold text-gray-500 dark:text-gray-500 line-through"/>
                   $t:userinfo.withdrawn_user
                 </h2>
               </div>
@@ -115,11 +115,11 @@
                     <!-- 게시판명 배지 -->
                     <span class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap truncate max-w-32">{{post.board_name}}</span>
                     <!-- 카테고리 배지 -->
-                    <span data-if="{{post.category}}" class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded whitespace-nowrap">{{post.category}}</span>
+                    <span data-if="{{post.category}}" class="flex-shrink-0 truncate max-w-32 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded whitespace-nowrap">{{post.category}}</span>
                     <!-- 비밀글 아이콘 -->
-                    <icon data-if="{{post.is_secret}}" name="lock" size="xs" class="flex-shrink-0 text-yellow-500 dark:text-yellow-400"/>
+                    <icon data-if="{{post.is_secret}}" name="lock" size="xs" class="flex-shrink-0 text-yellow-700 dark:text-yellow-400"/>
                     <!-- 블라인드 아이콘 -->
-                    <icon data-if="{{post.status === 'blinded'}}" name="eye-slash" size="xs" class="flex-shrink-0 text-orange-500 dark:text-orange-400"/>
+                    <icon data-if="{{post.status === 'blinded'}}" name="eye-slash" size="xs" class="flex-shrink-0 text-orange-600 dark:text-orange-400"/>
                     <!-- 제목 + 댓글수 컨테이너 -->
                     <div class="flex-1 min-w-0 flex items-center gap-1">
                       <!-- 제목 -->
@@ -147,7 +147,7 @@
               </a>
             </div>
             <div class="text-center py-12">
-              <icon name="file-circle-xmark" size="2xl" class="text-gray-300 dark:text-gray-600 mb-4"/>
+              <icon name="file-circle-xmark" size="2xl" class="text-gray-500 dark:text-gray-500 mb-4"/>
               <p class="text-gray-500 dark:text-gray-400">$t:user.profile.no_posts</p>
             </div>
           </div>

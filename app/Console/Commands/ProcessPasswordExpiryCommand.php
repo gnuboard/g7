@@ -63,7 +63,7 @@ class ProcessPasswordExpiryCommand extends Command
     public function handle(): int
     {
         if (! $this->service->isEnabled()) {
-            $this->info('비밀번호 만료 기능이 꺼져 있어 실행하지 않았습니다. (security.password_expiry_enabled = false)');
+            $this->info(__('auth.console.process_password_expiry.disabled'));
 
             return Command::SUCCESS;
         }
@@ -74,7 +74,7 @@ class ProcessPasswordExpiryCommand extends Command
         $lock = $isDryRun ? null : Cache::lock(PasswordExpiryStageRunner::LOCK_KEY, 3600);
 
         if ($lock !== null && ! $lock->get()) {
-            $this->warn('관리자 직권 실행이 비밀번호 만료 처리를 하고 있어 이번 주기는 건너뛰었습니다.');
+            $this->warn(__('auth.console.process_password_expiry.locked'));
 
             return Command::SUCCESS;
         }
@@ -101,8 +101,8 @@ class ProcessPasswordExpiryCommand extends Command
         $notice = $this->runStage('notice', fn (): array => $this->service->notifyUpcoming($isDryRun), $failed);
         $expire = $this->runStage('expire', fn (): array => $this->service->processExpired($isDryRun), $failed);
 
-        $this->info("{$prefix}만료 사전 안내: {$notice['count']}건 (남은 대상 {$notice['remaining']}건)");
-        $this->info("{$prefix}만료일 처리: {$expire['count']}건 (남은 대상 {$expire['remaining']}건)");
+        $this->info($prefix.__('auth.console.process_password_expiry.notice', ['count' => $notice['count'], 'remaining' => $notice['remaining']]));
+        $this->info($prefix.__('auth.console.process_password_expiry.expire', ['count' => $expire['count'], 'remaining' => $expire['remaining']]));
 
         if (! $isDryRun) {
             Log::info('ProcessPasswordExpiryCommand: 비밀번호 만료 처리 완료', [
@@ -137,7 +137,7 @@ class ProcessPasswordExpiryCommand extends Command
         } catch (\Throwable $e) {
             $failed++;
 
-            $this->error("단계 실패 — {$stage}: {$e->getMessage()}");
+            $this->error(__('auth.console.process_password_expiry.stage_failed', ['stage' => $stage, 'error' => $e->getMessage()]));
 
             Log::error('ProcessPasswordExpiryCommand: 단계 실패 — 나머지 단계는 계속합니다', [
                 'stage' => $stage,

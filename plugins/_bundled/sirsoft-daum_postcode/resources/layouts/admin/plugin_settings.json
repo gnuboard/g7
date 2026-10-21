@@ -4,6 +4,7 @@
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "$t:sirsoft-daum_postcode.settings.title",
         "description": "$t:sirsoft-daum_postcode.settings.description"
     },
@@ -18,6 +19,33 @@
             "auth_required": true,
             "initLocal": "form",
             "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
             "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form)"
         }
     ],
@@ -539,7 +567,10 @@
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate"
+                                        "handler": "navigate",
+                                        "params": {
+                                            "bypassLeaveGuard": true
+                                        }
                                     }
                                 ],
                                 "props": {
@@ -625,6 +656,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
                                     "className": "btn btn-primary flex-center gap-1.5"
                                 },

@@ -1,0 +1,37 @@
+feature: 상품 상세 2단 옵션 — 줄이 담긴 뒤 옵션 칸이 비고, 윗칸만 다시 골라도 옛 아랫칸 값으로 줄이 담기지 않는다 (7.1.1)
+
+description: |
+  옵션 2단(색상·사이즈) 상품에서 「네이비」→「L」 을 고르면 줄이 담기고 핸들러가 옵션 선택(`currentSelection`)을 `{}` 로
+  비웠는데(저장소 B·forced·getLocal 모두 `{}`), 화면 칸은 네이비·L 그대로였다. 그 상태에서 색상 「블랙」 만 고르면 사이즈를
+  고르지 않았는데 「블랙/L」 이 저절로 담겼다. 커스텀 핸들러의 쓰기는 엔진이 `G7Core.state.setLocal` 로 승격하고, 렌더러
+  상태(저장소 A)의 함수형 갱신 결과가 앞 상태와 다시 깊게 병합돼 빈 객체가 앞 키를 지우지 못한다. 화면 문맥
+  `deepMerge(B, A)` 가 A 의 앞 선택을 보여 주고, 다음 선택의 `Object.assign({}, _local.currentSelection, …)` 이 그 옛 값과
+  합쳐진다. 선택칸 컴포넌트는 `value` prop 만 그리는 제어 드롭다운이라 원인이 아니다. 7.1.0 에도 같은 코드 경로로 있었다.
+  같은 원인의 두 번째 경로: 줄을 담은 뒤 그 줄의 수량 증가·감소·삭제·추가옵션 변경을 누르면 그 핸들러들의 깊은 쓰기가
+  `setLocal` 에서 렌더 문맥 `_local`(A 의 앞 선택이 남은 값)의 빠진 잎 키를 저장소 B 에 보충해(addMissingLeafKeys),
+  getLocal·B 의 `currentSelection` 까지 앞 선택으로 되살아났다. 줄 쪽 핸들러는 `currentSelection` 을 싣지 않으므로 고칠 곳은
+  A 에 앞 선택을 남기던 비우기 한 곳이다.
+  핸들러가 옵션 선택을 null 로 먼저 지우고 `{}` 를 쓴다(엔진 무변경 — 레이아웃의 「빈 객체로 비우는 setState 는 null 로
+  먼저 지운다」 규칙과 같다). 시험은 운영과 같은 TemplateApp + renderTemplate 로 실물 옵션 섹션을 그린다.
+
+# axis 의미:
+#   step — 줄이 담긴 뒤 사용자가 하는 일: 아무것도 하지 않음(담긴 직후) / 윗칸만 다시 고름 / 이미 담긴 조합을 다시 고름 /
+#          담긴 줄의 수량 증가 / 수량 감소 / 줄 삭제 / 줄 안 추가옵션 변경(각각 그 뒤 윗칸만 다시 고름)
+#          *_after_rerender — 색상과 사이즈 사이에 루트가 다시 그려진(늦은 렌더 사본) 뒤의 줄 동작 (engine-v1.81.2)
+axes:
+  step: [after_add, reselect_upper_only, duplicate_reselect, quantity_increase_after_add, quantity_decrease_after_add, remove_item_after_add, additional_option_change_after_add, additional_option_change_after_rerender, quantity_increase_after_rerender]
+
+effects:
+  - option_selects_cleared_after_line_added            # 줄이 담기거나 중복 조합으로 거절된 뒤 두 칸이 모두 비어 보인다
+  - upper_reselect_does_not_reuse_previous_lower_value # 윗칸만 고르면 줄이 늘지 않고, 아랫칸까지 골라야 그 조합이 담긴다
+  - line_action_does_not_revive_previous_selection     # 담긴 줄의 수량·삭제·추가옵션을 바꿔도 옵션 선택(getLocal·화면 칸)이 앞 선택으로 되살아나지 않는다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shop-option-select-reset-after-add.test.tsx
+
+validation:
+  browser_check: 재실측 — 비회원 사용자 상품 상세(옵션 2단 상품) 「네이비」→「L」 로 줄 추가 뒤 두 칸이 「색상 선택」·「상위 옵션 먼저」 로 비는지, 「블랙」 만 골랐을 때 줄이 늘지 않는지, 「M」 까지 골라 블랙/M 이 담기는지. 줄 추가 뒤 그 줄의 「+」·「-」·삭제·추가옵션 변경을 누른 다음에도 칸이 비어 있고 getLocal().currentSelection 이 {} 이며, 색만 바꿨을 때 줄이 담기지 않는지
+  note: |
+    엔진 원인 두 갈래는 engine-v1.81.2(7.1.1)에서 고쳤다 — 저장소 A 함수형 갱신이 shallow·replace 를 지키고(handleLocalSetState
+    의 표지 판정), 루트 렌더 병합이 늦은 B 사본에만 남은 키를 뺀다(dropLaggingRenderBaseKeys). 핸들러의 null 선행(회피 수정)은 그대로 두었다(무해).
+    *_after_rerender 축은 회피 수정만으로는 red(엔진 렌더 병합 장치를 끄면 2 failed — 「색상」 칸 앞 값).

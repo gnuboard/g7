@@ -15,7 +15,7 @@
       </div>
     </div>
     <div class="modal-footer-buttons">
-      <button class="btn btn-secondary" disabled="{{_global.isBulkActivatingLanguagePacks}}">
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isBulkActivatingLanguagePacks}}">
         <on type="click">
           <!-- 건너뛰기 — 대상 목록만 비우고 닫는다(언어팩은 꺼진 채로 남는다). -->
           <sequence>
@@ -25,7 +25,7 @@
         </on>
         <span>$t:common.skip</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isBulkActivatingLanguagePacks}}">
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isBulkActivatingLanguagePacks}}">
         <on type="click">
           <!-- 일괄 활성 실행 — 보여 준 목록의 id 를 그대로 보낸다.
                성공해도 목록을 다시 받지 않는다(이 화면은 모듈 목록이고 언어팩 상태를 보이지 않는다). -->

@@ -1032,7 +1032,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
             <Span className="block font-medium text-gray-900 dark:text-gray-100">
               {t('admin.templates.layout_edit.draft.found', { count: pendingDraftKeys.length })}
             </Span>
-            <Span className="block mt-0.5 text-xs text-gray-500 dark:text-gray-400 truncate">
+            <Span className="block mt-0.5 text-xs text-gray-600 dark:text-gray-400 truncate">
               {pendingDraftKeys.map((key) => labelFromKey(key)).join(' · ')}
             </Span>
             <Div className="flex gap-2 mt-2">
@@ -1160,7 +1160,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
           className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs ${
             wordWrap
               ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-semibold'
-              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+              : 'text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
           }`}
           onClick={toggleWordWrap}
         >
@@ -1172,7 +1172,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
           data-testid="shortcut-help-open"
           aria-label={t('admin.templates.layout_edit.shortcuts.title')}
           title={t('admin.templates.layout_edit.shortcuts.title')}
-          className="px-2 py-1 rounded-md text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+          className="px-2 py-1 rounded-md text-xs text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
           onClick={() => setHelpOpen(true)}
         >
           <Icon name="fa-regular fa-keyboard" className="text-[11px]" />
@@ -1199,7 +1199,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
           <Div
             aria-busy="true"
             data-testid="editor-loading-overlay"
-            className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-gray-900/60 text-sm text-gray-600 dark:text-gray-300"
+            className="absolute inset-0 flex items-center justify-center bg-white/90 dark:bg-gray-900/90 text-sm text-gray-700 dark:text-gray-200"
           >
             {t('common.loading')}
           </Div>
@@ -1359,7 +1359,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
 
                 return (
                   <Div key={group}>
-                    <Span className="block mt-3 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                    <Span className="block mt-3 mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                       {t(CODE_SHORTCUT_GROUP_LABEL[group])}
                     </Span>
                     {specs.map((spec) => (

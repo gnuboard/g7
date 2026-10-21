@@ -4,6 +4,7 @@ namespace App\Services\Queue;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\Analytics\QueueStatsRepositoryInterface;
+use App\Jobs\GenerateSitemapJob;
 use Illuminate\Support\Carbon;
 use Throwable;
 
@@ -450,29 +451,13 @@ class QueueWorkerRegistry
 
         if (! in_array($this->driverOf($default), self::NON_WORKER_DRIVERS, true)) {
             foreach ($this->entries() as ['connection' => $connection, 'queue' => $queue]) {
-                $driver = $this->driverOf($connection);
-                $measurable = in_array($driver, self::MEASURABLE_DRIVERS, true);
-                $pending = $measurable ? (int) ($pendingByQueue[$queue] ?? 0) : null;
-                $beat = $this->lastHeartbeat($connection, $queue);
-                $alive = $beat !== null && $now - $beat <= $staleSeconds;
+                $rows[] = $this->statusRow($connection, $queue, $pendingByQueue, $now, $staleSeconds, false);
+            }
 
-                $warnings = [];
-                if (! $alive) {
-                    $warnings[] = ($pending ?? 0) > 0 ? 'pending_without_worker' : 'no_heartbeat';
-                }
-
-                $rows[] = [
-                    'connection' => $connection,
-                    'queue' => $queue,
-                    'driver' => $driver,
-                    'pending' => $pending,
-                    'pending_measurable' => $measurable,
-                    'last_heartbeat_at' => $beat !== null ? Carbon::createFromTimestamp($beat)->toIso8601String() : null,
-                    'warnings' => $warnings,
-                    'clamped_timeout_count' => $this->counterValue(self::CLAMP_PREFIX.'count:'.$connection.':'.$queue),
-                    // 긴 작업 큐를 retry_after 가 짧은 연결로 띄우면 실행 중인 잡을 다른 워커가 다시 집는다.
-                    'long_queue_hint' => $queue === config('queue.worker_registry.long_queue', 'long') && ! $this->isLongConnection($connection),
-                ];
+            // 코어 잡이 직접 쓰는 전용 큐 — 운영자가 등록하지 않아도 기본 연결에 잡이 쌓이므로 상태표에 늘 싣는다.
+            // 종전에는 등록 큐만 보여 사이트맵 잡이 영원히 대기해도 대기 건수·경고가 보이지 않았다(7.1.1 출시 전).
+            foreach ($this->unregisteredDedicatedQueues() as $queue => $timeout) {
+                $rows[] = $this->statusRow($default, $queue, $pendingByQueue, $now, $staleSeconds, true);
             }
         }
 
@@ -488,6 +473,69 @@ class QueueWorkerRegistry
                 'fallback' => $this->counterSummary(self::FALLBACK_PREFIX),
             ],
         ];
+    }
+
+    /**
+     * 상태표 한 행을 만듭니다.
+     *
+     * @param  string  $connection  연결 이름
+     * @param  string  $queue  큐 이름
+     * @param  array<string, int>  $pendingByQueue  큐별 대기 건수
+     * @param  int  $now  측정 시각 (unix ts)
+     * @param  int  $staleSeconds  하트비트가 낡았다고 보는 초
+     * @param  bool  $dedicated  코어 전용 큐(운영자 미등록)인지
+     * @return array<string, mixed> 상태 행
+     */
+    private function statusRow(string $connection, string $queue, array $pendingByQueue, int $now, int $staleSeconds, bool $dedicated): array
+    {
+        $driver = $this->driverOf($connection);
+        $measurable = in_array($driver, self::MEASURABLE_DRIVERS, true);
+        $pending = $measurable ? (int) ($pendingByQueue[$queue] ?? 0) : null;
+        $beat = $this->lastHeartbeat($connection, $queue);
+        $alive = $beat !== null && $now - $beat <= $staleSeconds;
+
+        $warnings = [];
+        if (! $alive) {
+            $warnings[] = ($pending ?? 0) > 0 ? 'pending_without_worker' : 'no_heartbeat';
+        }
+
+        return [
+            'connection' => $connection,
+            'queue' => $queue,
+            'driver' => $driver,
+            'pending' => $pending,
+            'pending_measurable' => $measurable,
+            'last_heartbeat_at' => $beat !== null ? Carbon::createFromTimestamp($beat)->toIso8601String() : null,
+            'warnings' => $warnings,
+            'clamped_timeout_count' => $this->counterValue(self::CLAMP_PREFIX.'count:'.$connection.':'.$queue),
+            // 긴 작업 큐를 retry_after 가 짧은 연결로 띄우면 실행 중인 잡을 다른 워커가 다시 집는다.
+            'long_queue_hint' => $queue === config('queue.worker_registry.long_queue', 'long') && ! $this->isLongConnection($connection),
+            // 코어 잡 전용 큐(사이트맵) — 운영자가 등록하지 않아도 워커가 따로 있어야 한다.
+            'dedicated' => $dedicated,
+        ];
+    }
+
+    /**
+     * 기본 연결에 운영자가 등록하지 않은 코어 전용 큐를 돌려줍니다.
+     *
+     * 사이트맵 생성 잡({@see GenerateSitemapJob})은 기본 연결의 전용 큐로 간다 — 대용량 생성이 default 큐의 방송·알림을
+     * 막지 않게 분리했고, 동시 중복 생성을 막으려 워커를 1개만 둔다. 운영자가 그 큐를 기본 연결에 직접 등록했으면
+     * 그 연결 명령에 이미 실리므로 여기서 빼고 겹쳐 내지 않는다.
+     *
+     * @return array<string, int> 큐 이름 => 잡 제한 시간(초)
+     */
+    private function unregisteredDedicatedQueues(): array
+    {
+        $registered = $this->queueNamesFor($this->defaultConnection());
+        $queues = [];
+
+        foreach ([GenerateSitemapJob::QUEUE => GenerateSitemapJob::TIMEOUT_SECONDS] as $queue => $timeout) {
+            if (! in_array($queue, $registered, true)) {
+                $queues[$queue] = $timeout;
+            }
+        }
+
+        return $queues;
     }
 
     /**
@@ -517,7 +565,9 @@ class QueueWorkerRegistry
     /**
      * 등록된 연결마다 Supervisor 에 넣을 워커 실행 명령을 만듭니다.
      *
-     * @return list<array{connection: string, queues: string, command: string}> 연결별 명령
+     * 코어 전용 큐(사이트맵)는 같은 연결이라도 워커 1개 전용 명령을 따로 싣는다(`dedicated: true`, `--timeout` = 잡 제한 시간).
+     *
+     * @return list<array{connection: string, queues: string, command: string, dedicated: bool}> 연결별 명령
      */
     private function supervisorCommands(): array
     {
@@ -535,7 +585,17 @@ class QueueWorkerRegistry
                 $command .= ' --timeout=3600';
             }
 
-            $commands[] = ['connection' => $connection, 'queues' => $queues, 'command' => $command];
+            $commands[] = ['connection' => $connection, 'queues' => $queues, 'command' => $command, 'dedicated' => false];
+        }
+
+        $default = $this->defaultConnection();
+        foreach ($this->unregisteredDedicatedQueues() as $queue => $timeout) {
+            $commands[] = [
+                'connection' => $default,
+                'queues' => $queue,
+                'command' => "php artisan queue:work {$default} --queue={$queue} --sleep=3 --tries=3 --max-time=3600 --timeout={$timeout}",
+                'dedicated' => true,
+            ];
         }
 
         return $commands;

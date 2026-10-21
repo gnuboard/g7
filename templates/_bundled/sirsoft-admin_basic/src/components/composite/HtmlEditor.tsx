@@ -307,10 +307,10 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
               inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all
               ${isActive
                 ? isDefault
-                  ? 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white shadow-md scale-105'
+                  ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white shadow-md scale-105'
                   : 'bg-gray-500 text-white dark:bg-gray-600 dark:text-white shadow-md scale-105'
                 : isDefault
-                  ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50'
                   : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }
             `}
@@ -318,10 +318,11 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
           >
             <Icon name="globe" className="w-3 h-3" />
             <Span>{getLocaleNameByCode(localeCode)}</Span>
-            {isDefault && <Span className="text-red-500">*</Span>}
+            {/* 필수 표시 — 활성 탭(진한 바탕)에서는 탭 글자색을 따르고, 비활성 탭(연한 바탕)에서만 빨강을 쓴다 */}
+            {isDefault && <Span className={isActive ? 'text-current' : 'text-red-700 dark:text-red-300'}>*</Span>}
             {/* 입력 완료 표시 */}
             {hasValue(localeCode) && !isActive && (
-              <Icon name="check" className="w-3 h-3 text-green-500 dark:text-green-400" />
+              <Icon name="check" className="w-3 h-3 text-green-700 dark:text-green-400" />
             )}
           </Button>
         );
@@ -347,8 +348,8 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
               onClick={handlePreviewModeToggle}
               className={`px-3 py-1.5 text-xs font-bold rounded-lg focus:outline-none focus:ring-2 ${
                 previewMode
-                  ? 'text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 hover:bg-gray-300 dark:hover:bg-gray-500 focus:ring-gray-400 dark:focus:ring-gray-500'
-                  : 'text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-700 border border-blue-300 dark:border-blue-600 hover:bg-blue-50 dark:hover:bg-gray-600 focus:ring-blue-500 dark:focus:ring-blue-600'
+                  ? 'text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-600 border border-gray-300 dark:border-gray-500 hover:bg-gray-300 dark:hover:bg-gray-700 focus:ring-gray-400 dark:focus:ring-gray-500'
+                  : 'text-blue-600 dark:text-blue-200 bg-white dark:bg-gray-700 border border-blue-300 dark:border-blue-600 hover:bg-blue-50 dark:hover:bg-gray-600 focus:ring-blue-500 dark:focus:ring-blue-600'
               }`}
             >
               {previewMode ? t('common.preview_off') : t('common.preview')}
@@ -392,7 +393,7 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
                 placeholder={`${placeholder} (${getLocaleNameByCode(localeCode)})`}
                 rows={rows}
                 readOnly={readOnly}
-                className={`block w-full rounded-lg border px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={`block w-full rounded-lg border px-3 py-2 text-sm placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed ${
                   isHtml
                     ? 'font-mono bg-white dark:bg-gray-800 border-blue-300 dark:border-blue-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500'
                     : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500'
@@ -409,7 +410,7 @@ export const HtmlEditor: React.FC<HtmlEditorProps> = ({
             placeholder={placeholder}
             rows={rows}
             readOnly={readOnly}
-            className={`block w-full rounded-lg border px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`block w-full rounded-lg border px-3 py-2 text-sm placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed ${
               isHtml
                 ? 'font-mono bg-white dark:bg-gray-800 border-blue-300 dark:border-blue-600 text-gray-800 dark:text-gray-200 focus:border-blue-500 focus:ring-blue-500'
                 : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-blue-500'

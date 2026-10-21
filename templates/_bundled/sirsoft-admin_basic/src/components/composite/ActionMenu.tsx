@@ -397,11 +397,11 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
               );
             }
 
-            // 잠긴 항목은 위험(빨강) 색·hover 를 빼고 회색으로 흐리게 — 빨강이 남으면 눌릴 것처럼 보였다(O-F11).
+            // 잠긴 항목은 위험(빨강) 색·hover 를 빼고 회색으로 흐리게 — 빨강이 남으면 눌릴 것처럼 보였다.
             const stateClasses = item.disabled
               ? 'text-gray-400 dark:text-gray-500 opacity-60 cursor-not-allowed'
               : item.variant === 'danger'
-                ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus:bg-red-50 dark:focus:bg-red-900/20 cursor-pointer'
+                ? 'text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus:bg-red-50 dark:focus:bg-red-900/20 cursor-pointer'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 cursor-pointer';
 
             const link = item.disabled ? null : resolveLinkHref(item.mergeQuery && typeof item.href === 'string' ? mergeQueryIntoHref(item.href) : item.href);
@@ -485,7 +485,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
           ref={triggerRef as React.RefObject<HTMLButtonElement>}
           aria-haspopup="menu"
           aria-expanded={isOpen}
-          // 아이콘만 있는 트리거(DataGrid 행 메뉴 … 등)는 글자가 없어 이름 없는 버튼으로 읽혔다(7.1.0 실측 O-KF-1)
+          // 아이콘만 있는 트리거(DataGrid 행 메뉴 … 등)는 글자가 없어 이름 없는 버튼으로 읽혔다(7.1.0 실측)
           aria-label={triggerLabel ? undefined : iconOnlyName}
           onClick={handleTriggerClick}
           onKeyDown={(event) => handleTriggerKeyDown(event, false)}

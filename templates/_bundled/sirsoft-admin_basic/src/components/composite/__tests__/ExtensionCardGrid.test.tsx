@@ -217,7 +217,9 @@ describe('ExtensionCardGrid — 아이콘', () => {
     expect(badge.getAttribute('aria-label')).toBe('日本語 언어팩');
     // 다크에서도 파랑을 유지해야 흰 글자와의 대비가 남는다(§7.4).
     expect(badge.className).toContain('bg-blue-600');
-    expect(badge.className).toContain('dark:bg-blue-500');
+    // 다크 짝도 600 단계다 — blue-500 은 흰 글자 대비가 3.76 으로 4.5:1 에 못 미친다.
+    expect(badge.className).toContain('dark:bg-blue-600');
+    expect(badge.className).not.toContain('dark:bg-blue-500');
   });
 
   // @scenario shape=region_tagged
@@ -623,7 +625,7 @@ describe('ExtensionCardGrid — 상태 표시', () => {
   });
 });
 
-describe('ExtensionCardGrid — 켜기 스위치의 접근 가능한 이름 (O-Q2-1)', () => {
+describe('ExtensionCardGrid — 켜기 스위치의 접근 가능한 이름', () => {
   // 업데이트·레이아웃 편집 단추가 스위치 바로 앞에 서면, 이름 없는 스위치가 곁 글자를 찾아 그 단추 글자를
   // 이름으로 집었다 — 화면 읽기에서 모듈·플러그인 카드 스위치가 「업데이트」, 템플릿 카드는 「레이아웃 편집」.
   // @scenario control=extension_card_switch

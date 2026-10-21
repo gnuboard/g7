@@ -73,7 +73,7 @@ class PurgeCommandTest extends TestCase
         $this->seedLedgerAndStats();
 
         $this->artisan('analytics:purge', ['--confirm' => true])
-            ->expectsQuestion('방문자 통계 기록과 집계를 모두 지웁니다. 되돌릴 수 없습니다. 진행할까요? (yes/no) [no]', 'no')
+            ->expectsQuestion(__('analytics.console.purge.confirm').' (yes/no) [no]', 'no')
             ->assertSuccessful();
 
         $this->assertSame(1, AnalyticsVisit::query()->count());
@@ -98,7 +98,7 @@ class PurgeCommandTest extends TestCase
         });
 
         $this->artisan('analytics:purge', ['--confirm' => true])
-            ->expectsQuestion('방문자 통계 기록과 집계를 모두 지웁니다. 되돌릴 수 없습니다. 진행할까요? (yes/no) [no]', 'yes')
+            ->expectsQuestion(__('analytics.console.purge.confirm').' (yes/no) [no]', 'yes')
             ->assertSuccessful();
 
         $this->assertSame(0, AnalyticsVisit::query()->count());
@@ -128,7 +128,7 @@ class PurgeCommandTest extends TestCase
         $this->assertGreaterThan(0, AnalyticsActionName::query()->count());
 
         $this->artisan('analytics:purge', ['--confirm' => true])
-            ->expectsQuestion('방문자 통계 기록과 집계를 모두 지웁니다. 되돌릴 수 없습니다. 진행할까요? (yes/no) [no]', 'yes')
+            ->expectsQuestion(__('analytics.console.purge.confirm').' (yes/no) [no]', 'yes')
             ->assertSuccessful();
 
         $this->assertSame(0, AnalyticsActionName::query()->count());

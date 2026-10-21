@@ -6,7 +6,8 @@
  * (`partial`) 참조까지 따라가 화면이 실제로 그리는 트리 전체를 본다.
  *
  * 재는 것은 둘이다.
- *  - 실패해도 흰 화면이 되지 않는가 — api 데이터소스마다 `fallback`.
+ *  - 실패해도 흰 화면이 되지 않는가 — api 데이터소스마다 `fallback`, 또는 폼을 채우는 소스는
+ *    `errorHandling.default → showErrorPage`(fallback 이 있으면 빈 폼 저장으로 설정을 덮어쓴다).
  *  - 다시 받아오는 동안 옛 값이 서 있다 툭 바뀌지 않는가 — 표·차트를 가진 화면마다 `blur_until_loaded`.
  *
  * @scenario screen=overview, state=loading, viewport=1440, locale=ko
@@ -57,16 +58,53 @@ describe('방문자 통계 화면 — 상태 분기 전수', () => {
     expect(screens.length).toBeGreaterThanOrEqual(14);
   });
 
+  /**
+   * 처음 받기 실패가 본문 오류 화면인지 — `default` 가 곧바로 showErrorPage 이거나, 다시 받기 실패(`error.refetch`)만 토스트로 가르는
+   * `conditions` 의 조건 없는 갈래가 showErrorPage (engine-v1.82.0 문맥)
+   *
+   * @param source 데이터 소스
+   * @returns 처음 받기 실패가 오류 화면이면 true
+   */
+  const firstFetchFailureShowsErrorPage = (source: any): boolean => {
+    const handler = source.errorHandling?.default;
+    if (handler?.handler === 'showErrorPage') return true;
+    if (handler?.handler !== 'conditions') return false;
+
+    return (handler.conditions ?? []).some((b: any) => b.if === undefined && b.then?.handler === 'showErrorPage');
+  };
+
   // @scenario screen=overview, state=load_failed, viewport=1440, locale=ko
   // @effects every_analytics_screen_has_fallback_and_blur
-  it('모든 화면의 api 데이터소스가 fallback 을 갖는다 — 실패해도 흰 화면이 되지 않는다', () => {
+  it('모든 화면의 api 데이터소스가 실패 갈래를 갖는다 — fallback 이거나 본문 오류 화면, 흰 화면이 되지 않는다', () => {
+    // 폼을 채우는 소스(initLocal)는 fallback 대신 errorHandling.default → showErrorPage 로 실패를 가른다.
+    // fallback 이 있으면 받기 실패가 「성공」으로 돌아와 빈 설정 폼이 서고, 저장하면 실제 설정을 기본값으로 덮어쓴다.
+    // 표시 전용 소스는 지금처럼 fallback 으로 빈 화면 대신 빈 값을 그린다.
     const missing: string[] = [];
     for (const screen of screens) {
       for (const source of apiSources(expandedObjects(screen))) {
-        if (!source.fallback) missing.push(`${screen}:${source.id}`);
+        const errorPage = firstFetchFailureShowsErrorPage(source);
+        if (!source.fallback && !errorPage) missing.push(`${screen}:${source.id}`);
       }
     }
     expect(missing).toEqual([]);
+  });
+
+  // @scenario screen=overview, state=load_failed, viewport=1440, locale=ko
+  // @effects every_analytics_screen_has_fallback_and_blur
+  it('폼을 채우는 소스는 fallback 없이 본문 오류 화면으로 실패를 알린다 — 빈 폼 저장으로 설정을 덮어쓰지 않는다', () => {
+    const formSources: string[] = [];
+    const wrong: string[] = [];
+    for (const screen of screens) {
+      for (const source of apiSources(expandedObjects(screen))) {
+        if (!source.initLocal && !source.initGlobal) continue;
+        formSources.push(`${screen}:${source.id}`);
+        if (source.fallback) wrong.push(`${screen}:${source.id} — fallback`);
+        if (!firstFetchFailureShowsErrorPage(source)) wrong.push(`${screen}:${source.id} — default 오류 화면 없음`);
+      }
+    }
+    // 모집단이 비면 단언이 조용히 통과한다 — 통계 설정(analytics_settings) 하나는 반드시 잡혀야 한다.
+    expect(formSources.some((id) => id.endsWith(':analytics_settings'))).toBe(true);
+    expect(wrong).toEqual([]);
   });
 
   // @scenario screen=overview, state=loading, viewport=1440, locale=ko
@@ -261,6 +299,8 @@ describe('방문자 통계 레이아웃 — 번역 키 전수(모든 로케일)'
     };
     const missing: string[] = [];
     for (const [key, file] of owners) {
+      // 코어 공용 문구(`core.*` — 다시 받기 실패 토스트 등)는 코어 언어 파일·코어 ja 팩이 갖는다(템플릿 lang 밖)
+      if (key.startsWith('core.')) continue;
       const ns = key.split('.')[0];
       for (const locale of locales) {
         const value = langValue(tree(locale, ns), key);

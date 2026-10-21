@@ -275,11 +275,11 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
 
     // @scenario case=community
     // @effects community_injection_contract
-    it('빈 상태 메시지는 length === 0 조건으로 노출된다', () => {
+    it('빈 상태 메시지는 받은 뒤 length === 0 일 때만 노출된다(받는 중에는 숨김)', () => {
         const postsEmpty = findById(communityExt as any, 'latest_posts_empty');
-        expect(postsEmpty.if).toBe('{{(board_recent_posts?.data ?? []).length === 0}}');
+        expect(postsEmpty.if).toBe('{{board_recent_posts !== undefined && ((board_recent_posts?.data ?? []).length === 0)}}');
         const reportsEmpty = findById(communityExt as any, 'report_management_empty');
-        expect(reportsEmpty.if).toBe('{{(board_pending_reports?.data?.items ?? []).length === 0}}');
+        expect(reportsEmpty.if).toBe('{{board_pending_reports !== undefined && ((board_pending_reports?.data?.items ?? []).length === 0)}}');
     });
 
     // @scenario case=community

@@ -59,4 +59,14 @@ return [
     'reset_token_expired' => 'Password reset token has expired. Please request again.',
     'password_reset_email_sent' => 'Password reset email has been sent.',
     'email_send_failed' => 'Failed to send email. Please try again later.',
+    // `auth:process-password-expiry` command output
+    'console' => [
+        'process_password_expiry' => [
+            'disabled' => 'Skipped because the password expiry feature is turned off. (security.password_expiry_enabled = false)',
+            'locked' => 'Skipped this cycle because an administrator-initiated run is processing password expiry.',
+            'notice' => 'Expiry advance notices: :count (:remaining remaining)',
+            'expire' => 'Expired on due date: :count (:remaining remaining)',
+            'stage_failed' => 'Stage failed — :stage: :error',
+        ],
+    ],
 ];

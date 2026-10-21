@@ -1,8 +1,43 @@
 import { AuthManager } from '../auth/AuthManager';
 import { createLogger } from '../utils/Logger';
 import { suffixed } from '../support/assetUrl';
+import {
+  consumeArmedLeaveGuardBypass,
+  endLeaveApproval,
+  installLeaveGuardUnloadListener,
+  requestLeave,
+} from './LeaveGuard';
 
 const logger = createLogger('Router');
+
+/**
+ * Router.navigate 옵션
+ */
+export interface RouterNavigateOptions {
+  /** 레이아웃 이탈 가드(`meta.leave_guard`) 확인을 이번 이동에 한해 생략 (저장 성공 뒤 이동 등) @since engine-v1.82.0 */
+  bypassLeaveGuard?: boolean;
+  /** 호출 측 호환용 — Router 는 언제나 pushState 한다(교체는 navigate 액션의 replace 가 맡는다) */
+  replace?: boolean;
+  [key: string]: unknown;
+}
+
+/**
+ * 지금 히스토리 항목의 위치 — Navigation API(`navigation.currentEntry.index`)가 있을 때만 안다.
+ *
+ * @returns 위치, 모르면 null
+ */
+function currentHistoryEntryIndex(): number | null {
+  const index = (window as any).navigation?.currentEntry?.index;
+
+  return typeof index === 'number' && index >= 0 ? index : null;
+}
+
+/**
+ * 지금 주소(경로+쿼리+해시)
+ */
+function currentUrl(): string {
+  return window.location.pathname + window.location.search + window.location.hash;
+}
 
 /**
  * 라우트 메타 정보
@@ -57,10 +92,17 @@ export class Router {
   private eventHandlers: Map<string, EventHandler[]> = new Map();
   private pendingNavigation: string | null = null;
   private isNavigating: boolean = false;
+  /** 마지막으로 확정한 화면의 주소 — 이탈 가드가 popstate 를 되돌릴 때 쓴다 @since engine-v1.82.0 */
+  private committedUrl: string;
+  /** 마지막으로 확정한 히스토리 항목 위치(Navigation API), 모르면 null @since engine-v1.82.0 */
+  private committedHistoryIndex: number | null;
 
   constructor(templateIdentifier: string) {
     this.templateIdentifier = templateIdentifier;
+    this.committedUrl = currentUrl();
+    this.committedHistoryIndex = currentHistoryEntryIndex();
     this.initPopstateListener();
+    installLeaveGuardUnloadListener();
   }
 
   /**
@@ -72,10 +114,62 @@ export class Router {
 
   /**
    * popstate 이벤트 핸들러 (화살표 함수로 this 바인딩 유지)
+   *
+   * popstate 는 주소가 이미 바뀐 뒤에 온다. 레이아웃 이탈 가드가 참이고 사용자가 머무르기를 고르면
+   * 확정 화면의 주소를 같은 자리에서 곧바로 다시 쌓는다(`pushState`). 화면은 다시 그리지 않는다 (engine-v1.82.0)
    */
   private handlePopState = (): void => {
+    const targetIndex = currentHistoryEntryIndex();
+    const bypass = consumeArmedLeaveGuardBypass();
+    if (!requestLeave(currentUrl(), { bypass, fromPath: this.getCommittedUrl() })) {
+      this.restoreBlockedPopState(targetIndex);
+
+      return;
+    }
+
+    this.committedUrl = currentUrl();
+    this.committedHistoryIndex = targetIndex;
     this.navigateToCurrentPath();
   };
+
+  /**
+   * 이탈 가드가 막은 popstate 를 되돌립니다 — 확정 주소를 **동기로** 다시 쌓는다.
+   *
+   * `history.go(차이)` 로 원래 항목에 돌아가는 방식은 쓰지 않는다. 되돌림이 비동기라 그 사이 주소가 목적지에
+   * 머물고, 대기 중인 디바운스 입력의 경로 검사(`window.location.pathname`)가 머무른 화면의 입력을 「다른 경로」로
+   * 보고 버린다(입력 손실 — 이 가드가 막으려는 바로 그것). 뒤로 가기를 막은 경우 기록은 [.., 목적지, 확정 화면] 이
+   * 되어 다시 뒤로 가면 또 묻는다. 앞으로 가기를 막은 경우 그 뒤의 앞으로 기록은 잃는다.
+   *
+   * @param _targetIndex popstate 가 내려앉은 항목 위치 (진단용)
+   */
+  private restoreBlockedPopState(_targetIndex: number | null): void {
+    window.history.pushState({}, '', this.getCommittedUrl());
+    this.committedHistoryIndex = currentHistoryEntryIndex();
+  }
+
+  /**
+   * 확정 화면의 주소 — Navigation API 가 있으면 그 항목의 지금 주소(그 뒤 replaceState 로 바뀐 쿼리 포함)를 쓴다.
+   *
+   * @returns 경로+쿼리+해시
+   */
+  private getCommittedUrl(): string {
+    const index = this.committedHistoryIndex;
+    if (index !== null) {
+      try {
+        const entry = (window as any).navigation?.entries?.()?.[index];
+        if (typeof entry?.url === 'string') {
+          const url = new URL(entry.url);
+          if (url.origin === window.location.origin) {
+            return url.pathname + url.search + url.hash;
+          }
+        }
+      } catch {
+        // 아래 기록값으로
+      }
+    }
+
+    return this.committedUrl;
+  }
 
   /**
    * 이벤트 핸들러 등록
@@ -278,6 +372,8 @@ export class Router {
 
     if (!matchResult) {
       logger.warn(`No route matched for path: ${pathname}`);
+      // 새 화면(오류 화면)으로 넘어간다 — 이탈 승인은 여기까지 (engine-v1.82.0)
+      endLeaveApproval();
       this.emit('routeNotFound', pathname);
       return;
     }
@@ -300,6 +396,12 @@ export class Router {
       // 인증 상태가 없거나 타입이 다른 경우에만 API 호출
       if (!isAuthenticated) {
         isAuthenticated = await authManager.checkAuth(authType);
+      }
+
+      // 인증 확인을 기다리는 동안 더 새 이동이 대기열에 들어왔으면 이 경로는 그리지 않는다 (engine-v1.82.0)
+      if (this.isNavigating && this.pendingNavigation !== null) {
+        logger.log(`Route ${pathname} superseded while checking auth`);
+        return;
       }
 
       if (!isAuthenticated) {
@@ -334,34 +436,57 @@ export class Router {
     }
 
     // 라우트 변경 이벤트 발생 (핸들러가 완료될 때까지 대기)
-    await this.emit('routeChange', {
-      path: pathname,
-      layout: matchResult.route.layout,
-      endpoint: matchResult.route.endpoint,
-      params: { ...(matchResult.route.params || {}), ...matchResult.params },
-      query,
-      auth_required: matchResult.route.auth_required,
-      auth_type: matchResult.route.auth_type,
-      meta: matchResult.route.meta,
-    });
+    try {
+      await this.emit('routeChange', {
+        path: pathname,
+        layout: matchResult.route.layout,
+        endpoint: matchResult.route.endpoint,
+        params: { ...(matchResult.route.params || {}), ...matchResult.params },
+        query,
+        auth_required: matchResult.route.auth_required,
+        auth_type: matchResult.route.auth_type,
+        meta: matchResult.route.meta,
+      });
+    } finally {
+      // 새 화면이 그려졌다 — 다음 이탈부터 그 화면의 가드로 다시 묻는다 (engine-v1.82.0)
+      endLeaveApproval();
+    }
   }
 
   /**
    * 지정된 경로로 이동합니다.
    *
    * 동시에 여러 navigate 호출이 발생할 경우, 마지막 요청만 처리합니다.
-   * 이전 navigate가 진행 중이면 대기했다가 최신 경로로 이동합니다.
+   * 이전 navigate가 진행 중이면 `navigationSuperseded` 를 알려 그 화면 처리를 멈추게 하고(engine-v1.82.0),
+   * 그 처리가 물러나는 대로 최신 경로로 이동합니다.
+   *
+   * 지금 화면 레이아웃이 `meta.leave_guard` 를 선언했고 그 식이 참이면 주소를 바꾸기 **전에** 확인을 묻고,
+   * 머무르기를 고르면 아무것도 하지 않는다(pushState·routeChange 0). 같은 경로(쿼리·해시만 다름)는 묻지 않는다.
    *
    * @param path - 이동할 경로 (예: '/admin/dashboard')
+   * @param options - `bypassLeaveGuard: true` 면 이탈 확인 생략 (engine-v1.82.0)
+   * @returns 이동을 시작(또는 대기열에 넣음)했으면 true, 이탈 가드에서 머무르기를 골랐으면 false (engine-v1.82.0 — 종전 void)
    */
-  navigate(path: string): void {
+  navigate(path: string, options?: RouterNavigateOptions): boolean {
+    // 이탈 가드 — 대기열에 넣기 전에도 판정한다 (engine-v1.82.0)
+    if (!requestLeave(path, { bypass: options?.bypassLeaveGuard === true })) {
+      logger.log(`Navigation to ${path} cancelled by leave guard`);
+      return false;
+    }
+
     // 이미 navigate가 진행 중이면 대기열에 추가
     if (this.isNavigating) {
       this.pendingNavigation = path;
-      return;
+      // 진행 중인 이동은 이제 낡았다 — 구독자(TemplateApp)가 그 화면 처리를 멈추게 알린다 (engine-v1.82.0).
+      // 종전에는 앞 이동을 끝까지(앞 화면 데이터 응답·렌더·progressive 받기까지) 마친 뒤에야 이 이동을 시작해,
+      // 사용자가 이미 떠난 화면(글 수정)이 그려지고 늦은 응답이 들어간 뒤 새 화면(새 글)으로 넘어갔다.
+      void this.emit('navigationSuperseded', path);
+      return true;
     }
 
     this.executeNavigation(path);
+
+    return true;
   }
 
   /**
@@ -374,9 +499,15 @@ export class Router {
     try {
       // URL 변경 (브라우저 히스토리에 추가)
       window.history.pushState({}, '', path);
+      this.committedUrl = currentUrl();
+      this.committedHistoryIndex = currentHistoryEntryIndex();
 
       // 라우트 매칭 및 렌더링 (완료까지 대기)
       await this.navigateToCurrentPath();
+    } catch (error) {
+      // 화면을 바꾸지 못했다 — 이탈 승인을 남겨 두면 지금 화면의 가드가 꺼진 채 남는다 (engine-v1.82.0)
+      endLeaveApproval();
+      throw error;
     } finally {
       this.isNavigating = false;
 

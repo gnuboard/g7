@@ -114,7 +114,8 @@
     "test_mode_settings_warning_title": "（注意）NicePayments決済設定が現在テスト決済になっています。",
     "test_mode_settings_warning_body": "テスト決済では実際の決済は発生しません。ショップ運営中の場合は必ず実決済に設定して運営してください。",
     "test_mode_settings_warning_action": "実決済に設定",
-    "test_mode_orders_in_list": "テスト決済注文を含む"
+    "test_mode_orders_in_list": "テスト決済注文を含む",
+    "vbank_noti_count_value": "{{count}}回"
   },
   "easy_pay": {
     "section_title": "簡便決済"

@@ -168,7 +168,7 @@ class DependencyEnricher
             }
         }
 
-        // 빈 문자열 이름도 식별자로 대체한다 — 화면은 이 값을 그대로 보여 주므로 빈 칸이 된다(#736 O-F10).
+        // 빈 문자열 이름도 식별자로 대체한다 — 화면은 이 값을 그대로 보여 주므로 빈 칸이 된다(#736).
         return is_string($name) && $name !== '' ? $name : $fallback;
     }
 }

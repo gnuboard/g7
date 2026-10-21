@@ -193,7 +193,7 @@ class LayoutMarkupApiTest extends TestCase
      *
      * 저장 요청의 정리 단계가 «슬롯이 하나도 없는 extends 문서» 에 빈 `content` 슬롯을 지어 넣어, 부모가
      * `content` 슬롯을 정의하지 않으면 「슬롯 "content"은 부모 레이아웃에 정의되지 않았습니다.」 로 막혔다
-     * (실측 2026-10-06, 7.1.0 전수 실측 I1: `admin_language_packs` → `admin_language_pack_list` 상속, 제목만
+     * (실측 2026-10-06, 7.1.0 전수 실측: `admin_language_packs` → `admin_language_pack_list` 상속, 제목만
      * 바꿔 저장 422). 부모가 그 슬롯을 정의했다면 빈 슬롯이 부모 본문을 비워 버리는 더 나쁜 결과가 된다.
      *
      * @scenario branch=layout, input=valid_edit, action=save
@@ -252,7 +252,7 @@ class LayoutMarkupApiTest extends TestCase
      *
      * JSON 탭은 타이핑 전에는 이 필드를, 타이핑 뒤에는 컴파일 결과를 같은 자리에 보여 준다. 이 필드만
      * 배열 캐스트를 거쳐 `{}` 를 `[]` 로 찍으면, 파일을 열자마자 JSON 탭에 틀린 값이 보이고 한 글자를
-     * 치는 순간 `{}` 로 바뀐다(실측 2026-10-06, 7.1.0 전수 실측 I1: `admin_role_list` 의
+     * 치는 순간 `{}` 로 바뀐다(실측 2026-10-06, 7.1.0 전수 실측: `admin_role_list` 의
      * `params.query` 가 DB 는 `{}` 인데 JSON 탭에는 `"query": []` 2곳).
      *
      * @scenario branch=layout, input=valid_edit, action=idle_compile

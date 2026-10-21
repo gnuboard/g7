@@ -1,7 +1,7 @@
 feature: 관리자 공통 UI 컴포넌트 기본 계약 — 아이콘·칩 체크박스·머리말·탭·테마 전환·토스트·토글
 
 description: |
-  관리자 화면 전반이 쓰는 공통 컴포넌트 7종의 렌더·상호작용 기본 계약. 7.1.0 영역 J 실측(D-J4·D-J5)에서
+  관리자 화면 전반이 쓰는 공통 컴포넌트 7종의 렌더·상호작용 기본 계약. 7.1.0 실측에서
   꾸밈 아이콘을 접근성 트리에서 숨기고(`role="img"`·글리프 영어 이름 제거), 테마 전환 단추 이름을 번역 문구로
   바꾸고(「Toggle theme」 → 「화면 테마」), 토글의 실제 체크박스를 sr-only 로 숨겨 보이는 트랙이 스위치 역할을
   맡게 하면서 기존 단위 테스트의 선택자가 함께 바뀌었다. 소유 매니페스트가 없던 그 테스트 파일들을 이 매니페스트가
@@ -19,6 +19,7 @@ effects:
   - chip_checkbox_renders_label_icon_and_hidden_input  # 라벨·선택 아이콘·숨은 체크박스 입력과 value 를 그린다
   - chip_checkbox_applies_variant_or_custom_color_styles
   - chip_checkbox_change_reaches_handler
+  - chip_custom_color_text_meets_contrast              # 운영자 데이터 색으로 그리는 연한·꽉 찬 칩(칩 체크박스·배지)의 글자가 바탕·마우스 올림 바탕과 라이트·다크 모두 4.5 이상(색 파생 도우미)
   # 페이지 머리말
   - page_header_renders_title_description_breadcrumb_tabs_actions
   - page_header_tab_and_action_clicks_dispatch         # 탭·액션 클릭이 콜백을 부르고 비활성 액션은 부르지 않는다
@@ -48,7 +49,8 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ThemeToggle.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Toast.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/Toggle.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/utils/__tests__/accessibleColor.test.ts
 
 notes: |
   e2e_browser=not_applicable — 컴포넌트 단위 계약이라 jsdom 렌더(Vitest)로 잠근다. 실제 화면에서의 접근 가능한 이름과
-  다크 모드 외형은 7.1.0 영역 J 브라우저 실측(라이트/다크 × 데스크톱/모바일)이 확인했다.
+  다크 모드 외형은 7.1.0 브라우저 실측(라이트/다크 × 데스크톱/모바일)이 확인했다.

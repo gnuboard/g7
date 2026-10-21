@@ -44,6 +44,22 @@
 @source "./safelist.txt";
 
 /*
+ * 컴포넌트(TSX)는 명시 앵커로 훑는다. Tailwind v4 자동 감지도 빌드 폴더(템플릿 뿌리) 아래를 훑어 컴포넌트를 이미
+ * 포함하지만, 자동 감지는 빌드 작업 폴더와 .gitignore 에 따라 달라지므로 컴포넌트 토큰이 빠지지 않게 고정한다.
+ */
+@source "../components/**/*.{ts,tsx}";
+
+/*
+ * 지난 빌드의 산출물(dist 의 js·css·src·index.d.ts)은 훑지 않는다 — 자동 감지가 템플릿 폴더 전체를 보므로 옛 산출물에
+ * 남은 class 가 다음 빌드로 이어진다. 번들 빌드는 빌드 전에 산출물을 비우지만 활성 폴더·감시(watch) 빌드는 비우지 않아,
+ * 같은 소스가 빌드 경로에 따라 다른 CSS 를 냈다(소스에서 지운 class 가 한쪽에만 남음). 동봉 vendor 는 그대로 둔다.
+ */
+@source not "../../dist/js";
+@source not "../../dist/css";
+@source not "../../dist/src";
+@source not "../../dist/index.d.ts";
+
+/*
  * Icon 크기 임의값.
  *
  * Icon 은 `<i>` 글리프라 박스가 아니라 `font-size` 로 크기가 정해진다. 기존 `w-N h-N` 을 픽셀 그대로
@@ -139,6 +155,19 @@
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-blue-500;
   }
+
+  /*
+   * 입력칸 안내 글(placeholder) 기본색. Tailwind preflight 기본값은 「글자색 50%」라 흰·연회색 칸에서
+   * 3.4 안팎(다크 3.9)으로 4.5 에 못 미쳤다 — 헤더·모바일 서랍 검색칸, 쇼핑·스크랩 검색, 글쓰기 제목, 회원가입 입력칸처럼
+   * placeholder 색을 지정하지 않은 칸 전부. 회색 100 바탕·회색 700 바탕까지 4.5 이상인 단계(gray-600 / 다크 gray-300)를
+   * 기본으로 둔다. 명시 class(`placeholder-*`·`.input` 의 placeholder)는 각각 utilities·components 층이라 이 기본보다 앞선다.
+   */
+  ::placeholder {
+    color: var(--color-gray-600);
+  }
+  .dark ::placeholder {
+    color: var(--color-gray-300);
+  }
 }
 
 /**
@@ -209,7 +238,7 @@
 
   .btn-primary {
     @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
-    @apply dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-400;
+    @apply dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-400;
   }
 
   .btn-secondary {
@@ -224,7 +253,7 @@
 
   .btn-danger {
     @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
-    @apply dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-red-400;
+    @apply dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-400;
   }
 
   /* 입력 필드 기본 스타일 */
@@ -233,7 +262,7 @@
     @apply bg-white text-gray-900;
     @apply focus:border-blue-500 focus:ring-1 focus:ring-blue-500;
     @apply dark:bg-gray-800 dark:border-gray-600 dark:text-white;
-    @apply placeholder:text-gray-400 dark:placeholder:text-gray-500;
+    @apply placeholder:text-gray-500 dark:placeholder:text-gray-400;
   }
 
   .input-error {

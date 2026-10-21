@@ -82,7 +82,7 @@ function own(node: any): string {
     return JSON.stringify(rest);
 }
 
-describe('R1 — 취소 창 「환불까지 한 번에 처리」 는 환불 실행 권한으로 잠긴다', () => {
+describe('취소 창 「환불까지 한 번에 처리」 는 환불 실행 권한으로 잠긴다', () => {
     const modal = layout('partials/admin_ecommerce_order_detail/_modal_cancel_order.json');
 
     /**
@@ -116,7 +116,7 @@ describe('R1 — 취소 창 「환불까지 한 번에 처리」 는 환불 실�
     });
 });
 
-describe('S3 — 직권 접수 창 「접수와 함께 승인」 은 상태 변경 권한으로 잠긴다', () => {
+describe('직권 접수 창 「접수와 함께 승인」 은 상태 변경 권한으로 잠긴다', () => {
     const modal = layout('partials/admin_ecommerce_order_detail/_modal_admin_claim_request.json');
 
     /**
@@ -138,7 +138,7 @@ describe('S3 — 직권 접수 창 「접수와 함께 승인」 은 상태 변�
     });
 });
 
-describe('G05 — 주문 상세 입금확인·현금영수증·비번 재설정은 주문 수정 권한으로 잠긴다', () => {
+describe('주문 상세 입금확인·현금영수증·비번 재설정은 주문 수정 권한으로 잠긴다', () => {
     const payment = layout('partials/admin_ecommerce_order_detail/_partial_payment_info.json');
     const orderInfo = layout('partials/admin_ecommerce_order_detail/_partial_order_info.json');
     const CU = 'order?.data?.abilities?.can_update !== true';
@@ -172,7 +172,7 @@ describe('G05 — 주문 상세 입금확인·현금영수증·비번 재설정�
     });
 });
 
-describe('G06 — 이커머스 설정 SEO 탭은 읽기 전용이면 입력과 [캐시 비우기]가 잠긴다', () => {
+describe('이커머스 설정 SEO 탭은 읽기 전용이면 입력과 [캐시 비우기]가 잠긴다', () => {
     const tab = layout('partials/admin_ecommerce_settings/_tab_seo.json');
 
     /**
@@ -212,7 +212,7 @@ describe('G06 — 이커머스 설정 SEO 탭은 읽기 전용이면 입력과 [
     });
 });
 
-describe('G10 — 드래그 손잡이는 읽기 전용이면 숨는다', () => {
+describe('드래그 손잡이는 읽기 전용이면 숨는다', () => {
     /**
      * @scenario surface=admin, permission=missing
      * @effects admin_drag_handles_hidden
@@ -230,7 +230,7 @@ describe('G10 — 드래그 손잡이는 읽기 전용이면 숨는다', () => {
     });
 });
 
-describe('설정 #3·#5 — 알림 채널 토글과 결제수단 카드 토글', () => {
+describe('설정 — 알림 채널 토글과 결제수단 카드 토글', () => {
     /**
      * @scenario surface=admin, permission=missing
      * @effects admin_settings_toggles_locked
@@ -248,7 +248,7 @@ describe('설정 #3·#5 — 알림 채널 토글과 결제수단 카드 토글',
     });
 });
 
-describe('G12 — 리뷰 관리는 리뷰 수정 권한으로 잠긴다', () => {
+describe('리뷰 관리는 리뷰 수정 권한으로 잠긴다', () => {
     const page = layout('admin_ecommerce_product_review_index.json');
 
     /**
@@ -281,7 +281,7 @@ describe('G12 — 리뷰 관리는 리뷰 수정 권한으로 잠긴다', () => 
     });
 });
 
-describe('G13 — 상품 문의 행 동작과 답변 등록은 각 권한으로 잠긴다', () => {
+describe('상품 문의 행 동작과 답변 등록은 각 권한으로 잠긴다', () => {
     const text = flat(layout('admin_ecommerce_inquiry_index.json'));
 
     /**
@@ -302,7 +302,7 @@ describe('G13 — 상품 문의 행 동작과 답변 등록은 각 권한으로 
     });
 });
 
-describe('G14 — 장바구니·찜 행 「삭제」는 관리 권한으로 잠긴다', () => {
+describe('장바구니·찜 행 「삭제」는 관리 권한으로 잠긴다', () => {
     /**
      * @scenario surface=admin, permission=missing
      * @effects admin_cart_wishlist_delete_locked
@@ -318,7 +318,7 @@ describe('G14 — 장바구니·찜 행 「삭제」는 관리 권한으로 잠�
     });
 });
 
-describe('G15 — 쿠폰 발급내역 「발급취소」는 그 쿠폰의 수정 권한으로 잠긴다', () => {
+describe('쿠폰 발급내역 「발급취소」는 그 쿠폰의 수정 권한으로 잠긴다', () => {
     /**
      * @scenario surface=admin, permission=missing
      * @effects admin_coupon_issue_cancel_locked
@@ -339,7 +339,7 @@ describe('G15 — 쿠폰 발급내역 「발급취소」는 그 쿠폰의 수정
     });
 });
 
-describe('G16 — 추가배송비 템플릿 창은 템플릿 동작별 권한으로 잠긴다', () => {
+describe('추가배송비 템플릿 창은 템플릿 동작별 권한으로 잠긴다', () => {
     const text = flat(layout('partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json'));
 
     /**
@@ -351,7 +351,7 @@ describe('G16 — 추가배송비 템플릿 창은 템플릿 동작별 권한으
     });
 });
 
-describe('배송정책 폼 promo#4·#5·#7 — 등록 모드 수정 권한 축과 행 삭제 과잉 차단', () => {
+describe('배송정책 폼 — 등록 모드 수정 권한 축과 행 삭제 과잉 차단', () => {
     const form = layout('admin_ecommerce_shipping_policy_form.json');
 
     /**
@@ -389,7 +389,7 @@ describe('배송정책 폼 promo#4·#5·#7 — 등록 모드 수정 권한 축�
     });
 });
 
-describe('promo#8·#11 — 복사는 등록 권한, 쿠폰명 링크는 수정 권한', () => {
+describe('쿠폰 — 복사는 등록 권한, 쿠폰명 링크는 수정 권한', () => {
     /**
      * @scenario surface=admin, permission=missing
      * @effects admin_copy_and_coupon_link_axis
@@ -418,7 +418,7 @@ describe('상품 영역 — 등록(can_create)·라벨·복사·DynamicFieldList
      * @scenario surface=admin, permission=missing
      * @effects admin_product_area_controls_locked
      */
-    it('products#3 — 등록 모드 저장이 목록 can_create 로 잠긴다 (폼 읽기 전용 계산값 경유)', () => {
+    it('등록 모드 저장이 목록 can_create 로 잠긴다 (폼 읽기 전용 계산값 경유)', () => {
         expect(own(byId(form, 'footer_save_button'))).toContain('_computed.isReadOnly');
         expect(String(form.computed?.isReadOnly ?? '')).toContain('product_abilities?.data?.abilities?.can_create !== true');
     });
@@ -427,7 +427,7 @@ describe('상품 영역 — 등록(can_create)·라벨·복사·DynamicFieldList
      * @scenario surface=admin, permission=missing
      * @effects admin_product_area_controls_locked
      */
-    it('products#5 — 폼 복사·목록 복사·공통정보 복사가 등록 권한을 본다', () => {
+    it('폼 복사·목록 복사·공통정보 복사가 등록 권한을 본다', () => {
         expect(own(byId(form, 'footer_copy_button'))).toContain('can_create === true');
         const grid = flat(layout('partials/admin_ecommerce_product_list/_partial_product_datagrid.json'));
         const at = grid.indexOf('"id":"copy"');
@@ -439,7 +439,7 @@ describe('상품 영역 — 등록(can_create)·라벨·복사·DynamicFieldList
      * @scenario surface=admin, permission=missing
      * @effects admin_product_area_controls_locked
      */
-    it('products#4 — 라벨 추가·수정·삭제·저장이 라벨 권한을 본다', () => {
+    it('라벨 추가·수정·삭제·저장이 라벨 권한을 본다', () => {
         const other = layout('partials/admin_ecommerce_product_form/_partial_other_info.json');
         expect(own(byId(other, 'label_add_button'))).toContain('product_labels?.data?.abilities?.can_create === true');
         expect(own(byId(other, 'label_edit_button'))).toContain('product_labels?.data?.abilities?.can_update === true');
@@ -454,7 +454,7 @@ describe('상품 영역 — 등록(can_create)·라벨·복사·DynamicFieldList
     it.each([
         ['partials/admin_ecommerce_product_notice_index/_panel_form.json', 'fields_editor'],
         ['partials/admin_ecommerce_product_form/_partial_product_notice.json', 'notice_items_editor'],
-    ])('products#7 — %s 의 DynamicFieldList 에 readOnly 를 넘긴다', (file, id) => {
+    ])('%s 의 DynamicFieldList 에 readOnly 를 넘긴다', (file, id) => {
         expect(own(byId(layout(file), id))).toContain('"readOnly"');
     });
 
@@ -463,7 +463,7 @@ describe('상품 영역 — 등록(can_create)·라벨·복사·DynamicFieldList
      * @effects admin_product_area_controls_locked
      */
     it.each(['admin_ecommerce_product_form.json', 'admin_ecommerce_promotion_coupon_form.json', 'admin_ecommerce_shipping_policy_form.json'])(
-        'G17 — %s 의 errorCondition 은 명시적 false 만 403',
+        '%s 의 errorCondition 은 명시적 false 만 403',
         (file) => {
             const text = flat(layout(file));
             expect(text).toContain('response?.data?.abilities?.can_update === false');
@@ -475,7 +475,7 @@ describe('상품 영역 — 등록(can_create)·라벨·복사·DynamicFieldList
      * @scenario surface=admin, permission=missing
      * @effects admin_product_area_controls_locked
      */
-    it('G18 — 상품 목록 프리셋 저장·이름변경·삭제가 잠긴다', () => {
+    it('상품 목록 프리셋 저장·이름변경·삭제가 잠긴다', () => {
         const manage = layout('partials/admin_ecommerce_product_list/_modal_preset_manage.json');
         for (const id of ['preset_rename_button_{{presetIdx}}', 'preset_delete_button_{{presetIdx}}', 'preset_save_new_button']) {
             expect(own(byId(manage, id))).toContain('products?.data?.abilities?.can_update !== true');
@@ -487,7 +487,7 @@ describe('상품 영역 — 등록(can_create)·라벨·복사·DynamicFieldList
     });
 });
 
-describe('G29·G32 — 라우트 정의와 골격 화면 권한은 실재 식별자다', () => {
+describe('라우트 정의와 골격 화면 권한은 실재 식별자다', () => {
     /**
      * module.php 에 선언된 권한 식별자를 모은다. (카테고리 identifier + action)
      *
@@ -537,7 +537,7 @@ describe('G29·G32 — 라우트 정의와 골격 화면 권한은 실재 식별
     });
 });
 
-describe('orders#12 — 미연결 시안 주문 화면의 [일괄 변경]은 잠겨 있다', () => {
+describe('미연결 시안 주문 화면의 [일괄 변경]은 잠겨 있다', () => {
     /**
      * @scenario surface=admin, permission=missing
      * @effects admin_mockup_batch_button_locked
@@ -547,7 +547,7 @@ describe('orders#12 — 미연결 시안 주문 화면의 [일괄 변경]은 잠
     });
 });
 
-describe('ecom-backend#9 — 회원 상세 결제 통화·배송국가 칸은 변경 권한으로 잠긴다', () => {
+describe('회원 상세 결제 통화·배송국가 칸은 변경 권한으로 잠긴다', () => {
     const ext = (file: string): string => fs.readFileSync(path.join(moduleRoot(), 'resources/extensions', file), 'utf-8');
 
     /**

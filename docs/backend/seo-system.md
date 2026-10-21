@@ -1070,6 +1070,13 @@ config에 없는 컴포넌트는 `<div>` fallback으로 렌더링됩니다.
 - 인자 치환은 `$t:키|…`·`$t()` 모두 한 번에(`strtr`) 한다 — 앞 인자 값에 든 뒤 인자 자리표시자(`{{column}}`)를 다시 치환하지 않는다
 - `$localized()`: `{ko: "상품", en: "Product"}` → 현재 로케일(`ko`) → `"상품"`. fallback: 사이트 기본 언어(`app.site_locale`) → en → 첫 번째 값, 빈 문자열은 건너뜀(`App\Support\LocalizedValue::pick()` — 화면 `$localized` 와 같은 규칙)
 
+### ExpressionEvaluator — 빈 바인딩 뒤 남은 부호 정리
+
+봇 화면이 풀지 못한 식(`+{{미지원함수()}}`)이 빈 글자가 되면 앞뒤 부호만 남으므로, `evaluate()` 는 **빈 바인딩이 있었을 때만** 결과가 2글자 이하의 부호(`+`·`-`·`/`·`*`)뿐이면 빈 글자로 바꿉니다.
+
+- 바인딩이 없는 글자(`/`·`-`)와 비지 않은 바인딩 값(`{{home}}` → `/`)은 그대로 둡니다 — 일반 화면과 같은 값. 7.1.1 이전에는 이것까지 지워 홈 링크(`href="/"`)가 봇 화면에서 href 없는 `<a>` 로 나갔습니다.
+- URL 자리(`href`·`src`·`fallbackHref`·이동 액션 `path`)는 세 번째 인자 `dropOrphanOperators: false` 로 평가해 정리하지 않습니다 — `/{{빈값}}` 도 일반 화면처럼 `/` 입니다.
+
 ### ExpressionEvaluator — 객체 리터럴 / 스프레드 연산자
 
 객체 리터럴 `{key: value}` 및 스프레드 연산자 `{...obj}` / `[...arr]`를 지원합니다.
@@ -1223,10 +1230,11 @@ SEO 렌더링은 `renderComponent()` 진입 시점에 이 값을 해석해 데�
 | `callbacks` (extension_point 호스트) | ✅ | ❌ (의도) | 미처리 | 주입 단계에서 `extensionPointCallbacks` 로 부착 — 봇 화면에는 액션 실행기가 없음 |
 | `type: "extension_point"` 호스트 (반복 항목 안 포함) | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::renderComponent` → `renderTag` (`div` 폴백) | 주입된 children 을 감싸는 래퍼. `iteration` 항목 안에서도 같은 경로로 그 항목의 컨텍스트로 그린다 — React 는 engine-v1.73.0 에서 `renderItemChildren` 분기를 더해 이 동작에 맞췄다. 호스트 속성은 양쪽 모두 허용 목록만 싣고, `layout`/`columns`/`gap` 을 컨테이너 클래스로 접는 것은 React 만 한다(봇 화면의 내용에는 영향 없음) |
 | `computed` / `extends` / 파셜 | ✅ | ✅ | `app/Seo/SeoRenderer.php::resolveComputed` / `app/Services/LayoutService.php::getLayout` | 레이아웃 병합·설치 시점에 처리 |
-| `$t:` / `$t:defer:` | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::resolveTranslation` | 봇 화면은 지연 개념이 없어 동일 키로 해석 |
+| `$t:` / `$t:defer:` | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::resolveTranslation` | 봇 화면은 지연 개념이 없어 동일 키로 해석. 인자 값의 `{{…}}`(파이프·`\|\|` 포함)는 인자를 나눈 뒤 푼다(engine-v1.80.1). **빈 인자 값(`이름=`·`{{없는.경로}}`)은 빈 글자로 치환한다** — 일반 화면은 그 인자를 빼서 자리표시자(`{{name}}`)가 남지만(빈 인자 진단 단서), 봇 화면은 없는 키를 빈 글자로 내는 것과 같은 이유로 색인 HTML 에 자리표시자를 싣지 않는다(의도된 차이). 값이 빌 수 있는 줄은 레이아웃에서 `if` 로 숨기거나 대체 문구를 준다 |
 | `$t(키, 인자)` 식 안 인자 | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::evaluateTranslationFunction` / `translateKey` | engine-v1.80.1 — 객체 인자 치환, 값은 글자 그대로 |
 | `$t:키\|count=N` 복수형 변형(`키_one` 등) | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::pluralVariant` | engine-v1.78.7 — 현재 로케일 CLDR 범주로 `키_{범주}` 를 먼저, 없거나 other 면 기본 키. intl 이 없으면 ko·ja·zh 등 other, 나머지 1 → one 근사([다국어 처리](../frontend/data-binding-i18n.md#수에-따른-단수복수-engine-v1787)) |
 | `actions` | ✅ | 링크만 | `app/Seo/ComponentHtmlMapper.php::extractLinkAction` | 페이지 이동/새 창 열기 액션만 `<a href>` 로 승격 |
+| 정적 링크(`a`)의 `target`·`rel`·`fallbackHref`·`disabled` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::presetAnchorAttributes` | 템플릿 `A` 컴포넌트와 같은 규칙(7.1.1) — `target="_blank"` 면 `rel` 에 `noopener noreferrer` 를 합치고(받은 토큰 유지), `fallbackHref` 가 있으면 이 사이트 주소가 아닌 href(다른 사이트·`//host`·`https://이 사이트//다른호스트`·`#`·실행 스킴)를 그 주소로, `disabled` 가 참이면 href 를 빼고 `role="link"`. 대체 주소가 없는 href 는 양쪽 모두 그대로(실행 스킴만 `#`) — 같은 출처 전체 주소·외부 주소를 경로로 바꾸지 않는다. `mergeQuery` 는 봇 화면이 합치지 않는다(이동 액션의 `mergeQuery` 와 같음) |
 | `extensionPointCallbacks` | ✅ | ❌ (의도) | 미처리 | 액션 실행기 부재 |
 | `lifecycle` / `dataKey` / `trackChanges` | ✅ | ❌ (무해) | 미처리 | 입력·생명주기 전용 |
 | `slot` / `slotOrder` | ✅ | ❌ (무해) | `app/Services/LayoutService.php::replaceSlots` 에서 선처리 | 레이아웃 병합 단계에서 제거 |

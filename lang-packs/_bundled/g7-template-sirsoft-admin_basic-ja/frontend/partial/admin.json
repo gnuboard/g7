@@ -744,14 +744,18 @@
       "installing": "インストール中",
       "uninstalling": "削除中",
       "updating": "アップデート中",
+      "stuck_update": "更新停止",
       "active_label": "有効化"
     },
+    "stuck_update_hint": "更新が途中で止まりました。「整理して再更新」を押すと整理してから更新を最後まで完了し、スイッチを入れると整理してから有効化します。",
+    "stuck_update_reactivate_hint": "止まっていた更新を整理しました。整理したモジュールは無効状態のため、スイッチで再度有効にしてください。",
     "actions": {
       "install": "インストール",
       "uninstall": "削除",
       "activate": "有効化",
       "deactivate": "無効化",
       "update": "アップデート",
+      "recover_update": "整理して再更新",
       "check_updates": "アップデート確認",
       "view_detail": "詳細情報",
       "refresh_layouts": "レイアウト更新",
@@ -957,14 +961,18 @@
       "not_installed": "未インストール",
       "installing": "インストール中",
       "uninstalling": "削除中",
-      "updating": "アップデート中"
+      "updating": "アップデート中",
+      "stuck_update": "更新停止"
     },
+    "stuck_update_hint": "更新が途中で止まりました。「整理して再更新」を押すと整理してから更新を最後まで完了し、スイッチを入れると整理してから有効化します。",
+    "stuck_update_reactivate_hint": "止まっていた更新を整理しました。整理したプラグインは無効状態のため、スイッチで再度有効にしてください。",
     "actions": {
       "install": "インストール",
       "uninstall": "削除",
       "activate": "有効化",
       "deactivate": "無効化",
       "update": "アップデート",
+      "recover_update": "整理して再更新",
       "check_updates": "アップデート確認",
       "view_detail": "詳細情報",
       "settings": "設定",
@@ -1212,7 +1220,12 @@
       "delete_title": "メニュー削除",
       "delete_confirm": "このメニューを削除しますか?",
       "delete_core_warning": "コアメニューは削除できません。",
-      "module_menu_notice": "モジュールのデフォルトメニューのモジュールは変更できません。"
+      "module_menu_notice": "モジュールのデフォルトメニューのモジュールは変更できません。",
+      "editing_title": "編集中の内容があります",
+      "editing_message": "保存していない変更があります。",
+      "editing_confirm_message": "変更を保存せずに別のメニューへ移動しますか？",
+      "editing_discard": "変更を破棄",
+      "editing_continue": "編集を続ける"
     },
     "messages": {
       "order_updated": "メニューの順序が変更されました。",
@@ -1737,7 +1750,9 @@
       "sitemap_progress_phase": "現在処理中: {{phase}}",
       "sitemap_progress_urls": "累積URL: {{count}}個",
       "sitemap_realtime_connected": "リアルタイムで接続されています。",
-      "sitemap_polling": "進行状況を定期的に確認しています。"
+      "sitemap_polling": "進行状況を定期的に確認しています。",
+      "meta_title_suffix_placeholder": " | グヌボード7",
+      "meta_keywords_placeholder": "CMS, グヌボード7, オープンソース"
     },
     "security": {
       "title": "セキュリティ 設定",
@@ -2625,14 +2640,18 @@
       "installing": "インストール中",
       "uninstalling": "削除中",
       "updating": "アップデート中",
+      "stuck_update": "更新停止",
       "update_available": "アップデート必要"
     },
+    "stuck_update_hint": "更新が途中で止まりました。「整理して再更新」を押すと整理してから更新を最後まで完了し、スイッチを入れると整理してから有効化します。",
+    "stuck_update_reactivate_hint": "止まっていた更新を整理しました。整理したテンプレートは無効状態のため、スイッチで再度有効にしてください。",
     "actions": {
       "install": "インストール",
       "uninstall": "削除",
       "activate": "有効化",
       "deactivate": "無効化",
       "update": "アップデート",
+      "recover_update": "整理して再更新",
       "check_updates": "アップデート確認",
       "view_detail": "詳細情報",
       "refresh_layouts": "レイアウト更新",
@@ -4300,5 +4319,28 @@
       "empty": "この期間の記録はありません。",
       "error": "推移を読み込めませんでした。しばらく経ってからもう一度開いてください。"
     }
+  },
+  "brand_name": "グヌボード7",
+  "default_user_name": "管理者",
+  "template_partial_test": {
+    "title": "テンプレート Partial システムテスト",
+    "meta_description": "sirsoft-admin_basic テンプレートの Partial システムの動作確認",
+    "description": "sirsoft-admin_basic テンプレートのレイアウト Partial 機能をテストします",
+    "checklist_title": "テスト項目",
+    "check_level1": "✅ Level 1 Partial: partials/template_partial_test/_content_section.g7.html",
+    "check_level2_header": "✅ Level 2 Partial: partials/template_partial_test/_header_section.g7.html",
+    "check_level2_card": "✅ Level 2 Partial: partials/template_partial_test/_info_card.g7.html (Composite コンポーネント)",
+    "check_basic": "✅ Basic コンポーネントのレンダリング",
+    "check_dark": "✅ ダークモード対応",
+    "success_title": "🎉 Partial システム正常動作",
+    "success_description": "上のすべてのセクションが正しく表示されれば、テンプレート Partial システムは正常に動作しています。",
+    "level1_title": "Level 1 Partial: コンテンツセクション",
+    "level1_description": "このファイルは下の Level 2 partial ファイルを含みます",
+    "after_title": "Partial の後の追加コンテンツ",
+    "after_description": "Partial ファイルの後にも好きなだけコンテンツを追加できます。",
+    "header_title": "Level 2 Include: ヘッダーセクション読み込み完了",
+    "header_description": "このファイルは templates/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html です",
+    "card_title": "✨ Composite コンポーネント Include テスト",
+    "card_content": "この Card は partials/template_partial_test/_info_card.g7.html から include されました。\n\n📌 Include システムの特徴:\n• モジュールとテンプレートの両方に対応\n• 無制限のネスト深さ(depth 上限 10)\n• 循環参照の自動検出\n• Basic と Composite コンポーネントの両方を使用可能"
   }
 }

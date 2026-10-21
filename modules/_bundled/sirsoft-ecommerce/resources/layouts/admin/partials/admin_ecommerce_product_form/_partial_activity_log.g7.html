@@ -3,7 +3,7 @@
   넓은 화면은 표, 좁은 화면은 카드로 같은 내용을 두 벌 세운다. -->
 <partial description="Product Form - Activity Log Section (Edit Mode Only)">
   <div data-ref="activity_log" class="admin-card-accordion">
-    <div class="card-header">
+    <button type="button" class="flex w-full justify-start text-left card-header" aria-expanded="{{_local.ui.activityLogExpanded !== false}}">
       <on type="click">
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.activityLogExpanded="{{!_local.ui.activityLogExpanded}}"/>
@@ -11,8 +11,8 @@
       <icon name="history" class="text-gray-500 dark:text-gray-400"/>
       <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.activity_log</span>
       <span data-if="{{activity_logs.data?.meta?.total}}" class="ml-2 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">{{activity_logs.data?.meta?.total}}</span>
-      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.activityLogExpanded !== false ? 'rotate-180' : ''}}"/>
-    </div>
+      <icon name="chevron-down" class="admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.activityLogExpanded !== false ? 'rotate-180' : ''}}"/>
+    </button>
     <div data-ref="activity_log_body" data-if="{{_local.ui.activityLogExpanded !== false}}" class="row-stack">
       <div data-ref="activity_log_filters" class="flex-between flex-wrap gap-4 p-4 border-b border-gray-200 dark:border-gray-700">
         <responsive on="portable" class="row-stack p-4 border-b border-gray-200 dark:border-gray-700"/>
@@ -69,14 +69,14 @@
             </tr>
           </thead>
           <tbody class="divider-list">
-            <tr data-ref="activity_log_row_{{logIdx}}" data-each="log, logIdx in {{activity_logs?.data?.data ?? []}}" class="hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800/50">
+            <tr data-ref="activity_log_row_{{logIdx}}" data-each="log, logIdx in {{activity_logs?.data?.data ?? []}}" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
               <td class="px-4 py-3 text-label-subtle whitespace-nowrap">{{log.created_at}}</td>
               <td class="px-4 py-3 whitespace-nowrap">
                 <action-menu data-type="composite" data-if="{{!!log.user?.uuid}}" position="left">
                   <prop name="items">
                     <item id="view_member" href="/admin/users/{{log.user.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
                   </prop>
-                  <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
+                  <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
                     <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
                       <span aria-hidden="true" class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}</span>
                     </div>
@@ -100,8 +100,8 @@
                   </div>
                   <div data-each="change, changeIdx in {{log.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-4 border-t border-gray-100 dark:border-gray-700">
                     <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
-                    <span class="w-28 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
-                    <span class="w-28 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+                    <span class="w-28 text-center text-red-600 dark:text-red-300">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+                    <span class="w-28 text-center text-green-700 dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
                   </div>
                 </div>
                 <div data-if="{{log.bulk_changes &amp;&amp; log.bulk_changes.length > 0}}" class="mt-2 space-y-2">
@@ -113,16 +113,23 @@
                     </div>
                     <div data-each="change, changeIdx in {{group.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-4 border-t border-gray-100 dark:border-gray-700">
                       <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
-                      <span class="w-28 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
-                      <span class="w-28 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+                      <span class="w-28 text-center text-red-600 dark:text-red-300">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
+                      <span class="w-28 text-center text-green-700 dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
                     </div>
                   </div>
                 </div>
               </td>
             </tr>
-            <tr data-ref="activity_log_empty" data-if="{{(activity_logs.data?.data ?? []).length === 0}}">
+            <!-- 받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「처리 이력이 없습니다」를 보이면 기록이 없는 줄 안다 -->
+            <tr data-ref="activity_log_load_failed" data-if="{{activity_logs === null}}">
+              <td :colSpan="3" class="px-4 py-12 text-center">
+                <p role="alert" class="text-sm text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
+              </td>
+            </tr>
+            <!-- 빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
+            <tr data-ref="activity_log_empty" data-if="{{activity_logs !== undefined &amp;&amp; activity_logs !== null &amp;&amp; (activity_logs.data?.data ?? []).length === 0}}">
               <td :colSpan="3" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                <icon name="clipboard-list" class="text-3xl mx-auto mb-2 text-gray-300 dark:text-gray-600"/>
+                <icon name="clipboard-list" class="text-3xl mx-auto mb-2 text-gray-500 dark:text-gray-500"/>
                 <p>$t:sirsoft-ecommerce.admin.product.activity_log.empty</p>
               </td>
             </tr>
@@ -138,7 +145,7 @@
                 <prop name="items">
                   <item id="view_member" href="/admin/users/{{log.user.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.product.activity_log.actor_action.view_member" iconName="user"/>
                 </prop>
-                <div class="flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
+                <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
                   <div class="flex-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
                     <span aria-hidden="true" class="text-xs font-medium text-gray-600 dark:text-gray-300">{{(log.actor_name ?? 'S').charAt(0).toUpperCase()}}</span>
                   </div>
@@ -164,7 +171,7 @@
             <div data-each="change, changeIdx in {{log.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-3 border-t border-gray-100 dark:border-gray-700">
               <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
               <span class="w-20 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
-              <span class="w-20 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+              <span class="w-20 text-center text-green-700 dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
             </div>
           </div>
           <div data-if="{{log.bulk_changes &amp;&amp; log.bulk_changes.length > 0}}">
@@ -177,13 +184,16 @@
               <div data-each="change, changeIdx in {{group.changes ?? []}}" class="px-3 py-1.5 text-xs flex gap-3 border-t border-gray-100 dark:border-gray-700">
                 <span class="flex-1 font-medium text-gray-700 dark:text-gray-300">{{change.label ?? change.field}}</span>
                 <span class="w-20 text-center text-red-600 dark:text-red-400">{{change.old_label ?? change.old?.[$locale] ?? (typeof change.old === 'object' &amp;&amp; change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}</span>
-                <span class="w-20 text-center text-green-600 dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
+                <span class="w-20 text-center text-green-700 dark:text-green-400">{{change.new_label ?? change.new?.[$locale] ?? (typeof change.new === 'object' &amp;&amp; change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}</span>
               </div>
             </div>
           </div>
         </div>
-        <div data-ref="activity_log_empty_mobile" data-if="{{(activity_logs.data?.data ?? []).length === 0}}" class="p-8 text-center text-gray-500 dark:text-gray-400">
-          <icon name="clipboard-list" class="text-3xl mx-auto mb-2 text-gray-300 dark:text-gray-600"/>
+        <!-- 좁은 화면 카드 쪽 받기 실패 안내 — 위 표와 같은 조건 -->
+        <p data-ref="activity_log_load_failed_mobile" data-if="{{activity_logs === null}}" role="alert" class="p-8 text-center text-sm text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
+        <!-- 빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
+        <div data-ref="activity_log_empty_mobile" data-if="{{activity_logs !== undefined &amp;&amp; activity_logs !== null &amp;&amp; (activity_logs.data?.data ?? []).length === 0}}" class="p-8 text-center text-gray-500 dark:text-gray-400">
+          <icon name="clipboard-list" class="text-3xl mx-auto mb-2 text-gray-500 dark:text-gray-500"/>
           <p>$t:sirsoft-ecommerce.admin.product.activity_log.empty</p>
         </div>
       </div>

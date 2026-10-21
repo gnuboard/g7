@@ -576,6 +576,7 @@ class CoreUpdateService
         // 폴백 체인: zipball(ZipArchive → unzip) → tarball(PharData)
         $strategies = $this->buildExtractionStrategies();
         $lastError = null;
+        $resolvedAny = false;
 
         foreach ($strategies as $strategy) {
             $archiveType = $strategy['archive_type'];
@@ -589,6 +590,8 @@ class CoreUpdateService
 
                 continue;
             }
+
+            $resolvedAny = true;
 
             $extension = $archiveType === 'zipball' ? '.zip' : '.tar.gz';
             $archivePath = $pendingPath.DIRECTORY_SEPARATOR.'core_update'.$extension;
@@ -641,6 +644,12 @@ class CoreUpdateService
                     'error' => $e->getMessage(),
                 ]));
             }
+        }
+
+        // 어느 전략도 아카이브 주소를 얻지 못했다 = 한 번도 내려받지 않았다(태그 없음·GitHub 연결 실패).
+        // 「추출 실패」로 알리면 원인을 추출 도구로 잘못 짚는다(7.1.1 출시 전).
+        if (! $resolvedAny && $strategies !== []) {
+            throw new CoreUpdateOperationException('settings.core_update.release_not_found', ['version' => $version]);
         }
 
         // 모든 전략 실패
@@ -2550,10 +2559,10 @@ class CoreUpdateService
             base_path('bootstrap/cache'),
             storage_path('app/ext-bundles'),
             // 확장 업데이트의 다운로드·추출 임시 폴더. 부모 `storage/app/temp` 가 sudo 업데이트에서 root 로
-            // 최초 생성되면 이후 관리자 화면의 확장 업데이트가 임시 폴더를 만들지 못한다 (#651 F14).
+            // 최초 생성되면 이후 관리자 화면의 확장 업데이트가 임시 폴더를 만들지 못한다 (#651).
             storage_path('app/temp'),
             // `restore_ownership` 은 `storage/logs` 를 포함하지만 그 복원은 흐름 **중간**(Step 11)이라,
-            // 그 뒤에 만들어지는 daily 롤오버·신규 로그 파일은 root 로 남는다 (#651 F15).
+            // 그 뒤에 만들어지는 daily 롤오버·신규 로그 파일은 root 로 남는다 (#651).
             storage_path('logs'),
         ];
 

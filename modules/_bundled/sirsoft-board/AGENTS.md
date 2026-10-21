@@ -139,7 +139,7 @@
 | 구독 훅 | 104개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 22개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 7개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
-| 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
+| 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 2개 | [스케줄](docs/extension-points.md#스케줄) |
 | 알림 정의 | 7개 | [알림 정의](docs/extension-points.md#알림-정의) |
@@ -204,10 +204,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 255개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 88개 | `vitest.config.ts` |
-| Playwright | 38개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 159개 | `tests/scenarios` |
+| PHPUnit | 260개 | `modules/_bundled/sirsoft-board/tests` |
+| Vitest | 99개 | `vitest.config.ts` |
+| Playwright | 39개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 173개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

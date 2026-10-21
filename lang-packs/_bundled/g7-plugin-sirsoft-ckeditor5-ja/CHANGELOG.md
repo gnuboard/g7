@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.4] - 2026-10-20
+
+### Added
+
+- CKEditor5 1.1.1 에서 번역 문구로 바뀐 사용하지 않는 이미지 정리 명령의 콘솔 출력(안내·표 머리글 7건)의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 출력이 키 그대로 보입니다.
+
 ## [1.0.3] - 2026-10-10
 
 ### Added

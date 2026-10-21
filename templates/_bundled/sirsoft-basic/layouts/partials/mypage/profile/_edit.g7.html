@@ -16,10 +16,10 @@
       <p class="text-sm text-red-800 dark:text-red-200">$t:mypage.profile.status_blocked_notice</p>
     </div>
     <div data-if="{{user.data?.status === 'withdrawn'}}" class="flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-      <icon name="circle-xmark" size="lg" class="text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+      <icon name="circle-xmark" size="lg" class="text-yellow-700 dark:text-yellow-400 flex-shrink-0"/>
       <div class="flex flex-col gap-1">
         <p class="text-sm text-yellow-800 dark:text-yellow-200">$t:mypage.profile.status_withdrawn_notice</p>
-        <p data-if="{{user.data?.withdrawn_at}}" class="text-xs text-yellow-600 dark:text-yellow-300">$t:mypage.profile.withdrawn_at: {{user.data?.withdrawn_at}}</p>
+        <p data-if="{{user.data?.withdrawn_at}}" class="text-xs text-yellow-700 dark:text-yellow-300">$t:mypage.profile.withdrawn_at: {{user.data?.withdrawn_at}}</p>
       </div>
     </div>
     <!-- 섹션 헤더 - 프로필 수정 + 취소/저장 버튼 (카드 외부) -->
@@ -134,7 +134,7 @@
                  「원래 고칠 수 없는 것」 인지 화면이 말해 주지 않기 때문이다. -->
             <div class="flex-1 space-y-2">
               <responsive on="portable" class="w-full space-y-2 text-center"/>
-              <span data-if="{{user.data?.status &amp;&amp; user.data?.status !== 'active'}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', secondary: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', danger: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', info: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'})[user.data?.status_variant] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}">{{user.data?.status_label}}</span>
+              <span data-if="{{user.data?.status &amp;&amp; user.data?.status !== 'active'}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', secondary: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300', danger: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', info: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'})[user.data?.status_variant] ?? 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}">{{user.data?.status_label}}</span>
               <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
                 <responsive on="portable" class="flex flex-col gap-1 text-sm text-gray-500 dark:text-gray-400"/>
                 <div>
@@ -158,7 +158,7 @@
             <div class="relative">
               <input type="email" aria-label="$t:mypage.profile.email" value="{{user.data?.email}}" :readOnly="true" class="w-full px-4 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"/>
               <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <icon name="lock" size="sm" class="text-gray-400 dark:text-gray-500"/>
+                <icon name="lock" size="sm" class="text-gray-500 dark:text-gray-500"/>
               </div>
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.email_readonly_hint</p>
@@ -170,7 +170,7 @@
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 <span>$t:mypage.profile.name</span>
-                <span class="text-red-500 ml-0.5">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
               </label>
               <input type="text" name="name" aria-label="$t:mypage.profile.name" value="{{user.data?.name ?? ''}}" placeholder="$t:mypage.profile.name_placeholder" :required="true" class="{{_local.profileErrors?.name ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'}}"/>
               <p data-if="{{_local.profileErrors?.name}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.name?.[0] ?? ''}}</p>

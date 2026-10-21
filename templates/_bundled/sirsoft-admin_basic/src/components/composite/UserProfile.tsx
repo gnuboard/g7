@@ -10,7 +10,7 @@ import { isSameOriginRequest } from '../../support/sameOriginRequest';
 import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
   const translated = (window as any).G7Core?.t?.(key, params);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
@@ -118,7 +118,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   id,
   editorAttrs,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
   const profileText = profileTextProp ?? tOr('admin.profile_settings', 'Profile Settings');
   const logoutText = logoutTextProp ?? tOr('admin.logout', 'Logout');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -254,13 +254,13 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               />
             ) : (
               <Div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <Icon name={IconName.User} className="w-5 h-5 text-gray-600 dark:text-gray-300" />
               </Div>
             )}
             <Div className="flex-1 min-w-0 text-left">
               <Div className="font-semibold text-gray-900 dark:text-white text-sm truncate">{user.name}</Div>
               {user.role && (
-                <Div className="text-gray-500 dark:text-gray-400 text-xs">{user.role}</Div>
+                <Div className="text-gray-500 dark:text-gray-300 text-xs">{user.role}</Div>
               )}
             </Div>
             {showChevron && (
@@ -282,7 +282,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             >
               {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (#143) */}
               <Div className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</Div>
-              <Div className="text-gray-500 dark:text-gray-400 text-sm truncate">{user.email}</Div>
+              <Div className="text-gray-500 dark:text-gray-300 text-sm truncate">{user.email}</Div>
             </a>
           ) : (
             <Div
@@ -291,7 +291,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             >
               {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (#143) */}
               <Div className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</Div>
-              <Div className="text-gray-500 dark:text-gray-400 text-sm truncate">{user.email}</Div>
+              <Div className="text-gray-500 dark:text-gray-300 text-sm truncate">{user.email}</Div>
             </Div>
           )}
           {/* 언어 선택은 헤더 독립 버튼으로 일원화(드롭다운에서 제거) — 유저 템플릿 패리티(H-T7).
@@ -319,7 +319,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             <Button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-start gap-3 text-red-600 dark:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-start gap-3 text-red-600 dark:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Icon name={IconName.ArrowRight} className="w-5 h-5" />
               <Span>{isLoggingOut ? tOr('common.logging_out', 'Logging out...') : logoutText}</Span>

@@ -513,7 +513,7 @@ export interface DataGridProps {
 | `rowActions` | `ActionMenuItem[]` | ❌ | - | 행별 액션 메뉴 항목. 항목에 `href`(예: `/admin/users/{{row.uuid}}/edit`)를 주면 `<a role="menuitem" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열린다. 보통 클릭은 `onRowAction` 그대로. `href` 는 **DataGrid 가 행마다 평가**한다 — `components.json` 의 `skipBindingKeys` 에 `href` 가 있어 엔진이 행 문맥 없이 먼저 풀지 않으므로 `{{row.…}}` 를 그대로 쓴다(`$t:defer:` 불필요). `href` 없는 항목(삭제 등)은 종전 단추. 보통 클릭이 목록 조건을 넘기는 항목은 `:mergeQuery="true"` 를 함께 달아 새 탭에도 현재 쿼리를 합친다 |
 | `className` | `string` | ❌ | - | CSS 클래스 |
 
-> **`rowKey` / `selectedRows` / `loading` 은 존재한 적이 없는 prop 이다** (S17 20차 실측 —
+> **`rowKey` / `selectedRows` / `loading` 은 존재한 적이 없는 prop 이다** (실측 —
 > `DataGrid.tsx` grep 각 **0건**). 종전 이 표는 셋을 정식 prop 으로 적었고 아래 마크업 예시에도
 > 실었으나, 엔진은 그 키를 읽지 않으므로 전량 무시된다. 실물 이름은 `idField` · `selectedIds`
 > 이고 로딩 상태는 `DataGrid` 가 받지 않는다(데이터소스 `loading` 을 상위 노드의 `if` 로 가른다).
@@ -730,7 +730,7 @@ export interface DataGridProps {
 ```
 
 > 셀 커스텀 키는 `cellChildren`(배열)이다 — `template` 은 `DataGridColumn` 에 존재한 적이 없다
-> (S17 20차 실측: `DataGrid.tsx` 에 `template?:` **0건**). 마크업 표기는 `<column><cell>…</cell></column>`.
+> (실측: `DataGrid.tsx` 에 `template?:` **0건**). 마크업 표기는 `<column><cell>…</cell></column>`.
 
 **컬럼 셀 컨텍스트 변수**:
 - `$row`: 현재 행 데이터 객체
@@ -1449,6 +1449,7 @@ id prop 사용: scrollIntoView 등 DOM selector로 접근해야 할 때 필수 �
 | `disabled` | boolean | `false` | 참이면 `href` 를 빼고 `aria-disabled="true"` · `tabindex="-1"` 로 그린다. 클릭해도 아무 일도 하지 않는다. `<a>` 에는 `disabled` 속성이 없으므로 꾸밈은 `disabled:` 가 아니라 **`aria-disabled:`** 변형으로 쓴다 |
 | `target` | string | - | `_blank` 면 새 창. `rel` 에 `noopener` 가 없으면 컴포넌트가 `noopener noreferrer` 를 더한다(기존 `rel` 값은 지킨다) — 레이아웃에서 `rel` 을 따로 적지 않아도 새 창이 `window.opener` 로 이 화면을 조작하지 못한다 |
 | `mergeQuery` | boolean | `false` | 렌더할 때 현재 주소의 쿼리를 `href` 에 합친다(`G7Core.navigation.mergeQueryIntoHref` — 같은 키는 `href` 쪽이 이긴다). 새 탭도 같은 목록 조건(검색·정렬·쪽)으로 열린다. DOM 속성으로 새지 않는다 |
+| `fallbackHref` | string | - | **`sirsoft-basic` 만.** 대체 주소 — `href` 가 이 사이트 주소가 아니면(실행 주소·다른 사이트·`//host`) 대신 이 주소를 `href` 로 단다. 바깥에서 정해지는 `href`(알림 이동 주소 등)가 새 탭으로 그대로 열리지 않게 하며, 보통 클릭의 `navigate` `fallbackPath` 와 같은 착지점을 적는다. 빈 `href` 는 그대로. DOM 속성으로 새지 않는다 |
 
 | 클릭 | 동작 |
 | ---- | ---- |

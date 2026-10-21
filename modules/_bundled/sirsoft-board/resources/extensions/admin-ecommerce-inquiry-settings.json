@@ -79,7 +79,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['inquiry.board_slug']}}",
                             "props": {
-                                "className": "block text-xs text-red-500 mt-1 dark:text-red-400"
+                                "className": "block text-xs text-red-600 mt-1 dark:text-red-400"
                             },
                             "text": "{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}"
                         }

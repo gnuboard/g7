@@ -28,7 +28,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "exclamation-circle",
-                        "className": "text-yellow-500 text-4xl mb-4"
+                        "className": "text-yellow-700 dark:text-yellow-600 text-4xl mb-4"
                     }
                 },
                 {
@@ -71,7 +71,7 @@
                     ],
                     "props": {
                         "href": "{{_global.shopBase}}/cart",
-                        "className": "inline-flex items-center justify-center px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                        "className": "inline-flex items-center justify-center px-6 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors"
                     },
                     "text": "$t:common.confirm"
                 }

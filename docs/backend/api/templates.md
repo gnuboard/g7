@@ -64,6 +64,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | icon_url | string\|null | `/api/extensions/template/sirsoft-admin_basic/icon?v=1.1.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
 | icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
+| stuck_update | boolean | `false` | 업데이트가 도중에 멈춘 상태인지 — `updating` 으로 10분이 지났고 진행 중인 업데이트 잠금이 없으면 `true`. 관리자 카드가 「업데이트 멈춤」 표시와 「정리 후 다시 업데이트」 단추를 보일 때 쓴다 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
 | latest_version | string | `1.0.4` | 감지된 최신 배포 버전 |
 | file_version | string | `1.0.4` | 설치된 파일의 manifest 버전 |
@@ -102,6 +103,7 @@ HTTP/1.1 200
                 },
                 "dependencies_met": true,
                 "update_available": false,
+                "stuck_update": false,
                 "update_source": null,
                 "latest_version": "1.0.4",
                 "file_version": "1.0.4",
@@ -253,7 +255,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| template | object | `{"identifier":"sirsoft-admin_basic","status":"active", …}` | 활성화된 템플릿 리소스 (TemplateResource 목록 필드 전체 — identifier/vendor/name/version/type/status/description/dependencies/dependencies_met/update_available/update_source/latest_version/file_version/github_url/github_changelog_url/is_pending/is_bundled/deactivated_reason/deactivated_at/incompatible_required_version/abilities) |
+| template | object | `{"identifier":"sirsoft-admin_basic","status":"active", …}` | 활성화된 템플릿 리소스 (TemplateResource 목록 필드 전체 — identifier/vendor/name/version/type/status/description/dependencies/dependencies_met/update_available/update_source/latest_version/file_version/github_url/github_changelog_url/is_pending/is_bundled/deactivated_reason/deactivated_at/incompatible_required_version/abilities). 업데이트의 판 전환이 끝나지 않은 확장이면 `version` 은 기록 판, `file_version` 은 파일 판이고 `update_available` 이 `true` 다 |
 | pending_language_packs | array | `[]` | 이 템플릿 재활성화로 함께 되살아날 수 있는 비활성 번들 언어팩 목록 (각 항목: id, identifier, locale, locale_native_name) |
 
 **응답 예시**
@@ -78228,7 +78230,7 @@ HTTP/1.1 200
                                 "widget": "datasource-picker"
                             }
                         ],
-                        "expr": "({src}?.data?.length ?? 0) === 0"
+                        "expr": "({src}?.data?.length ?? -1) === 0"
                     },
                     {
                         "value": "dsLoading",
@@ -78240,7 +78242,7 @@ HTTP/1.1 200
                                 "widget": "datasource-picker"
                             }
                         ],
-                        "expr": "{src}?.loading"
+                        "expr": "typeof {src} === 'undefined'"
                     },
                     {
                         "value": "fieldEquals",
@@ -93053,7 +93055,7 @@ HTTP/1.1 200
                             "bio": "커뮤니티 운영과 CS를 담당하고 있습니다.",
                             "timezone": "Asia/Seoul",
                             "admin_memo": "2025년 우수 운영자. CS 응대 만족도 1위. 콘텐츠 신고 처리 권한 보유.",
-                            "ip_address": "203.241.18.92",
+                            "ip_address": "203.0.113.10",
                             "email_verified_at": "2025-08-20 10:14:55",
                             "last_login_at": "2026-06-03 08:40:12",
                             "created_at": "2025-08-20 09:58:31",
@@ -174414,7 +174416,7 @@ HTTP/1.1 200
                                 "widget": "datasource-picker"
                             }
                         ],
-                        "expr": "({src}?.data?.length ?? 0) === 0"
+                        "expr": "({src}?.data?.length ?? -1) === 0"
                     },
                     {
                         "value": "dsLoading",
@@ -174426,7 +174428,7 @@ HTTP/1.1 200
                                 "widget": "datasource-picker"
                             }
                         ],
-                        "expr": "{src}?.loading"
+                        "expr": "typeof {src} === 'undefined'"
                     },
                     {
                         "value": "fieldEquals",
@@ -189239,7 +189241,7 @@ HTTP/1.1 200
                             "bio": "커뮤니티 운영과 CS를 담당하고 있습니다.",
                             "timezone": "Asia/Seoul",
                             "admin_memo": "2025년 우수 운영자. CS 응대 만족도 1위. 콘텐츠 신고 처리 권한 보유.",
-                            "ip_address": "203.241.18.92",
+                            "ip_address": "203.0.113.10",
                             "email_verified_at": "2025-08-20 10:14:55",
                             "last_login_at": "2026-06-03 08:40:12",
                             "created_at": "2025-08-20 09:58:31",

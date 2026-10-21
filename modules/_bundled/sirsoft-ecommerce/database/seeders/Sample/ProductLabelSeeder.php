@@ -20,7 +20,7 @@ class ProductLabelSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('상품 라벨 데이터 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product_label.start'));
 
         $this->deleteExistingLabels();
 
@@ -89,11 +89,11 @@ class ProductLabelSeeder extends Seeder
 
         foreach ($labels as $label) {
             ProductLabel::create($label);
-            $this->command->line("  - 라벨 생성: {$label['name']['ko']} ({$label['name']['en']})");
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.product_label.created', ['name' => $label['name']['ko'], 'name_en' => $label['name']['en']]));
         }
 
         $count = ProductLabel::count();
-        $this->command->info("상품 라벨 데이터 {$count}건이 성공적으로 생성되었습니다.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product_label.done', ['count' => $count]));
     }
 
     /**
@@ -110,7 +110,7 @@ class ProductLabelSeeder extends Seeder
 
         if ($deletedCount > 0) {
             ProductLabel::query()->delete();
-            $this->command->warn("기존 상품 라벨 {$deletedCount}건을 삭제했습니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.product_label.purged', ['count' => $deletedCount]));
         }
     }
 }

@@ -7,7 +7,7 @@
 회원·비회원 주문상세의 클레임 신청 버튼은 상품 목록 바로 아래에서 환불 빨강·반품 주황·교환 파랑으로 표시한다. 공통 클레임 목록의 탭·페이지는 로컬 상태와 `replaceUrl`을 갱신한 뒤 `claims` 데이터소스만 동기 재조회하여 스크롤을 유지한다. 탭 대기 중에는 스피너와 `aria-disabled`·액션 가드를 함께 사용해 포커스와 중복 클릭 방지를 유지한다. 다른 비동기 신청·저장 버튼은 기존 `Icon` 스피너와 `disabled` 패턴을 따른다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 194개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 193개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
@@ -17,7 +17,7 @@
 | `errors` | 6개 |
 | `mypage` | 15개 |
 | `page` | 1개 |
-| `partials` | 145개 |
+| `partials` | 144개 |
 | `search` | 1개 |
 | `shop` | 11개 |
 | `users` | 2개 |
@@ -179,7 +179,6 @@
 | `_modal_cart_option_change` | `partials` | partial | - |
 | `_modal_cart_unavailable` | `partials` | partial | - |
 | `_modal_coupon_download` | `partials` | partial | - |
-| `_modal_exclusive_coupon_confirm` | `partials` | partial | - |
 | `_modal_temp_order_not_found` | `partials` | partial | - |
 | `_admin_edit_link` | `partials` | partial | - |
 | `_header` | `partials` | partial | - |
@@ -595,8 +594,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _checkout_payment.g7.html (결제 수단)
 │   │       ├── _checkout_summary.g7.html (주문 요약)
 │   │       ├── _modal_address_manage.g7.html (배송지 관리)
-│   │       ├── _modal_coupon_download.g7.html (쿠폰 다운로드)
-│   │       └── _modal_exclusive_coupon_confirm.g7.html (전용 쿠폰 확인)
+│   │       └── _modal_coupon_download.g7.html (쿠폰 다운로드)
 │   ├── order_complete.g7.html (주문 완료)
 │   ├── guest_order_form.g7.html (비회원 주문 조회 폼)
 │   ├── guest_order_show.g7.html (비회원 주문 상세)

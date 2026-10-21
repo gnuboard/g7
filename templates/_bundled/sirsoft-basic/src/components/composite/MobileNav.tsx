@@ -168,7 +168,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
               {user.avatar ? (
                 <Img src={user.avatar} alt={user.name} className="w-12 h-12 shrink-0 rounded-full" />
               ) : (
-                <Div className="w-12 h-12 shrink-0 rounded-full bg-blue-500 dark:bg-blue-400 flex items-center justify-center text-white text-lg font-medium">
+                <Div className="w-12 h-12 shrink-0 rounded-full bg-blue-600 dark:bg-blue-600 flex items-center justify-center text-white text-lg font-medium">
                   {(user.name || 'U').charAt(0).toUpperCase()}
                 </Div>
               )}
@@ -244,7 +244,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
                 <Icon name="shopping-cart" className="w-5 h-5" />
                 {t('nav.cart')}
                 {cartCount > 0 && (
-                  <Span className="ml-auto px-2 py-0.5 text-xs bg-blue-500 dark:bg-blue-400 text-white rounded-full">
+                  <Span className="ml-auto px-2 py-0.5 text-xs bg-blue-600 dark:bg-blue-600 text-white rounded-full">
                     {cartCount}
                   </Span>
                 )}

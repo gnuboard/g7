@@ -1,0 +1,20 @@
+feature: 역할 등록 직후 수정 화면 저장이 PUT — 브라우저 회귀 (7.1.1)
+
+description: |
+  등록·수정 요청을 가로채 가짜 200 으로 답하고(서버에 역할을 만들지 않는다) 새 역할 조회는 실제 역할 응답의 id 만 바꿔
+  돌려준다. 등록 저장 → 수정 화면 이동 → 다시 저장이 PUT /api/admin/roles/{id} 인지 본다.
+
+axes:
+  case:
+    - create_then_edit
+
+effects:
+  - create_posts_once
+  - edit_after_create_saves_with_put
+  - no_role_written_to_server
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-role-create-then-edit-put.spec.ts
+
+notes: |
+  관리자 계정은 실행 환경변수(G7_E2E_TOKEN, 또는 G7_E2E_ADMIN_EMAIL + G7_E2E_ADMIN_PASSWORD_FILE)로만 받는다.

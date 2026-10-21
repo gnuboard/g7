@@ -567,7 +567,7 @@ class CoreActivityLogListenerTest extends TestCase
 
     /**
      * 같은 로그인·로그아웃 훅이라도 설명은 들어온 경로를 따른다 — 사용자 로그인에 「관리자 로그인」이 찍히지 않는다
-     * (7.1.0 실측 O-B3). 관리자 로그인은 `api/auth/admin/*`, 관리자 로그아웃은 `api/admin/*` 이다.
+     * (7.1.0 실측). 관리자 로그인은 `api/auth/admin/*`, 관리자 로그아웃은 `api/admin/*` 이다.
      *
      * @scenario request_area=user
      *

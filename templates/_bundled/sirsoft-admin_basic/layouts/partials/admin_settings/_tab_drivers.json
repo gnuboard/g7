@@ -658,7 +658,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || (_local.testingDriver === 's3')}}",
-                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
+                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
                                             },
                                             "children": [
                                                 {
@@ -691,7 +691,7 @@
                                             "name": "Div",
                                             "if": "{{_local.driverTestResults?.s3}}",
                                             "props": {
-                                                "className": "{{_local.driverTestResults.s3.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
+                                                "className": "{{_local.driverTestResults.s3.success ? 'flex-center gap-2 text-green-700 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
                                             },
                                             "children": [
                                                 {
@@ -1315,7 +1315,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || (_local.testingDriver === 'redis')}}",
-                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
+                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
                                             },
                                             "children": [
                                                 {
@@ -1348,7 +1348,7 @@
                                             "name": "Div",
                                             "if": "{{_local.driverTestResults?.redis}}",
                                             "props": {
-                                                "className": "{{_local.driverTestResults.redis.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
+                                                "className": "{{_local.driverTestResults.redis.success ? 'flex-center gap-2 text-green-700 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
                                             },
                                             "children": [
                                                 {
@@ -1600,7 +1600,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || (_local.testingDriver === 'memcached')}}",
-                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
+                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
                                             },
                                             "children": [
                                                 {
@@ -1633,7 +1633,7 @@
                                             "name": "Div",
                                             "if": "{{_local.driverTestResults?.memcached}}",
                                             "props": {
-                                                "className": "{{_local.driverTestResults.memcached.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
+                                                "className": "{{_local.driverTestResults.memcached.success ? 'flex-center gap-2 text-green-700 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
                                             },
                                             "children": [
                                                 {
@@ -1952,7 +1952,7 @@
                                     "name": "P",
                                     "if": "{{_local.form?.drivers?.session_driver === 'redis'}}",
                                     "props": {
-                                        "className": "flex-center text-xs text-blue-500 dark:text-blue-400 mt-2 gap-1"
+                                        "className": "flex-center text-xs text-blue-600 dark:text-blue-400 mt-2 gap-1"
                                     },
                                     "children": [
                                         {
@@ -2175,7 +2175,7 @@
                                     "name": "P",
                                     "if": "{{_local.form?.drivers?.queue_driver === 'redis'}}",
                                     "props": {
-                                        "className": "flex-center text-xs text-blue-500 dark:text-blue-400 mt-2 gap-1"
+                                        "className": "flex-center text-xs text-blue-600 dark:text-blue-400 mt-2 gap-1"
                                     },
                                     "children": [
                                         {
@@ -2538,7 +2538,7 @@
                                         {
                                             "type": "basic",
                                             "name": "P",
-                                            "if": "{{_global.queueStatusFailed !== true && (queueStatus?.data?.rows ?? []).length === 0}}",
+                                            "if": "{{_global.queueStatusFailed !== true && queueStatus !== undefined && (queueStatus?.data?.rows ?? []).length === 0}}",
                                             "props": {
                                                 "className": "text-label-subtle"
                                             },
@@ -3673,7 +3673,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 ml-1"
+                                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                                             },
                                                             "text": "*"
                                                         },
@@ -3736,7 +3736,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 ml-1"
+                                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                                             },
                                                             "text": "*"
                                                         },
@@ -3799,7 +3799,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 ml-1"
+                                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                                             },
                                                             "text": "*"
                                                         },
@@ -4271,7 +4271,7 @@
                                                             "type": "basic",
                                                             "name": "Code",
                                                             "props": {
-                                                                "className": "block mt-1 text-xs bg-amber-100 dark:bg-amber-900/40 px-2 py-1 rounded font-mono text-warning-soft"
+                                                                "className": "block mt-1 text-xs bg-amber-50 dark:bg-amber-900/40 px-2 py-1 rounded font-mono text-warning-soft"
                                                             },
                                                             "text": "php artisan reverb:start"
                                                         }
@@ -4384,7 +4384,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{_computed.isReadOnly || (_local.testingDriver === 'websocket')}}",
-                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
+                                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors"
                                             },
                                             "children": [
                                                 {
@@ -4417,7 +4417,7 @@
                                             "name": "Div",
                                             "if": "{{_local.driverTestResults?.websocket}}",
                                             "props": {
-                                                "className": "{{_local.driverTestResults.websocket.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
+                                                "className": "{{_local.driverTestResults.websocket.success ? 'flex-center gap-2 text-green-700 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}"
                                             },
                                             "children": [
                                                 {

@@ -73,7 +73,7 @@ effects:
   - claim_list_tab_switch_does_not_inherit_the_previous_page
   - claim_list_page_and_detail_round_trip_keeps_the_list_state
   - claim_list_empty_state_and_pagination
-  # 서브탭 건수 뱃지 (F12) — 서버가 `counts` 를 내고 화면이 그것만 그린다.
+  # 서브탭 건수 뱃지 — 서버가 `counts` 를 내고 화면이 그것만 그린다.
   - claim_list_subtab_badges_render_server_counts
   - claim_list_subtab_badges_absent_without_counts
   - claim_list_pagination_survives_a_truncated_total
@@ -118,6 +118,8 @@ effects:
   # 수정 (⑤⑥)
   - claim_edit_route_resolves_number_by_position
   - claim_edit_order_404_is_a_normal_path
+  - claim_edit_missing_claim_shows_error_page_without_blocking_render   # 없는·남의 신청서 수정 주소는 렌더를 막지 않고 오류 화면으로 끝난다 (7.1.1 출시 전 실측 — init_actions 가 오류 화면을 기다리면 「로딩 중...」·빈 화면에서 멈춘다)
+  - claim_edit_stale_response_after_navigation_is_ignored   # 신청서 응답을 기다리는 사이 다른 화면으로 옮기면 그 응답으로 오류 화면·상태 쓰기·재조회를 하지 않는다 (7.1.1 출시 전 확장 보완)
   - claim_edit_seeds_items_from_the_claim
   - claim_edit_unit_price_secondary_currency_is_its_own   # 단가 줄의 보조통화는 차액이 아니라 단가에서 온다 (S3-D6)
   - claim_edit_preview_excludes_its_own_lock
@@ -147,7 +149,7 @@ effects:
   - claim_withdraw_handler_channel_contract        # 철회 전송·중복 차단·4xx 화면 / 5xx 토스트
   - claim_pay_handler_address_and_guards           # 결제 주소 조립 금지·중복 차단·PG 위임
 
-  # 대기 결제행의 수단을 다시 고르는 축 (#599 3차 실측 F-1·F-2 — T1-D6)
+  # 대기 결제행의 수단을 다시 고르는 축 (#599 실측)
   # 접수 때 확정한 수단이 뒤에 낼 수 없게 되는 경우가 둘 있다: 마일리지 잔액 부족, 운영자가
   # 그 수단을 카탈로그에서 내림. 고를 자리가 없으면 출구가 신청서 철회뿐이다.
   - claim_payment_method_choices_follow_the_setting          # 선택지는 전역 설정을 따른다

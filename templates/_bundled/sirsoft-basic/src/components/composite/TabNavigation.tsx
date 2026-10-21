@@ -157,8 +157,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     switch (variant) {
       case 'pills':
         return isActive
-          ? `${baseClasses} bg-blue-600 dark:bg-blue-500 text-white rounded-lg`
-          : `${baseClasses} text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg`;
+          ? `${baseClasses} bg-blue-600 dark:bg-blue-600 text-white rounded-lg`
+          : `${baseClasses} text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg`;
 
       case 'underline':
         return isActive
@@ -199,7 +199,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
               <Span>{tab.label}</Span>
 
               {tab.badge !== undefined && (
-                <Div className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-red-500 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded-full">
+                <Div className="flex items-center justify-center min-w-5 h-5 px-1.5 bg-red-600 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded-full">
                   <Span>{tab.badge}</Span>
                 </Div>
               )}

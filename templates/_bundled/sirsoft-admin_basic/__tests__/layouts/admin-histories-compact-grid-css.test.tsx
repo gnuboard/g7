@@ -2,7 +2,7 @@
  * @file admin-histories-compact-grid-css.test.tsx
  * @description 이력 표 촘촘 서식(`.histories-compact-grid`)이 표 칸의 기본 여백을 실제로 이기는지 잠근다.
  *
- * 7.1.0 전수 실측 K2 관측 O-K2-7: 신고 상세 「처리 이력」 표가 1024px 에서 칸보다 2px 넓어
+ * 7.1.0 전수 실측: 신고 상세 「처리 이력」 표가 1024px 에서 칸보다 2px 넓어
  * 가로 스크롤이 생겼다(표 673.29px, 칸 671px). 원인은 촘촘 서식 규칙이 `@layer components`
  * 안에 있어, 표 칸(td·th)에 붙은 유틸리티 클래스 `px-6 py-4`(`@layer utilities`)에 밀려 한 번도
  * 적용되지 않았던 것이다. 캐스케이드 층 순서상 유틸리티 층이 컴포넌트 층을 이기므로 명시도로는

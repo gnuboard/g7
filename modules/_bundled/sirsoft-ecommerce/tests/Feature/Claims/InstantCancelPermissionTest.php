@@ -17,7 +17,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 회원·비회원 [취소·환불 신청]의 즉시 취소 분기 권한 테스트 (7.1.0 abilities 게이트 R3)
+ * 회원·비회원 [취소·환불 신청]의 즉시 취소 분기 권한 테스트 (7.1.0 abilities 게이트)
  *
  * 취소·환불 신청은 상품 상태로 자동 분기한다. 즉시 취소 분기(`auto` — 미결제·결제완료 상품)는
  * 종전 [주문 취소]와 같은 일이라, 신청 권한(`user-claims.request`)에 더해 주문 취소 권한

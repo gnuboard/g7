@@ -50,7 +50,8 @@ describe('확장 업데이트 모달 — 동시 업데이트 409 · 업데이트
     const call = findUpdateApiCall(modal);
     expect(call).toBeDefined();
 
-    const toasts = (call!.onSuccess as Json[]).filter((a) => a.handler === 'toast');
+    // 조건 없는 성공 토스트는 하나 — 멈춘 업데이트를 정리한 경우의 재활성화 안내(`if` 조건부)는 따로 센다
+    const toasts = (call!.onSuccess as Json[]).filter((a) => a.handler === 'toast' && a.if === undefined);
     expect(toasts).toHaveLength(1);
     expect(toasts[0].params.message).toBe(`{{response?.message ?? '$t:${fallback}'}}`);
   });

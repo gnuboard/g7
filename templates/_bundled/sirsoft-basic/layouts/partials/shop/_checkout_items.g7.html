@@ -23,7 +23,7 @@
               <responsive on="portable" class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700"/>
               <img data-if="{{item.product.thumbnail_url}}" src="{{item.product.thumbnail_url}}" alt="{{item.product.name}}" class="w-full h-full object-cover"/>
               <div data-if="{{!item.product.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
-                <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+                <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
               </div>
             </div>
           </a>
@@ -47,24 +47,24 @@
             <!-- 배송정책 및 배송비 -->
             <div data-if="{{checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy}}" class="flex items-center gap-2 mt-1">
               <responsive on="portable" class="flex items-center gap-2 mt-0.5"/>
-              <icon name="truck" size="xs" class="text-gray-400 dark:text-gray-500"/>
+              <icon name="truck" size="xs" class="text-gray-500 dark:text-gray-500"/>
               <span class="text-xs text-gray-500 dark:text-gray-400">{{checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.policy_name}}</span>
-              <span class="text-xs text-gray-400 dark:text-gray-500">/</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">/</span>
               <!-- 단독 구매 시 배송비 > 0 -->
               <span data-if="{{(checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount ?? 0) > 0}}" class="text-xs text-gray-600 dark:text-gray-300">{{checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount_formatted ?? ''}}</span>
               <!-- 단독 구매 시 무료배송 -->
-              <span data-if="{{(checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount ?? 0) === 0}}" class="text-xs text-green-600 dark:text-green-400">$t:shop.checkout.free_shipping</span>
+              <span data-if="{{(checkoutData.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount ?? 0) === 0}}" class="text-xs text-green-700 dark:text-green-400">$t:shop.checkout.free_shipping</span>
             </div>
             <!-- 정가 취소선 + 할인율 (할인 있을 때만, U5) -->
             <div data-if="{{(item.product_option?.discount_rate ?? 0) > 0}}" class="flex items-center gap-2 mt-1">
               <!-- 정가 취소선 - 주 통화 -->
-              <span class="text-xs text-gray-400 dark:text-gray-500 line-through">{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400 line-through">{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}</span>
               <!-- 할인율 칩 -->
-              <span class="text-xs font-bold text-red-500">{{item.product_option?.discount_rate}}%</span>
+              <span class="text-xs font-bold text-red-600 dark:text-red-400">{{item.product_option?.discount_rate}}%</span>
             </div>
             <!-- 정가 취소선 - 보조 통화들 (할인 있을 때, 선택 통화 제외) -->
             <div data-if="{{(item.product_option?.discount_rate ?? 0) > 0}}" data-each="currency in {{Object.entries(item.product_option?.multi_currency_list_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
-              <span class="text-xs text-gray-400 dark:text-gray-500 line-through">{{currency[1]?.formatted}}</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400 line-through">{{currency[1]?.formatted}}</span>
             </div>
             <!-- 단가 - 주 통화 -->
             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -113,7 +113,7 @@
                   </api-call>
                 </on>
                 <option value="">{{(item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_1' : '$t:shop.checkout.coupon_no_available'}}</option>
-                <option data-each="pcoupon in {{item.available_coupons ?? []}}" value="{{pcoupon.id}}" disabled="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[1] == pcoupon.id || (item.disabled_coupon_ids ?? []).includes(pcoupon.id)}}">{{(item.disabled_coupon_ids ?? []).includes(pcoupon.id) ? '[' + pcoupon.target_type_short_label + '] ' + pcoupon.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pcoupon.target_type_short_label + '] ' + pcoupon.localized_name + ' (' + pcoupon.benefit_formatted + ')'}}</option>
+                <option data-each="pcoupon in {{item.available_coupons ?? []}}" value="{{pcoupon.id}}" disabled="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[1] == pcoupon.id || (item.disabled_coupon_ids ?? []).includes(pcoupon.id)}}">{{(item.disabled_coupon_ids ?? []).includes(pcoupon.id) ? '[' + pcoupon.target_type_short_label + '] ' + pcoupon.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pcoupon.target_type_short_label + '] ' + pcoupon.localized_name + ' (' + (pcoupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? pcoupon.benefit_formatted) + ')'}}</option>
               </select>
               <!-- 상품 쿠폰 2 (첫 번째 쿠폰 선택 시에만 표시) -->
               <select data-if="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0]}}" name="item_coupon_2" aria-label="$t:common.row_cell|row={{item.product.name ?? ''}}|column={{$t('shop.checkout.product_coupon_2')}}" value="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[1] ?? ''}}" class="w-48 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500">
@@ -135,7 +135,7 @@
                   </api-call>
                 </on>
                 <option value="">{{(item.available_coupons ?? []).length > 0 ? '$t:shop.checkout.product_coupon_2' : '$t:shop.checkout.coupon_no_available'}}</option>
-                <option data-each="pcoupon2 in {{item.available_coupons ?? []}}" value="{{pcoupon2.id}}" disabled="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0] == pcoupon2.id || (item.disabled_coupon_ids ?? []).includes(pcoupon2.id)}}">{{(item.disabled_coupon_ids ?? []).includes(pcoupon2.id) ? '[' + pcoupon2.target_type_short_label + '] ' + pcoupon2.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pcoupon2.target_type_short_label + '] ' + pcoupon2.localized_name + ' (' + pcoupon2.benefit_formatted + ')'}}</option>
+                <option data-each="pcoupon2 in {{item.available_coupons ?? []}}" value="{{pcoupon2.id}}" disabled="{{_local.checkout?.item_coupons?.[item.product_option_id]?.[0] == pcoupon2.id || (item.disabled_coupon_ids ?? []).includes(pcoupon2.id)}}">{{(item.disabled_coupon_ids ?? []).includes(pcoupon2.id) ? '[' + pcoupon2.target_type_short_label + '] ' + pcoupon2.localized_name + ' (' + '$t:shop.checkout.coupon_already_used' + ')' : '[' + pcoupon2.target_type_short_label + '] ' + pcoupon2.localized_name + ' (' + (pcoupon2.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? pcoupon2.benefit_formatted) + ')'}}</option>
               </select>
             </div>
           </div>
@@ -147,7 +147,7 @@
             <!-- 원 판매금액 (할인 없을 때) - 주 통화 -->
             <div data-if="{{(item.product_coupon_discount_amount ?? 0) === 0}}" class="font-bold text-gray-900 dark:text-white">{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_formatted}}</div>
             <!-- 원 판매금액 (할인 있을 때 취소선) - 주 통화 -->
-            <div data-if="{{(item.product_coupon_discount_amount ?? 0) > 0}}" class="text-sm text-gray-400 dark:text-gray-500 line-through">{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_formatted}}</div>
+            <div data-if="{{(item.product_coupon_discount_amount ?? 0) > 0}}" class="text-sm text-gray-500 dark:text-gray-400 line-through">{{item.multi_currency_subtotal?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.subtotal_formatted}}</div>
             <!-- 할인 후 금액 - 주 통화 -->
             <div data-if="{{(item.product_coupon_discount_amount ?? 0) > 0}}" class="font-bold text-red-600 dark:text-red-400">{{item.multi_currency_final_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.final_amount_formatted}}</div>
             <!-- 원 판매금액 - 보조 통화들 (할인 없을 때) -->
@@ -156,7 +156,7 @@
             </div>
             <!-- 할인 후 금액 - 보조 통화들 -->
             <div data-if="{{(item.product_coupon_discount_amount ?? 0) > 0}}" data-each="finalCurrency in {{Object.entries(item.multi_currency_final_amount ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2 justify-end">
-              <span class="text-xs text-red-500 dark:text-red-400">{{finalCurrency[1]?.formatted}}</span>
+              <span class="text-xs text-red-600 dark:text-red-400">{{finalCurrency[1]?.formatted}}</span>
             </div>
           </div>
         </div>

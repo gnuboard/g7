@@ -1,0 +1,31 @@
+feature: apiCall 이 끝나면 로딩 플래그(`_local.loadingActions[id]`)가 저장소 A·B 모두에서 사라지고, 겹친 요청의 진행 중 플래그와 레이아웃 키는 남는다 (engine-v1.81.2, 7.1.1)
+
+description: |
+  apiCall 은 시작할 때 발화한 컴포넌트 상태에 로딩 플래그를 넣고 끝나면 뺀다. 종전 해제는 클릭 시점 사본에서 키를 생략한 객체라 렌더러의 기본
+  깊은 병합이 끝난 키를 지우지 못했고(7.0.0-beta.1 부터), 화면 문맥에 남은 플래그가 setState·setLocal 의 A 전용 키 보충으로 저장소 B 에 옮겨져
+  `_local` 이 호출마다 커졌다(7.1.0 포함). 축 case 는 「요청 결과 × 겹침 × 요청 중 다른 쓰기 × 화면 이동 × 문맥 종류(렌더러·복합 컴포넌트·전역 폴백)」
+  가운데 다른 경로를 타는 조합만 고른 것이다. 저장소 B 는 손으로 채우지 않는다(실제 writer 만). 브라우저 축은 7.1.1 출시 전 캠페인 재실측
+  (주문서 배송지 「선택」·글쓰기 「등록」 반복의 `_local` 길이, 스피너·잠금 단추)이 덮는다.
+
+axes:
+  case: [repeat_success_with_onsuccess_setstate, in_flight_spinner_and_lock, overlapping_calls, write_during_flight_copies_flag_to_b, late_write_after_overlap, setlocal_snapshot_during_flight, error_response, composite_consumer_lock, custom_key_kept, complete_after_navigation, modal_fallback_functional_writer, global_fallback_overlap]
+
+effects:
+  - flags_cleared_in_store_a          # 끝난 플래그가 저장소 A(렌더 문맥)에 남지 않는다
+  - flags_cleared_in_store_b          # 끝난 플래그가 저장소 B(`G7Core.state.get()._local`)에 남지 않는다
+  - local_size_stable                 # 같은 요청을 반복해도 `_local` 길이가 그대로다
+  - in_flight_flag_visible            # 요청 중에는 플래그가 보여 스피너·잠금이 동작한다
+  - lock_released_after_completion    # 성공·실패·중단 뒤 잠금이 풀린다
+  - other_in_flight_flag_kept         # 겹친 다른 요청의 진행 중 플래그는 먼저 끝난 요청의 해제가 지우지 않는다
+  - non_engine_keys_kept              # 레이아웃·확장이 직접 넣은 다른 로딩 키는 남는다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.apiCallLoadingFlags.test.tsx
+
+validation:
+  browser_check: 재실측 — 사용자 주문서 배송지 「선택」 10회·글쓰기 「등록」 반복의 `JSON.stringify(G7Core.state.get()._local).length`, 요청 중 단추 잠금·스피너, 두 요청 겹침(두 템플릿)
+  note: |
+    fail-first(worktree 사본): 수정 전 ActionDispatcher 로 11 failed / 12(화면 이동 뒤 완료는 종전에도 통과 — 새 화면 `_local` 초기화가 덮는다),
+    해제의 B 정리와 동작 뒤 정리를 함께 끄면 계약 쌍 포함 6 failed / 37, 동작 뒤 정리만 끄면 1 failed(late_write_after_overlap),
+    getLocal 대체 스냅샷 정리를 끄면 1 failed(setlocal_snapshot_during_flight), 함수형 갱신의 shallow 표지를 끄면 10 failed / 37. 창 폴백 writer 의 함수형 풀기를 되돌리면 1 failed(modal_fallback_functional_writer).
+    계약 쌍(dual-store-mirror-contract 「apiCall 로딩 플래그 해제」)은 수정 전 2 failed.

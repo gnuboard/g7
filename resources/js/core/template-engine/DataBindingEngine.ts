@@ -13,6 +13,7 @@ import { TranslationEngine } from './TranslationEngine';
 import { hasPipes, splitPipes, executePipeChain } from './PipeRegistry';
 import { classifyExpression, extractSingleBinding, isComplexExpression, LITERALS, scanBindings } from './BindingShape';
 import { RAW_PREFIX, wrapRaw, wrapRawDeep } from './rawMarkers';
+import { findTranslationParamZones, isInTranslationParamZone, wrapTranslationParamValue } from './translationParamValues';
 import { evaluateSafeExpression, isUnsafeHostValue, isExpressionSafeFunction } from './SafeExpressionEvaluator';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 import { getCompiledExpression } from './ExpressionCompileCache';
@@ -111,6 +112,17 @@ export interface BindingOptions {
    * 반복 렌더링(DataGrid의 cellChildren 등)에서 같은 경로가 다른 값을 가져야 할 때 사용
    */
   skipCache?: boolean;
+
+  /**
+   * `$t:키|이름={{값}}` 의 인자 자리에 넣는 값을 보호 표식으로 감쌀지 여부 (`resolveBindings` 전용)
+   *
+   * 결과를 곧바로 번역 엔진(`TranslationEngine.resolveTranslations`)에 넘기는 렌더·액션 경로만 켠다 —
+   * 번역 엔진이 인자를 나눈 뒤 표식 안 글자를 그대로 치환하고 표식을 걷는다. 값에 든 `&`·`|`·`=`·끝 ` /` 가
+   * 인자 구분자·문장 꼬리로 읽히지 않는다. 번역하지 않는 경로에 켜면 표식이 결과에 남는다.
+   *
+   * @since engine-v1.80.1
+   */
+  protectTranslationParams?: boolean;
 }
 
 /**
@@ -508,11 +520,22 @@ export class DataBindingEngine {
     const bindings = scanBindings(template);
     if (bindings.length === 0) return template;
 
+    // `$t:키|이름={{값}}` 의 인자 자리 값 보호 — 번역 엔진이 인자를 나눈 뒤 글자 그대로 치환한다(engine-v1.80.1).
+    // 평가에 실패해 원본 `{{…}}` 를 돌려준 자리는 감싸지 않는다(종전처럼 번역 엔진이 다시 평가한다).
+    // 빈 값도 감싸지 않는다 — 종전처럼 그 인자가 빠져 자리표시자가 남는다(빈 인자 진단 단서 유지).
+    const zones = opts.protectTranslationParams && template.includes('$t:')
+      ? findTranslationParamZones(template, bindings)
+      : null;
+
     let output = '';
     let cursor = 0;
     for (const binding of bindings) {
       output += template.slice(cursor, binding.start);
-      output += replaceBinding(template.slice(binding.start, binding.end), binding.expr);
+      const matchText = template.slice(binding.start, binding.end);
+      const replaced = replaceBinding(matchText, binding.expr);
+      output += zones && replaced !== '' && replaced !== matchText && isInTranslationParamZone(zones, binding.start)
+        ? wrapTranslationParamValue(replaced)
+        : replaced;
       cursor = binding.end;
     }
     return output + template.slice(cursor);

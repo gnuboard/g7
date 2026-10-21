@@ -128,7 +128,7 @@
                   </set-state>
                 </on>
               </input>
-              <span class="text-gray-400 dark:text-gray-500">~</span>
+              <span class="text-gray-500 dark:text-gray-400">~</span>
               <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.wishlists.filters.date_label')}}" data-ref="end_date_input" type="date" class="text-sm" value="{{_local.filter.endDate ?? ''}}">
                 <on type="change">
                   <!-- 기간 끝 — 담아만 둔다 -->
@@ -219,7 +219,7 @@
           </select>
         </div>
       </div>
-      <data-grid data-type="composite" pageHref="/admin/ecommerce/wishlists?page={page}" :pageHrefMergeQuery="true" rowLabelField="product.name" data-ref="wishlists_datagrid" :data-blur-until-loaded="true" data="{{wishlists?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{wishlists?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{wishlists?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{wishlists?.data?.pagination?.has_more_pages ?? false}}" selectable="{{wishlists?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_wishlists || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-ecommerce.admin.wishlists.table.empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
+      <data-grid data-type="composite" pageHref="/admin/ecommerce/wishlists?page={page}" :pageHrefMergeQuery="true" rowLabelField="product.name" data-ref="wishlists_datagrid" :data-blur-until-loaded="true" data="{{wishlists?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{wishlists?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{wishlists?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{wishlists?.data?.pagination?.has_more_pages ?? false}}" selectable="{{wishlists?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_wishlists || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="{{wishlists === undefined ? '' : $t('sirsoft-ecommerce.admin.wishlists.table.empty')}}" actionsColumnHeader="$t:common.actions" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-ecommerce.admin.wishlists.columns.created_at">
           <cell>
             <span class="text-sm text-gray-900 dark:text-white">{{row.created_at}}</span>
@@ -236,7 +236,7 @@
                   </on>
                   {{row.member?.name}}
                 </a>
-                <span data-if="{{!row.member}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.wishlists.badges.guest</span>
+                <span data-if="{{!row.member}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.wishlists.badges.guest</span>
                 <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-ecommerce.admin.wishlists.badges.withdrawn</badge>
               </div>
               <span data-if="{{row.member?.email}}" class="text-xs text-gray-500 dark:text-gray-400">{{row.member?.email}}</span>

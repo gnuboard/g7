@@ -4,19 +4,21 @@ description: |
   관리자 화면 입력칸 일부가 화면 낭독기에서 이름 없이 「편집 가능 텍스트」·「체크박스」·「스위치, 켬」으로만 읽히거나,
   목록형 선택칸이 고른 값(「최신순」)만 읽혔다. 검색 필터 칩은 실제 체크박스가 display:none 이라 Tab 으로 닿지 않았다.
   컴포넌트가 그리는 칸(메뉴 스위치·권한 트리·다국어칸·표 셀·검색 드롭다운·분류 트리·동적 행·칩·목록형 선택칸)은 이름을 스스로 달고,
-  레이아웃의 칸은 R1~R8 규칙(보이는 제목 키 · 체크박스를 글자와 한 label 로 · 표 칸 「{행} {열}」 · 선택칸 「{이름} {값}」)으로 단다.
+  레이아웃의 칸은~R8 규칙(보이는 제목 키 · 체크박스를 글자와 한 label 로 · 표 칸 「{행} {열}」 · 선택칸 「{이름} {값}」)으로 단다.
   레이아웃 잠금 시험은 관리자 템플릿 layouts·extensions 전체에서 이름 없는 칸 0 을 잠근다.
 
 # 화면 위치(첫 화면·모달·표 행)는 레이아웃 잠금 시험이 layouts·extensions 전체를 한 번에 세므로 축으로 나누지 않는다.
 axes:
-  component: [keys, sortable_menu_item, permission_tree, multilingual_input, data_grid, searchable_dropdown, category_tree, dynamic_field_list, chip_checkbox, select, layout_lock, role_list_row_switch, native_datetime, toggle_row_title, tag_input, tab_navigation]
+  component: [keys, sortable_menu_item, permission_tree, multilingual_input, data_grid, searchable_dropdown, category_tree, dynamic_field_list, chip_checkbox, select, layout_lock, role_list_row_switch, native_datetime, toggle_row_title, tag_input, tab_navigation, identity_policy_row_switch]
 
 effects:
   - controls_have_accessible_name
   - listbox_reads_name_and_value
   - row_controls_read_row_and_column
+  - policy_toggle_named_by_purpose      # 본인인증 정책 행 스위치 「{인증 목적} ({정책 키}) 활성」
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ControlAccessibleNames.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/control-accessible-names.test.ts
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-identity-policy-toggle-name.test.ts
   - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-control-names.spec.ts

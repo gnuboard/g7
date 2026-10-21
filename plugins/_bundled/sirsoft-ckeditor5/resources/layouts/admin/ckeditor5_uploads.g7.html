@@ -106,7 +106,7 @@
       <div data-ref="filter_section" class="admin-card mb-6">
         <div data-ref="search_row" class="flex-center flex-wrap gap-2">
           <div class="relative flex-1">
-            <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+            <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"/>
             <input name="search" type="text" placeholder="$t:sirsoft-ckeditor5.admin.uploads.filter.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
               <on type="change">
                 <!-- 타이핑은 폼 상태에만 담아 둔다. 여기서 목록을 부르지 않는 것은 의도다 — 검색 실행은 Enter 또는 검색 버튼이 맡는다 -->
@@ -168,12 +168,12 @@
           <span>$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.button</span>
         </button>
       </div>
-      <data-grid :pageHrefMergeQuery="true" pageHref="/admin/plugins/sirsoft-ckeditor5/uploads?page={page}" data-type="composite" data-ref="ckeditor5_uploads_datagrid" rowLabelField="original_name" data="{{ckeditor5Uploads?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{ckeditor5Uploads?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{ckeditor5Uploads?.data?.pagination?.last_page ?? null}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" :sortable="true" sortField="{{query.sort_by || 'created_at'}}" sortDirection="{{query.sort_order || 'desc'}}" idField="id" selectable="{{ckeditor5Uploads?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_ckeditor5_uploads || []}}" emptyMessage="$t:sirsoft-ckeditor5.admin.uploads.empty" actionsColumnHeader="$t:common.actions">
+      <data-grid :pageHrefMergeQuery="true" pageHref="/admin/plugins/sirsoft-ckeditor5/uploads?page={page}" data-type="composite" data-ref="ckeditor5_uploads_datagrid" rowLabelField="original_name" data="{{ckeditor5Uploads?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{ckeditor5Uploads?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{ckeditor5Uploads?.data?.pagination?.last_page ?? null}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" :sortable="true" sortField="{{query.sort_by || 'created_at'}}" sortDirection="{{query.sort_order || 'desc'}}" idField="id" selectable="{{ckeditor5Uploads?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_ckeditor5_uploads || []}}" emptyMessage="{{ckeditor5Uploads === undefined ? '' : $t('sirsoft-ckeditor5.admin.uploads.empty')}}" actionsColumnHeader="$t:common.actions">
         <blur-until-loaded sources="ckeditor5Uploads"/>
         <prop name="rowActions">
           <item id="delete" label="$t:sirsoft-ckeditor5.admin.uploads.delete.button" iconName="trash" variant="danger" disabled="{{ckeditor5Uploads?.data?.abilities?.can_delete !== true}}"/>
         </prop>
-        <column field="thumbnail" header="$t:sirsoft-ckeditor5.admin.uploads.col.thumbnail" width="90px">
+        <column field="thumbnail" :sortable="false" header="$t:sirsoft-ckeditor5.admin.uploads.col.thumbnail" width="90px">
           <cell>
             <img src="{{row.download_url}}" alt="{{row.original_name ?? ''}}" loading="lazy" class="w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-700"/>
           </cell>
@@ -191,7 +191,7 @@
             <span class="text-label whitespace-nowrap">{{Math.round((row.file_size ?? 0) / 1024).toLocaleString()}} KB</span>
           </cell>
         </column>
-        <column field="uploader_name" header="$t:sirsoft-ckeditor5.admin.uploads.col.uploader" width="140px">
+        <column field="uploader_name" :sortable="false" header="$t:sirsoft-ckeditor5.admin.uploads.col.uploader" width="140px">
           <cell>
             <span class="text-body">{{row.uploader_name ?? '-'}}</span>
           </cell>
@@ -201,7 +201,7 @@
             <span class="text-label whitespace-nowrap">{{row.created_at ?? '-'}}</span>
           </cell>
         </column>
-        <column field="referenced" header="$t:sirsoft-ckeditor5.admin.uploads.col.referenced" width="110px">
+        <column field="referenced" :sortable="false" header="$t:sirsoft-ckeditor5.admin.uploads.col.referenced" width="110px">
           <cell>
             <span data-if="{{row.referenced === true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">$t:sirsoft-ckeditor5.admin.uploads.badge.referenced</span>
             <span data-if="{{row.referenced !== true}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:sirsoft-ckeditor5.admin.uploads.badge.unreferenced</span>
@@ -214,7 +214,9 @@
           </navigate>
         </on>
         <on type="change" event="onSortChange">
-          <!-- 정렬을 바꾸면 page 를 비운다 — 순서가 달라졌는데 보던 페이지 번호를 유지하면 전혀 다른 구간이 열린다 -->
+          <!-- 정렬을 바꾸면 page 를 비운다 — 순서가 달라졌는데 보던 페이지 번호를 유지하면 전혀 다른 구간이 열린다.
+               서버가 정렬하는 열은 올린 시각·파일 크기·원래 이름 셋뿐이라(IndexUploadsRequest::SORTABLE) 썸네일·업로더·참조 열은 정렬 불가로 둔다 —
+               종전에는 그 머리를 누르면 422 가 났다(7.1.1) -->
           <navigate path="/admin/plugins/sirsoft-ckeditor5/uploads" :replace="true" :mergeQuery="true" transition_overlay_target="ckeditor5_uploads_datagrid__body">
             <query page="" sort_by="{{$args[0]}}" sort_order="{{$args[1]}}"/>
           </navigate>

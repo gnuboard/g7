@@ -1,0 +1,41 @@
+feature: 신고 서비스 단위 동작 — 케이스 접수·재사용·재활성, 상태 변경과 대상 동기화
+
+description: |
+  ReportService 를 Mock 신고 저장소와 실제 게시글·댓글 저장소로 묶어, 신고 접수(훅·같은 대상 케이스 재사용·
+  닫힌 케이스 재활성·처리 중 케이스의 마지막 신고 시각 갱신)와 상태 변경이 대상 글·댓글에 미치는 동기화
+  (게시 중단·삭제·반려 복구), 복구 대상 집계, 대상 제목 해석을 고정한다.
+
+  기존 회귀 테스트의 소유권을 2026-10-20 신고 마지막 시각 갱신 수정 때 시험 파일을 고치며 사후 등재했다.
+  축 case 는 시험이 고정하는 서비스 동작 하나다(동작마다 입력 조합이 정해져 있어 한 축으로 둔다).
+
+axes:
+  case:
+    - create_report_executes_hooks
+    - create_report_reuses_existing_case_for_same_target
+    - create_report_reactivates_rejected_case
+    - update_report_status_changes_status
+    - delete_report_soft_deletes
+    - update_report_status_blinds_post_content
+    - update_report_status_deletes_post_content
+    - update_report_status_restores_post_content
+    - update_report_status_blinds_comment_content
+    - comment_report_reportable_includes_post_title
+    - post_report_reportable_includes_post_title_directly
+    - restorable_blind_count_includes_cases_with_multiple_reporters
+
+effects:
+  - create_report_executes_hooks
+  - create_report_reuses_existing_case_for_same_target
+  - create_report_reactivates_rejected_case
+  - update_report_status_changes_status
+  - delete_report_soft_deletes
+  - update_report_status_blinds_post_content
+  - update_report_status_deletes_post_content
+  - update_report_status_restores_post_content
+  - update_report_status_blinds_comment_content
+  - comment_report_reportable_includes_post_title
+  - post_report_reportable_includes_post_title_directly
+  - restorable_blind_count_includes_cases_with_multiple_reporters
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/ReportServiceTest.php

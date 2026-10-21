@@ -21,6 +21,11 @@ class ExtStaticStatusCommandTest extends TestCase
 {
     private string $isolatedPublicPath;
 
+    /**
+     * 격리된 public 경로와 캐시 버전·게시 상태를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,6 +40,11 @@ class ExtStaticStatusCommandTest extends TestCase
         ExtensionStaticCacheService::resetPublishScheduleForTesting();
     }
 
+    /**
+     * 웹 계정 가짜값과 격리 경로·게시 일정을 원래대로 되돌립니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         FilePermissionHelper::fakeWebServerAccountForTesting(null);
@@ -48,15 +58,17 @@ class ExtStaticStatusCommandTest extends TestCase
      * root 가 아니면 경고 없이 종전 문구 그대로다 (미게시 → 비-0 종료).
      *
      * @effects status_command_warns_root_and_hints_web_account
+     *
+     * @return void 반환값 없음
      */
     public function test_non_root_status_prints_plain_publish_hint_without_root_warning(): void
     {
         FilePermissionHelper::fakeWebServerAccountForTesting(['mode' => 'non_root', 'name' => null]);
 
         $this->artisan('ext-static:status')
-            ->expectsOutputToContain('부트스트랩 리소스 정적 게시 상태')
-            ->expectsOutputToContain('현재 캐시 버전 : 987600000')
-            ->expectsOutputToContain('게시 상태      : 미게시')
+            ->expectsOutputToContain(__('extensions.commands.ext_static_status.title'))
+            ->expectsOutputToContain(__('extensions.commands.ext_static_status.labels.version').' 987600000')
+            ->expectsOutputToContain(__('extensions.commands.ext_static_status.labels.publish_state').' '.__('extensions.commands.ext_static_status.values.not_published'))
             ->expectsOutputToContain('php artisan ext-static:publish')
             ->doesntExpectOutputToContain('root 로 실행 중')
             ->doesntExpectOutputToContain('sudo -u')
@@ -67,6 +79,8 @@ class ExtStaticStatusCommandTest extends TestCase
      * root + 웹 계정 식별 → 경고 + `sudo -u {계정}` 힌트. 종료 코드는 종전과 같다.
      *
      * @effects status_command_warns_root_and_hints_web_account
+     *
+     * @return void 반환값 없음
      */
     public function test_root_status_warns_and_hints_sudo_with_web_account(): void
     {
@@ -82,6 +96,8 @@ class ExtStaticStatusCommandTest extends TestCase
      * root + 웹 계정 미상 → placeholder 와 확인 방법.
      *
      * @effects status_command_warns_root_and_hints_web_account
+     *
+     * @return void 반환값 없음
      */
     public function test_root_status_with_unknown_web_account_uses_placeholder(): void
     {
@@ -89,7 +105,7 @@ class ExtStaticStatusCommandTest extends TestCase
 
         // 한 줄에 두 부분 문자열을 따로 기대하면 Mockery 가 첫 기대만 소비한다 — 한 문자열로 잠근다
         $this->artisan('ext-static:status')
-            ->expectsOutputToContain('sudo -u <웹서버계정> php artisan ext-static:publish (웹서버 계정은 storage 디렉토리 소유자로 확인)')
+            ->expectsOutputToContain(__('extensions.commands.ext_static_status.publish_hint_unknown_web', ['command' => 'php artisan ext-static:publish']))
             ->assertExitCode(1);
     }
 
@@ -97,6 +113,8 @@ class ExtStaticStatusCommandTest extends TestCase
      * root 서비스 구성(웹 계정도 root)은 sudo 접두 없이 안내한다 — 재실행도 root 로 무해.
      *
      * @effects status_command_warns_root_and_hints_web_account
+     *
+     * @return void 반환값 없음
      */
     public function test_root_symmetric_hint_has_no_sudo_prefix(): void
     {
@@ -112,6 +130,8 @@ class ExtStaticStatusCommandTest extends TestCase
      * 게시 명령은 root 여도 **중단하지 않고** 경고 뒤 계속 실행한다 (D3 — 명시적 명령은 운영자 책임).
      *
      * @effects publish_command_warns_root_but_continues
+     *
+     * @return void 반환값 없음
      */
     public function test_publish_warns_root_but_still_publishes(): void
     {
@@ -131,6 +151,8 @@ class ExtStaticStatusCommandTest extends TestCase
      * 상태 명령은 서비스 보고서를 소비한다 — 게시 뒤에는 완료·파일 수·게시 시각을 그대로 보인다.
      *
      * @effects status_command_consumes_service_report
+     *
+     * @return void 반환값 없음
      */
     public function test_status_reflects_published_report(): void
     {
@@ -140,9 +162,9 @@ class ExtStaticStatusCommandTest extends TestCase
         $this->assertTrue(app(ExtensionStaticCacheService::class)->publishCurrent());
 
         $this->artisan('ext-static:status')
-            ->expectsOutputToContain('게시 상태      : 완료')
-            ->expectsOutputToContain('manifest 파일  : 1건')
-            ->expectsOutputToContain('이상 없음.')
+            ->expectsOutputToContain(__('extensions.commands.ext_static_status.labels.publish_state').' '.__('extensions.commands.ext_static_status.values.published'))
+            ->expectsOutputToContain(__('extensions.commands.ext_static_status.labels.manifest_files').' '.__('extensions.commands.ext_static_status.values.files_count', ['count' => 1]))
+            ->expectsOutputToContain(__('extensions.commands.ext_static_status.ok'))
             ->assertExitCode(0);
     }
 }

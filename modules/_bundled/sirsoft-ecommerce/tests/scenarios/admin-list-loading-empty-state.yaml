@@ -1,0 +1,36 @@
+# 시나리오 매니페스트 — 관리자 목록 표의 받는 중·빈 결과 표시
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_list_loading_empty_state
+
+description: >-
+  관리자 이커머스 목록 화면은 화면을 먼저 그린 뒤 목록을 받는다(progressive). 받기 전에는 데이터소스 값이
+  비어 있어 표가 행 0개로 보이고, 표는 행이 없으면 빈 문구를 그린다 — 그래서 수정 화면에서 「목록」으로
+  돌아온 직후 「등록된 상품이 없습니다」가 먼저 뜨고 몇 초 뒤 행이 들어왔다. 빈 문구는 받은 결과가 0건일
+  때만 보이고, 받는 중에는 문구 없이 표를 흐리게 덮는다. 상품·주문·클레임·쿠폰·쿠폰 발급 내역 창·배송정책·
+  마일리지·회원 배송지·장바구니·문의·찜·후기 12개 표가 같은 규칙을 쓰고, 새 목록 표가 규칙 없이 들어오면
+  전수 검사가 잡는다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminListLoadingEmptyState.test.tsx
+
+coverage_strategy: full
+
+# axis 의미:
+#   load_state — 목록 데이터소스 상태. loading 은 엔진이 화면을 먼저 그릴 때 넣는 undefined,
+#                loaded_empty 는 받은 결과 0건, loaded_rows 는 1건 이상, error 는 처음 받기 실패(엔진이 null 로 둠), refetch_error 는 다시 받기 실패(엔진이 값을 그대로 둠 — 데이터소스 오류 처리가 전역 실패 표시를 남김). 12개 화면은 같은 규칙을 쓰므로
+#                축으로 곱하지 않고 각 시험이 화면 전부를 돈다(it.each).
+axes:
+  load_state: [loading, loaded_empty, loaded_rows, error, refetch_error]
+
+effects:
+  - loading_hides_empty_message   # 받는 중에는 빈 문구가 없다
+  - loading_blurs_grid   # 받는 중에는 표가 흐림 처리된다
+  - loaded_empty_shows_message   # 받은 결과 0건이면 그 화면의 빈 문구가 보이고 흐림이 풀린다
+  - loaded_rows_hide_message   # 받은 결과가 있으면 행이 그려지고 빈 문구가 없다
+  - error_releases_blur_and_shows_empty_message   # 받기 실패(null)면 흐림이 풀리고 빈 문구가 보인다(오류 표시는 데이터소스 오류 처리 몫)
+  - refetch_failure_flag_set_by_source_error_handling   # 다시 받기로만 받는 목록(쿠폰 발급 내역·개인정보 대상·추가배송비 템플릿)은 오류 처리가 실패 표시를 남기고 성공하면 내리며, 창을 여는 곳마다 지운다
+  - refetch_failure_shows_error_instead_of_empty   # 쿠폰 발급 내역 창은 다시 받기 실패 때 「발급 이력이 없습니다」 대신 오류 안내 — 남은 행·쪽 나눔·흐림도 감춘다
+  - failure_shows_error_instead_of_empty   # 프리셋 관리 창·활동 로그·처리 이력·환불 은행 안내·개인정보 대상·추가배송비 템플릿은 받기 실패 때 빈 안내 대신 오류 안내, 쇼핑몰 환경설정은 오류 화면
+  - every_unguarded_source_empty_state_masks_failure   # 오류 처리·대체 값이 없는 데이터소스를 읽는 빈 안내는 모두 실패를 가린다(전수)
+  - every_progressive_list_grid_gated   # 화면 뒤에 받는 데이터소스에 묶인 관리자 표는 빈 문구 지정 여부와 무관하게 모두 이 규칙을 지킨다(전수)

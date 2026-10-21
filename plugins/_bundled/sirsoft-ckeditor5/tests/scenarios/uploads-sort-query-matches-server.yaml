@@ -1,0 +1,24 @@
+# 시나리오 매니페스트 — CKEditor5 업로드 목록 표 머리 정렬이 서버가 받는 열로만 나간다 (7.1.1)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: ckeditor5_uploads_sort_query_matches_server
+
+description: >-
+  서버(IndexUploadsRequest SORTABLE = created_at·file_size·original_name, sort_by 는 Rule::in(SORTABLE))는 세 열만 받는데,
+  표는 썸네일·업로더·참조 열도 정렬 가능하게 그려(DataGrid 기본 정렬 가능) 그 머리를 누르면 sort_by=thumbnail 등으로 422 가 났다.
+  썸네일·업로더·참조 열에 `:sortable="false"` 를 달고, 받는 세 열은 종전대로 sort_by={열}·sort_order={방향} 으로 나간다(서버 무변경).
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/uploads-sort-query-matches-server.test.tsx
+
+axes:
+  column: [created_at, file_size, original_name]   # 서버 허용 정렬 열 = 표의 정렬 가능한 열
+  direction: [asc, desc]
+
+effects:
+  - uploads_sortable_columns_match_server   # 표의 정렬 가능한 열이 서버 SORTABLE 세 열과 같다(썸네일·업로더·참조 머리엔 정렬 단추 없음)
+  - uploads_sort_query_matches_server   # 정렬 가능한 열 × 두 방향이 sort_by={허용 열}·sort_order={방향} 으로 이동한다
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: 7.1.1 출시 전 캠페인 재실측(CKEditor5 업로드 목록 머리 정렬 뒤 목록 요청 200)

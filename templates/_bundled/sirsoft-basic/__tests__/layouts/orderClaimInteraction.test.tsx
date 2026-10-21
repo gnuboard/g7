@@ -48,7 +48,7 @@ describe.each(['mypage/orders/show.json', 'shop/guest_order_show.json'])('%s 상
     const children = nodes(shell.slots).find(n => n.children?.includes(group)).children;
     const index = children.indexOf(group);
     expect(children[index - 1].partial).toBe('partials/mypage/orders/_items.json');
-    // 버튼 줄과 주문자 정보 사이에는 권한 때문에 잠긴 이유 안내(7.1.0 R3)만 선다 — 버튼 바로 아래에서 이유를 말한다.
+    // 버튼 줄과 주문자 정보 사이에는 권한 때문에 잠긴 이유 안내(7.1.0 abilities 게이트)만 선다 — 버튼 바로 아래에서 이유를 말한다.
     const after = children.slice(index + 1);
     const ordererAt = after.findIndex((c: any) => c.partial === 'partials/mypage/orders/_orderer.json');
     expect(ordererAt).toBeGreaterThanOrEqual(0);
@@ -74,7 +74,7 @@ describe.each(['mypage/orders/show.json', 'shop/guest_order_show.json'])('%s 상
       initialState: { _local: { selectedItemIds: selected } },
       translations: { claim: { apply: { entry_refund: '취소·환불 신청', entry_return: '반품 신청', entry_exchange: '교환 신청' } } },
     });
-    // 신청 가능 상품 응답은 abilities(7.1.0 R3)를 늘 싣고 버튼은 `can_request !== true` 면 잠긴다.
+    // 신청 가능 상품 응답은 abilities 를 늘 싣고(7.1.0) 버튼은 `can_request !== true` 면 잠긴다.
     // 이 표는 상품 선택 축만 재므로 권한은 있는 상태로 둔다(권한 게이트 계약은 이커머스 모듈 테스트가 잰다).
     active.mockApi('claimable', { response: { data: {
       options: [416, 417].map(id => ({ option: { id, option_status: 'payment_complete' }, available_quantity: 1, claimable_types: types })),
@@ -87,7 +87,7 @@ describe.each(['mypage/orders/show.json', 'shop/guest_order_show.json'])('%s 상
       expect(button).toBeInTheDocument();
       expect(isLocked(button as HTMLElement)).toBe(!enabled);
       expect(button).toHaveClass('bg-red-600', 'text-white');
-      expect(queryEntry('반품 신청')).toHaveClass('bg-orange-600', 'text-white');
+      expect(queryEntry('반품 신청')).toHaveClass('bg-orange-700', 'text-white');
       expect(queryEntry('교환 신청')).toHaveClass('bg-blue-600', 'text-white');
     }
   });

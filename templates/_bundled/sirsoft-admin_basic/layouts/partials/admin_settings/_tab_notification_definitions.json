@@ -419,7 +419,7 @@
                                                         "type": "button",
                                                         "aria-label": "{{(_local.expandedNotifications ?? {})[def.id] ? '$t:common.collapse' : '$t:common.expand'}}",
                                                         "aria-expanded": "{{!!(_local.expandedNotifications ?? {})[def.id]}}",
-                                                        "className": "p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                        "className": "p-1.5 rounded-md text-gray-500 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                                     },
                                                     "children": [
                                                         {
@@ -475,7 +475,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                                                                "className": "text-body font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
                                                                             },
                                                                             "text": "{{def.type}}"
                                                                         },
@@ -501,7 +501,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "{{def.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}} text-xs font-medium px-2 py-0.5 rounded-full"
+                                                                                "className": "{{def.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}} text-xs font-medium px-2 py-0.5 rounded-full"
                                                                             },
                                                                             "text": "{{def.is_active ? '$t:admin.settings.notification_definitions.active' : '$t:admin.settings.notification_definitions.inactive'}}"
                                                                         },
@@ -530,7 +530,7 @@
                                                                     "name": "P",
                                                                     "if": "{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}",
                                                                     "props": {
-                                                                        "className": "text-sm text-gray-400 dark:text-gray-500 italic"
+                                                                        "className": "text-sm text-gray-500 dark:text-gray-400 italic"
                                                                     },
                                                                     "text": "$t:admin.settings.notification_definitions.no_template_for_channel"
                                                                 },
@@ -582,7 +582,7 @@
                                                                                     "name": "Span",
                                                                                     "if": "{{rcpt.exclude_trigger_user}}",
                                                                                     "props": {
-                                                                                        "className": "text-purple-500 dark:text-purple-400"
+                                                                                        "className": "text-purple-600 dark:text-purple-400"
                                                                                     },
                                                                                     "text": "$t:admin.settings.notification_definitions.recipients.badge.exclude_self"
                                                                                 }
@@ -606,7 +606,7 @@
                                                                                 "item_var": "v"
                                                                             },
                                                                             "props": {
-                                                                                "className": "text-tertiary px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono"
+                                                                                "className": "text-body px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded font-mono"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -840,7 +840,7 @@
                     "id": "notif_empty",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{(notificationDefinitions?.data?.data ?? []).length === 0}}",
+                    "if": "{{notificationDefinitions !== undefined && (notificationDefinitions?.data?.data ?? []).length === 0}}",
                     "props": {
                         "className": "admin-card"
                     },
@@ -850,7 +850,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "fa-solid fa-envelope",
-                                "className": "text-4xl text-gray-300 dark:text-gray-600 mb-3"
+                                "className": "text-4xl text-gray-500 dark:text-gray-500 mb-3"
                             }
                         },
                         {

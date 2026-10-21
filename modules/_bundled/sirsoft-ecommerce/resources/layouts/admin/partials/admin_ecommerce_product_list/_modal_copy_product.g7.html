@@ -17,7 +17,7 @@
             <img src="{{$parent._local.productList.copyTargetProduct?.thumbnail_url}}" alt="{{$localized($parent._local.productList.copyTargetProduct?.name)}}" class="w-full h-full object-cover"/>
           </div>
           <div data-if="{{!$parent._local.productList.copyTargetProduct?.thumbnail_url}}" class="flex-center w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0">
-            <icon name="image" class="text-2xl text-gray-400 dark:text-gray-500"/>
+            <icon name="image" class="text-2xl text-gray-500 dark:text-gray-400"/>
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-primary font-medium truncate">{{$localized($parent._local.productList.copyTargetProduct?.name) || '$t:sirsoft-ecommerce.admin.product.modal.copy.no_name'}}</p>
@@ -140,7 +140,7 @@
           </on>
           <span>$t:sirsoft-ecommerce.common.cancel</span>
         </button>
-        <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCopyingProduct}}">
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCopyingProduct}}">
           <on type="click">
             <!-- 복사 실행. 처리중 표시만 `_global` 에 두는데, 위 선택값들과 달리 이 플래그는 창의 두 버튼만 읽기 때문이다. 실제 복사는 핸들러가 서버에 맡긴다. -->
             <sequence>

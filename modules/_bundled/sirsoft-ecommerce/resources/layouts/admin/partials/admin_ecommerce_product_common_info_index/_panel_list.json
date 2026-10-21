@@ -349,7 +349,7 @@
                                                     "name": "Span",
                                                     "if": "{{item.is_default}}",
                                                     "props": {
-                                                        "className": "text-secondary px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0"
+                                                        "className": "text-secondary dark:text-gray-300 px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 flex-shrink-0"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.common_info.list.default"
                                                 }
@@ -463,7 +463,7 @@
             "id": "empty_state",
             "type": "basic",
             "name": "Div",
-            "if": "{{(commonInfos?.data?.data?.length ?? 0) === 0}}",
+            "if": "{{commonInfos !== undefined && ((commonInfos?.data?.data?.length ?? 0) === 0)}}",
             "props": {
                 "className": "flex-center flex-1 justify-center gap-3 px-4 py-8"
             },
@@ -473,7 +473,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "info-circle",
-                        "className": "text-gray-400 dark:text-gray-500",
+                        "className": "text-gray-500 dark:text-gray-500",
                         "size": "md"
                     }
                 },

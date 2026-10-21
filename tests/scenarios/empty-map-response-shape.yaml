@@ -9,6 +9,7 @@ description: |
 
 test_files:
   - tests/Feature/EmptyMapResponseShapeTest.php
+  - tests/Feature/Analytics/Api/EmptyMapFieldsTest.php   # 7.1.1 출시 전 — 서비스가 만든 빈 배열(방문 분석)
 
 axes:
   surface:
@@ -17,6 +18,10 @@ axes:
     - settings_meta
     - analytics_row
     - attachment_meta
+    - analytics_realtime_visitor   # 실시간·개요의 visitors[].extensions
+    - analytics_diagnostics        # 진단 extensions·collection.excluded_reason_labels
+    - analytics_registered_goal    # 등록 목록 goals[].attributes
+    - analytics_privacy_subject    # 정보주체 열람 파일 extensions·삭제 응답 deleted.extensions
 
 effects:
   - g7config_empty_maps_render_as_objects
@@ -24,3 +29,7 @@ effects:
   - settings_env_locked_empty_is_object
   - analytics_extra_empty_is_object
   - attachment_meta_empty_is_object
+  - analytics_visitor_extensions_empty_is_object
+  - analytics_diagnostics_maps_empty_are_objects
+  - analytics_goal_attributes_empty_is_object
+  - analytics_privacy_extension_maps_empty_are_objects

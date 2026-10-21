@@ -11,7 +11,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * 비활성 5상태 회원의 본인 정보 조회 — 역할 권한으로 판단 (결정 2026-10-07, 실측 N O-N3·P15).
+ * 비활성 5상태 회원의 본인 정보 조회 — 역할 권한으로 판단 (결정 2026-10-07, 실측).
  *
  * 마이페이지의 계정 상태 배지·안내는 `GET /api/me` 응답의 `status`·`status_variant` 로 그리는데,
  * `check.user_status` 가 비활성·차단·탈퇴·가입대기·휴면 회원의 모든 요청을 403 으로 막아 그 화면이

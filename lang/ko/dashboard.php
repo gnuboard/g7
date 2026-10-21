@@ -32,4 +32,10 @@ return [
     'activities' => [
         'user_registered' => ':name 님이 가입했습니다.',
     ],
+    // `dashboard:*` 명령 출력
+    'console' => [
+        'broadcast_resources' => [
+            'done' => '시스템 리소스 정보가 브로드캐스트되었습니다.',
+        ],
+    ],
 ];

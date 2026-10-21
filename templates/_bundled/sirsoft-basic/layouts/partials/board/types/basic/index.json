@@ -8,7 +8,7 @@
     "name": "Div",
     "children": [
         {
-            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)\n         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 J D-J12).\n         제목 칸은 최소 8rem 을 지키며 남는 폭을 쓰고, 그 폭도 안 나오면 버튼 묶음이 다음 줄 오른쪽 끝(ml-auto)으로 내린다 — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). 보통 이름은 수정 전처럼 제목 옆 오른쪽에 둔다.",
+            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)\n         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 실측).\n         제목 칸은 최소 8rem 을 지키며 남는 폭을 쓰고, 그 폭도 안 나오면 버튼 묶음이 다음 줄 오른쪽 끝(ml-auto)으로 내린다 — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). 보통 이름은 수정 전처럼 제목 옆 오른쪽에 둔다.",
             "type": "basic",
             "name": "Div",
             "props": {
@@ -329,7 +329,7 @@
                                                             "name": "Span",
                                                             "if": "{{post?.row_type === 'notice'}}",
                                                             "props": {
-                                                                "className": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500"
+                                                                "className": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-600"
                                                             },
                                                             "children": [
                                                                 {
@@ -355,7 +355,7 @@
                                                             "name": "Span",
                                                             "if": "{{post?.row_type === 'normal'}}",
                                                             "props": {
-                                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                "className": "text-sm text-gray-600 dark:text-gray-400"
                                                             },
                                                             "text": "{{post?.number ?? '-'}}"
                                                         }
@@ -380,7 +380,7 @@
                                                             "props": {
                                                                 "name": "turn-up",
                                                                 "size": "sm",
-                                                                "className": "fa-rotate-90 text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                                "className": "fa-rotate-90 text-gray-500 dark:text-gray-400 flex-shrink-0"
                                                             }
                                                         },
                                                         {
@@ -389,7 +389,7 @@
                                                             "name": "Span",
                                                             "if": "{{post?.category}}",
                                                             "props": {
-                                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0"
+                                                                "className": "inline-block truncate max-w-32 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0"
                                                             },
                                                             "text": "{{post?.category}}"
                                                         },
@@ -412,14 +412,14 @@
                                                             "props": {
                                                                 "name": "eye-slash",
                                                                 "size": "sm",
-                                                                "className": "text-orange-500 dark:text-orange-400 flex-shrink-0"
+                                                                "className": "text-orange-600 dark:text-orange-400 flex-shrink-0"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}"
+                                                                "className": "text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}}"
                                                             },
                                                             "text": "{{post?.title}}"
                                                         },
@@ -461,7 +461,7 @@
                                                             "name": "Span",
                                                             "if": "{{posts?.data?.board?.settings?.use_reaction !== false && (post?.reaction_total ?? 0) > 0}}",
                                                             "props": {
-                                                                "className": "text-rose-500 dark:text-rose-400 text-xs font-medium flex-shrink-0 inline-flex items-center gap-0.5"
+                                                                "className": "text-rose-700 dark:text-rose-300 text-xs font-medium flex-shrink-0 inline-flex items-center gap-0.5"
                                                             },
                                                             "children": [
                                                                 {
@@ -494,7 +494,7 @@
                                                             "name": "Span",
                                                             "if": "{{post?.is_new}}",
                                                             "props": {
-                                                                "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0"
+                                                                "className": "px-1.5 py-0.5 text-xs bg-red-600 dark:bg-red-600 text-white rounded flex-shrink-0"
                                                             },
                                                             "text": "N"
                                                         }
@@ -524,7 +524,7 @@
                                                                 "author": "{{post?.author}}",
                                                                 "showDropdown": true,
                                                                 "stopPropagation": true,
-                                                                "className": "relative z-20 text-sm {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"
+                                                                "className": "relative z-20 text-sm {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600 dark:text-gray-400'}}"
                                                             }
                                                         }
                                                     ]
@@ -534,7 +534,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-center whitespace-nowrap {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}",
+                                                        "className": "text-sm text-center whitespace-nowrap {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600 dark:text-gray-400'}}",
                                                         "title": "{{post?.created_at ?? ''}}"
                                                     },
                                                     "text": "{{post?.created_at_formatted ?? ''}}"
@@ -545,7 +545,7 @@
                                                     "name": "Span",
                                                     "if": "{{posts?.data?.board?.settings?.show_view_count !== false}}",
                                                     "props": {
-                                                        "className": "text-sm text-center {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"
+                                                        "className": "text-sm text-center {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600 dark:text-gray-400'}}"
                                                     },
                                                     "text": "{{post?.view_count}}"
                                                 }
@@ -573,7 +573,7 @@
                                                             "name": "Span",
                                                             "if": "{{post?.row_type === 'notice'}}",
                                                             "props": {
-                                                                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500 flex-shrink-0"
+                                                                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-600 flex-shrink-0"
                                                             },
                                                             "children": [
                                                                 {
@@ -599,7 +599,7 @@
                                                             "name": "Span",
                                                             "if": "{{post?.row_type === 'normal'}}",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5"
+                                                                "className": "text-xs text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5"
                                                             },
                                                             "text": "#{{post?.number}}"
                                                         },
@@ -629,7 +629,7 @@
                                                                             "props": {
                                                                                 "name": "turn-up",
                                                                                 "size": "sm",
-                                                                                "className": "fa-rotate-90 text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                                                "className": "fa-rotate-90 text-gray-500 dark:text-gray-400 flex-shrink-0"
                                                                             }
                                                                         },
                                                                         {
@@ -638,7 +638,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{post?.category}}",
                                                                             "props": {
-                                                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0"
+                                                                                "className": "inline-block truncate max-w-32 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0"
                                                                             },
                                                                             "text": "{{post?.category}}"
                                                                         },
@@ -661,7 +661,7 @@
                                                                             "props": {
                                                                                 "name": "eye-slash",
                                                                                 "size": "sm",
-                                                                                "className": "text-orange-500 dark:text-orange-400 flex-shrink-0"
+                                                                                "className": "text-orange-600 dark:text-orange-400 flex-shrink-0"
                                                                             }
                                                                         },
                                                                         {
@@ -669,7 +669,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}"
+                                                                                "className": "text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}}"
                                                                             },
                                                                             "text": "{{post?.title}}"
                                                                         },
@@ -711,7 +711,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{posts?.data?.board?.settings?.use_reaction !== false && (post?.reaction_total ?? 0) > 0}}",
                                                                             "props": {
-                                                                                "className": "text-rose-500 dark:text-rose-400 text-xs font-medium flex-shrink-0 inline-flex items-center gap-0.5"
+                                                                                "className": "text-rose-700 dark:text-rose-300 text-xs font-medium flex-shrink-0 inline-flex items-center gap-0.5"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -744,7 +744,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{post?.is_new}}",
                                                                             "props": {
-                                                                                "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0"
+                                                                                "className": "px-1.5 py-0.5 text-xs bg-red-600 dark:bg-red-600 text-white rounded flex-shrink-0"
                                                                             },
                                                                             "text": "N"
                                                                         }
@@ -759,7 +759,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex items-center justify-between text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"
+                                                        "className": "flex items-center justify-between text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600 dark:text-gray-400'}}"
                                                     },
                                                     "children": [
                                                         {
@@ -785,7 +785,7 @@
                                                                         "author": "{{post?.author}}",
                                                                         "showDropdown": true,
                                                                         "stopPropagation": true,
-                                                                        "className": "relative z-20 text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"
+                                                                        "className": "relative z-20 text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600 dark:text-gray-400'}}"
                                                                     }
                                                                 }
                                                             ]

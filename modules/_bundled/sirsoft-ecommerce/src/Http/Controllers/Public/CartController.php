@@ -198,6 +198,12 @@ class CartController extends PublicBaseController
             $userId = Auth::id();
             $cartKey = $request->header('X-Cart-Key');
 
+            // 비회원 cart_key 검증 — 키 없는 요청이 주인 없는(user_id·cart_key 모두 null) 행을 고치거나 지우지 못하게
+            $validationError = $this->validateGuestCartKey($userId, $cartKey);
+            if ($validationError !== null) {
+                return $validationError;
+            }
+
             // 수량 업데이트
             $this->cartService->updateQuantity(
                 $id,
@@ -262,6 +268,12 @@ class CartController extends PublicBaseController
 
             $userId = Auth::id();
             $cartKey = $request->header('X-Cart-Key');
+
+            // 비회원 cart_key 검증 — 키 없는 요청이 주인 없는(user_id·cart_key 모두 null) 행을 고치거나 지우지 못하게
+            $validationError = $this->validateGuestCartKey($userId, $cartKey);
+            if ($validationError !== null) {
+                return $validationError;
+            }
             $validated = $request->validated();
 
             $cart = $this->cartService->changeOption(
@@ -354,6 +366,12 @@ class CartController extends PublicBaseController
 
             $userId = Auth::id();
             $cartKey = $request->header('X-Cart-Key');
+
+            // 비회원 cart_key 검증 — 키 없는 요청이 주인 없는(user_id·cart_key 모두 null) 행을 고치거나 지우지 못하게
+            $validationError = $this->validateGuestCartKey($userId, $cartKey);
+            if ($validationError !== null) {
+                return $validationError;
+            }
 
             $deletedCount = $this->cartService->deleteItems(
                 $request->validated('ids'),

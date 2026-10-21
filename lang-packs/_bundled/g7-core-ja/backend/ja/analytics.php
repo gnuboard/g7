@@ -296,4 +296,78 @@ return [
         'ch' => 'クライアントヒント',
         'wd' => '自動化ブラウザフラグ',
     ],
+    // `analytics:*` コマンド出力
+    'console' => [
+        'anonymize' => [
+            'invalid_octets' => 'マスクするオクテット数は 0 から 3 の間で指定してください。',
+            'option_required' => '--mask-octets または --hash のいずれかを指定してください。',
+            'confirm' => '既に蓄積された訪問記録を元に戻せない形で変更します。続行しますか？',
+            'cancelled' => 'キャンセルしました。',
+            'failed' => '遡及匿名化に失敗しました: :error',
+            'done' => '訪問 :count 件を匿名化しました。',
+        ],
+        'archive' => [
+            'invalid_period' => '集計単位は hour または day で指定してください。',
+            'stale_closed' => '完了を報告できずに停止した実行 :count 件を失敗として終了しました。',
+            'invalid_date' => '期間は Y-m-d 形式で指定してください。',
+            'range_reversed' => '開始日が終了日より後になっています。',
+            'range_dry_run' => '再集計対象期間 :from ~ :to (ドライラン — 集計テーブルは変更していません)',
+            'range_done' => '再集計を :days 日分実行しました (失敗 :failed 日)',
+            'date_dry_run' => ':date の集計対象を確認しました (ドライラン — 集計テーブルは変更していません)',
+            'date_failed' => ':date の集計に失敗しました: :error',
+            'date_skipped' => ':date の集計をスキップしました — 同じ期間を既に集計中です。',
+            'date_done' => ':date の集計完了 — 訪問 :visits 件、アクション :actions 件、チャンク :chunks 個',
+        ],
+        'broadcast_realtime' => [
+            'done' => '現在の接続者 :count 人をブロードキャストしました。',
+        ],
+        'check_volume' => [
+            'rows' => '訪問 :visits 行 · アクション :actions 行',
+            'within_limit' => '警告しきい値の範囲内です。',
+            'exceeded_notified' => '警告しきい値を超えたため通知を送信しました。',
+            'exceeded_already_notified' => '警告しきい値を超えましたが、本日は既に通知済みのため再送信していません。',
+        ],
+        'prune' => [
+            'headers' => [
+                'target' => '対象',
+                'to_delete' => '削除対象',
+                'deleted' => '削除',
+            ],
+            'dry_run' => 'ドライラン — 何も削除していません。',
+            'done' => '訪問者統計 :count 件を整理しました。',
+        ],
+        'purge' => [
+            'confirm_option_required' => '全体削除は --confirm を付けた場合のみ実行されます。元に戻せません。',
+            'confirm' => '訪問者統計の記録と集計をすべて削除します。元に戻せません。続行しますか？',
+            'cancelled' => 'キャンセルしました。',
+            'headers' => [
+                'target' => '対象',
+                'deleted' => '削除',
+            ],
+            'done' => '訪問者統計 :count 件を削除しました。',
+        ],
+        'purge_extension' => [
+            'invalid_arguments' => '拡張の種類は module または plugin で、識別子が必要です。',
+            'extension_active' => ':type :identifier は有効になっています。無効化または削除してから実行するか、有効のまま削除するには --force を付けてください。',
+            'confirm_option_required' => '拡張統計の整理は --confirm を付けた場合のみ実行されます。元に戻せません。',
+            'not_installed' => ':type :identifier はインストールされていません。データを残して削除した拡張であればそのまま続行し、識別子を誤って入力した場合はキャンセルしてください。',
+            'confirm' => ':type :identifier の訪問者統計のコンバージョン・ディメンション集計を削除します。元に戻せません。続行しますか？',
+            'cancelled' => 'キャンセルしました。',
+            'failed' => '整理に失敗しました。診断画面の実行履歴とアプリケーションログで原因を確認してください。',
+            'headers' => [
+                'target' => '対象',
+                'deleted' => '削除',
+            ],
+        ],
+        'report' => [
+            'invalid_period' => '期間は weekly または monthly で指定してください。',
+            'disabled' => 'レポート送信がオフのため送信しませんでした。',
+            'sent' => ':period レポートを送信しました — 訪問 :visits 件、訪問者 :visitors 人、ページビュー :pageviews 件',
+        ],
+        'update_cloud_ranges' => [
+            'failed_sources' => '取得できなかったソース: :sources',
+            'none_received' => '帯域を一つも取得できなかったため、既存のリストをそのまま維持します。',
+            'done' => 'クラウド IP 帯域 :count 件を更新しました。',
+        ],
+    ],
 ];

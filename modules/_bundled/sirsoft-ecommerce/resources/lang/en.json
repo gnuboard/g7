@@ -171,6 +171,9 @@
         "promotion_discount_code": {
             "$partial": "partial/en/admin/promotion_discount_code.json"
         },
+        "sample": {
+            "$partial": "partial/en/admin/sample.json"
+        },
         "common_info": {
             "$partial": "partial/en/admin/common_info.json"
         },

@@ -27,11 +27,11 @@
       <container data-type="layout" class="py-8">
         <responsive on="portable" class="py-4"/>
         <!-- 로딩 상태 -->
-        <div data-if="{{userPosts.loading &amp;&amp; !userPosts.data}}" class="flex justify-center items-center py-20">
+        <div data-if="{{userPosts === undefined}}" class="flex justify-center items-center py-20">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"/>
         </div>
         <!-- 게시글 목록 -->
-        <div data-if="{{userPosts.data &amp;&amp; !userPosts.error}}" class="space-y-6">
+        <div data-if="{{userPosts.data}}" class="space-y-6">
           <!-- 브레드크럼 (1행). 경로의 이름은 한 줄 … 로 자르고, 아래 제목은 줄을 바꿔 모두 보인다(#143). -->
           <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
             <a href="/users/{{route.userId}}" class="inline-block text-center min-w-0 truncate hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors">
@@ -57,7 +57,7 @@
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <!-- 게시글 없음 -->
             <div data-if="{{!userPosts.data?.data?.length}}" class="text-center py-12">
-              <icon name="file-circle-xmark" size="2xl" class="text-gray-300 dark:text-gray-600 mb-4"/>
+              <icon name="file-circle-xmark" size="2xl" class="text-gray-500 dark:text-gray-500 mb-4"/>
               <p class="text-gray-500 dark:text-gray-400">$t:user.profile.no_posts</p>
             </div>
             <!-- 테이블 헤더 -->
@@ -80,11 +80,11 @@
                   <!-- 게시판명 배지 (모바일용) -->
                   <span class="md:hidden flex-shrink-0 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded whitespace-nowrap truncate max-w-32">{{post.board_name}}</span>
                   <!-- 카테고리 배지 -->
-                  <span data-if="{{post.category}}" class="flex-shrink-0 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded whitespace-nowrap">{{post.category}}</span>
+                  <span data-if="{{post.category}}" class="flex-shrink-0 truncate max-w-32 text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded whitespace-nowrap">{{post.category}}</span>
                   <!-- 비밀글 아이콘 -->
-                  <icon data-if="{{post.is_secret}}" name="lock" size="xs" class="flex-shrink-0 text-yellow-500 dark:text-yellow-400"/>
+                  <icon data-if="{{post.is_secret}}" name="lock" size="xs" class="flex-shrink-0 text-yellow-700 dark:text-yellow-400"/>
                   <!-- 블라인드 아이콘 -->
-                  <icon data-if="{{post.status === 'blinded'}}" name="eye-slash" size="xs" class="flex-shrink-0 text-orange-500 dark:text-orange-400"/>
+                  <icon data-if="{{post.status === 'blinded'}}" name="eye-slash" size="xs" class="flex-shrink-0 text-orange-600 dark:text-orange-400"/>
                   <!-- 제목 + 댓글수 컨테이너 -->
                   <div class="flex-1 min-w-0 flex items-center gap-1">
                     <!-- 제목 -->

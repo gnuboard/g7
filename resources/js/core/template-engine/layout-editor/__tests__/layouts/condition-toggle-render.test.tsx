@@ -35,6 +35,7 @@ function evalSynthesized(clauses: ConditionClause[], combinator: 'and' | 'or', c
 }
 
 describe('합성 if 식 ↔ ConditionEvaluator 평가', () => {
+  /** @effects condition_synthesized_expr_evaluates_via_condition_evaluator */
   it('로그인 상태 토글 → 회원 전용 영역 표시/숨김', () => {
     const clause: ConditionClause[] = [{ operator: 'isLoggedIn', params: {} }];
     expect(evalSynthesized(clause, 'and', { _global: { currentUser: { uuid: 'u-1' } } })).toBe(true);
@@ -43,6 +44,7 @@ describe('합성 if 식 ↔ ConditionEvaluator 평가', () => {
     expect(evalSynthesized(clause, 'and', {})).toBe(false);
   });
 
+  /** @effects condition_recipe_array_length_uses_length_nullish_zero_fallback, condition_synthesized_expr_evaluates_via_condition_evaluator */
   it('데이터소스 빈 배열 → "데이터 없음" 분기 (length ?? 0 fallback)', () => {
     const clause: ConditionClause[] = [{ operator: 'dsHasData', params: { src: 'posts' } }];
     expect(evalSynthesized(clause, 'and', { posts: { data: [{ id: 1 }] } })).toBe(true);
@@ -50,12 +52,14 @@ describe('합성 if 식 ↔ ConditionEvaluator 평가', () => {
     expect(evalSynthesized(clause, 'and', { posts: {} })).toBe(false);
   });
 
+  /** @effects condition_synthesized_expr_evaluates_via_condition_evaluator */
   it('필드 값 변경 → 조건부 영역', () => {
     const clause: ConditionClause[] = [{ operator: 'fieldEquals', params: { field: 'status', value: 'open' } }];
     expect(evalSynthesized(clause, 'and', { status: 'open' })).toBe(true);
     expect(evalSynthesized(clause, 'and', { status: 'closed' })).toBe(false);
   });
 
+  /** @effects condition_recipe_wraps_entire_combined_expression_in_single_braces, condition_synthesized_expr_evaluates_via_condition_evaluator */
   it('AND 결합 — 둘 다 참일 때만', () => {
     const clauses: ConditionClause[] = [
       { operator: 'isLoggedIn', params: {} },
@@ -65,6 +69,7 @@ describe('합성 if 식 ↔ ConditionEvaluator 평가', () => {
     expect(evalSynthesized(clauses, 'and', { _global: { currentUser: { uuid: 'x' } }, posts: { data: [] } })).toBe(false);
   });
 
+  /** @effects condition_recipe_wraps_entire_combined_expression_in_single_braces, condition_synthesized_expr_evaluates_via_condition_evaluator */
   it('OR 결합 — 하나만 참이어도', () => {
     const clauses: ConditionClause[] = [
       { operator: 'isLoggedIn', params: {} },
@@ -120,8 +125,10 @@ const CASES: Record<string, { params?: Record<string, string>; truthy: Record<st
   noErrors: { truthy: { _local: {} }, falsy: { _local: { errors: { x: 'e' } } } },
   dsHasData: { params: { src: 'posts' }, truthy: { posts: { data: [1] } }, falsy: { posts: { data: [] } } },
   dsEmpty: { params: { src: 'posts' }, truthy: { posts: { data: [] } }, falsy: { posts: { data: [1] } } },
-  dsLoading: { params: { src: 'posts' }, truthy: { posts: { loading: true } }, falsy: { posts: { loading: false } } },
-  dsError: { params: { src: 'posts' }, truthy: { posts: { error: 'x' } }, falsy: { posts: {} } },
+  // 받는 중 = 데이터소스 값이 아직 없음(엔진은 값에 loading 을 싣지 않는다 — 받기 실패는 null)
+  dsLoading: { params: { src: 'posts' }, truthy: {}, falsy: { posts: { data: [] } } },
+  // 받기 실패 = 값 null + `_dataSourceErrors.{id}` 기록(값에는 error 가 없다)
+  dsError: { params: { src: 'posts' }, truthy: { posts: null, _dataSourceErrors: { posts: { message: 'x' } } }, falsy: { posts: { data: [] } } },
   fieldEquals: { params: { field: 'status', value: 'open' }, truthy: { status: 'open' }, falsy: { status: 'closed' } },
   fieldNotEquals: { params: { field: 'status', value: 'open' }, truthy: { status: 'closed' }, falsy: { status: 'open' } },
   stateEquals: { params: { key: 'tab', value: 'detail' }, truthy: { tab: 'detail' }, falsy: { tab: 'list' } },
@@ -161,11 +168,13 @@ describe.each([
 ])('번들 %s editor-spec 전 operator 평가', (_name, spec) => {
   const bundleOps = loadOps(spec as { conditionRecipes?: unknown });
 
+  /** @effects condition_synthesized_expr_evaluates_via_condition_evaluator */
   it('모든 operator 가 CASES 에 정의돼 있다 (커버리지 누락 차단)', () => {
     const missing = bundleOps.filter((o) => !CASES[o.value]).map((o) => o.value);
     expect(missing).toEqual([]);
   });
 
+  /** @effects condition_recipe_substitutes_params_into_expr_template, condition_synthesized_expr_evaluates_via_condition_evaluator, condition_recipe_ds_state_matches_engine_datasource_value */
   it.each(bundleOps.map((o) => [o.value]))('operator %s — 단일 {{}} + truthy/falsy 평가', (value) => {
     const op = bundleOps.find((o) => o.value === value)!;
     const c = CASES[value];
@@ -191,6 +200,7 @@ describe.each([
     { operator: 'dsHasData', params: { src: 'posts' } },
   ];
 
+  /** @effects condition_recipe_wraps_entire_combined_expression_in_single_braces, condition_synthesized_expr_evaluates_via_condition_evaluator */
   it('AND 결합 — 둘 다 참일 때만 (진리표 4조합)', () => {
     const expr = combineConditions(clauses, 'and', bundleOps);
     expect(evaluateStringCondition(expr, T, engine)).toBe(true);
@@ -199,6 +209,7 @@ describe.each([
     expect(evaluateStringCondition(expr, F, engine)).toBe(false);
   });
 
+  /** @effects condition_recipe_wraps_entire_combined_expression_in_single_braces, condition_synthesized_expr_evaluates_via_condition_evaluator */
   it('OR 결합 — 하나라도 참이면 (진리표 4조합)', () => {
     const expr = combineConditions(clauses, 'or', bundleOps);
     expect(evaluateStringCondition(expr, T, engine)).toBe(true);
@@ -207,6 +218,7 @@ describe.each([
     expect(evaluateStringCondition(expr, F, engine)).toBe(false);
   });
 
+  /** @effects condition_recipe_wraps_entire_combined_expression_in_single_braces, condition_synthesized_expr_evaluates_via_condition_evaluator */
   it('3절 결합도 단일 {{}} + 평가 정합', () => {
     const three: ConditionClause[] = [
       { operator: 'isLoggedIn', params: {} },

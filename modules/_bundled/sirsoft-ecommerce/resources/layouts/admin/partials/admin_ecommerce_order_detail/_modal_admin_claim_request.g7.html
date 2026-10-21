@@ -1,7 +1,13 @@
 <partial description="Admin Claim Request Modal — exchange / return on behalf of the customer (#599 §3-11)" editor_label="$t:sirsoft-ecommerce.admin.order.claim_request.editor_label">
   <!-- 관리자 직권 접수 창 (교환·반품 — D5~D8). 주문 상세 선택 바의 [교환 접수]·[반품 접수] 가 연다. 모달은 부모 `_local` 을 해석하지 못하므로 상태는 전부 `_global.adminClaimRequest` 다(핸들러 `adminClaimRequestHandlers`). 사유는 판매자 귀책(고객 비노출) 사유까지, 청구는 사유로 자동 계산한 값을 미리보기가 보여 주고 운영자가 배송비·청구 방식(「무료」 포함)을 고친다. 선택지는 `claimRequestContext` 가 나른다(사유 카탈로그·청구 방식 설정은 `settings.read` 게이트). -->
   <modal data-type="composite" data-ref="modal_admin_claim_request" title="{{_global.adminClaimRequest?.type === 'exchange' ? '$t:sirsoft-ecommerce.admin.order.claim_request.title_exchange' : '$t:sirsoft-ecommerce.admin.order.claim_request.title_return'}}" size="lg">
+    <!-- 창 본문 — 닫힐 때(unmount) 접수 상태와 타이머를 정리하는 자리를 겸한다 -->
     <div class="space-y-4">
+      <on event="unmount">
+        <!-- 창 닫힘 정리 — X·바깥 클릭·Esc 는 엔진 창 닫기로만 이어져 레이아웃 동작을 타지 않는다. 창이 닫히면 본문을 그리지 않으므로 늘 붙어 있는 이 본문 틀이 내려갈 때 개인정보를 담은 창 이름 공간을 비운다(7.1.1). 이어서 예약된 미리보기를 거둔다 — 비운 뒤라 늦게 온 응답은 쓸 상태가 없어 버려진다 -->
+        <set-state target="global" :adminClaimRequest="null"/>
+        <action handler="sirsoft-ecommerce.clearAdminClaimRequestTimers"/>
+      </on>
       <p data-ref="acr_001_description" class="text-label">$t:sirsoft-ecommerce.admin.order.claim_request.description</p>
       <!-- 상품 줄 — 수량은 가용 수량(다른 신청서가 잡은 수량을 뺀 값)까지. 교환은 줄마다 교환 옵션을 고른다(비우면 같은 옵션). -->
       <div data-ref="acr_002_rows" class="border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
@@ -124,7 +130,10 @@
             </on>
           </input>
         </div>
-        <p data-if="{{(paymentSettings.data?.order_settings?.banks ?? []).length === 0}}" class="text-xs text-amber-600 dark:text-amber-400 mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_empty_hint</p>
+        <!-- 결제 설정(은행 목록) 받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「은행이 등록되어 있지 않습니다」를 보이면 운영자가 환경설정에서 은행을 다시 등록하러 간다 -->
+        <p data-ref="claim_request_refund_bank_load_failed" data-if="{{paymentSettings === null}}" role="alert" class="text-xs text-red-600 dark:text-red-400 mt-1">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
+        <!-- 은행 목록 빈 안내는 받은 뒤 0개일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
+        <p data-ref="claim_request_refund_bank_empty_hint" data-if="{{paymentSettings !== undefined &amp;&amp; paymentSettings !== null &amp;&amp; (paymentSettings.data?.order_settings?.banks ?? []).length === 0}}" class="text-xs text-amber-700 dark:text-amber-400 mt-1">$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_empty_hint</p>
       </div>
       <!-- 환불 우선순위 (반품만) — 종전 취소 창과 같은 조건: PG 환불이 걸리는 주문에서만 서고, 포인트를 쓰지 않았으면 배분 순서가 무의미하므로 선택을 막는다. 바꾸면 환불 예상액을 다시 받는다. -->
       <div data-ref="acr_013_refund_priority" data-if="{{_global.adminClaimRequest?.type === 'return' &amp;&amp; order.data?.payment?.requires_pg_cancellation === true}}">
@@ -181,7 +190,7 @@
         </checkbox>
         <span>$t:sirsoft-ecommerce.admin.order.claim_request.approve</span>
       </label>
-      <p data-ref="acr_009_approve_no_permission" data-if="{{claimRequestContext?.data?.abilities?.can_update_status !== true}}" class="text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-ecommerce.admin.order.claim_request.approve_no_permission</p>
+      <p data-ref="acr_009_approve_no_permission" data-if="{{claimRequestContext !== undefined &amp;&amp; (claimRequestContext?.data?.abilities?.can_update_status !== true)}}" class="text-xs text-amber-700 dark:text-amber-400">$t:sirsoft-ecommerce.admin.order.claim_request.approve_no_permission</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.claim_request.customer_notice</p>
       <div class="flex justify-end gap-2 pt-2">
         <button data-ref="acr_010_cancel" type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -190,11 +199,12 @@
             <sequence>
               <action handler="sirsoft-ecommerce.clearAdminClaimRequestTimers"/>
               <close-modal/>
+              <set-state target="global" :adminClaimRequest="null"/>
             </sequence>
           </on>
           $t:common.cancel
         </button>
-        <button data-ref="acr_011_submit" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.adminClaimRequest?.submitting === true || (_global.adminClaimRequest?.reasonCode ?? '') === ''}}">
+        <button data-ref="acr_011_submit" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.adminClaimRequest?.submitting === true || (_global.adminClaimRequest?.reasonCode ?? '') === ''}}">
           <on type="click">
             <!-- 직권 신청서를 제출한다 — 입력값은 창을 여는 핸들러가 채운 _global.adminClaimRequest 에서 모은다 -->
             <action handler="sirsoft-ecommerce.submitAdminClaimRequest" canApprove="{{claimRequestContext?.data?.abilities?.can_update_status === true}}">

@@ -1,0 +1,15 @@
+feature: 슬롯 노드는 SlotProvider 아래 첫 그림에서도 제자리(주입 앵커)에 그려지지 않는다 (engine-v1.81.1, 7.1.1)
+
+description: |
+  슬롯 노드의 렌더 시점 「제자리 건너뛰기」 는 전역 `window.__slotContextValue` 만 봤는데, 그 값은 SlotProvider 의 useLayoutEffect 가
+  첫 커밋 뒤에 연다. 첫 그림에서 슬롯 조각(관리자·사용자 머리글 통화 선택 등)이 주입 앵커 자리에도 한 벌 그려져 다음 다시 그리기까지
+  같은 단추가 둘이었다. SlotProvider 의 React 문맥 값(첫 렌더부터 있음)도 함께 본다. 축 entry 는 진입 모양이다.
+
+axes:
+  entry: [first_load, outside_provider]
+
+effects:
+  - slot_node_never_rendered_in_place_under_provider
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.slotFirstRenderInPlace.test.tsx

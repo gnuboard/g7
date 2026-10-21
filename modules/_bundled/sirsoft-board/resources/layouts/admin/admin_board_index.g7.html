@@ -19,7 +19,7 @@
   <slot name="content">
     <div data-ref="board_list_content" class="admin-page-content-responsive-fluid">
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.board.index.title" description="$t:sirsoft-board.admin.board.index.description">
-        <button data-ref="refresh_button" class="btn-icon" aria-label="$t:common.refresh">
+        <button type="button" data-ref="refresh_button" class="btn-icon" aria-label="$t:common.refresh">
           <on type="click">
             <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색을 유지한다 (#75). -->
             <navigate path="/admin/boards" :mergeQuery="true">
@@ -103,7 +103,7 @@
                 </toggle>
                 <action-menu data-type="composite" data-ref="action_menu" triggerLabel="" triggerIconName="ellipsis-h" position="right">
                   <prop name="items">
-                    <item href="/admin/boards/{{row.slug}}/edit" id="edit" label="$t:sirsoft-board.admin.board.actions.edit" iconName="pencil" disabled="{{row.abilities?.can_update !== true}}"/>
+                    <item href="/admin/boards/{{row.slug}}/edit" :mergeQuery="true" id="edit" label="$t:sirsoft-board.admin.board.actions.edit" iconName="pencil" disabled="{{row.abilities?.can_update !== true}}"/>
                     <item href="/admin/board/{{row.slug}}" id="manage_posts" label="$t:sirsoft-board.admin.board.actions.manage_posts" iconName="list"/>
                     <item id="copy" label="$t:sirsoft-board.admin.board.actions.copy" iconName="copy" disabled="{{row.abilities?.can_create !== true}}"/>
                     <item id="delete" label="$t:sirsoft-board.admin.board.actions.delete" iconName="trash" variant="danger" disabled="{{row.abilities?.can_delete !== true}}"/>
@@ -180,13 +180,13 @@
           </p>
         </div>
         <div data-ref="copy_button_group" class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button data-ref="copy_cancel_button" class="px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400">
+          <button type="button" data-ref="copy_cancel_button" class="px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400">
             <on type="click">
               <close-modal target="copy_confirm_modal"/>
             </on>
             $t:common.cancel
           </button>
-          <button data-ref="copy_confirm_button" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+          <button type="button" data-ref="copy_confirm_button" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400">
             <on type="click">
               <close-modal target="copy_confirm_modal"/>
             </on>
@@ -212,13 +212,13 @@
         <p data-ref="delete_backup_notice" data-if="{{_global.modal_data.posts_count > 0}}" class="text-label">$t:sirsoft-board.admin.modals.delete.backup_notice</p>
       </div>
       <div class="modal-footer-buttons">
-        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeleting}}">
           <on type="click">
             <!-- 삭제 실행 — 진행 표시를 켜 두 번 눌리는 것을 막고, 성공하면 목록과 «관리자 메뉴」를 함께 다시 읽는다(게시판이 메뉴에 등재돼 있으면 사이드바에 유령 항목이 남기 때문) -->
             <sequence>

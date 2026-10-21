@@ -1,0 +1,16 @@
+feature: 빈 객체로 비우는 setState 의 null 선행 (7.1.1 출시 전 점검)
+
+description: |
+  setState 기본(deep) 병합은 값이 빈 객체 `{}` 이면 기존 객체의 키를 지우지 못한다. 「비우기」로 쓴 `{}` 앞에는 같은 동작 목록에서
+  그 경로(또는 조상)를 null 로 먼저 덮는다. 페이지 등록 폼(admin_page_form) init 은 form 을 null 로 덮은 뒤 title `{}` 를 쓴다(이미 2단계) —
+  수정 화면에서 등록 화면으로 옮겨도 앞 페이지 제목이 남지 않는다.
+
+axes:
+  surface:
+    - layout_json_corpus   # 확장 레이아웃·조각 JSON 전수의 deep setState
+
+effects:
+  - empty_object_preceded_by_null_reset
+
+test_files:
+  - modules/_bundled/sirsoft-page/resources/js/__tests__/layouts/empty-object-reset.test.ts

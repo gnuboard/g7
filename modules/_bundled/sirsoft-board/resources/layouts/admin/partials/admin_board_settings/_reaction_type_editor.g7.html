@@ -63,7 +63,7 @@
             <td class="px-2 py-2 text-center">
               <!-- 끌어서 순서를 바꾼다. 손잡이를 따로 두는 것은 행 안의 입력·토글을 누를 때
                 끌기가 시작되지 않게 하기 위해서다(형제 화면 배송유형과 같은 방식). -->
-              <div data-testid="reaction-type-drag-{{row.code}}" data-if="{{!_computed.isReadOnly}}" :data-drag-handle="true" class="cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+              <div data-testid="reaction-type-drag-{{row.code}}" data-if="{{!_computed.isReadOnly}}" :data-drag-handle="true" class="cursor-grab text-gray-500 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                 <icon name="fa-solid fa-grip-vertical" class="text-sm"/>
               </div>
             </td>
@@ -126,7 +126,7 @@
               <!-- 반응이 쌓인 유형은 지울 수 없다 — 지우면 그 반응 행이 가리킬 유형이 없어진다.
                 disabled 버튼은 hover 이벤트가 죽어 툴팁이 뜨지 않으므로 래퍼 span 에 건다. -->
               <div data-testid="reaction-type-delete-wrap-{{row.code}}" class="inline-block" title="{{(row.reaction_count ?? 0) > 0 ? (row.reaction_count ?? 0) + '$t:sirsoft-board.admin.settings.reaction_types.delete_blocked_suffix|count=' + (row.reaction_count ?? 0) : ''}}">
-                <button aria-label="$t:common.delete" data-testid="reaction-type-delete-{{row.code}}" type="button" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || (row.reaction_count ?? 0) > 0}}">
+                <button aria-label="$t:common.delete" data-testid="reaction-type-delete-{{row.code}}" type="button" class="p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || (row.reaction_count ?? 0) > 0}}">
                   <on type="click">
                     <!-- 행을 빼고 남은 자리 번호를 다시 매긴다. 게시판이 고른 코드 목록에서도
                       같이 빼야 없어진 코드를 가리키는 설정이 남지 않는다. -->
@@ -214,7 +214,7 @@
               </td>
               <td class="px-4 py-2 text-center align-top">
                 <div class="flex-center gap-1">
-                  <button data-testid="reaction-type-form-confirm" type="button" class="p-1.5 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 board-confirm-button rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:sirsoft-board.admin.settings.reaction_types.form.confirm" disabled="{{_computed.isReadOnly}}">
+                  <button data-testid="reaction-type-form-confirm" type="button" class="p-1.5 text-green-700 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 board-confirm-button rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:sirsoft-board.admin.settings.reaction_types.form.confirm" disabled="{{_computed.isReadOnly}}">
                     <on type="click">
                       <!-- 추가 확인. 코드와 기본 언어 이름이 있고 코드가 이미 있는 것과 겹치지 않아야
                         통과한다. 하나라도 어긋나면 배열은 건드리지 않고 어느 칸이 문제인지만 세운다.
@@ -235,7 +235,7 @@
                     </on>
                     <icon name="fa-solid fa-check" class="text-sm"/>
                   </button>
-                  <button data-testid="reaction-type-form-cancel" type="button" class="p-1.5 text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.cancel" disabled="{{_computed.isReadOnly}}">
+                  <button data-testid="reaction-type-form-cancel" type="button" class="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.cancel" disabled="{{_computed.isReadOnly}}">
                     <on type="click">
                       <!-- 추가 취소. 임시 폼만 비우면 원본 배열은 그대로다. -->
                       <set-state target="local" :isAddingReactionType="false" :reactionTypeForm="null" :reactionTypeFormErrors="null"/>

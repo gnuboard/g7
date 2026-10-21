@@ -31,7 +31,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "fa-solid fa-search",
-                                "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"
                             }
                         },
                         {
@@ -202,7 +202,7 @@
                     "id": "analytics_report_grid",
                     "type": "composite",
                     "name": "DataGrid",
-                    "if": "{{analytics_report?.loading || (analytics_report?.data?.data ?? []).length > 0}}",
+                    "if": "{{analytics_report === undefined || (analytics_report?.data?.data ?? []).length > 0}}",
                     "actions": [
                         {
                             "comment": "쪽 이동 — 주소를 갈아 끼워 다시 받는다. 돌아온 목록이 곧 화면이다.",
@@ -234,7 +234,7 @@
                         "idField": "label",
                         "selectable": false,
                         "sortable": false,
-                        "emptyMessage": "$t:admin.analytics.common.empty_title",
+                        "emptyMessage": "{{analytics_report === undefined ? '' : $t('admin.analytics.common.empty_title')}}",
                         "columns": [
                             {
                                 "field": "label_display",
@@ -387,7 +387,7 @@
                                         "name": "Span",
                                         "if": "{{row.extra?.no_result === undefined && row.extra?.revenue_cents === undefined}}",
                                         "props": {
-                                            "className": "text-gray-400 dark:text-gray-500"
+                                            "className": "text-gray-500 dark:text-gray-400"
                                         },
                                         "text": "-"
                                     }
@@ -461,7 +461,7 @@
             "id": "report_empty",
             "type": "composite",
             "name": "EmptyState",
-            "if": "{{!analytics_report?.loading && (analytics_report?.data?.data ?? []).length === 0}}",
+            "if": "{{analytics_report !== undefined && (analytics_report?.data?.data ?? []).length === 0}}",
             "props": {
                 "iconName": "folder-open",
                 "title": "$t:admin.analytics.common.empty_title",
@@ -474,7 +474,7 @@
             "id": "report_empty_actions",
             "type": "basic",
             "name": "Div",
-            "if": "{{!analytics_report?.loading && (analytics_report?.data?.data ?? []).length === 0 && ((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read'))}}",
+            "if": "{{analytics_report !== undefined && (analytics_report?.data?.data ?? []).length === 0 && ((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read'))}}",
             "props": {
                 "className": "flex justify-center pb-10"
             },

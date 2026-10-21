@@ -175,6 +175,108 @@ class SeoProductCacheListenerTest extends ModuleTestCase
         $this->assertContains('shop/category', $invokedLayouts);
     }
 
+    /**
+     * 상품 수정 시 상품 코드 주소(사용자 화면 링크가 쓰는 상세 주소)의 캐시도 비우는지 확인
+     *
+     * 상세 라우트는 번호와 상품 코드를 모두 받으므로(`Product::resolveRouteBinding`) 번호 주소만 비우면
+     * 상품 코드 주소의 검색엔진용 화면이 캐시 만료까지 옛 내용으로 남는다. 사이트맵은 번호 주소
+     * (`products/{id}`)를 싣는다(`EcommerceSitemapContributor`).
+     *
+     * @scenario listener=seo_product, queue=sync
+     *
+     * @effects shared_cache_invalidated_without_worker
+     *
+     * @return void 반환값 없음
+     */
+    public function test_on_product_update_invalidates_product_code_url_too(): void
+    {
+        $product = (object) ['id' => 4, 'product_code' => 'FM1TGKY42DSXR60H'];
+
+        $invokedUrls = [];
+        $this->cacheMock->shouldReceive('invalidateByUrl')
+            ->andReturnUsing(function (string $pattern) use (&$invokedUrls) {
+                $invokedUrls[] = $pattern;
+
+                return 1;
+            });
+        $this->cacheMock->shouldReceive('invalidateByLayout')->andReturn(1);
+
+        $this->regeneratorMock->shouldNotReceive('renderAndCache');
+        Log::shouldReceive('debug')->atLeast()->once();
+
+        $this->listener->onProductUpdate($product);
+
+        $this->assertContains('*/products/4', $invokedUrls);
+        $this->assertContains('*/products/FM1TGKY42DSXR60H', $invokedUrls);
+    }
+
+    /**
+     * 상품 코드를 바꾼 저장이면 옛 상품 코드 주소의 캐시도 비우는지 확인
+     *
+     * 수정 훅은 수정 전 스냅샷(`ProductService::update` 의 `$product->toArray()`)을 두 번째 인자로 넘긴다.
+     * 새 코드 주소만 비우면 옛 코드 주소(이미 공유·색인된 링크)의 검색엔진용 화면이 캐시 만료까지 옛 내용으로 남는다.
+     *
+     * @scenario listener=seo_product, queue=sync
+     *
+     * @effects shared_cache_invalidated_without_worker
+     *
+     * @return void 반환값 없음
+     */
+    public function test_on_product_update_invalidates_previous_product_code_url_when_code_changed(): void
+    {
+        $product = (object) ['id' => 4, 'product_code' => 'NEWCODE0000000001'];
+        $snapshot = ['id' => 4, 'product_code' => 'OLDCODE0000000001'];
+
+        $invokedUrls = [];
+        $this->cacheMock->shouldReceive('invalidateByUrl')
+            ->andReturnUsing(function (string $pattern) use (&$invokedUrls) {
+                $invokedUrls[] = $pattern;
+
+                return 1;
+            });
+        $this->cacheMock->shouldReceive('invalidateByLayout')->andReturn(1);
+
+        $this->regeneratorMock->shouldNotReceive('renderAndCache');
+        Log::shouldReceive('debug')->atLeast()->once();
+
+        $this->listener->onProductUpdate($product, $snapshot);
+
+        $this->assertContains('*/products/4', $invokedUrls);
+        $this->assertContains('*/products/NEWCODE0000000001', $invokedUrls);
+        $this->assertContains('*/products/OLDCODE0000000001', $invokedUrls);
+    }
+
+    /**
+     * 상품 코드가 그대로인 저장이면 같은 주소를 두 번 비우지 않는지 확인
+     *
+     * @scenario listener=seo_product, queue=sync
+     *
+     * @effects shared_cache_invalidated_without_worker
+     *
+     * @return void 반환값 없음
+     */
+    public function test_on_product_update_does_not_repeat_url_when_code_unchanged(): void
+    {
+        $product = (object) ['id' => 4, 'product_code' => 'SAMECODE000000001'];
+        $snapshot = ['id' => 4, 'product_code' => 'SAMECODE000000001'];
+
+        $invokedUrls = [];
+        $this->cacheMock->shouldReceive('invalidateByUrl')
+            ->andReturnUsing(function (string $pattern) use (&$invokedUrls) {
+                $invokedUrls[] = $pattern;
+
+                return 1;
+            });
+        $this->cacheMock->shouldReceive('invalidateByLayout')->andReturn(1);
+
+        $this->regeneratorMock->shouldNotReceive('renderAndCache');
+        Log::shouldReceive('debug')->atLeast()->once();
+
+        $this->listener->onProductUpdate($product, $snapshot);
+
+        $this->assertSame(['*/products/4', '*/products/SAMECODE000000001'], $invokedUrls);
+    }
+
     // ─── onProductDelete ──────────────────────────────────
 
     /**

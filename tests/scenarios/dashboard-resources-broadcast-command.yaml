@@ -1,0 +1,16 @@
+feature: 대시보드 시스템 자원 방송 커맨드
+
+description: |
+  dashboard:broadcast-resources 는 서버 자원(CPU·메모리·디스크) 현황을 관리자 대시보드 채널로
+  방송해 대시보드가 새로고침 없이 갱신되게 한다. 방송 대상 채널·이벤트 이름·페이로드 형태가
+  바뀌면 대시보드가 조용히 멈추므로 두 갈래를 잠근다.
+
+axes:
+  aspect: [channel_and_event, resource_payload]   # 방송의 어느 부분을 단언하는가
+
+effects:
+  - dashboard_resources_broadcast_on_admin_dashboard_channel   # core.admin.dashboard 채널에 dashboard.resources.updated(type=resources)
+  - dashboard_resources_payload_includes_cpu_memory_disk       # 페이로드 data 에 cpu·memory·disk
+
+test_files:
+  - tests/Unit/Console/Commands/BroadcastDashboardResourcesTest.php

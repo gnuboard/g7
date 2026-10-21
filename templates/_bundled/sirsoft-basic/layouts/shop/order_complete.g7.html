@@ -66,7 +66,7 @@
         <div data-if="{{orderData?.data?.payment?.payment_method &amp;&amp; orderData?.data?.payment?.payment_method !== 'vbank' &amp;&amp; orderData?.data?.payment?.payment_method !== 'dbank'}}" class="text-center mb-8">
           <responsive on="portable" class="text-center mb-6"/>
           <div class="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center leading-none">
-            <icon name="check" size="lg" class="text-green-600 dark:text-green-400"/>
+            <icon name="check" size="lg" class="text-green-700 dark:text-green-400"/>
           </div>
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white mb-2"/>
@@ -104,7 +104,7 @@
             <!-- 입금 기한 -->
             <div class="flex justify-between pt-2 border-t border-blue-200 dark:border-blue-700 mt-2">
               <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.deposit_due</span>
-              <span class="font-medium text-red-600 dark:text-red-400">{{orderData?.data?.payment?.deposit_due_at_formatted}}</span>
+              <span class="font-medium text-red-700 dark:text-red-400">{{orderData?.data?.payment?.deposit_due_at_formatted}}</span>
             </div>
           </div>
           <p class="text-sm text-blue-700 dark:text-blue-300 mt-4">$t:shop.order_complete.vbank_notice</p>
@@ -132,7 +132,7 @@
             </div>
             <div class="flex justify-between pt-2 border-t border-blue-200 dark:border-blue-700 mt-2">
               <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.deposit_due</span>
-              <span class="font-medium text-red-600 dark:text-red-400">{{orderData?.data?.payment?.vbank_due_at_formatted}}</span>
+              <span class="font-medium text-red-700 dark:text-red-400">{{orderData?.data?.payment?.vbank_due_at_formatted}}</span>
             </div>
           </div>
           <p class="text-sm text-blue-700 dark:text-blue-300 mt-4">$t:shop.order_complete.vbank_notice</p>
@@ -164,7 +164,7 @@
               <div data-each="item, idx in {{orderData?.data?.options ?? []}}" class="flex gap-3">
                 <img data-if="{{item.thumbnail_url}}" src="{{item.thumbnail_url}}" alt="{{$localized(item.product_name)}}" class="w-16 h-16 object-cover rounded"/>
                 <div data-if="{{!item.thumbnail_url}}" class="shrink-0 w-16 h-16 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                  <icon name="image" class="text-xl text-gray-400 dark:text-gray-500"/>
+                  <icon name="image" class="text-xl text-gray-500 dark:text-gray-400"/>
                 </div>
                 <div class="flex-1 min-w-0">
                   <p class="font-medium text-gray-900 dark:text-white truncate">{{$localized(item.product_name)}}</p>
@@ -178,10 +178,10 @@
                   <p class="text-sm text-gray-600 dark:text-gray-400">{{item.mc_unit_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.unit_price_formatted}} x {{item.quantity}}</p>
                   <!-- 단가 보조 통화들 -->
                   <div data-if="{{Object.keys(item.mc_unit_price ?? {}).length > 1}}" data-each="currency in {{Object.entries(item.mc_unit_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
-                    <span class="text-xs text-gray-400 dark:text-gray-500">{{currency[1]?.formatted}} x {{item.quantity}}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{{currency[1]?.formatted}} x {{item.quantity}}</span>
                   </div>
                   <!-- 할인 표시 (할인이 있을 때만) -->
-                  <p data-if="{{(item.subtotal_discount_amount ?? 0) > 0}}" class="text-xs text-red-500 dark:text-red-400">-{{item.subtotal_discount_amount_formatted}}</p>
+                  <p data-if="{{(item.subtotal_discount_amount ?? 0) > 0}}" class="text-xs text-red-600 dark:text-red-400">-{{item.subtotal_discount_amount_formatted}}</p>
                 </div>
                 <!-- 소계 (다중 통화) -->
                 <div class="flex flex-col items-end justify-center flex-shrink-0">
@@ -214,7 +214,7 @@
                  같은 이름이 이미 있으면 서버가 중복으로 거절하고 그 문구를 토스트로 보여 준다.
                  라벨은 `$t:` 접두가 아니라 `{{$t('…')}}` 표현식이어야 한다 — 전자는 화면 문구에만
                  치환되고 API 본문 값으로는 원문 키가 그대로 저장된다(실측: 배송지명 `$t:shop.…`).
-                 저장 배송지로 주문했으면(주소록에 같은 주소가 있으면) 숨긴다 — 누르면 같은 주소가 또 쌓였다(전수 실측 S4, 제품 결정 ①). -->
+                 저장 배송지로 주문했으면(주소록에 같은 주소가 있으면) 숨긴다 — 누르면 같은 주소가 또 쌓였다(전수 실측, 제품 결정). -->
             <button data-ref="save_shipping_address_button" data-if="{{_global.currentUser?.uuid &amp;&amp; !_computed.shippingAddressAlreadySaved}}" type="button" class="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline">
               <on type="click">
                 <api-call target="/api/modules/sirsoft-ecommerce/user/addresses" :auth_required="true" method="POST">
@@ -249,7 +249,7 @@
             <div class="flex justify-between mb-2">
               <span class="text-gray-600 dark:text-gray-400">$t:shop.order_complete.shipping_fee</span>
               <!-- Number() 캐스팅 — Order.total_shipping_amount 는 decimal:2 cast 로 '0.00' 문자열이 응답에 올 수 있어 === 0 비교가 false 회귀 -->
-              <span class="{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}}">{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? '$t:shop.checkout.free' : (orderData?.data?.mc_total_shipping_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_shipping_amount_formatted)}}</span>
+              <span class="{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-white'}}">{{Number(orderData?.data?.total_shipping_amount ?? 0) === 0 ? '$t:shop.checkout.free' : (orderData?.data?.mc_total_shipping_amount?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? orderData?.data?.total_shipping_amount_formatted)}}</span>
             </div>
             <!-- 할인 -->
             <div data-if="{{(orderData?.data?.total_discount_amount ?? 0) > 0}}" class="flex justify-between mb-2 text-red-600 dark:text-red-400">
@@ -281,15 +281,15 @@
         <div class="flex gap-4 justify-center">
           <responsive on="portable" class="flex flex-col gap-3"/>
           <!-- 회원: 마이페이지 주문 상세(/mypage/orders/:order_number, auth_required:true), 비회원: 비회원 주문 상세(/{shopBase}/guest/orders/:order_number, auth_required:false + X-Guest-Order-Token globalHeader 자동 주입). 분기 없이 마이페이지로만 보내면 비회원이 라우트 가드에 막혀 로그인 페이지로 튕긴다. 회원 갈래는 주소 있는 링크(가운데 클릭·Ctrl+클릭 새 탭), 비회원 갈래는 단추 — 비회원 조회 토큰은 탭에 묶여 새 탭에 실리지 않는다. -->
-          <a data-if="{{_global.currentUser?.uuid}}" href="/mypage/orders/{{orderData?.data?.order_number}}" class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium">
-            <responsive on="portable" class="inline-flex items-center justify-center w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium"/>
+          <a data-if="{{_global.currentUser?.uuid}}" href="/mypage/orders/{{orderData?.data?.order_number}}" class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium">
+            <responsive on="portable" class="inline-flex items-center justify-center w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium"/>
             <on type="click">
               <navigate/>
             </on>
             $t:shop.order_complete.view_order_detail
           </a>
-          <button data-if="{{!_global.currentUser?.uuid}}" type="button" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium">
-            <responsive on="portable" class="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-lg font-medium"/>
+          <button data-if="{{!_global.currentUser?.uuid}}" type="button" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium">
+            <responsive on="portable" class="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium"/>
             <on type="click">
               <navigate path="{{(_global.shopBase ?? '/shop') + '/guest/orders/' + orderData?.data?.order_number}}"/>
             </on>

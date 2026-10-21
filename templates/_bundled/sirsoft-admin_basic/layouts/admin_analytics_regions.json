@@ -211,7 +211,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                            "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"
                                         }
                                     },
                                     {

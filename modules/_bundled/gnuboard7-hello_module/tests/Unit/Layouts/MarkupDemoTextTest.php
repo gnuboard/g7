@@ -7,7 +7,7 @@ use Modules\Gnuboard7\HelloModule\Tests\ModuleTestCase;
 /**
  * 마크업 형식 예시 화면(admin_markup_demo)의 글자 표시 테스트.
  *
- * 7.1.0 전수 실측 G3: 예시가 `<h2 text="Hello Markup Demo"/>` 처럼 글자를 `text` 속성으로 적어
+ * 7.1.0 전수 실측: 예시가 `<h2 text="Hello Markup Demo"/>` 처럼 글자를 `text` 속성으로 적어
  * 컴파일 결과가 `props.text` 가 됐다. 기본 컴포넌트(H2, Span)는 `props.text` 를 그리지 않아
  * 미리보기 화면의 제목이 빈 칸(`<h2 text="Hello Markup Demo"></h2>`)으로 나왔다. 기본 태그의 글자는
  * 본문 텍스트로 적어 노드 `text` 로 컴파일되게 한다.

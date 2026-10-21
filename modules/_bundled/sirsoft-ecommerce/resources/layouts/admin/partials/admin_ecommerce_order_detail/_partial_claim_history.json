@@ -69,7 +69,7 @@
                                 "base": "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors",
                                 "key": "{{claimType.value === (_computed.claimHistoryActiveType ?? 'exchange') ? 'active' : 'idle'}}",
                                 "variants": {
-                                    "active": "border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-500 font-medium",
+                                    "active": "border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-600 font-medium",
                                     "idle": "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                                 },
                                 "default": "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
@@ -100,7 +100,7 @@
                                         "base": "inline-flex items-center justify-center min-w-5 px-1.5 text-xs rounded-full",
                                         "key": "{{claimType.value === (_computed.claimHistoryActiveType ?? 'exchange') ? 'active' : 'idle'}}",
                                         "variants": {
-                                            "active": "bg-white/25 text-white",
+                                            "active": "bg-blue-800 dark:bg-blue-800 text-white",
                                             "idle": "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
                                         },
                                         "default": "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
@@ -140,7 +140,7 @@
                     "id": "claim_history_empty",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{orderClaims?.data?.unavailable !== true && (_computed.claimHistoryRows ?? []).length === 0}}",
+                    "if": "{{orderClaims !== undefined && (orderClaims?.data?.unavailable !== true && (_computed.claimHistoryRows ?? []).length === 0)}}",
                     "props": {
                         "className": "py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                     },
@@ -286,7 +286,7 @@
                                                     "name": "Div",
                                                     "if": "{{!!claim.reject_reason}}",
                                                     "props": {
-                                                        "className": "text-xs text-red-600 dark:text-red-400"
+                                                        "className": "text-xs text-red-600 dark:text-red-300"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.claim_history.reject_reason: {{claim.reject_reason ?? ''}}"
                                                 },
@@ -363,7 +363,7 @@
                                                                     "if": "{{!item.thumbnail_url}}",
                                                                     "props": {
                                                                         "name": "image",
-                                                                        "className": "text-base text-gray-400 dark:text-gray-500",
+                                                                        "className": "text-base text-gray-500 dark:text-gray-400",
                                                                         "data-thumb-placeholder": "true"
                                                                     }
                                                                 }
@@ -745,7 +745,7 @@
                                                                             "if": "{{!item.thumbnail_url}}",
                                                                             "props": {
                                                                                 "name": "image",
-                                                                                "className": "text-base text-gray-400 dark:text-gray-500",
+                                                                                "className": "text-base text-gray-500 dark:text-gray-400",
                                                                                 "data-thumb-placeholder": "true"
                                                                             }
                                                                         }

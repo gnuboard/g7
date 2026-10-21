@@ -55,7 +55,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | type_label | string | `신규 주문 관리자 알림` | `type` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | subject | string | `새로운 주문이 접수되었습니다` | 알림 제목 (알림 템플릿의 subject 를 변수 치환해 렌더한 문자열) |
 | body | string | `소경은님이 주문번호 20260713-0038038875 (결제금액:…` | 알림 본문 (알림 템플릿의 body 를 변수 치환해 렌더한 문자열) |
-| url | string | `https://g7.dev/admin/ecommerce/orders…` | 알림 클릭 시 이동할 URL (템플릿의 click_url 우선, 없으면 메일 CTA action_url) |
+| url | string | `https://example.com/admin/ecommerce/orders…` | 알림 클릭 시 이동할 URL (템플릿의 click_url 우선, 없으면 메일 CTA action_url) |
 | data | object | `{"type":"new_order_admin","subject":"새로운 주문이 접수되었습니다","bo…` | 알림 원본 페이로드 객체 (type/subject/body/click_url 과 발송 시 전달된 변수 data 를 포함) |
 | read_at | null | `null` | read 일시 |
 | created_at | string | `2026-07-13 09:38:04` | 생성 일시 |
@@ -485,7 +485,7 @@ _단건 응답: `data` 객체의 필드 (읽음 처리 후 갱신된 알림 1건
 | type_label | string | `신규 주문 관리자 알림` | `type` 값의 사람이 읽는 라벨 (알림 정의의 현지화 이름, 정의 미존재 시 빈 문자열) |
 | subject | string | `새로운 주문이 접수되었습니다` | 알림 제목 (알림 템플릿의 subject 를 변수 치환해 렌더한 문자열) |
 | body | string | `소경은님이 주문번호 20260713-0038038875 (결제금액:…` | 알림 본문 (알림 템플릿의 body 를 변수 치환해 렌더한 문자열) |
-| url | string \| null | `https://g7.dev/admin/ecommerce/orders/1` | 알림 클릭 시 이동할 URL (템플릿의 `click_url` 우선, 없으면 메일 CTA `action_url`, 둘 다 없으면 `null`) |
+| url | string \| null | `https://example.com/admin/ecommerce/orders/1` | 알림 클릭 시 이동할 URL (템플릿의 `click_url` 우선, 없으면 메일 CTA `action_url`, 둘 다 없으면 `null`) |
 | data | object | `{"type":"new_order_admin","subject":"...","body":"...","click_url":"..."}` | 알림 원본 페이로드 객체 (type/subject/body/click_url 과 발송 시 전달된 변수 data 를 포함) |
 | read_at | string \| null | `2026-07-13 09:40:11` | 읽음 처리 일시 (사용자 타임존 기준 `Y-m-d H:i:s`) — 이 엔드포인트 성공 시 항상 값이 채워짐 |
 | created_at | string \| null | `2026-07-13 09:38:04` | 알림 생성 일시 (사용자 타임존 기준 `Y-m-d H:i:s`) |
@@ -506,14 +506,14 @@ HTTP/1.1 200
         "type_label": "신규 주문 관리자 알림",
         "subject": "새로운 주문이 접수되었습니다",
         "body": "소경은님이 주문번호 20260713-0038038875 주문을 접수했습니다.",
-        "url": "https://g7.dev/admin/ecommerce/orders/1",
+        "url": "https://example.com/admin/ecommerce/orders/1",
         "data": {
             "type": "new_order_admin",
             "subject": "새로운 주문이 접수되었습니다",
             "body": "소경은님이 주문번호 20260713-0038038875 주문을 접수했습니다.",
-            "click_url": "https://g7.dev/admin/ecommerce/orders/1",
+            "click_url": "https://example.com/admin/ecommerce/orders/1",
             "data": {
-                "action_url": "https://g7.dev/admin/ecommerce/orders/1"
+                "action_url": "https://example.com/admin/ecommerce/orders/1"
             }
         },
         "read_at": "2026-07-13 09:40:11",
@@ -576,7 +576,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | type_label | string | `신규 주문 관리자 알림` | `type` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | subject | string | `새로운 주문이 접수되었습니다` | 알림 제목 (알림 템플릿의 subject 를 변수 치환해 렌더한 문자열) |
 | body | string | `소경은님이 주문번호 20260713-0038038875 (결제금액:…` | 알림 본문 (알림 템플릿의 body 를 변수 치환해 렌더한 문자열) |
-| url | string | `https://g7.dev/admin/ecommerce/orders…` | 알림 클릭 시 이동할 URL (템플릿의 click_url 우선, 없으면 메일 CTA action_url) |
+| url | string | `https://example.com/admin/ecommerce/orders…` | 알림 클릭 시 이동할 URL (템플릿의 click_url 우선, 없으면 메일 CTA action_url) |
 | data | object | `{"type":"new_order_admin","subject":"새로운 주문이 접수되었습니다","bo…` | 알림 원본 페이로드 객체 (type/subject/body/click_url 과 발송 시 전달된 변수 data 를 포함) |
 | read_at | null | `null` | read 일시 |
 | created_at | string | `2026-07-13 09:38:04` | 생성 일시 |
@@ -1007,7 +1007,7 @@ _단건 응답: `data` 객체의 필드 (읽음 처리 후 갱신된 알림 1건
 | type_label | string | `배송 시작 알림` | `type` 값의 사람이 읽는 라벨 (알림 정의의 현지화 이름, 정의 미존재 시 빈 문자열) |
 | subject | string | `주문하신 상품이 발송되었습니다` | 알림 제목 (알림 템플릿의 subject 를 변수 치환해 렌더한 문자열) |
 | body | string | `주문번호 20260713-0038038875 상품이 발송되었습니다.` | 알림 본문 (알림 템플릿의 body 를 변수 치환해 렌더한 문자열) |
-| url | string \| null | `https://g7.dev/mypage/orders/1` | 알림 클릭 시 이동할 URL (템플릿의 `click_url` 우선, 없으면 메일 CTA `action_url`, 둘 다 없으면 `null`) |
+| url | string \| null | `https://example.com/mypage/orders/1` | 알림 클릭 시 이동할 URL (템플릿의 `click_url` 우선, 없으면 메일 CTA `action_url`, 둘 다 없으면 `null`) |
 | data | object | `{"type":"order_shipped","subject":"...","body":"...","click_url":"..."}` | 알림 원본 페이로드 객체 (type/subject/body/click_url 과 발송 시 전달된 변수 data 를 포함) |
 | read_at | string \| null | `2026-07-13 10:02:33` | 읽음 처리 일시 (사용자 타임존 기준 `Y-m-d H:i:s`) — 이 엔드포인트 성공 시 항상 값이 채워짐 |
 | created_at | string \| null | `2026-07-13 09:58:12` | 알림 생성 일시 (사용자 타임존 기준 `Y-m-d H:i:s`) |
@@ -1028,14 +1028,14 @@ HTTP/1.1 200
         "type_label": "배송 시작 알림",
         "subject": "주문하신 상품이 발송되었습니다",
         "body": "주문번호 20260713-0038038875 상품이 발송되었습니다.",
-        "url": "https://g7.dev/mypage/orders/1",
+        "url": "https://example.com/mypage/orders/1",
         "data": {
             "type": "order_shipped",
             "subject": "주문하신 상품이 발송되었습니다",
             "body": "주문번호 20260713-0038038875 상품이 발송되었습니다.",
-            "click_url": "https://g7.dev/mypage/orders/1",
+            "click_url": "https://example.com/mypage/orders/1",
             "data": {
-                "action_url": "https://g7.dev/mypage/orders/1"
+                "action_url": "https://example.com/mypage/orders/1"
             }
         },
         "read_at": "2026-07-13 10:02:33",

@@ -60,18 +60,21 @@ class ActivityLogSampleSeederTest extends TestCase
             'description_params' => [],
             'user_id' => $admin->id,
         ]);
+        // 다시 채우기 전에 지우는 대상은 이 시더가 전에 만든 코어 샘플 로그(표식 행)뿐이다 — 표식 없는 실제 로그 보존은
+        // ActivityLogSampleSeederPreservesRealLogsTest 가 고정한다.
         $staleCoreLog = ActivityLog::create([
             'log_type' => ActivityLogType::Admin,
             'action' => 'user.update',
             'description_key' => 'activity_log.description.user_update',
             'description_params' => [],
+            'properties' => ['seeded_by' => ActivityLogSampleSeeder::SAMPLE_MARKER],
             'user_id' => $admin->id,
         ]);
 
         $this->seed(ActivityLogSampleSeeder::class);
 
         $this->assertTrue(ActivityLog::whereKey($extensionLog->id)->exists(), '확장 네임스페이스 로그가 지워졌습니다.');
-        $this->assertFalse(ActivityLog::whereKey($staleCoreLog->id)->exists(), '기존 코어 로그는 다시 채우기 전에 지워져야 합니다.');
+        $this->assertFalse(ActivityLog::whereKey($staleCoreLog->id)->exists(), '이전 코어 샘플 로그는 다시 채우기 전에 지워져야 합니다.');
     }
 
     /**

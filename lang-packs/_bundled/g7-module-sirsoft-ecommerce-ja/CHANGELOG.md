@@ -8,6 +8,9 @@
 
 ### Added
 
+#### 분류 관리 수정 중 이동 확인
+- 이커머스 1.3.1 의 분류 관리에 새로 생긴 「수정 중입니다」 확인 창 문구 5건(`admin/category.modal.editing.*` — 「編集中です」「キャンセルして移動」 등)의 일본어 번역을 추가했습니다. 없으면 일본어 로케일에서 이 창의 문구가 키 그대로 보입니다.
+
 #### 관리자 화면 입력칸 이름
 - 화면 낭독기가 읽는 관리자 입력칸 이름의 일본어 번역을 추가했습니다.
   - 상품 목록 카테고리 단계 선택칸(`admin/product.filter.category_step` — 「カテゴリ{{n}}段階」), 옵션 일괄 생성의 옵션그룹명·옵션값 칸(`admin/product.options.option_group_name_n`·`option_group_values_n` — 「オプショングループ{{n}}の名前」「オプショングループ{{n}}の値」)
@@ -16,9 +19,33 @@
   - 클레임 상세 송장 방향(`admin/claim.detail.items.tracking_direction_label` — 「送り状の方向」), 교환 신청의 교환할 옵션(`admin/order.claim_request.exchange_option_label` — 「交換するオプション」)
   - 주문 설정 자동 취소 칸(`admin/settings.order_settings.auto_cancel.days_label`·`pending_minutes_label` — 「入金待ち注文の自動キャンセル日数」「決済未完了注文の自動キャンセル時間（分）」)
 
+#### 탈퇴 회원 지급·발급 거절 안내
+- 탈퇴한 회원에게 마일리지 지급·쿠폰 발급·적립건 유효기간 연장을 거절할 때의 안내 문구(`validation.mileage.user_withdrawn`·`validation.coupon.user_withdrawn`·`messages.coupon.user_withdrawn`·`messages.mileage.withdrawn_lot_not_extendable`)의 일본어 번역을 추가했습니다.
+
+#### 마일리지 내역 정렬
+
+- 마일리지 내역 정렬 선택칸에 더한 「오래된순」(`admin/mileage_transactions.sort.created_at_asc`)의 일본어 번역을 추가했습니다.
+
+#### 목록 불러오기 실패 안내
+
+- 관리자 이커머스의 쿠폰 발급 내역·개인정보 보유기간 대상·추가배송비 템플릿 창, 프리셋 관리 창, 활동 로그·처리 이력, 환불 은행 안내가 목록을 불러오지 못했을 때 보이는 안내 문구(`common.error.list_load_failed` — 「一覧を読み込めませんでした。…」)의 일본어 번역을 추가했습니다.
+
+#### 한국어로 고정돼 있던 화면 문구
+
+- 이커머스 1.3.1 에서 번역 문구로 바뀐 관리자 화면 문구의 일본어 번역을 추가했습니다 — 입금 확인·엑셀 내려받기·메인 배너·개인결제·할인코드 예시 화면의 이름·문구(`admin/sample.*`), 대시보드의 「匿名」(`admin/dashboard.community.anonymous`), 주문 상세·후기 목록의 수량 표시(`admin/order.detail.order_info.quantity_value`·`admin/product_review.table.quantity_value`), 재고 일괄 변경 단위와 상품 삭제 확인 창의 관련 이미지·옵션 수(`admin/product.modal.bulk_stock.quantity_unit`·`modal.delete.related_*`). 종전에는 일본어 화면에서도 한국어로 보였습니다.
+
+#### 명령 출력
+
+- 이커머스 1.3.1 에서 번역 문구로 바뀐 미결제 주문 자동 취소·마일리지 적립/소멸/만료 예고·장바구니·임시 이미지 정리·통계 집계 명령과 설치·샘플 시드, 시험용 시드 명령의 콘솔 출력 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 출력이 키 그대로 보입니다.
+
+### Removed
+
+- 화면에서 쓰이지 않던 「중복 할인 불가 쿠폰」 확인 문구 번역 2건(`shop.checkout.exclusive_coupon_title`·`exclusive_coupon_message`)을 정리했습니다.
+
 ### Fixed
 
 - 상품 공통정보 관리에서 편집 중 다른 항목을 고를 때 뜨는 확인 창 문구가 「別の商品グループ」(상품정보고시 용어)였던 것을 「別の共通情報」로 바로잡았습니다(`admin/common_info.modal.editing.confirm_message`).
+- 이미 만료됐거나 모두 쓴 마일리지 적립건의 유효기간을 바꾸려 할 때 나오는 안내에서 적립건이 「積立建」으로 잘못 적혀 있던 것을 다른 마일리지 화면과 같은 「積立件」으로 바로잡았습니다(`messages.mileage.expiry_not_editable`).
 
 ### Changed
 

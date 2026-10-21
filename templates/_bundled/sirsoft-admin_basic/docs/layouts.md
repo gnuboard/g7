@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 184개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 185개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 136개 |
+| `partials` | 137개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -99,6 +99,7 @@
 | `_partial_filter` | `partials` | partial | - |
 | `_modal_bulk_roles_confirm` | `partials` | partial | - |
 | `_modal_delete` | `partials` | partial | - |
+| `_modal_editing_confirm` | `partials` | partial | - |
 | `_panel_bulk_roles` | `partials` | partial | - |
 | `_panel_detail` | `partials` | partial | - |
 | `_panel_form` | `partials` | partial | - |
@@ -418,6 +419,7 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 | 미리보기 HTML 해석 | 같은 값 | `rich` 일 때만 HTML 로 그립니다. 사이트내 알림은 알림센터가 평문으로 그리므로, 여기서만 HTML 로 해석하면 관리자가 본 문구와 사용자가 받는 문구가 다릅니다 |
 | 「관련 사용자」 선택지 | 정의의 `relations` | 선언이 비면 타입 드롭다운에서 그 항목 자체를 감춥니다 — 지원하지 않는 관계를 고르면 수신자가 **0명**이 되고 예외도 로그도 남지 않습니다 |
 | 역할 선택 | `recipients[].value` (서버가 언제나 배열로 정규화) | 다중 선택. 표시 이름은 `display_names` 가 **저장 순서 그대로** 나릅니다 |
+| 특정 회원 검색 | `GET /api/admin/users/search?keyword=…&exclude_withdrawn=1` | 탈퇴 회원은 결과에서 뺍니다(7.1.1) — 연락처가 익명화되고 바깥 채널 발송이 막혀 수신자로 골라도 받지 못합니다. 게시판·이커머스·GDPR·수출입은행 알림 문안 창도 같은 값을 싣습니다. 활동 로그 「회원」 필터처럼 기록을 찾는 자리는 싣지 않습니다 |
 
 `rich` 편집기는 상태를 `_global` 네임스페이스에 두므로 확장점 props 로 `writeScope: "global"`
 과 활성 언어까지 포함한 `writePath` 를 넘깁니다. 노드 `id` 에 활성 언어를 넣어 언어 탭을 바꿀
@@ -570,6 +572,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _panel_view.g7.html (우측: 미리보기)
 │           ├── _panel_bulk_roles.g7.html (여러 개 선택 모드: 고른 메뉴에 역할 일괄 추가·제거)
 │           ├── _modal_bulk_roles_confirm.g7.html (역할 일괄 적용 확인)
+│           ├── _modal_editing_confirm.g7.html (편집 중 다른 메뉴를 고를 때 이탈 확인)
 │           └── _modal_delete.g7.html
 │
 ├── 환경 설정

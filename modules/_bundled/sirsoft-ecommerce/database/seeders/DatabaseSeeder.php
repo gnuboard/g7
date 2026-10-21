@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('=== 이커머스 모듈 시더 실행 시작 ===');
+        $this->command->info('=== '.__('sirsoft-ecommerce::messages.seeders.database.start').' ===');
         $this->command->newLine();
 
         // 설치 필수 시더 (항상 실행)
@@ -58,11 +58,11 @@ class DatabaseSeeder extends Seeder
         // 샘플 시더 (--sample 옵션 시에만 실행)
         if ($this->shouldIncludeSample()) {
             $this->command->newLine();
-            $this->command->info('--- 이커머스 샘플 시더 실행 ---');
+            $this->command->info('--- '.__('sirsoft-ecommerce::messages.seeders.database.sample_start').' ---');
 
             if (! $this->confirmSampleReset()) {
-                $this->command->warn('샘플 데이터 생성을 취소했습니다. (설치 데이터만 동기화됨)');
-                $this->command->warn('대화형이 아닌 실행(자동화 스크립트·CI·파이프)에서는 --force 를 붙여야 샘플을 만듭니다.');
+                $this->command->warn(__('sirsoft-ecommerce::messages.seeders.database.sample_cancelled'));
+                $this->command->warn(__('sirsoft-ecommerce::messages.seeders.database.sample_needs_force'));
 
                 return;
             }
@@ -102,7 +102,7 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->command->newLine();
-        $this->command->info('=== 이커머스 모듈 시더 실행 완료 ===');
+        $this->command->info('=== '.__('sirsoft-ecommerce::messages.seeders.database.done').' ===');
     }
 
     /**
@@ -116,21 +116,21 @@ class DatabaseSeeder extends Seeder
      */
     private function confirmSampleReset(): bool
     {
-        $this->command->warn('샘플 데이터를 다시 만들기 위해 아래 데이터를 비웁니다 (현재 행 수):');
+        $this->command->warn(__('sirsoft-ecommerce::messages.seeders.database.reset_notice'));
         foreach ($this->sampleResetTables() as $label => $count) {
-            $this->command->line(sprintf('  - %s: %s건', $label, number_format($count)));
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.database.reset_row', ['label' => $label, 'count' => number_format($count)]));
         }
-        $this->command->line('  - 활동 로그: 이전 샘플 표식이 있는 행만 (실제 활동 로그는 보존)');
-        $this->command->line('  ※ 회원 배송지는 지우지 않습니다. 마일리지 원장은 전체가 다시 만들어집니다.');
-        $this->command->line('  ※ 삭제 외 변경: 1:1 문의게시판 설정이 비어 있으면 product-inquiry 게시판을 연결하고, 최근 31일 대시보드 통계를 다시 집계합니다.');
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.database.reset_activity_logs'));
+        $this->command->line('  ※ '.__('sirsoft-ecommerce::messages.seeders.database.reset_note_addresses'));
+        $this->command->line('  ※ '.__('sirsoft-ecommerce::messages.seeders.database.reset_note_side_effects'));
 
         if ($this->command->hasOption('force') && $this->command->option('force')) {
-            $this->command->line('  --force: 확인 없이 진행합니다.');
+            $this->command->line('  --force: '.__('sirsoft-ecommerce::messages.seeders.database.force_proceed'));
 
             return true;
         }
 
-        return $this->command->confirm('위 데이터를 비우고 샘플을 새로 만들까요?', false);
+        return $this->command->confirm(__('sirsoft-ecommerce::messages.seeders.database.confirm_reset'), false);
     }
 
     /**
@@ -141,21 +141,21 @@ class DatabaseSeeder extends Seeder
     private function sampleResetTables(): array
     {
         return [
-            '상품(옵션·이미지·고시·라벨 연결 포함, 저장소 상품 이미지 폴더 전체)' => Product::withTrashed()->count(),
-            '상품 문의(게시판 문의 글과 그 답변 포함)' => ProductInquiry::withTrashed()->count(),
-            '주문(결제·배송·주소·취소·환불·교환·반품·추가결제·클레임 첨부·현금영수증·세금계산서 포함)' => Order::withTrashed()->count(),
-            '쿠폰·쿠폰 발급 이력' => Coupon::withTrashed()->count(),
-            '장바구니' => Cart::query()->count(),
-            '마일리지 거래·잔액' => MileageTransaction::query()->count(),
-            '상품 리뷰(리뷰 이미지 포함, 저장소 리뷰 이미지 폴더 전체)' => ProductReview::withTrashed()->count(),
-            '브랜드' => Brand::withTrashed()->count(),
-            '카테고리' => Category::query()->count(),
-            '상품 라벨' => ProductLabel::query()->count(),
-            '상품 공통정보' => ProductCommonInfo::query()->count(),
-            '상품정보제공고시 템플릿' => ProductNoticeTemplate::query()->count(),
-            '추가배송비 템플릿' => ExtraFeeTemplate::query()->count(),
-            '배송정책(국가별 설정·클레임 회수지 포함)' => ShippingPolicy::query()->count(),
-            '회원 쇼핑 프로필(선호 통화·배송국가)' => EcommerceUserProfile::query()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.products') => Product::withTrashed()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.inquiries') => ProductInquiry::withTrashed()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.orders') => Order::withTrashed()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.coupons') => Coupon::withTrashed()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.carts') => Cart::query()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.mileage') => MileageTransaction::query()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.reviews') => ProductReview::withTrashed()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.brands') => Brand::withTrashed()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.categories') => Category::query()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.labels') => ProductLabel::query()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.common_infos') => ProductCommonInfo::query()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.notice_templates') => ProductNoticeTemplate::query()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.extra_fee_templates') => ExtraFeeTemplate::query()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.shipping_policies') => ShippingPolicy::query()->count(),
+            __('sirsoft-ecommerce::messages.seeders.database.reset_tables.user_profiles') => EcommerceUserProfile::query()->count(),
         ];
     }
 
@@ -168,9 +168,9 @@ class DatabaseSeeder extends Seeder
     {
         try {
             app(EcommerceDashboardService::class)->aggregateRecentDays(31);
-            $this->command->info('  - 최근 31일 매출·주문 통계를 집계했습니다.');
+            $this->command->info('  - '.__('sirsoft-ecommerce::messages.seeders.database.stats_aggregated'));
         } catch (\Throwable $e) {
-            $this->command->warn('  - 통계 집계를 건너뜁니다: '.$e->getMessage());
+            $this->command->warn('  - '.__('sirsoft-ecommerce::messages.seeders.database.stats_skipped', ['error' => $e->getMessage()]));
         }
     }
 

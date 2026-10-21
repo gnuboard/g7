@@ -92,7 +92,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| general | object | `{"site_name":"그누보드7","site_url":"https:\/\/g7_2.dev","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고 첨부). site_logo 는 SettingsService 가 별도 주입한 첨부 정보 |
+| general | object | `{"site_name":"그누보드7","site_url":"https:\/\/api.example.com","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고 첨부). site_logo 는 SettingsService 가 별도 주입한 첨부 정보 |
 | security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절. 비밀번호 정책 키(`password_min_length`·`require_password_special_char` 와 `password_*` 16키 — 작성 규칙·재사용 금지·만료, 서버가 기록하는 만료 기준 시작일 `password_expiry_started_at` 포함 — #736)도 이 그룹에 실린다 — 범위·기본값은 `POST /api/admin/settings` 의 `security.password_*` 행. 활동 로그(접속기록) 보관 기간 `activity_log_retention_days`(정수 일, 기본 365)도 이 그룹이다 |
 | mail | object | `{"mailer":"smtp","host":"","port":587,"username":"","pass…` | 메일 탭 설정 그룹 (메일러 종류(smtp/mailgun/ses)·SMTP 호스트/포트/인증 정보·암호화 방식·발신자 주소/이름·Mailgun/SES 자격 정보) |
 | upload | object | `{"max_file_size":10,"allowed_extensions":["jpg","jpeg","p…` | 업로드 탭 설정 그룹 (최대 파일 크기(MB)·허용 확장자 목록·이미지 최대 가로/세로·이미지 품질) |
@@ -133,7 +133,7 @@ HTTP/1.1 200
             "site_name": "그누보드7",
             "site_url": "https://api.example.com",
             "site_description": null,
-            "admin_email": "heuristing@gmail.com",
+            "admin_email": "admin@example.com",
             "timezone": "Asia/Seoul",
             "...": "(5개 키 생략, 총 10개)"
         },
@@ -1282,10 +1282,10 @@ _단건 응답: `data` 객체의 필드._
 | max_execution_time | string | `36000초` | PHP `max_execution_time` ini 값 (초 단위 접미사 부착) |
 | upload_max_filesize | string | `2G` | PHP `upload_max_filesize` ini 값 |
 | opcache | object | `{"loaded":true,"enabled":true}` | OPcache 상태 (`OpcacheStatus::probe()`). `loaded` 는 확장 적재 여부, `enabled` 는 `opcache.enable` 지시자 값이며 `ini_get` 이 차단·미정의인 환경에서는 **확인 불가를 뜻하는 `null`** 이 된다 (false 와 구분된다) |
-| install_path | string | `C:\Users\HeuJung\htdocs\g7_2` | 애플리케이션 설치 루트 경로 (`base_path()`) |
-| config_path | string | `C:\Users\HeuJung\htdocs\g7_2\storage\…` | 설정 파일 저장 경로 (`storage/app/settings`) |
-| log_path | string | `C:\Users\HeuJung\htdocs\g7_2\storage\…` | 로그 파일 저장 경로 (`storage/logs`) |
-| upload_path | string | `C:\Users\HeuJung\htdocs\g7_2\storage\…` | 공개 업로드 파일 저장 경로 (`storage/app/public`) |
+| install_path | string | `/var/www/g7` | 애플리케이션 설치 루트 경로 (`base_path()`) |
+| config_path | string | `/var/www/g7/storage/…` | 설정 파일 저장 경로 (`storage/app/settings`) |
+| log_path | string | `/var/www/g7/storage/…` | 로그 파일 저장 경로 (`storage/logs`) |
+| upload_path | string | `/var/www/g7/storage/…` | 공개 업로드 파일 저장 경로 (`storage/app/public`) |
 | php_extensions | object | `{"required":{"openssl":true,"pdo":true,"mbstring":true,"t…` | PHP 확장 로드 상태. required(필수)·optional(선택) 두 그룹으로 나뉘며 각 확장명→로드 여부(bool) 매핑 |
 | database_config | object | `{"has_read_write_split":false,"write":{"host":"localhost"…` | DB 연결 구성 요약. has_read_write_split(읽기/쓰기 분리 여부)·write(쓰기 연결 정보)·read(읽기 replica 목록, write 와 동일하면 제외) |
 | timezone | string | `UTC` | 애플리케이션 기본 타임존 (`config('app.timezone')`) |
@@ -1332,10 +1332,10 @@ HTTP/1.1 200
             "loaded": true,
             "enabled": true
         },
-        "install_path": "C:\\Users\\HeuJung\\htdocs\\g7",
-        "config_path": "C:\\Users\\HeuJung\\htdocs\\g7\\storage\\app/settings",
-        "log_path": "C:\\Users\\HeuJung\\htdocs\\g7\\storage\\logs",
-        "upload_path": "C:\\Users\\HeuJung\\htdocs\\g7\\storage\\app/public",
+        "install_path": "/var/www/g7",
+        "config_path": "/var/www/g7/storage/app/settings",
+        "log_path": "/var/www/g7/storage/logs",
+        "upload_path": "/var/www/g7/storage/app/public",
         "php_extensions": {
             "required": {
                 "openssl": true,
@@ -1581,7 +1581,7 @@ HTTP/1.1 200
 
 **설명**
 
-환경설정 → 드라이버 탭 「큐 워커」 구역이 읽는 상태입니다(#139). 판정은 **운영자가 등록한 연결·큐 목록**으로 하고, 워커 생존 신호(하트비트)는 큐별로 표시만 합니다. 신호는 워커 루프(`Illuminate\Queue\Events\Looping`)와 잡 시작(`JobProcessing` — `--once` 워커용)마다 프로세스당 30초에 한 번 캐시(`queue:heartbeat:{connection}:{queue}`)에 남습니다. 읽기 전용이며 입력이 없습니다. 등록 규칙은 위 `POST /api/admin/settings` 의 「큐 워커 등록 검증」, 리스너가 큐를 고르는 방법은 [hooks.md](../../extension/hooks.md) 「큐 옵션 — 등록 큐만 허용·폴백·timeout 클램프」 를 보세요.
+환경설정 → 드라이버 탭 「큐 워커」 구역이 읽는 상태입니다(#139). 판정은 **운영자가 등록한 연결·큐 목록**으로 하고, 워커 생존 신호(하트비트)는 큐별로 표시만 합니다. 신호는 워커 루프(`Illuminate\Queue\Events\Looping`)와 잡 시작(`JobProcessing` — `--once` 워커용)마다 프로세스당 30초에 한 번 캐시(`queue:heartbeat:{connection}:{queue}`)에 남습니다. 코어 잡 전용 큐(사이트맵 생성 `sitemap`)는 운영자가 등록하지 않아도 큐 드라이버 연결에 잡이 쌓이므로, 등록 목록에 없으면 `rows` 와 `commands` 에 `dedicated: true` 항목으로 함께 싣습니다(워커 1개 전용 명령, `--timeout=1800`). 등록 큐 항목은 `dedicated: false` 입니다. 읽기 전용이며 입력이 없습니다. 등록 규칙은 위 `POST /api/admin/settings` 의 「큐 워커 등록 검증」, 리스너가 큐를 고르는 방법은 [hooks.md](../../extension/hooks.md) 「큐 옵션 — 등록 큐만 허용·폴백·timeout 클램프」 를 보세요.
 
 
 ### POST /api/admin/settings/static-cache/republish

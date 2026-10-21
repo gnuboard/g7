@@ -5,6 +5,39 @@
 <partial description="배송지 정보 입력 섹션 (PC/모바일 반응형)">
   <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
     <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"/>
+    <on listen="sirsoft-basic:checkout-address-selected">
+      <!-- 「배송지 관리」 창의 「선택」 이 보낸 배송지를 주문서에 적용한다 — 아래 저장된 배송지 칩과 같은 순서(고른 배송지 → 배송지 칸 →
+           우편번호·국가 → 배송비 다시 받기)를 페이지 문맥에서 돈다. 창이 페이지 상태를 직접 고치면 정본에 닿지 않는다(7.1.1) -->
+      <sequence>
+        <set-state target="local" selectedAddressId="{{_eventData.address?.id ?? null}}"/>
+        <set-state target="local" selectedAddressObj="{{_eventData.address ?? null}}"/>
+        <set-state target="local">
+          <field name="shipping">
+            <field name="recipient_name" value="{{_eventData.address?.recipient_name}}"/>
+            <field name="recipient_phone" value="{{_eventData.address?.recipient_phone}}"/>
+            <field name="country_code" value="{{_eventData.address?.country_code ?? 'KR'}}"/>
+            <field name="zipcode" value="{{_eventData.address?.zipcode ?? ''}}"/>
+            <field name="address" value="{{_eventData.address?.address ?? ''}}"/>
+            <field name="address_detail" value="{{_eventData.address?.address_detail ?? ''}}"/>
+            <field name="region" value="{{_eventData.address?.region ?? ''}}"/>
+            <field name="address_line_1" value="{{_eventData.address?.address_line_1 ?? ''}}"/>
+            <field name="address_line_2" value="{{_eventData.address?.address_line_2 ?? ''}}"/>
+            <field name="intl_city" value="{{_eventData.address?.city ?? ''}}"/>
+            <field name="intl_state" value="{{_eventData.address?.state ?? ''}}"/>
+            <field name="intl_postal_code" value="{{_eventData.address?.postal_code ?? ''}}"/>
+          </field>
+        </set-state>
+        <set-state target="local" checkout.zipcode="{{_eventData.address?.zipcode}}" checkout.country_code="{{_eventData.address?.country_code ?? 'KR'}}"/>
+        <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="PUT" body="{{_local.checkout}}">
+          <success>
+            <update-data-source dataSourceId="checkoutData" data="{{response}}"/>
+          </success>
+          <fail>
+            <toast type="error" message="{{error.message}}"/>
+          </fail>
+        </api-call>
+      </sequence>
+    </on>
     <!-- 섹션 헤더 -->
     <div class="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
       <responsive on="portable" class="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 dark:border-gray-700"/>
@@ -58,12 +91,24 @@
         </button>
       </div>
       <!-- 배송지 관리 버튼 (항상 표시) -->
-      <button type="button" class="px-4 py-2 border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 rounded-full text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1">
-        <responsive on="portable" class="px-3 py-1.5 border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 rounded-full text-xs hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1"/>
+      <button type="button" class="px-4 py-2 border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 rounded-full text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1">
+        <responsive on="portable" class="px-3 py-1.5 border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 rounded-full text-xs hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1"/>
         <on type="click">
-          <!-- 배송지 관리 창을 목록 모드로 연다 — 같은 창이 등록/수정 모드로도 열리므로 모드를 먼저 정한다 -->
+          <!-- 배송지 관리 창을 목록 모드로 연다 — 같은 창이 등록/수정 모드로도 열리므로 모드를 먼저 정한다.
+               창 상태는 창 고유 전역 이름 공간에 두고, 열 때마다 null 로 비운 뒤 통째로 다시 쓴다 — 페이지 _local 에 쓰면 영구 마운트된
+               창이 쥔 앞 값(수정 폼·앞 배송지)에 가려 닿지 않는다(7.1.1). 창 안 선택은 지금 주문서에 적용된 배송지로 시작한다 -->
           <sequence>
-            <set-state target="local" addressModalMode="list"/>
+            <set-state target="global" :checkoutAddressModal="null"/>
+            <set-state target="global">
+              <field name="checkoutAddressModal">
+                <field name="mode" value="list"/>
+                <field name="editing" :value="null"/>
+                <field name="errors" :value="null"/>
+                <field name="isSaving" :value="false"/>
+                <field name="selectedAddressId" value="{{_local.selectedAddressId ?? null}}"/>
+                <field name="selectedAddressObj" value="{{_local.selectedAddressObj ?? null}}"/>
+              </field>
+            </set-state>
             <open-modal target="addressManageModal"/>
           </sequence>
         </on>
@@ -92,7 +137,7 @@
       <responsive on="portable" class="mb-3"/>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         <span>$t:shop.checkout.shipping_country</span>
-        <span class="text-red-500 ml-1">*</span>
+        <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
       <select name="country_code" aria-label="$t:shop.checkout.shipping_country" value="{{_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR'}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" options="{{(shippingSettings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: $localized(c.name) || c.code }))}}">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
@@ -122,7 +167,7 @@
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <span>$t:shop.checkout.recipient_name</span>
-          <span class="text-red-500 ml-1">*</span>
+          <span class="text-red-600 dark:text-red-400 ml-1">*</span>
         </label>
         <input aria-label="$t:shop.checkout.recipient_name" type="text" name="recipient_name" value="{{_local.shipping?.recipient_name ?? ''}}" placeholder="$t:shop.checkout.recipient_name_placeholder" class="{{_local.errors?.['shipping.recipient_name'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
           <responsive on="portable" class="{{_local.errors?.['shipping.recipient_name'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
@@ -135,13 +180,13 @@
             <set-state if="{{_local.sameAsOrderer}}" target="local" orderer.name="{{_local.shipping?.recipient_name ?? ''}}"/>
           </on>
         </input>
-        <span data-if="{{_local.errors?.['shipping.recipient_name']}}" class="text-red-500 text-xs mt-1 block">{{_local.errors?.['shipping.recipient_name']?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.['shipping.recipient_name']}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['shipping.recipient_name']?.[0] ?? ''}}</span>
       </div>
       <!-- 연락처 -->
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <span>$t:shop.checkout.recipient_phone</span>
-          <span class="text-red-500 ml-1">*</span>
+          <span class="text-red-600 dark:text-red-400 ml-1">*</span>
         </label>
         <input aria-label="$t:shop.checkout.recipient_phone" type="tel" name="recipient_phone" value="{{_local.shipping?.recipient_phone ?? ''}}" placeholder="$t:shop.checkout.recipient_phone_placeholder" class="{{_local.errors?.['shipping.recipient_phone'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
           <responsive on="portable" class="{{_local.errors?.['shipping.recipient_phone'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
@@ -154,7 +199,7 @@
             <set-state if="{{_local.sameAsOrderer}}" target="local" orderer.phone="{{_local.shipping?.recipient_phone ?? ''}}"/>
           </on>
         </input>
-        <span data-if="{{_local.errors?.['shipping.recipient_phone']}}" class="text-red-500 text-xs mt-1 block">{{_local.errors?.['shipping.recipient_phone']?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.['shipping.recipient_phone']}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['shipping.recipient_phone']?.[0] ?? ''}}</span>
       </div>
     </div>
     <!-- 국내 주소 검색 - sirsoft-daum_postcode 플러그인 연동 (KR 국가만 표시) -->
@@ -162,13 +207,13 @@
       <responsive on="portable" class="mb-3"/>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         <span>$t:shop.checkout.address</span>
-        <span class="text-red-500 ml-1">*</span>
+        <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
       <div class="space-y-2">
         <!-- 우편번호 + 검색 버튼 -->
         <div class="flex gap-2">
           <!-- 주소 검색 SDK 를 못 불러오면 이 칸은 편집 가능 상태로 열린다(플러그인 폴백). 그때 사용자가 친 값이 상태로 가려면 이 change 액션이 있어야 한다 — 평소에는 openPostcode 가 shipping.* 를 직접 써서 넣으므로 없어도 드러나지 않지만, 폴백 상황에서는 결제 버튼이 이 값을 요구해 영영 비활성이 된다. -->
-          <input type="text" name="zipcode" value="{{_local.shipping?.zipcode ?? ''}}" placeholder="$t:shop.checkout.zipcode_placeholder" class="{{_local.errors?.['shipping.zipcode'] ? 'w-28 px-4 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-28 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" :readOnly="false">
+          <input aria-label="$t:shop.checkout.zipcode" type="text" name="zipcode" value="{{_local.shipping?.zipcode ?? ''}}" placeholder="$t:shop.checkout.zipcode_placeholder" class="{{_local.errors?.['shipping.zipcode'] ? 'w-28 px-4 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-28 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" :readOnly="false">
             <responsive on="portable" class="{{_local.errors?.['shipping.zipcode'] ? 'w-24 px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"/>
             <on type="change">
               <set-state target="local" shipping.zipcode="{{$event.target.value}}"/>
@@ -198,20 +243,20 @@
             </callback>
           </extension-point>
         </div>
-        <span data-if="{{_local.errors?.['shipping.zipcode']}}" class="text-red-500 text-xs block">{{_local.errors?.['shipping.zipcode']?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.['shipping.zipcode']}}" class="text-red-600 dark:text-red-400 text-xs block">{{_local.errors?.['shipping.zipcode']?.[0] ?? ''}}</span>
         <!-- 기본 주소(도로명). 주소 검색 SDK 를 못 불러오면 이 칸은 편집 가능 상태로 열린다(플러그인 폴백). 그때 사용자가 친 값이 상태로 가려면 이 change 액션이 있어야 한다 — 평소에는 openPostcode 가 shipping.* 를 직접 써서 넣으므로 없어도 드러나지 않지만, 폴백 상황에서는 결제 버튼이 이 값을 요구해 영영 비활성이 된다. -->
-        <input type="text" name="address" value="{{_local.shipping?.address ?? ''}}" placeholder="$t:shop.checkout.address_placeholder" class="{{_local.errors?.['shipping.address'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" :readOnly="false">
+        <input aria-label="$t:shop.checkout.address" type="text" name="address" value="{{_local.shipping?.address ?? ''}}" placeholder="$t:shop.checkout.address_placeholder" class="{{_local.errors?.['shipping.address'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}" :readOnly="false">
           <responsive on="portable" class="{{_local.errors?.['shipping.address'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm'}}"/>
           <on type="change">
             <set-state target="local" shipping.address="{{$event.target.value}}"/>
           </on>
         </input>
-        <span data-if="{{_local.errors?.['shipping.address']}}" class="text-red-500 text-xs block">{{_local.errors?.['shipping.address']?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.['shipping.address']}}" class="text-red-600 dark:text-red-400 text-xs block">{{_local.errors?.['shipping.address']?.[0] ?? ''}}</span>
         <!-- 상세 주소 — 국내 주문의 필수 칸이다(서버가 해외 주소 1행이 없을 때 요구한다). 별표와 칸 아래 오류가
              없으면 결제하기가 422 로 막혀도 어느 칸이 비었는지 찾을 수 없다. 해외 폼에는 이 칸이 없다(주소 2행이 대신한다). -->
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <span>$t:shop.checkout.detail_address</span>
-          <span class="text-red-500 ml-1">*</span>
+          <span class="text-red-600 dark:text-red-400 ml-1">*</span>
         </label>
         <input aria-label="$t:shop.checkout.detail_address" type="text" name="address_detail" value="{{_local.shipping?.address_detail ?? ''}}" placeholder="$t:shop.checkout.detail_address_placeholder" class="{{_local.errors?.['shipping.address_detail'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
           <responsive on="portable" class="{{_local.errors?.['shipping.address_detail'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
@@ -220,7 +265,7 @@
             <set-state target="local" shipping.address_detail="{{$event.target.value}}"/>
           </on>
         </input>
-        <span data-if="{{_local.errors?.['shipping.address_detail']}}" class="text-red-500 text-xs block">{{_local.errors?.['shipping.address_detail']?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.['shipping.address_detail']}}" class="text-red-600 dark:text-red-400 text-xs block">{{_local.errors?.['shipping.address_detail']?.[0] ?? ''}}</span>
       </div>
     </div>
     <!-- 해외 주소 입력 폼 (KR 이외 국가 선택 시 표시) -->
@@ -228,21 +273,21 @@
       <responsive on="portable" class="mb-3 space-y-2"/>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
         <span>$t:shop.checkout.intl_address</span>
-        <span class="text-red-500 ml-1">*</span>
+        <span class="text-red-600 dark:text-red-400 ml-1">*</span>
       </label>
       <!-- Address Line 1 -->
       <div>
-        <input type="text" name="address_line_1" value="{{_local.shipping?.address_line_1 ?? ''}}" placeholder="$t:shop.checkout.intl_address1_placeholder" class="{{_local.errors?.['shipping.address_line_1'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
+        <input aria-label="$t:shop.checkout.intl_address" type="text" name="address_line_1" value="{{_local.shipping?.address_line_1 ?? ''}}" placeholder="$t:shop.checkout.intl_address1_placeholder" class="{{_local.errors?.['shipping.address_line_1'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
           <responsive on="portable" class="{{_local.errors?.['shipping.address_line_1'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
           <on type="change">
             <!-- 해외 주소 1행 — 국내 주소와 저장 자리가 갈린다(국내는 `shipping.address`) -->
             <set-state target="local" shipping.address_line_1="{{$event.target.value}}"/>
           </on>
         </input>
-        <span data-if="{{_local.errors?.['shipping.address_line_1']}}" class="text-red-500 text-xs mt-1 block">{{_local.errors?.['shipping.address_line_1']?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.['shipping.address_line_1']}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['shipping.address_line_1']?.[0] ?? ''}}</span>
       </div>
       <!-- Address Line 2 (Optional) -->
-      <input type="text" name="address_line_2" value="{{_local.shipping?.address_line_2 ?? ''}}" placeholder="$t:shop.checkout.intl_address2_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+      <input aria-label="$t:shop.checkout.detail_address" type="text" name="address_line_2" value="{{_local.shipping?.address_line_2 ?? ''}}" placeholder="$t:shop.checkout.intl_address2_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
         <on type="change">
           <!-- 해외 주소 2행(선택) — 별표도 오류 표시도 없는 유일한 주소 칸이다 -->
@@ -255,7 +300,7 @@
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             <span>$t:shop.checkout.intl_city</span>
-            <span class="text-red-500 ml-1">*</span>
+            <span class="text-red-600 dark:text-red-400 ml-1">*</span>
           </label>
           <input aria-label="$t:shop.checkout.intl_city" type="text" name="intl_city" value="{{_local.shipping?.intl_city ?? ''}}" placeholder="$t:shop.checkout.intl_city_placeholder" class="{{_local.errors?.['shipping.intl_city'] ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
             <responsive on="portable" class="{{_local.errors?.['shipping.intl_city'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
@@ -264,7 +309,7 @@
               <set-state target="local" shipping.intl_city="{{$event.target.value}}"/>
             </on>
           </input>
-          <span data-if="{{_local.errors?.['shipping.intl_city']}}" class="text-red-500 text-xs mt-1 block">{{_local.errors?.['shipping.intl_city']?.[0] ?? ''}}</span>
+          <span data-if="{{_local.errors?.['shipping.intl_city']}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['shipping.intl_city']?.[0] ?? ''}}</span>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:shop.checkout.intl_state</label>
@@ -281,7 +326,7 @@
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <span>$t:shop.checkout.intl_postal_code</span>
-          <span class="text-red-500 ml-1">*</span>
+          <span class="text-red-600 dark:text-red-400 ml-1">*</span>
         </label>
         <input aria-label="$t:shop.checkout.intl_postal_code" type="text" name="intl_postal_code" value="{{_local.shipping?.intl_postal_code ?? ''}}" placeholder="$t:shop.checkout.intl_postal_code_placeholder" class="{{_local.errors?.['shipping.intl_postal_code'] ? 'w-48 px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-48 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
           <responsive on="portable" class="{{_local.errors?.['shipping.intl_postal_code'] ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
@@ -291,7 +336,7 @@
             <set-state target="local" shipping.intl_postal_code="{{$event.target.value}}"/>
           </on>
         </input>
-        <span data-if="{{_local.errors?.['shipping.intl_postal_code']}}" class="text-red-500 text-xs mt-1 block">{{_local.errors?.['shipping.intl_postal_code']?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.['shipping.intl_postal_code']}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['shipping.intl_postal_code']?.[0] ?? ''}}</span>
       </div>
     </div>
     <!-- 배송 메모 -->
@@ -315,7 +360,7 @@
     <!-- 직접 입력 (custom 선택 시) -->
     <div data-if="{{_local.shippingMemo === 'custom'}}" class="mb-4">
       <responsive on="portable" class="mb-3"/>
-      <input type="text" name="shipping_memo_custom" value="{{_local.shippingMemoCustom ?? ''}}" placeholder="$t:shop.checkout.memo_custom_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+      <input aria-label="$t:shop.checkout.shipping_memo" type="text" name="shipping_memo_custom" value="{{_local.shippingMemoCustom ?? ''}}" placeholder="$t:shop.checkout.memo_custom_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
         <on type="change">
           <!-- 고른 값과 별도로 담는다 — 다른 항목으로 바꿨다가 되돌아와도 쓰던 문장이 남아 있게 -->

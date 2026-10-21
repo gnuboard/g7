@@ -187,7 +187,6 @@
             "cart_option_change_modal": "Change Cart Option",
             "cart_unavailable_modal": "Unavailable Items",
             "coupon_download_modal": "Download Coupon",
-            "exclusiveCouponConfirm": "Apply Exclusive Coupon",
             "tempOrderNotFoundModal": "Order Not Found"
         },
         "mypage_orders": {

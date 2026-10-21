@@ -217,7 +217,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-slate-500 dark:text-slate-400"
+                                                                "className": "text-sm text-slate-600 dark:text-slate-400"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.dashboard.community.posts"
                                                         }
@@ -244,7 +244,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-slate-500 dark:text-slate-400"
+                                                                "className": "text-sm text-slate-600 dark:text-slate-400"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.dashboard.community.comments"
                                                         }
@@ -272,7 +272,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm text-slate-500 dark:text-slate-400 mb-1"
+                                                        "className": "text-sm text-slate-600 dark:text-slate-400 mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.dashboard.community.total_posts"
                                                 },
@@ -298,7 +298,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "{{(board_post_graph?.data?.posts_change ?? null) === null ? 'text-xs font-medium text-slate-400' : ((board_post_graph?.data?.posts_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-500' : 'text-xs font-medium text-rose-500')}}"
+                                                                "className": "{{(board_post_graph?.data?.posts_change ?? null) === null ? 'text-xs font-medium text-slate-600 dark:text-slate-400' : ((board_post_graph?.data?.posts_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-700 dark:text-emerald-300' : 'text-xs font-medium text-rose-700 dark:text-rose-300')}}"
                                                             },
                                                             "text": "{{(board_post_graph?.data?.posts_change ?? null) === null ? '—' : ((board_post_graph?.data?.posts_change >= 0 ? '+' : '') + board_post_graph?.data?.posts_change + '%')}}"
                                                         }
@@ -316,7 +316,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm text-slate-500 dark:text-slate-400 mb-1"
+                                                        "className": "text-sm text-slate-600 dark:text-slate-400 mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.dashboard.community.total_comments"
                                                 },
@@ -342,7 +342,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "{{(board_post_graph?.data?.comments_change ?? null) === null ? 'text-xs font-medium text-slate-400' : ((board_post_graph?.data?.comments_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-500' : 'text-xs font-medium text-rose-500')}}"
+                                                                "className": "{{(board_post_graph?.data?.comments_change ?? null) === null ? 'text-xs font-medium text-slate-600 dark:text-slate-400' : ((board_post_graph?.data?.comments_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-700 dark:text-emerald-300' : 'text-xs font-medium text-rose-700 dark:text-rose-300')}}"
                                                             },
                                                             "text": "{{(board_post_graph?.data?.comments_change ?? null) === null ? '—' : ((board_post_graph?.data?.comments_change >= 0 ? '+' : '') + board_post_graph?.data?.comments_change + '%')}}"
                                                         }
@@ -370,7 +370,7 @@
                                     "name": "P",
                                     "if": "{{!!board_post_graph?.data?.updated_at_display}}",
                                     "props": {
-                                        "className": "text-xs text-slate-400 dark:text-slate-500 mt-2 text-right"
+                                        "className": "text-xs text-slate-600 dark:text-slate-400 mt-2 text-right"
                                     },
                                     "text": "$t:sirsoft-board.admin.dashboard.community.updated_at|time={{board_post_graph?.data?.updated_at_display ?? ''}}"
                                 }
@@ -411,7 +411,7 @@
                                             "name": "A",
                                             "props": {
                                                 "href": "/admin/boards",
-                                                "className": "text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                                                "className": "text-sm text-slate-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
                                             },
                                             "text": "$t:sirsoft-board.admin.dashboard.community.go_to_boards"
                                         }
@@ -421,9 +421,9 @@
                                     "id": "latest_posts_empty",
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{(board_recent_posts?.data ?? []).length === 0}}",
+                                    "if": "{{board_recent_posts !== undefined && ((board_recent_posts?.data ?? []).length === 0)}}",
                                     "props": {
-                                        "className": "text-sm text-slate-500 dark:text-slate-400 text-center py-6"
+                                        "className": "text-sm text-slate-600 dark:text-slate-400 text-center py-6"
                                     },
                                     "text": "$t:sirsoft-board.admin.dashboard.community.no_posts"
                                 },
@@ -470,7 +470,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex items-center min-w-0 text-xs text-slate-500 dark:text-slate-400"
+                                                        "className": "flex items-center min-w-0 text-xs text-slate-600 dark:text-slate-400"
                                                     },
                                                     "children": [
                                                         {
@@ -549,7 +549,7 @@
                                             "name": "A",
                                             "props": {
                                                 "href": "/admin/boards/reports",
-                                                "className": "text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                                                "className": "text-sm text-slate-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
                                             },
                                             "text": "$t:sirsoft-board.admin.dashboard.community.go_to_reports"
                                         }
@@ -559,9 +559,9 @@
                                     "id": "report_management_empty",
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{(board_pending_reports?.data?.items ?? []).length === 0}}",
+                                    "if": "{{board_pending_reports !== undefined && ((board_pending_reports?.data?.items ?? []).length === 0)}}",
                                     "props": {
-                                        "className": "text-sm text-slate-500 dark:text-slate-400 text-center py-6"
+                                        "className": "text-sm text-slate-600 dark:text-slate-400 text-center py-6"
                                     },
                                     "text": "$t:sirsoft-board.admin.dashboard.community.no_reports"
                                 },
@@ -618,7 +618,7 @@
                                                             "props": {
                                                                 "className": "flex-1 min-w-0 text-sm font-medium text-slate-900 dark:text-white truncate"
                                                             },
-                                                            "text": "{{report?.target_title ?? '(제목 없음)'}}"
+                                                            "text": "{{report?.target_title ?? $t('sirsoft-board.admin.dashboard.community.untitled')}}"
                                                         },
                                                         {
                                                             "id": "report_status_badge_{{i}}",
@@ -637,9 +637,9 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-slate-500 dark:text-slate-400"
+                                                        "className": "text-xs text-slate-600 dark:text-slate-400"
                                                     },
-                                                    "text": "{{(report?.board_name ?? '') + ' · ' + (report?.author_name ?? '익명') + ' · ' + (report?.last_reported_at ?? '')}}"
+                                                    "text": "{{(report?.board_name ?? '') + ' · ' + (report?.author_name ?? $t('sirsoft-board.admin.dashboard.community.anonymous')) + ' · ' + (report?.last_reported_at ?? '')}}"
                                                 }
                                             ]
                                         }

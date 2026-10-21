@@ -39,6 +39,7 @@
   "sort": {
     "label": "정렬",
     "created_at_desc": "최신순",
+    "created_at_asc": "오래된순",
     "amount_desc": "금액 높은순",
     "amount_asc": "금액 낮은순"
   },

@@ -82,7 +82,7 @@
         </textarea>
       </div>
       <div class="modal-footer-buttons">
-        <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSaving}}">
+        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSaving}}">
           <on type="click">
             <close-modal/>
           </on>
@@ -92,7 +92,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.actionType === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : _global.actionType === 'review' ? 'bg-blue-600 hover:bg-blue-700' : _global.actionType === 'rejected' ? 'bg-purple-600 hover:bg-purple-700' : _global.actionType === 'suspended' ? 'bg-red-600 hover:bg-red-700' : _global.actionType === 'deleted' ? 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}}" disabled="{{_global.isSaving}}">
+        <button type="button" class="px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.actionType === 'pending' ? 'bg-yellow-700 hover:bg-yellow-800' : _global.actionType === 'review' ? 'bg-blue-600 hover:bg-blue-700' : _global.actionType === 'rejected' ? 'bg-purple-600 hover:bg-purple-700' : _global.actionType === 'suspended' ? 'bg-red-600 hover:bg-red-700' : _global.actionType === 'deleted' ? 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}}" disabled="{{_global.isSaving}}">
           <on type="click">
             <!-- 확인 ①  저장 중 표시를 켜 두 번 눌리는 것을 막는다(취소 버튼도 같은 값으로 함께 잠긴다) -->
             <set-state target="global" :isSaving="true"/>

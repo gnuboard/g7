@@ -413,7 +413,7 @@
                                 "id": "trend_empty",
                                 "type": "composite",
                                 "name": "EmptyState",
-                                "if": "{{!analytics_overview?.loading && (analytics_overview?.data?.series?.points ?? []).length === 0}}",
+                                "if": "{{analytics_overview !== undefined && (analytics_overview?.data?.series?.points ?? []).length === 0}}",
                                 "props": {
                                     "iconName": "chart-line",
                                     "title": "$t:admin.analytics.common.empty_title",
@@ -675,7 +675,7 @@
                                             {
                                                 "type": "basic",
                                                 "name": "P",
-                                                "if": "{{(analytics_overview?.data?.top?.pages ?? []).length === 0}}",
+                                                "if": "{{analytics_overview !== undefined && (analytics_overview?.data?.top?.pages ?? []).length === 0}}",
                                                 "props": {
                                                     "className": "text-label-subtle py-4 text-center"
                                                 },
@@ -811,7 +811,7 @@
                                             {
                                                 "type": "basic",
                                                 "name": "P",
-                                                "if": "{{(analytics_overview?.data?.top?.referrers ?? []).length === 0}}",
+                                                "if": "{{analytics_overview !== undefined && (analytics_overview?.data?.top?.referrers ?? []).length === 0}}",
                                                 "props": {
                                                     "className": "text-label-subtle py-4 text-center"
                                                 },
@@ -947,7 +947,7 @@
                                             {
                                                 "type": "basic",
                                                 "name": "P",
-                                                "if": "{{(analytics_overview?.data?.top?.countries ?? []).length === 0}}",
+                                                "if": "{{analytics_overview !== undefined && (analytics_overview?.data?.top?.countries ?? []).length === 0}}",
                                                 "props": {
                                                     "className": "text-label-subtle py-4 text-center"
                                                 },

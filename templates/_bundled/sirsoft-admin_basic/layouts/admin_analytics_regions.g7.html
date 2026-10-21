@@ -109,7 +109,7 @@
       <include src="partials/admin_analytics/_partial_status_alerts.g7.html"/>
       <div data-ref="geoip_off_alert" data-if="{{analytics_status?.data?.geoip?.enabled === false || analytics_status?.data?.geoip?.db_present === false}}" class="alert-warning mb-4">
         <div class="flex-center gap-3">
-          <icon name="triangle-exclamation" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+          <icon name="triangle-exclamation" class="text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"/>
           <p class="text-warning-soft flex-1">$t:admin.analytics.alerts.geoip_off</p>
           <a data-ref="geoip_settings_link" href="/admin/settings?tab=advanced" data-if="{{((current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.settings.read'))}}" class="button text-sm font-medium underline text-yellow-800 dark:text-yellow-200">
             <on type="click">

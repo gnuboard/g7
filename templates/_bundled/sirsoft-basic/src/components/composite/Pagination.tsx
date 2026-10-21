@@ -333,7 +333,7 @@ export const Pagination: React.FC<PaginationProps> = ({
             onActivate: () => handlePageClick(pageNum),
             className: `px-3 py-1 text-sm border rounded ${
               isActive
-                ? 'bg-blue-500 dark:bg-blue-600 text-white border-blue-500 dark:border-blue-600'
+                ? 'bg-blue-600 dark:bg-blue-600 text-white border-blue-500 dark:border-blue-600'
                 : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800'
             }`,
             ariaLabel: t('common.page_n', { n: pageNum }),

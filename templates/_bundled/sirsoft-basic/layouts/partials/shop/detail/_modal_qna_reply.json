@@ -55,7 +55,7 @@
                             ],
                             "props": {
                                 "aria-label": "$t:shop.qna.reply_content",
-                                "className": "{{(_global.qnaErrors?.content) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none'}}",
+                                "className": "{{(_global.qnaErrors?.content) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none'}}",
                                 "placeholder": "$t:shop.qna.reply_content_placeholder",
                                 "rows": 5,
                                 "value": "{{_global.qnaReplyForm.content ?? ''}}",
@@ -67,7 +67,7 @@
                             "name": "Span",
                             "if": "{{_global.qnaErrors?.content}}",
                             "props": {
-                                "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                             },
                             "text": "{{(_global.qnaErrors?.content ?? [])[0] ?? ''}}"
                         }
@@ -256,7 +256,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-1 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-1 py-2.5 bg-blue-600 dark:bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.qnaSubmitting}}"
                     },
                     "children": [

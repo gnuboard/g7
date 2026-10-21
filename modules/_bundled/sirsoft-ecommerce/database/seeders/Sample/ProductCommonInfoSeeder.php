@@ -38,13 +38,13 @@ class ProductCommonInfoSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('공통정보 시더 시작...');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product_common_info.start'));
 
         $this->deleteExisting();
         $this->createCommonInfos();
 
         $count = ProductCommonInfo::count();
-        $this->command->info("공통정보 시더 완료: {$count}개 생성됨");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.product_common_info.done', ['count' => $count]));
     }
 
     /**
@@ -57,7 +57,7 @@ class ProductCommonInfoSeeder extends Seeder
         $count = ProductCommonInfo::count();
         if ($count > 0) {
             ProductCommonInfo::query()->delete();
-            $this->command->line("  - 기존 공통정보 {$count}개 삭제됨");
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.product_common_info.purged', ['count' => $count]));
         }
     }
 

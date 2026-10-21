@@ -1,0 +1,21 @@
+feature: 장바구니 체크박스 이름 — 특수문자 상품명 브라우저 회귀 (7.1.1)
+
+description: |
+  레이아웃 문자열 번역 `$t:common.select_item|name={{item.product.name}}` 의 값이 `&`·`|`·`=` 에서 잘리던 결함을
+  실제 장바구니 화면에서 고정한다. 장바구니 키 발급·조회를 page.route 로 모의해 특수문자 상품명 2개를 싣고,
+  체크박스 접근 이름이 「상품명 전체 + 선택」인지 본다. 서버 장바구니는 쓰지 않는다.
+
+axes:
+  case:
+    - guest_cart_mocked
+
+effects:
+  - cart_checkbox_name_keeps_special_chars
+  - cart_checkbox_name_not_truncated
+  - cart_e2e_no_server_write
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/cart-checkbox-name-special-chars.spec.ts
+
+notes: |
+  수정 전(HEAD) 엔진 번들을 G7_E2E_ENGINE_BUNDLE 로 끼우면 체크박스 이름 단언이 실패한다(2026-10-18 실측).

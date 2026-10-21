@@ -91,7 +91,7 @@
                                             "name": "Img",
                                             "props": {
                                                 "src": "{{_global.settings?.general?.site_logo_url}}",
-                                                "alt": "{{_global.settings?.general?.site_name ?? '그누보드7'}}",
+                                                "alt": "{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}",
                                                 "className": "h-16 w-auto max-w-[200px] mx-auto object-contain"
                                             }
                                         }
@@ -110,7 +110,7 @@
                                             "id": "logo_text",
                                             "type": "basic",
                                             "name": "Span",
-                                            "text": "{{_global.settings?.general?.site_name ?? '그누보드7'}}"
+                                            "text": "{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}"
                                         }
                                     ]
                                 },
@@ -393,7 +393,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-sm text-red-600 dark:text-red-400"
+                                                "className": "text-sm text-red-700 dark:text-red-400"
                                             },
                                             "text": "{{_local.loginError}}"
                                         },
@@ -404,7 +404,7 @@
                                             "name": "P",
                                             "if": "{{_local.loginErrors?.locked_until}}",
                                             "props": {
-                                                "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                                                "className": "mt-1 text-sm text-red-700 dark:text-red-400"
                                             },
                                             "text": "$t:auth.login.locked_until|until={{_local.loginErrors?.locked_until | datetime}}"
                                         },
@@ -414,7 +414,7 @@
                                             "name": "P",
                                             "if": "{{_local.loginErrors?.permanent === true}}",
                                             "props": {
-                                                "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                                                "className": "mt-1 text-sm text-red-700 dark:text-red-400"
                                             },
                                             "text": "$t:auth.login.locked_permanent"
                                         }
@@ -530,7 +530,7 @@
                                             ],
                                             "props": {
                                                 "href": "/admin/forgot-password",
-                                                "className": "button text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 cursor-pointer"
+                                                "className": "button text-sm text-blue-600 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 cursor-pointer"
                                             },
                                             "text": "$t:auth.login.forgot"
                                         }
@@ -544,7 +544,7 @@
                                     "if": "{{!_local.twoFactor?.required && !_local.passwordChange?.required}}",
                                     "props": {
                                         "type": "submit",
-                                        "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
+                                        "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
                                         "disabled": "{{_local.isLoggingIn}}"
                                     },
                                     "children": [
@@ -641,7 +641,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm text-red-600 dark:text-red-400"
+                                                        "className": "text-sm text-red-700 dark:text-red-400"
                                                     },
                                                     "text": "{{_local.twoFactor?.error ?? ''}}"
                                                 }
@@ -734,7 +734,7 @@
                                             "name": "Button",
                                             "props": {
                                                 "type": "submit",
-                                                "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
+                                                "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
                                                 "disabled": "{{!_local.twoFactor?.code || _local.twoFactor.code.length < 4 || _local.isLoggingIn}}"
                                             },
                                             "children": [
@@ -938,7 +938,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm text-red-600 dark:text-red-400"
+                                                        "className": "text-sm text-red-700 dark:text-red-400"
                                                     },
                                                     "text": "{{_local.passwordChange?.error ?? ''}}"
                                                 },
@@ -947,7 +947,7 @@
                                                     "name": "P",
                                                     "if": "{{_local.loginErrors?.locked_until}}",
                                                     "props": {
-                                                        "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                                                        "className": "mt-1 text-sm text-red-700 dark:text-red-400"
                                                     },
                                                     "text": "$t:auth.login.locked_until|until={{_local.loginErrors?.locked_until | datetime}}"
                                                 }
@@ -1122,7 +1122,7 @@
                                             "name": "Button",
                                             "props": {
                                                 "type": "submit",
-                                                "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
+                                                "className": "flex-center w-full px-4 py-3 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 justify-center gap-2",
                                                 "disabled": "{{_local.isLoggingIn}}"
                                             },
                                             "children": [

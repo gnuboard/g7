@@ -113,6 +113,38 @@ effects:
   - apply_list_merges_added_and_changed_sorted
   - single_file_target_is_classified
   - symlink_is_excluded_and_flagged
+  # CoreUpdateService 의 나머지 단계(업데이트 확인·CHANGELOG·_pending·유지보수 모드·.env 버전·실패 리포트·
+  # 캐시 초기화·커맨드 출력·targets 설정·압축 해제·패키지 검증·적용 보존 규칙) — 시험별 표지
+  - checkForUpdates_returns_version_comparison_structure
+  - checkForUpdates_marks_check_failed_with_error_when_lookup_fails
+  - getChangelog_parses_versions_and_categories
+  - getChangelog_filters_by_version_range
+  - getChangelog_returns_empty_when_file_missing
+  - validatePendingPath_creates_missing_directory
+  - maintenance_mode_toggles_via_down_and_up_commands
+  - updateVersionInEnv_replaces_app_version_keeping_other_keys
+  - updateVersionInEnv_syncs_process_env_channels
+  - updateVersionInEnv_appends_app_version_when_missing
+  - updateVersionInEnv_never_touches_real_env_file
+  - generateFailureReport_writes_log_with_versions_and_trace
+  - cleanupPending_removes_directory_and_tolerates_missing_path
+  - createPendingDirectory_creates_unique_timestamped_directory
+  - clearAllCaches_runs_cache_clear_and_package_discovery_commands
+  - core_check_updates_command_reports_up_to_date
+  - core_check_updates_command_prints_failure_and_exits_nonzero
+  - core_update_command_aborts_when_update_check_fails
+  - update_targets_include_public_and_core_root_files
+  - checkSystemRequirements_returns_validity_structure
+  - extraction_strategies_exclude_phardata_and_use_zipball
+  - extractWithZipArchive_extracts_zip_contents
+  - validatePendingUpdate_requires_g7_config_with_version
+  - extractZipToPending_returns_package_root_for_flat_and_wrapped_zip
+  - extractZipToPending_rejects_missing_or_invalid_zip
+  - copyDirectory_remove_orphans_deletes_files_absent_from_source
+  - applyUpdate_prune_preserves_static_publish_dir
+  - applyUpdate_prune_preserves_public_storage_symlink
+  - applyUpdate_auto_discovers_new_top_level_directories_from_source
+  - applyUpdate_auto_discovery_skips_protected_paths_and_excludes
 
 test_files:
   - tests/Unit/Services/CoreUpdateServiceTest.php

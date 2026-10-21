@@ -203,7 +203,7 @@ const Header: React.FC<HeaderProps> = ({
   const userMenuRef = useRef<HTMLDivElement>(null);
   const moreButtonRef = useRef<HTMLDivElement>(null);
   const langMenuRef = useRef<HTMLDivElement>(null);
-  // 언어 메뉴는 listbox 패턴이다(7.1.0 O-PF-1, 관리자 템플릿 LanguageSelector 와 같은 계약) — 단추가 aria-controls 로
+  // 언어 메뉴는 listbox 패턴이다(7.1.0, 관리자 템플릿 LanguageSelector 와 같은 계약) — 단추가 aria-controls 로
   // 목록을 가리키고, 열면 현재 언어 항목에 초점을 두며 ↓/↑/Home/End 로 옮기고 Enter 로 고른다. Esc 는 닫고 단추로.
   const langListboxId = `${useId()}-language-listbox`;
   const langTriggerRef = useRef<HTMLButtonElement>(null);
@@ -388,9 +388,10 @@ const Header: React.FC<HeaderProps> = ({
       {/* 상단 바 */}
       <Div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <Div className="flex items-center justify-between h-16">
-          {/* 로고 — 이름이 길면 이 칸이 줄어들고(min-w-0) 최대 20rem 에서 이름이 한 줄 … 로 잘린다. 우측 액션은 제자리를
-              지키고 검색창은 12rem 아래로 줄지 않는다 — 52자 이름에서 로고 칸이 646px 를 차지해 검색창이 57px 로 눌렸다(#143). */}
-          <LinkButton href="/" onNavigate={() => navigate('/')} className="justify-start flex items-center gap-2 min-w-0 max-w-xs cursor-pointer">
+          {/* 로고 — 이름이 길면 이 칸이 먼저 줄어들고(shrink-1000, 최소 6rem) 최대 20rem 에서 이름이 한 줄 … 로 잘린다.
+              검색창은 32rem 을 기준 폭으로 잡고(basis-lg) 줄어드는 몫은 로고·회원 이름이 먼저 진다 — 이름 길이와 무관하게 검색창 폭이
+              같다(#143). 종전에는 검색창이 남는 폭만 받아(flex-1) 이름이 길수록 좁아졌다(1024px 329→192·1280px 512→345 실측). */}
+          <LinkButton href="/" onNavigate={() => navigate('/')} className="justify-start flex items-center gap-2 min-w-24 max-w-xs shrink-1000 cursor-pointer">
             {logo ? (
               <Img src={logo} alt={siteName} className="h-8 max-w-full object-contain object-left" />
             ) : (
@@ -400,7 +401,7 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* 검색바 (데스크톱 전용) */}
           {!isMobile && (
-            <Form onSubmit={handleSearch} className="flex flex-1 min-w-48 max-w-lg mx-8">
+            <Form onSubmit={handleSearch} className="flex basis-lg min-w-48 max-w-lg mx-8">
               <Div className="relative w-full">
                 <Input
                   type="text"
@@ -411,14 +412,15 @@ const Header: React.FC<HeaderProps> = ({
                 />
                 <Icon
                   name="search"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400"
                 />
               </Div>
             </Form>
           )}
 
-          {/* 우측 액션 버튼들 */}
-          <Div className="flex items-center gap-2 shrink-0">
+          {/* 우측 액션 버튼들 — 회원 이름만 줄어들 수 있고(최소 3rem) 나머지 단추는 제 폭을 지킨다. 줄어드는 몫은 로고와 이 묶음이
+              먼저 지고(shrink-1000) 검색창은 그 뒤에 준다. 묶음의 최소 폭은 안쪽 글의 최소 폭이라, 글이 든 단추는 줄바꿈하지 않는다(whitespace-nowrap). */}
+          <Div className="flex items-center gap-2 shrink-1000">
             {/* 다크모드 전환 */}
             <ThemeToggle
               autoText={t('common.theme.auto')}
@@ -456,7 +458,7 @@ const Header: React.FC<HeaderProps> = ({
             <LinkButton href={`${shopBase}/cart`} onNavigate={() => navigate(`${shopBase}/cart`)} aria-label={t('nav.cart_with_count', { count: cartCount })} className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
               <Icon name="shopping-cart" className="w-5 h-5" />
               {cartCount > 0 && (
-                <Span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center text-xs bg-blue-500 dark:bg-blue-600 text-white rounded-full">
+                <Span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center text-xs bg-blue-600 dark:bg-blue-600 text-white rounded-full">
                   {cartCount > 99 ? '99+' : cartCount}
                 </Span>
               )}
@@ -534,7 +536,9 @@ const Header: React.FC<HeaderProps> = ({
                     name={user.name}
                     size="sm"
                   />
-                  <Span className="hidden sm:inline text-sm font-medium truncate max-w-32">{user.name}</Span>
+                  {/* 이름은 한 줄 … (최대 8rem). truncate(nowrap)는 최소 폭이 이름 전체라 묶음이 줄지 못한다 — 줄바꿈을 허용하고(break-all)
+                      한 줄만 보이게(line-clamp-1) 해 최소 폭을 3rem 으로 낮춘다. 이름이 길어도 검색창이 좁아지지 않는다(#143). */}
+                  <Span className="hidden sm:line-clamp-1 break-all text-sm font-medium max-w-32 min-w-12" title={user.name}>{user.name}</Span>
                   <Icon name="chevron-down" className="w-4 h-4" />
                 </Button>
 
@@ -563,7 +567,7 @@ const Header: React.FC<HeaderProps> = ({
                         <>
                           <A
                             href="/admin"
-                            className="block w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer font-medium"
+                            className="block w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer font-medium"
                           >
                             <Icon name="settings" className="inline w-4 h-4 mr-2" />
                             {t('common.admin_menu')}
@@ -590,7 +594,7 @@ const Header: React.FC<HeaderProps> = ({
                     <Hr className="my-1 border-gray-200 dark:border-gray-700" />
                     <Button
                       onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                      className="block w-full text-left px-4 py-2 text-sm text-red-700 dark:text-red-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                     >
                       <Icon name="right-from-bracket" className="inline w-4 h-4 mr-2" />
                       {t('auth.logout')}
@@ -599,7 +603,7 @@ const Header: React.FC<HeaderProps> = ({
                 )}
               </Div>
             ) : (
-              <Div className="flex items-center gap-1.5">
+              <Div className="flex items-center gap-1.5 whitespace-nowrap">
                 {/* 주문조회 — 로그인 페이지로 진입. 회원은 로그인 후 redirect 파라미터로 마이페이지 주문 내역으로 이동, 비회원은 로그인 페이지의 '비회원 주문 조회' 링크로 폼 진입. 로그아웃된 회원이 비회원 페이지에서 막다른 길에 빠지는 케이스를 차단한다. */}
                 <LinkButton
                   href="/login?redirect=/mypage/orders"
@@ -618,7 +622,7 @@ const Header: React.FC<HeaderProps> = ({
                 <LinkButton
                   href="/register"
                   onNavigate={() => navigate('/register')}
-                  className="ml-1 px-3 py-2 text-sm font-medium text-white bg-emerald-500 dark:bg-emerald-600 rounded-lg hover:bg-emerald-600 dark:hover:bg-emerald-500 cursor-pointer"
+                  className="ml-1 px-3 py-2 text-sm font-medium text-white bg-emerald-700 dark:bg-emerald-700 rounded-lg hover:bg-emerald-800 dark:hover:bg-emerald-800 cursor-pointer"
                 >
                   {t('auth.register_link')}
                 </LinkButton>

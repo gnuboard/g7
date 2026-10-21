@@ -88,7 +88,7 @@
             <p class="text-hint mt-1">$t:admin.settings.drivers.storage.s3_url_desc</p>
           </div>
           <div data-ref="s3_test_section" class="flex-center py-3 gap-4">
-            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 's3')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 's3')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
               <on type="click">
                 <!-- S3 연결 시험. **직전 결과를 먼저 지운다** — 안 지우면 새 시험이 도는 동안 옛 성공
                      표시가 남아 저장 버튼이 풀린 것처럼 보인다(잠금 판정이 이 결과를 읽는다).
@@ -122,7 +122,7 @@
               <icon data-if="{{_local.testingDriver === 's3'}}" name="spinner" class="spinner-sm"/>
               <span>{{_local.testingDriver === 's3' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
             </button>
-            <div data-if="{{_local.driverTestResults?.s3}}" class="{{_local.driverTestResults.s3.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
+            <div data-if="{{_local.driverTestResults?.s3}}" class="{{_local.driverTestResults.s3.success ? 'flex-center gap-2 text-green-700 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
               <icon name="{{_local.driverTestResults.s3.success ? 'check-circle' : 'circle-xmark'}}" class="text-xl"/>
               <span class="text-sm font-medium">{{_local.driverTestResults.s3.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
             </div>
@@ -206,7 +206,7 @@
             </div>
           </div>
           <div data-ref="redis_test_section" class="flex-center py-3 gap-4">
-            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'redis')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'redis')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
               <on type="click">
                 <!-- Redis 연결 시험 — S3 시험과 같은 형태다. 이 결과 하나를 **캐시·세션·큐 세 자리**가
                      함께 읽는다(셋 다 redis 를 고를 수 있다). -->
@@ -237,7 +237,7 @@
               <icon data-if="{{_local.testingDriver === 'redis'}}" name="spinner" class="spinner-sm"/>
               <span>{{_local.testingDriver === 'redis' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
             </button>
-            <div data-if="{{_local.driverTestResults?.redis}}" class="{{_local.driverTestResults.redis.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
+            <div data-if="{{_local.driverTestResults?.redis}}" class="{{_local.driverTestResults.redis.success ? 'flex-center gap-2 text-green-700 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
               <icon name="{{_local.driverTestResults.redis.success ? 'check-circle' : 'circle-xmark'}}" class="text-xl"/>
               <span class="text-sm font-medium">{{_local.driverTestResults.redis.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
             </div>
@@ -263,7 +263,7 @@
             </div>
           </div>
           <div data-ref="memcached_test_section" class="flex-center py-3 gap-4">
-            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'memcached')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'memcached')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
               <on type="click">
                 <!-- Memcached 연결 시험 — 캐시 드라이버에서만 쓰인다. -->
                 <sequence>
@@ -293,7 +293,7 @@
               <icon data-if="{{_local.testingDriver === 'memcached'}}" name="spinner" class="spinner-sm"/>
               <span>{{_local.testingDriver === 'memcached' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
             </button>
-            <div data-if="{{_local.driverTestResults?.memcached}}" class="{{_local.driverTestResults.memcached.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
+            <div data-if="{{_local.driverTestResults?.memcached}}" class="{{_local.driverTestResults.memcached.success ? 'flex-center gap-2 text-green-700 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
               <icon name="{{_local.driverTestResults.memcached.success ? 'check-circle' : 'circle-xmark'}}" class="text-xl"/>
               <span class="text-sm font-medium">{{_local.driverTestResults.memcached.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
             </div>
@@ -345,7 +345,7 @@
               <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
             </p>
           </div>
-          <p data-if="{{_local.form?.drivers?.session_driver === 'redis'}}" class="flex-center text-xs text-blue-500 dark:text-blue-400 mt-2 gap-1">
+          <p data-if="{{_local.form?.drivers?.session_driver === 'redis'}}" class="flex-center text-xs text-blue-600 dark:text-blue-400 mt-2 gap-1">
             <icon name="info-circle" class="text-xs"/>
             <span>$t:admin.settings.drivers.session.redis_shared_notice</span>
           </p>
@@ -381,7 +381,7 @@
               <span>$t:admin.settings.drivers.common.unavailable_saved_value_suffix</span>
             </p>
           </div>
-          <p data-if="{{_local.form?.drivers?.queue_driver === 'redis'}}" class="flex-center text-xs text-blue-500 dark:text-blue-400 mt-2 gap-1">
+          <p data-if="{{_local.form?.drivers?.queue_driver === 'redis'}}" class="flex-center text-xs text-blue-600 dark:text-blue-400 mt-2 gap-1">
             <icon name="info-circle" class="text-xs"/>
             <span>$t:admin.settings.drivers.queue.redis_shared_notice</span>
           </p>
@@ -444,7 +444,7 @@
             <div data-if="{{_global.queueStatusFailed === true}}" data-testid="queue-status-load-failed" class="alert-danger">
               <p class="text-sm">$t:admin.settings.drivers.queue.worker.status.load_failed</p>
             </div>
-            <p data-if="{{_global.queueStatusFailed !== true &amp;&amp; (queueStatus?.data?.rows ?? []).length === 0}}" class="text-label-subtle">$t:admin.settings.drivers.queue.worker.status.empty</p>
+            <p data-if="{{_global.queueStatusFailed !== true &amp;&amp; queueStatus !== undefined &amp;&amp; (queueStatus?.data?.rows ?? []).length === 0}}" class="text-label-subtle">$t:admin.settings.drivers.queue.worker.status.empty</p>
             <div data-ref="queue_status_table_desktop" data-testid="queue-status-table" data-if="{{(queueStatus?.data?.rows ?? []).length > 0}}" class="overflow-x-auto">
               <responsive on="mobile" data-if="{{false}}"/>
               <table class="w-full text-sm">
@@ -633,7 +633,7 @@
             <div class="py-3">
               <label class="form-label">
                 <span>$t:admin.settings.drivers.websocket.app_id</span>
-                <span class="text-red-500 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                 <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.websocket_app_id'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
               <input type="text" name="drivers.websocket_app_id" placeholder="my-app-id" :required="true" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_app_id'] === true}}" class="{{_local.errors?.['drivers.websocket_app_id'] ? 'input-error font-mono' : 'font-mono'}}"/>
@@ -642,7 +642,7 @@
             <div class="py-3">
               <label class="form-label">
                 <span>$t:admin.settings.drivers.websocket.app_key</span>
-                <span class="text-red-500 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                 <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.websocket_app_key'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
               <input type="text" name="drivers.websocket_app_key" placeholder="my-app-key" :required="true" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_app_key'] === true}}" class="{{_local.errors?.['drivers.websocket_app_key'] ? 'input-error font-mono' : 'font-mono'}}"/>
@@ -651,7 +651,7 @@
             <div class="py-3">
               <label class="form-label">
                 <span>$t:admin.settings.drivers.websocket.app_secret</span>
-                <span class="text-red-500 ml-1">*</span>
+                <span class="text-red-600 dark:text-red-400 ml-1">*</span>
                 <badge data-type="composite" data-if="{{_computed.envLocked?.['drivers.websocket_app_secret'] === true}}" text="$t:admin.settings.env_locked_badge" variant="secondary" size="sm" class="ml-2"/>
               </label>
               <input type="password" name="drivers.websocket_app_secret" placeholder="my-app-secret" :required="true" disabled="{{_computed.isReadOnly || _computed.envLocked?.['drivers.websocket_app_secret'] === true}}" class="{{_local.errors?.['drivers.websocket_app_secret'] ? 'input-error font-mono' : 'font-mono'}}"/>
@@ -729,12 +729,12 @@
               <icon name="triangle-exclamation" class="text-base text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"/>
               <div>
                 <p class="text-warning-soft">$t:admin.settings.drivers.websocket.reverb_notice</p>
-                <code class="block mt-1 text-xs bg-amber-100 dark:bg-amber-900/40 px-2 py-1 rounded font-mono text-warning-soft">php artisan reverb:start</code>
+                <code class="block mt-1 text-xs bg-amber-50 dark:bg-amber-900/40 px-2 py-1 rounded font-mono text-warning-soft">php artisan reverb:start</code>
               </div>
             </div>
           </div>
           <div data-ref="websocket_test_section" class="flex-center py-3 gap-4">
-            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'websocket')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
+            <button type="button" disabled="{{_computed.isReadOnly || (_local.testingDriver === 'websocket')}}" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 text-white dark:text-white text-sm font-medium rounded-lg flex-center gap-2 transition-colors">
               <on type="click">
                 <!-- 웹소켓 연결 시험 — 다른 셋과 달리 드라이버 선택이 아니라 **켜기/끄기**에 걸린다
                      (켜 두고 시험을 통과하지 못하면 저장이 잠긴다). -->
@@ -765,7 +765,7 @@
               <icon data-if="{{_local.testingDriver === 'websocket'}}" name="spinner" class="spinner-sm"/>
               <span>{{_local.testingDriver === 'websocket' ? '$t:admin.settings.drivers.testing' : '$t:admin.settings.drivers.test_connection'}}</span>
             </button>
-            <div data-if="{{_local.driverTestResults?.websocket}}" class="{{_local.driverTestResults.websocket.success ? 'flex-center gap-2 text-green-600 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
+            <div data-if="{{_local.driverTestResults?.websocket}}" class="{{_local.driverTestResults.websocket.success ? 'flex-center gap-2 text-green-700 dark:text-green-400' : 'flex-center gap-2 text-red-600 dark:text-red-400'}}">
               <icon name="{{_local.driverTestResults.websocket.success ? 'check-circle' : 'circle-xmark'}}" class="text-xl"/>
               <span class="text-sm font-medium">{{_local.driverTestResults.websocket.success ? '$t:admin.settings.drivers.test_success' : '$t:admin.settings.drivers.test_failed'}}</span>
             </div>

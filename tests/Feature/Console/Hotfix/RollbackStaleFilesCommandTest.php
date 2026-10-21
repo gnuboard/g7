@@ -18,6 +18,11 @@ class RollbackStaleFilesCommandTest extends TestCase
 {
     private string $tempBackup;
 
+    /**
+     * 시험마다 비어 있는 임시 백업 디렉토리를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +30,11 @@ class RollbackStaleFilesCommandTest extends TestCase
         File::ensureDirectoryExists($this->tempBackup);
     }
 
+    /**
+     * 임시 백업 디렉토리를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->tempBackup)) {
@@ -41,6 +51,12 @@ class RollbackStaleFilesCommandTest extends TestCase
      *
      * 단, 비어있는 임시 디렉토리는 그 자체로 "유효한 백업" 이므로 manifest 부재 경고가
      * 발화. 본 케이스는 진단 모드에서 잔존 후보가 0 일 때 정상 종료를 검증.
+     *
+     * @scenario hotfix_command_mode=missing_backup
+     *
+     * @effects hotfix_command_missing_backup_dir_completes_safely
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_backup_completes_successfully(): void
     {
@@ -53,6 +69,12 @@ class RollbackStaleFilesCommandTest extends TestCase
 
     /**
      * 시나리오 1: 진단 모드 (옵션 없음) — 후보 목록 출력 + 실제 파일 미삭제.
+     *
+     * @scenario hotfix_command_mode=diagnose
+     *
+     * @effects hotfix_command_diagnose_mode_outputs_candidates_without_pruning, hotfix_command_explicit_backup_option_uses_specified_path
+     *
+     * @return void 반환값 없음
      */
     public function test_diagnostic_mode_outputs_candidates_without_pruning(): void
     {
@@ -90,6 +112,12 @@ class RollbackStaleFilesCommandTest extends TestCase
      * manifest 부재 시 보수적 진단 모드 안내 + collectCandidates 가 빈 배열 반환 → 잔존
      * 후보 0 → SUCCESS 종료. (Laravel expectsOutputToContain 의 warn() 캡처 동작이 환경별
      * 차이가 있어, 본 케이스는 흐름 정합성만 exit code 로 검증)
+     *
+     * @scenario hotfix_command_mode=diagnose
+     *
+     * @effects hotfix_command_missing_manifest_falls_back_to_conservative_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_missing_manifest_path_completes_safely(): void
     {
@@ -105,6 +133,10 @@ class RollbackStaleFilesCommandTest extends TestCase
      * → SUCCESS. manifest 부재 상태에서 --prune 시도 시 collectCandidates 가 빈 배열을
      * 반환하므로 사용자가 prune 옵션을 지정해도 자동으로 잔존 후보 0 안내 → SUCCESS.
      * (안전 우선 — 실제 파일 시스템 영향 없음)
+     *
+     * @effects hotfix_command_missing_manifest_falls_back_to_conservative_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_prune_without_candidates_completes_safely(): void
     {
@@ -119,6 +151,12 @@ class RollbackStaleFilesCommandTest extends TestCase
 
     /**
      * 시나리오 5: --backup 명시 옵션 — 존재하지 않는 경로 지정 시 에러.
+     *
+     * @scenario hotfix_command_mode=explicit_backup
+     *
+     * @effects hotfix_command_explicit_backup_invalid_path_errors
+     *
+     * @return void 반환값 없음
      */
     public function test_explicit_backup_invalid_path_errors(): void
     {
@@ -138,12 +176,22 @@ class RollbackStaleFilesCommandTest extends TestCase
      * 본 케이스는 실제 활성 디렉토리(base_path) 의 임시 마커 파일을 prune 대상으로 두고
      * --prune 옵션 + 확인 프롬프트 승인을 시뮬레이션한다. 정리 결과 로그가
      * `storage/logs/hotfix_rollback_stale_files_*.log` 에 기록되는지 검증.
+     *
+     * @scenario hotfix_command_mode=prune_with_confirm
+     *
+     * @effects hotfix_command_prune_with_confirmation_removes_marker_file, hotfix_command_writes_log_after_prune
+     *
+     * @return void 반환값 없음
      */
     public function test_prune_mode_with_confirmation_removes_candidates(): void
     {
         $markerName = 'HotfixPruneMarker_'.uniqid().'.php';
         $marker = base_path('app/'.$markerName);
         File::put($marker, '<?php // test marker');
+
+        $logGlob = storage_path('logs/hotfix_rollback_stale_files_*.log');
+        $logsBefore = File::glob($logGlob);
+        $newLogs = [];
 
         File::put($this->tempBackup.'/_new_files_manifest.json', json_encode([
             'version' => 1,
@@ -159,20 +207,36 @@ class RollbackStaleFilesCommandTest extends TestCase
                 '--backup' => $this->tempBackup,
                 '--prune' => true,
             ])
-                ->expectsQuestion('위 후보를 활성 디렉토리에서 정리하시겠습니까? (yes/no) [no]', 'yes')
+                ->expectsQuestion(__('common.console.hotfix_rollback_stale_files.confirm_prune').' (yes/no) [no]', 'yes')
                 ->assertExitCode(0);
 
             // marker 가 prune 되어야 함
             $this->assertFileDoesNotExist($marker);
+
+            // 정리 결과가 실행 로그 파일에 남아야 함 — 지운 개수와 실행 직전 후보 목록
+            $newLogs = array_values(array_diff(File::glob($logGlob), $logsBefore));
+            $this->assertCount(1, $newLogs, '정리 뒤 실행 로그 파일이 하나 새로 생겨야 합니다');
+            $log = File::get($newLogs[0]);
+            $this->assertStringContainsString('파일 제거: 1', $log);
+            $this->assertStringContainsString('app/'.$markerName, $log);
         } finally {
             if (File::exists($marker)) {
                 File::delete($marker);
+            }
+            foreach ($newLogs as $path) {
+                File::delete($path);
             }
         }
     }
 
     /**
      * 시나리오 2: --prune 모드 + 확인 거부 — 출력만 + 실제 미삭제.
+     *
+     * @scenario hotfix_command_mode=prune_reject
+     *
+     * @effects hotfix_command_prune_with_rejection_keeps_files
+     *
+     * @return void 반환값 없음
      */
     public function test_prune_mode_with_rejection_keeps_files(): void
     {
@@ -194,7 +258,7 @@ class RollbackStaleFilesCommandTest extends TestCase
                 '--backup' => $this->tempBackup,
                 '--prune' => true,
             ])
-                ->expectsQuestion('위 후보를 활성 디렉토리에서 정리하시겠습니까? (yes/no) [no]', 'no')
+                ->expectsQuestion(__('common.console.hotfix_rollback_stale_files.confirm_prune').' (yes/no) [no]', 'no')
                 ->assertExitCode(0);
 
             // marker 보존

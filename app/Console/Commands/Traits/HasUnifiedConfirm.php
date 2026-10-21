@@ -25,6 +25,7 @@ trait HasUnifiedConfirm
      *
      * @param  string  $question  질문 메시지
      * @param  bool  $default  기본값 (true=[yes], false=[no])
+     * @return bool yes 면 true, no 면 false (응답을 받을 수 없거나 빈 입력이면 $default)
      */
     protected function unifiedConfirm(string $question, bool $default = false): bool
     {
@@ -46,7 +47,7 @@ trait HasUnifiedConfirm
                 return $parsed;
             }
 
-            $this->warn('  yes, y, no, n 중 하나로 입력해 주세요.');
+            $this->warn('  '.__('common.console.console_confirm.invalid_answer'));
         }
     }
 

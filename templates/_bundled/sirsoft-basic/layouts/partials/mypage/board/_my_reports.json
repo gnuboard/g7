@@ -310,7 +310,7 @@
                                 "type": "text",
                                 "placeholder": "$t:mypage.board_activities.search_placeholder",
                                 "value": "{{_global.myReportsSearch ?? ''}}",
-                                "className": "flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+                                "className": "flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                             }
                         },
                         {
@@ -340,6 +340,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                             },
                             "text": "$t:common.search"
@@ -377,6 +378,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             },
                             "text": "$t:common.reset"
@@ -402,7 +404,7 @@
                     },
                     "props": {
                         "data-testid": "my-report-row-{{report.id}}",
-                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 {{report.target_deleted ? 'opacity-60' : ''}}"
+                        "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 {{report.target_deleted ? 'opacity-75' : ''}}"
                     },
                     "children": [
                         {
@@ -431,7 +433,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "inline-block truncate max-w-32 px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded"
+                                                        "className": "inline-block truncate max-w-32 px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
                                                     },
                                                     "text": "{{report.board_name ?? ''}}"
                                                 },
@@ -440,7 +442,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{report.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}"
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{report.target_type === 'comment' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-300'}}"
                                                     },
                                                     "text": "{{report.target_type_label ?? ''}}"
                                                 },
@@ -450,7 +452,7 @@
                                                     "name": "Span",
                                                     "props": {
                                                         "data-testid": "my-report-status-{{report.id}}",
-                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{report.status === 'pending' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' : report.status === 'review' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : report.status === 'rejected' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : report.status === 'suspended' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}}"
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{report.status === 'pending' ? 'bg-yellow-100 text-yellow-950 dark:bg-yellow-900/40 dark:text-yellow-300' : report.status === 'review' ? 'bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-300' : report.status === 'rejected' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : report.status === 'suspended' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}"
                                                     },
                                                     "text": "{{report.status_label ?? ''}}"
                                                 },
@@ -460,7 +462,7 @@
                                                     "name": "Span",
                                                     "if": "{{report.target_deleted}}",
                                                     "props": {
-                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded"
+                                                        "className": "inline-flex items-center px-2 py-0.5 text-xs bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 rounded"
                                                     },
                                                     "text": "$t:mypage.board_activities.reports.target_deleted"
                                                 }
@@ -488,7 +490,7 @@
                                             "name": "Span",
                                             "if": "{{report.target_deleted || !report.board_slug || !report.post_id}}",
                                             "props": {
-                                                "className": "block text-sm text-gray-500 dark:text-gray-400 line-clamp-2"
+                                                "className": "block text-sm text-gray-700 dark:text-gray-300 line-clamp-2"
                                             },
                                             "text": "{{raw:report.title ?? report.excerpt ?? ''}}"
                                         },
@@ -497,7 +499,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "mt-2 flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "mt-2 flex items-start gap-2 text-xs text-gray-700 dark:text-gray-300"
                                             },
                                             "children": [
                                                 {
@@ -550,7 +552,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                                                "className": "text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap"
                                             },
                                             "text": "{{report.reported_at ?? ''}}"
                                         },
@@ -582,8 +584,9 @@
                                                 }
                                             ],
                                             "props": {
+                                                "type": "button",
                                                 "data-testid": "my-report-cancel-{{report.id}}",
-                                                "className": "px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors whitespace-nowrap"
+                                                "className": "px-2 py-1 text-xs text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors whitespace-nowrap"
                                             },
                                             "text": "$t:mypage.board_activities.reports.cancel"
                                         }
@@ -597,7 +600,7 @@
                     "comment": "신고 없음",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{(myReports?.data?.data ?? []).length === 0}}",
+                    "if": "{{myReports !== undefined && (myReports?.data?.data ?? []).length === 0}}",
                     "props": {
                         "data-testid": "my-reports-empty",
                         "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center"
@@ -609,7 +612,7 @@
                             "props": {
                                 "name": "flag",
                                 "size": "3x",
-                                "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                                "className": "mx-auto text-gray-500 dark:text-gray-500 mb-3"
                             }
                         },
                         {

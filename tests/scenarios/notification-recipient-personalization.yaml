@@ -49,7 +49,7 @@ effects:
   - after_send_receives_the_personalized_payload
   - zero_recipients_are_logged_as_skipped
   - empty_guest_email_is_logged_with_its_own_reason
-  # 건너뜀 사유는 규칙을 사람 말로 적는다 — 관계 이름·유발자 제외·역할 이름(7.1.0 실측 O-G7)
+  # 건너뜀 사유는 규칙을 사람 말로 적는다 — 관계 이름·유발자 제외·역할 이름(7.1.0 실측)
   - zero_recipient_reason_names_rules_in_words
   - zero_recipient_reason_names_role_by_display_name
   # 발송 파이프라인 기본 경로 (NotificationDispatchIntegrationTest) — 수신 규칙별 실제 발송·데이터 추출

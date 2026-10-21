@@ -94,7 +94,7 @@ effects:
   - claim_refund_execute_requires_confirm_modal
   - claim_refund_modal_does_not_read_parent_local
   - claim_refund_execute_seeds_modal_context
-  # T2-D6 (#599 3차 실측 L-8) — 계좌 없이 「환불완료」가 찍히던 길을 창에서 먼저 막는다
+  # (#599 실측) — 계좌 없이 「환불완료」가 찍히던 길을 창에서 먼저 막는다
   - claim_refund_execute_modal_gates_on_the_bank_account
   - claim_refund_execute_modal_clears_the_bank_inputs_on_open
   - claim_refund_execute_body_carries_the_typed_bank_account
@@ -209,7 +209,7 @@ notes: |
 
 validation:
   audit_rule: frontend-change-requires-e2e
-  browser_check: Playwright MCP   # #599 3차 실측 세션2 — 실제 주문·신청으로 재실측
+  browser_check: Playwright MCP   # #599 실측 — 실제 주문·신청으로 재실측
   note: |
     T2-D6(계좌도 동의도 없으면 [환불하기]가 잠긴다)의 브라우저 축은 Playwright MCP 재실측이
     덮는다. spec 을 새로 두지 않는 이유는 이 축이 **무통장 결제 → 배송완료 → 환불신청 → 승인**

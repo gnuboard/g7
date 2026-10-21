@@ -61,9 +61,9 @@ class ExtDocgenCommand extends Command
         // `--init` 도 같은 성질이다 — dry-run·check 와 함께 주면 조용히 무시되어
         // "골격을 만들라고 시켰는데 아무 일도 없었다" 가 성공으로 보인다.
         $conflict = match (true) {
-            $this->option('check') && $this->option('dry-run') => '--check 와 --dry-run 은 함께 쓸 수 없습니다 (dry-run 은 검사를 수행하지 않습니다).',
-            $this->option('init') && $this->option('dry-run') => '--init 과 --dry-run 은 함께 쓸 수 없습니다 (dry-run 은 파일을 만들지 않습니다).',
-            $this->option('init') && $this->option('check') => '--init 과 --check 는 함께 쓸 수 없습니다 (check 는 파일을 만들지 않습니다).',
+            $this->option('check') && $this->option('dry-run') => __('extensions.commands.ext_docgen.conflict_check_dry_run'),
+            $this->option('init') && $this->option('dry-run') => __('extensions.commands.ext_docgen.conflict_init_dry_run'),
+            $this->option('init') && $this->option('check') => __('extensions.commands.ext_docgen.conflict_init_check'),
             default => null,
         };
 
@@ -103,7 +103,7 @@ class ExtDocgenCommand extends Command
         }
 
         if ($records === []) {
-            $message = "범위 '{$scope}' 에 해당하는 번들 확장이 없습니다.";
+            $message = __('extensions.commands.ext_docgen.no_extensions', ['scope' => $scope]);
 
             if ($this->option('json')) {
                 $this->line((string) json_encode(['scope' => $scope, 'extensions' => [], 'error' => $message], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
@@ -267,6 +267,7 @@ class ExtDocgenCommand extends Command
      * @param  array<string, mixed>  $ctx  수집 컨텍스트
      * @param  ExtensionDocScaffolder  $scaffolder  문서 스캐폴더
      * @param  array<string, mixed>  $result  처리 결과 (created 누적)
+     * @return void
      */
     private function initSkeletons(array $ctx, ExtensionDocScaffolder $scaffolder, array &$result): void
     {
@@ -344,7 +345,7 @@ class ExtDocgenCommand extends Command
         }
 
         if ($this->option('dry-run')) {
-            $this->info(count($results).'개 확장 (scope='.$scope.')');
+            $this->info(__('extensions.commands.ext_docgen.dry_run_header', ['count' => count($results), 'scope' => $scope]));
             $this->newLine();
 
             foreach ($results as $result) {
@@ -359,10 +360,10 @@ class ExtDocgenCommand extends Command
 
                 $this->line(sprintf('  [%s] %s v%s', $result['type'], $result['id'], $result['version']));
                 $this->line('      '.implode(' · ', $parts));
-                $this->line('      문서 '.count($result['documents']).'종: '.implode(', ', $result['documents']));
+                $this->line('      '.__('extensions.commands.ext_docgen.documents', ['count' => count($result['documents']), 'list' => implode(', ', $result['documents'])]));
 
                 if (! $result['surfaceAvailable'] && $result['surfaceReason'] !== null) {
-                    $this->line('      선언형 표면: '.$result['surfaceReason']);
+                    $this->line('      '.__('extensions.commands.ext_docgen.surface', ['reason' => $result['surfaceReason']]));
                 }
                 if ($result['surfaceErrors'] !== []) {
                     foreach ($result['surfaceErrors'] as $getter => $message) {
@@ -378,52 +379,51 @@ class ExtDocgenCommand extends Command
             $label = sprintf('[%s] %s', $result['type'], $result['id']);
 
             if ($result['created'] !== []) {
-                $this->info("{$label} 생성: ".implode(', ', $result['created']));
+                $this->info(__('extensions.commands.ext_docgen.created', ['label' => $label, 'list' => implode(', ', $result['created'])]));
             }
             if ($result['updated'] !== []) {
-                $this->info("{$label} 갱신: ".implode(', ', $result['updated']));
+                $this->info(__('extensions.commands.ext_docgen.updated', ['label' => $label, 'list' => implode(', ', $result['updated'])]));
             }
             if ($result['missingDocuments'] !== []) {
-                $this->warn("{$label} 문서 없음: ".implode(', ', $result['missingDocuments']));
+                $this->warn(__('extensions.commands.ext_docgen.missing_documents', ['label' => $label, 'list' => implode(', ', $result['missingDocuments'])]));
             }
             if ($result['missingBlocks'] !== []) {
-                $this->warn("{$label} 자동 생성 블록 없음: ".implode(', ', $result['missingBlocks']));
+                $this->warn(__('extensions.commands.ext_docgen.missing_blocks', ['label' => $label, 'list' => implode(', ', $result['missingBlocks'])]));
             }
             if ($result['missingSections'] !== []) {
-                $this->warn("{$label} 필수 섹션 없음: ".implode(', ', $result['missingSections']));
+                $this->warn(__('extensions.commands.ext_docgen.missing_sections', ['label' => $label, 'list' => implode(', ', $result['missingSections'])]));
             }
             if ($result['driftedBlocks'] !== []) {
-                $this->warn("{$label} 블록 드리프트(코드 실측과 불일치): ".implode(', ', $result['driftedBlocks']));
+                $this->warn(__('extensions.commands.ext_docgen.drifted_blocks', ['label' => $label, 'list' => implode(', ', $result['driftedBlocks'])]));
             }
             if ($result['orphanBlocks'] !== []) {
-                $this->warn("{$label} 갱신 대상이 아닌 자동 생성 블록(고아): ".implode(', ', $result['orphanBlocks']));
+                $this->warn(__('extensions.commands.ext_docgen.orphan_blocks', ['label' => $label, 'list' => implode(', ', $result['orphanBlocks'])]));
             }
             // 미채움 잔량은 계산만 하고 `--json` 에만 실려 있었다 — 계획이 이 마커를 둔
             // 이유가 "잔량 집계" 이므로 사람이 읽는 출력에도 낸다.
             if ($result['unfilled'] !== []) {
                 $total = array_sum(array_column($result['unfilled'], 'count'));
-                $this->line("{$label} 미채움 마커 {$total}건: ".implode(', ', array_map(
+                $this->line(__('extensions.commands.ext_docgen.unfilled', ['label' => $label, 'total' => $total, 'list' => implode(', ', array_map(
                     static fn (array $u): string => $u['doc'].' → '.$u['marker'].'×'.$u['count'],
                     $result['unfilled'],
-                )));
+                ))]));
             }
             foreach ($result['surfaceErrors'] as $getter => $message) {
-                $this->warn("{$label} 선언형 표면 수집 실패 {$getter}(): {$message}");
+                $this->warn(__('extensions.commands.ext_docgen.surface_error', ['label' => $label, 'getter' => $getter, 'message' => $message]));
             }
         }
 
         foreach ($this->malformed as $bad) {
-            $this->warn(sprintf(
-                '[%s] %s — %s 를 읽지 못해 검사 대상에서 빠졌습니다 (%s). "확장이 없음" 이 아니라 "읽지 못함" 입니다.',
-                $bad['type'], $bad['id'], $bad['manifest'], $bad['reason'],
-            ));
+            $this->warn(__('extensions.commands.ext_docgen.malformed', [
+                'type' => $bad['type'], 'id' => $bad['id'], 'manifest' => $bad['manifest'], 'reason' => $bad['reason'],
+            ]));
         }
 
         $this->newLine();
-        $this->info(sprintf('%d개 확장 처리 (scope=%s, mode=%s) — 이슈 %d건', count($results), $scope, $this->mode(), $issues));
+        $this->info(__('extensions.commands.ext_docgen.summary', ['count' => count($results), 'scope' => $scope, 'mode' => $this->mode(), 'issues' => $issues]));
 
         if ($this->option('check') && $issues > 0) {
-            $this->line('`php artisan ext:docgen --init` 으로 골격을 만들고, `php artisan ext:docgen` 으로 블록을 갱신하세요.');
+            $this->line(__('extensions.commands.ext_docgen.check_hint'));
 
             return self::FAILURE;
         }

@@ -291,7 +291,7 @@
                                             "name": "Span",
                                             "if": "{{!!originImage.created_at}}",
                                             "props": {
-                                                "className": "text-gray-400 dark:text-gray-500"
+                                                "className": "text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.reason.image_origin_uploaded_at|at={{originImage.created_at ?? ''}}"
                                         }

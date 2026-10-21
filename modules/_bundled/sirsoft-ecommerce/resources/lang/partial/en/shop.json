@@ -176,8 +176,6 @@
     "product_coupon_2": "Product Coupon 2",
     "order_coupon": "Order Discount Coupon",
     "shipping_coupon": "Shipping Discount Coupon",
-    "exclusive_coupon_title": "Exclusive Coupon",
-    "exclusive_coupon_message": "Using an exclusive coupon will automatically remove other coupons. Do you want to continue?",
     "coupon_disabled_exclusive": "Cannot use with other coupons",
     "coupon_disabled_already_applied": "Already applied",
     "coupon_min_amount_not_met": "Minimum order amount not met",

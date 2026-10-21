@@ -100,7 +100,7 @@ class PlaywrightIssueTokenTest extends TestCase
     /**
      * 커맨드가 만든 역할의 name·description 이 이중 인코딩되지 않아야 한다.
      *
-     * 권한 행은 더 이상 커맨드가 만들지 않는다(없는 식별자는 발급 때 거절 — 7.1.0 O-D2). 그래서 이 계약은
+     * 권한 행은 더 이상 커맨드가 만들지 않는다(없는 식별자는 발급 때 거절 — 7.1.0). 그래서 이 계약은
      * 커맨드가 여전히 만드는 테스트 역할에만 남는다.
      *
      * @scenario case=role_encoding

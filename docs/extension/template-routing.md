@@ -33,7 +33,7 @@
       "layout_name": "admin_dashboard",
       "permissions": ["core.dashboard.view"],
       "meta": {
-        "title": "대시보드",
+        "title": "$t:admin.dashboard.title",
         "icon": "dashboard"
       }
     },
@@ -42,7 +42,7 @@
       "layout_name": "admin_users_list",
       "permissions": ["core.users.view"],
       "meta": {
-        "title": "사용자 관리",
+        "title": "$t:admin.users.page_title",
         "icon": "users"
       }
     }
@@ -57,7 +57,7 @@
 | `path` | 라우트 경로 (Laravel 라우트와 일치) |
 | `layout_name` | `template_layouts` 테이블의 레이아웃명 |
 | `permissions` | 필요한 권한 배열 (빈 배열 시 인증만 필요) |
-| `meta` | 메타 정보 (제목, 아이콘 등) |
+| `meta` | 메타 정보 (제목, 아이콘 등). `title` 은 번역 키(`$t:키`)로 적는다 — 화면 편집기의 라우트 목록과 방문 통계의 페이지 제목에 그대로 보이므로 한국어를 박으면 다른 언어 사이트에서도 한국어로 나온다 |
 
 ---
 

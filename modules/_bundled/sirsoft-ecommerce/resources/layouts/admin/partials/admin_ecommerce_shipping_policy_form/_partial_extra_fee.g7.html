@@ -39,6 +39,7 @@
               <on type="click">
                 <!-- 템플릿 불러오기 창 열기 — 목록을 **먼저 다시 받고** 연다. 창이 스스로 조회하지 않으므로, 순서를 뒤집으면 지난번 목록이 잠깐 보인다. -->
                 <sequence>
+                  <set-state target="global" :extraFeeTemplatesLoadFailed="false"/>
                   <refetch-data-source dataSourceId="extra_fee_templates"/>
                   <open-modal target="extra_fee_template"/>
                 </sequence>
@@ -152,7 +153,7 @@
             </table>
           </div>
         </div>
-        <div data-if="{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).length === 0}}" class="text-center py-4 text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+        <div data-if="{{(_computed.activeCountrySetting?.extra_fee_settings ?? []).length === 0}}" class="text-center py-4 text-sm text-gray-500 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
           <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.no_extra_fee</span>
         </div>
       </div>

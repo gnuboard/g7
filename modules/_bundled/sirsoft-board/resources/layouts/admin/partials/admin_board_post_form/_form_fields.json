@@ -7,13 +7,6 @@
     "id": "post_form_fields",
     "type": "basic",
     "name": "Div",
-    "classMap": {
-        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-        "variants": {
-            "readonly": "opacity-60",
-            "normal": ""
-        }
-    },
     "children": [
         {
             "id": "main_form_card",

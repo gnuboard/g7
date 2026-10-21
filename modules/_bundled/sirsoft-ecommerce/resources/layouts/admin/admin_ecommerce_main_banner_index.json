@@ -235,7 +235,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "image",
-                                                            "className": "text-[4rem] text-gray-300 dark:text-gray-600 mb-4"
+                                                            "className": "text-[4rem] text-gray-500 dark:text-gray-500 mb-4"
                                                         }
                                                     },
                                                     {
@@ -244,7 +244,7 @@
                                                         "props": {
                                                             "className": "text-secondary text-sm"
                                                         },
-                                                        "text": "좌측에서 배너를 선택하세요"
+                                                        "text": "$t:sirsoft-ecommerce.admin.sample.misc.select_banner_hint"
                                                     }
                                                 ]
                                             }

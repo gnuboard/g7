@@ -131,7 +131,7 @@
                   </set-state>
                 </on>
               </input>
-              <span class="text-gray-400 dark:text-gray-500">~</span>
+              <span class="text-gray-500 dark:text-gray-400">~</span>
               <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.inquiries.filters.date_label')}}" data-ref="end_date_input" type="date" class="text-sm" value="{{_local.filter.endDate ?? ''}}">
                 <on type="change">
                   <!-- 기간 끝 — 담아만 둔다 -->
@@ -241,7 +241,7 @@
           </select>
         </div>
       </div>
-      <data-grid data-type="composite" pageHref="/admin/ecommerce/inquiries?page={page}" :pageHrefMergeQuery="true" rowLabelField="product.name" data-ref="inquiries_datagrid" :data-blur-until-loaded="true" data="{{inquiries?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{inquiries?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{inquiries?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{inquiries?.data?.pagination?.has_more_pages ?? false}}" selectable="{{inquiries?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_inquiries || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="$t:sirsoft-ecommerce.admin.inquiries.table.empty" actionsColumnHeader="$t:common.actions" selectedCountText="">
+      <data-grid data-type="composite" pageHref="/admin/ecommerce/inquiries?page={page}" :pageHrefMergeQuery="true" rowLabelField="product.name" data-ref="inquiries_datagrid" :data-blur-until-loaded="true" data="{{inquiries?.data?.data}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{inquiries?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{inquiries?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{inquiries?.data?.pagination?.has_more_pages ?? false}}" selectable="{{inquiries?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedItems_inquiries || []}}" idField="id" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="{{inquiries === undefined ? '' : $t('sirsoft-ecommerce.admin.inquiries.table.empty')}}" actionsColumnHeader="$t:common.actions" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-ecommerce.admin.inquiries.columns.created_at">
           <cell>
             <span class="text-sm text-gray-900 dark:text-white">{{row.created_at}}</span>
@@ -258,7 +258,7 @@
                   </on>
                   {{row.member?.name}}
                 </a>
-                <span data-if="{{!row.member}}" class="text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.inquiries.badges.guest</span>
+                <span data-if="{{!row.member}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.inquiries.badges.guest</span>
                 <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-ecommerce.admin.inquiries.badges.withdrawn</badge>
               </div>
               <span data-if="{{row.member?.email}}" class="text-xs text-gray-500 dark:text-gray-400">{{row.member?.email}}</span>
@@ -279,7 +279,7 @@
         <column field="content_excerpt" header="$t:sirsoft-ecommerce.admin.inquiries.columns.content" cellClassName="max-w-xs">
           <cell>
             <span data-if="{{!!row.content_excerpt}}" class="text-sm text-gray-700 dark:text-gray-300">{{row.content_excerpt}}</span>
-            <span data-if="{{!row.content_excerpt}}" class="text-sm text-gray-400 dark:text-gray-500">$t:sirsoft-ecommerce.admin.inquiries.content_unavailable</span>
+            <span data-if="{{!row.content_excerpt}}" class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.inquiries.content_unavailable</span>
           </cell>
         </column>
         <column field="is_answered" header="$t:sirsoft-ecommerce.admin.inquiries.columns.status">
@@ -384,7 +384,7 @@
           <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{{_global.replyTarget_inquiries?.member?.name ?? '-'}} · {{_global.replyTarget_inquiries?.product?.name ?? '-'}}</span>
           <span class="block text-sm text-gray-700 dark:text-gray-300">{{_global.replyTarget_inquiries?.content_excerpt ?? ''}}</span>
         </div>
-        <p data-if="{{_global.replyTarget_inquiries?.is_answered}}" class="mb-2 text-xs text-amber-600 dark:text-amber-400">$t:sirsoft-ecommerce.admin.inquiries.modal.reply.already_answered</p>
+        <p data-if="{{_global.replyTarget_inquiries?.is_answered}}" class="mb-2 text-xs text-amber-700 dark:text-amber-400">$t:sirsoft-ecommerce.admin.inquiries.modal.reply.already_answered</p>
         <label class="form-label">$t:sirsoft-ecommerce.admin.inquiries.modal.reply.content_label</label>
         <textarea class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800" :rows="6" :maxlength="5000" placeholder="$t:sirsoft-ecommerce.admin.inquiries.modal.reply.content_placeholder" value="{{_global.replyContent_inquiries || ''}}">
           <on type="change">

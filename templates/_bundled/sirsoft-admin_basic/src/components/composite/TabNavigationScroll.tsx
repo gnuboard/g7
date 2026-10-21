@@ -166,7 +166,7 @@ export const TabNavigationScroll: React.FC<TabNavigationScrollProps> = ({
    * 사용자가 누른 탭 — 사용자가 직접 스크롤(휠·터치·스크롤 키)할 때까지 Scroll Spy 가 활성 탭을 바꾸지 않는다.
    *
    * 스크롤 이동이 지연·애니메이션보다 길거나 섹션이 맨 위까지 올라오지 못하면(페이지 바닥) 다시 켜진 Scroll Spy 가
-   * 더 많이 보이는 다른 섹션·마지막 탭을 활성으로 바꿔, 누른 탭이 아닌 탭이 선택된 것처럼 보였다(7.1.0 실측 O-KF-2).
+   * 더 많이 보이는 다른 섹션·마지막 탭을 활성으로 바꿔, 누른 탭이 아닌 탭이 선택된 것처럼 보였다(7.1.0 실측).
    */
   const pinnedTabRef = useRef<string | number | null>(null);
 

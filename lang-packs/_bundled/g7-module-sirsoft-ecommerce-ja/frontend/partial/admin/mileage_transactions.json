@@ -39,6 +39,7 @@
   "sort": {
     "label": "並べ替え",
     "created_at_desc": "最新順",
+    "created_at_asc": "古い順",
     "amount_desc": "金額が高い順",
     "amount_asc": "金額が低い順"
   },

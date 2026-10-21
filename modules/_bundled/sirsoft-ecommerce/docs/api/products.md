@@ -3643,7 +3643,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| reviews | object | `{"data":[],"links":{"first":"https:\/\/g7_2.dev\/api\/mod…` | 리뷰 목록 (data 배열 + 페이지네이션 메타, 공개 상태 리뷰만 정렬/필터 적용해 반환) |
+| reviews | object | `{"data":[],"links":{"first":"https:\/\/api.example.com\/api\/mod…` | 리뷰 목록 (data 배열 + 페이지네이션 메타, 공개 상태 리뷰만 정렬/필터 적용해 반환) |
 | rating_stats | object | `{"5":{"count":0,"percent":0},"4":{"count":0,"percent":0},…` | 별점 분포 통계 (별점(1~5)별 count·percent 맵 + avg 평균 별점, 공개 리뷰 기준) |
 | option_filters | array | `[{"key":"색상","values":[{"value":"화이트","count":0},{"value"…` | 옵션 조건 필터 후보 (구매 옵션 키·값별 리뷰 건수 집계, 옵션별 리뷰 필터 UI용) |
 | total_count | integer | `0` | total 개수 (집계) |

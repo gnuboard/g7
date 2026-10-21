@@ -84,15 +84,15 @@
             </on>
           </select>
           <div class="flex-center gap-2">
-            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
-            <input type="date" name="startDate" value="{{_local.filter.startDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.start_date" class="input w-36">
+            <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
+            <input type="date" name="startDate" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.product.filter.date')}}" value="{{_local.filter.startDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.start_date" class="input w-36">
               <on type="change">
                 <!-- 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다 — 남겨 두면 버튼은 "1개월" 인데 실제 범위는 다른 상태가 된다. -->
                 <set-state target="_local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
               </on>
             </input>
-            <span class="text-gray-400 dark:text-gray-500">~</span>
-            <input type="date" name="endDate" value="{{_local.filter.endDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.end_date" class="input w-36">
+            <span class="text-gray-500 dark:text-gray-400">~</span>
+            <input type="date" name="endDate" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.product.filter.date')}}" value="{{_local.filter.endDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.end_date" class="input w-36">
               <on type="change">
                 <!-- 시작일과 같은 이유로 빠른 기간 표시를 지운다. 시작·종료 중 하나만 넣어도 서버는 열린 구간으로 받는다. -->
                 <set-state target="_local" filter.endDate="{{$event.target.value}}" filter.dateQuick=""/>
@@ -100,7 +100,7 @@
             </input>
           </div>
           <div class="flex-center flex-wrap gap-1">
-            <div class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            <button type="button" class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'today'}}">
               <on type="click">
                 <!-- 빠른 기간 버튼 여섯. 핸들러가 시작·종료일을 계산해 돌려주고 그 결과를 `$prev` 로 받아 담는다 — 날짜 계산을 레이아웃 표현식에 두지 않으려는 것이다. -->
                 <sequence>
@@ -109,8 +109,8 @@
                 </sequence>
               </on>
               $t:sirsoft-ecommerce.admin.product.filter.date_quick.today
-            </div>
-            <div class="{{_local.filter.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === '3days'}}">
               <on type="click">
                 <!-- 3일. 주문 목록에는 없는 구간으로, 상품은 최근 등록분을 훑는 일이 잦아 짧은 구간을 더 뒀다. -->
                 <sequence>
@@ -119,8 +119,8 @@
                 </sequence>
               </on>
               $t:sirsoft-ecommerce.admin.product.filter.date_quick.3days
-            </div>
-            <div class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'week'}}">
               <on type="click">
                 <!-- 1주일. 눌린 버튼 표시는 `dateQuick` 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다. -->
                 <sequence>
@@ -129,8 +129,8 @@
                 </sequence>
               </on>
               $t:sirsoft-ecommerce.admin.product.filter.date_quick.week
-            </div>
-            <div class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'month'}}">
               <on type="click">
                 <!-- 1개월. 기준 날짜는 위 "등록일/수정일" 선택을 따른다. -->
                 <sequence>
@@ -139,8 +139,8 @@
                 </sequence>
               </on>
               $t:sirsoft-ecommerce.admin.product.filter.date_quick.month
-            </div>
-            <div class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === '3months'}}">
               <on type="click">
                 <!-- 3개월. 상품은 주문과 달리 오래된 것도 계속 유효하므로 6개월 구간 대신 "전체" 를 뒀다. -->
                 <sequence>
@@ -149,8 +149,8 @@
                 </sequence>
               </on>
               $t:sirsoft-ecommerce.admin.product.filter.date_quick.3months
-            </div>
-            <div class="{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+            </button>
+            <button type="button" class="{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'all'}}">
               <on type="click">
                 <!-- 전체. 날짜 조건을 비우는 자리라 다른 다섯과 달리 범위를 넓히는 것이 아니라 없앤다. -->
                 <sequence>
@@ -159,7 +159,7 @@
                 </sequence>
               </on>
               $t:sirsoft-ecommerce.admin.product.filter.date_quick.all
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -347,7 +347,7 @@
                 <set-state :debounce="300" target="_local" filter.minPrice="{{$event.target.value}}"/>
               </on>
             </input>
-            <span class="text-gray-400 dark:text-gray-500 shrink-0">~</span>
+            <span class="text-gray-500 dark:text-gray-400 shrink-0">~</span>
             <input type="number" value="{{_local.filter?.maxPrice ?? ''}}" min="0" step="1" placeholder="$t:sirsoft-ecommerce.admin.product.filter.max_price" class="w-32">
               <on type="change">
                 <!-- 최소값과 같은 이유로 묶는다. 한쪽만 넣어도 서버는 열린 구간으로 받는다. -->
@@ -372,7 +372,7 @@
               <set-state :debounce="300" target="_local" filter.minStock="{{$event.target.value}}"/>
             </on>
           </input>
-          <span class="text-gray-400 dark:text-gray-500 shrink-0">~</span>
+          <span class="text-gray-500 dark:text-gray-400 shrink-0">~</span>
           <input type="text" value="{{_local.filter?.maxStock ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.filter.max" class="input md:w-28">
             <on type="change">
               <!-- 최소 재고와 같은 이유로 묶는다. 0 을 넣으면 품절만 보는 것과 비슷하지만 품절 상태와 재고 0 이 항상 같지는 않다. -->
@@ -401,15 +401,15 @@
       </div>
     </div>
     <div data-ref="preset_row" class="flex-center flex-wrap gap-3 mb-4">
-      <div class="flex-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">
+      <button type="button" class="flex-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">
         <on type="click">
           <open-modal target="modal_preset_manage"/>
         </on>
         <icon name="sliders" class="text-base"/>
         <span class="text-sm font-medium">$t:sirsoft-ecommerce.admin.product.preset.label</span>
-      </div>
+      </button>
       <!-- 프리셋 버튼. 저장된 조건 세트를 통째로 갈아끼우고 펼침 상태를 비운 뒤 주소를 바꾼다 — 지금 걸린 조건과 섞지 않는 것이 프리셋의 뜻이다 -->
-      <div data-ref="preset_buttons_dynamic_{{presetIdx}}" data-each="preset, presetIdx in presets.data || []" class="{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}">
+      <button type="button" data-ref="preset_buttons_dynamic_{{presetIdx}}" data-each="preset, presetIdx in presets.data || []" class="{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}" aria-pressed="{{query.preset_id === String(preset.id)}}">
         <on type="click">
           <set-state target="_local" merge="shallow">
             <field name="filter">
@@ -446,7 +446,7 @@
           <toast type="info" message="$t:sirsoft-ecommerce.admin.product.preset.applied|name={{preset.name}}"/>
         </on>
         {{preset.name}}
-      </div>
+      </button>
     </div>
     <div data-ref="search_row" class="flex-center flex-wrap gap-3">
       <responsive on="portable" class="row-stack"/>
@@ -469,7 +469,7 @@
         </select>
         <div class="flex-1 min-w-64 relative">
           <responsive on="portable" class="flex-1 min-w-0 relative"/>
-          <icon name="search" class="text-base absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"/>
+          <icon name="search" class="text-base absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"/>
           <input type="text" placeholder="$t:sirsoft-ecommerce.admin.product.search.placeholder" class="input pl-10" value="{{_local.filter.searchKeyword}}">
             <on type="change">
               <!-- 타이핑은 300ms 묶어 담기만 한다 — 글자마다 조회하면 목록 API 를 계속 친다. 실제 조회는 Enter 나 검색 버튼이다. -->

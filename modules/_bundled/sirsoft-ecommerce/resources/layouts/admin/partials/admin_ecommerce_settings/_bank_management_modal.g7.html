@@ -26,7 +26,7 @@
           <icon name="circle-exclamation" class="text-sm"/>
           <span>$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.validation_error</span>
         </div>
-        <div class="text-red-600 dark:text-red-400 text-xs space-y-0.5 ml-6">
+        <div class="text-red-700 dark:text-red-400 text-xs space-y-0.5 ml-6">
           <div data-each="errMsg, errIdx in Object.values($parent._local.bankModalErrors ?? {}).flat()">• {{errMsg}}</div>
         </div>
       </div>
@@ -42,7 +42,7 @@
           </thead>
           <tbody>
             <!-- 빈 목록 안내 -->
-            <tr data-if="{{!$parent._local.form?.order_settings?.banks || $parent._local.form.order_settings.banks.length === 0}}">
+            <tr data-if="{{settings !== undefined &amp;&amp; (!$parent._local.form?.order_settings?.banks || $parent._local.form.order_settings.banks.length === 0)}}">
               <td :colSpan="3" class="text-center py-8 text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.empty</td>
             </tr>
             <!-- 은행 항목 반복 -->

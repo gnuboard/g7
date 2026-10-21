@@ -1,0 +1,30 @@
+feature: 액션 밖 G7Core.state.setLocal 의 shallow·replace 가 화면·저장소 B 에서 그 의미대로 남는다 (engine-v1.81.2, 7.1.1)
+
+description: |
+  setLocal 은 액션 문맥이 있으면 저장소 A 도 같은 방식으로 고치지만, 액션 밖(컴포넌트 코드·타이머·웹소켓 콜백)에서는 저장소 B 만 바꾼다.
+  그 키 아래에 저장소 A 가 setState 동작으로 쓴 하위 키가 있으면 렌더 병합(A 우선)이 되살려 화면 ≠ B 였고, 그 화면 문맥을 입력으로 쓰는
+  다음 동작의 잎 키 보충이 B 에까지 되썼다(7.1.0 에도 있음). 엔진은 교체한 최상위 키를 표지로 남겨 페이지 루트가 그 키를 정본 B 값으로
+  그리고, B 사본이 따라온 뒤 저장소 A 에서 그 키를 지운다. 축 case 는 쓰기 방식(shallow·replace·render:false) × 뒤이은 동작, 대조군은
+  액션 안 shallow·액션 밖 deep 이다. 저장소 B 는 손으로 채우지 않는다.
+
+axes:
+  case: [outside_shallow_empty, outside_shallow_empty_then_actions, outside_replace, outside_shallow_render_false_then_root_render, in_action_shallow_control, outside_deep_control, outside_shallow_render_false_then_local_write, apply_shapes, prune_shapes]
+
+effects:
+  - screen_matches_canonical_after_outside_replace  # 액션 밖 shallow·replace 뒤 화면이 정본 B 와 같다
+  - next_action_reads_canonical                     # 다음 동작이 읽는 `_local` 도 정본과 같다
+  - line_action_does_not_write_back                 # 잎 키 보충이 있는 다음 setLocal 이 B 에 하위 키를 되쓰지 않는다
+  - marker_cleared_after_catch_up                   # B 사본이 따라오면 표지를 비우고, 이후 쓰기는 종전대로 보인다
+  - in_action_path_unchanged                        # 액션 안 shallow 는 표지 없이 종전 경로
+  - deep_setlocal_unchanged                         # deep setLocal 은 표지 없이 종전처럼 깊게 병합
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.setLocalOutsideActionReplace.test.tsx
+
+validation:
+  browser_check: 재실측 — 두 템플릿에서 setState 로 하위 키를 쓴 화면(목록 필터 등)을 연 뒤 콘솔에서 G7Core.state.setLocal({키: {}}, {merge:'shallow'}) → 화면 표시·getLocal·다음 동작 본문
+  note: |
+    fail-first: 렌더 단계 정본 맞춤(applySetLocalReplacedKeys)을 끄면 outside_shallow_empty·outside_shallow_empty_then_actions·outside_replace·
+    outside_shallow_render_false_then_root_render 가 red(실물 렌더러 사례는 그 뒤 엔진이 render:false 도 루트를 바로 다시 그리게 해, 표지 생성을 끄면
+    red·렌더 단계 맞춤만 끄면 green — 맞춤은 루트 다시 그리기보다 먼저 오는 저장소 A 쓰기 렌더의 방어라 apply_shapes 가 모양별로 잠근다).
+    정리를 끄면 outside_shallow_render_false_then_root_render 가 red(표지 남음). 대조군 둘은 장치 없이도 green 인 회귀 잠금이다.

@@ -1805,6 +1805,136 @@ class LayoutControllerTest extends TestCase
     }
 
     /**
+     * 레이아웃 업데이트 시 이탈 확인 메타 키 보존 (leave_guard / leave_message)
+     *
+     * 엔진 이탈 가드는 meta.leave_guard({{식}})·meta.leave_message($t: 문구)를 읽는다. rules() 에 명시하지
+     * 않으면 validated() 가 두 키를 떨궈, 편집기로 한 번 저장한 화면은 저장하지 않은 변경이 있어도
+     * 다른 화면으로 떠날 때 확인을 묻지 않는다(입력 손실).
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_layout_preserves_leave_guard_meta_keys(): void
+    {
+        // Arrange
+        $layout = TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'board/form',
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'board/form',
+                'meta' => [
+                    'title' => '$t:board.form.title',
+                    'leave_guard' => '{{_local.hasChanges === true}}',
+                ],
+                'endpoint' => '/api/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+            ],
+        ]);
+
+        $updateData = [
+            'expected_lock_version' => 0,
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'board/form',
+                'meta' => [
+                    'title' => '$t:board.form.title',
+                    'leave_guard' => '{{_local.hasChanges === true}}',
+                    'leave_message' => '$t:board.form.leave_confirm',
+                ],
+                'endpoint' => '/api/admin/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+            ],
+        ];
+
+        // Act
+        $response = $this->authRequest()
+            ->putJson("/api/admin/templates/{$this->template->identifier}/layouts/board/form", $updateData);
+
+        // Assert
+        $response->assertStatus(200);
+
+        $layout->refresh();
+        $this->assertSame('{{_local.hasChanges === true}}', $layout->content['meta']['leave_guard'] ?? null, 'leave_guard 가 저장 시 유실됨');
+        $this->assertSame('$t:board.form.leave_confirm', $layout->content['meta']['leave_message'] ?? null, 'leave_message 가 저장 시 유실됨');
+    }
+
+    /**
+     * 레이아웃 업데이트 시 편집기·작성 도구·SEO 탭이 쓰는 meta 키 보존
+     * (icon / editor_label / _e2e_allow / seo.title / seo.description / seo.twitter)
+     *
+     * 편집기 [기본 정보] 탭은 meta.icon(메뉴 아이콘)·meta.editor_label(트리 라벨)을, SEO 탭은 meta.seo.title·description·twitter
+     * 를 쓰고 서버(공유 미리보기·트위터 카드)가 읽는다. 번들 JSON 의 작성 도구 표기(meta._e2e_allow)는 런타임이 쓰지 않지만
+     * 저장에서 떨어지면 다음 업데이트의 3-way 병합이 운영자가 meta 를 고친 것으로 본다. rules() 에 명시하지 않으면
+     * validated() 가 이 키들을 떨군다.
+     *
+     * @scenario endpoint=layout_update
+     *
+     * @effects layout_update_saves_and_keeps_fields
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_layout_preserves_editor_and_seo_tab_meta_keys(): void
+    {
+        // Arrange
+        TemplateLayout::factory()->create([
+            'template_id' => $this->template->id,
+            'name' => 'shop/show',
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'shop/show',
+                'meta' => ['title' => '$t:shop.title'],
+                'endpoint' => '/api/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+            ],
+        ]);
+
+        $updateData = [
+            'expected_lock_version' => 0,
+            'content' => [
+                'version' => '1.0.0',
+                'layout_name' => 'shop/show',
+                'meta' => [
+                    'title' => '$t:shop.title',
+                    'icon' => 'fas fa-store',
+                    'editor_label' => '$t:shop.editor_label',
+                    '_e2e_allow' => 'e2e:allow 표시 문구만 바꿨다',
+                    'seo' => [
+                        'enabled' => true,
+                        'title' => '{{product?.data?.name ?? \'\'}}',
+                        'description' => '{{product?.data?.summary ?? \'\'}}',
+                        'twitter' => ['card' => 'summary_large_image', 'title' => '{{product?.data?.name ?? \'\'}}'],
+                    ],
+                ],
+                'endpoint' => '/api/admin/test',
+                'components' => [['id' => 'root', 'type' => 'layout', 'name' => 'Container']],
+                'data_sources' => [],
+            ],
+        ];
+
+        // Act
+        $response = $this->authRequest()
+            ->putJson("/api/admin/templates/{$this->template->identifier}/layouts/shop/show", $updateData);
+
+        // Assert
+        $response->assertStatus(200);
+
+        $meta = TemplateLayout::query()->where('template_id', $this->template->id)->where('name', 'shop/show')->firstOrFail()->content['meta'];
+        $this->assertSame('fas fa-store', $meta['icon'] ?? null, 'icon 이 저장 시 유실됨');
+        $this->assertSame('$t:shop.editor_label', $meta['editor_label'] ?? null, 'editor_label 이 저장 시 유실됨');
+        $this->assertSame('e2e:allow 표시 문구만 바꿨다', $meta['_e2e_allow'] ?? null, '_e2e_allow 가 저장 시 유실됨');
+        $this->assertSame('{{product?.data?.name ?? \'\'}}', $meta['seo']['title'] ?? null, 'seo.title 이 저장 시 유실됨');
+        $this->assertSame('{{product?.data?.summary ?? \'\'}}', $meta['seo']['description'] ?? null, 'seo.description 이 저장 시 유실됨');
+        $this->assertSame(['card' => 'summary_large_image', 'title' => '{{product?.data?.name ?? \'\'}}'], $meta['seo']['twitter'] ?? null, 'seo.twitter 가 저장 시 유실됨');
+    }
+
+    /**
      * 레이아웃 업데이트 시 meta.seo 하위의 비표준 키 보존 (vars / page_type / extensions / toggle_setting)
      *
      * content.meta.seo 도 'array' 규칙이고 enabled/data_sources/priority 등 일부 하위 키만
@@ -2188,7 +2318,7 @@ class LayoutControllerTest extends TestCase
     }
 
     /**
-     * 미리보기 주소는 템플릿 종류의 화면 셸을 가리킨다 (7.1.0 O-G3-6).
+     * 미리보기 주소는 템플릿 종류의 화면 셸을 가리킨다 (7.1.0).
      *
      * 관리자 템플릿 레이아웃을 사용자 셸(`/preview/{token}`)로 열면 활성 사용자 템플릿의 컴포넌트·다국어·라우트로
      * 그려졌다. 관리자 템플릿은 `/admin/preview/{token}`, 사용자 템플릿은 `/preview/{token}` 이다.

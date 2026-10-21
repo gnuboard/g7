@@ -49,12 +49,12 @@ class GenerateLayoutTestFixture extends Command
 
         // 파일 존재 확인
         if (! File::exists($layoutPath)) {
-            $this->error("레이아웃 파일을 찾을 수 없습니다: {$layoutPath}");
+            $this->error(__('layouts.console.generate_fixture.layout_not_found', ['path' => $layoutPath]));
 
             return self::FAILURE;
         }
 
-        $this->info("레이아웃 로드 중: {$layoutPath}");
+        $this->info(__('layouts.console.generate_fixture.loading', ['path' => $layoutPath]));
 
         // 소스 선택은 설치 경로와 **같은 규약**을 쓴다 — 소스 SSoT(`.g7.html`) 우선, 없으면 짝
         // `.json`, 설정 `LAYOUT_INSTALL_SOURCE`(template.layout_markup.install_source)가 json 이면 역전
@@ -71,18 +71,18 @@ class GenerateLayoutTestFixture extends Command
         }
 
         if ($source === null) {
-            $this->error("레이아웃 소스를 찾을 수 없습니다: {$layoutPath}");
+            $this->error(__('layouts.console.generate_fixture.source_not_found', ['path' => $layoutPath]));
 
             return self::FAILURE;
         }
 
         if ($source['markup']) {
-            $this->info('소스로 로드합니다: '.$source['path']);
+            $this->info(__('layouts.console.generate_fixture.loading_source', ['path' => $source['path']]));
 
             try {
                 $layoutData = $this->compileMarkupLayoutFile($source['path']);
             } catch (\Throwable $e) {
-                $this->error('소스 컴파일 실패: '.$e->getMessage());
+                $this->error(__('layouts.console.generate_fixture.compile_failed', ['error' => $e->getMessage()]));
 
                 return self::FAILURE;
             }
@@ -90,7 +90,7 @@ class GenerateLayoutTestFixture extends Command
             $layoutData = json_decode(File::get($source['path']), true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->error('JSON 파싱 실패: '.json_last_error_msg());
+                $this->error(__('layouts.console.generate_fixture.json_parse_failed', ['error' => json_last_error_msg()]));
 
                 return self::FAILURE;
             }
@@ -102,12 +102,18 @@ class GenerateLayoutTestFixture extends Command
 
         // `.json` 문서의 깨진 조각 참조는 설치와 같이 빈 자리로 관용한다(#712) — 종전에는 이 명령만 관용 플래그를
         // 넘기지 않아, 설치는 통과하는 JSON 레이아웃의 fixture 를 만들 수 없었다.
+        // 관용 경고가 어느 레이아웃의 참조인지 말하도록 검증 중 레이아웃 파일을 알린다 — 설치 검증은 넘기는데
+        // 이 명령만 넘기지 않아 경고가 「JSON 레이아웃  에서 조각 …」(이름 빈칸)으로 찍혔다(7.1.1 출시 전).
+        $this->currentLayoutFile = $source['path'];
+
         try {
             $mergedLayout = $this->resolveAllPartials($layoutData, $basePath, 0, $dataSources, ! $source['markup']);
         } catch (\Exception $e) {
-            $this->error('Partial 병합 실패: '.$e->getMessage());
+            $this->error(__('layouts.console.generate_fixture.partial_merge_failed', ['error' => $e->getMessage()]));
 
             return self::FAILURE;
+        } finally {
+            $this->currentLayoutFile = null;
         }
 
         if ($mergedLayout === self::SKIPPED_PARTIAL) {
@@ -125,7 +131,7 @@ class GenerateLayoutTestFixture extends Command
         // 디렉토리 생성
         if (! File::exists($outputDir)) {
             File::makeDirectory($outputDir, 0755, true);
-            $this->info("디렉토리 생성: {$outputDir}");
+            $this->info(__('layouts.console.generate_fixture.directory_created', ['path' => $outputDir]));
         }
 
         // 출력 파일명 결정
@@ -141,8 +147,8 @@ class GenerateLayoutTestFixture extends Command
         $jsonOutput = json_encode($mergedLayout, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         File::put($outputPath, $jsonOutput);
 
-        $this->info("Fixture 생성 완료: {$outputPath}");
-        $this->info('파일 크기: '.number_format(strlen($jsonOutput)).' bytes');
+        $this->info(__('layouts.console.generate_fixture.done', ['path' => $outputPath]));
+        $this->info(__('layouts.console.generate_fixture.file_size', ['size' => number_format(strlen($jsonOutput))]));
 
         return self::SUCCESS;
     }

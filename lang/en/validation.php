@@ -597,6 +597,13 @@ return [
         'current_locale_required_unnamed' => 'The :language (:locale) value is required.',
     ],
 
+    // Member search (member picker) field display names
+    'user_search' => [
+        'attributes' => [
+            'uuid' => 'member',
+        ],
+    ],
+
     // Menu validation messages
     'menu' => [
         // Display names of multilingual fields — used as the field name in the required-locale message
@@ -1318,6 +1325,15 @@ return [
 
     'attributes' => [
         'layout_source' => 'layout install source',
+        'layout_meta_icon' => 'menu icon',
+        'layout_meta_editor_label' => 'editor label',
+        'layout_meta_authoring_note' => 'authoring note',
+        'layout_meta_leave_guard' => 'leave confirmation condition',
+        'layout_meta_leave_message' => 'leave confirmation message',
+        'layout_seo_title' => 'SEO title',
+        'layout_seo_description' => 'SEO description',
+        'layout_seo_twitter' => 'Twitter card',
+        'exclude_withdrawn' => 'exclude withdrawn members',
         'since' => 'reference time',
         'skip_waiting' => 'skip waiting period',
         'targets' => 'targets',

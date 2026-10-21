@@ -490,7 +490,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{dep.is_met}}",
                                                                     "props": {
-                                                                        "className": "text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded"
+                                                                        "className": "text-success-soft px-2 py-0.5 bg-green-50 dark:bg-green-900 rounded"
                                                                     },
                                                                     "text": "$t:admin.modules.modals.dependency_met"
                                                                 },
@@ -739,7 +739,7 @@
                                                             "name": "Span",
                                                             "if": "{{lp.origin === 'user_installed'}}",
                                                             "props": {
-                                                                "className": "text-success-soft px-2 py-0.5 bg-green-100 dark:bg-green-900 rounded"
+                                                                "className": "text-success-soft px-2 py-0.5 bg-green-50 dark:bg-green-900 rounded"
                                                             },
                                                             "text": "$t:admin.language_packs.origin.user_installed"
                                                         },
@@ -748,7 +748,7 @@
                                                             "name": "Span",
                                                             "if": "{{lp.status === 'active'}}",
                                                             "props": {
-                                                                "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded"
+                                                                "className": "px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400 rounded"
                                                             },
                                                             "text": "$t:admin.language_packs.status.active"
                                                         },
@@ -757,7 +757,7 @@
                                                             "name": "Span",
                                                             "if": "{{lp.status === 'inactive'}}",
                                                             "props": {
-                                                                "className": "text-tertiary px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                                                "className": "text-body px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
                                                             },
                                                             "text": "$t:admin.language_packs.status.inactive"
                                                         },
@@ -766,7 +766,7 @@
                                                             "name": "Span",
                                                             "if": "{{lp.status === 'uninstalled'}}",
                                                             "props": {
-                                                                "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded"
+                                                                "className": "px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded"
                                                             },
                                                             "text": "$t:admin.language_packs.status.uninstalled"
                                                         },

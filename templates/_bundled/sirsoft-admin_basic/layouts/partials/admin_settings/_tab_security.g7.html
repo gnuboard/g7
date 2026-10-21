@@ -20,7 +20,7 @@
           <div>
             <div class="flex-center">
               <span class="text-heading">$t:admin.settings.security.force_https</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
             </div>
             <p class="text-label-subtle">$t:admin.settings.security.force_https_desc</p>
             <span data-if="{{_local.errors?.['security.force_https']}}" class="form-error">{{_local.errors?.['security.force_https']?.[0] ?? ''}}</span>
@@ -41,7 +41,7 @@
           <div>
             <div class="flex-center">
               <span class="text-heading">$t:admin.settings.security.login_attempt_limit</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
             </div>
             <p class="text-label-subtle">$t:admin.settings.security.login_attempt_limit_desc</p>
             <span data-if="{{_local.errors?.['security.login_attempt_enabled']}}" class="form-error">{{_local.errors?.['security.login_attempt_enabled']?.[0] ?? ''}}</span>
@@ -103,7 +103,7 @@
         <div class="flex-center gap-3">
           <responsive on="portable" class="row-stack"/>
           <input type="text" value="{{appKey?.data?.app_key ?? ''}}" :disabled="true" class="input flex-1 font-mono"/>
-          <button disabled="{{_computed.isReadOnly}}" class="px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors whitespace-nowrap">
+          <button type="button" disabled="{{_computed.isReadOnly}}" class="px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors whitespace-nowrap">
             <responsive on="portable" class="w-full px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"/>
             <on type="click">
               <open-modal target="settings_password_confirm_modal"/>

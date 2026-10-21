@@ -370,7 +370,7 @@ class SecretPostAttachmentAccessTest extends BoardTestCase
     /**
      * 비밀글 목록 썸네일도 작성자·게시판 관리자에게는 서명 주소로 싣고, 다른 사람에게는 싣지 않는다.
      *
-     * 2026-10-08 실측(O-K4-10): 비밀글 첨부 서빙은 무서명 미리보기를 막는데(작성자·관리자도 <img> 요청에는
+     * 2026-10-08 실측: 비밀글 첨부 서빙은 무서명 미리보기를 막는데(작성자·관리자도 <img> 요청에는
      * 토큰이 실리지 않는다) 목록 썸네일만 무서명 주소로 나가, 작성자·관리자 카드형·갤러리형 목록 이미지가 403 으로 깨졌다.
      *
      * @scenario viewer=owner
@@ -426,7 +426,7 @@ class SecretPostAttachmentAccessTest extends BoardTestCase
     /**
      * 블라인드 글의 첨부 표시(attachment_count·has_attachment)는 작성자·게시판 관리자에게만 싣는다.
      *
-     * 2026-10-08 실측(O-K4-9): 블라인드 글 첨부 목록·서빙은 막았지만 목록·상세 응답의 첨부 개수가 남아
+     * 2026-10-08 실측: 블라인드 글 첨부 목록·서빙은 막았지만 목록·상세 응답의 첨부 개수가 남아
      * 기본형·카드형·갤러리형 목록에 클립 아이콘이 보였다(파일은 받을 수 없는데 첨부가 있다는 표시만 남음).
      *
      * @scenario viewer=regular

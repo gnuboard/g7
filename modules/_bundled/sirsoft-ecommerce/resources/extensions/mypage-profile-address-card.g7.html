@@ -25,7 +25,7 @@
           <icon name="arrow-right" class="text-sm"/>
         </a>
       </div>
-      <span data-if="{{!user?.data?.ecommerce_default_address}}" class="block text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.user_address_card.empty_notice</span>
+      <span data-if="{{user !== undefined &amp;&amp; user !== null &amp;&amp; (!user?.data?.ecommerce_default_address)}}" class="block text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.user_address_card.empty_notice</span>
       <div data-ref="ext_my_default_address_body" data-if="{{!!user?.data?.ecommerce_default_address}}">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="text-sm font-medium text-gray-900 dark:text-white">{{user?.data?.ecommerce_default_address?.recipient_name}}</span>

@@ -19,7 +19,7 @@ description: |
   컬렉션·입력 value·단일 객체는 dataProps 소관. audit editor-datapropspec-shape-valid 가 직교 위반·
   shape enum·sources 종류를 정적 차단. 구조/수치/enum/boolean prop 에 데이터 연결 UI 0(회귀 가드).
 
- 친화 명칭: 후보 표시 명칭은 `$t:` 키 — data_source `label_key`(6-c 관리) + editor-spec
+  친화 명칭: 후보 표시 명칭은 `$t:` 키 — data_source `label_key`(6-c 관리) + editor-spec
   `stateLabels` 카탈로그(_global.currentUser·query.q 등). 편집 대상 템플릿 사전으로 해석, 미커버는
   키 폴백(raw 키 노출 회피는 피커 책임). 언어팩 동적 로케일 자동 대응(고정 ko/en/ja 하드코딩 0).
 
@@ -56,6 +56,7 @@ effects:
   - candidate_label_resolved_via_edit_template_dictionary_fallback_to_key
   - data_source_label_key_deferred_to_6c_with_exhaustive_coverage_mandate
   # 연결/디그레이드
+  - data_binding_section_renders_declared_dataprops_rows
   - select_candidate_writes_binding_expression_to_props_propkey
   - clear_removes_binding_back_to_unconnected
   - single_path_binding_prefilled_in_picker_via_parse

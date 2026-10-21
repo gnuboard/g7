@@ -26,7 +26,7 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.naverpay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.naverpay.description',
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'N', 'class' => 'bg-green-500 text-white'],
+            'brand_mark' => ['text' => 'N', 'class' => 'bg-green-700 text-white'],
         ],
         [
             'id' => 'nicepay_kakaopay',
@@ -56,14 +56,14 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.payco.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.payco.description',
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'P', 'class' => 'bg-red-500 text-white'],
+            'brand_mark' => ['text' => 'P', 'class' => 'bg-red-600 text-white'],
         ],
         [
             'id' => 'nicepay_skpay',
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.skpay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.skpay.description',
             'icon' => 'wallet',
-            'brand_mark' => ['text' => '11', 'class' => 'bg-orange-500 text-white'],
+            'brand_mark' => ['text' => '11', 'class' => 'bg-orange-700 text-white'],
         ],
         [
             'id' => 'nicepay_ssgpay',

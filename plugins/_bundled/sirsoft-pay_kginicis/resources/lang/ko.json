@@ -230,7 +230,21 @@
         "escrow_deny_confirm_status_label": "구매거절 상태",
         "escrow_deny_confirm_buyer_denied": "구매거절",
         "escrow_deny_confirm_buyer_denied_at": "일시",
-        "easy_pay_provider": "간편결제: {{provider}}"
+        "easy_pay_provider": "간편결제: {{provider}}",
+        "escrow_couriers": {
+            "hanjin": "한진택배",
+            "cj": "CJ대한통운",
+            "lotte_parcel": "롯데택배",
+            "epost": "우체국택배",
+            "lotte_global": "롯데글로벌로지스",
+            "kyungdong": "경동택배",
+            "cvs": "편의점택배",
+            "ilyang": "일양로지스",
+            "chunil": "천일택배",
+            "cvsnet": "CVSnet편의점",
+            "daesin": "대신택배",
+            "kunyoung": "건영택배"
+        }
     },
     "settings": {
         "title": "KG 이니시스 설정",

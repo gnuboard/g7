@@ -7,7 +7,7 @@
         <label data-ref="inquiry_board_label" class="block text-sm font-medium text-gray-900 mb-1 dark:text-white">$t:sirsoft-board.admin.ecommerce_settings.inquiry.board_label</label>
         <select data-ref="inquiry_board_select" name="inquiry.board_slug" value="{{_local.form?.inquiry?.board_slug ?? ''}}" options="{{[{value: '', label: $t('sirsoft-board.admin.ecommerce_settings.inquiry.board_placeholder')}].concat((board_list_for_inquiry?.data?.data ?? []).map(b => ({value: b.slug, label: b.name})))}}" class="{{_local.errors?.['inquiry.board_slug'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
       </div>
-      <span data-ref="inquiry_board_select_error" data-if="{{_local.errors?.['inquiry.board_slug']}}" class="block text-xs text-red-500 mt-1 dark:text-red-400">{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}</span>
+      <span data-ref="inquiry_board_select_error" data-if="{{_local.errors?.['inquiry.board_slug']}}" class="block text-xs text-red-600 mt-1 dark:text-red-400">{{_local.errors?.['inquiry.board_slug']?.[0] ?? ''}}</span>
     </div>
     <div data-ref="inquiry_board_hints" class="space-y-3">
       <p data-ref="inquiry_board_hint_secret" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-board.admin.ecommerce_settings.inquiry.hint_secret</p>

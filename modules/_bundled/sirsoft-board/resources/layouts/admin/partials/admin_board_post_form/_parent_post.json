@@ -40,7 +40,7 @@
                     "name": "Span",
                     "if": "{{form_meta?.data?.parent_post?.is_notice}}",
                     "props": {
-                        "className": "text-danger-soft inline-flex items-center px-2 py-0.5 rounded font-medium bg-red-100 dark:bg-red-900"
+                        "className": "text-xs board-tone-danger inline-flex items-center px-2 py-0.5 rounded font-medium bg-red-100 dark:bg-red-900"
                     },
                     "text": "$t:sirsoft-board.admin.posts.notice"
                 },
@@ -49,7 +49,7 @@
                     "name": "Span",
                     "if": "{{form_meta?.data?.parent_post?.is_secret}}",
                     "props": {
-                        "className": "text-warning-soft inline-flex items-center px-2 py-0.5 rounded font-medium bg-yellow-100 dark:bg-yellow-900"
+                        "className": "text-xs board-tone-warning inline-flex items-center px-2 py-0.5 rounded font-medium bg-yellow-100 dark:bg-yellow-900"
                     },
                     "text": "$t:sirsoft-board.admin.posts.secret"
                 }

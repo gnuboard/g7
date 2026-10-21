@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 스케줄 목록 응답의 컬렉션 abilities (G22).
+ * 스케줄 목록 응답의 컬렉션 abilities (7.1.0 abilities 게이트 점검).
  *
  * 「예약 작업 등록」·일괄 상태 변경·행 선택은 페이지 수준 버튼이라 행 abilities 로는 잠글 수 없다.
  * 목록 응답에 라우트 미들웨어와 같은 식별자로 판정한 컬렉션 abilities 가 실려야 화면이 잠근다.

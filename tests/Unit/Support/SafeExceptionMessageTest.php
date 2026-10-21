@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 /**
- * 화면에 실을 예외 사유 판정 (7.1.0 전수 실측 O-F7).
+ * 화면에 실을 예외 사유 판정 (7.1.0 전수 실측).
  */
 class SafeExceptionMessageTest extends TestCase
 {

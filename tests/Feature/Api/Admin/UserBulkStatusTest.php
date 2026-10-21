@@ -340,7 +340,7 @@ class UserBulkStatusTest extends TestCase
 
     /**
      * after_bulk_update 훅에는 실제로 바뀐 회원만 실린다 — 등급(최고관리자)·범위로 제외된 회원이 실리면
-     * 활동 로그 리스너가 바뀌지 않은 회원에게 「상태 변경」 기록을 남긴다(#736 영역 C 실측: 제외된 최고관리자에
+     * 활동 로그 리스너가 바뀌지 않은 회원에게 「상태 변경」 기록을 남긴다(#736 실측: 제외된 최고관리자에
      * `user.bulk_update_status {status: inactive}` 가 남음).
      *
      * @scenario status=inactive, target=super_admin

@@ -87,6 +87,10 @@
                         "id": "gdpr_notice_log_grid",
                         "type": "composite",
                         "name": "DataGrid",
+                        "blur_until_loaded": {
+                            "enabled": true,
+                            "data_sources": "gdprNoticeLog"
+                        },
                         "responsive": {
                             "mobile": {
                                 "props": {
@@ -124,7 +128,7 @@
                             "selectable": false,
                             "idField": "id",
                             "serverHasMorePages": "{{gdprNoticeLog?.data?.pagination?.has_more_pages ?? false}}",
-                            "emptyMessage": "$t:sirsoft-gdpr.annual_notice.empty",
+                            "emptyMessage": "{{gdprNoticeLog === undefined ? '' : (gdprNoticeLog === null ? $t('sirsoft-gdpr.common.list_load_failed') : $t('sirsoft-gdpr.annual_notice.empty'))}}",
                             "columns": [
                                 {
                                     "field": "created_at",

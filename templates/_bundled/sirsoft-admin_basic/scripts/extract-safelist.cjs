@@ -211,6 +211,53 @@ function collectExtensionClasses(into) {
 const extStats = collectExtensionClasses(classes);
 console.log(`확장 조각 ${extStats.files}개에서 클래스 ${extStats.added}개 추가`);
 
+/*
+ * 모듈·플러그인 **PHP 리스너가 만드는 레이아웃 조각**의 클래스도 담는다.
+ *
+ * 결제 플러그인의 「테스트 결제 경고」처럼 레이아웃 훅 리스너(`src/**\/*.php`)가 화면 JSON 에 노드를 직접 끼워 넣는
+ * 경우, 그 `className` 은 레이아웃 파일 어디에도 없어 위 두 경로가 모두 놓친다. 그 클래스가 이 템플릿 다른 곳에서
+ * 우연히 쓰이지 않으면 규칙이 생기지 않는다 — 실측: 「실결제로 설정」 단추의 다크 hover 바탕(주황 900·40%) 규칙이 빠져
+ * 다크 hover 때 라이트 hover 바탕(주황 100)이 그대로 걸려 밝은 주황 글자가 사라졌다(대비 1.0).
+ * (이 파일도 Tailwind 가 훑는 폴더 안이라 주석에 class 이름을 그대로 적으면 그 class 가 생겨 누락이 가려진다 — 적지 않는다.)
+ * PHP 배열 리터럴 `'className' => '…'`(`*ClassName` 포함)의 따옴표 안 값을 그대로 담는다.
+ */
+function collectPhpLayoutClasses(into) {
+  const roots = [path.join(__dirname, '../../../../modules/_bundled'), path.join(__dirname, '../../../../plugins/_bundled')];
+  const phpFiles = [];
+  const walkPhp = (dir) => {
+    if (!fs.existsSync(dir)) return;
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walkPhp(p);
+      else if (e.name.endsWith('.php')) phpFiles.push(p);
+    }
+  };
+  for (const root of roots) {
+    if (!fs.existsSync(root)) continue;
+    for (const entry of fs.readdirSync(root)) walkPhp(path.join(root, entry, 'src'));
+  }
+  let added = 0;
+  let files = 0;
+  for (const file of phpFiles) {
+    const src = fs.readFileSync(file, 'utf-8');
+    let hit = false;
+    for (const m of src.matchAll(/'(?:className|[a-zA-Z]+ClassName)'\s*=>\s*'([^'\\]*)'/g)) {
+      hit = true;
+      for (const tok of m[1].split(/\s+/)) {
+        if (tok && !into.has(tok)) {
+          into.add(tok);
+          added++;
+        }
+      }
+    }
+    if (hit) files++;
+  }
+  return { files, added };
+}
+
+const phpStats = collectPhpLayoutClasses(classes);
+console.log(`PHP 레이아웃 조각 ${phpStats.files}개에서 클래스 ${phpStats.added}개 추가`);
+
 // main.css에 @source inline() 자동 삽입
 const mainCssPath = path.join(__dirname, '../src/styles/main.css');
 let mainCss = fs.readFileSync(mainCssPath, 'utf-8');

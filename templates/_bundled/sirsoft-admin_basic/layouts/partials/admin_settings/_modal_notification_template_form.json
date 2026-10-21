@@ -19,6 +19,18 @@
             "type": "basic",
             "name": "Div",
             "blur_until_loaded": "{{_global.notification_template_form_modal?.isSaving}}",
+            "lifecycle": {
+                "onUnmount": [
+                    {
+                        "comment": "창이 닫혀 본문이 내려갈 때(창 머리 닫기·Esc 포함, 어느 갈래로 닫든) 창 이름 공간을 비운다 — 「특정 회원」 검색 결과(이름·이메일)와\n             고른 회원 이름이 다음에 열 때까지 전역에 남지 않게(7.1.1). 이 틀은 조건·반복 없이 창이 열려 있는 동안 내내 붙어 있고, 여는 쪽이 매번 새로 채운다",
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "notification_template_form_modal": null
+                        }
+                    }
+                ]
+            },
             "props": {
                 "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
             },
@@ -123,7 +135,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                        "className": "text-body font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
                                     },
                                     "text": "{{_global.notification_template_form_modal?.definition?.type ?? ''}}"
                                 },
@@ -131,7 +143,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-400 dark:text-gray-500"
+                                        "className": "text-sm text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "·"
                                 },
@@ -232,7 +244,7 @@
                                                             "props": {
                                                                 "type": "button",
                                                                 "aria-label": "$t:admin.settings.notification_definitions.recipients.remove_rule|index={{rcptIdx + 1}}",
-                                                                "className": "p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                                                "className": "p-1 text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                                                             },
                                                             "children": [
                                                                 {
@@ -445,17 +457,18 @@
                                                                             },
                                                                             "debounce": 300,
                                                                             "onSuccess": {
+                                                                                "comment": "창이 닫힌 뒤(이름 공간 null) 도착한 응답은 쓰지 않는다 — 점 경로로 쓰면 닫힌 창의 이름 공간이 검색 결과(회원 이름·이메일)를 담은 채 다시 생긴다. 액션 if 는 요청 시점 상태를 보므로 값 식(평가 시점 최신 _global)에서 가른다(7.1.1)",
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "global",
-                                                                                    "notification_template_form_modal.roleSearchResults": "{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"
+                                                                                    "notification_template_form_modal": "{{_global.notification_template_form_modal == null ? null : ({ roleSearchResults: (response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier })) })}}"
                                                                                 }
                                                                             },
                                                                             "onError": {
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "global",
-                                                                                    "notification_template_form_modal.roleSearchResults": []
+                                                                                    "notification_template_form_modal": "{{_global.notification_template_form_modal == null ? null : ({ roleSearchResults: [] })}}"
                                                                                 }
                                                                             }
                                                                         },
@@ -567,7 +580,7 @@
                                                                     "name": "SearchableDropdown",
                                                                     "actions": [
                                                                         {
-                                                                            "comment": "회원 검색 — 역할 검색과 같은 형태다. 이쪽은 여러 명을 고를 수 있어(`multiple`)\n                           이미 고른 회원을 목록 **앞쪽**에 두고 검색 결과에서 그들을 걸러 낸다.",
+                                                                            "comment": "회원 검색 — 역할 검색과 같은 형태다. 이쪽은 여러 명을 고를 수 있어(`multiple`)\n                           이미 고른 회원을 목록 **앞쪽**에 두고 검색 결과에서 그들을 걸러 낸다.\n                           탈퇴 회원은 수신자로 고르지 않는다(exclude_withdrawn) — 연락처가 익명화되고 바깥 채널 발송이 막혀 골라도 받지 못한다(2026-10-18 관찰).",
                                                                             "event": "onSearch",
                                                                             "handler": "apiCall",
                                                                             "target": "/api/admin/users/search",
@@ -576,22 +589,24 @@
                                                                             "params": {
                                                                                 "method": "GET",
                                                                                 "query": {
-                                                                                    "keyword": "{{$args[0]}}"
+                                                                                    "keyword": "{{$args[0]}}",
+                                                                                    "exclude_withdrawn": "1"
                                                                                 }
                                                                             },
                                                                             "debounce": 300,
                                                                             "onSuccess": {
+                                                                                "comment": "창이 닫힌 뒤(이름 공간 null) 도착한 응답은 쓰지 않는다 — 점 경로로 쓰면 닫힌 창의 이름 공간이 검색 결과(회원 이름·이메일)를 담은 채 다시 생긴다. 액션 if 는 요청 시점 상태를 보므로 값 식(평가 시점 최신 _global)에서 가른다(7.1.1)",
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "global",
-                                                                                    "notification_template_form_modal.userSearchResults": "{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"
+                                                                                    "notification_template_form_modal": "{{_global.notification_template_form_modal == null ? null : ({ userSearchResults: (response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email })) })}}"
                                                                                 }
                                                                             },
                                                                             "onError": {
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "global",
-                                                                                    "notification_template_form_modal.userSearchResults": []
+                                                                                    "notification_template_form_modal": "{{_global.notification_template_form_modal == null ? null : ({ userSearchResults: [] })}}"
                                                                                 }
                                                                             }
                                                                         },
@@ -1102,13 +1117,27 @@
                             },
                             "children": [
                                 {
+                                    "comment": "취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다",
                                     "type": "basic",
                                     "name": "Button",
                                     "actions": [
                                         {
                                             "type": "click",
-                                            "handler": "closeModal",
-                                            "target": "modal_notification_template_form"
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "closeModal",
+                                                    "target": "modal_notification_template_form"
+                                                },
+                                                {
+                                                    "comment": "취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1)",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "notification_template_form_modal": null
+                                                    }
+                                                }
+                                            ]
                                         }
                                     ],
                                     "props": {

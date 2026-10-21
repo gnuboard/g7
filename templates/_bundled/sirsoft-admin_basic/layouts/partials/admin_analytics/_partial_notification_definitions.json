@@ -81,7 +81,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "triangle-exclamation",
-                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"
                             }
                         },
                         {
@@ -110,7 +110,7 @@
         {
             "type": "basic",
             "name": "P",
-            "if": "{{_computed.canReadDefinitions && !analytics_notification_definitions?.loading && (analytics_notification_definitions?.data?.data ?? []).filter(d => d.hook_prefix === 'core.analytics').length === 0}}",
+            "if": "{{_computed.canReadDefinitions && analytics_notification_definitions !== undefined && (analytics_notification_definitions?.data?.data ?? []).filter(d => d.hook_prefix === 'core.analytics').length === 0}}",
             "props": {
                 "className": "text-label-subtle py-4 text-center"
             },

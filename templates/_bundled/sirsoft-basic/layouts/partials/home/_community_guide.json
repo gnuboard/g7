@@ -50,7 +50,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-green-500 mt-0.5"
+                                "className": "text-green-700 dark:text-green-600 mt-0.5"
                             },
                             "text": "•"
                         },
@@ -72,7 +72,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 mt-0.5"
+                                "className": "text-red-600 dark:text-red-400 mt-0.5"
                             },
                             "text": "•"
                         },
@@ -94,7 +94,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 mt-0.5"
+                                "className": "text-red-600 dark:text-red-400 mt-0.5"
                             },
                             "text": "•"
                         },

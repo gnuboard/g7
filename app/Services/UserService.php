@@ -713,11 +713,12 @@ class UserService
      * 키워드로 사용자를 검색합니다. (이름, 닉네임, 이메일)
      *
      * @param  string  $keyword  검색할 키워드
+     * @param  bool  $excludeWithdrawn  탈퇴 회원을 뺄지 여부 — 알림 수신자처럼 고르는 자리는 true, 기록을 찾는 목록 필터는 false(기본)
      * @return Collection 검색된 사용자 컬렉션
      */
-    public function searchByKeyword(string $keyword): Collection
+    public function searchByKeyword(string $keyword, bool $excludeWithdrawn = false): Collection
     {
-        $result = $this->userRepository->searchByKeyword($keyword);
+        $result = $this->userRepository->searchByKeyword($keyword, $excludeWithdrawn);
 
         HookManager::doAction('core.user.after_search', $keyword, $result->count());
 
@@ -907,7 +908,7 @@ class UserService
 
         if (empty($userIds)) {
             // 훅에는 실제로 바뀐 회원만 싣는다 — 활동 로그 리스너가 이 목록의 회원마다 「상태 변경」 을 남기므로,
-            // 등급·범위로 제외된 회원을 실으면 바뀌지 않은 회원에게 변경 기록이 생긴다(#736 영역 C 실측).
+            // 등급·범위로 제외된 회원을 실으면 바뀌지 않은 회원에게 변경 기록이 생긴다(#736 실측).
             HookManager::doAction('sirsoft-core.user.after_bulk_update', [], $status, 0);
 
             return [

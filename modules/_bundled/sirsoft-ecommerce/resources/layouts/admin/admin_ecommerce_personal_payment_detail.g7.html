@@ -19,10 +19,10 @@
           <div class="flex-center flex-wrap gap-2 text-sm text-secondary">
             <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.meta.payment_number:</span>
             <span class="font-medium text-primary">PP20251028-005</span>
-            <span class="text-gray-300 dark:text-gray-600">|</span>
+            <span class="text-gray-500 dark:text-gray-400">|</span>
             <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.meta.created_at:</span>
             <span class="font-medium text-primary">2025-10-28 09:15:30</span>
-            <span class="text-gray-300 dark:text-gray-600">|</span>
+            <span class="text-gray-500 dark:text-gray-400">|</span>
             <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.meta.status:</span>
             <span class="badge badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
           </div>
@@ -30,13 +30,13 @@
         <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
           <button type="button" class="btn btn-outline">$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.list</button>
           <button type="button" class="btn btn-outline">$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.edit</button>
-          <button type="button" class="btn btn-primary bg-red-600 dark:bg-red-700 hover:bg-red-700">$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.delete</button>
+          <button type="button" class="btn btn-primary bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800 text-white dark:text-white">$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.delete</button>
         </div>
       </div>
       <div data-ref="product_info_card" class="admin-card mb-6">
         <div data-ref="product_header" class="flex-start justify-between mb-4">
           <div>
-            <div class="text-lg font-semibold text-heading">스탠다드 멤버십 6개월</div>
+            <div class="text-lg font-semibold text-heading">$t:sirsoft-ecommerce.admin.sample.products.standard_membership_6m</div>
             <div class="text-xl font-bold text-heading mt-1">₩60,000</div>
           </div>
           <span class="badge badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
@@ -53,7 +53,7 @@
             </div>
             <div class="flex-center gap-2">
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.payer_name</span>
-              <span class="text-heading">김지영</span>
+              <span class="text-heading">$t:sirsoft-ecommerce.admin.sample.people.kim_jiyoung</span>
             </div>
           </div>
           <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm mb-3">
@@ -72,20 +72,20 @@
           </span>
         </div>
         <div data-ref="status_alert" class="alert-warning">
-          <icon name="clock" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+          <icon name="clock" class="text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"/>
           <span class="ecommerce-tone-warning-soft text-xs">$t:sirsoft-ecommerce.admin.personal_payment_detail.status_message.pending</span>
         </div>
       </div>
       <div data-ref="info_cards_grid" class="grid-2col-responsive mb-6">
         <div data-ref="member_info_card" class="admin-card">
           <div class="flex-center gap-2 mb-4">
-            <icon name="user" class="text-xl icon-muted"/>
+            <icon name="user" class="text-xl icon-muted text-gray-500 dark:text-gray-400"/>
             <h3 class="card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.title</h3>
           </div>
           <div class="grid-2col">
             <div>
               <div class="text-label-subtle text-xs mb-1">$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.name</div>
-              <div class="text-heading">정수진</div>
+              <div class="text-heading">$t:sirsoft-ecommerce.admin.sample.people.jung_sujin</div>
             </div>
             <div>
               <div class="text-label-subtle text-xs mb-1">$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.member_id</div>
@@ -106,7 +106,7 @@
         </div>
         <div data-ref="payment_detail_card" class="admin-card">
           <div class="flex-center gap-2 mb-4">
-            <icon name="globe" class="text-xl icon-muted"/>
+            <icon name="globe" class="text-xl icon-muted text-gray-500 dark:text-gray-400"/>
             <h3 class="card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_detail.title</h3>
           </div>
           <div class="grid-2col">
@@ -135,7 +135,7 @@
       <div data-ref="link_memo_cards_grid" class="grid-2col-responsive mb-6">
         <div data-ref="payment_link_card" class="admin-card">
           <div class="flex-center gap-2 mb-4">
-            <icon name="link" class="text-xl icon-muted"/>
+            <icon name="link" class="text-xl icon-muted text-gray-500 dark:text-gray-400"/>
             <h3 class="card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.title</h3>
           </div>
           <div class="flex-center gap-2">
@@ -143,7 +143,7 @@
             <button type="button" class="btn btn-icon" title="$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.copy">
               <icon name="copy" class="text-xl"/>
             </button>
-            <button aria-label="$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.open" title="$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.open" type="button" class="btn btn-primary btn-icon">
+            <button aria-label="$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.open" title="$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.open" type="button" class="btn btn-primary btn-icon text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100">
               <icon name="external-link" class="text-xl"/>
             </button>
           </div>
@@ -151,7 +151,7 @@
         <div data-ref="memo_card" class="admin-card">
           <div class="flex-between mb-4">
             <div class="flex-center gap-2">
-              <icon name="file-text" class="text-xl icon-muted"/>
+              <icon name="file-text" class="text-xl icon-muted text-gray-500 dark:text-gray-400"/>
               <h3 class="card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.memo.title</h3>
             </div>
             <button type="button" class="flex-center text-sm text-blue-600 dark:text-blue-400 hover:underline gap-1">
@@ -159,17 +159,17 @@
               <span>$t:sirsoft-ecommerce.admin.personal_payment_detail.memo.edit</span>
             </button>
           </div>
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm text-secondary min-h-[60px]">가상계좌 발급 완료 - 입금 대기중</div>
+          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm text-secondary min-h-[60px]">$t:sirsoft-ecommerce.admin.sample.misc.vbank_issued_waiting</div>
         </div>
       </div>
       <div data-ref="log_section" class="admin-card">
         <div data-ref="log_header" class="flex-between cursor-pointer">
           <div class="flex-center gap-3">
-            <icon name="calendar" class="text-xl icon-muted"/>
+            <icon name="calendar" class="text-xl icon-muted text-gray-500 dark:text-gray-400"/>
             <h3 class="card-title">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.title</h3>
-            <span class="badge badge-gray">5개</span>
+            <span class="badge badge-gray">$t:sirsoft-ecommerce.admin.sample.fmt.items|count=5</span>
           </div>
-          <icon name="chevron-down" class="text-xl text-gray-400 dark:text-gray-500"/>
+          <icon name="chevron-down" class="text-xl text-gray-500 dark:text-gray-500"/>
         </div>
         <div data-ref="log_content" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
           <div data-ref="log_controls" class="flex-center flex-wrap justify-end gap-3 mb-4">
@@ -186,9 +186,9 @@
               <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_detail.log.per_page:</span>
               <select class="w-20" value="{{_local.logPerPage}}" aria-label="$t:sirsoft-ecommerce.admin.personal_payment_detail.log.per_page">
                 <options>
-                  <option :value="10">10개</option>
-                  <option :value="20">20개</option>
-                  <option :value="50">50개</option>
+                  <option :value="10">$t:sirsoft-ecommerce.admin.sample.fmt.items|count=10</option>
+                  <option :value="20">$t:sirsoft-ecommerce.admin.sample.fmt.items|count=20</option>
+                  <option :value="50">$t:sirsoft-ecommerce.admin.sample.fmt.items|count=50</option>
                 </options>
               </select>
             </div>
@@ -207,23 +207,23 @@
                 <tr>
                   <td>2025-10-28 10:30:25</td>
                   <td>
-                    <span class="log-table-actor">관리자 (admin)</span>
+                    <span class="log-table-actor">$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.admin|id=admin</span>
                   </td>
-                  <td>결제 링크 재발송</td>
+                  <td>$t:sirsoft-ecommerce.admin.sample.misc.resend_payment_link</td>
                 </tr>
                 <tr>
                   <td>2025-10-28 09:15:30</td>
                   <td>
-                    <span class="log-table-actor">시스템</span>
+                    <span class="log-table-actor">$t:sirsoft-ecommerce.admin.sample.people.system</span>
                   </td>
-                  <td>개인결제 링크 생성</td>
+                  <td>$t:sirsoft-ecommerce.admin.sample.misc.create_payment_link</td>
                 </tr>
                 <tr>
                   <td>2025-10-28 09:15:00</td>
                   <td>
-                    <span class="log-table-actor">관리자 (admin)</span>
+                    <span class="log-table-actor">$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.admin|id=admin</span>
                   </td>
-                  <td>개인결제 요청 등록</td>
+                  <td>$t:sirsoft-ecommerce.admin.sample.misc.register_payment_request</td>
                 </tr>
               </tbody>
             </table>
@@ -232,24 +232,24 @@
             <responsive on="portable" class="row-stack"/>
             <div class="log-card">
               <div class="log-card-header">
-                <span class="log-table-actor">관리자 (admin)</span>
+                <span class="log-table-actor">$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.admin|id=admin</span>
                 <span class="text-tertiary text-sm">2025-10-28 10:30:25</span>
               </div>
-              <div class="log-card-body">결제 링크 재발송</div>
+              <div class="log-card-body">$t:sirsoft-ecommerce.admin.sample.misc.resend_payment_link</div>
             </div>
             <div class="log-card">
               <div class="log-card-header">
-                <span class="log-table-actor">시스템</span>
+                <span class="log-table-actor">$t:sirsoft-ecommerce.admin.sample.people.system</span>
                 <span class="text-tertiary text-sm">2025-10-28 09:15:30</span>
               </div>
-              <div class="log-card-body">개인결제 링크 생성</div>
+              <div class="log-card-body">$t:sirsoft-ecommerce.admin.sample.misc.create_payment_link</div>
             </div>
             <div class="log-card">
               <div class="log-card-header">
-                <span class="log-table-actor">관리자 (admin)</span>
+                <span class="log-table-actor">$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.admin|id=admin</span>
                 <span class="text-tertiary text-sm">2025-10-28 09:15:00</span>
               </div>
-              <div class="log-card-body">개인결제 요청 등록</div>
+              <div class="log-card-body">$t:sirsoft-ecommerce.admin.sample.misc.register_payment_request</div>
             </div>
           </div>
           <div data-ref="pagination" class="flex-center justify-center gap-1 mt-4 pt-4">

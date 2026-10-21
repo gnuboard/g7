@@ -17,6 +17,8 @@ description: >-
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminControlNames.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminIdentityPolicyToggleName.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminModalRowKeyboard.test.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-control-names.spec.ts
 
 coverage_strategy: pairwise
@@ -37,6 +39,7 @@ effects:
   - controls_have_accessible_name   # 글자·숫자칸·체크박스·라디오·스위치·다국어칸·기본 선택칸이 자기 이름·감싼 Label·label[for]·(관리자) 곁 라벨 중 하나로 이름을 갖는다
   - listbox_reads_name_and_value   # 목록형 선택칸(Select options·SearchableDropdown)은 aria-label·aria-labelledby·곁 라벨로 「이름 + 현재 값」으로 읽힌다
   - row_controls_read_row_and_column   # DataGrid 셀 안 칸의 이름이 행을 가리킨다($rowLabel·common.row_cell·select_item·select_row_n)
+  - modal_row_selection_keyboard_operable   # 창 안 반복 행(회원 검색 결과 등)에서 클릭을 받는 요소가 단추·링크(또는 role·tabIndex·keydown)라 Tab·Enter 로 고른다
 
 validation:
   audit_rule: frontend-change-requires-e2e

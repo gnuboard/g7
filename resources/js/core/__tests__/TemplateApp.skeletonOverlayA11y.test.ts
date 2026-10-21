@@ -2,7 +2,7 @@
  * @file TemplateApp.skeletonOverlayA11y.test.ts
  * @description 스켈레톤 전환 덮개의 상태 영역 이름이 화면 언어이고, 안쪽 컴포넌트와 겹치지 않는다 (engine-v1.79.0)
  *
- * 버그 (7.1.0 원 세션 실측 O-C3b-2):
+ * 버그 (7.1.0 실측):
  *   스켈레톤 덮개 컨테이너(#g7-skeleton-overlay)가 role="status" + aria-label="Loading..." 영문 고정이었다.
  *   그 안에 PageSkeleton 이 번역된 role="status" 를 다시 그려 상태 영역이 둘 겹쳤다(ko/en/ja 모두 바깥 「Loading...」).
  *
@@ -45,7 +45,7 @@ import { TemplateApp } from '../TemplateApp';
 
 const layoutData = { components: [{ id: 'tab_content', name: 'Div', children: [] }] };
 
-describe('스켈레톤 전환 덮개 접근성 (engine-v1.79.0, O-C3b-2)', () => {
+describe('스켈레톤 전환 덮개 접근성 (engine-v1.79.0)', () => {
   let app: TemplateApp;
 
   beforeEach(() => {

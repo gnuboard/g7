@@ -4,15 +4,15 @@
   값 변경은 전부 핸들러를 거치는데, 옵션표가 중첩 배열이라 자리(index)를 함께 넘겨야 하기 때문이다. -->
 <partial description="Product Form - Product Options Section">
   <div data-ref="options" class="admin-card-accordion">
-    <div class="card-header">
+    <button type="button" class="flex w-full justify-start text-left card-header" aria-expanded="{{_local.ui.productOptionsExpanded !== false}}">
       <on type="click">
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.productOptionsExpanded="{{!_local.ui.productOptionsExpanded}}"/>
       </on>
       <icon name="sliders" class="text-gray-500 dark:text-gray-400"/>
       <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.product_options</span>
-      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.productOptionsExpanded !== false ? 'rotate-180' : ''}}"/>
-    </div>
+      <icon name="chevron-down" class="admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.productOptionsExpanded !== false ? 'rotate-180' : ''}}"/>
+    </button>
     <div data-ref="product_options_body" data-if="{{_local.ui.productOptionsExpanded !== false}}" class="row-stack">
       <div data-ref="option_required_notice" data-if="{{!_local.form.options || _local.form.options.length === 0}}" class="alert-info">
         <icon name="info-circle" class="text-xl text-blue-500 dark:text-blue-400 shrink-0"/>
@@ -52,7 +52,7 @@
                 </on>
               </multilingual-tag-input>
             </div>
-            <button data-if="{{((_local.ui.optionInputs ?? []).length) > 1 &amp;&amp; !_computed.isReadOnly}}" type="button" class="flex-center justify-center w-10 h-10 border border-red-300 dark:border-red-700 rounded text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" aria-label="$t:common.delete">
+            <button data-if="{{((_local.ui.optionInputs ?? []).length) > 1 &amp;&amp; !_computed.isReadOnly}}" type="button" class="flex-center justify-center w-10 h-10 border border-red-300 dark:border-red-700 rounded text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" aria-label="$t:common.delete">
               <on type="click">
                 <!-- 옵션 축 빼기 — 축이 하나뿐이면 뺄 수 없다 -->
                 <action handler="sirsoft-ecommerce.removeOptionInput" index="{{optIdx}}"/>
@@ -81,7 +81,7 @@
           </div>
         </div>
         <div data-if="{{_local.errors?.options}}" class="alert-danger">
-          <span class="text-red-600 dark:text-red-400 text-sm">{{_local.errors?.options?.[0]}}</span>
+          <span class="text-red-700 dark:text-red-400 text-sm">{{_local.errors?.options?.[0]}}</span>
         </div>
         <div data-ref="option_table_desktop" class="toggle-group">
           <responsive on="portable" data-if="{{false}}"/>
@@ -104,7 +104,7 @@
                 </tr>
               </thead>
               <tbody class="divider-list">
-                <tr data-each="opt, optIdx in {{_local.form.options ?? []}}" class="align-top hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800/50">
+                <tr data-each="opt, optIdx in {{_local.form.options ?? []}}" class="align-top hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td class="px-3 py-2 text-center">
                     <input type="radio" name="default_option" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.default')}}" class="radio" checked="{{opt.is_default === true}}" disabled="{{_computed.isReadOnly}}">
                       <on type="change">
@@ -217,7 +217,7 @@
                     </toggle>
                   </td>
                   <td class="px-3 py-2 text-center">
-                    <button data-if="{{!_computed.isReadOnly}}" type="button" class="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:text-red-400" aria-label="$t:common.delete">
+                    <button data-if="{{!_computed.isReadOnly}}" type="button" class="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400" aria-label="$t:common.delete">
                       <on type="click">
                         <!-- 이 옵션 줄 지우기 (넓은 화면 표) -->
                         <action handler="sirsoft-ecommerce.deleteOption" rowIndex="{{optIdx}}"/>
@@ -230,7 +230,7 @@
             </table>
           </div>
           <div data-ref="add_row_section" class="border-t border-gray-200 dark:border-gray-700">
-            <button type="button" class="flex-center w-full py-3 text-label-subtle hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+            <button type="button" class="flex-center w-full py-3 text-label-subtle hover:bg-gray-50 dark:hover:bg-gray-700 justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
               <on type="click">
                 <!-- 조합에 없는 옵션 줄을 직접 하나 더한다 -->
                 <action handler="sirsoft-ecommerce.addOptionRow" isCreate="{{!route.itemCode}}"/>
@@ -388,13 +388,13 @@
                 <!-- 그룹 헤더 — 드래그핸들 + 그룹명(다국어) + 필수 토글 + 그룹 삭제 -->
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
                   <!-- 추가 옵션 드래그 손잡이 — 폼이 읽기 전용(수정 진입은 수정 권한, 등록·복사 진입은 등록 권한 없음)이면 숨긴다(형제 삭제 버튼과 같은 조건). -->
-                  <div data-ref="additional_option_drag_handle" data-if="{{!_computed.isReadOnly}}" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 select-none" :data-drag-handle="true">
+                  <div data-ref="additional_option_drag_handle" data-if="{{!_computed.isReadOnly}}" class="text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 select-none" :data-drag-handle="true">
                     <icon name="grip-vertical" class="text-xl"/>
                   </div>
                   <div class="flex-1">
                     <div class="flex-center gap-1 mb-1">
                       <label class="form-label">$t:sirsoft-ecommerce.admin.product.options.additional_name_label</label>
-                      <span class="text-red-500 dark:text-red-400">*</span>
+                      <span class="text-red-600 dark:text-red-400">*</span>
                     </div>
                     <multilingual-input data-type="composite" name="additional_options_{{addIdx}}_name" ariaLabel="$t:common.row_cell|row={{$t('common.row_n', {n: addIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.additional_name_label')}}" value="{{addOpt.name}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.product.options.additional_name_placeholder" :maxLength="100" :required="true" error="{{_local.errors?.['additional_options.' + addIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.name.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
                       <on type="change">
@@ -427,7 +427,7 @@
                     <div class="flex-1">
                       <div class="flex-center gap-1 mb-1">
                         <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.additional_value_name_label</label>
-                        <span class="text-red-500 dark:text-red-400">*</span>
+                        <span class="text-red-600 dark:text-red-400">*</span>
                       </div>
                       <multilingual-input data-type="composite" name="additional_options_{{addIdx}}_values_{{addValIdx}}_name" ariaLabel="$t:common.row_cell|row={{$t('common.row_n', {n: addValIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.additional_value_name_label')}}" value="{{addVal.name}}" layout="compact" placeholder="$t:sirsoft-ecommerce.admin.product.options.additional_value_name_placeholder" :maxLength="100" :required="true" error="{{_local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name']?.[0] ?? _local.errors?.['additional_options.' + addIdx + '.values.' + addValIdx + '.name.ko']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}" :autoBinding="false">
                         <on type="change">

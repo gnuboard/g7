@@ -216,7 +216,7 @@
                     "name": "P",
                     "if": "{{!order.data.payment?.paid_at}}",
                     "props": {
-                        "className": "text-xs text-amber-600 dark:text-amber-400"
+                        "className": "text-xs text-amber-700 dark:text-amber-400"
                     },
                     "text": "$t:sirsoft-pay_nhnkcp.user.vbank_notice"
                 }
@@ -609,7 +609,7 @@
                     "name": "P",
                     "if": "{{nhnkcp_mock_deposit.data.is_admin_view === true}}",
                     "props": {
-                        "className": "mt-2 text-xs text-center text-orange-500 dark:text-orange-400 font-medium"
+                        "className": "mt-2 text-xs text-center text-orange-700 dark:text-orange-400 font-medium"
                     },
                     "text": "$t:sirsoft-pay_nhnkcp.user.mock_admin_notice"
                 }

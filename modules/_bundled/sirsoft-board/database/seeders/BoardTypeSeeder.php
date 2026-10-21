@@ -59,9 +59,9 @@ class BoardTypeSeeder extends Seeder implements TranslatableSeederInterface
             );
 
             if ($existing) {
-                $this->command->info("  게시판 유형 '{$boardTypeData['slug']}' 동기화 (사용자 수정 보존).");
+                $this->command->info('  '.__('sirsoft-board::messages.seeders.board_type.synced', ['slug' => $boardTypeData['slug']]));
             } else {
-                $this->command->info("  게시판 유형 '{$boardTypeData['slug']}' 생성 완료.");
+                $this->command->info('  '.__('sirsoft-board::messages.seeders.board_type.created', ['slug' => $boardTypeData['slug']]));
             }
         }
 

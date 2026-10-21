@@ -8,19 +8,19 @@ import { Svg } from './Svg';
 import { Input } from './Input';
 import { getLocaleDisplayName } from '../../support/localeName';
 
-/** 검색칸 기본 안내 — 언어와 무관하게 「Search...」 였다(7.1.0 validate R4, admin_basic D-J11 대칭) */
+/** 검색칸 기본 안내 — 언어와 무관하게 「Search...」 였다(7.1.0 전수 실측, admin_basic 대칭) */
 const selectSearchPlaceholder = (): string => {
   const translated = (window as any).G7Core?.t?.('common.search_placeholder');
   return typeof translated === 'string' && translated !== 'common.search_placeholder' ? translated : 'Search...';
 };
 
-/** 검색칸 이름 — 안내 글자와 같은 결함으로 언어와 무관하게 「Search」 로 읽혔다(7.1.0 validate R4) */
+/** 검색칸 이름 — 안내 글자와 같은 결함으로 언어와 무관하게 「Search」 로 읽혔다(7.1.0 전수 실측) */
 const selectSearchLabel = (): string => {
   const translated = (window as any).G7Core?.t?.('common.search');
   return typeof translated === 'string' && translated !== 'common.search' ? translated : 'Search';
 };
 
-/** 검색 결과 없음 문구 — 언어와 무관하게 「No results」 였다(7.1.0 validate R4) */
+/** 검색 결과 없음 문구 — 언어와 무관하게 「No results」 였다(7.1.0 전수 실측) */
 const selectNoResults = (): string => {
   const translated = (window as any).G7Core?.t?.('common.no_results');
   return typeof translated === 'string' && translated !== 'common.no_results' ? translated : 'No results';
@@ -344,7 +344,7 @@ export const Select: React.FC<SelectProps> = ({
                 value={searchTerm}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                 placeholder={searchPlaceholder ?? selectSearchPlaceholder()}
-                className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-sm text-gray-700 dark:text-gray-200 placeholder-gray-600 dark:placeholder-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 role="searchbox"
                 aria-label={searchPlaceholder ?? selectSearchLabel()}
               />
@@ -365,7 +365,7 @@ export const Select: React.FC<SelectProps> = ({
                   onClick={() => !option.disabled && handleSelect(option.value)}
                   disabled={option.disabled}
                   className={`w-full px-4 py-3 text-left flex items-center justify-between gap-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                    isSelected ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'
+                    isSelected ? 'text-blue-600 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-gray-200'
                   } ${option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                   role="option"
                   aria-selected={isSelected}
@@ -373,7 +373,7 @@ export const Select: React.FC<SelectProps> = ({
                   {option.description ? (
                     <Div className="flex flex-col gap-0.5 min-w-0">
                       <Span>{option.label}</Span>
-                      <Span className="text-xs font-normal text-gray-500 dark:text-gray-400 whitespace-normal">{option.description}</Span>
+                      <Span className="text-xs font-normal text-gray-500 dark:text-gray-300 whitespace-normal">{option.description}</Span>
                     </Div>
                   ) : (
                     <Span>{option.label}</Span>

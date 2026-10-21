@@ -63,6 +63,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | icon_url | string\|null | `/api/extensions/module/sirsoft-board/icon?v=1.2.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
 | icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
+| stuck_update | boolean | `false` | 업데이트가 도중에 멈춘 상태인지 — `updating` 으로 10분이 지났고 진행 중인 업데이트 잠금이 없으면 `true`. 관리자 카드가 「업데이트 멈춤」 표시와 「정리 후 다시 업데이트」 단추를 보일 때 쓴다 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
 | latest_version | string | `1.0.3` | 감지된 최신 배포 버전 |
 | file_version | string | `1.0.3` | 설치된 파일의 manifest 버전 |
@@ -97,6 +98,7 @@ HTTP/1.1 200
                 "status": "active",
                 "assets": null,
                 "update_available": false,
+                "stuck_update": false,
                 "update_source": null,
                 "latest_version": "1.0.3",
                 "file_version": "1.0.3",
@@ -231,7 +233,7 @@ _단건 응답: `data` 객체의 필드 (`data.module` 은 목록과 동일한 `
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| module | object | `{"identifier":"sirsoft-board", ...}` | 활성화된 모듈 정보 (`ModuleResource` — 목록 응답 항목과 동일 필드 구성) |
+| module | object | `{"identifier":"sirsoft-board", ...}` | 활성화된 모듈 정보 (`ModuleResource` — 목록 응답 항목과 동일 필드 구성). 업데이트의 판 전환이 끝나지 않은 확장이면 `version` 은 기록 판, `file_version` 은 파일 판이고 `update_available` 이 `true` 다 |
 | pending_language_packs | array | `[]` | 이전 비활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록 (재활성화 안내 모달용). 각 항목: `id`, `identifier`, `locale`, `locale_native_name`. 없으면 빈 배열 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 

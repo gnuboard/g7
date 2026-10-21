@@ -424,7 +424,7 @@ test.describe('구매자 클레임 신청내역', () => {
    * 대기 결제행의 수단은 접수 때 확정되지만 그 뒤에 낼 수 없게 될 수 있다 — 마일리지 잔액이
    * 모자라거나, 운영자가 그 수단을 카탈로그에서 내리거나. 고를 자리가 없으면 사용자는
    * 「미수납 ○○원 + 결제하기」를 보면서 누를 때마다 같은 거절을 받고 출구가 철회뿐이다
-   * (#599 3차 실측 F-1·F-2 — T1-D6).
+   * (#599 실측).
    *
    * @scenario claim_type=exchange, screen=detail, entry=none
    * @effects claim_detail_pending_payment_method_can_be_rechosen

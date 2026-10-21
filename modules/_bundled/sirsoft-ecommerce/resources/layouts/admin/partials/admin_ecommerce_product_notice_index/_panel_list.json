@@ -1,5 +1,5 @@
 {
-    "comment": "공지 템플릿 화면 왼쪽 목록. 공통정보 목록과 같은 무한 스크롤 구조이고, 검색어는 URL 에 남는다.\n  **다른 점 하나** — 항목을 고를 때 편집 중인지 묻지 않는다. 공통정보 목록은 편집 중이면 이탈\n  확인 창을 열지만, 여기서는 곧바로 선택이 바뀐다(같은 이름의 이탈 확인 창이 이 화면에도 있으나\n  목록에서 열리지 않는다).\n  선택은 `replace-url` 로 주소에 남겨 새로고침·공유에는 살아 있되 뒤로가기 이력은 늘리지 않는다.\n  행의 노출 스위치는 클릭이 행 선택으로 번지지 않도록 전파를 끊는다.",
+    "comment": "공지 템플릿 화면 왼쪽 목록. 공통정보 목록과 같은 무한 스크롤 구조이고, 검색어는 URL 에 남는다.\n  항목을 고를 때 **편집·등록 중이면 곧바로 넘어가지 않는다** — 고른 항목을 `_global.pendingTemplate*` 에\n  잡아 두고 이탈 확인 창을 연다. 이동을 완결하는 것은 그 창이다(공통정보 목록과 같은 규칙. 7.1.0 까지는\n  묻지 않고 바로 넘어가 고치던 내용이 사라졌다 — 7.1.1 출시 전 실측).\n  선택은 `replace-url` 로 주소에 남겨 새로고침·공유에는 살아 있되 뒤로가기 이력은 늘리지 않는다.\n  행의 노출 스위치는 클릭이 행 선택으로 번지지 않도록 전파를 끊는다.",
     "meta": {
         "is_partial": true,
         "description": "Product Notice Template List Panel - Left Sidebar with Search"
@@ -200,27 +200,57 @@
                             "name": "Div",
                             "actions": [
                                 {
-                                    "comment": "항목 선택 — 목록이 들고 있는 행 전체를 전역에 옮기고 주소를 갈아끼운다. 편집 중인지는 묻지 않는다(공통정보 목록과 갈리는 자리).",
+                                    "comment": "항목 선택 — 편집·등록 중이면 곧바로 넘어가지 않고 고른 항목을 대기 자리에 두고 이탈 확인 창을 연다(공통정보 목록과 같은 규칙). 이동을 완결하는 것은 그 창이다. 편집 중이 아니면 목록이 들고 있는 행 전체를 전역에 옮기고 주소를 갈아끼운다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
                                         {
-                                            "handler": "setState",
+                                            "handler": "switch",
                                             "params": {
-                                                "target": "global",
-                                                "selectedTemplateId": "{{template.id}}",
-                                                "selectedTemplate": "{{template}}",
-                                                "panelMode": "view"
-                                            }
-                                        },
-                                        {
-                                            "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (#75).",
-                                            "handler": "replaceUrl",
-                                            "params": {
-                                                "mergeQuery": true,
-                                                "query": {
-                                                    "id": "{{template.id}}",
-                                                    "mode": "view"
+                                                "value": "{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}"
+                                            },
+                                            "cases": {
+                                                "true": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "pendingTemplateId": "{{template.id}}",
+                                                                "pendingTemplate": "{{template}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "editing_confirm_modal"
+                                                        }
+                                                    ]
+                                                },
+                                                "false": {
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "selectedTemplateId": "{{template.id}}",
+                                                                "selectedTemplate": "{{template}}",
+                                                                "panelMode": "view"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "선택 상태만 주소에 기록한다 — 왼쪽 목록에 걸어둔 검색어는 그대로 둔다 (#75).",
+                                                            "handler": "replaceUrl",
+                                                            "params": {
+                                                                "mergeQuery": true,
+                                                                "query": {
+                                                                    "id": "{{template.id}}",
+                                                                    "mode": "view"
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
                                                 }
                                             }
                                         }
@@ -248,21 +278,51 @@
                                                     "handler": "sequence",
                                                     "actions": [
                                                         {
-                                                            "handler": "setState",
+                                                            "handler": "switch",
                                                             "params": {
-                                                                "target": "global",
-                                                                "selectedTemplateId": "{{template.id}}",
-                                                                "selectedTemplate": "{{template}}",
-                                                                "panelMode": "view"
-                                                            }
-                                                        },
-                                                        {
-                                                            "handler": "replaceUrl",
-                                                            "params": {
-                                                                "mergeQuery": true,
-                                                                "query": {
-                                                                    "id": "{{template.id}}",
-                                                                    "mode": "view"
+                                                                "value": "{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}"
+                                                            },
+                                                            "cases": {
+                                                                "true": {
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "pendingTemplateId": "{{template.id}}",
+                                                                                "pendingTemplate": "{{template}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "openModal",
+                                                                            "target": "editing_confirm_modal"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                "false": {
+                                                                    "handler": "sequence",
+                                                                    "actions": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "global",
+                                                                                "selectedTemplateId": "{{template.id}}",
+                                                                                "selectedTemplate": "{{template}}",
+                                                                                "panelMode": "view"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "replaceUrl",
+                                                                            "params": {
+                                                                                "mergeQuery": true,
+                                                                                "query": {
+                                                                                    "id": "{{template.id}}",
+                                                                                    "mode": "view"
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    ]
                                                                 }
                                                             }
                                                         }
@@ -288,7 +348,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-secondary px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700"
+                                                        "className": "text-secondary dark:text-gray-300 px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700"
                                                     },
                                                     "text": "{{template.fields_count ?? 0}}"
                                                 },
@@ -363,7 +423,7 @@
             "id": "empty_template_state",
             "type": "basic",
             "name": "Div",
-            "if": "{{(templates?.data?.data?.length ?? 0) === 0}}",
+            "if": "{{templates !== undefined && ((templates?.data?.data?.length ?? 0) === 0)}}",
             "props": {
                 "className": "flex-center flex-1 justify-center gap-3 px-4 py-8"
             },
@@ -373,7 +433,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "file-alt",
-                        "className": "text-gray-400 dark:text-gray-500",
+                        "className": "text-gray-500 dark:text-gray-500",
                         "size": "md"
                     }
                 },

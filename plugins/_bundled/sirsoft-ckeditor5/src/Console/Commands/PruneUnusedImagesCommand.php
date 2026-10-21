@@ -56,7 +56,7 @@ class PruneUnusedImagesCommand extends Command
     public function handle(): int
     {
         if ($this->option('scheduled') && ! $this->isAutoCleanupEnabled()) {
-            $this->info('미사용 이미지 자동 정리가 꺼져 있어 실행하지 않았습니다. (unusedImageCleanup = false)');
+            $this->info(__('sirsoft-ckeditor5::messages.console.prune_unused_images.auto_cleanup_disabled'));
 
             return Command::SUCCESS;
         }
@@ -87,17 +87,16 @@ class PruneUnusedImagesCommand extends Command
             return Command::SUCCESS;
         }
 
-        $this->info(sprintf(
-            '보존기간(%d일) 경과 후보 %d건 중 참조됨 %d건, 삭제 %d건, 실패 %d건.',
-            $days,
-            $result['scanned'],
-            $result['referenced'],
-            $result['deleted'],
-            $result['failed'],
-        ));
+        $this->info(__('sirsoft-ckeditor5::messages.console.prune_unused_images.done', [
+            'days' => $days,
+            'scanned' => $result['scanned'],
+            'referenced' => $result['referenced'],
+            'deleted' => $result['deleted'],
+            'failed' => $result['failed'],
+        ]));
 
         if ($result['failed'] > 0) {
-            $this->warn(sprintf('%d건은 파일 삭제에 실패해 기록을 보존했습니다. 다음 회차에 재시도합니다.', $result['failed']));
+            $this->warn(__('sirsoft-ckeditor5::messages.console.prune_unused_images.delete_failed', ['count' => $result['failed']]));
         }
 
         Log::info('PruneUnusedImagesCommand: 미참조 에디터 이미지 정리 완료', [
@@ -143,23 +142,29 @@ class PruneUnusedImagesCommand extends Command
      *
      * @param  array{scanned: int, referenced: int, deleted: int, failed: int, items: array<int, array<string, mixed>>}  $result  판정 결과
      * @param  int  $days  보존기간(일)
+     * @return void
      */
     private function renderDryRun(array $result, int $days): void
     {
-        $this->info(sprintf(
-            '[DRY RUN] 보존기간(%d일) 경과 후보 %d건 중 참조됨 %d건, 삭제 대상 %d건.',
-            $days,
-            $result['scanned'],
-            $result['referenced'],
-            count($result['items']),
-        ));
+        $this->info('[DRY RUN] '.__('sirsoft-ckeditor5::messages.console.prune_unused_images.dry_run', [
+            'days' => $days,
+            'scanned' => $result['scanned'],
+            'referenced' => $result['referenced'],
+            'count' => count($result['items']),
+        ]));
 
         if ($result['items'] === []) {
             return;
         }
 
         $this->table(
-            ['ID', 'HASH', '원본명', '크기(bytes)', '업로드 시각'],
+            [
+                'ID',
+                'HASH',
+                __('sirsoft-ckeditor5::messages.console.prune_unused_images.headers.original_name'),
+                __('sirsoft-ckeditor5::messages.console.prune_unused_images.headers.file_size'),
+                __('sirsoft-ckeditor5::messages.console.prune_unused_images.headers.uploaded_at'),
+            ],
             array_map(fn (array $item) => [
                 $item['id'],
                 $item['hash'],

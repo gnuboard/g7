@@ -90,7 +90,7 @@
       <div data-ref="visitors_card" class="admin-card">
         <div data-ref="visitors_toolbar" class="flex-between flex-wrap gap-3 mb-4">
           <div class="relative flex-1 min-w-[220px]">
-            <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+            <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"/>
             <input data-ref="visitors_search" name="analytics_visitors_q" type="text" placeholder="$t:admin.analytics.visitors.search_placeholder" class="input pl-10" value="{{query.q || ''}}">
               <on type="keydown" key="Enter">
                 <!-- 검색 — Enter 때만 보낸다. 방문자 키·주소·회원 번호를 서버가 한 칸 값으로 모두 대 보므로 기준을 고르지 않는다. 1쪽으로 돌린다. -->
@@ -128,7 +128,7 @@
         </div>
         <div class="overflow-x-auto">
           <blur-until-loaded sources="analytics_visitors"/>
-          <data-grid pageHref="/admin/analytics/visitors?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="analytics_visitors_grid" data="{{analytics_visitors?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_visitors?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="visitor_key" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title" actionsColumnHeader="$t:common.actions">
+          <data-grid pageHref="/admin/analytics/visitors?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="analytics_visitors_grid" data="{{analytics_visitors?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_visitors?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="visitor_key" :selectable="false" :sortable="false" emptyMessage="{{analytics_visitors === undefined ? '' : $t('admin.analytics.common.empty_title')}}" actionsColumnHeader="$t:common.actions">
             <on type="action" event="onPageChange">
               <!-- 쪽 이동 — `page` 만 바꾼다. 총 쪽 수를 모르는 목록이라 다음 쪽 버튼은 응답의 `has_more` 가 가른다. -->
               <navigate path="/admin/analytics/visitors" :mergeQuery="true" :replace="true" transition_overlay_target="analytics_visitors_grid__body">
@@ -186,7 +186,7 @@
                     </switch>
                   </on>
                   <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
-                    <icon name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0" aria-hidden="true"/>
+                    <icon name="fa-regular fa-user" class="text-gray-500 dark:text-gray-400 flex-shrink-0" aria-hidden="true"/>
                     <div class="min-w-0 flex-1">
                       <span class="font-medium text-gray-900 dark:text-gray-100 truncate block">{{row.user.name}}</span>
                       <span data-if="{{!!row.user.email}}" class="text-tertiary truncate block">({{row.user.email}})</span>

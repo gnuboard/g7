@@ -4,6 +4,7 @@
     "layout_name": "admin_settings",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "$t:admin.settings.page_title",
         "description": "$t:admin.settings.page_description"
     },
@@ -108,6 +109,33 @@
             },
             "fallback": {
                 "data": []
+            },
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
             },
             "comment": "설정값 전체 — **탭 조건이 없는 유일한 소스**다(어느 탭에서도 폼의 뿌리이므로).\n       응답을 `_local.form` 으로 풀어 편집 대상으로 삼고, 드라이버 원본값은 따로 남긴다\n       (드라이버 탭이 \"바뀐 항목만 연결 시험을 다시 요구\" 하려면 처음 값이 있어야 한다).\n       권한은 전역으로 올려 조각들이 각자 읽는다."
         },
@@ -783,7 +811,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "lock",
-                                            "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                            "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"
                                         }
                                     },
                                     {
@@ -1136,19 +1164,34 @@
                         },
                         "children": [
                             {
+                                "comment": "취소 — 저장하지 않은 변경을 버리고 받은 값으로 되돌린다",
                                 "id": "cancel_button",
                                 "type": "basic",
                                 "name": "Button",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "refetchDataSource",
-                                        "params": {
-                                            "dataSourceId": "settings"
-                                        }
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "comment": "취소 — 받은 값으로 되돌리고 「고친 것이 있다」 표시도 끈다(남겨 두면 저장 단추·탭 전환 확인·이탈 확인이 되돌린 뒤에도 켜져 있다)",
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "settings"
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "hasChanges": false
+                                                }
+                                            }
+                                        ]
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "className": "btn btn-secondary"
                                 },
                                 "children": [
@@ -1298,6 +1341,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "disabled": "{{!_local.hasChanges || _local.isSaving || ((_global.activeSettingsTab || query.tab) === 'drivers' && (((_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3') && !_local.driverTestResults?.s3?.success && ((_local.form?.drivers?.storage_driver || '') !== (_local.originalDrivers?.storage_driver || '') || (_local.form?.drivers?.s3_bucket || '') !== (_local.originalDrivers?.s3_bucket || '') || (_local.form?.drivers?.s3_region || '') !== (_local.originalDrivers?.s3_region || '') || (_local.form?.drivers?.s3_access_key || '') !== (_local.originalDrivers?.s3_access_key || '') || (_local.form?.drivers?.s3_secret_key || '') !== (_local.originalDrivers?.s3_secret_key || '') || (_local.form?.drivers?.s3_endpoint || '') !== (_local.originalDrivers?.s3_endpoint || '') || Boolean(_local.form?.drivers?.s3_use_path_style) !== Boolean(_local.originalDrivers?.s3_use_path_style))) || (_local.form?.drivers?.cache_driver === 'redis' && !_local.driverTestResults?.redis?.success && ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.cache_driver === 'memcached' && !_local.driverTestResults?.memcached?.success && ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.memcached_host || '') !== (_local.originalDrivers?.memcached_host || '') || String(_local.form?.drivers?.memcached_port ?? '') !== String(_local.originalDrivers?.memcached_port ?? ''))) || (_local.form?.drivers?.session_driver === 'redis' && !_local.driverTestResults?.redis?.success && ((_local.form?.drivers?.session_driver || '') !== (_local.originalDrivers?.session_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.queue_driver === 'redis' && !_local.driverTestResults?.redis?.success && ((_local.form?.drivers?.queue_driver || '') !== (_local.originalDrivers?.queue_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.websocket_enabled && !_local.driverTestResults?.websocket?.success && (Boolean(_local.form?.drivers?.websocket_enabled) !== Boolean(_local.originalDrivers?.websocket_enabled) || (_local.form?.drivers?.websocket_host || '') !== (_local.originalDrivers?.websocket_host || '') || String(_local.form?.drivers?.websocket_port ?? '') !== String(_local.originalDrivers?.websocket_port ?? '') || (_local.form?.drivers?.websocket_scheme || '') !== (_local.originalDrivers?.websocket_scheme || '')))))}}",
                                     "className": "btn btn-primary flex-center gap-1.5"
                                 },

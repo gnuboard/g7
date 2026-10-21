@@ -357,6 +357,33 @@ class LayoutThreeWayMergerTest extends TestCase
     }
 
     /**
+     * data_sources — 같은 id 를 조건(if)으로 여러 판 선언한 목록은 항목 단위로 묶지 않는다(판이 하나로 합쳐지지 않는다, 7.1.1 출시 전).
+     *
+     * 항목 단위 병합은 id 를 키로 쓴다. 같은 id 두 판이면 뒤 판이 앞 판을 덮어 한 판이 사라졌다 — 키 통째 판정으로 넘긴다.
+     *
+     * @effects data_sources_merge_by_item_id
+     *
+     * @return void 반환값 없음
+     */
+    public function test_data_sources_with_conditional_variants_keep_every_variant(): void
+    {
+        $ds = fn (array $items) => ['data_sources' => $items];
+        $variants = fn (string $first, string $second) => [
+            ['id' => 'user', 'endpoint' => $first, 'if' => '{{route.id}}'],
+            ['id' => 'user', 'endpoint' => $second, 'if' => '{{!route.id}}'],
+        ];
+        $base = $this->doc('A', 'B', true, $ds($variants('/users/{{route.id}}', '/users/template')));
+        // 운영자는 첫 판을, 새 판은 둘째 판을 고쳤다 — 세 판이 모두 달라 지름길 없이 병합 판정을 탄다.
+        $ours = $this->doc('A', 'B', false, $ds($variants('/users/{{route.id}}?op=1', '/users/template')));
+        $theirs = $this->doc('A', 'B', true, $ds($variants('/users/{{route.id}}', '/users/blank')));
+
+        $result = $this->merge($base, $ours, $theirs);
+
+        $this->assertSame(['user', 'user'], array_column($result->merged['data_sources'], 'id'), '같은 id 두 판 중 하나가 사라졌다');
+        $this->assertSame(['{{route.id}}', '{{!route.id}}'], array_column($result->merged['data_sources'], 'if'), '판의 조건 짝이 깨졌다');
+    }
+
+    /**
      * data_sources — 같은 id 를 양쪽이 다르게 고치면 충돌·운영자 것, id 없는 항목이 섞이면 키 통째 판정.
      *
      * @effects data_sources_merge_by_item_id

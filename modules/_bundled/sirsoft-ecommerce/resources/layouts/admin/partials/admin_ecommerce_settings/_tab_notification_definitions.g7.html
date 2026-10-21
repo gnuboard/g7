@@ -66,7 +66,7 @@
         <div data-each="def, defIdx in {{ecommerceNotificationDefinitions?.data?.data ?? []}}" class="admin-card mb-3">
           <div class="flex-start gap-3">
             <div class="flex-shrink-0 pt-0.5">
-              <button type="button" class="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="{{(_local.expandedNotifications ?? {})[def.id] ? '$t:common.collapse' : '$t:common.expand'}}" aria-expanded="{{(_local.expandedNotifications ?? {})[def.id] ? 'true' : 'false'}}">
+              <button type="button" class="p-1.5 rounded-md text-gray-500 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="{{(_local.expandedNotifications ?? {})[def.id] ? '$t:common.collapse' : '$t:common.expand'}}" aria-expanded="{{(_local.expandedNotifications ?? {})[def.id] ? 'true' : 'false'}}">
                 <on type="click">
                   <!-- 이 알림 줄의 상세 펼침/접힘. 여러 줄을 동시에 펼칠 수 있어 id 별 참/거짓 맵으로 담는다. -->
                   <set-state target="local" expandedNotifications="{{Object.assign({}, _local.expandedNotifications ?? {}, {[def.id]: !(_local.expandedNotifications ?? {})[def.id]})}}"/>
@@ -82,18 +82,18 @@
                     <span class="text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{def.type}}</span>
                     <!-- 본인인증 문구(category=identity) — 이커머스 정의 중 1건뿐이라 분류 칩 없이 배지만 단다(코어 알림 탭과 같은 키). -->
                     <span data-if="{{def.category === 'identity'}}" class="bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 text-xs font-medium px-2 py-0.5 rounded-full">$t:admin.settings.notification_definitions.category.identity</span>
-                    <span class="{{def.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'}} text-xs font-medium px-2 py-0.5 rounded-full">{{def.is_active ? '$t:sirsoft-ecommerce.admin.settings.notification_definitions.active' : '$t:sirsoft-ecommerce.admin.settings.notification_definitions.inactive'}}</span>
+                    <span class="{{def.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}} text-xs font-medium px-2 py-0.5 rounded-full">{{def.is_active ? '$t:sirsoft-ecommerce.admin.settings.notification_definitions.active' : '$t:sirsoft-ecommerce.admin.settings.notification_definitions.inactive'}}</span>
                     <span data-if="{{def.is_default}}" class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs font-medium px-2 py-0.5 rounded-full">$t:sirsoft-ecommerce.admin.settings.notification_definitions.default_badge</span>
                   </div>
                   <p data-if="{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="text-label-subtle truncate">{{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.subject?.[$locale] ?? ''}}</p>
-                  <p data-if="{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="text-sm text-gray-400 dark:text-gray-500 italic">$t:sirsoft-ecommerce.admin.settings.notification_definitions.no_template_for_channel</p>
+                  <p data-if="{{!(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))}}" class="text-sm text-gray-500 dark:text-gray-400 italic">$t:sirsoft-ecommerce.admin.settings.notification_definitions.no_template_for_channel</p>
                   <!-- 본인인증 알림은 수신자가 「인증을 요청한 대상」으로 고정이다(수신자 규칙이 없다) — 편집 대신 고정 문구. -->
                   <p data-if="{{def.category === 'identity'}}" class="text-tertiary mt-2">$t:admin.settings.notification_definitions.identity_recipient_fixed</p>
                   <div data-ref="ecommerce_recipients_badge_{{defIdx}}" data-if="{{def.category !== 'identity' &amp;&amp; ((def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []).length > 0}}" class="flex-center flex-wrap gap-1.5 mt-2">
                     <span class="text-tertiary font-medium">$t:admin.settings.notification_definitions.recipients_label</span>
                     <span data-each="rcpt in {{(def.templates ?? []).find(t => t.channel === (query.channel ?? 'mail'))?.recipients ?? []}}" class="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 rounded-full">
                       <span>{{rcpt.type === 'trigger_user' ? '$t:admin.settings.notification_definitions.recipients.types.trigger_user' : rcpt.type === 'related_user' ? '$t:admin.settings.notification_definitions.recipients.types.related_user' + (rcpt.relation ? ' (' + (def.relation_labels?.[rcpt.relation] ?? rcpt.relation) + ')' : '') : rcpt.type === 'role' ? '$t:admin.settings.notification_definitions.recipients.types.role' + ': ' + ((rcpt.display_names ?? []).join(', ') || rcpt.display_name || '') : rcpt.type === 'specific_users' ? '$t:admin.settings.notification_definitions.recipients.types.specific_users' + ': ' + ((rcpt.display_names ?? []).join(', ') || '') : rcpt.type}}</span>
-                      <span data-if="{{rcpt.exclude_trigger_user}}" class="text-purple-500 dark:text-purple-400">$t:admin.settings.notification_definitions.recipients.badge.exclude_self</span>
+                      <span data-if="{{rcpt.exclude_trigger_user}}" class="text-purple-600 dark:text-purple-400">$t:admin.settings.notification_definitions.recipients.badge.exclude_self</span>
                     </span>
                   </div>
                   <div data-if="{{(def.variables ?? []).length > 0}}" class="flex flex-wrap gap-1 mt-2">
@@ -161,9 +161,9 @@
           </div>
         </div>
       </div>
-      <div data-ref="ecommerce_notif_empty" data-if="{{(ecommerceNotificationDefinitions?.data?.data ?? []).length === 0}}" class="admin-card">
+      <div data-ref="ecommerce_notif_empty" data-if="{{ecommerceNotificationDefinitions !== undefined &amp;&amp; ((ecommerceNotificationDefinitions?.data?.data ?? []).length === 0)}}" class="admin-card">
         <div class="row-stack">
-          <icon name="fa-solid fa-envelope" class="text-4xl text-gray-300 dark:text-gray-600 mb-3"/>
+          <icon name="fa-solid fa-envelope" class="text-4xl text-gray-500 dark:text-gray-500 mb-3"/>
           <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.settings.notification_definitions.empty_message</p>
         </div>
       </div>

@@ -35,7 +35,7 @@ describe('FileTreePicker — 오버레이 규격', () => {
     expect(overlay.className).toContain('g7le-drawer-enter');
     expect(overlay.className).not.toContain('g7le-sheet-enter');
     // 관리자 모바일 헤더(h-16, z-50) 아래에서 시작한다 — top:0 이면 서랍 머리(제목·검색칸)가 헤더에 가려
-    // 검색칸 가운데를 눌러도 헤더가 받는다(실측 2026-10-06, 7.1.0 전수 실측 I1: 900px 에서 elementFromPoint=헤더).
+    // 검색칸 가운데를 눌러도 헤더가 받는다(실측 2026-10-06, 7.1.0 전수 실측: 900px 에서 elementFromPoint=헤더).
     expect(overlay.className).toContain('top-16');
     expect(overlay.className).not.toContain('inset-y-0');
   });

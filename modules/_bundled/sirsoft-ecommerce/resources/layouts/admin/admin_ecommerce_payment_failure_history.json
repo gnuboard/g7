@@ -55,7 +55,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "credit-card",
-                                                    "className": "text-xl icon-muted"
+                                                    "className": "text-xl icon-muted text-gray-500 dark:text-gray-400"
                                                 }
                                             },
                                             {
@@ -253,7 +253,7 @@
                                         "children": [
                                             {
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "comment": "결제수단을 가리지 않고 모두",
@@ -266,7 +266,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.paymentMethodFilter === '' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.paymentMethodFilter === ''}}"
                                                 },
                                                 "children": [
                                                     {
@@ -286,7 +288,7 @@
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "comment": "신용카드 — 실패가 가장 많이 나는 수단이라 따로 보는 일이 잦다",
@@ -299,7 +301,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.paymentMethodFilter === 'card' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.paymentMethodFilter === 'card'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -319,7 +323,7 @@
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "comment": "계좌이체",
@@ -332,7 +336,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400 dark:ring-cyan-500' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.paymentMethodFilter === 'bank_transfer' ? 'btn-badge btn-badge-cyan cursor-pointer ring-1 ring-cyan-400 dark:ring-cyan-500' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.paymentMethodFilter === 'bank_transfer'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -352,7 +358,7 @@
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "comment": "가상계좌 — 발급 단계에서 막힌 건이 여기 남는다",
@@ -365,7 +371,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'virtual_account' ? 'btn-badge btn-badge-orange cursor-pointer ring-1 ring-orange-400 dark:ring-orange-500' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.paymentMethodFilter === 'virtual_account' ? 'btn-badge btn-badge-orange cursor-pointer ring-1 ring-orange-400 dark:ring-orange-500' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.paymentMethodFilter === 'virtual_account'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -385,7 +393,7 @@
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "comment": "간편결제 — 앱으로 넘어갔다 돌아오지 못한 이탈이 섞여 있다",
@@ -398,7 +406,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'easy_payment' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400 dark:ring-yellow-500' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.paymentMethodFilter === 'easy_payment' ? 'btn-badge btn-badge-yellow cursor-pointer ring-1 ring-yellow-400 dark:ring-yellow-500' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.paymentMethodFilter === 'easy_payment'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -418,7 +428,7 @@
                                             },
                                             {
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "comment": "무통장입금",
@@ -431,7 +441,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.paymentMethodFilter === 'bank_deposit' ? 'btn-badge btn-badge-red cursor-pointer ring-1 ring-red-400 dark:ring-red-500' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.paymentMethodFilter === 'bank_deposit' ? 'btn-badge btn-badge-red cursor-pointer ring-1 ring-red-400 dark:ring-red-500' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.paymentMethodFilter === 'bank_deposit'}}"
                                                 },
                                                 "children": [
                                                     {
@@ -479,7 +491,7 @@
                                             {
                                                 "comment": "기기를 가리지 않고 모두",
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -491,14 +503,16 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.deviceFilter === '' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.deviceFilter === '' ? 'btn-badge btn-badge-blue cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.deviceFilter === ''}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.filter.all"
                                             },
                                             {
                                                 "comment": "PC — 기기별로 결제창 동작이 달라 실패 원인 추적의 한 축이다",
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -510,14 +524,16 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.deviceFilter === 'desktop' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.deviceFilter === 'desktop' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.deviceFilter === 'desktop'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.filter.desktop"
                                             },
                                             {
                                                 "comment": "모바일 — 앱 전환이 끼어 이탈이 잦은 쪽이다",
                                                 "type": "basic",
-                                                "name": "Div",
+                                                "name": "Button",
                                                 "actions": [
                                                     {
                                                         "type": "click",
@@ -529,7 +545,9 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "{{_local.deviceFilter === 'mobile' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}"
+                                                    "type": "button",
+                                                    "className": "{{_local.deviceFilter === 'mobile' ? 'btn-badge cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'btn-badge cursor-pointer'}}",
+                                                    "aria-pressed": "{{_local.deviceFilter === 'mobile'}}"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.filter.mobile"
                                             }
@@ -572,7 +590,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "text-base icon-muted"
+                                                            "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                         }
                                                     },
                                                     {
@@ -619,7 +637,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "text-base icon-muted"
+                                                            "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                         }
                                                     },
                                                     {
@@ -830,7 +848,7 @@
                                                                         "props": {
                                                                             "className": "text-primary"
                                                                         },
-                                                                        "text": "프리미엄 티셔츠 외 2건"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.fmt.product_and_more|product=$t:sirsoft-ecommerce.admin.sample.products.premium_tshirt|count=2"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -838,7 +856,7 @@
                                                                         "props": {
                                                                             "className": "text-secondary"
                                                                         },
-                                                                        "text": "김철수 (user001)"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu|id=user001"
                                                                     }
                                                                 ]
                                                             },
@@ -855,15 +873,28 @@
                                                                         "props": {
                                                                             "className": "text-primary font-semibold"
                                                                         },
-                                                                        "text": "89,000원"
+                                                                        "text": "₩89,000"
                                                                     },
                                                                     {
+                                                                        "comment": "키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다",
                                                                         "type": "basic",
-                                                                        "name": "Icon",
+                                                                        "name": "Button",
                                                                         "props": {
-                                                                            "name": "{{_local.expandedRows.includes(1) ? 'chevron-up' : 'chevron-down'}}",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
-                                                                        }
+                                                                            "type": "button",
+                                                                            "className": "rounded",
+                                                                            "aria-expanded": "{{_local.expandedRows.includes(1)}}",
+                                                                            "aria-label": "{{_local.expandedRows.includes(1) ? '$t:common.collapse' : '$t:common.expand'}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "{{_local.expandedRows.includes(1) ? 'chevron-up' : 'chevron-down'}}",
+                                                                                    "className": "text-xl text-gray-500 dark:text-gray-500"
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             },
@@ -939,7 +970,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "ecommerce-tone-error font-semibold text-sm"
+                                                                                            "className": "ecommerce-tone-error-soft font-semibold text-sm"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.title"
                                                                                     }
@@ -996,7 +1027,7 @@
                                                                                                 "type": "basic",
                                                                                                 "name": "Span",
                                                                                                 "props": {
-                                                                                                    "className": "ecommerce-tone-error"
+                                                                                                    "className": "ecommerce-tone-error-soft"
                                                                                                 },
                                                                                                 "text": "EXCEED_MAX_ONE_TIME_AUTH_AMOUNT"
                                                                                             }
@@ -1025,7 +1056,7 @@
                                                                                         "name": "Icon",
                                                                                         "props": {
                                                                                             "name": "user",
-                                                                                            "className": "text-base icon-muted"
+                                                                                            "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                                                         }
                                                                                     },
                                                                                     {
@@ -1118,7 +1149,7 @@
                                                                                         "name": "Icon",
                                                                                         "props": {
                                                                                             "name": "desktop",
-                                                                                            "className": "text-base icon-muted"
+                                                                                            "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                                                         }
                                                                                     },
                                                                                     {
@@ -1266,7 +1297,7 @@
                                                                         "props": {
                                                                             "className": "text-primary"
                                                                         },
-                                                                        "text": "겨울 패딩 점퍼"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.products.winter_padded_jacket"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -1274,7 +1305,7 @@
                                                                         "props": {
                                                                             "className": "text-secondary"
                                                                         },
-                                                                        "text": "이영희 (user002)"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.lee_younghee|id=user002"
                                                                     }
                                                                 ]
                                                             },
@@ -1291,14 +1322,14 @@
                                                                         "props": {
                                                                             "className": "text-primary font-semibold"
                                                                         },
-                                                                        "text": "159,000원"
+                                                                        "text": "₩159,000"
                                                                     },
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "chevron-down",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
+                                                                            "className": "text-xl text-gray-500 dark:text-gray-500"
                                                                         }
                                                                     }
                                                                 ]
@@ -1389,7 +1420,7 @@
                                                                         "props": {
                                                                             "className": "text-primary"
                                                                         },
-                                                                        "text": "스니커즈 신발"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.products.sneakers"
                                                                     },
                                                                     {
                                                                         "type": "basic",
@@ -1397,7 +1428,7 @@
                                                                         "props": {
                                                                             "className": "text-secondary"
                                                                         },
-                                                                        "text": "박민수 (user003)"
+                                                                        "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.park_minsu|id=user003"
                                                                     }
                                                                 ]
                                                             },
@@ -1414,14 +1445,14 @@
                                                                         "props": {
                                                                             "className": "text-primary font-semibold"
                                                                         },
-                                                                        "text": "129,000원"
+                                                                        "text": "₩129,000"
                                                                     },
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Icon",
                                                                         "props": {
                                                                             "name": "chevron-down",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
+                                                                            "className": "text-xl text-gray-500 dark:text-gray-500"
                                                                         }
                                                                     }
                                                                 ]
@@ -1579,7 +1610,7 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
@@ -1632,7 +1663,7 @@
                                                                                 "type": "composite",
                                                                                 "name": "Dropdown",
                                                                                 "props": {
-                                                                                    "label": "김철수",
+                                                                                    "label": "$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu",
                                                                                     "position": "bottom-left",
                                                                                     "variant": "text",
                                                                                     "items": [
@@ -1665,7 +1696,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "프리미엄 티셔츠 외 2건"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.product_and_more|product=$t:sirsoft-ecommerce.admin.sample.products.premium_tshirt|count=2"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1690,7 +1721,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary text-right"
                                                                 },
-                                                                "text": "89,000원"
+                                                                "text": "₩89,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -1778,12 +1809,25 @@
                                                                 },
                                                                 "children": [
                                                                     {
+                                                                        "comment": "키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다",
                                                                         "type": "basic",
-                                                                        "name": "Icon",
+                                                                        "name": "Button",
                                                                         "props": {
-                                                                            "name": "{{_local.expandedRows.includes(1) ? 'chevron-up' : 'chevron-down'}}",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
-                                                                        }
+                                                                            "type": "button",
+                                                                            "className": "rounded",
+                                                                            "aria-expanded": "{{_local.expandedRows.includes(1)}}",
+                                                                            "aria-label": "{{_local.expandedRows.includes(1) ? '$t:common.collapse' : '$t:common.expand'}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "{{_local.expandedRows.includes(1) ? 'chevron-up' : 'chevron-down'}}",
+                                                                                    "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             }
@@ -1837,7 +1881,7 @@
                                                                                                 "type": "basic",
                                                                                                 "name": "Span",
                                                                                                 "props": {
-                                                                                                    "className": "ecommerce-tone-error font-semibold"
+                                                                                                    "className": "ecommerce-tone-error-soft font-semibold"
                                                                                                 },
                                                                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.detail.payment_failure_info.title"
                                                                                             }
@@ -1937,7 +1981,7 @@
                                                                                                                 "props": {
                                                                                                                     "className": "text-primary"
                                                                                                                 },
-                                                                                                                "text": "89,000원"
+                                                                                                                "text": "₩89,000"
                                                                                                             }
                                                                                                         ]
                                                                                                     },
@@ -1994,7 +2038,7 @@
                                                                                                                 "type": "basic",
                                                                                                                 "name": "Span",
                                                                                                                 "props": {
-                                                                                                                    "className": "ecommerce-tone-error"
+                                                                                                                    "className": "ecommerce-tone-error-soft"
                                                                                                                 },
                                                                                                                 "text": "$t:sirsoft-ecommerce.admin.payment_failure_history.failure_reasons.exceed_max_one_time_auth_amount"
                                                                                                             }
@@ -2019,7 +2063,7 @@
                                                                                                                 "type": "basic",
                                                                                                                 "name": "Span",
                                                                                                                 "props": {
-                                                                                                                    "className": "ecommerce-tone-error"
+                                                                                                                    "className": "ecommerce-tone-error-soft"
                                                                                                                 },
                                                                                                                 "text": "EXCEED_MAX_ONE_TIME_AUTH_AMOUNT"
                                                                                                             }
@@ -2057,7 +2101,7 @@
                                                                                                         "name": "Icon",
                                                                                                         "props": {
                                                                                                             "name": "user",
-                                                                                                            "className": "text-base icon-muted"
+                                                                                                            "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                                                                         }
                                                                                                     },
                                                                                                     {
@@ -2095,7 +2139,7 @@
                                                                                                                 "props": {
                                                                                                                     "className": "text-primary text-sm"
                                                                                                                 },
-                                                                                                                "text": "김철수"
+                                                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu"
                                                                                                             }
                                                                                                         ]
                                                                                                     },
@@ -2188,7 +2232,7 @@
                                                                                                         "name": "Icon",
                                                                                                         "props": {
                                                                                                             "name": "desktop",
-                                                                                                            "className": "text-base icon-muted"
+                                                                                                            "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
                                                                                                         }
                                                                                                     },
                                                                                                     {
@@ -2323,7 +2367,7 @@
                                                             }
                                                         ],
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
@@ -2362,7 +2406,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "이영희"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -2382,7 +2426,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "겨울 패딩 점퍼"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.winter_padded_jacket"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2407,7 +2451,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary text-right"
                                                                 },
-                                                                "text": "159,000원"
+                                                                "text": "₩159,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2484,12 +2528,25 @@
                                                                 },
                                                                 "children": [
                                                                     {
+                                                                        "comment": "키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다",
                                                                         "type": "basic",
-                                                                        "name": "Icon",
+                                                                        "name": "Button",
                                                                         "props": {
-                                                                            "name": "{{_local.expandedRows.includes(2) ? 'chevron-up' : 'chevron-down'}}",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
-                                                                        }
+                                                                            "type": "button",
+                                                                            "className": "rounded",
+                                                                            "aria-expanded": "{{_local.expandedRows.includes(2)}}",
+                                                                            "aria-label": "{{_local.expandedRows.includes(2) ? '$t:common.collapse' : '$t:common.expand'}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "{{_local.expandedRows.includes(2) ? 'chevron-up' : 'chevron-down'}}",
+                                                                                    "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             }
@@ -2510,7 +2567,7 @@
                                                             }
                                                         ],
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
@@ -2549,7 +2606,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "박민수"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -2569,7 +2626,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "스니커즈 신발"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.sneakers"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2594,7 +2651,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary text-right"
                                                                 },
-                                                                "text": "129,000원"
+                                                                "text": "₩129,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2671,12 +2728,25 @@
                                                                 },
                                                                 "children": [
                                                                     {
+                                                                        "comment": "키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다",
                                                                         "type": "basic",
-                                                                        "name": "Icon",
+                                                                        "name": "Button",
                                                                         "props": {
-                                                                            "name": "{{_local.expandedRows.includes(3) ? 'chevron-up' : 'chevron-down'}}",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
-                                                                        }
+                                                                            "type": "button",
+                                                                            "className": "rounded",
+                                                                            "aria-expanded": "{{_local.expandedRows.includes(3)}}",
+                                                                            "aria-label": "{{_local.expandedRows.includes(3) ? '$t:common.collapse' : '$t:common.expand'}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "{{_local.expandedRows.includes(3) ? 'chevron-up' : 'chevron-down'}}",
+                                                                                    "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             }
@@ -2697,7 +2767,7 @@
                                                             }
                                                         ],
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
@@ -2736,7 +2806,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "정수현"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.jung_suhyun"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -2756,7 +2826,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "청바지 외 1건"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.fmt.product_and_more|product=$t:sirsoft-ecommerce.admin.sample.products.jeans|count=1"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2781,7 +2851,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary text-right"
                                                                 },
-                                                                "text": "65,000원"
+                                                                "text": "₩65,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2858,12 +2928,25 @@
                                                                 },
                                                                 "children": [
                                                                     {
+                                                                        "comment": "키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다",
                                                                         "type": "basic",
-                                                                        "name": "Icon",
+                                                                        "name": "Button",
                                                                         "props": {
-                                                                            "name": "{{_local.expandedRows.includes(4) ? 'chevron-up' : 'chevron-down'}}",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
-                                                                        }
+                                                                            "type": "button",
+                                                                            "className": "rounded",
+                                                                            "aria-expanded": "{{_local.expandedRows.includes(4)}}",
+                                                                            "aria-label": "{{_local.expandedRows.includes(4) ? '$t:common.collapse' : '$t:common.expand'}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "{{_local.expandedRows.includes(4) ? 'chevron-up' : 'chevron-down'}}",
+                                                                                    "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             }
@@ -2884,7 +2967,7 @@
                                                             }
                                                         ],
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
@@ -2923,7 +3006,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "최지은"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.choi_jieun"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -2943,7 +3026,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "가죽 지갑"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.leather_wallet"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -2968,7 +3051,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary text-right"
                                                                 },
-                                                                "text": "49,000원"
+                                                                "text": "₩49,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3045,12 +3128,25 @@
                                                                 },
                                                                 "children": [
                                                                     {
+                                                                        "comment": "키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다",
                                                                         "type": "basic",
-                                                                        "name": "Icon",
+                                                                        "name": "Button",
                                                                         "props": {
-                                                                            "name": "{{_local.expandedRows.includes(5) ? 'chevron-up' : 'chevron-down'}}",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
-                                                                        }
+                                                                            "type": "button",
+                                                                            "className": "rounded",
+                                                                            "aria-expanded": "{{_local.expandedRows.includes(5)}}",
+                                                                            "aria-label": "{{_local.expandedRows.includes(5) ? '$t:common.collapse' : '$t:common.expand'}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "{{_local.expandedRows.includes(5) ? 'chevron-up' : 'chevron-down'}}",
+                                                                                    "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             }
@@ -3071,7 +3167,7 @@
                                                             }
                                                         ],
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
@@ -3110,7 +3206,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "홍길동"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.hong_gildong"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -3130,7 +3226,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "무선 이어폰"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.wireless_earphones"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3155,7 +3251,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary text-right"
                                                                 },
-                                                                "text": "179,000원"
+                                                                "text": "₩179,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3232,12 +3328,25 @@
                                                                 },
                                                                 "children": [
                                                                     {
+                                                                        "comment": "키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다",
                                                                         "type": "basic",
-                                                                        "name": "Icon",
+                                                                        "name": "Button",
                                                                         "props": {
-                                                                            "name": "{{_local.expandedRows.includes(6) ? 'chevron-up' : 'chevron-down'}}",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
-                                                                        }
+                                                                            "type": "button",
+                                                                            "className": "rounded",
+                                                                            "aria-expanded": "{{_local.expandedRows.includes(6)}}",
+                                                                            "aria-label": "{{_local.expandedRows.includes(6) ? '$t:common.collapse' : '$t:common.expand'}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "{{_local.expandedRows.includes(6) ? 'chevron-up' : 'chevron-down'}}",
+                                                                                    "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             }
@@ -3258,7 +3367,7 @@
                                                             }
                                                         ],
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
@@ -3297,7 +3406,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "강민지"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.kang_minji"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -3317,7 +3426,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "노트북 파우치"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.laptop_pouch"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3342,7 +3451,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary text-right"
                                                                 },
-                                                                "text": "35,000원"
+                                                                "text": "₩35,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3419,12 +3528,25 @@
                                                                 },
                                                                 "children": [
                                                                     {
+                                                                        "comment": "키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다",
                                                                         "type": "basic",
-                                                                        "name": "Icon",
+                                                                        "name": "Button",
                                                                         "props": {
-                                                                            "name": "{{_local.expandedRows.includes(7) ? 'chevron-up' : 'chevron-down'}}",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
-                                                                        }
+                                                                            "type": "button",
+                                                                            "className": "rounded",
+                                                                            "aria-expanded": "{{_local.expandedRows.includes(7)}}",
+                                                                            "aria-label": "{{_local.expandedRows.includes(7) ? '$t:common.collapse' : '$t:common.expand'}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "{{_local.expandedRows.includes(7) ? 'chevron-up' : 'chevron-down'}}",
+                                                                                    "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             }
@@ -3445,7 +3567,7 @@
                                                             }
                                                         ],
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
@@ -3484,7 +3606,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "윤서준"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.yoon_seojun"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -3504,7 +3626,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "운동화"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.running_shoes"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3529,7 +3651,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary text-right"
                                                                 },
-                                                                "text": "98,000원"
+                                                                "text": "₩98,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3606,12 +3728,25 @@
                                                                 },
                                                                 "children": [
                                                                     {
+                                                                        "comment": "키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다",
                                                                         "type": "basic",
-                                                                        "name": "Icon",
+                                                                        "name": "Button",
                                                                         "props": {
-                                                                            "name": "{{_local.expandedRows.includes(8) ? 'chevron-up' : 'chevron-down'}}",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
-                                                                        }
+                                                                            "type": "button",
+                                                                            "className": "rounded",
+                                                                            "aria-expanded": "{{_local.expandedRows.includes(8)}}",
+                                                                            "aria-label": "{{_local.expandedRows.includes(8) ? '$t:common.collapse' : '$t:common.expand'}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "{{_local.expandedRows.includes(8) ? 'chevron-up' : 'chevron-down'}}",
+                                                                                    "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             }
@@ -3632,7 +3767,7 @@
                                                             }
                                                         ],
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
@@ -3671,7 +3806,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "송하늘"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.song_haneul"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -3691,7 +3826,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "백팩"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.backpack"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3716,7 +3851,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary text-right"
                                                                 },
-                                                                "text": "82,000원"
+                                                                "text": "₩82,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3793,12 +3928,25 @@
                                                                 },
                                                                 "children": [
                                                                     {
+                                                                        "comment": "키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다",
                                                                         "type": "basic",
-                                                                        "name": "Icon",
+                                                                        "name": "Button",
                                                                         "props": {
-                                                                            "name": "{{_local.expandedRows.includes(9) ? 'chevron-up' : 'chevron-down'}}",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
-                                                                        }
+                                                                            "type": "button",
+                                                                            "className": "rounded",
+                                                                            "aria-expanded": "{{_local.expandedRows.includes(9)}}",
+                                                                            "aria-label": "{{_local.expandedRows.includes(9) ? '$t:common.collapse' : '$t:common.expand'}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "{{_local.expandedRows.includes(9) ? 'chevron-up' : 'chevron-down'}}",
+                                                                                    "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             }
@@ -3819,7 +3967,7 @@
                                                             }
                                                         ],
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer"
+                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                                                         },
                                                         "children": [
                                                             {
@@ -3858,7 +4006,7 @@
                                                                                 "props": {
                                                                                     "className": "text-primary font-medium"
                                                                                 },
-                                                                                "text": "임준호"
+                                                                                "text": "$t:sirsoft-ecommerce.admin.sample.people.lim_junho"
                                                                             },
                                                                             {
                                                                                 "type": "basic",
@@ -3878,7 +4026,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary"
                                                                 },
-                                                                "text": "캐주얼 셔츠"
+                                                                "text": "$t:sirsoft-ecommerce.admin.sample.products.casual_shirt"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3903,7 +4051,7 @@
                                                                 "props": {
                                                                     "className": "py-4 px-4 text-sm text-primary text-right"
                                                                 },
-                                                                "text": "45,000원"
+                                                                "text": "₩45,000"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -3980,12 +4128,25 @@
                                                                 },
                                                                 "children": [
                                                                     {
+                                                                        "comment": "키보드 펼치기 단추 — 자기 동작 없이 눌림이 바깥 행(카드·칸)의 펼치기 클릭으로 올라간다",
                                                                         "type": "basic",
-                                                                        "name": "Icon",
+                                                                        "name": "Button",
                                                                         "props": {
-                                                                            "name": "{{_local.expandedRows.includes(10) ? 'chevron-up' : 'chevron-down'}}",
-                                                                            "className": "text-xl text-gray-400 dark:text-gray-500"
-                                                                        }
+                                                                            "type": "button",
+                                                                            "className": "rounded",
+                                                                            "aria-expanded": "{{_local.expandedRows.includes(10)}}",
+                                                                            "aria-label": "{{_local.expandedRows.includes(10) ? '$t:common.collapse' : '$t:common.expand'}}"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Icon",
+                                                                                "props": {
+                                                                                    "name": "{{_local.expandedRows.includes(10) ? 'chevron-up' : 'chevron-down'}}",
+                                                                                    "className": "text-xl text-gray-500 dark:text-gray-400"
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     }
                                                                 ]
                                                             }

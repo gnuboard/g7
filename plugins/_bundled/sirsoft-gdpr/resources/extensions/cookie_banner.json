@@ -357,7 +357,7 @@
                                             "props": {
                                                 "type": "button",
                                                 "disabled": "{{!!_global.gdprBannerSubmittingAction}}",
-                                                "className": "px-4 py-2 text-sm font-medium text-white bg-amber-600 dark:bg-amber-700 rounded hover:bg-amber-700 dark:hover:bg-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+                                                "className": "px-4 py-2 text-sm font-medium text-white bg-amber-700 dark:bg-amber-700 rounded hover:bg-amber-800 dark:hover:bg-amber-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
                                             },
                                             "children": [
                                                 {

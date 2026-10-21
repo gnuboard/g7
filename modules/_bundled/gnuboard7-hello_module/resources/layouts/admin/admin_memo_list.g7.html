@@ -23,7 +23,7 @@
     <div data-ref="memo_list_wrapper" class="admin-page-content">
       <div data-ref="memo_list_header" class="flex-between mb-6">
         <h1 data-ref="memo_list_title" class="text-page-heading">$t:gnuboard7-hello_module.admin.memos.index.title</h1>
-        <a href="/admin/memos/create" :mergeQuery="true" data-ref="memo_create_button" class="button px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed" disabled="{{memos?.data?.abilities?.can_create !== true}}" title="{{memos?.data?.abilities?.can_create === true ? '' : '$t:gnuboard7-hello_module.admin.memos.index.create_no_permission'}}">
+        <a href="/admin/memos/create" :mergeQuery="true" data-ref="memo_create_button" class="button px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed" disabled="{{memos?.data?.abilities?.can_create !== true}}" title="{{memos?.data?.abilities?.can_create === true ? '' : '$t:gnuboard7-hello_module.admin.memos.index.create_no_permission'}}">
           <on type="click">
             <!-- 새 메모 작성. 작성을 취소하고 돌아올 때를 위해 목록 상태를 함께 넘긴다 -->
             <navigate :mergeQuery="true">
@@ -34,7 +34,7 @@
         </a>
       </div>
       <!-- 메모가 0건이면 빈 화면 대신 안내 문구를 보인다 -->
-      <p data-ref="memo_empty" data-if="{{(memos?.data?.data ?? []).length === 0}}" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">$t:gnuboard7-hello_module.admin.memos.index.empty</p>
+      <p data-ref="memo_empty" data-if="{{memos !== undefined &amp;&amp; ((memos?.data?.data ?? []).length === 0)}}" class="py-8 text-center text-sm text-gray-500 dark:text-gray-400">$t:gnuboard7-hello_module.admin.memos.index.empty</p>
       <!-- 반복은 카드에 둔다 — 묶음(row-stack)에 두면 메모마다 자식 하나뿐인 묶음이 생기고, row-stack 은 첫·마지막 자식의 위아래 여백을 0 으로 두어 카드가 간격 없이 붙는다(사용자 메모 목록과 같은 결함군). -->
       <div data-ref="memo_items" class="space-y-3">
         <div data-ref="memo_item_{{idx}}" data-each="memo, idx in {{memos?.data?.data ?? []}}" class="p-4 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">

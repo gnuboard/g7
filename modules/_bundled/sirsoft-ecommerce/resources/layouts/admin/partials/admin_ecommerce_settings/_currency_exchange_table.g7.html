@@ -78,7 +78,7 @@
           </td>
           <td>
             <div data-if="{{_local.editingCurrencyIdx !== currency._idx}}" class="flex-center gap-1">
-              <button type="button" class="btn-icon text-blue-600 dark:text-blue-400 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.edit">
+              <button type="button" class="btn-icon text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.edit">
                 <on type="click">
                   <!-- 편집 시작. 원본 코드를 함께 담아 저장 시 "코드가 바뀌었는가" 를 비교한다. -->
                   <set-state target="local" editingCurrencyIdx="{{currency._idx}}">
@@ -100,7 +100,7 @@
               </button>
             </div>
             <div data-if="{{_local.editingCurrencyIdx === currency._idx}}" class="flex-center gap-1">
-              <button type="button" class="btn-icon text-green-600 dark:text-green-400 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.save">
+              <button type="button" class="btn-icon text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.save">
                 <on type="click">
                   <!-- 편집 저장. 코드가 바뀌었고 이미 있는 코드면 토스트로 막고, 아니면 배열에 반영한다 — 두 조건은 서로 배타적이다. -->
                   <sequence>
@@ -166,7 +166,7 @@
           </td>
           <td>
             <div class="flex-center gap-1">
-              <button type="button" class="btn-icon text-green-600 dark:text-green-400 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.add">
+              <button type="button" class="btn-icon text-green-700 dark:text-green-400 hover:text-green-700 dark:hover:text-green-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.add">
                 <on type="click">
                   <!-- 새 통화 추가. 비었거나 이미 있으면 토스트로 막고 아니면 배열 끝에 붙인다. -->
                   <sequence>

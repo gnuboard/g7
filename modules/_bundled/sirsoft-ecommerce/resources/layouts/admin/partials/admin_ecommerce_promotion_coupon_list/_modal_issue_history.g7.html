@@ -10,10 +10,11 @@
   <modal data-type="composite" data-ref="modal_issue_history" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.title" width="920px">
     <div class="flex-between mb-4">
       <div class="flex-center gap-2">
-        <span class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.total|count={{couponIssues?.data?.pagination?.total || 0}}</span>
+        <!-- 총건수 — 받기에 실패하면 앞 쿠폰의 건수가 남으므로 감춘다(실패 표시는 번역 인자가 아니라 표시 조건으로 읽는다 — 번역 인자는 창 상태 표본이 담는 값만 읽는다) -->
+        <span data-if="{{_global.issueHistoryLoadFailed !== true}}" class="text-label">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.total|count={{couponIssues?.data?.pagination?.total || 0}}</span>
         <badge data-type="composite" data-if="{{_global.issueHistoryFilterUser}}" color="blue" size="sm" class="flex-center gap-1">
           <span>{{_global.issueHistoryFilterUser?.name}}</span>
-          <button class="ml-1 -mr-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded" aria-label="$t:sirsoft-ecommerce.common.remove">
+          <button type="button" class="ml-1 -mr-1 p-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded" aria-label="$t:sirsoft-ecommerce.common.remove">
             <on type="click">
               <!-- 회원 필터 해제. 필터를 지우면서 페이지도 1로 되돌린다 — 안 되돌리면 3쪽을 보던 상태에서 전체 목록의 3쪽으로 튄다. -->
               <sequence>
@@ -40,15 +41,17 @@
         </on>
       </select>
     </div>
-    <data-grid data-type="composite" data="{{couponIssues?.data?.data || []}}" emptyMessage="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.empty">
-      <blur-until-loaded sources="couponIssues"/>
+    <!-- 받기 실패 안내 — 실패 표시는 데이터소스 오류 처리가 남긴다(`issueHistoryLoadFailed`). 실패한 채로 「발급 이력이 없습니다」를 보이면 운영자가 「발급 0건」으로 읽는다 -->
+    <p data-ref="issue_history_load_failed" data-if="{{_global.issueHistoryLoadFailed === true}}" role="alert" class="mb-4 text-sm text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
+    <!-- 실패하면 앞 쿠폰·앞 쪽의 행이 남아 있으므로 비우고, 빈 문구와 흐림도 끈다(실패 안내가 대신한다) -->
+    <data-grid data-type="composite" data="{{_global.issueHistoryLoadFailed === true ? [] : (couponIssues?.data?.data || [])}}" emptyMessage="{{couponIssues === undefined || _global.issueHistoryLoadFailed === true ? '' : $t('sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.empty')}}" data-blur-until-loaded="{{couponIssues === undefined &amp;&amp; _global.issueHistoryLoadFailed !== true}}">
       <column field="issued_at" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.issued_at" width="180px"/>
       <column field="user_info" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.user" width="200px">
         <cell>
           <div class="group flex-between">
             <div class="flex flex-col">
               <div class="flex items-center gap-1">
-                <icon name="user" class="text-base text-gray-400 dark:text-gray-500"/>
+                <icon name="user" class="text-base text-gray-500 dark:text-gray-400"/>
                 <span class="font-medium text-gray-900 dark:text-white">{{row.user_name}}</span>
               </div>
             </div>
@@ -89,14 +92,14 @@
       </column>
       <column comment="사용처: 사용된 건은 주문번호 링크, 아니면 - 표시" field="order_number" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.used_order" width="160px">
         <cell>
-          <a data-if="{{!!row.order_number}}" href="/admin/ecommerce/orders/{{row.order_id}}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">{{row.order_number}}</a>
-          <span data-if="{{!row.order_number}}" class="text-gray-400 dark:text-gray-500 text-sm">-</span>
+          <a data-if="{{!!row.order_number}}" href="/admin/ecommerce/orders/{{row.order_number}}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm font-medium">{{row.order_number}}</a>
+          <span data-if="{{!row.order_number}}" class="text-gray-500 dark:text-gray-400 text-sm">-</span>
         </cell>
       </column>
       <column comment="작업: 미사용(취소 가능) 건만 발급취소 버튼 노출" field="actions" header="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.columns.actions" width="120px">
         <cell>
           <!-- 발급취소는 쿠폰 수정 권한(서버 promotion-coupon.update)의 일이다 — 그 쿠폰 행의 can_update 를 창을 열 때 담아 둔다. -->
-          <button data-ref="issue_cancel_button" data-if="{{row.is_cancellable}}" type="button" class="px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.issueHistoryCoupon?.can_update !== true}}">
+          <button data-ref="issue_cancel_button" data-if="{{row.is_cancellable}}" type="button" class="px-2 py-1 text-xs font-medium text-red-700 dark:text-red-400 border border-red-300 dark:border-red-600 rounded hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.issueHistoryCoupon?.can_update !== true}}">
             <on type="click">
               <!-- 발급취소 창 열기. 회수 가능한 건에만 버튼이 뜨고(그 판정은 서버가 준 값이다), 어느 발급분인지 담아 두고 연다 — 그 창은 발급내역을 따로 조회하지 않는다. -->
               <sequence>
@@ -111,11 +114,11 @@
             </on>
             $t:sirsoft-ecommerce.admin.promotion_coupon.modal.issue_history.action.cancel_issue
           </button>
-          <span data-if="{{!row.is_cancellable}}" class="text-gray-300 dark:text-gray-600 text-sm">-</span>
+          <span data-if="{{!row.is_cancellable}}" class="text-gray-500 dark:text-gray-400 text-sm">-</span>
         </cell>
       </column>
     </data-grid>
-    <div class="mt-4 flex justify-center">
+    <div data-if="{{_global.issueHistoryLoadFailed !== true}}" class="mt-4 flex justify-center">
       <pagination data-type="composite" currentPage="{{couponIssues?.data?.pagination?.current_page || 1}}" totalPages="{{couponIssues?.data?.pagination?.last_page ?? null}}" hasMorePages="{{couponIssues?.data?.pagination?.has_more_pages ?? false}}" totalItems="{{couponIssues?.data?.pagination?.total || 0}}" perPage="{{couponIssues?.data?.pagination?.per_page || 10}}">
         <on event="onPageChange">
           <!-- 쪽 이동. 이 목록은 URL 을 쓰지 않는다 — 창 안의 목록이라 주소로 되돌아올 자리가 없다(바깥 목록은 URL 로 쪽을 옮긴다). -->

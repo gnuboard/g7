@@ -28,7 +28,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * (`cancelPendingPayments()`), 이 배치의 대상은 그러지 못한 채 끝난 건(프로세스 중단 등)이다」.
  * 반려가 정리하지 않으면 그 전제가 깨지고, 배치의 보존 기간 동안 결제가 열린 채로 남는다.
  *
- * 회귀 배경 (#599 3차 실측 F-9, 2026-09-22): 관리자 화면에서 교환을 반려한 직후 구매자 상세에
+ * 회귀 배경 (#599 실측, 2026-09-22): 관리자 화면에서 교환을 반려한 직후 구매자 상세에
  * [결제하기]가 그대로 서 있었고, 눌렀더니 **토스 결제창이 열렸다**.
  */
 class AdminClaimRejectPaymentCleanupTest extends ModuleTestCase

@@ -34,7 +34,7 @@
             <set-state target="global" myCommentsSearchField="{{$event.target.value}}"/>
           </on>
         </select>
-        <input type="text" placeholder="$t:mypage.board_activities.search_placeholder_comments" value="{{_global.myCommentsSearch ?? ''}}" class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
+        <input type="text" placeholder="$t:mypage.board_activities.search_placeholder_comments" value="{{_global.myCommentsSearch ?? ''}}" class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400">
           <on type="change">
             <!-- 댓글 본문 검색어 — 옆 「내 글」 탭과 조건 자리가 갈리므로 이름도 따로다 -->
             <set-state target="global" myCommentsSearch="{{$event.target.value}}"/>
@@ -47,7 +47,7 @@
             </sequence>
           </on>
         </input>
-        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <on type="click">
             <!-- 검색 — 조건이 URL 이 아니라 전역 상태에 있어 스스로 refetch 를 걸어야 한다. 쪽수를 1 로 되돌리지 않으면 3쪽을 보던 중 검색했을 때 빈 쪽이 뜬다 -->
             <sequence>
@@ -57,7 +57,7 @@
           </on>
           $t:common.search
         </button>
-        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">
             <!-- 초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
             <sequence>
@@ -77,7 +77,7 @@
         <span data-if="{{myComments?.data?.query?.search}}" class="font-medium">"{{myComments?.data?.query?.search}}"</span>
         <span>({{myComments?.data?.total ?? 0}}$t:mypage.board_activities.search_result_unit|count={{myComments?.data?.total ?? 0}}</span><span>)</span>
       </div>
-      <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm">
+      <button type="button" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm">
         <on type="click">
           <!-- 초기화 — 게시판·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
           <sequence>
@@ -114,8 +114,8 @@
         </a>
       </div>
       <!-- 댓글 없음 -->
-      <div data-if="{{!myComments?.data?.data || myComments.data.data.length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-        <icon name="comment" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+      <div data-if="{{myComments !== undefined &amp;&amp; (!myComments?.data?.data || myComments.data.data.length === 0)}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+        <icon name="comment" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
         <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
         <p data-if="{{!(!!_global.myCommentsSearchApplied || !!_global.myCommentsBoard)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.board_activities.empty_comments</p>
         <p data-if="{{!!_global.myCommentsSearchApplied || !!_global.myCommentsBoard}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>

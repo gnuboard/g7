@@ -9,7 +9,7 @@ import { isSameOriginRequest } from '../../support/sameOriginRequest';
 import { getLocaleDisplayName } from '../../support/localeName';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
   const translated = (window as any).G7Core?.t?.(key, params);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
@@ -91,7 +91,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   id,
   editorAttrs,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
   const languageText = languageTextProp ?? tOr('admin.language', 'Language');
   const [showMenu, setShowMenu] = useState(false);
   const [isChanging, setIsChanging] = useState(false);
@@ -99,7 +99,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     return localStorage.getItem('g7_locale') || 'ko';
   });
   const menuRef = useRef<HTMLDivElement>(null);
-  // 독립 모드 목록은 listbox 패턴이다(7.1.0 O-PF-1) — 단추는 aria-haspopup="listbox"·aria-controls 로 목록을 가리키고,
+  // 독립 모드 목록은 listbox 패턴이다(7.1.0) — 단추는 aria-haspopup="listbox"·aria-controls 로 목록을 가리키고,
   // 열면 현재 언어 항목에 초점을 두며 ↓/↑/Home/End 로 옮기고 Enter 로 고른다. Esc 는 닫고 단추로 초점을 돌린다.
   const listboxId = `${useId()}-language-listbox`;
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -252,7 +252,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
       onLanguageChange?.(locale);
 
       // 공개 API 로 화면 언어 전환 (새로고침 없이 리렌더링). 회원 언어는 위에서 이미 저장했으므로
-      // 코어가 다시 저장하지 않게 한다(저장 요청 1회 — 7.1.0 O-C3-3)
+      // 코어가 다시 저장하지 않게 한다(저장 요청 1회 — 7.1.0)
       if (typeof G7Core?.locale?.change === 'function') {
         await G7Core.locale.change(locale, { persist: false });
       } else {
@@ -287,7 +287,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
           </Span>
           <Icon
             name={IconName.ChevronDown}
-            className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform ${showMenu ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${showMenu ? 'rotate-180' : ''}`}
           />
         </Button>
         {showMenu && (

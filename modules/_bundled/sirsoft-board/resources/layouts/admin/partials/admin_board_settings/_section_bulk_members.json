@@ -1,5 +1,5 @@
 {
-    "comment": "「기본값」 탭 맨 아래의 게시판 관리자·스텝 일괄 지정 구획. 한 회원을 여러 게시판의 관리자·스텝으로 지정하려면 게시판 폼을\n  하나씩 저장해야 했던 것을 한 번에 한다. 여기서는 대상 게시판(전체/고른 것)·구분(관리자/스텝)·회원·작업(추가/제거)만 정하고,\n  실행은 확인 창이 맡는다. 입력은 전역 `boardBulkMembers` 한 묶음에 담아 확인 창과 나눠 쓰고, 탭을 옮기면 비운다.\n  관리자가 0명이 되는 게시판은 서버가 건너뛰고 그 사유를 돌려준다(게시판 폼의 「관리자 최소 1명」 규칙과 같다).\n  잠금은 서버(bulk-members)와 같은 게시판 수정 권한(boards.update)만 따른다 — 환경설정 수정 권한(settings.update)이 없어도\n  게시판 수정 권한이 있으면 쓸 수 있다(7.1.0 실측 O-K3-5). 화면 본체의 computed `bulkMembersLocked` 는 게시판 목록 응답의\n  abilities.can_update 로 판정해 목록이 오기 전·실패하면 잠근 채 두고, `bulkMembersNoPermission` 은 권한 없음이 확인됐을 때(응답의 abilities 또는 목록 조회 403)만,\n  `bulkMembersLoadFailed` 는 목록 조회가 그 밖의 이유(5xx 등)로 실패했을 때만 이유를 보인다(7.1.0 S2 #8 — 서버 오류에도 「권한 없음」 이 떴다).\n  「모든 게시판」 에서 역할을 줄 수 없는 게시판은 서버가 not_grantable 로, 역할 행이 없는(데이터 손상) 게시판은 role_missing 으로 건너뛴다.\n  이 카드는 설정 화면의 자동 바인딩 폼 안에 있으므로 이름을 가진 입력은 :autoBinding=\"false\" 로 폼에서 떼어 낸다 —\n  붙여 두면 값이 _local.form 으로 들어가 전역을 비워도 라디오가 옛 값으로 남고 설정 저장 본문에도 섞인다.",
+    "comment": "「기본값」 탭 맨 아래의 게시판 관리자·스텝 일괄 지정 구획. 한 회원을 여러 게시판의 관리자·스텝으로 지정하려면 게시판 폼을\n  하나씩 저장해야 했던 것을 한 번에 한다. 여기서는 대상 게시판(전체/고른 것)·구분(관리자/스텝)·회원·작업(추가/제거)만 정하고,\n  실행은 확인 창이 맡는다. 입력은 전역 `boardBulkMembers` 한 묶음에 담아 확인 창과 나눠 쓰고, 탭을 옮기면 비운다.\n  관리자가 0명이 되는 게시판은 서버가 건너뛰고 그 사유를 돌려준다(게시판 폼의 「관리자 최소 1명」 규칙과 같다).\n  잠금은 서버(bulk-members)와 같은 게시판 수정 권한(boards.update)만 따른다 — 환경설정 수정 권한(settings.update)이 없어도\n  게시판 수정 권한이 있으면 쓸 수 있다(7.1.0 실측). 화면 본체의 computed `bulkMembersLocked` 는 게시판 목록 응답의\n  abilities.can_update 로 판정해 목록이 오기 전·실패하면 잠근 채 두고, `bulkMembersNoPermission` 은 권한 없음이 확인됐을 때(응답의 abilities 또는 목록 조회 403)만,\n  `bulkMembersLoadFailed` 는 목록 조회가 그 밖의 이유(5xx 등)로 실패했을 때만 이유를 보인다(7.1.0 화면 검증 — 서버 오류에도 「권한 없음」 이 떴다).\n  「모든 게시판」 에서 역할을 줄 수 없는 게시판은 서버가 not_grantable 로, 역할 행이 없는(데이터 손상) 게시판은 role_missing 으로 건너뛴다.\n  이 카드는 설정 화면의 자동 바인딩 폼 안에 있으므로 이름을 가진 입력은 :autoBinding=\"false\" 로 폼에서 떼어 낸다 —\n  붙여 두면 값이 _local.form 으로 들어가 전역을 비워도 라디오가 옛 값으로 남고 설정 저장 본문에도 섞인다.",
     "meta": {
         "is_partial": true,
         "description": "게시판 설정 > 관리자·스텝 일괄 지정 섹션"
@@ -8,13 +8,6 @@
     "type": "basic",
     "name": "Div",
     "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
-    "classMap": {
-        "key": "{{_computed.bulkMembersLocked ? 'readonly' : 'normal'}}",
-        "variants": {
-            "readonly": "opacity-60",
-            "normal": ""
-        }
-    },
     "children": [
         {
             "id": "section_bulk_members",

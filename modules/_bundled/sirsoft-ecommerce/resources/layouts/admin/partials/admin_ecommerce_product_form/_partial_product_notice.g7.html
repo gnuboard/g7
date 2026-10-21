@@ -3,7 +3,7 @@
   줄 수가 정해져 있지 않아 추가·삭제·순서 바꾸기가 되는 목록 편집기로 다룬다. -->
 <partial description="Product Form - Product Information Notice Section">
   <div data-ref="notice" class="admin-card-accordion">
-    <div class="card-header">
+    <button type="button" class="flex w-full justify-start text-left card-header" aria-expanded="{{_local.ui.noticeExpanded !== false}}">
       <on type="click">
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.noticeExpanded="{{!_local.ui.noticeExpanded}}"/>
@@ -11,8 +11,8 @@
       <icon name="clipboard-list" class="text-gray-500 dark:text-gray-400"/>
       <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.notice</span>
       <span class="text-label-subtle ml-2">({{(_local.form.notice_items ?? []).length}}$t:sirsoft-ecommerce.admin.product.notice.items_count_suffix)</span>
-      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.noticeExpanded !== false ? 'rotate-180' : ''}}"/>
-    </div>
+      <icon name="chevron-down" class="admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.noticeExpanded !== false ? 'rotate-180' : ''}}"/>
+    </button>
     <div data-ref="notice_body" data-if="{{_local.ui.noticeExpanded !== false}}" class="row-stack">
       <div data-ref="notice_existing_template_mode">
         <div>

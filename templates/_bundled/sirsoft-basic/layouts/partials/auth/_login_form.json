@@ -339,7 +339,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-red-600 dark:text-red-400"
+                        "className": "text-sm text-red-700 dark:text-red-400"
                     },
                     "text": "{{_global.loginError}}"
                 },
@@ -349,7 +349,7 @@
                     "name": "P",
                     "if": "{{_global.loginErrors?.locked_until}}",
                     "props": {
-                        "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                        "className": "mt-1 text-sm text-red-700 dark:text-red-400"
                     },
                     "text": "$t:auth.locked_until|until={{_global.loginErrors?.locked_until | datetime}}"
                 },
@@ -358,7 +358,7 @@
                     "name": "P",
                     "if": "{{_global.loginErrors?.permanent === true}}",
                     "props": {
-                        "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                        "className": "mt-1 text-sm text-red-700 dark:text-red-400"
                     },
                     "text": "$t:auth.locked_permanent"
                 }
@@ -529,7 +529,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-sm text-red-600 dark:text-red-400"
+                                "className": "text-sm text-red-700 dark:text-red-400"
                             },
                             "text": "{{_global.twoFactor?.error ?? ''}}"
                         }
@@ -805,7 +805,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-sm text-red-600 dark:text-red-400"
+                                "className": "text-sm text-red-700 dark:text-red-400"
                             },
                             "text": "{{_global.passwordChange?.error ?? ''}}"
                         },
@@ -814,7 +814,7 @@
                             "name": "P",
                             "if": "{{_global.loginErrors?.locked_until}}",
                             "props": {
-                                "className": "mt-1 text-sm text-red-600 dark:text-red-400"
+                                "className": "mt-1 text-sm text-red-700 dark:text-red-400"
                             },
                             "text": "$t:auth.locked_until|until={{_global.loginErrors?.locked_until | datetime}}"
                         }

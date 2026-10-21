@@ -354,6 +354,11 @@
             "required": false,
             "description": "현재 주소의 쿼리를 href 에 합친다(href 자신의 키가 이김) — 보통 클릭과 새 탭이 같은 목록 조건으로 열린다"
           },
+          "fallbackHref": {
+            "type": "string",
+            "required": false,
+            "description": "대체 주소 — href 가 이 사이트 주소가 아니면(실행 주소·다른 사이트·//host) 대신 이 주소를 href 로 단다. 바깥에서 정해지는 href(알림 이동 주소 등)가 새 탭으로 그대로 열리지 않게 하며, 보통 클릭의 navigate fallbackPath 와 같은 착지점을 적는다. 빈 href 는 그대로"
+          },
           "target": {
             "type": "string",
             "required": false,

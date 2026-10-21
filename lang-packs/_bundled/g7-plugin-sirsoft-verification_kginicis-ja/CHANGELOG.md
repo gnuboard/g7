@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.4] - 2026-10-20
+
+### Added
+
+- KG이니시스 본인확인 1.1.1 의 마이페이지 본인확인 정보를 불러오지 못했을 때의 안내(`card.load_failed` — 「本人確認情報を読み込めませんでした。…」)의 일본어 번역을 추가했습니다.
+
 ## [1.0.3] - 2026-10-10
 
 ### Added

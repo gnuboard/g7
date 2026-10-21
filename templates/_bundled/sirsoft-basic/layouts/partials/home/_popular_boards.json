@@ -22,7 +22,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "flame",
-                        "className": "text-xl text-orange-500"
+                        "className": "text-xl text-orange-600"
                     }
                 },
                 {
@@ -99,9 +99,9 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{!popular_boards.data || popular_boards.data.length === 0}}",
+            "if": "{{popular_boards !== undefined && (!popular_boards.data || popular_boards.data.length === 0)}}",
             "props": {
-                "className": "text-center py-8 text-gray-500 dark:text-gray-400 flex-grow flex flex-col items-center justify-center min-h-[200px]"
+                "className": "text-center py-8 text-gray-800 dark:text-gray-300 flex-grow flex flex-col items-center justify-center min-h-[200px]"
             },
             "children": [
                 {

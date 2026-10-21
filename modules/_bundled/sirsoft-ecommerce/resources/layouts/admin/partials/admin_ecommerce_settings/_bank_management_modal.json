@@ -103,7 +103,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs space-y-0.5 ml-6"
+                                "className": "text-red-700 dark:text-red-400 text-xs space-y-0.5 ml-6"
                             },
                             "children": [
                                 {
@@ -177,7 +177,7 @@
                                             "comment": "빈 목록 안내",
                                             "type": "basic",
                                             "name": "Tr",
-                                            "if": "{{!$parent._local.form?.order_settings?.banks || $parent._local.form.order_settings.banks.length === 0}}",
+                                            "if": "{{settings !== undefined && (!$parent._local.form?.order_settings?.banks || $parent._local.form.order_settings.banks.length === 0)}}",
                                             "children": [
                                                 {
                                                     "type": "basic",

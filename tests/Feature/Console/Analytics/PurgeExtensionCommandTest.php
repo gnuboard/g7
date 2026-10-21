@@ -25,8 +25,16 @@ class PurgeExtensionCommandTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** 대화형 확인 문구 */
-    private const PROMPT = 'module sirsoft-ecommerce 의 방문자 통계 전환·차원 집계를 지웁니다. 되돌릴 수 없습니다. 진행할까요? (yes/no) [no]';
+    /**
+     * 대화형 확인 문구를 만듭니다.
+     *
+     * @param  string  $identifier  확장 식별자
+     * @return string 확인 질문(기본값 표시 포함)
+     */
+    private function prompt(string $identifier = 'sirsoft-ecommerce'): string
+    {
+        return __('analytics.console.purge_extension.confirm', ['type' => 'module', 'identifier' => $identifier]).' (yes/no) [no]';
+    }
 
     /**
      * 정리 대상과 남아야 할 데이터를 만듭니다.
@@ -61,7 +69,7 @@ class PurgeExtensionCommandTest extends TestCase
         $this->artisan('analytics:purge-extension', ['type' => 'module', 'identifier' => 'sirsoft-ecommerce'])->assertFailed();
         $this->artisan('analytics:purge-extension', ['type' => 'theme', 'identifier' => 'x', '--confirm' => true])->assertFailed();
         $this->artisan('analytics:purge-extension', ['type' => 'module', 'identifier' => 'sirsoft-ecommerce', '--confirm' => true])
-            ->expectsQuestion(self::PROMPT, 'no')
+            ->expectsQuestion($this->prompt(), 'no')
             ->assertSuccessful();
 
         $this->assertSame(2, AnalyticsConversion::count());
@@ -83,7 +91,7 @@ class PurgeExtensionCommandTest extends TestCase
         $this->seedRows();
 
         $this->artisan('analytics:purge-extension', ['type' => 'module', 'identifier' => 'sirsoft-ecommerce', '--confirm' => true])
-            ->expectsQuestion(self::PROMPT, 'yes')
+            ->expectsQuestion($this->prompt(), 'yes')
             ->assertSuccessful();
 
         $this->assertSame(0, AnalyticsConversion::where('extension_identifier', 'sirsoft-ecommerce')->count());
@@ -121,7 +129,7 @@ class PurgeExtensionCommandTest extends TestCase
         $this->assertSame(0, AnalyticsArchiveRun::count());
 
         $this->artisan('analytics:purge-extension', ['type' => 'module', 'identifier' => 'sirsoft-ecommerce', '--confirm' => true, '--force' => true])
-            ->expectsQuestion(self::PROMPT, 'yes')
+            ->expectsQuestion($this->prompt(), 'yes')
             ->assertSuccessful();
         $this->assertSame(0, AnalyticsConversion::where('extension_identifier', 'sirsoft-ecommerce')->count(), '--force 면 지운다');
     }
@@ -144,7 +152,7 @@ class PurgeExtensionCommandTest extends TestCase
 
         $this->artisan('analytics:purge-extension', ['type' => 'module', 'identifier' => 'sirsoft-ecomerce', '--confirm' => true])
             ->expectsOutputToContain('설치되어 있지 않습니다')
-            ->expectsQuestion('module sirsoft-ecomerce 의 방문자 통계 전환·차원 집계를 지웁니다. 되돌릴 수 없습니다. 진행할까요? (yes/no) [no]', 'no')
+            ->expectsQuestion($this->prompt('sirsoft-ecomerce'), 'no')
             ->assertSuccessful();
         $this->assertSame(2, AnalyticsConversion::count());
     }
@@ -167,7 +175,7 @@ class PurgeExtensionCommandTest extends TestCase
         $this->app->instance(StatsRepositoryInterface::class, $stats);
 
         $this->artisan('analytics:purge-extension', ['type' => 'module', 'identifier' => 'sirsoft-ecommerce', '--confirm' => true])
-            ->expectsQuestion(self::PROMPT, 'yes')
+            ->expectsQuestion($this->prompt(), 'yes')
             ->assertFailed();
 
         $this->assertSame(2, AnalyticsConversion::count(), '실패한 정리는 트랜잭션이 되돌린다');

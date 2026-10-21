@@ -69,7 +69,7 @@ describe('[case:components-datagrid-row-class-resolved-without-row] DataGrid row
   // @scenario row_type=notice
   // @effects datagrid_row_class_applies_to_mobile_cards
   it('좁은 화면 카드 보기에서도 행 클래스가 카드에 붙고, 배경을 주면 기본 흰 배경을 빼 덮이지 않게 한다', () => {
-    // 7.1.0 실측 K3 관측 O-K3-17: 390px 카드 보기의 공지 카드에 배경 구분이 없었다(행 배경은 표 tr 에만 붙음).
+    // 7.1.0 실측: 390px 카드 보기의 공지 카드에 배경 구분이 없었다(행 배경은 표 tr 에만 붙음).
     const { container } = render(
       <DataGrid columns={columns} data={data} rowClassName={ROW_CLASS} responsiveBreakpoint={100000} />,
     );

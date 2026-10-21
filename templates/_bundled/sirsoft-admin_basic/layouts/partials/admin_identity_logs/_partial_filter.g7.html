@@ -23,7 +23,7 @@
           </on>
         </select>
         <div class="relative flex-1">
-          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"/>
           <input name="search" type="text" placeholder="$t:admin.identity.logs.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
             <on type="change">
               <!-- 검색어는 담아 두기만 한다. 대상이 되는 값(대상 해시 등)은 원문이 아니라 저장된 형태 그대로 넣어야 맞는다. -->
@@ -97,7 +97,7 @@
             <set-state target="local" filter.dateFrom="{{$event.target.value}}"/>
           </on>
         </input>
-        <span class="text-gray-400 dark:text-gray-500">~</span>
+        <span class="text-gray-500 dark:text-gray-400">~</span>
         <input type="date" aria-label="$t:common.range_end|label={{$t('admin.identity.logs.filter.date_range_label')}}" name="dateTo" class="input w-40" value="{{_local.filter.dateTo || ''}}">
           <on type="change">
             <!-- 종료일. 두 칸 다 비워 두면 기간 조건 없이 전체를 본다. -->

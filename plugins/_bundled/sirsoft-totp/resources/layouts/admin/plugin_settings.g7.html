@@ -33,6 +33,17 @@
       <on-code code="403">
         <suppress/>
       </on-code>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
     </error-handling>
   </data-source>
   <computed name="isPluginReadOnly">{{totpSettings?.data?.abilities?.can_update !== true}}</computed>
@@ -57,7 +68,7 @@
         <p data-ref="totp_security_description" class="page-description">$t:sirsoft-totp.admin.security.description</p>
     </div>
       <div data-ref="totp_security_error" data-if="{{_local.error}}" class="alert-danger mb-4" role="alert">
-        <p data-ref="totp_security_error_text" class="text-sm text-red-600 dark:text-red-400">{{_local.error ?? ''}}</p>
+        <p data-ref="totp_security_error_text" class="text-sm text-red-700 dark:text-red-400">{{_local.error ?? ''}}</p>
     </div>
       <!-- 이미 등록을 마친 상태 — 해제와 백업 코드 재발급만 남는다. -->
       <div data-ref="totp_security_enrolled_card" data-if="{{totpEnrollment?.data?.enrolled && !_local.backupCodes}}" class="card-stack-item">
@@ -95,7 +106,7 @@
             </on>
             <span data-ref="totp_security_regenerate_text">$t:sirsoft-totp.admin.security.enrolled.regenerate</span>
           </button>
-          <button data-ref="totp_security_disable" type="button" class="px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{String(_local.code ?? '').trim().length &lt; 6 || _local.busy}}">
+          <button data-ref="totp_security_disable" type="button" class="px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{String(_local.code ?? '').trim().length &lt; 6 || _local.busy}}">
             <on type="click">
               <!-- 해제 — 해제에도 현재 코드를 요구한다(열린 세션만으로 2단계 인증을 끄지 못하게). -->
               <sequence>
@@ -126,7 +137,7 @@
           <li data-ref="totp_security_intro_step2">$t:sirsoft-totp.admin.security.intro.step_scan</li>
           <li data-ref="totp_security_intro_step3">$t:sirsoft-totp.admin.security.intro.step_confirm</li>
         </ol>
-        <button data-ref="totp_security_start" type="button" class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.busy}}">
+        <button data-ref="totp_security_start" type="button" class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.busy}}">
           <on type="click">
             <!-- 시크릿 발급 — 응답의 평문은 이 시점에만 받는다. -->
             <sequence>
@@ -173,7 +184,7 @@
               </input>
             </div>
             <div data-ref="totp_security_enroll_actions" class="flex flex-col sm:flex-row gap-2 mt-4">
-              <button data-ref="totp_security_confirm" type="button" class="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.code || _local.code.length < 6 || _local.busy}}">
+              <button data-ref="totp_security_confirm" type="button" class="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.code || _local.code.length < 6 || _local.busy}}">
                 <on type="click">
                   <!-- 확정 — 성공하면 백업 코드 10개를 1회 노출 화면으로 넘긴다. -->
                   <sequence>
@@ -227,7 +238,7 @@
             </on>
             <span data-ref="totp_security_backup_copy_text">$t:sirsoft-totp.admin.security.backup.copy</span>
           </button>
-          <button data-ref="totp_security_backup_done" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors cursor-pointer">
+          <button data-ref="totp_security_backup_done" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors cursor-pointer">
             <on type="click">
               <!-- 「보관했습니다」 — 백업 코드 평문을 화면 상태에서 지워 등록됨 카드로 돌아간다. 다시 볼 방법은 재발급뿐이다 -->
               <set-state target="local" :backupCodes="null"/>
@@ -242,12 +253,12 @@
       <div data-ref="totp_settings_card" data-if="{{!!totpSettings?.data}}" class="card-stack-item">
         <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!totpSettings?.data}}" role="status" class="alert-warning mt-6">
           <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-          <span class="text-warning-soft">$t:sirsoft-totp.plugin_read_only</span>
+          <span class="text-xs totp-tone-warning">$t:sirsoft-totp.plugin_read_only</span>
         </div>
         <h3 data-ref="totp_settings_title" class="card-title">$t:sirsoft-totp.admin.settings.title</h3>
         <div data-ref="totp_settings_desc" class="card-description">$t:sirsoft-totp.admin.settings.description</div>
         <div data-ref="totp_settings_errors" data-if="{{_local.settingsErrors}}" class="alert-danger mt-4" role="alert">
-          <p data-ref="totp_settings_error_item_{{errorIndex}}" data-each="message, errorIndex in Object.values(_local.settingsErrors ?? {}).flat()" class="text-sm text-red-600 dark:text-red-400">{{message}}</p>
+          <p data-ref="totp_settings_error_item_{{errorIndex}}" data-each="message, errorIndex in Object.values(_local.settingsErrors ?? {}).flat()" class="text-sm text-red-700 dark:text-red-400">{{message}}</p>
         </div>
         <div data-ref="totp_settings_issuer_field" class="mt-4">
           <label data-ref="totp_settings_issuer_label" for="totp_settings_issuer" class="form-label">$t:sirsoft-totp.admin.settings.issuer_label</label>
@@ -273,10 +284,10 @@
         </div>
         <!-- 끈 상태의 결과를 저장 전에 알린다 — 미등록 회원은 등록을 마칠 때까지 로그인할 수 없다(allow_mail_fallback=false). -->
         <div data-ref="totp_settings_fallback_off_warning" data-if="{{_local.settingsForm?.allow_mail_fallback === false}}" class="alert-warning mt-3" role="status">
-          <p data-ref="totp_settings_fallback_off_warning_text" class="text-warning-soft">$t:sirsoft-totp.admin.settings.fallback_off_warning</p>
+          <p data-ref="totp_settings_fallback_off_warning_text" class="text-xs totp-tone-warning">$t:sirsoft-totp.admin.settings.fallback_off_warning</p>
         </div>
         <div data-ref="totp_settings_actions" class="flex justify-end mt-4">
-          <button data-ref="totp_settings_save" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly || (!_local.settingsChanged || _local.settingsSaving)}}">
+          <button data-ref="totp_settings_save" type="button" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly || (!_local.settingsChanged || _local.settingsSaving)}}">
             <on type="click">
               <!-- 운영 설정 저장 — 응답(정규화된 저장값)을 폼에 되돌려 화면과 저장 상태를 맞춘다. 실패하면 칸별 사유를 카드 안에 보인다 -->
               <sequence>

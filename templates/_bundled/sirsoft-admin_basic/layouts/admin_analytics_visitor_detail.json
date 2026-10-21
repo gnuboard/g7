@@ -217,10 +217,17 @@
                                         "name": "Button",
                                         "actions": [
                                             {
-                                                "comment": "정보주체 삭제 창을 방문자 키로 연다. 끝나면 목록으로 돌아간다(analyticsSubjectAfter).",
+                                                "comment": "정보주체 삭제 창을 방문자 키로 연다. 끝나면 목록으로 돌아간다(analyticsSubjectAfter).\n                   지울 기준을 먼저 null 로 비운다 — 기본(deep) 병합이라 정보주체 화면에서 연 IP·회원·기간이 남아 이 방문자 키와 AND 로\n                   묶여, 삭제가 덜 지워지거나 0건이 됐다(7.1.1)",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "analyticsSubject": null
+                                                        }
+                                                    },
                                                     {
                                                         "handler": "setState",
                                                         "params": {
@@ -692,7 +699,7 @@
                                                                 "text": "{{(analytics_visitor?.data?.visits ?? [])[0]?.ip ?? '-'}}"
                                                             },
                                                             {
-                                                                "comment": "배지는 설정이 아니라 **이 주소**가 가려졌는지를 말한다 — 마스킹을 켜며 소급을 건너뛴 기존 방문은\n                     원래 주소 그대로라, 설정만 보고 「마스킹」을 붙이면 원래 주소를 가려진 값으로 읽는다(7.1.0 실측 O-E8).\n                     서버가 방문마다 `ip_masked`(지금 설정대로 가려졌는가)를 싣는다.",
+                                                                "comment": "배지는 설정이 아니라 **이 주소**가 가려졌는지를 말한다 — 마스킹을 켜며 소급을 건너뛴 기존 방문은\n                     원래 주소 그대로라, 설정만 보고 「마스킹」을 붙이면 원래 주소를 가려진 값으로 읽는다(7.1.0 실측).\n                     서버가 방문마다 `ip_masked`(지금 설정대로 가려졌는가)를 싣는다.",
                                                                 "type": "composite",
                                                                 "name": "Badge",
                                                                 "if": "{{(analytics_visitor?.data?.ip_mask_octets ?? 0) > 0 && (analytics_visitor?.data?.visits ?? [])[0]?.ip_masked !== false}}",
@@ -790,7 +797,7 @@
                                         "id": "visits_empty",
                                         "type": "composite",
                                         "name": "EmptyState",
-                                        "if": "{{!analytics_visitor?.loading && (analytics_visitor?.data?.visits ?? []).length === 0}}",
+                                        "if": "{{analytics_visitor !== undefined && (analytics_visitor?.data?.visits ?? []).length === 0}}",
                                         "props": {
                                             "iconName": "clock-rotate-left",
                                             "title": "$t:admin.analytics.common.empty_title",
@@ -883,7 +890,7 @@
                                                         "props": {
                                                             "name": "{{(_local.openVisits ?? {})[visit.visit_id] ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}",
                                                             "size": "sm",
-                                                            "className": "text-gray-400 dark:text-gray-500"
+                                                            "className": "text-gray-500 dark:text-gray-500"
                                                         }
                                                     }
                                                 ]

@@ -7,7 +7,7 @@
     "id": "visitor_counter_section",
     "type": "basic",
     "name": "Div",
-    "if": "{{_global.settings?.analytics?.public_summary_enabled === true && !!visitor_summary?.data && !visitor_summary?.error}}",
+    "if": "{{_global.settings?.analytics?.public_summary_enabled === true && !!visitor_summary?.data}}",
     "props": {
         "className": "mt-4"
     },

@@ -160,7 +160,7 @@ class DeletedContentStateTransitionTest extends BoardTestCase
     /**
      * 원글이 삭제된 채로 댓글만 단건 복구하면 409 로 거절하고, 원글을 먼저 복구하면 그 댓글도 복구된다.
      *
-     * 2026-10-07 실측(O-KF3-2): 원글 삭제로 함께 지워진 댓글을 단건 복구하면 지워진 글 아래 댓글만
+     * 2026-10-07 실측: 원글 삭제로 함께 지워진 댓글을 단건 복구하면 지워진 글 아래 댓글만
      * published 로 살아났다(사용자 화면에는 글이 없어 보이지 않는 고아 댓글).
      *
      * @scenario transition=restore_deleted, target=comment

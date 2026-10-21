@@ -50,7 +50,7 @@ class ListLanguagePackCommand extends Command
         $packs = $paginator->items();
 
         if (empty($packs)) {
-            $this->info('언어팩이 없습니다.');
+            $this->info(__('language_packs.commands.list.empty'));
 
             return self::SUCCESS;
         }
@@ -85,7 +85,7 @@ class ListLanguagePackCommand extends Command
     private function formatStatus(LanguagePack $pack): string
     {
         if ((bool) $pack->getAttribute('files_missing')) {
-            return $pack->status.' (파일 없음)';
+            return __('language_packs.commands.list.files_missing', ['status' => $pack->status]);
         }
 
         return (string) $pack->status;

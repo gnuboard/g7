@@ -9,7 +9,7 @@ import { P } from '../basic/P';
 import { Svg } from '../basic/Svg';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
   const translated = (window as any).G7Core?.t?.(key, params);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
@@ -95,7 +95,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   className = '',
   style,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
   const emailLabel = emailLabelProp ?? tOr('auth.login.email', 'Email');
   const passwordLabel = passwordLabelProp ?? tOr('auth.login.password', 'Password');
   const submitButtonText = submitButtonTextProp ?? tOr('auth.login.submit', 'Sign In');
@@ -177,7 +177,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         {/* API 에러 메시지 */}
         {apiError && (
           <Div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-            <P className="text-sm text-red-600 dark:text-red-400">{apiError}</P>
+            <P className="text-sm text-red-700 dark:text-red-400">{apiError}</P>
           </Div>
         )}
 
@@ -206,7 +206,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               }
               bg-white dark:bg-gray-800
               text-gray-900 dark:text-white
-              placeholder-gray-400 dark:placeholder-gray-500
+              placeholder-gray-500 dark:placeholder-gray-400
               focus:outline-none focus:ring-2
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors duration-200
@@ -244,7 +244,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               }
               bg-white dark:bg-gray-800
               text-gray-900 dark:text-white
-              placeholder-gray-400 dark:placeholder-gray-500
+              placeholder-gray-500 dark:placeholder-gray-400
               focus:outline-none focus:ring-2
               disabled:opacity-50 disabled:cursor-not-allowed
               transition-colors duration-200
@@ -262,7 +262,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           <Div className="flex items-center justify-end">
             <A
               href={forgotPasswordUrl}
-              className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
+              className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
             >
               {forgotPasswordText}
             </A>
@@ -276,7 +276,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           className={`
             w-full px-4 py-3 rounded-lg font-medium
             bg-blue-600 hover:bg-blue-700
-            dark:bg-blue-500 dark:hover:bg-blue-600
+            dark:bg-blue-600 dark:hover:bg-blue-700
             text-white
             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
             dark:focus:ring-offset-gray-900

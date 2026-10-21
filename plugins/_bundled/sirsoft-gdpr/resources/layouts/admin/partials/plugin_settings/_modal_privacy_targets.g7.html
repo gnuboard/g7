@@ -56,7 +56,9 @@
           <loading-spinner data-type="composite" data-ref="privacy_targets_loading" data-if="{{_global.privacyTargets?.isLoadingMore}}" size="sm" text="$t:sirsoft-gdpr.annual_notice.targets.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
         </div>
       </div>
-      <div data-ref="privacy_targets_empty" data-if="{{(privacyTargets?.data?.data ?? []).length === 0}}" class="flex flex-col items-center gap-3 text-center text-gray-400 dark:text-gray-500 py-6">
+      <!-- 다시 받기에 실패하면 엔진이 값을 null 로 둔다 — 「대상이 없습니다」 대신 불러오기 실패를 알린다 -->
+      <p data-ref="privacy_targets_load_failed" data-if="{{privacyTargets === null}}" role="alert" class="py-6 text-center text-sm text-red-600 dark:text-red-400">$t:sirsoft-gdpr.common.list_load_failed</p>
+      <div data-ref="privacy_targets_empty" data-if="{{privacyTargets !== undefined &amp;&amp; privacyTargets !== null &amp;&amp; ((privacyTargets?.data?.data ?? []).length === 0)}}" class="flex flex-col items-center gap-3 text-center text-gray-500 dark:text-gray-400 py-6">
         <icon name="inbox" class="text-4xl"/>
         <span class="text-sm">$t:sirsoft-gdpr.annual_notice.targets.empty</span>
       </div>

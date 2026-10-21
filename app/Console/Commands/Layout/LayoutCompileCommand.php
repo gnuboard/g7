@@ -70,7 +70,7 @@ class LayoutCompileCommand extends Command
         $path = $this->argument('path');
 
         if ($path === null && ! $this->option('all')) {
-            $this->error('경로를 지정하거나 --all 을 사용하세요.');
+            $this->error(__('layouts.console.path_or_all'));
 
             return self::FAILURE;
         }
@@ -78,7 +78,7 @@ class LayoutCompileCommand extends Command
         $files = $this->option('all') ? $this->scanLayoutFiles() : [$this->absolutePath((string) $path)];
 
         if ($files === []) {
-            $this->info('대상 .json 레이아웃이 없습니다.');
+            $this->info(__('layouts.console.compile_no_targets'));
 
             return self::SUCCESS;
         }
@@ -144,20 +144,20 @@ class LayoutCompileCommand extends Command
     private function reportBudget(array $budget, int $filesWithEscape): void
     {
         if ($budget === []) {
-            $this->info('<json> 탈출구 방출 0건 — 전 레이아웃이 첫 급부 문법으로 왕복.');
+            $this->info(__('layouts.console.budget_none_layouts'));
 
             return;
         }
 
         arsort($budget);
         $this->newLine();
-        $this->line('<comment>=== &lt;json&gt; 탈출구 예산 (결함 인벤토리 대조) ===</comment>');
+        $this->line('<comment>'.__('layouts.console.budget_header_inventory').'</comment>');
 
         foreach ($budget as $key => $count) {
-            $this->line(sprintf('  %-24s %d건', $key, $count));
+            $this->line(sprintf('  %-24s %s', $key, __('layouts.console.budget_count', ['count' => $count])));
         }
 
-        $this->line(sprintf('  총 %d건 / 파일 %d개', array_sum($budget), $filesWithEscape));
+        $this->line('  '.__('layouts.console.budget_total_files', ['count' => array_sum($budget), 'files' => $filesWithEscape]));
     }
 
     /**
@@ -179,7 +179,7 @@ class LayoutCompileCommand extends Command
             $result = $failure['result'];
 
             if ($result['error'] !== null) {
-                $this->line('  <comment>컴파일 오류</comment>: '.$result['error']);
+                $this->line('  <comment>'.__('layouts.console.compile_error').'</comment>: '.$result['error']);
 
                 continue;
             }
@@ -189,12 +189,11 @@ class LayoutCompileCommand extends Command
         }
 
         $this->newLine();
-        $this->info(sprintf(
-            '왕복 — 대상 %d개, 불일치 %d개, 스킵 %d개.',
-            $total,
-            count($failures),
-            $skipped,
-        ));
+        $this->info(__('layouts.console.roundtrip_summary', [
+            'total' => $total,
+            'failed' => count($failures),
+            'skipped' => $skipped,
+        ]));
 
         return $failures === [] ? self::SUCCESS : self::FAILURE;
     }
@@ -245,7 +244,7 @@ class LayoutCompileCommand extends Command
             $json = EmptyMap::decodePreserving(File::get($file));
 
             if (! is_array($json)) {
-                $this->error("JSON 이 아닙니다: {$file}");
+                $this->error(__('layouts.console.not_json', ['file' => $file]));
                 $failed++;
 
                 continue;
@@ -260,7 +259,7 @@ class LayoutCompileCommand extends Command
             try {
                 (new LayoutMarkupCompiler($registry))->compile($markup, $out, $this->resolveContext($file));
             } catch (CompileError $error) {
-                $this->error("자기검사 실패 — 산출을 기록하지 않습니다: {$error->getMessage()}");
+                $this->error(__('layouts.console.self_check_failed', ['error' => $error->getMessage()]));
                 $failed++;
 
                 continue;
@@ -271,7 +270,7 @@ class LayoutCompileCommand extends Command
         }
 
         $this->newLine();
-        $this->info(sprintf('완료 — 파일 %d개, 실패 %d개.', count($files), $failed));
+        $this->info(__('layouts.console.compile_done', ['files' => count($files), 'failed' => $failed]));
 
         return $failed === 0 ? self::SUCCESS : self::FAILURE;
     }

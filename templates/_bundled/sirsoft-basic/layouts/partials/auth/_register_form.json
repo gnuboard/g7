@@ -118,7 +118,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm font-medium text-red-600 dark:text-red-400"
+                        "className": "text-sm font-medium text-red-700 dark:text-red-400"
                     },
                     "text": "{{_local.registerError}}"
                 },
@@ -139,7 +139,7 @@
                             "type": "basic",
                             "name": "Li",
                             "props": {
-                                "className": "text-sm text-red-600 dark:text-red-400"
+                                "className": "text-sm text-red-700 dark:text-red-400"
                             },
                             "text": "{{message}}"
                         }
@@ -168,7 +168,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -192,7 +192,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.email}}",
                     "props": {
-                        "className": "text-red-500 text-xs mt-1"
+                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                     },
                     "text": "{{_local.errors?.email?.[0] ?? ''}}"
                 }
@@ -219,7 +219,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -299,7 +299,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -344,7 +344,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -368,7 +368,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.name}}",
                     "props": {
-                        "className": "text-red-500 text-xs mt-1"
+                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                     },
                     "text": "{{_local.errors?.name?.[0] ?? ''}}"
                 }
@@ -404,7 +404,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.nickname}}",
                     "props": {
-                        "className": "text-red-500 text-xs mt-1"
+                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                     },
                     "text": "{{_local.errors?.nickname?.[0] ?? ''}}"
                 }
@@ -440,7 +440,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.mobile}}",
                     "props": {
-                        "className": "text-red-500 text-xs mt-1"
+                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                     },
                     "text": "{{_local.errors?.mobile?.[0] ?? ''}}"
                 }
@@ -476,7 +476,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.phone}}",
                     "props": {
-                        "className": "text-red-500 text-xs mt-1"
+                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                     },
                     "text": "{{_local.errors?.phone?.[0] ?? ''}}"
                 }
@@ -516,7 +516,7 @@
             "name": "Div"
         },
         {
-            "comment": "약관 동의 — 곁 문구는 전문 보기 버튼을 품어 체크박스를 감쌀 수 없으므로 체크박스 이름은 aria-label 로 준다. 곁 문구를 <label> 로 두면\n         연결 없는 label 이 안의 버튼을 대상으로 삼아 버튼 이름이 「(필수)」 로 읽힌다 — 그래서 <div> 다(7.1.0 N O-N6).",
+            "comment": "약관 동의 — 곁 문구는 전문 보기 버튼을 품어 체크박스를 감쌀 수 없으므로 체크박스 이름은 aria-label 로 준다. 곁 문구를 <label> 로 두면\n         연결 없는 label 이 안의 버튼을 대상으로 삼아 버튼 이름이 「(필수)」 로 읽힌다 — 그래서 <div> 다(7.1.0 실측).",
             "type": "basic",
             "name": "Div",
             "props": {
@@ -606,7 +606,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.agree_terms}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1 ml-6"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 ml-6"
                             },
                             "text": "{{_local.errors?.agree_terms?.[0] ?? ''}}"
                         }
@@ -696,7 +696,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.agree_privacy}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1 ml-6"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 ml-6"
                             },
                             "text": "{{_local.errors?.agree_privacy?.[0] ?? ''}}"
                         }

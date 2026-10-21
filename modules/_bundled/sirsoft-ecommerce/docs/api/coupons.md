@@ -294,6 +294,10 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | min_order_amount_formatted | string | `¥20,000` | `min_order_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | remaining_quantity | integer | `299` | 잔여 발급 가능 수량 (total_quantity − issued_count, 무제한이면 null) |
 | benefit_formatted | string | `¥3,000 할인` | `benefit` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| multi_currency_benefit_formatted | object | `{"KRW":"3,000원 할인","USD":"$2.25 할인"}` | 혜택 문구의 통화별 맵(통화코드 => 문구). 정액 할인액·정률 최대 할인액을 그 통화로 환산해 쓴다 |
+| multi_currency_discount_value | object\|null | `{"KRW":{"price":3000,"formatted":"3,000원","is_default":true},…}` | 정액 할인액의 통화별 환산 맵(상품 가격과 같은 `{price, formatted, is_default}` 모양). 정률 쿠폰은 null |
+| multi_currency_min_order_amount | object\|null | `{"KRW":{"price":20000,"formatted":"20,000원","is_default":true},…}` | 최소 주문금액의 통화별 환산 맵 (0이면 null) |
+| multi_currency_discount_max_amount | object\|null | `null` | 정률 최대 할인 금액의 통화별 환산 맵 (없으면 null) |
 | included_products | array | `[]` | 적용 대상 포함 상품 목록 (target_scope=products 시 이 상품에만 적용) |
 | excluded_products | array | `[]` | 적용 제외 상품 목록 (해당 상품은 쿠폰 적용에서 제외) |
 | included_categories | array | `[{"id":32,"name":{"ko":"바지","en":"Pants"},"description":{…` | 적용 대상 포함 카테고리 목록 (target_scope=categories 시 이 카테고리에만 적용) |
@@ -354,6 +358,37 @@ HTTP/1.1 200
                 "min_order_amount_formatted": "¥20,000",
                 "remaining_quantity": 299,
                 "benefit_formatted": "¥3,000 할인",
+                "multi_currency_benefit_formatted": {
+                    "KRW": "3,000원 할인",
+                    "USD": "$2.25 할인"
+                },
+                "multi_currency_discount_value": {
+                    "KRW": {
+                        "price": 3000,
+                        "formatted": "3,000원",
+                        "is_default": true
+                    },
+                    "USD": {
+                        "price": 2.25,
+                        "formatted": "$2.25",
+                        "is_default": false,
+                        "exchange_rate": 0.75
+                    }
+                },
+                "multi_currency_min_order_amount": {
+                    "KRW": {
+                        "price": 20000,
+                        "formatted": "20,000원",
+                        "is_default": true
+                    },
+                    "USD": {
+                        "price": 15,
+                        "formatted": "$15.00",
+                        "is_default": false,
+                        "exchange_rate": 0.75
+                    }
+                },
+                "multi_currency_discount_max_amount": null,
                 "included_products": [],
                 "excluded_products": [],
                 "included_categories": [
@@ -452,6 +487,37 @@ HTTP/1.1 200
                 "min_order_amount_formatted": "¥20,000",
                 "remaining_quantity": 938,
                 "benefit_formatted": "50.00% 할인 (최대 ¥3,000)",
+                "multi_currency_benefit_formatted": {
+                    "KRW": "50.00% 할인 (최대 3,000원)",
+                    "USD": "50.00% 할인 (최대 $2.25)"
+                },
+                "multi_currency_discount_value": null,
+                "multi_currency_min_order_amount": {
+                    "KRW": {
+                        "price": 20000,
+                        "formatted": "20,000원",
+                        "is_default": true
+                    },
+                    "USD": {
+                        "price": 15,
+                        "formatted": "$15.00",
+                        "is_default": false,
+                        "exchange_rate": 0.75
+                    }
+                },
+                "multi_currency_discount_max_amount": {
+                    "KRW": {
+                        "price": 3000,
+                        "formatted": "3,000원",
+                        "is_default": true
+                    },
+                    "USD": {
+                        "price": 2.25,
+                        "formatted": "$2.25",
+                        "is_default": false,
+                        "exchange_rate": 0.75
+                    }
+                },
                 "included_products": [],
                 "excluded_products": [],
                 "included_categories": [],
@@ -502,7 +568,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 로그인한 회원이 지금 다운로드해 발급받을 수 있는 쿠폰(다운로드형) 목록을 페이지네이션으로 조회합니다. `auth:sanctum` 인증이 필요하며, `UserCouponService::getDownloadableCoupons()`가 발급기간·수량·회원당 한도를 만족하는 다운로드형 쿠폰을 반환하고 각 항목에 `is_downloaded`·`user_issued_count`로 이미 받았는지 여부를 표시합니다. 여기 항목은 아직 발급 전이므로 쿠폰 정의(마스터) 기준이며, 실제 발급은 download 엔드포인트로 수행합니다.
+**설명** 로그인한 회원이 지금 다운로드해 발급받을 수 있는 쿠폰(다운로드형) 목록을 페이지네이션으로 조회합니다. `auth:sanctum` 인증이 필요하며, `UserCouponService::getDownloadableCoupons()`가 발급기간·수량·회원당 한도를 만족하는 다운로드형 쿠폰을 반환하고 각 항목에 `is_downloaded`·`user_issued_count`로 이미 받았는지 여부를 표시합니다. 여기 항목은 아직 발급 전이므로 쿠폰 정의(마스터) 기준이며, 실제 발급은 download 엔드포인트로 수행합니다. 주문서의 쿠폰 받기 창이 선택 통화로 보이도록 정액 할인액·최소 주문금액·정률 최대 할인액의 통화별 환산 맵(`multi_currency_*`, 상품 가격과 같은 모양)과 혜택 문구 맵(`multi_currency_benefit_formatted`)을 함께 싣습니다 — 상품 상세 목록(`products/{product}/downloadable-coupons`)과 같은 계약입니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/user/coupons/{couponId}/download

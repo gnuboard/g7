@@ -252,7 +252,7 @@ describe('Exchange rate history controls', () => {
     expect(grid).toBeTruthy();
     expect(grid.props.expandChildren).toBeTruthy();
     // DataGridProps 에 loading 계약이 없으므로 로딩은 그리드 형제 스피너로 표현한다.
-    const spinner=nodes(tabHistory).find((n:any)=>typeof n.if==='string' && n.if.includes('koreaeximRuns?.loading'));
+    const spinner=nodes(tabHistory).find((n:any)=>typeof n.if==='string' && n.if.includes('koreaeximRuns === undefined'));
     expect(spinner).toBeTruthy();
     expect(nodes(spinner).some((n:any)=>n.props?.className==='spinner-sm')).toBe(true);
     const runs=(settingsLayout as any).data_sources.filter((d:any)=>typeof d.endpoint==='string' && d.endpoint.includes('/admin/runs'));

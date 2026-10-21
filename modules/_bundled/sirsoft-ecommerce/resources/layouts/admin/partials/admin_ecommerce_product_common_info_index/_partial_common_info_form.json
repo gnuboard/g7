@@ -273,7 +273,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "globe",
-                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                                "className": "text-base text-gray-500 dark:text-gray-500"
                                             }
                                         },
                                         {
@@ -331,7 +331,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{_local.contentMode === 'text' ? 'tab active' : 'tab'}}"
+                                                "className": "{{_local.contentMode === 'text' ? 'tab active' : 'tab text-gray-600'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.common_info.form.mode_text"
                                         },
@@ -351,7 +351,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "{{_local.contentMode === 'html' ? 'tab active' : 'tab'}}"
+                                                "className": "{{_local.contentMode === 'html' ? 'tab active' : 'tab text-gray-600'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.common_info.form.mode_html"
                                         }

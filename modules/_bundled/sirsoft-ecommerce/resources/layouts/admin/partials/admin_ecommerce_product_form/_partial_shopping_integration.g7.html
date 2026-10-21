@@ -3,22 +3,22 @@
   이 폼이 아니라 연동 관리 화면에 있다(각 줄의 「관리」가 그리로 나간다). -->
 <partial description="Product Form - Shopping Integration Section">
   <div data-ref="shopping_integration" class="admin-card-accordion">
-    <div class="card-header">
+    <button type="button" class="flex w-full justify-start text-left card-header" aria-expanded="{{_local.ui.shoppingIntegrationExpanded !== false}}">
       <on type="click">
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.shoppingIntegrationExpanded="{{!_local.ui.shoppingIntegrationExpanded}}"/>
       </on>
       <icon name="share-alt" class="text-gray-500 dark:text-gray-400"/>
       <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.shopping_integration</span>
-      <icon name="chevron-down" class="admin-card-accordion-icon transition-transform duration-200 {{_local.ui.shoppingIntegrationExpanded !== false ? 'rotate-180' : ''}}"/>
-    </div>
+      <icon name="chevron-down" class="admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.shoppingIntegrationExpanded !== false ? 'rotate-180' : ''}}"/>
+    </button>
     <div data-ref="shopping_integration_body" data-if="{{_local.ui.shoppingIntegrationExpanded !== false}}" class="row-stack">
       <p data-ref="shopping_integration_description" class="text-label-subtle">$t:sirsoft-ecommerce.admin.product.shopping_integration.description</p>
       <div data-ref="platform_naver" class="toggle-group">
         <div data-ref="naver_header" class="flex-between p-4 bg-gray-50 dark:bg-gray-800">
           <responsive on="portable" class="row-stack p-4 bg-gray-50 dark:bg-gray-800"/>
           <div class="flex-center gap-3">
-            <div class="flex-center w-8 h-8 bg-green-500 dark:bg-green-500 rounded-lg justify-center">
+            <div class="flex-center w-8 h-8 bg-green-700 dark:bg-green-700 rounded-lg justify-center">
               <span class="text-white font-bold text-sm">N</span>
             </div>
             <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.product.shopping_integration.naver.title</span>
@@ -36,7 +36,7 @@
               </on>
               <on type="change">
                 <!-- 연동 켜기/끄기도 저장 대상이라 변경 표시를 세운다 -->
-                <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                <set-state target="local" :hasChanges="true"/>
               </on>
             </select>
             <a href="/admin/ecommerce/integrations/naver" class="button btn btn-ghost btn-sm">
@@ -62,7 +62,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.manual
               </button>
@@ -73,7 +73,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.realtime
               </button>
@@ -84,7 +84,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1h
               </button>
@@ -95,7 +95,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.6h
               </button>
@@ -106,7 +106,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1d
               </button>
@@ -141,7 +141,7 @@
               </on>
               <on type="change">
                 <!-- 연동 켜기/끄기도 저장 대상이라 변경 표시를 세운다 -->
-                <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                <set-state target="local" :hasChanges="true"/>
               </on>
             </select>
             <a href="/admin/ecommerce/integrations/facebook" class="button btn btn-ghost btn-sm">
@@ -167,7 +167,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.manual
               </button>
@@ -178,7 +178,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.realtime
               </button>
@@ -189,7 +189,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1h
               </button>
@@ -200,7 +200,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.6h
               </button>
@@ -211,7 +211,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1d
               </button>
@@ -229,7 +229,7 @@
           <responsive on="portable" class="row-stack p-4 bg-gray-50 dark:bg-gray-800"/>
           <div class="flex-center gap-3">
             <div class="flex-center w-8 h-8 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg justify-center">
-              <span class="text-red-500 dark:text-red-400 font-bold text-sm">G</span>
+              <span class="text-red-600 dark:text-red-300 font-bold text-sm">G</span>
             </div>
             <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.product.shopping_integration.google.title</span>
           </div>
@@ -246,7 +246,7 @@
               </on>
               <on type="change">
                 <!-- 연동 켜기/끄기도 저장 대상이라 변경 표시를 세운다 -->
-                <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                <set-state target="local" :hasChanges="true"/>
               </on>
             </select>
             <a href="/admin/ecommerce/integrations/google" class="button btn btn-ghost btn-sm">
@@ -272,7 +272,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.manual
               </button>
@@ -283,7 +283,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.realtime
               </button>
@@ -294,7 +294,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1h
               </button>
@@ -305,7 +305,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.6h
               </button>
@@ -316,7 +316,7 @@
                 </on>
                 <on type="click">
                   <!-- 주기 변경도 저장 대상이라 변경 표시를 세운다(연동 값과 폼 표시는 담기는 자리가 달라 블록을 나눴다) -->
-                  <set-state target="local" hasChanges="{{!!route?.itemCode}}"/>
+                  <set-state target="local" :hasChanges="true"/>
                 </on>
                 $t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1d
               </button>

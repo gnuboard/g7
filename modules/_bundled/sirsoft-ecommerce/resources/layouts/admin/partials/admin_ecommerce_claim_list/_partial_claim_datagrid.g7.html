@@ -28,7 +28,8 @@
     </div>
     <div data-ref="claim_datagrid_card" class="p-0 md:p-0">
       <!-- DataGrid 의 id 가 전환 오버레이 대상(`claim_datagrid__body`)의 앞자리를 정한다 — 셸의 `named_actions.searchClaims` 와 이 파일의 페이지·페이지크기 이동이 같은 이름을 가리킨다. -->
-      <data-grid data-type="composite" data-ref="claim_datagrid" pageHref="/admin/ecommerce/claims?page={page}" :pageHrefMergeQuery="true" rowLabelField="claim_number" data="{{claims?.data?.data ?? []}}" selectable="{{(query.type ?? 'exchange') !== 'cancel' &amp;&amp; claims?.data?.abilities?.can_update_status === true}}" selectionScope="page" selectedIds="{{_local.selectedItems ?? []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="$t:sirsoft-ecommerce.admin.claim.message.no_claims" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{claims?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{claims?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{claims?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
+      <data-grid data-type="composite" data-ref="claim_datagrid" pageHref="/admin/ecommerce/claims?page={page}" :pageHrefMergeQuery="true" rowLabelField="claim_number" data="{{claims?.data?.data ?? []}}" selectable="{{(query.type ?? 'exchange') !== 'cancel' &amp;&amp; claims?.data?.abilities?.can_update_status === true}}" selectionScope="page" selectedIds="{{_local.selectedItems ?? []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="{{claims === undefined ? '' : $t('sirsoft-ecommerce.admin.claim.message.no_claims')}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{claims?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{claims?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{claims?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
+        <blur-until-loaded sources="claims"/>
         <column field="requested_at" header="$t:sirsoft-ecommerce.admin.claim.column.requested_at" width="140px" :sortable="false" :required="true">
           <cell>
             <span>{{row.requested_at_formatted ?? '-'}}</span>
@@ -135,7 +136,7 @@
           </cell>
         </column>
         <prop name="rowActions">
-          <item id="view_detail" href="/admin/ecommerce/claims/{{row.claim_number}}" label="$t:sirsoft-ecommerce.admin.claim.action.view_detail" iconName="eye"/>
+          <item id="view_detail" href="/admin/ecommerce/claims/{{row.claim_number}}" :mergeQuery="true" label="$t:sirsoft-ecommerce.admin.claim.action.view_detail" iconName="eye"/>
         </prop>
         <on type="change" event="onSelectionChange">
           <!-- 체크할 때뿐 아니라 재조회·쪽 이동으로 행이 빠질 때도 그리드가 남은 선택만 다시 올려 보낸다(selectionScope page) — 그래서 일괄 변경 바가 읽는 선택은 언제나 지금 보이는 행이다. -->

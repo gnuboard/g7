@@ -14,7 +14,8 @@ description: |
   2. 관리자 스크랩·반응(scrap·reaction, owner_key user_id) — 목록은 저장소 스코프, 단건·일괄은 서비스 단언(B7~B9).
   3. 게시글·댓글 읽기(post·comment, owner_key user_id) — 신고·스크랩·반응 대상(B10·B11)은
      BoardReadScope::assertTargetReadable, 최근글·인기글(B12)은 캐시 항목 작성자로 응답 시점 판정,
-     공개 프로필(B13)은 범위 밖 게시판 제외, 통합검색(B13)은 게시판별 작성자 조건, 이전/다음 글(B14)은 목록과 같은 쿼리 스코프.
+     공개 프로필(B13)은 범위 밖 게시판 제외, 통합검색(B13)은 게시판별 작성자 조건, 이전/다음 글(B14)은 목록과 같은 쿼리 스코프,
+     댓글 목록 API(B16)는 사용자 문맥(comments.read)으로 조회 — 서비스 문맥 기본값(admin)을 쓰면 범위가 풀린다.
   4. 신고 관리(reports.*)는 범위를 두지 않는다 — 1케이스 구조 뒤 케이스 테이블에 신고자 컬럼이 없어
      「본인만」이 일관되게 동작하지 않았다. 메타 선언·코드 판정을 걷어내고 옛 부여 행은 보유만으로 동작한다.
   5. 재발 방지(§6.4) — 원장 리스너가 바인딩 없는 라우트마다 강제 메서드를 기록하고 감사 테스트가 낡은 원장·새 라우트를 잡는다.
@@ -51,6 +52,7 @@ axes:
     - search_filtered_by_scope
     - navigation_filtered_by_scope
     - directory_recent_posts_filtered_by_scope
+    - comment_list_api_filtered_by_scope
     - board_routes_have_no_unledgered_scope_gap
     - board_ledger_enforcers_exist_and_check_scope
     - board_ledger_listener_registered
@@ -110,6 +112,7 @@ effects:
   - search_filtered_by_scope
   - navigation_filtered_by_scope
   - directory_recent_posts_filtered_by_scope
+  - comment_list_api_filtered_by_scope
   # 5. 원장·래칫
   - board_routes_have_no_unledgered_scope_gap
   - board_ledger_enforcers_exist_and_check_scope

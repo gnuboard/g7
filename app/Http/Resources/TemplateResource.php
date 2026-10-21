@@ -38,6 +38,8 @@ class TemplateResource extends BaseApiResource
             'version' => $this->getValue('version'),
             'type' => $this->getValue('type'),
             'status' => $this->getValue('status'),
+            // 멈춘 업데이트 — 관리자 카드가 「업데이트 멈춤」 표시와 정리(다시 업데이트)·활성화 단추를 보인다
+            'stuck_update' => (bool) $this->getValue('stuck_update', false),
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getDependenciesSummary(),
             'integrations' => DependencyEnricher::enrichIntegrations($this->getValue('integrations', [])),

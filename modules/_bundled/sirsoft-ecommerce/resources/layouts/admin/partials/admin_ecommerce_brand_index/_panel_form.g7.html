@@ -12,7 +12,7 @@
       <h3 data-if="{{_global.panelMode === 'create'}}" class="text-heading">$t:sirsoft-ecommerce.admin.brand.form.create_title</h3>
       <h3 data-if="{{_global.panelMode === 'edit'}}" class="text-heading">$t:sirsoft-ecommerce.admin.brand.form.edit_title</h3>
       <div class="flex-center gap-2">
-        <button type="button" class="px-3 py-1.5 text-label hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors">
+        <button type="button" class="px-3 py-1.5 text-label dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
           <on type="click">
             <!-- 편집 취소 ① 돌아갈 자리 — 고른 브랜드가 있으면 그 보기로, 신규 등록 중이었으면 빈 패널로. -->
             <set-state target="global" panelMode="{{_global.selectedBrandId ? 'view' : 'empty'}}"/>

@@ -111,7 +111,7 @@ class MyKcpIdentityShowControllerTest extends PluginTestCase
     /**
      * 응답 안내 문장은 이 플러그인의 번역 문구로 나간다 — 원문 키(`messages.success`)가 그대로 나가면 안 된다.
      *
-     * 코어에는 `messages` 번역 묶음이 없어 종전 키는 어느 언어에서도 번역되지 않았다(2026-10-07 실측 O-M2-5).
+     * 코어에는 `messages` 번역 묶음이 없어 종전 키는 어느 언어에서도 번역되지 않았다(2026-10-07 실측).
      *
      * @param  string  $locale  회원 언어
      * @param  bool  $withRecord  본인확인 기록 유무

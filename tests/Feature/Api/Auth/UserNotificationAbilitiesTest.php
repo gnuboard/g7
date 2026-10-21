@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 사용자 알림 목록 응답의 abilities 회귀 테스트 (7.1.0 abilities 게이트 G27)
+ * 사용자 알림 목록 응답의 abilities 회귀 테스트 (7.1.0 abilities 게이트)
  *
  * 알림함·헤더 알림센터의 읽음·삭제 버튼이 잠글 근거가 없어, 읽음·삭제 권한을 회수한 회원에게도 버튼이
  * 열린 채 눌리면 403 이 났다. 목록 응답(컬렉션)이 라우트와 같은 권한으로 can_update·can_delete 를 싣는다.

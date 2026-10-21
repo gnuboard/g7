@@ -26,7 +26,7 @@
         <input type="number" name="mileage.default_earn_rate" value="{{_local.form?.mileage?.default_earn_rate ?? 1}}" min="{{_local?.form?._meta?.limits?.default_earn_rate_min ?? 0}}" max="{{_local?.form?._meta?.limits?.default_earn_rate_max ?? 100}}" step="0.1" class="input w-24 text-center" disabled="{{_computed.isReadOnly}}"/>
         <span class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_rate_suffix</span>
       </div>
-      <span data-if="{{_local.errors?.['mileage.default_earn_rate']}}" class="text-red-500 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['mileage.default_earn_rate']?.[0] ?? ''}}</span>
+      <span data-if="{{_local.errors?.['mileage.default_earn_rate']}}" class="text-red-600 dark:text-red-400 text-xs mt-1 block">{{_local.errors?.['mileage.default_earn_rate']?.[0] ?? ''}}</span>
       <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:sirsoft-ecommerce.admin.mileage_settings.basic.earn_rate_hint</p>
     </div>
     <div class="border-t border-gray-200 dark:border-gray-700 pt-4">

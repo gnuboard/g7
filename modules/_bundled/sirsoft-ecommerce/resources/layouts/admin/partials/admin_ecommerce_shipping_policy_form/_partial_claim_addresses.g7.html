@@ -4,7 +4,7 @@
   <div data-ref="claim_addresses_section" class="admin-card">
     <h2 class="card-title">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_claim_addresses</h2>
     <div class="card-description">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_description</div>
-    <!-- 회수지 입력은 조회가 끝난 뒤에만 연다. 편집 버퍼 초기값과 조회 실패 폴백이 둘 다 비어 있어 '못 받았다' 와 '비어 있다' 가 값으로 구분되지 않는데, 저장은 두 회수지를 항상 함께 실어 `null` 이 서버 삭제 계약을 탄다 — 조회 전에 한쪽만 입력해 저장하면 다른 쪽이 확인창 없이 지워진다. 로딩 표식(`claimAddresses._loaded`)은 데이터소스 onSuccess 가 세우는데 편집이 먼저 일어나면 그 쓰기가 붙지 않으므로(10차 실측) 편집 자체를 막는다. 신규 등록은 init_actions 가 표식을 먼저 세운다. -->
+    <!-- 회수지 입력은 조회가 끝난 뒤에만 연다. 편집 버퍼 초기값과 조회 실패 폴백이 둘 다 비어 있어 '못 받았다' 와 '비어 있다' 가 값으로 구분되지 않는데, 저장은 두 회수지를 항상 함께 실어 `null` 이 서버 삭제 계약을 탄다 — 조회 전에 한쪽만 입력해 저장하면 다른 쪽이 확인창 없이 지워진다. 로딩 표식(`claimAddresses._loaded`)은 데이터소스 onSuccess 가 세우는데 편집이 먼저 일어나면 그 쓰기가 붙지 않으므로(실측) 편집 자체를 막는다. 신규 등록은 init_actions 가 표식을 먼저 세운다. -->
     <div data-ref="claim_addresses_loading_notice" data-if="{{!!route.id &amp;&amp; _local.claimAddresses?._loaded !== true}}" class="text-sm text-amber-700 dark:text-amber-400 mb-3">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_loading_notice</div>
     <!-- 등록 모드에서 수정 권한이 없으면 회수지 입력 묶음을 감추고 이유를 알린다 — 회수지는 정책을 만든 뒤 별도 저장(claim-settings PUT = 수정 권한)으로 반영되므로, 입력을 받으면 정책만 만들어지고 회수지는 거절되는 부분 실패가 난다. -->
     <div data-ref="claim_addresses_no_update_notice" data-if="{{!route.id &amp;&amp; _computed.lacksUpdate}}" class="text-sm text-amber-700 dark:text-amber-400 mb-3">$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_requires_update</div>

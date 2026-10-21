@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 본인인증 프로바이더 행 abilities (core-backend #5).
+ * 본인인증 프로바이더 행 abilities (7.1.0 abilities 게이트 점검).
  */
 class ProviderAbilitiesTest extends TestCase
 {
@@ -67,7 +67,7 @@ class ProviderAbilitiesTest extends TestCase
     }
 
     /**
-     * 프로바이더 행 can_update 는 실제 저장 경로(환경설정 저장 = core.settings.update)로 판정된다 (core-backend #5).
+     * 프로바이더 행 can_update 는 실제 저장 경로(환경설정 저장 = core.settings.update)로 판정된다.
      *
      * 프로바이더 설정은 환경설정 저장으로 바뀐다. 쓰는 라우트가 없는 권한(providers.update)으로 판정하면
      * 그 권한만 받은 운영자는 true 를 받고도 저장이 403 이고, 설정 수정 권한 보유자는 false 를 받았다.

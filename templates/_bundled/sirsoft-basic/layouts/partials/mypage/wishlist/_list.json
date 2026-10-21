@@ -139,7 +139,7 @@
                                     "props": {
                                         "type": "button",
                                         "aria-label": "$t:shop.product.remove_from_wishlist",
-                                        "className": "absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-gray-700 rounded-full shadow-md border border-gray-200 dark:border-gray-600 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:scale-110 transition-all cursor-pointer"
+                                        "className": "absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-gray-700 rounded-full shadow-md border border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-300 hover:text-red-700 dark:hover:text-red-300 hover:scale-110 transition-all cursor-pointer"
                                     },
                                     "children": [
                                         {
@@ -161,7 +161,7 @@
                     "comment": "찜 목록 없음",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!wishlist.data.data || wishlist.data.data.length === 0}}",
+                    "if": "{{wishlist !== undefined && (!wishlist.data.data || wishlist.data.data.length === 0)}}",
                     "responsive": {
                         "portable": {
                             "props": {
@@ -179,7 +179,7 @@
                             "props": {
                                 "name": "heart",
                                 "size": "3x",
-                                "className": "mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                                "className": "mx-auto text-gray-500 dark:text-gray-500 mb-3"
                             }
                         },
                         {

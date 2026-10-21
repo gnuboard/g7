@@ -628,7 +628,7 @@ _단건 응답: `data` 객체의 필드._
 | orderer_name | string | `박대수` | 주문자 이름 (배송지에서 플래튼) |
 | orderer_phone | string | `010-4416-4675` | 주문자 휴대전화 (배송지에서 플래튼) |
 | orderer_tel | null | `null` | 주문자 일반전화 (배송지에서 플래튼, 미입력 시 null) |
-| orderer_email | string | `shin.yewon@cheon.biz` | 주문자 이메일 (배송지에서 플래튼, 비회원 알림 수신 통로) |
+| orderer_email | string | `user@example.com` | 주문자 이메일 (배송지에서 플래튼, 비회원 알림 수신 통로) |
 | recipient_name | string | `권강희` | 수령인 이름 (배송지에서 플래튼) |
 | recipient_phone | string | `010-6286-6243` | 수령인 휴대전화 (배송지에서 플래튼) |
 | recipient_tel | null | `null` | 수령인 일반전화 (배송지에서 플래튼, 미입력 시 null) |

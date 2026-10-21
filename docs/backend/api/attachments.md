@@ -89,7 +89,7 @@ _단건 응답: `data` 객체의 필드 (`AttachmentResource`)._
 | order | integer | `0` | 컬렉션 내 정렬 순서 |
 | download_url | string | `"/api/attachment/aB3xY9kLmQ7z"` | 해시 기반 다운로드 경로 |
 | is_image | boolean | `false` | MIME 타입이 `image/` 로 시작하는지 여부 |
-| meta | object\|null | `{"width": 800, "height": 600}` | 추가 메타데이터. 이미지 업로드 시 width/height 자동 기록, 그 외에는 빈 객체 |
+| meta | object\|null | `{"width": 800, "height": 600}` | 추가 메타데이터. 이미지 업로드 시 width/height 자동 기록. 정보가 없는 첨부(이미지가 아닌 파일)는 `null`, 저장값이 빈 목록이면 빈 객체 `{}` 로 나간다 |
 | source_type | string | `"core"` | 첨부 생성 출처 (`core` / `module` / `plugin`) |
 | source_identifier | string\|null | `"sirsoft-board"` | 모듈/플러그인 식별자 (코어 업로드 시 `null`) |
 | creator | object\|없음 | `{"uuid": "...", "name": "관리자"}` | 업로더 정보(`uuid`, `name`). `creator` 관계가 eager load 된 경우에만 포함되며, 업로드 응답에는 포함되지 않음 |
@@ -202,7 +202,7 @@ _배열 응답: `data` 는 `AttachmentResource` 객체의 배열입니다 (페�
 | data[].order | integer | `0` | 컬렉션 내 정렬 순서 (배치 내 파일마다 순차 증가) |
 | data[].download_url | string | `"/api/attachment/aB3xY9kLmQ7z"` | 해시 기반 다운로드 경로 |
 | data[].is_image | boolean | `true` | MIME 타입이 `image/` 로 시작하는지 여부 |
-| data[].meta | object\|null | `{"width": 1920, "height": 1080}` | 이미지 업로드 시 width/height 자동 기록 |
+| data[].meta | object\|null | `{"width": 1920, "height": 1080}` | 추가 메타데이터. 이미지 업로드 시 width/height 자동 기록. 정보가 없는 첨부(이미지가 아닌 파일)는 `null`, 저장값이 빈 목록이면 빈 객체 `{}` 로 나간다 |
 | data[].source_type | string | `"core"` | 첨부 생성 출처 (`core` / `module` / `plugin`) |
 | data[].source_identifier | string\|null | `null` | 모듈/플러그인 식별자 |
 | data[].created_at | string | `"2026-07-14 10:23:41"` | 생성 일시 (사용자 타임존 기준) |

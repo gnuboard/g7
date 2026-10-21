@@ -23,7 +23,7 @@
           </on>
           $t:common.cancel
         </button>
-        <button data-ref="cre_006_save" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isEditingClaimRequest === true || (_global.claimRequestEditReasonCode ?? '') === ''}}">
+        <button data-ref="cre_006_save" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isEditingClaimRequest === true || (_global.claimRequestEditReasonCode ?? '') === ''}}">
           <on type="click">
             <!-- 고객을 대신해 신청 사유를 저장한다 — 실패 안내는 핸들러가 띄우므로 기본 오류 정책은 막는다 -->
             <action handler="sirsoft-ecommerce.updateClaimRequestOnBehalf" pathSegment="{{_global.claimRequestEditContext?.pathSegment ?? ''}}" claimId="{{_global.claimRequestEditContext?.claimId ?? null}}" reasonCode="{{_global.claimRequestEditReasonCode ?? ''}}" reasonDetail="{{_global.claimRequestEditReasonDetail ?? ''}}">

@@ -122,7 +122,7 @@
                   </on>
                 </input>
               </td>
-              <td class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 whitespace-nowrap truncate">
+              <td class="px-4 py-3 text-left text-gray-500 dark:text-gray-300 whitespace-nowrap truncate">
                 <!-- 게시판명 클릭 → 게시판 목록 이동 -->
                 <a href="{{`/board/${item.board_slug}`}}" class="cursor-pointer hover:underline">
                   <on type="click">
@@ -145,11 +145,11 @@
                 <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{item}}" postId="{{item.post_id}}" boardSlug="{{item.board_slug}}" context="mypage_scrap"/>
               </td>
               <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300 whitespace-nowrap truncate">{{item.author_name ?? ''}}</td>
-              <td class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">{{item.comments_count ?? 0}}</td>
-              <td class="px-4 py-3 text-center text-gray-400 dark:text-gray-500 whitespace-nowrap">{{item.scrapped_at ?? ''}}</td>
+              <td class="px-4 py-3 text-center text-gray-500 dark:text-gray-300">{{item.comments_count ?? 0}}</td>
+              <td class="px-4 py-3 text-center text-gray-500 dark:text-gray-300 whitespace-nowrap">{{item.scrapped_at ?? ''}}</td>
               <td class="px-4 py-3 text-center">
                 <!-- 스크랩 해제 버튼 (확인 모달 경유) — 텍스트 버튼으로 명확한 의도 전달. 행 전체 클릭이 없으므로 이벤트 버블링 충돌 없음 -->
-                <button data-testid="scrap-remove-{{item.id}}" type="button" class="text-xs font-medium px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer whitespace-nowrap">
+                <button data-testid="scrap-remove-{{item.id}}" type="button" class="text-xs font-medium px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-300 transition-colors cursor-pointer whitespace-nowrap">
                   <on type="click">
                     <set-state target="global">
                       <field name="scrapDeleteModal">
@@ -165,7 +165,7 @@
               </td>
             </tr>
             <!-- 스크랩이 중지된 게시판의 행 — 게시판이 스크랩 기능을 껐거나 비활성이 된 상태. 행을 지우지 않고 남기되(담아 둔 것은 회원의 자산이다) 이동은 막고 해제만 허용한다. 삭제글 행과 같은 톤다운을 쓴다 -->
-            <tr data-testid="scrap-card-{{item.id}}" data-if="{{!item.is_deleted &amp;&amp; !item.scrap_enabled}}" class="border-b border-gray-100 dark:border-gray-700 opacity-50">
+            <tr data-testid="scrap-card-{{item.id}}" data-if="{{!item.is_deleted &amp;&amp; !item.scrap_enabled}}" class="border-b border-gray-100 dark:border-gray-700 opacity-75">
               <td class="px-4 py-3">
                 <input data-testid="scrap-check-{{item.id}}" type="checkbox" aria-label="$t:common.select_item|name={{item.is_deleted ? $t('mypage.scrap.deleted_post') : (item.title ?? '')}}" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500" checked="{{(_local.scrapSelectedIds ?? []).includes(item.id)}}">
                   <on type="change">
@@ -174,17 +174,17 @@
                   </on>
                 </input>
               </td>
-              <td class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 whitespace-nowrap truncate">{{item.board_name ?? ''}}</td>
+              <td class="px-4 py-3 text-left text-gray-700 dark:text-gray-300 whitespace-nowrap truncate">{{item.board_name ?? ''}}</td>
               <td class="px-4 py-3">
-                <span class="font-medium text-gray-500 dark:text-gray-400">{{item.title ?? ''}}</span>
-                <span data-if="{{!item.board_deleted}}" class="ml-2 text-xs font-semibold px-2 py-1 rounded text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900">$t:mypage.scrap.disabled_flag</span>
-                <span data-if="{{item.board_deleted}}" class="ml-2 text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
+                <span class="font-medium text-gray-700 dark:text-gray-300">{{item.title ?? ''}}</span>
+                <span data-if="{{!item.board_deleted}}" class="ml-2 text-xs font-semibold px-2 py-1 rounded text-yellow-950 dark:text-yellow-200 bg-yellow-50 dark:bg-yellow-900">$t:mypage.scrap.disabled_flag</span>
+                <span data-if="{{item.board_deleted}}" class="ml-2 text-xs font-semibold px-2 py-1 rounded text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
               </td>
-              <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300 whitespace-nowrap truncate">{{item.author_name ?? ''}}</td>
-              <td class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">{{item.comments_count ?? 0}}</td>
-              <td class="px-4 py-3 text-center text-gray-400 dark:text-gray-500 whitespace-nowrap">{{item.scrapped_at ?? ''}}</td>
+              <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300 whitespace-nowrap truncate">{{item.author_name ?? ''}}</td>
+              <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">{{item.comments_count ?? 0}}</td>
+              <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300 whitespace-nowrap">{{item.scrapped_at ?? ''}}</td>
               <td class="px-4 py-3 text-center">
-                <button data-testid="scrap-remove-{{item.id}}" type="button" class="text-xs font-medium px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer whitespace-nowrap">
+                <button data-testid="scrap-remove-{{item.id}}" type="button" class="text-xs font-medium px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:text-red-700 dark:hover:text-red-300 transition-colors cursor-pointer whitespace-nowrap">
                   <on type="click">
                     <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->
                     <sequence>
@@ -203,7 +203,7 @@
               </td>
             </tr>
             <!-- 삭제된 원글 행 — 클릭 이동 액션 없음. 톤다운 + '삭제됨' 표시, 게시판명·작성자는 유지(확정 정책). 게시판 자체가 지워진 스크랩(board_deleted)도 이 행으로 온다 — 게시판을 지우면 글도 함께 하드 삭제되기 때문이다. 그때는 게시판 칸에 「게시판 삭제됨」을 단다(게시판명은 남아 있지 않다) -->
-            <tr data-testid="scrap-card-{{item.id}}" data-if="{{item.is_deleted}}" class="border-b border-gray-100 dark:border-gray-700 opacity-50">
+            <tr data-testid="scrap-card-{{item.id}}" data-if="{{item.is_deleted}}" class="border-b border-gray-100 dark:border-gray-700 opacity-75">
               <td class="px-4 py-3">
                 <input data-testid="scrap-check-{{item.id}}" type="checkbox" aria-label="$t:common.select_item|name={{item.is_deleted ? $t('mypage.scrap.deleted_post') : (item.title ?? '')}}" class="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500" checked="{{(_local.scrapSelectedIds ?? []).includes(item.id)}}">
                   <on type="change">
@@ -212,20 +212,20 @@
                   </on>
                 </input>
               </td>
-              <td class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 whitespace-nowrap truncate">
+              <td class="px-4 py-3 text-left text-gray-700 dark:text-gray-300 whitespace-nowrap truncate">
                 <span data-if="{{!item.board_deleted}}">{{item.board_name ?? ''}}</span>
-                <span data-if="{{item.board_deleted}}" data-testid="scrap-board-deleted-{{item.id}}" class="text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
+                <span data-if="{{item.board_deleted}}" data-testid="scrap-board-deleted-{{item.id}}" class="text-xs font-semibold px-2 py-1 rounded text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
               </td>
               <td class="px-4 py-3">
-                <span class="italic text-gray-400 dark:text-gray-500">$t:mypage.scrap.deleted_post</span>
-                <span class="ml-2 text-xs font-semibold px-2 py-1 rounded text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900">$t:mypage.scrap.deleted_flag</span>
+                <span class="italic text-gray-700 dark:text-gray-300">$t:mypage.scrap.deleted_post</span>
+                <span class="ml-2 text-xs font-semibold px-2 py-1 rounded text-red-800 dark:text-red-200 bg-red-50 dark:bg-red-900">$t:mypage.scrap.deleted_flag</span>
               </td>
-              <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300 whitespace-nowrap truncate">{{item.author_name ?? ''}}</td>
-              <td class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">—</td>
-              <td class="px-4 py-3 text-center text-gray-400 dark:text-gray-500 whitespace-nowrap">{{item.scrapped_at ?? ''}}</td>
+              <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300 whitespace-nowrap truncate">{{item.author_name ?? ''}}</td>
+              <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300">—</td>
+              <td class="px-4 py-3 text-center text-gray-700 dark:text-gray-300 whitespace-nowrap">{{item.scrapped_at ?? ''}}</td>
               <td class="px-4 py-3 text-center">
                 <!-- 스크랩 해제 버튼 (확인 모달 경유) — 삭제된 행도 동일하게 정리 가능(확정 13). 텍스트 버튼으로 명확한 의도 전달 -->
-                <button data-testid="scrap-remove-{{item.id}}" type="button" class="text-xs font-medium px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer whitespace-nowrap">
+                <button data-testid="scrap-remove-{{item.id}}" type="button" class="text-xs font-medium px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:text-red-700 dark:hover:text-red-300 transition-colors cursor-pointer whitespace-nowrap">
                   <on type="click">
                     <set-state target="global">
                       <field name="scrapDeleteModal">
@@ -273,32 +273,32 @@
               <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                 <span>{{item.author_name ?? ''}}</span>
                 <span>$t:mypage.scrap.comments|count={{item.comments_count ?? 0}}</span>
-                <span class="text-gray-400 dark:text-gray-500">{{item.scrapped_at ?? ''}}</span>
+                <span class="text-gray-500 dark:text-gray-400">{{item.scrapped_at ?? ''}}</span>
               </div>
             </a>
             <!-- 스크랩이 중지된 게시판의 카드 — 톤다운 + 배지, 카드 클릭 이동 없음 -->
-            <div data-if="{{!item.is_deleted &amp;&amp; !item.scrap_enabled}}" class="opacity-50">
+            <div data-if="{{!item.is_deleted &amp;&amp; !item.scrap_enabled}}" class="opacity-75">
               <div class="flex items-center gap-2 mb-1 flex-wrap">
-                <span data-if="{{!item.board_deleted}}" class="shrink-0 truncate max-w-32 text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">{{item.board_name ?? ''}}</span>
-                <span data-if="{{item.board_deleted}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
-                <h3 class="min-w-0 text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{{item.title ?? ''}}</h3>
-                <span data-if="{{!item.board_deleted}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900">$t:mypage.scrap.disabled_flag</span>
+                <span data-if="{{!item.board_deleted}}" class="shrink-0 truncate max-w-32 text-xs font-semibold px-2 py-1 rounded text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">{{item.board_name ?? ''}}</span>
+                <span data-if="{{item.board_deleted}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
+                <h3 class="min-w-0 text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{{item.title ?? ''}}</h3>
+                <span data-if="{{!item.board_deleted}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-yellow-950 dark:text-yellow-200 bg-yellow-50 dark:bg-yellow-900">$t:mypage.scrap.disabled_flag</span>
               </div>
-              <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+              <div class="flex items-center gap-3 text-xs text-gray-700 dark:text-gray-300">
                 <span>{{item.author_name ?? ''}}</span>
                 <span>$t:mypage.scrap.comments|count={{item.comments_count ?? 0}}</span>
-                <span class="text-gray-400 dark:text-gray-500">{{item.scrapped_at ?? ''}}</span>
+                <span class="text-gray-700 dark:text-gray-300">{{item.scrapped_at ?? ''}}</span>
               </div>
             </div>
             <!-- 삭제된 원글 카드 — 뱃지·작성자는 톤만 낮춰 유지 + '삭제됨' 표시. 제목 대신 '삭제된 게시글' 표기. 클릭 이동 없음. 게시판이 지워진 스크랩도 이 카드로 오므로 게시판 뱃지 자리에 「게시판 삭제됨」을 단다 -->
             <div data-if="{{item.is_deleted}}">
               <div class="flex items-center gap-2 mb-1">
-                <span data-if="{{!item.board_deleted}}" class="shrink-0 truncate max-w-32 text-xs font-semibold px-2 py-1 rounded text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700">{{item.board_name ?? ''}}</span>
-                <span data-if="{{item.board_deleted}}" data-testid="scrap-board-deleted-m-{{item.id}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
-                <h3 class="shrink-0 text-sm font-medium text-gray-400 dark:text-gray-500 italic">$t:mypage.scrap.deleted_post</h3>
-                <span class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900">$t:mypage.scrap.deleted_flag</span>
+                <span data-if="{{!item.board_deleted}}" class="shrink-0 truncate max-w-32 text-xs font-semibold px-2 py-1 rounded text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">{{item.board_name ?? ''}}</span>
+                <span data-if="{{item.board_deleted}}" data-testid="scrap-board-deleted-m-{{item.id}}" class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">$t:mypage.scrap.board_deleted_flag</span>
+                <h3 class="shrink-0 text-sm font-medium text-gray-500 dark:text-gray-400 italic">$t:mypage.scrap.deleted_post</h3>
+                <span class="shrink-0 text-xs font-semibold px-2 py-1 rounded text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900">$t:mypage.scrap.deleted_flag</span>
               </div>
-              <div class="flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500">
+              <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                 <span>{{item.author_name ?? ''}}</span>
                 <span>{{item.scrapped_at ?? ''}}</span>
               </div>
@@ -326,9 +326,9 @@
         </div>
       </div>
       <!-- 스크랩 목록 없음 (항상 노출 탭 — 빈 상태 안내, 확정 03) — 마이페이지 마일리지 탭과 동일한 카드 박스로 감싼다 -->
-      <div data-if="{{!scrap.data.data || scrap.data.data.length === 0}}" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+      <div data-if="{{scrap !== undefined &amp;&amp; (!scrap.data.data || scrap.data.data.length === 0)}}" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
         <responsive on="portable" class="flex flex-col items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center"/>
-        <icon name="bookmark" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+        <icon name="bookmark" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
         <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
         <p data-if="{{!(!!_local.scrapSearchApplied)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.scrap.empty</p>
         <p data-if="{{!!_local.scrapSearchApplied}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>

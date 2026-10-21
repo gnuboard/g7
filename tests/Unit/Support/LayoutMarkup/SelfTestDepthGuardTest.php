@@ -27,7 +27,7 @@ use Tests\Support\InjectsGuardSamples;
  * | 31차 | ① 모집단이 손 열거 | ③ | 초록인 채 통과 |
  * | 32차 | ② 문지기가 대입문 표기 의존 | ③ | 초록인 채 통과 |
  *
- * 32차 실측으로 게이트의 자기시험 **넷이 전부** 이 형태였다. 즉 검출력을 더 높이는 조치로는
+ * 실측으로 게이트의 자기시험 **넷이 전부** 이 형태였다. 즉 검출력을 더 높이는 조치로는
  * 끝나지 않는다 — 깨질 수 있는 단이 넷인데 시험받는 단이 하나면, 남은 셋이 다음 회차의
  * 검출물이 된다. 그래서 규율을 바꾼다.
  *
@@ -82,6 +82,8 @@ class SelfTestDepthGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects guard_self_tests_prove_samples_reach_the_production_check
+     *
+     * @return void 반환값 없음
      */
     public function test_every_predicate_self_test_also_proves_reachability(): void
     {
@@ -127,6 +129,8 @@ class SelfTestDepthGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects self_test_depth_predicate_distinguishes_shallow_from_deep
+     *
+     * @return void 반환값 없음
      */
     public function test_predicate_distinguishes_shallow_from_deep_self_tests(): void
     {
@@ -149,6 +153,8 @@ class SelfTestDepthGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects self_test_depth_guard_reacts_to_population_injected_samples
+     *
+     * @return void 반환값 없음
      */
     public function test_guard_reacts_to_samples_injected_into_the_population(): void
     {
@@ -172,6 +178,8 @@ class SelfTestDepthGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=invalid
      *
      * @effects gatekeeper_coverage_guard_detects_hidden_harness_user
+     *
+     * @return void 반환값 없음
      */
     public function test_self_rejects_a_harness_user_hidden_from_the_gatekeeper(): void
     {
@@ -300,9 +308,9 @@ class SelfTestDepthGuardTest extends LayoutMarkupTestCase
     /**
      * 도달 시험 하네스를 쓰는 게이트 파일은 **전부** 이 가드의 판정 대상이다 (근본 조치 I).
      *
-     * ## 왜 이 명제인가 — 서른네 회차가 반복한 골격의 다음 층
+     * ## 왜 이 명제인가 — 그동안의 점검이 반복한 골격의 다음 층
      *
-     * 회차마다 새 결함 형태를 판정식으로 만들었지만, 그 판정식을 태울 **입구(문지기)를 다시
+     * 점검마다 새 결함 형태를 판정식으로 만들었지만, 그 판정식을 태울 **입구(문지기)를 다시
      * 표기로 좁혔다**. 그리고 자기시험 표본은 저자가 만들므로 그 좁은 입구를 언제나 통과한다 —
      * 즉 문지기가 무엇을 떨어뜨리는지는 어떤 자기시험으로도 드러나지 않는다. 29차 ④ 단언 ·
      * 31차 ① 모집단 · 32차 ② 문지기 · 33차 판정 입도가 전부 이 형태였고, 32차가 표본을 모집단
@@ -316,6 +324,8 @@ class SelfTestDepthGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects gatekeeper_rejections_are_observed_not_assumed
+     *
+     * @return void 반환값 없음
      */
     public function test_every_reachability_harness_user_is_judged(): void
     {
@@ -424,6 +434,8 @@ class SelfTestDepthGuardTest extends LayoutMarkupTestCase
 
     /**
      * 표본 — 얕은 자기시험을 가진 가드 (32차까지의 실물 형태).
+     *
+     * @return string 표본 PHP 소스
      */
     private function shallowGuardSource(): string
     {
@@ -453,6 +465,8 @@ class SelfTestDepthGuardTest extends LayoutMarkupTestCase
 
     /**
      * 표본 — 도달 시험을 갖춘 가드 (근본 조치 H 준수 형태).
+     *
+     * @return string 표본 PHP 소스
      */
     private function deepGuardSource(): string
     {
@@ -487,6 +501,8 @@ class SelfTestDepthGuardTest extends LayoutMarkupTestCase
 
     /**
      * 표본 — 자기시험이 없는 프로덕션 전용 검사 (판정 대상 아님).
+     *
+     * @return string 표본 PHP 소스
      */
     private function productionOnlyGuardSource(): string
     {

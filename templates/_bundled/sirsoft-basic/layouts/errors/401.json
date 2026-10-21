@@ -27,7 +27,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "text-8xl font-bold text-gray-200 dark:text-gray-700 mb-4"
+                                    "className": "text-8xl font-bold text-gray-500 dark:text-gray-500 mb-4"
                                 },
                                 "text": "401"
                             },

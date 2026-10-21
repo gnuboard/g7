@@ -27,6 +27,7 @@
     "unanswered_inquiries": "未回答のお問い合わせ",
     "go_to_inquiries": "すべて表示",
     "no_inquiries": "未回答のお問い合わせがありません",
-    "updated_at": "最終更新: {{time}}"
+    "updated_at": "最終更新: {{time}}",
+    "anonymous": "匿名"
   }
 }

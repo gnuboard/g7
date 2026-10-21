@@ -15,7 +15,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr data-ref="no_accounts_message" data-if="{{!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0}}">
+        <tr data-ref="no_accounts_message" data-if="{{settings !== undefined &amp;&amp; (!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0)}}">
           <td :colSpan="6" class="text-center py-8 text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.empty</td>
         </tr>
         <tr data-each="account, accountIndex in (Array.isArray(_local.form?.order_settings?.bank_accounts) ? _local.form.order_settings.bank_accounts : []).map((a, i) => ({...a, _idx: i}))">
@@ -25,7 +25,7 @@
                 <!-- 대표 계좌 지정. 배열 전체를 다시 만들면서 고른 것만 참으로 둔다 — 대표는 하나뿐이라 끄는 동작이 없다. -->
                 <set-state target="local" form.order_settings.bank_accounts="{{(_local.form?.order_settings?.bank_accounts ?? []).map((a, i) => ({...a, is_default: i === account._idx}))}}" :hasChanges="true"/>
               </on>
-              <icon name="{{account.is_default ? 'circle-dot' : 'circle'}}" class="{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}}"/>
+              <icon name="{{account.is_default ? 'circle-dot' : 'circle'}}" class="{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"/>
             </button>
           </td>
           <td>

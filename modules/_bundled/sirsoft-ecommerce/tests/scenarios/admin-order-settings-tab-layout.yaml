@@ -49,7 +49,7 @@ effects:
   - mileage_timing_options_exclude_none          # 결제 완료·주문 시점 두 옵션만 (차감 안 함 없음)
   - pc_mobile_partials_consistent                # 표와 카드가 같은 정렬 소스·같은 분기 접두사·같은 가드
   # 고아 결제수단
-  - orphaned_method_row_dimmed                   # 고아 행 흐림 처리
+  - orphaned_method_row_marked                   # 고아 행 빨강 바탕·테두리 표시(흐림 없음 — 글자 대비 유지)
   - orphaned_method_drag_disabled                # 고아 행 드래그 핸들 숨김
   - orphaned_method_badge_shown                  # 고아 배지
   - orphaned_method_removable                    # 고아일 때만 나오는 삭제 버튼

@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Psr\Log\AbstractLogger;
 
 /**
- * 1.3.0 업그레이드 — 「주문 삭제」 권한을 admin 역할에 붙이는 데이터 마이그레이션 테스트 (7.1.0 R4)
+ * 1.3.0 업그레이드 — 「주문 삭제」 권한을 admin 역할에 붙이는 데이터 마이그레이션 테스트 (7.1.0 abilities 게이트)
  *
  * 기존 설치본의 admin 역할이 새 권한을 갖게 되는지, 운영자가 직접 뺀 기록은 존중하는지,
  * 두 번 돌려도 같은 결과인지를 본다.

@@ -211,7 +211,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
      * — 열어 두면 PG 승인이 확정된 **뒤**에 금액 불일치로 거절되어 망취소 보상이 필요해진다」.
      *
      * 형제 플러그인 3종(kginicis·nhnkcp·nicepayments)은 이미 승인/서명 전에 `resolvePaymentCharge()`
-     * 로 대조한다. 토스만 빠져 있었다 (#599 3차 실측 F-6, 2026-09-22: 결제창 9,000원 · 결제행
+     * 로 대조한다. 토스만 빠져 있었다 (#599 실측, 2026-09-22: 결제창 9,000원 · 결제행
      * 5,000원 상태를 화면에서 확인했고 경고는 없었다).
      *
      * @return void 반환값 없음
@@ -278,7 +278,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
      * 다른 거절(한도 초과·분실 카드·세션 만료)이 전부 같은 값이 되어, 구매자도 관리자도
      * 무엇이 잘못됐는지 알 수 없고 대사할 원본도 남지 않는다.
      *
-     * 회귀 배경 (#599 3차 실측 F-5, 2026-09-22): 실거래에서 토스가 거절했을 때 결제행에
+     * 회귀 배경 (#599 실측, 2026-09-22): 실거래에서 토스가 거절했을 때 결제행에
      * `PG_API_ERROR` 만 남고 `raw_response` 는 null 이었다.
      *
      * @return void 반환값 없음

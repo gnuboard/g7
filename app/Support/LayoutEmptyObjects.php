@@ -11,7 +11,7 @@ use stdClass;
  *
  * 레이아웃 content 는 `array` 캐스트(연관 배열 디코드)로 읽혀 빈 객체 `{}` 가 빈 배열 `[]` 과
  * 구별되지 않는다. 그대로 응답하면 원본·DB 행이 `{}` 인 자리가 `[]` 로 나가, 화면이
- * `_local.expandedNotifications` 같은 키-값 상태를 배열로 받는다(7.1.0 실측 O-K3-4).
+ * `_local.expandedNotifications` 같은 키-값 상태를 배열로 받는다(7.1.0 실측).
  *
  * 병합·확장 적용 단계의 PHP 코드는 섹션·구조 키(`props`, `params` 자체, `initLocal` 자체 등)를
  * 배열로 다루므로 그 자리는 배열로 둔다. 빈 객체를 stdClass 로 보존하는 곳은 PHP 가 해석하지

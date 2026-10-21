@@ -160,7 +160,7 @@ class BoardListSearchFieldTest extends BoardTestCase
     /**
      * 허용 목록 밖의 search_field 는 422 가 아니라 기본 검색 대상(제목+내용)으로 처리한다.
      *
-     * 관리자 목록과 같게 잘못된 값으로 목록이 통째로 실패하지 않게 한다(7.1.0 실측 O-K3-3).
+     * 관리자 목록과 같게 잘못된 값으로 목록이 통째로 실패하지 않게 한다(7.1.0 실측).
      * 조용히 all 로 떨어지면 작성자까지 섞이므로, 화면 셀렉트 기본값과 같은 title_content 로 둔다.
      *
      * @scenario surface=board_list,search_field=invalid

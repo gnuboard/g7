@@ -66,6 +66,16 @@
   <page-transition-indicator data-type="composite" data-ref="page_transition_indicator"/>
   <layout-warnings data-type="composite" data-ref="layout_warnings" warnings="{{_global.layoutWarnings}}" class="layout_warnings"/>
   <div data-ref="admin_layout_root" class="admin_layout_root">
+    <on type="keydown" key="Escape">
+      <!-- 모바일 사이드바 Esc 닫기 — 사이드바를 연 직후 초점은 머리 띠의 [메뉴] 단추에 있어 사이드바 자신은 키를 못 받는다.
+           사용자 템플릿(_user_base)처럼 뿌리에서 받되 열려 있을 때만 닫는다(닫혀 있을 때 Esc 마다 전역을 흔들지 않게). 종전에는
+           바깥 덮개 클릭으로만 닫혔다(7.1.1). -->
+      <conditions>
+        <when if="{{_global.sidebarOpen}}">
+          <set-state target="global" :sidebarOpen="false"/>
+        </when>
+      </conditions>
+    </on>
     <div data-ref="mobile_overlay" data-if="{{false}}" class="mobile_overlay">
       <responsive on="portable" data-if="{{_global.sidebarOpen}}"/>
       <on type="click">
@@ -79,8 +89,8 @@
       <div data-ref="sidebar_header" class="sidebar_header">
         <responsive on="portable" class="hidden"/>
         <div data-ref="sidebar_logo" data-leave-guard="true" class="sidebar_logo">
-          <img data-ref="logo_image" data-if="{{_global.settings?.general?.site_logo_url}}" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? '그누보드7'}}" class="logo_image"/>
-          <span data-ref="app_name" data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary font-bold text-xl truncate">{{_global.settings?.general?.site_name ?? '그누보드7'}}</span>
+          <img data-ref="logo_image" data-if="{{_global.settings?.general?.site_logo_url}}" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}" class="logo_image"/>
+          <span data-ref="app_name" data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary font-bold text-xl truncate">{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}</span>
         </div>
       </div>
       <!-- 언어/통화/배송국가 선택 — 모바일 전용. 헤더 우측 그룹에서 이동(모바일 헤더가 420px 를 요구해 폰 뷰포트에서 통화 선택기가 화면 밖으로 잘렸다). 사용자 템플릿 _user_base 의 mobile_drawer_prefs 와 동일하게 셋 다 가로 나열 칩으로 통일. 통화/배송국가는 이커머스 모듈이 'header_currency' 슬롯에 주입하므로 SlotContainer 만 배치(모듈 비활성 시 자동 미렌더). 스크롤 영역(admin_sidebar_menu) 바깥 최상단에 둔다. -->
@@ -97,7 +107,7 @@
             <span class="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
               <!-- 접힘 상태 요약 = 현재 언어명 -->
               <span class="font-medium">{{_global.appConfig?.localeNames?.[$locale] ?? $locale}}</span>
-              <icon name="chevron-down" class="{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200"/>
+              <icon name="chevron-down" class="{{_global.mobileLanguageOpen ? 'rotate-180' : ''}} text-xs text-gray-500 dark:text-gray-500 transition-transform duration-200"/>
             </span>
           </button>
           <!-- 펼침 영역 — max-h/opacity 트랜지션. overflow-hidden 이라 접힘 시 칩이 잘려 사라진다. -->
@@ -155,7 +165,7 @@
           <language-selector data-type="composite" data-ref="language_selector_desktop" availableLocales="{{_global.appConfig.supportedLocales ?? $locales}}" languageText="$t:admin.language" :showCode="true"/>
           <!-- 통화 선택 — 이커머스 모듈이 'header_currency' 슬롯에 주입(layout_extensions). 헤더는 슬롯 이름만 알고 통화/모듈을 모름. 모듈 비활성 시 빈 슬롯 → 미렌더(인프라 자동 게이트). -->
           <slot-container data-type="composite" data-ref="header_currency_slot_desktop" slotId="header_currency" class="flex items-center"/>
-          <notification-center data-type="composite" data-ref="notification_center_desktop" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
+          <notification-center data-type="composite" data-ref="notification_center_desktop" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}" dropdownAlign="right">
             <on event="onClose">
               <!-- 드롭다운을 닫는 순간, 열려 있는 동안 화면에 보인 알림들을 한 번에 읽음 처리한다
                    (컴포넌트가 그 id 목록을 넘겨준다). 더보기로 쌓인 페이지 상태는 여기서 초기화한다 —
@@ -275,10 +285,11 @@
           <div data-ref="user_avatar_section" class="user_avatar_section">
             <div data-ref="user_avatar" class="user_avatar">
               <img data-ref="user_avatar_img" data-if="{{current_user.data?.avatar_url}}" src="{{current_user.data?.avatar_url}}" alt="{{current_user.data?.name ?? 'User'}}" class="user_avatar_img"/>
-              <i data-ref="user_avatar_fallback" data-if="{{!current_user.data?.avatar_url}}" class="fas fa-user icon-muted"/>
+              <!-- 사진 없을 때의 대신 그림 — 옆에 이름이 있어 장식이다(읽지 않음). 원 바탕(gray-200 / 다크 gray-600) 위 3:1 이상인 단계(종전 icon-muted 다크 2.9) -->
+              <i data-ref="user_avatar_fallback" data-if="{{!current_user.data?.avatar_url}}" aria-hidden="true" class="fas fa-user text-gray-600 dark:text-gray-300"/>
             </div>
             <div data-ref="user_info" class="user_info min-w-0">
-              <p data-ref="user_name" class="text-primary text-sm font-bold leading-none truncate max-w-xs">{{current_user.data?.name ?? '관리자'}}</p>
+              <p data-ref="user_name" class="text-primary text-sm font-bold leading-none truncate max-w-xs">{{current_user.data?.name ?? $t('admin.default_user_name')}}</p>
               <p data-ref="user_email" class="text-tertiary text-[11px] mt-1 truncate max-w-xs">{{current_user.data?.email ?? ''}}</p>
             </div>
             <user-profile data-type="composite" data-ref="user_dropdown" user="{{current_user.data}}" profileText="$t:admin.profile_settings" logoutText="$t:admin.logout" languageText="$t:admin.language" availableLocales="{{_global.appConfig.supportedLocales ?? $locales}}" class="" :showAvatar="false" :showName="false" :dropdownOnly="true" :showChevron="false" dropdownDirection="down"/>
@@ -297,13 +308,13 @@
             <span class="text-primary text-lg leading-none">☰</span>
           </button>
           <div data-ref="mobile_logo" class="mobile_logo">
-            <img data-ref="mobile_logo_image" data-if="{{_global.settings?.general?.site_logo_url}}" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? '그누보드7'}}" class="mobile_logo_image"/>
-            <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary font-bold text-lg leading-none truncate">{{_global.settings?.general?.site_name ?? '그누보드7'}}</span>
+            <img data-ref="mobile_logo_image" data-if="{{_global.settings?.general?.site_logo_url}}" src="{{_global.settings?.general?.site_logo_url}}" alt="{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}" class="mobile_logo_image"/>
+            <span data-if="{{!_global.settings?.general?.site_logo_url}}" class="text-primary font-bold text-lg leading-none truncate">{{_global.settings?.general?.site_name ?? $t('admin.brand_name')}}</span>
           </div>
         </div>
         <div data-ref="mobile_header_right" class="mobile_header_right">
           <theme-toggle data-type="composite" data-ref="theme_toggle_mobile" autoText="$t:admin.theme.auto" lightText="$t:admin.theme.light" darkText="$t:admin.theme.dark"/>
-          <notification-center data-type="composite" data-ref="notification_center_mobile" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? notifications?.loading ?? false}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}">
+          <notification-center data-type="composite" data-ref="notification_center_mobile" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" unreadCount="{{_global.adminNotificationCount ?? 0}}" hasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" loading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" titleText="$t:admin.notifications" emptyText="$t:admin.no_notifications" markAllReadText="$t:admin.notifications_mark_all_read" deleteAllText="$t:admin.notifications_delete_all" unreadOnlyText="$t:admin.notifications_unread_only" unreadOnly="{{_global.notificationsUnreadOnly ?? true}}" canUpdate="{{notifications?.data?.abilities?.can_update === true}}" canDelete="{{notifications?.data?.abilities?.can_delete === true}}">
             <on event="onClose">
               <!-- 드롭다운을 닫는 순간, 열려 있는 동안 화면에 보인 알림들을 한 번에 읽음 처리한다
                    (컴포넌트가 그 id 목록을 넘겨준다). 더보기로 쌓인 페이지 상태는 여기서 초기화한다 —
@@ -424,7 +435,7 @@
       </div>
       <div data-ref="right_content_area" class="right_content_area">
         <container data-type="layout" data-ref="main_content" data-slot="content" class="main_content" layout="flex" direction="column" :padding="24"/>
-        <admin-footer data-type="composite" data-ref="admin_footer" copyright="© {{_global.appConfig?.releaseYear ?? '2026'}} 그누보드7" version="{{_global.appConfig?.version ?? ''}}" copyrightModalId="license_modal" changelogModalId="changelog_modal"/>
+        <admin-footer data-type="composite" data-ref="admin_footer" copyright="© {{_global.appConfig?.releaseYear ?? '2026'}} {{$t('admin.brand_name')}}" version="{{_global.appConfig?.version ?? ''}}" copyrightModalId="license_modal" changelogModalId="changelog_modal"/>
       </div>
     </div>
   </div>

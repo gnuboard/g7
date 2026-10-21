@@ -21,7 +21,8 @@
 ```text
 필수: 기본 컴포넌트만 사용 (Div, Button, H2 등 — HTML 태그 직접 사용 금지)
 필수: 집합 컴포넌트 재사용 우선
-필수: 다크 모드 light/dark variant 함께 지정
+필수: 다크 모드 light/dark variant 함께 지정 — 변형까지 맞춘다(`hover:bg-gray-50` 에는 `dark:hover:bg-gray-700`), 라이트 바탕 없는 `dark:bg-*` 단독 금지
+필수: 화면 글자는 `$t:` 키 — 레이아웃 글자·속성·식 안 표시 문자열·라우트 meta.title 에 한국어 금지(견본 화면 예시 값 포함)
 필수: HtmlEditor 사용 (RichTextEditor 미구현)
 ```
 
@@ -89,7 +90,7 @@
 |------|------------|
 | `Icon className="w-4 h-4"` | `className="text-base"` (아래 등가표) 또는 `size` prop |
 | `Select valueKey/labelKey` | `{ value, label }` 로 변환 — 두 곳 이상에서 쓰면 computed, 한 곳뿐이면 `options` 식에서 바로 `.map()` |
-| Form 내 `Button` type 없음 | `type="button"` 명시 (submit 방지) |
+| `Button` type 없음 (폼 안·밖 모두) | 누르기만 하는 단추는 `type="button"`, 제출은 `type="submit"` 명시 — 기본값이 submit 이고, 파셜·확장점 조각은 어느 화면의 폼 안에 포함될지 파일만 보고는 알 수 없다 |
 | 링크(`<a href>`) 안에 단추·다른 링크·입력·메뉴(`UserInfo` 등)·HTML 본문(`HtmlContent`)·click 액션 요소 | 카드·행 전체 링크는 덮는 링크(stretched link)로 그리고 안쪽 조작은 링크 밖에 형제로 둔다 — `<a>` 안 대화형 요소는 HTML 위반이고 낭독기 이름·키보드 초점·클릭이 겹친다 |
 | 비활성 링크(`<a disabled="…">`)의 꾸밈을 `disabled:` 변형으로 | `aria-disabled:` 변형 — `<a>` 에는 `:disabled` 가 없어 `disabled:opacity-50` 이 걸리지 않는다(단추를 링크로 바꿀 때 클래스를 그대로 옮기면 잠긴 링크가 멀쩡해 보인다) |
 | `options={{options}}` | `options={{options ?? []}}` (fallback) |

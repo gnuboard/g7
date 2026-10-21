@@ -13,7 +13,7 @@
   <modal data-type="composite" data-ref="modal_excel_download" title="$t:sirsoft-ecommerce.admin.product.modal.excel_download.title" size="md">
     <div data-ref="excel_download_options">
       <div>
-        <label data-ref="option_search" class="flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+        <label data-ref="option_search" class="flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
           <input type="radio" name="excelDownloadType" value="search" class="radio mt-0.5">
             <on type="change">
               <!-- 검색결과 갈래. 담는 자리가 `target` 없이 선언돼 있고 그 값을 읽는 곳도 없어 지금은 선택해도 아무 데도 반영되지 않는다(파일 머리 ⓒ). -->
@@ -22,10 +22,10 @@
           </input>
           <div class="flex-1">
             <span class="text-primary block font-medium">$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_search</span>
-            <span class="block text-label-subtle mt-1">총 12개의 상품이 다운로드됩니다.</span>
+            <span class="block text-label-subtle mt-1">$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_search_desc|count=12</span>
           </div>
         </label>
-        <label data-ref="option_selected" class="flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+        <label data-ref="option_selected" class="flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
           <input type="radio" name="excelDownloadType" value="selected" class="radio mt-0.5">
             <on type="change">
               <!-- 선택분 갈래. 주문 쪽과 달리 체크한 상품이 없을 때 잠기지도 않는다 — 소비처가 생길 때 그 잠금도 함께 세워야 한다. -->
@@ -34,7 +34,7 @@
           </input>
           <div class="flex-1">
             <span class="text-primary block font-medium">$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_selected</span>
-            <span class="block text-label-subtle mt-1">10개의 상품만 다운로드됩니다.</span>
+            <span class="block text-label-subtle mt-1">$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_selected_desc|count=10</span>
           </div>
         </label>
       </div>

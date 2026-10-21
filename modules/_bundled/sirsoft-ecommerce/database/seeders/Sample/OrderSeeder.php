@@ -159,7 +159,7 @@ class OrderSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('주문 더미 데이터 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.order.start'));
 
         $this->deleteExistingOrders();
         $this->resolveSampleContext();
@@ -167,7 +167,7 @@ class OrderSeeder extends Seeder
         $this->replenishAvailableCoupons();
 
         $count = Order::count();
-        $this->command->info("주문 더미 데이터 {$count}건이 성공적으로 생성되었습니다.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.order.done', ['count' => $count]));
     }
 
     /**
@@ -180,7 +180,7 @@ class OrderSeeder extends Seeder
         $result = $this->purgeSampleOrderGraph();
 
         if ($result['orders'] > 0) {
-            $this->command->warn("기존 주문 {$result['orders']}건과 하위 문서(결제·배송·취소·환불·클레임·첨부)를 삭제했습니다. (쿠폰 {$result['coupons_restored']}건 복원)");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.order.purged', ['orders' => $result['orders'], 'coupons' => $result['coupons_restored']]));
         }
     }
 
@@ -205,10 +205,10 @@ class OrderSeeder extends Seeder
             $configured = $settings->getPaymentMethodConfig('card')['pg_provider']
                 ?? $settings->getSetting('order_settings.default_pg_provider');
             $this->samplePgProvider = in_array($configured, $registered, true) ? $configured : $registered[0];
-            $this->command->line("  - 샘플 카드·가상계좌 PG: {$this->samplePgProvider} (테스트 표식 is_test_mode, 거래번호 ".self::SAMPLE_TRANSACTION_PREFIX.' 접두)');
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.order.sample_pg', ['provider' => $this->samplePgProvider, 'prefix' => self::SAMPLE_TRANSACTION_PREFIX]));
         } else {
             $this->samplePgProvider = null;
-            $this->command->warn('  - 켜진 결제 플러그인이 없어 무통장입금 주문만 만듭니다.');
+            $this->command->warn('  - '.__('sirsoft-ecommerce::messages.seeders.order.bank_transfer_only'));
         }
 
         $rules = (array) $settings->getSetting('mileage.currency_rules', []);
@@ -254,17 +254,17 @@ class OrderSeeder extends Seeder
             $users = User::take(self::ORDER_USER_POOL)->get();
         }
         if ($users->isEmpty()) {
-            $this->command->line('  - 사용자가 없어 '.self::ORDER_USER_POOL.'명 생성합니다.');
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.order.creating_users', ['count' => self::ORDER_USER_POOL]));
             $users = User::factory()->count(self::ORDER_USER_POOL)->create();
         }
 
-        $this->command->line("  - 주문 배정 회원 풀: {$users->count()}명");
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.order.user_pool', ['count' => $users->count()]));
 
         // 상품 옵션 목록 가져오기 (없으면 경고)
         $productOptions = ProductOption::with('product')->take(100)->get();
         if ($productOptions->isEmpty()) {
-            $this->command->warn('상품 옵션이 없습니다. ProductSeeder를 먼저 실행하는 것을 권장합니다.');
-            $this->command->warn('상품 없이 주문을 생성합니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.order.no_options'));
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.order.without_products'));
         }
 
         // 상태별 주문 수 계산
@@ -331,7 +331,7 @@ class OrderSeeder extends Seeder
 
         $progressBar->finish();
         $this->command->newLine();
-        $this->command->info('  - 회원 주문: '.($createdCount - $guestCount)."건, 비회원 주문: {$guestCount}건, 쿠폰 적용: {$couponCount}건");
+        $this->command->info('  - '.__('sirsoft-ecommerce::messages.seeders.order.summary', ['members' => $createdCount - $guestCount, 'guests' => $guestCount, 'coupons' => $couponCount]));
     }
 
     /**
@@ -1563,14 +1563,14 @@ class OrderSeeder extends Seeder
             ->get();
 
         if ($issues->isEmpty()) {
-            $this->command->line('  - 사용 가능한 쿠폰 발급 내역이 없습니다. 쿠폰 미적용 주문만 생성합니다.');
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.order.no_coupon_issues'));
 
             return [];
         }
 
         // Collection 그대로 유지 (모델 인스턴스 보존)
         $grouped = $issues->groupBy('user_id')->all();
-        $this->command->line("  - 쿠폰 발급 내역 {$issues->count()}건 로드 (".count($grouped).'명 사용자)');
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.order.coupon_issues_loaded', ['count' => $issues->count(), 'users' => count($grouped)]));
 
         return $grouped;
     }
@@ -2155,6 +2155,6 @@ class OrderSeeder extends Seeder
             Coupon::where('id', $couponId)->increment('issued_count', $count);
         }
 
-        $this->command->line("  - 주문서 테스트용 쿠폰 {$replenished}건 보충 발급 완료");
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.order.coupons_replenished', ['count' => $replenished]));
     }
 }

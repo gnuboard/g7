@@ -8,10 +8,10 @@
       <div data-payment-method="{{$method.id}}" class="flex-center border rounded-lg p-3 gap-4">
         <class-map key="{{$method._orphaned ? 'orphaned' : 'normal'}}">
           <variant when="normal">bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700</variant>
-          <variant when="orphaned">bg-red-50 dark:bg-red-900/20 opacity-60 border-red-300 dark:border-red-700</variant>
+          <variant when="orphaned">bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700</variant>
         </class-map>
         <!-- 드래그 손잡이 — 읽기 전용(설정 수정 권한 없음)이면 숨긴다. 손잡이가 없으면 순서를 끌어 바꿀 수 없다(엔진 sortable 은 비활성 옵션이 없다). -->
-        <div data-ref="payment_method_drag_handle_list" data-if="{{!$method._orphaned &amp;&amp; !_computed.isReadOnly}}" :data-drag-handle="true" class="cursor-grab text-gray-400 dark:text-gray-500">
+        <div data-ref="payment_method_drag_handle_list" data-if="{{!$method._orphaned &amp;&amp; !_computed.isReadOnly}}" :data-drag-handle="true" class="cursor-grab text-gray-500 dark:text-gray-400">
           <icon name="grip-vertical" class="text-lg"/>
         </div>
         <!-- 브랜드 마크(색 배지/SVG 로고) — 결제 플러그인이 카탈로그 brand_mark 로 선언한 수단(간편결제)만 그리고, 없으면 아이콘을 그린다(#639) -->

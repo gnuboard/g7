@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.1] - 2026-10-20
+
+### Added
+
+- 2단계 인증 1.0.1 에서 번역 문구로 바뀐 2단계 인증 초기화 명령과 시험용 시드 명령의 콘솔 출력(8건)의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 출력이 키 그대로 보입니다.
+
 ## [1.0.0] - 2026-10-10
 
 ### Added

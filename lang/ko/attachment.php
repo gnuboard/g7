@@ -66,4 +66,13 @@ return [
     'access_denied' => '이 첨부파일에 대한 접근 권한이 없습니다.',
     'update_denied' => '이 첨부파일에 대한 수정 권한이 없습니다.',
     'delete_denied' => '이 첨부파일에 대한 삭제 권한이 없습니다.',
+    // `attachments:prune-orphans` 명령 출력
+    'console' => [
+        'prune_orphans' => [
+            'disabled' => '고아 첨부 자동 정리가 꺼져 있어 실행하지 않았습니다. (upload.orphan_cleanup_enabled = false)',
+            'retention_below_minimum' => '고아 첨부 보존기간이 1일 미만이어서 정리를 수행하지 않았습니다.',
+            'dry_run' => '보존기간(:days일) 경과 고아 첨부: :count건',
+            'done' => '보존기간(:days일) 경과 고아 첨부 :scanned건 중 :deleted건을 삭제했습니다. (실패 :failed건)',
+        ],
+    ],
 ];

@@ -253,7 +253,7 @@ export const FileTreePicker: React.FC<FileTreePickerProps> = ({
     <>
       <Div className="p-3 border-b border-gray-200 dark:border-gray-700 flex flex-col gap-2 shrink-0">
         <Div className="flex items-center gap-2">
-          <Icon name="fa-regular fa-folder-open" className="text-base text-amber-500 dark:text-amber-400" />
+          <Icon name="fa-regular fa-folder-open" className="text-base text-amber-600 dark:text-amber-400" />
           <Span className="flex-1 font-medium text-sm text-gray-900 dark:text-gray-100">
             {t('admin.templates.layout_edit.layout_files')}
           </Span>
@@ -296,7 +296,7 @@ export const FileTreePicker: React.FC<FileTreePickerProps> = ({
         <Div className="relative">
           <Icon
             name="fa-solid fa-magnifying-glass"
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-gray-500 pointer-events-none"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 dark:text-gray-500 pointer-events-none"
           />
           <Input
             ref={searchRef}
@@ -380,7 +380,7 @@ export const FileTreePicker: React.FC<FileTreePickerProps> = ({
         className="flex items-center gap-2 h-11 px-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 max-w-full"
         onClick={() => setOpen(true)}
       >
-        <Icon name="fa-regular fa-folder-open" className="text-sm text-amber-500 dark:text-amber-400" />
+        <Icon name="fa-regular fa-folder-open" className="text-sm text-amber-600 dark:text-amber-400" />
         <Span className="truncate font-medium">
           {selectedKeyLabel(nodes, selectedKey) ?? t('admin.templates.layout_edit.layout_files')}
         </Span>
@@ -392,7 +392,7 @@ export const FileTreePicker: React.FC<FileTreePickerProps> = ({
             {dirtyCount}
           </Span>
         )}
-        <Icon name="fa-solid fa-chevron-down" className="text-[10px] text-gray-400 dark:text-gray-500" />
+        <Icon name="fa-solid fa-chevron-down" className="text-[10px] text-gray-500 dark:text-gray-500" />
       </Button>
 
       {open && (

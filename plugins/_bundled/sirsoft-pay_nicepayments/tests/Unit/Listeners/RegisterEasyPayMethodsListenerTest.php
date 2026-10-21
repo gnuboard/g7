@@ -7,10 +7,15 @@ namespace Plugins\Sirsoft\PayNicepayments\Tests\Unit\Listeners;
 use Plugins\Sirsoft\PayNicepayments\Listeners\AdjustEcommercePaymentMethodsLayoutListener;
 use Plugins\Sirsoft\PayNicepayments\Listeners\RegisterEasyPayMethodsListener;
 use Plugins\Sirsoft\PayNicepayments\Plugin;
-use Tests\TestCase;
+use Plugins\Sirsoft\PayNicepayments\Tests\PluginTestCase;
 
-class RegisterEasyPayMethodsListenerTest extends TestCase
+class RegisterEasyPayMethodsListenerTest extends PluginTestCase
 {
+    /**
+     * 나이스페이먼츠 언어팩 네임스페이스를 등록해 표시명 번역을 읽을 수 있게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -21,6 +26,15 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
         );
     }
 
+    /**
+     * 간편결제 8종이 휴대폰 결제와 다른 PG 간편결제 뒤, 포인트·무통장 앞에 순서대로 들어가는지 검증한다.
+     *
+     * @scenario contract=catalog_position
+     *
+     * @effects easy_pay_methods_follow_phone_and_other_pg_easy_pay
+     *
+     * @return void 반환값 없음
+     */
     public function test_injects_easy_pay_methods_after_existing_pg_easy_pay_methods(): void
     {
         $listener = new RegisterEasyPayMethodsListener;
@@ -52,6 +66,15 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
         ], array_column($methods, 'id'));
     }
 
+    /**
+     * 플러그인이 간편결제 등록 리스너와 관리자 결제수단 화면 보정 리스너를 함께 훅에 올리는지 검증한다.
+     *
+     * @scenario contract=hook_wiring
+     *
+     * @effects easy_pay_hook_listeners_registered
+     *
+     * @return void 반환값 없음
+     */
     public function test_plugin_registers_easy_pay_hook_listeners(): void
     {
         $listeners = (new Plugin)->getHookListeners();
@@ -60,6 +83,15 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
         $this->assertContains(AdjustEcommercePaymentMethodsLayoutListener::class, $listeners);
     }
 
+    /**
+     * 간편결제 수단이 PG 를 나이스페이먼츠로 고정 선언하고 설치 직후 비활성·결제 완료 시점 차감으로 등록되는지 검증한다.
+     *
+     * @scenario contract=method_defaults
+     *
+     * @effects easy_pay_methods_locked_to_own_pg, easy_pay_methods_installed_inactive_with_payment_complete_timing
+     *
+     * @return void 반환값 없음
+     */
     public function test_easy_pay_methods_are_locked_to_own_pg_provider(): void
     {
         // 간편결제는 나이스페이먼츠 결제창을 통해서만 처리되므로 PG 를 자기 자신으로 고정 선언한다.
@@ -96,6 +128,15 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
         }
     }
 
+    /**
+     * 간편결제 이름·설명이 관리자 결제수단 화면과 같은 언어팩 문구로 나오는지 검증한다.
+     *
+     * @scenario contract=display_labels
+     *
+     * @effects easy_pay_labels_match_language_pack
+     *
+     * @return void 반환값 없음
+     */
     public function test_easy_pay_method_labels_match_admin_payment_method_names(): void
     {
         $listener = new RegisterEasyPayMethodsListener;
@@ -114,6 +155,15 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
         $this->assertSame('PAYCO (NicePayments)', $payco['name']['en'] ?? null);
     }
 
+    /**
+     * 간편결제 표시 문구가 다른 PG 의 브랜드명 매처에 걸리지 않도록 폭 없는 공백으로 끊겨 있는지 검증한다.
+     *
+     * @scenario contract=display_labels
+     *
+     * @effects easy_pay_labels_avoid_other_pg_brand_matchers
+     *
+     * @return void 반환값 없음
+     */
     public function test_easy_pay_method_labels_avoid_other_pg_brand_matchers(): void
     {
         $listener = new RegisterEasyPayMethodsListener;
@@ -146,9 +196,13 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
     }
 
     /**
+     * 간편결제 수단이 색 배지 형태의 브랜드 마크를 등록 데이터로 싣는지 검증한다.
+     *
      * @scenario mark_form=badge, requires_ios=false, device=ipados_desktop_ua
      *
      * @effects brand_mark_flows_to_cached, badge_renders_text_and_color
+     *
+     * @return void 반환값 없음
      */
     public function test_easy_pay_methods_carry_badge_brand_mark(): void
     {
@@ -162,7 +216,7 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
         ]))->keyBy('id');
 
         $this->assertSame(
-            ['text' => 'N', 'class' => 'bg-green-500 text-white'],
+            ['text' => 'N', 'class' => 'bg-green-700 text-white'],
             $methods->get('nicepay_naverpay')['brand_mark'] ?? null,
         );
         $this->assertSame(
@@ -171,6 +225,13 @@ class RegisterEasyPayMethodsListenerTest extends TestCase
         );
     }
 
+    /**
+     * 애플페이만 iOS 전용 노출 플래그를 갖고 다른 간편결제에는 붙지 않는지 검증한다.
+     *
+     * @effects requires_ios_flag_carried
+     *
+     * @return void 반환값 없음
+     */
     public function test_only_apple_pay_requires_ios(): void
     {
         // 애플페이만 iOS 전용 노출 플래그를 가진다.

@@ -18,7 +18,7 @@
           <span data-if="{{ch.source && ch.source !== 'core'}}" class="text-hint block">{{ch.source_label ?? ch.source}}</span>
           <!-- 켰는데 그 채널 템플릿이 없으면 발송 때 조용히 건너뛴다(코어가 로그에만 남긴다).
                화면이 그 사실을 말해 주지 않으면 "켰는데 안 온다" 로만 보인다. -->
-          <span data-if="{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) &amp;&amp; !(def.templates ?? []).some(t => t.channel === ch.id)}}" class="text-hint block text-amber-600 dark:text-amber-400">$t:sirsoft-koreaexim.channel_template_missing</span>
+          <span data-if="{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) &amp;&amp; !(def.templates ?? []).some(t => t.channel === ch.id)}}" class="text-hint block text-amber-700 dark:text-amber-400">$t:sirsoft-koreaexim.channel_template_missing</span>
         </div>
       </div>
       <toggle data-type="composite" label="{{(ch.name ?? ch.id)}}" checked="{{(_local.koreaeximChannels?.[def.id] ?? def.channels ?? []).includes(ch.id)}}" disabled="{{_computed.isNotificationReadOnly}}">
@@ -62,8 +62,12 @@
       </button>
       <button type="button" data-ref="koreaexim_cancel_channels_{{defIdx}}" data-if="{{JSON.stringify([...(_local.koreaeximChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())}}" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.koreaeximSavingChannels !== null &amp;&amp; _local.koreaeximSavingChannels !== undefined}}">
         <on type="click">
-          <!-- 취소 — 폼의 임시 채널 값을 전부 버려 저장된 def.channels 로 되돌린다(이 버튼은 저장값과 다를 때만 보인다) -->
-          <set-state target="local" :koreaeximChannels="{}"/>
+          <!-- 취소 — 폼의 임시 채널 값을 전부 버려 저장된 def.channels 로 되돌린다(이 버튼은 저장값과 다를 때만 보인다).
+               기본 병합(deep)은 빈 객체 {} 로 기존 키를 지우지 않으므로 먼저 null 로 덮고 다시 {} 로 쓴다(7.1.1 출시 전) -->
+          <sequence>
+            <set-state target="local" :koreaeximChannels="null"/>
+            <set-state target="local" :koreaeximChannels="{}"/>
+          </sequence>
         </on>
         <span>$t:sirsoft-koreaexim.cancel</span>
       </button>

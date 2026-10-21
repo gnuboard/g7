@@ -10,9 +10,9 @@
  * 4. auth_required가 아닌 auth_mode: "optional"이 사용되는가
  * 5. 기존 403/404 핸들러가 유지되는가
  *
- * 조합(cross product) 마킹은 짝 핸들러 테스트가 담당한다 — 이 파일은 레이아웃이 그 핸들러를
- * 배선하고 있다는 구조 사실만 고정하므로 effects 만 마킹한다.
- * @effects redirect_preserves_pathname,login_returns_to_original_path
+ * 시나리오 매핑은 테스트마다 둔다(파일·describe 레벨 마커는 메서드가 없어도 커버로 집계돼 쓰지 않는다).
+ *   - 401 갈래: tests/scenarios/board-guest-access-login-redirect.yaml (entry_point 축 — 글 보기 board_show_401, 목록 board_list_401)
+ *   - 403·404 갈래와 최상위 errorHandling 부재: tests/scenarios/board-datasource-error-page.yaml (layout × status 축, 7.1.1)
  */
 
 import { describe, it, expect } from 'vitest';
@@ -30,37 +30,52 @@ function getDataSourceErrorHandling(layout: any, dataSourceId: string) {
 }
 
 describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #228 B-5)', () => {
-  /**
-   * @scenario entry_point=board_show_401
-   * @effects redirect_preserves_pathname, login_returns_to_original_path
-   */
   describe('show.json — auth_mode 및 데이터소스 401', () => {
     // redirect: /board/{{route.slug}}/posts/{{route.id}}
     const ds = getDataSource(showLayout, 'post');
     const dsErrorHandling = ds?.errorHandling ?? null;
 
+    /**
+     * @scenario entry_point=board_show_401
+     */
     it('auth_mode가 optional이어야 한다 (auth_required 사용 금지)', () => {
       expect(ds?.auth_mode).toBe('optional');
       expect(ds?.auth_required).toBeUndefined();
     });
 
+    /**
+     * @scenario entry_point=board_show_401
+     */
     it('데이터소스 errorHandling에 401이 정의되어야 한다', () => {
       expect(dsErrorHandling?.['401']).toBeDefined();
     });
 
+    /**
+     * @scenario entry_point=board_show_401
+     */
     it('401 핸들러가 sequence 타입이어야 한다', () => {
       expect(dsErrorHandling?.['401']?.handler).toBe('sequence');
     });
 
+    /**
+     * @scenario entry_point=board_show_401
+     */
     it('sequence actions 가 둘 이상이어야 한다', () => {
       expect(actionsOf(dsErrorHandling?.['401']).length).toBeGreaterThanOrEqual(2);
     });
 
+    /**
+     * @scenario entry_point=board_show_401
+     */
     it('첫 번째 action이 toast 핸들러이어야 한다', () => {
       const toastAction = actionsOf(dsErrorHandling?.['401'])[0];
       expect(toastAction?.handler).toBe('toast');
     });
 
+    /**
+     * @scenario entry_point=board_show_401
+     * @effects redirect_preserves_pathname
+     */
     it('두 번째 action이 redirectToLoginWithReturn 핸들러이어야 한다', () => {
       // 등록 키를 handler 에 직접 지정 (custom+name 형식은 디스패치가 handler 값으로만
       // 조회하므로 throw 됨 — feedback_verify_full_path_not_just_evaluator).
@@ -68,84 +83,141 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
       expect(redirectAction?.handler).toBe('redirectToLoginWithReturn');
     });
 
+    /**
+     * @scenario entry_point=board_show_401
+     */
     it('두 번째 action에 name 필드 단언이 없어야 한다 (custom+name 거짓 통과 방지)', () => {
       const redirectAction = actionsOf(dsErrorHandling?.['401'])[1];
       expect(redirectAction?.handler).not.toBe('custom');
       expect((redirectAction as any)?.name).toBeUndefined();
     });
 
+    /**
+     * @scenario entry_point=board_show_401
+     * @effects redirect_preserves_pathname
+     */
     it('redirect 는 핸들러가 window.location 으로 캡처하므로 navigate params 가 불필요하다', () => {
       // 레이아웃에 정적 redirect 표현식을 두지 않는다 (핸들러가 런타임에 캡처).
       const redirectAction = actionsOf(dsErrorHandling?.['401'])[1];
       expect(redirectAction?.params).toBeUndefined();
     });
 
+    /**
+     * @scenario layout=board_show, status=forbidden
+     * @effects error_status_shows_error_page
+     */
     it('기존 403 핸들러가 유지되어야 한다', () => {
       expect(dsErrorHandling?.['403']).toBeDefined();
       expect(dsErrorHandling?.['403']?.handler).toBe('showErrorPage');
     });
 
+    /**
+     * @scenario layout=board_show, status=not_found
+     * @effects error_status_shows_error_page
+     */
     it('기존 404 핸들러가 유지되어야 한다', () => {
       expect(dsErrorHandling?.['404']).toBeDefined();
       expect(dsErrorHandling?.['404']?.handler).toBe('showErrorPage');
     });
 
+    /**
+     * @effects error_handling_scoped_to_data_source
+     */
     it('레이아웃 최상위에 errorHandling이 없어야 한다', () => {
       expect((showLayout as any).errorHandling).toBeUndefined();
     });
   });
 
-  /**
-   * @scenario entry_point=board_list_401
-   * @effects redirect_preserves_pathname, login_returns_to_original_path
-   */
   describe('index.json — auth_mode 및 데이터소스 401', () => {
     const ds = getDataSource(indexLayout, 'posts');
     const dsErrorHandling = ds?.errorHandling ?? null;
 
+    /**
+     * @scenario entry_point=board_list_401
+     */
     it('auth_mode가 optional이어야 한다 (auth_required 사용 금지)', () => {
       expect(ds?.auth_mode).toBe('optional');
       expect(ds?.auth_required).toBeUndefined();
     });
 
+    /**
+     * @scenario entry_point=board_list_401
+     */
     it('데이터소스 errorHandling에 401이 정의되어야 한다', () => {
       expect(dsErrorHandling?.['401']).toBeDefined();
     });
 
+    /**
+     * @scenario entry_point=board_list_401
+     */
     it('401 핸들러가 sequence 타입이어야 한다', () => {
       expect(dsErrorHandling?.['401']?.handler).toBe('sequence');
     });
 
+    /**
+     * @scenario entry_point=board_list_401
+     */
     it('sequence actions 가 둘 이상이어야 한다', () => {
       expect(actionsOf(dsErrorHandling?.['401']).length).toBeGreaterThanOrEqual(2);
     });
 
+    /**
+     * @scenario entry_point=board_list_401
+     */
     it('첫 번째 action이 toast 핸들러이어야 한다', () => {
       const toastAction = actionsOf(dsErrorHandling?.['401'])[0];
       expect(toastAction?.handler).toBe('toast');
     });
 
+    /**
+     * @scenario entry_point=board_list_401
+     * @effects redirect_preserves_pathname
+     */
     it('두 번째 action이 redirectToLoginWithReturn 핸들러이어야 한다', () => {
       const redirectAction = actionsOf(dsErrorHandling?.['401'])[1];
       expect(redirectAction?.handler).toBe('redirectToLoginWithReturn');
     });
 
+    /**
+     * @scenario entry_point=board_list_401
+     */
     it('두 번째 action에 name 필드 단언이 없어야 한다 (custom+name 거짓 통과 방지)', () => {
       const redirectAction = actionsOf(dsErrorHandling?.['401'])[1];
       expect(redirectAction?.handler).not.toBe('custom');
       expect((redirectAction as any)?.name).toBeUndefined();
     });
 
+    /**
+     * @scenario entry_point=board_list_401
+     * @effects redirect_preserves_pathname
+     */
     it('redirect 는 핸들러가 window.location 으로 캡처하므로 navigate params 가 불필요하다', () => {
       const redirectAction = actionsOf(dsErrorHandling?.['401'])[1];
       expect(redirectAction?.params).toBeUndefined();
     });
 
+    /**
+     * @scenario layout=board_list, status=forbidden
+     * @effects error_status_shows_error_page
+     */
     it('기존 403 핸들러가 유지되어야 한다', () => {
       expect(dsErrorHandling?.['403']).toBeDefined();
       expect(dsErrorHandling?.['403']?.handler).toBe('showErrorPage');
     });
 
+    // 없는 게시판 — 게시판 API 가 권한보다 먼저 404 를 돌려준다(7.1.1). 목록에만 404 갈래가 없어 오류 화면이 뜨지 않았다
+    /**
+     * @scenario layout=board_list, status=not_found
+     * @effects error_status_shows_error_page
+     */
+    it('404 핸들러가 오류 화면(showErrorPage)이어야 한다 — 글 보기와 같은 모양', () => {
+      expect(dsErrorHandling?.['404']).toBeDefined();
+      expect(dsErrorHandling?.['404']?.handler).toBe('showErrorPage');
+    });
+
+    /**
+     * @effects error_handling_scoped_to_data_source
+     */
     it('레이아웃 최상위에 errorHandling이 없어야 한다', () => {
       expect((indexLayout as any).errorHandling).toBeUndefined();
     });

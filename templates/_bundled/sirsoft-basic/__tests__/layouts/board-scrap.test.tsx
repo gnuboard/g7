@@ -156,7 +156,7 @@ describe('이슈 #524 — 게시글 상세 스크랩 버튼 (show.json)', () => 
     // @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
     // @effects detail_button_reflects_is_scraped
     it('담김 여부를 aria-pressed 로도 알린다 (반응 버튼과 같은 방식, 화면 글자 「스크랩됨」에만 기대지 않는다)', () => {
-        // 7.1.0 실측 O-K2-5: 버튼에 aria-pressed 가 없어 담김 상태가 글자로만 전달됐다.
+        // 7.1.0 실측: 버튼에 aria-pressed 가 없어 담김 상태가 글자로만 전달됐다.
         const btn = scrapButtons[0];
         const props = btn.props as Record<string, unknown>;
         const raw = String(props['aria-pressed'] ?? '');

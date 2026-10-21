@@ -379,7 +379,11 @@
                                                 "id": "bot_names_grid",
                                                 "type": "composite",
                                                 "name": "DataGrid",
-                                                "if": "{{analytics_bots?.loading || (analytics_bots?.data?.data ?? []).length > 0}}",
+                                                "if": "{{analytics_bots === undefined || (analytics_bots?.data?.data ?? []).length > 0}}",
+                                                "blur_until_loaded": {
+                                                    "enabled": true,
+                                                    "data_sources": "analytics_bots"
+                                                },
                                                 "actions": [
                                                     {
                                                         "comment": "봇 이름 표의 쪽 이동 — 질의 `page` 만 바꿔 주소를 갈아 끼우고 전환 표시는 표 몸통에만 띄운다. 총 쪽 수를 모르는\n                     목록이라 다음 쪽이 있는지는 응답의 `has_more` 가 가른다.",
@@ -411,7 +415,7 @@
                                                     "idField": "label",
                                                     "selectable": false,
                                                     "sortable": false,
-                                                    "emptyMessage": "$t:admin.analytics.common.empty_title",
+                                                    "emptyMessage": "{{analytics_bots === undefined ? '' : $t('admin.analytics.common.empty_title')}}",
                                                     "columns": [
                                                         {
                                                             "field": "label_display",
@@ -526,7 +530,7 @@
                                     {
                                         "type": "composite",
                                         "name": "EmptyState",
-                                        "if": "{{!analytics_bots?.loading && (analytics_bots?.data?.data ?? []).length === 0}}",
+                                        "if": "{{analytics_bots !== undefined && (analytics_bots?.data?.data ?? []).length === 0}}",
                                         "props": {
                                             "iconName": "robot",
                                             "title": "$t:admin.analytics.common.empty_title",
@@ -553,7 +557,7 @@
                                         "text": "$t:admin.analytics.bots.recent_title"
                                     },
                                     {
-                                        "comment": "최근 요청은 고른 기간 안에서 고른다(서버 `ReportService::recentBotHits`) — 화면의 다른 숫자와 같은 기간이라는\n               사실을 함께 적는다. 예전에는 기간과 무관한 최신 50건이라 어제를 골라도 오늘 요청이 섞였다(7.1.0 실측 O-E10).",
+                                        "comment": "최근 요청은 고른 기간 안에서 고른다(서버 `ReportService::recentBotHits`) — 화면의 다른 숫자와 같은 기간이라는\n               사실을 함께 적는다. 예전에는 기간과 무관한 최신 50건이라 어제를 골라도 오늘 요청이 섞였다(7.1.0 실측).",
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
@@ -573,6 +577,10 @@
                                                 "id": "recent_hits_grid",
                                                 "type": "composite",
                                                 "name": "DataGrid",
+                                                "blur_until_loaded": {
+                                                    "enabled": true,
+                                                    "data_sources": "analytics_bots"
+                                                },
                                                 "props": {
                                                     "data": "{{analytics_bots?.data?.recent_hits ?? []}}",
                                                     "pagination": true,
@@ -580,7 +588,7 @@
                                                     "idField": "id",
                                                     "selectable": false,
                                                     "sortable": false,
-                                                    "emptyMessage": "$t:admin.analytics.common.empty_title",
+                                                    "emptyMessage": "{{analytics_bots === undefined ? '' : $t('admin.analytics.common.empty_title')}}",
                                                     "columns": [
                                                         {
                                                             "field": "bot_name",

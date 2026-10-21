@@ -30,10 +30,29 @@
                     }
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "fallback": {
@@ -104,6 +123,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "className": "btn-icon",
                                     "aria-label": "$t:admin.roles.refresh"
                                 },
@@ -361,6 +381,7 @@
                             "alwaysShowPagination": true,
                             "idField": "id",
                             "responsiveBreakpoint": 768,
+                            "emptyMessage": "{{roles === undefined ? '' : $t('common.no_data')}}",
                             "actionsColumnHeader": "$t:common.actions",
                             "rowActions": [
                                 {

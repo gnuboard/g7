@@ -97,7 +97,7 @@
         </button>
       </div>
     </div>
-    <div data-if="{{(_local.form?.shipping?.carriers ?? []).length === 0 &amp;&amp; !_local.isAddingCarrier}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.settings.shipping.carriers.empty</div>
+    <div data-if="{{settings !== undefined &amp;&amp; ((_local.form?.shipping?.carriers ?? []).length === 0 &amp;&amp; !_local.isAddingCarrier)}}" class="p-8 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.settings.shipping.carriers.empty</div>
     <div data-ref="carrier_list" data-if="{{(_local.form?.shipping?.carriers ?? []).length > 0}}" class="overflow-x-clip">
       <responsive on="portable" class="">
         <include src="_shipping_carrier_cards.g7.html"/>
@@ -120,7 +120,7 @@
             <div class="border-t border-gray-200 dark:border-gray-700 contents">
               <td class="px-2 py-2 text-center">
                 <!-- 드래그 손잡이 — 읽기 전용(설정 수정 권한 없음)이면 숨긴다. 손잡이가 없으면 순서를 끌어 바꿀 수 없다(엔진 sortable 은 비활성 옵션이 없다). -->
-                <div data-ref="shipping_carrier_drag_handle" data-if="{{!_computed.isReadOnly}}" :data-drag-handle="true" class="cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                <div data-ref="shipping_carrier_drag_handle" data-if="{{!_computed.isReadOnly}}" :data-drag-handle="true" class="cursor-grab text-gray-500 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                   <icon name="fa-solid fa-grip-vertical" class="text-sm"/>
                 </div>
               </td>
@@ -171,7 +171,7 @@
                 </toggle>
               </td>
               <td class="px-4 py-2 text-center">
-                <button type="button" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
+                <button type="button" class="p-1.5 text-gray-500 hover:text-red-700 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly}}">
                   <on type="click">
                     <!-- 기존 줄 — 삭제. -->
                     <set-state confirm="$t:sirsoft-ecommerce.admin.settings.shipping.carriers.confirm_delete" target="local" form.shipping.carriers="{{(_local.form?.shipping?.carriers ?? []).filter((_, i) => i !== $carrier._idx)}}" :hasChanges="true"/>

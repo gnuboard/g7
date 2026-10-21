@@ -171,7 +171,7 @@ export const setLabelDatePresetInlineHandler = (
     }
 
     // 시작일은 계정 시간대(회원 → 사이트 기본)의 오늘. 예전에는 `toISOString()`(UTC 날짜)라 한국 시간 오전 9시
-    // 전에 누르면 시작일이 어제로 채워졌다(7.1.0 QE-O3).
+    // 전에 누르면 시작일이 어제로 채워졌다(7.1.0).
     const today = calendarDateIn(new Date(), resolveAccountTimezone());
     const startDate = formatCalendarDate(today);
     let endDate: string | null = null;

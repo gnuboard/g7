@@ -239,4 +239,36 @@ class TemplateOverrideMarkupInstallTest extends TestCase
                 && ! str_contains($context['error'] ?? '', 'EmptyMap'))
             ->once();
     }
+
+    /**
+     * 내용이 목록(`[1,2]`·`[]`)인 조각은 읽기 실패로 건너뛰고, 원인을 「객체가 아님 (list)」 으로 ERROR 에 적는다 (7.1.1 출시 전).
+     *
+     * 목록도 PHP 배열이라 종전에는 정의로 통과해 등록 단계에서 「대상 부재」 DEBUG 로만 남았고, `layout:check-installed` 의
+     * 「읽기 실패」에도 잡히지 않았다.
+     *
+     * @scenario compile_unit=install,source_health=invalid
+     *
+     * @effects scalar_fragment_json_reports_type
+     *
+     * @return void 반환값 없음
+     */
+    public function test_list_fragment_json_is_a_read_failure(): void
+    {
+        foreach (['list.json' => '[1,2]', 'empty-list.json' => '[]'] as $name => $json) {
+            $file = "{$this->tmp}/{$name}";
+            File::put($file, $json);
+
+            Log::spy();
+
+            $result = $this->invokeProtected('loadFragmentSource', [['path' => $file, 'markup' => false]]);
+
+            $this->assertNull($result, "{$name}: 목록 조각은 정의로 쓰지 않는다");
+
+            Log::shouldHaveReceived('error')
+                ->withArgs(fn (string $message, array $context = []): bool => str_contains($message, '레이아웃 확장 JSON 형식 오류 (객체가 아님)')
+                    && str_contains($message, $name)
+                    && ($context['type'] ?? null) === 'list')
+                ->once();
+        }
+    }
 }

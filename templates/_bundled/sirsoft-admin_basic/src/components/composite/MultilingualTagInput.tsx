@@ -28,7 +28,7 @@ const tOr = (key: string, fallback: string, params?: Record<string, string | num
   return typeof translated === 'string' && translated !== key ? translated : fallback;
 };
 
-// 태그 지우기 단추 이름 — 단추 안 아이콘은 꾸밈이라 이름을 단추에 직접 단다(7.1.0 O-C3b-3)
+// 태그 지우기 단추 이름 — 단추 안 아이콘은 꾸밈이라 이름을 단추에 직접 단다(7.1.0)
 const removeTagLabel = (tag: string): string => tOr('common.remove_tag', `Remove ${tag}`, { tag });
 
 /** 다국어 값 객체 */
@@ -410,14 +410,14 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
             aria-label={ariaLabel}
             aria-labelledby={ariaLabelledBy}
             disabled={disabled}
-            className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+            className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300"
           />
         )}
       </Div>
 
       {/* 에러 메시지 */}
       {error && (
-        <Span className="text-xs text-red-500 dark:text-red-400 mt-1">
+        <Span className="text-xs text-red-600 dark:text-red-400 mt-1">
           {error}
         </Span>
       )}
@@ -437,7 +437,7 @@ export const MultilingualTagInput: React.FC<MultilingualTagInputProps> = ({
                   <Span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-16">
                     {getLocaleNameByCode(locale)}
                   </Span>
-                  <Span className="text-xs text-gray-400 dark:text-gray-500">
+                  <Span className="text-xs text-gray-500 dark:text-gray-400">
                     ({locale.toUpperCase()})
                   </Span>
                 </Div>

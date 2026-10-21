@@ -13,7 +13,7 @@ use Tests\TestCase;
 /**
  * module:deactivate — 의존하는 활성 확장 안내.
  *
- * 7.1.0 전수 실측 M3: Hello 플러그인(Hello 모듈에 의존)을 켜 둔 채 `module:deactivate gnuboard7-hello_module`
+ * 7.1.0 전수 실측: Hello 플러그인(Hello 모듈에 의존)을 켜 둔 채 `module:deactivate gnuboard7-hello_module`
  * 을 실행하면 거절(종료 코드 1)은 됐지만 「의존하는 템플릿 목록:」 제목만 나오고 목록이 비어, 무엇 때문에
  * 거절됐는지 알 수 없었다. 모듈 관리자는 의존하는 템플릿·모듈·플러그인을 모두 돌려주는데 명령은 템플릿만
  * 출력했다. `plugin:deactivate` 와 같이 세 종류를 모두 보여 준다.
@@ -69,7 +69,7 @@ class DeactivateModuleDependentsOutputTest extends TestCase
 
         $this->artisan('module:deactivate', ['identifier' => 'qa-parent_module'])
             ->expectsOutputToContain('qa-child_plugin (QA 자식 플러그인)')
-            ->doesntExpectOutput('의존하는 템플릿 목록:')
+            ->doesntExpectOutput(__('modules.commands.deactivate.dependent_templates'))
             ->assertExitCode(1);
     }
 
@@ -109,7 +109,7 @@ class DeactivateModuleDependentsOutputTest extends TestCase
         ]);
 
         $this->artisan('module:deactivate', ['identifier' => 'qa-parent_module'])
-            ->expectsOutput('의존하는 템플릿 목록:')
+            ->expectsOutput(__('modules.commands.deactivate.dependent_templates'))
             ->expectsOutputToContain('qa-child_template (QA 자식 템플릿)')
             ->assertExitCode(1);
     }

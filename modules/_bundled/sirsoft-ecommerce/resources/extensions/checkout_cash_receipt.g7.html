@@ -56,7 +56,7 @@
             <set-state target="local" cashReceiptIdentifierType="{{$event.target.value}}" cashReceiptIdentifier="" checkoutExtraPayload="{{ { cash_receipt_requested: true, cash_receipt_type: (_local.cashReceiptType ?? 'income'), cash_receipt_identifier_type: $event.target.value, cash_receipt_identifier: '' } }}"/>
           </on>
         </select>
-        <input data-ref="ext_checkout_cash_receipt_identifier" type="text" name="cash_receipt_identifier" value="{{_local.cashReceiptIdentifier ?? ''}}" placeholder="$t:sirsoft-ecommerce.checkout.cash_receipt.identifier_placeholder" class="{{_local.errors?.cash_receipt_identifier ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
+        <input data-ref="ext_checkout_cash_receipt_identifier" type="text" name="cash_receipt_identifier" aria-label="$t:sirsoft-ecommerce.order.cash_receipt.identifier" value="{{_local.cashReceiptIdentifier ?? ''}}" placeholder="$t:sirsoft-ecommerce.checkout.cash_receipt.identifier_placeholder" class="{{_local.errors?.cash_receipt_identifier ? 'w-full px-4 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500'}}">
           <responsive on="portable" class="{{_local.errors?.cash_receipt_identifier ? 'w-full px-3 py-2 border-2 border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 text-sm' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm'}}"/>
           <on type="change">
             <!-- 식별번호를 입력할 때마다 주문서가 서버로 보낼 꾸러미를 통째로 다시 만든다 — 개별 키만 고치면 신청 여부·유형과 어긋난 채 전송될 수 있다 -->
@@ -65,7 +65,7 @@
         </input>
       </div>
       <!-- 서버 검증 오류 인라인 노출 (M6 — 사업자번호 체크섬 오류 등) -->
-      <span data-if="{{!!_local.errors?.cash_receipt_identifier}}" class="block text-red-500 text-xs">{{_local.errors?.cash_receipt_identifier?.[0] ?? ''}}</span>
+      <span data-if="{{!!_local.errors?.cash_receipt_identifier}}" class="block text-red-600 dark:text-red-300 text-xs">{{_local.errors?.cash_receipt_identifier?.[0] ?? ''}}</span>
       <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.checkout.cash_receipt.purpose_help</p>
       <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.checkout.cash_receipt.immutable_help</p>
     </div>

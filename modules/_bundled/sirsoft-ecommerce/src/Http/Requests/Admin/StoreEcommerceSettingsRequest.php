@@ -84,6 +84,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
         }
 
         $changed = $this->fillOmittedManagedExchangeRates($data) || $changed;
+        $changed = $this->dropBlankPlaceholderBankAccounts($data) || $changed;
 
         // 쓸 수 없게 된 공개 자산 디스크 안내는 설정 응답이 화면에 싣는 표시용 값이라 저장하지 않는다
         // (EcommerceSettingsAdminService::withPublicAssetCatalog). 화면은 받은 기본정보를 통째로 돌려보낸다.
@@ -95,6 +96,94 @@ class StoreEcommerceSettingsRequest extends FormRequest
         if ($changed) {
             $this->replace($data);
         }
+    }
+
+    /**
+     * 사용 안 함이면서 계좌번호·예금주가 모두 빈 입금 계좌 행을 요청에서 뺍니다.
+     *
+     * 기본값(`config/settings/defaults.json`)은 은행만 골라 둔 「사용 안 함」 빈 행 하나를 싣고, 관리자 화면은
+     * 주문설정 탭을 통째로 돌려보낸다. 그 행을 그대로 검사하면 계좌번호·예금주 필수와 「사용·기본 계좌 하나 이상」에
+     * 걸려 새 설치 사이트는 주문설정의 어떤 값도 저장하지 못했다(7.1.0~, 7.1.1 출시 전 실측). 쓰이지 않는 빈
+     * 자리표시 행이므로 검사와 저장에서 함께 뺀다. 사용 중인 행은 칸이 비어도 빼지 않는다 — 그건 입력 누락이다.
+     *
+     * @param  array<string, mixed>  $data  요청 입력 (참조로 갱신)
+     * @return bool 뺀 행이 있으면 true
+     */
+    private function dropBlankPlaceholderBankAccounts(array &$data): bool
+    {
+        $accounts = $data['order_settings']['bank_accounts'] ?? null;
+        if (! is_array($accounts) || ! array_is_list($accounts)) {
+            return false;
+        }
+
+        $kept = array_values(array_filter($accounts, fn (mixed $account): bool => ! self::isBlankPlaceholderBankAccount($account)));
+        if (count($kept) === count($accounts)) {
+            return false;
+        }
+
+        $data['order_settings']['bank_accounts'] = $kept;
+
+        return true;
+    }
+
+    /**
+     * 입금 계좌 행이 빈 자리표시 행(사용 안 함 + 계좌번호·예금주 모두 빈칸)인지 판정합니다.
+     *
+     * @param  mixed  $account  계좌 행
+     * @return bool 빈 자리표시 행이면 true
+     */
+    private static function isBlankPlaceholderBankAccount(mixed $account): bool
+    {
+        return is_array($account)
+            && empty($account['is_active'])
+            && trim((string) ($account['account_number'] ?? '')) === ''
+            && trim((string) ($account['account_holder'] ?? '')) === '';
+    }
+
+    /**
+     * 비교용으로 계좌 목록을 정규화합니다 — 빈 자리표시 행을 빼고 판정에 쓰는 칸만 같은 모양으로 맞춥니다.
+     *
+     * @param  mixed  $accounts  계좌 목록
+     * @return array<int, array<string, mixed>> 정규화한 목록
+     */
+    private static function normalizeBankAccountsForComparison(mixed $accounts): array
+    {
+        if (! is_array($accounts)) {
+            return [];
+        }
+
+        $rows = [];
+        foreach ($accounts as $account) {
+            if (! is_array($account) || self::isBlankPlaceholderBankAccount($account)) {
+                continue;
+            }
+            $rows[] = [
+                'bank_code' => (string) ($account['bank_code'] ?? ''),
+                'account_number' => trim((string) ($account['account_number'] ?? '')),
+                'account_holder' => trim((string) ($account['account_holder'] ?? '')),
+                'is_active' => ! empty($account['is_active']),
+                'is_default' => ! empty($account['is_default']),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * 결제수단 목록에서 무통장입금(dbank)이 켜져 있는지 봅니다.
+     *
+     * @param  mixed  $methods  결제수단 목록
+     * @return bool 켜져 있으면 true
+     */
+    private static function isDbankActive(mixed $methods): bool
+    {
+        foreach (is_array($methods) ? $methods : [] as $method) {
+            if (is_array($method) && ($method['id'] ?? null) === PaymentMethodEnum::DBANK->value && ! empty($method['is_active'])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1073,6 +1162,11 @@ class StoreEcommerceSettingsRequest extends FormRequest
      * 없으면 저장값을 기준으로 판정한다(결제수단만 또는 계좌만 보내는 저장도 같은 결과가 되도록).
      * 주문설정을 싣지 않은 다른 탭 저장에는 관여하지 않는다.
      *
+     * 이번 요청이 그 상태를 **새로 만들 때만** 막는다 — 무통장을 이번에 새로 켜거나 계좌 목록을 바꾸는 요청.
+     * 저장된 상태가 이미 「무통장 켜짐 + 사용 중 계좌 0」 이고(새 설치 기본값이 그렇다) 이번 요청이 그 둘을 건드리지
+     * 않으면 다른 값의 저장을 막지 않는다. 막으면 새 설치 사이트는 계좌를 등록하거나 무통장을 끄기 전에는 주문설정의
+     * 어떤 값도 저장하지 못한다(7.1.1 출시 전 실측). 계좌 비교는 빈 자리표시 행을 뺀 정규화 목록으로 한다.
+     *
      * @param  Validator  $validator  Validator 인스턴스
      * @return void 반환값 없음
      */
@@ -1085,16 +1179,10 @@ class StoreEcommerceSettingsRequest extends FormRequest
         $service = app(EcommerceSettingsService::class);
         $saved = $service->getSettings('order_settings');
 
-        $methods = $this->has('order_settings.payment_methods')
-            ? $this->input('order_settings.payment_methods')
-            : ($saved['payment_methods'] ?? []);
-        $dbankActive = false;
-        foreach (is_array($methods) ? $methods : [] as $method) {
-            if (is_array($method) && ($method['id'] ?? null) === PaymentMethodEnum::DBANK->value && ! empty($method['is_active'])) {
-                $dbankActive = true;
-                break;
-            }
-        }
+        $savedDbankActive = self::isDbankActive($saved['payment_methods'] ?? []);
+        $dbankActive = $this->has('order_settings.payment_methods')
+            ? self::isDbankActive($this->input('order_settings.payment_methods'))
+            : $savedDbankActive;
         if (! $dbankActive) {
             return;
         }
@@ -1103,12 +1191,21 @@ class StoreEcommerceSettingsRequest extends FormRequest
             ? $this->input('order_settings.bank_accounts')
             : ($saved['bank_accounts'] ?? []);
 
-        if (! $service->hasUsableBankAccount($accounts)) {
-            $validator->errors()->add(
-                'order_settings.bank_accounts',
-                __('sirsoft-ecommerce::validation.custom.order_settings.bank_accounts.dbank_requires_active_account')
-            );
+        if ($service->hasUsableBankAccount($accounts)) {
+            return;
         }
+
+        $newlyEnabled = ! $savedDbankActive;
+        $accountsChanged = $this->has('order_settings.bank_accounts')
+            && self::normalizeBankAccountsForComparison($accounts) !== self::normalizeBankAccountsForComparison($saved['bank_accounts'] ?? []);
+        if (! $newlyEnabled && ! $accountsChanged) {
+            return;
+        }
+
+        $validator->errors()->add(
+            'order_settings.bank_accounts',
+            __('sirsoft-ecommerce::validation.custom.order_settings.bank_accounts.dbank_requires_active_account')
+        );
     }
 
     /**

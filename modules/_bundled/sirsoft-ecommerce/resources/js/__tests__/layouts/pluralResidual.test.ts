@@ -124,7 +124,7 @@ describe('이커머스 호출부 — 수를 count 로 넘긴다', () => {
   // @effects call_site_passes_count
   it('처리기가 수를 count 로도 넘긴다', () => {
     expect(read('resources/js/handlers/claimHandlers.ts')).toContain('{ kept, remaining, count: kept }');
-    // 상품 이미지 개수 상한 문구를 내던 `uploadImages` 처리기는 어느 화면도 부르지 않아 삭제했다(7.1.0 출시 점검 D3-2)
+    // 상품 이미지 개수 상한 문구를 내던 `uploadImages` 처리기는 어느 화면도 부르지 않아 삭제했다(7.1.0 출시 점검)
     const claimImage = read('resources/js/handlers/claimImageHandlers.ts');
     expect(claimImage.match(/\{ max: Number\(settings\.max_images \?\? 0\), count: Number\(settings\.max_images \?\? 0\) \}/g)?.length).toBe(2);
     expect(claimImage).toContain('{ failed, total: accepted.length, count: accepted.length }');

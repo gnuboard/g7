@@ -15,7 +15,7 @@
  *
  * ## 무엇을 재는가 (실측 사고 재현)
  *
- * 2026-09-18 PO 실측: 등록 화면에서 QR 이 안 떴다. 원인은 진입점이 디스패처의
+ * 2026-09-18 실측: 등록 화면에서 QR 이 안 떴다. 원인은 진입점이 디스패처의
  * `registerHandler` 를 **변수로 떼어내 호출**한 것이었다 — 엔진 구현이 내부에서
  * `this.customHandlers` 를 쓰므로 수신자를 잃으면
  * `TypeError: Cannot read properties of undefined (reading 'customHandlers')` 로 터지고,
@@ -42,6 +42,8 @@ describe('진입점 부트스트랩', () => {
         delete (window as Record<string, unknown>).G7Core;
     });
 
+    // @scenario case=no_dispatcher
+    // @effects qr_renders_without_dispatcher
     it('디스패처가 없어도 QR 을 그린다', async () => {
         const host = document.createElement('div');
         host.setAttribute('data-totp-qr', 'otpauth://totp/T:a@b.c?secret=JBSWY3DPEHPK3PXP');
@@ -52,6 +54,8 @@ describe('진입점 부트스트랩', () => {
         expect(host.innerHTML).toContain('<svg');
     });
 
+    // @scenario case=late_node
+    // @effects qr_observer_fills_late_nodes
     it('나중에 붙은 노드도 관측자가 채운다', async () => {
         await loadEntry();
 
@@ -63,6 +67,8 @@ describe('진입점 부트스트랩', () => {
         expect(late.innerHTML).toContain('<svg');
     });
 
+    // @scenario case=attribute_filled_later
+    // @effects qr_renders_when_attribute_is_filled_later
     it('속성이 빈 값에서 채워져도 그린다 — 등록 시작 시 실제 순서다', async () => {
         const host = document.createElement('div');
         host.setAttribute('data-totp-qr', '');
@@ -80,6 +86,9 @@ describe('진입점 부트스트랩', () => {
     /**
      * 이 케이스가 이번 사고의 정확한 재현이다 — 떼어낸 메서드가 `this` 를 잃고 터지는 상황.
      * 진입점이 수신자를 붙여 부르면(또는 등록 실패를 가둬 두면) QR 은 영향을 받지 않는다.
+     *
+     * @scenario case=handler_registration_throws
+     * @effects qr_survives_handler_registration_failure
      */
     it('핸들러 등록이 터져도 QR 은 그려진다', async () => {
         const dispatcher = {

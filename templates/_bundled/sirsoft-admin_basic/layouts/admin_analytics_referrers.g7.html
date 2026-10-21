@@ -189,7 +189,7 @@
         </div>
         <div class="overflow-x-auto">
           <blur-until-loaded sources="analytics_referrer_urls"/>
-          <data-grid pageHref="/admin/analytics/referrers?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="referrer_urls_grid" data-if="{{analytics_referrer_urls?.loading || (analytics_referrer_urls?.data?.data ?? []).length &gt; 0}}" data="{{analytics_referrer_urls?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_referrer_urls?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="url" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+          <data-grid pageHref="/admin/analytics/referrers?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="referrer_urls_grid" data-if="{{analytics_referrer_urls === undefined || (analytics_referrer_urls?.data?.data ?? []).length &gt; 0}}" data="{{analytics_referrer_urls?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_referrer_urls?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="url" :selectable="false" :sortable="false" emptyMessage="{{analytics_referrer_urls === undefined ? '' : $t('admin.analytics.common.empty_title')}}">
             <on type="action" event="onPageChange">
               <!-- 유입 주소 목록의 쪽 이동. 이 목록은 원장을 직접 읽어 총 건수를 세지 않으므로 다음 쪽 여부는 응답의 `has_more` 로만 안다. -->
               <navigate path="/admin/analytics/referrers" :mergeQuery="true" :replace="true" transition_overlay_target="referrer_urls_grid__body">
@@ -214,7 +214,7 @@
             </column>
           </data-grid>
         </div>
-        <empty-state data-type="composite" data-ref="referrer_urls_empty" data-if="{{!analytics_referrer_urls?.loading &amp;&amp; (analytics_referrer_urls?.data?.data ?? []).length === 0}}" iconName="link" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.referrers.urls_empty_description" class="py-10"/>
+        <empty-state data-type="composite" data-ref="referrer_urls_empty" data-if="{{analytics_referrer_urls !== undefined &amp;&amp; (analytics_referrer_urls?.data?.data ?? []).length === 0}}" iconName="link" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.referrers.urls_empty_description" class="py-10"/>
       </div>
       <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
       <extension-point name="analytics_referrers_widgets" class="space-y-4 mt-4">

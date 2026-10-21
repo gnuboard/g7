@@ -2,7 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
+use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Enums\UserStatus;
 use App\Models\User;
+use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -30,8 +33,24 @@ class IssueCouponDirectRequest extends FormRequest
     {
         return [
             'user_uuids' => ['required', 'array', 'min:1'],
-            'user_uuids.*' => ['string', Rule::exists(User::class, 'uuid')],
+            // 탈퇴 회원에게는 발급하지 않는다 — 로그인할 수 없어 쓰지 못한다(7.1.1). 하나라도 섞이면 요청 전체가 422 다.
+            'user_uuids.*' => ['string', Rule::exists(User::class, 'uuid'), $this->rejectWithdrawn(...)],
         ];
+    }
+
+    /**
+     * 대상 회원이 탈퇴 상태면 실패시킵니다.
+     *
+     * @param  string  $attribute  검증 중인 필드명
+     * @param  mixed  $value  회원 uuid
+     * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음
+     */
+    public function rejectWithdrawn(string $attribute, mixed $value, Closure $fail): void
+    {
+        if (is_string($value) && app(UserRepositoryInterface::class)->findByUuid($value)?->status === UserStatus::Withdrawn->value) {
+            $fail(__('sirsoft-ecommerce::validation.coupon.user_withdrawn'));
+        }
     }
 
     /**
@@ -57,8 +76,6 @@ class IssueCouponDirectRequest extends FormRequest
      */
     public function resolvedUserIds(): array
     {
-        return User::whereIn('uuid', $this->validated()['user_uuids'])
-            ->pluck('id')
-            ->all();
+        return app(UserRepositoryInterface::class)->getIdsByUuids($this->validated()['user_uuids']);
     }
 }

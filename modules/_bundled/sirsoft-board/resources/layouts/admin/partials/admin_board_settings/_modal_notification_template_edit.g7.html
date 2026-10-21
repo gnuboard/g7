@@ -2,6 +2,11 @@
 <partial description="게시판 알림 템플릿 편집 모달 — _global.ecommerce_board_notification_template_form_modal 단일 진실 패턴. list 가 매 진입마다 객체 통째 set, 모달 표시/입력 모두 _global 참조 (사례 13 회피 + modals 섹션 isolated 스코프 회피). 미리보기 데이터도 같은 namespace 의 preview 키에 저장.">
   <modal data-type="composite" data-ref="modal_board_notification_template_edit" title="$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.title" size="xl" :closeOnOverlayClick="false">
     <div data-ref="board_template_form_container" data-blur-until-loaded="{{_global.board_notification_template_form_modal?.isSaving}}" class="flex flex-col max-h-[calc(90vh-140px)] -my-4">
+      <on event="unmount">
+        <!-- 창이 닫혀 본문이 내려갈 때(창 머리 닫기·Esc 포함, 어느 갈래로 닫든) 창 이름 공간을 비운다 — 「특정 회원」 검색 결과(이름·이메일)와
+             고른 회원 이름이 다음에 열 때까지 전역에 남지 않게(7.1.1). 이 틀은 조건·반복 없이 창이 열려 있는 동안 내내 붙어 있고, 여는 쪽이 매번 새로 채운다 -->
+        <set-state target="global" :board_notification_template_form_modal="null"/>
+      </on>
       <div class="flex-1 overflow-y-auto space-y-5 pr-1">
         <div data-ref="board_template_validation_error" data-if="{{_global.board_notification_template_form_modal?.errors}}" class="alert-danger items-start">
           <div class="flex items-start gap-3">
@@ -17,8 +22,8 @@
         <div data-ref="board_template_type_channel" class="flex-center flex-wrap gap-2">
           <span class="text-label-subtle font-medium">$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.type_label</span>
           <span class="text-primary text-sm font-semibold">$t:sirsoft-board.admin.settings.notification_definitions.types.{{_global.board_notification_template_form_modal?.definition?.type ?? ''}}</span>
-          <span class="text-tertiary font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{_global.board_notification_template_form_modal?.definition?.type ?? ''}}</span>
-          <span class="text-sm text-gray-400 dark:text-gray-500">·</span>
+          <span class="text-body font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{_global.board_notification_template_form_modal?.definition?.type ?? ''}}</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400">·</span>
           <span class="text-label-subtle">$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.channel_label</span>
           <span class="text-sm font-medium text-indigo-600 dark:text-indigo-400">{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.name ?? _global.board_notification_template_form_modal?.template?.channel ?? ''}}</span>
         </div>
@@ -28,7 +33,7 @@
             <div data-each="rcpt, rcptIdx in {{_global.board_notification_template_form_modal?.recipients ?? []}}" class="bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2">
               <div class="flex-between">
                 <span class="text-xs font-medium text-purple-700 dark:text-purple-300">$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}</span>
-                <button aria-label="$t:admin.settings.notification_definitions.recipients.remove_rule|index={{rcptIdx + 1}}" type="button" class="p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+                <button aria-label="$t:admin.settings.notification_definitions.recipients.remove_rule|index={{rcptIdx + 1}}" type="button" class="p-1 text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors">
                   <on type="click">
                     <!-- 이 수신 규칙을 뺀다 — 규칙들은 이름이 아니라 «순서»로 구분되므로 그 자리(`rcptIdx`)를 걸러 새 목록을 만든다 -->
                     <set-state target="global" board_notification_template_form_modal.recipients="{{(_global.board_notification_template_form_modal?.recipients ?? []).filter((_, i) => i !== rcptIdx)}}"/>
@@ -87,10 +92,11 @@
                         <!-- 역할 찾기 — 타이핑마다 부르지 않도록 300ms 쉬었다 보낸다. 결과는 목록에 바로 꽂지 않고 따로 담아 두고, 이미 고른 역할과 합쳐 선택지를 만든다(합치지 않으면 검색 결과가 갈릴 때 고른 이름표가 사라진다) -->
                         <api-call :debounce="300" :auth_required="true" target="/api/admin/roles" method="GET">
                           <success>
-                            <set-state target="global" board_notification_template_form_modal.roleSearchResults="{{(response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier }))}}"/>
+                            <!-- 창이 닫힌 뒤(이름 공간 null) 도착한 응답은 쓰지 않는다 — 점 경로로 쓰면 닫힌 창의 이름 공간이 검색 결과(회원 이름·이메일)를 담은 채 다시 생긴다. 액션 if 는 요청 시점 상태를 보므로 값 식(평가 시점 최신 _global)에서 가른다(7.1.1) -->
+                            <set-state target="global" board_notification_template_form_modal="{{_global.board_notification_template_form_modal == null ? null : ({ roleSearchResults: (response.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name, description: r.identifier })) })}}"/>
                           </success>
                           <fail>
-                            <set-state target="global" :board_notification_template_form_modal.roleSearchResults="[]"/>
+                            <set-state target="global" board_notification_template_form_modal="{{_global.board_notification_template_form_modal == null ? null : ({ roleSearchResults: [] })}}"/>
                           </fail>
                           <query search="{{$args[0]}}" :per_page="50"/>
                         </api-call>
@@ -124,15 +130,17 @@
                     <searchable-dropdown data-type="composite" aria-label="$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.users_label')}}" data-ref="board_rcpt_users_{{rcptIdx}}" :multiple="true" value="{{rcpt.value ?? []}}" options="{{[...((rcpt.value ?? []).length > 0 ? (rcpt.value ?? []).map((uid, i) => ({ value: uid, label: String((rcpt.display_names ?? [])[i] ?? uid) })) : []), ...(_global.board_notification_template_form_modal?.userSearchResults ?? []).filter(o => !(rcpt.value ?? []).map(String).includes(String(o.value)))]}}" searchPlaceholder="$t:admin.settings.notification_definitions.recipients.users_placeholder" noResultsText="$t:admin.settings.notification_definitions.recipients.users_no_options" initialText="$t:admin.settings.notification_definitions.recipients.users_placeholder" triggerLabel="$t:admin.settings.notification_definitions.recipients.users_label" selectedCountLabel="$t:admin.settings.notification_definitions.recipients.users_selected_count|count={{(rcpt.value ?? []).length}}" class="w-full">
                       <on event="onSearch">
                         <!-- 회원 찾기 — 역할 칸과 같은 짜임이지만 결과를 담는 자리가 다르다(`userSearchResults`). 두 칸이 한 자리를 나눠 쓰면 한쪽 검색이 다른 쪽 선택지를 갈아치운다.
-                          검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 검색은 빈 검색어를 422 로 거절한다(역할 목록은 빈 검색어면 전체를 주므로 조건이 없다) -->
+                          검색칸을 지우거나 공백만 적으면 부르지 않는다 — 회원 검색은 빈 검색어를 422 로 거절한다(역할 목록은 빈 검색어면 전체를 주므로 조건이 없다)
+                          탈퇴 회원은 수신자로 고르지 않는다(exclude_withdrawn) — 연락처가 익명화되고 바깥 채널 발송이 막혀 골라도 받지 못한다(2026-10-18 관찰). -->
                         <api-call :debounce="300" :auth_required="true" if="{{String($args[0] ?? '').trim() !== ''}}" target="/api/admin/users/search" method="GET">
                           <success>
-                            <set-state target="global" board_notification_template_form_modal.userSearchResults="{{(response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email }))}}"/>
+                            <!-- 창이 닫힌 뒤(이름 공간 null) 도착한 응답은 쓰지 않는다 — 점 경로로 쓰면 닫힌 창의 이름 공간이 검색 결과(회원 이름·이메일)를 담은 채 다시 생긴다. 액션 if 는 요청 시점 상태를 보므로 값 식(평가 시점 최신 _global)에서 가른다(7.1.1) -->
+                            <set-state target="global" board_notification_template_form_modal="{{_global.board_notification_template_form_modal == null ? null : ({ userSearchResults: (response.data ?? []).map(u => ({ value: u.uuid, label: u.name, description: u.email })) })}}"/>
                           </success>
                           <fail>
-                            <set-state target="global" :board_notification_template_form_modal.userSearchResults="[]"/>
+                            <set-state target="global" board_notification_template_form_modal="{{_global.board_notification_template_form_modal == null ? null : ({ userSearchResults: [] })}}"/>
                           </fail>
-                          <query keyword="{{$args[0]}}"/>
+                          <query keyword="{{$args[0]}}" exclude_withdrawn="1"/>
                         </api-call>
                       </on>
                       <on event="onChange">
@@ -265,9 +273,12 @@
           </button>
         </div>
         <div class="flex gap-2">
+          <!-- 취소 — 편집 창을 닫고 창 이름 공간의 폼 상태를 비운다 -->
           <button type="button" class="text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.board_notification_template_form_modal?.isSaving ?? false}}">
             <on type="click">
               <close-modal target="modal_board_notification_template_edit"/>
+              <!-- 취소로 닫으면 창 이름 공간을 바로 비운다(7.1.1) -->
+              <set-state target="global" :board_notification_template_form_modal="null"/>
             </on>
             $t:common.cancel
           </button>

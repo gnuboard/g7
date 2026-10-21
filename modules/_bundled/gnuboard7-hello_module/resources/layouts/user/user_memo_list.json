@@ -58,7 +58,7 @@
                         "id": "user_memo_empty",
                         "type": "basic",
                         "name": "Span",
-                        "if": "{{(memos?.data?.data ?? []).length === 0}}",
+                        "if": "{{memos !== undefined && ((memos?.data?.data ?? []).length === 0)}}",
                         "props": {
                             "className": "block py-8 text-center text-sm text-gray-500 dark:text-gray-400"
                         },

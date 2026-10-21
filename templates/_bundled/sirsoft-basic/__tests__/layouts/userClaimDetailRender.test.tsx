@@ -592,7 +592,7 @@ describe('클레임 신청서 상세 — 렌더', () => {
         outstanding_amount: 6000,
         outstanding_amount_formatted: '6,000원',
         charge_method_label: '승인 시점 결제',
-        // 결제 권한(7.1.0 G31) — 신청서 응답은 `can_pay` 를 늘 싣고 [결제하기]는 `can_pay !== true` 면 잠긴다.
+        // 결제 권한(7.1.0 abilities 게이트) — 신청서 응답은 `can_pay` 를 늘 싣고 [결제하기]는 `can_pay !== true` 면 잠긴다.
         can_pay: true,
         pending_payment: {
           payment_number: 'CP20260901-0002',
@@ -627,7 +627,7 @@ describe('클레임 신청서 상세 — 렌더', () => {
    * 서버가 거절하는데 화면에 고를 자리가 없으면 사용자는 「미수납 ○○원 + 결제하기」를 보면서
    * 누를 때마다 같은 거절을 받고, 빠져나갈 길이 신청서 철회뿐이다.
    *
-   * 회귀 배경 (#599 3차 실측 F-1·F-2, 2026-09-22): 카탈로그에서 `point` 를 내리자 이미 `point` 로
+   * 회귀 배경 (#599 실측, 2026-09-22): 카탈로그에서 `point` 를 내리자 이미 `point` 로
    * 만들어진 대기 건이 계속 「포인트결제」를 안내하며 422 만 돌려줬다.
    *
    * @scenario claim_type=exchange, screen=detail, entry=none
@@ -1203,7 +1203,7 @@ describe('클레임 신청서 상세 — 렌더', () => {
    */
   it('교환 대상 — 이 교환에 얹은 추가옵션이 이름으로 나온다', async () => {
     // 신청 시점에 이름과 추가금이 동결된다. 예전에는 선택 ID 만 남아 이 자리에 아무것도
-    // 그릴 수 없었고, 구매자는 자기가 무엇을 골랐는지 확인할 수 없었다(2026-09-01 4차 실측).
+    // 그릴 수 없었고, 구매자는 자기가 무엇을 골랐는지 확인할 수 없었다(2026-09-01 실측).
     const claim = exchangeDetail();
     claim.items[0].new_additional_options = [
       { name: '선물 포장', price_adjustment: 3000, price_adjustment_formatted: '3,000원', custom_text: '' },

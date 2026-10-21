@@ -1,10 +1,6 @@
 <partial description="Board Form - Basic Tab Content" _e2e_allow="e2e:allow 반응 유형 체크박스 시각 스타일(배경 박스·들여쓰기·아이콘·정렬)만 변경, 클릭 동작(setState/hasChanges)은 기존과 동일. 렌더 분기·바인딩은 admin-board-reaction-settings.test.tsx(Vitest 레이아웃 테스트)로 커버, MCP 실브라우저로 시각 회귀 확인.">
   <!-- 게시판 폼 「기본」 탭 — 이름·주소(slug)·유형·분류처럼 게시판의 정체를 정하는 값들과, 켜고 끄는 성격의 스위치(활성·비밀글·조회수 표시·신고 사용·관리자 메뉴 등재)를 담는다. 읽기 전용일 때는 카드 전체가 잠긴 모습으로 바뀐다 -->
   <div data-ref="section_basic_card" class="admin-card">
-    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
-      <variant when="readonly">opacity-60</variant>
-      <variant when="normal"></variant>
-    </class-map>
     <h3 data-ref="section_basic_settings" class="card-title">$t:sirsoft-board.admin.form.tabs.basic</h3>
     <div data-ref="section_basic_fields" class="row-stack">
       <div data-ref="field_is_active" class="flex-start justify-between">
@@ -84,7 +80,7 @@
         <p data-ref="field_categories_description" class="text-tertiary mb-2">$t:sirsoft-board.admin.form.descriptions.categories</p>
         <tag-input data-type="composite" data-ref="field_categories_input" name="categories" options="{{_local.form?.category_options ?? []}}" :creatable="true" disabled="{{_computed.isReadOnly}}"/>
         <span data-if="{{_local.errors?.categories}}" class="form-error-xs mt-1">{{_local.errors?.categories?.[0] ?? ''}}</span>
-        <p data-ref="field_categories_notice" class="text-xs text-amber-600 dark:text-amber-400 mt-2">$t:sirsoft-board.admin.form.descriptions.categories_notice</p>
+        <p data-ref="field_categories_notice" class="text-xs text-amber-700 dark:text-amber-400 mt-2">$t:sirsoft-board.admin.form.descriptions.categories_notice</p>
       </div>
       <div data-ref="field_secret_mode" class="flex-between">
         <label data-ref="field_secret_mode_label" class="text-heading">

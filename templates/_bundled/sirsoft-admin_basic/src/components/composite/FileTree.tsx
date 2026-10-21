@@ -120,8 +120,8 @@ interface TreeSection {
 /** 배지 색 — 색만으로 구분하지 않도록 글자도 함께 싣는다. */
 const BADGE_TONE: Record<string, string> = {
   amber: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
-  indigo: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
-  red: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
+  indigo: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300',
+  red: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
   gray: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
 };
 
@@ -717,7 +717,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                 <>
                   <Icon
                     name={open ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-right'}
-                    className="text-[10px] w-3 text-gray-400 dark:text-gray-500 shrink-0"
+                    className="text-[10px] w-3 text-gray-500 dark:text-gray-500 shrink-0"
                   />
                   <Icon
                     name={
@@ -730,14 +730,14 @@ export const FileTree: React.FC<FileTreeProps> = ({
                             : 'fa-regular fa-folder'
                     }
                     className={`text-xs w-4 shrink-0 ${
-                      item.groupKind ? 'text-gray-500 dark:text-gray-400' : 'text-amber-500 dark:text-amber-400'
+                      item.groupKind ? 'text-gray-500 dark:text-gray-400' : 'text-amber-600 dark:text-amber-400'
                     }`}
                   />
                   <Span className={`flex-1 min-w-0 truncate ${rowText} text-gray-700 dark:text-gray-200`}>
                     <HighlightText text={item.label} keyword={searchKeyword} />
                   </Span>
                   {item.pending && (
-                    <Span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 shrink-0">
+                    <Span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 shrink-0">
                       {t('admin.templates.layout_edit.tree.pending_folder')}
                     </Span>
                   )}
@@ -753,7 +753,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                     </Span>
                   )}
                   {dirtyCount === 0 && fileCount > 0 && (
-                    <Span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">{fileCount}</Span>
+                    <Span className="text-[10px] text-gray-500 dark:text-gray-400 shrink-0">{fileCount}</Span>
                   )}
                 </>
               ),
@@ -784,12 +784,12 @@ export const FileTree: React.FC<FileTreeProps> = ({
             role: 'treeitem',
             selected: isSelected,
             onActivate: () => onSelect?.(node.key),
-            extraClass: `${link ? 'relative ' : ''}${node.meta?.disabled ? 'opacity-50' : ''}`,
+            extraClass: `${link ? 'relative ' : ''}`,
             children: (
               <>
                 <Icon
                   name={node.kind === 'extension' ? 'fa-solid fa-circle-plus' : 'fa-regular fa-file-code'}
-                  className="text-xs w-4 shrink-0 text-gray-400 dark:text-gray-500"
+                  className="text-xs w-4 shrink-0 text-gray-500 dark:text-gray-500"
                 />
                 {link ? (
                   <A
@@ -843,7 +843,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                       tabIndex={-1}
                       aria-label={t('admin.templates.layout_edit.file.rename')}
                       title={t('admin.templates.layout_edit.file.rename')}
-                      className="px-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                      className="px-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                       onClick={(event: React.MouseEvent) => {
                         event.stopPropagation();
                         onRename?.(node.key);
@@ -856,7 +856,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                       tabIndex={-1}
                       aria-label={t('admin.templates.layout_edit.file.delete')}
                       title={t('admin.templates.layout_edit.file.delete')}
-                      className="px-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                      className="px-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
                       onClick={(event: React.MouseEvent) => {
                         event.stopPropagation();
                         onDelete?.(node.key);
@@ -884,7 +884,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                   ariaLabel: t('admin.templates.layout_edit.search.goto_line', { line: line.line }),
                   children: (
                     <>
-                      <Span className="font-mono text-[11px] text-gray-400 dark:text-gray-500 w-9 text-right shrink-0">
+                      <Span className="font-mono text-[11px] text-gray-500 dark:text-gray-400 w-9 text-right shrink-0">
                         {line.line}
                       </Span>
                       <Span className="font-mono text-[11px] text-gray-500 dark:text-gray-400 flex-1 min-w-0 truncate">
@@ -946,12 +946,12 @@ export const FileTree: React.FC<FileTreeProps> = ({
                 <>
                   <Icon
                     name={open ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-right'}
-                    className="text-[10px] w-3 text-gray-400 dark:text-gray-500 shrink-0"
+                    className="text-[10px] w-3 text-gray-500 dark:text-gray-500 shrink-0"
                   />
                   <Span className="flex-1 min-w-0 truncate text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                     {t(section.labelKey)}
                   </Span>
-                  <Span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">{section.fileCount}</Span>
+                  <Span className="text-[10px] text-gray-500 dark:text-gray-400 shrink-0">{section.fileCount}</Span>
                 </>
               ),
             })}

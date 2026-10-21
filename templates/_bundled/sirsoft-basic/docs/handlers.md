@@ -447,6 +447,12 @@ sirsoft-admin_basic과 동일한 localStorage 키(`g7_color_scheme`)를 사용�
 
 모든 옵션 그룹 선택 완료 시 선택 아이템 목록에 자동 추가합니다.
 
+줄을 담거나(같은 조합·맞는 옵션 없음으로 거절해도) 옵션 선택 `currentSelection` 을 **null 로 먼저 지우고 `{}` 로** 비웁니다.
+engine-v1.81.2 이전 엔진은 커스텀 핸들러의 쓰기를 `setLocal` 로 승격한 뒤 렌더러 상태에 깊게 다시 병합해, `{}` 한 번으로는
+앞 선택이 화면에 남았습니다 — 그러면 다음에 윗칸만 골라도 옛 아랫칸 값과 합쳐져 줄이 저절로 담겼고, 담긴 줄의
+수량·삭제·추가옵션을 바꾸면 `getLocal()` 의 옵션 선택까지 앞 선택으로 되살아났습니다(7.1.1). engine-v1.81.2 부터는 엔진이
+shallow 쓰기를 그대로 지켜 `{}` 한 번으로 비워집니다. null 선행은 이전 엔진과의 호환과 이중 안전장치로 남겨 둡니다.
+
 ```html
 <on type="click">
   <action handler="sirsoft-basic.addSelectedItemIfComplete" newGroupName="{{groupName}}" newValue="{{selectedValue}}" optionGroups="{{product?.data?.option_groups}}" options="{{product?.data?.options}}"/>

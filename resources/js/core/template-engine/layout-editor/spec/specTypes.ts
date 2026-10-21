@@ -217,7 +217,7 @@ export type BindingSourceKind =
  *
  * 컴포넌트의 어떤 prop 이 "데이터를 바라보는" prop 인지를 명시 선언한다. [속성] 탭
  * "데이터 연결" 전용 영역이 본 선언을 행으로 렌더하고, 각 행은 **항상 바인딩 모드**다
- * (정적↔바인딩 토글 없음 — 1차 결함 근절). 선택 시 `{{<source>.<path>}}` 가
+ * (정적↔바인딩 토글 없음 — 결함 근절). 선택 시 `{{<source>.<path>}}` 가
  * `props[propKey]` 에 기입된다(런타임 `DataBindingEngine` 동일). 구조/수치(열 수·간격·
  * 페이지크기)·enum 선택·boolean config 는 **dataProps 비대상**(propControls 정적 편집).
  *

@@ -1,0 +1,33 @@
+feature: 관리자가 탈퇴 회원에게 주는 혜택(마일리지 수동 지급·유효기간 연장·쿠폰 직접 발급)을 서버가 거절한다 (7.1.1)
+
+description: |
+  판정: 받을 회원을 고르는 창은 탈퇴 회원을 검색하지 않게 됐지만(admin-member-picker-excludes-withdrawn),
+  서버는 탈퇴 회원에게도 그대로 지급·발급했다 — 관리자 지급(`UserMileageService::adminEarn`)은 주문 적립·환불 반환과 달리
+  탈퇴 즉시 소멸(`forfeitIfWithdrawn`)을 거치지 않아 잔액이 남고, 쿠폰 직접 발급(`issueDirectlyToUser`)은 회원 상태를 보지 않으며,
+  두 요청 검증은 `Rule::exists(User, uuid)` 뿐이었다. 탈퇴 회원은 로그인할 수 없어 받은 것을 쓰지 못한다.
+  수동 지급·쿠폰 직접 발급은 검증 단계 422(다국어 메시지)로, 서비스도 같은 판정으로 막는다(확장·훅이 서비스를 바로 부르는 경로).
+  유효기간 연장도 탈퇴 회원 적립건이면 422 다(남은 잔액을 늘리는 쓰기). 수동 차감은 받는다 — 7.1.0 에서 탈퇴 회원에게 들어간
+  관리자 지급 잔액을 운영자가 정리할 수단이라서다.
+
+# axis 의미:
+#   grant  — 관리자 쓰기(마일리지 지급 / 마일리지 차감 / 유효기간 연장 / 쿠폰 직접 발급)
+#   member — 대상 회원 상태(정상 / 탈퇴)
+axes:
+  grant: [mileage_earn, mileage_deduct, mileage_extend, coupon_direct]
+  member: [active, withdrawn]
+
+exclusions:
+  - { grant: mileage_deduct, member: active, reason: "정상 회원 차감은 MileageTransactionControllerTest::test_store_admin_deduct_within_balance 가 고정 — 이번 변경 무관" }
+
+effects:
+  - withdrawn_member_grant_rejected_with_422     # 탈퇴 회원 대상 지급·연장·직접 발급은 422(지급·발급은 필드 검증 메시지)
+  - nothing_is_written_for_withdrawn_member      # 거절된 요청은 적립건·발급 행·만료일을 바꾸지 않는다(섞인 발급은 정상 회원에게도 발급 안 함)
+  - active_member_grant_still_succeeds           # 정상 회원 지급·연장·발급은 종전과 같다
+  - service_guard_rejects_withdrawn_member       # 서비스를 바로 불러도 거절(마일리지 검증 예외 · 쿠폰 사유 user_withdrawn)
+  - withdrawn_member_leftover_can_be_deducted    # 탈퇴 회원에게 남은 잔액은 수동 차감으로 정리할 수 있다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/AdminGrantRejectsWithdrawnMemberTest.php
+
+validation:
+  browser_check: 재실측 — 관리자 마일리지 내역 「수동 지급/차감」·쿠폰 목록 「직접 발급」 창은 탈퇴 회원을 검색하지 않으므로, 브라우저에서는 탈퇴 회원 uuid 를 실은 요청을 개발자 도구로 다시 보내 422 와 문구를 본다

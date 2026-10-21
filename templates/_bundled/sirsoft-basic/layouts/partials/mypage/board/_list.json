@@ -78,7 +78,7 @@
                             "props": {
                                 "name": "file-text",
                                 "size": "lg",
-                                "className": "mx-auto text-gray-400 dark:text-gray-500 mb-2"
+                                "className": "mx-auto text-gray-500 dark:text-gray-500 mb-2"
                             }
                         },
                         {
@@ -113,7 +113,7 @@
                             "props": {
                                 "name": "comment",
                                 "size": "lg",
-                                "className": "mx-auto text-gray-400 dark:text-gray-500 mb-2"
+                                "className": "mx-auto text-gray-500 dark:text-gray-500 mb-2"
                             }
                         },
                         {
@@ -148,7 +148,7 @@
                             "props": {
                                 "name": "eye",
                                 "size": "lg",
-                                "className": "mx-auto text-gray-400 dark:text-gray-500 mb-2"
+                                "className": "mx-auto text-gray-500 dark:text-gray-500 mb-2"
                             }
                         },
                         {
@@ -183,7 +183,7 @@
                             "props": {
                                 "name": "heart",
                                 "size": "lg",
-                                "className": "mx-auto text-gray-400 dark:text-gray-500 mb-2"
+                                "className": "mx-auto text-gray-500 dark:text-gray-500 mb-2"
                             }
                         },
                         {
@@ -218,7 +218,7 @@
                             "props": {
                                 "name": "flag",
                                 "size": "lg",
-                                "className": "mx-auto text-gray-400 dark:text-gray-500 mb-2"
+                                "className": "mx-auto text-gray-500 dark:text-gray-500 mb-2"
                             }
                         },
                         {
@@ -276,6 +276,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-posts' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
                     },
                     "children": [
@@ -329,6 +330,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-comments' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
                     },
                     "children": [
@@ -382,6 +384,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "data-testid": "mypage-subtab-my-reactions",
                         "className": "px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-reactions' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
                     },
@@ -436,6 +439,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "data-testid": "mypage-subtab-my-reports",
                         "className": "px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 {{(_global.boardActivitySubTab ?? 'my-posts') === 'my-reports' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}}"
                     },

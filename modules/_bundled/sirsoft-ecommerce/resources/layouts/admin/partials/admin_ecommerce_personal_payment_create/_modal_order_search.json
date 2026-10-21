@@ -139,7 +139,7 @@
             "props": {
                 "className": "text-sm text-secondary mb-3"
             },
-            "text": "7개의 주문이 검색되었습니다"
+            "text": "$t:sirsoft-ecommerce.admin.sample.fmt.orders_found|count=7"
         },
         {
             "id": "order_search_results",
@@ -152,7 +152,7 @@
                 {
                     "id": "order_item_1",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
                     "actions": [
                         {
                             "type": "click",
@@ -160,12 +160,13 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
+                        "type": "button",
+                        "className": "w-full justify-start text-left flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
                                 "className": "flex-center w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg justify-center flex-shrink-0"
                             },
@@ -182,14 +183,14 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
-                                "className": "flex-1 min-w-0"
+                                "className": "block flex-1 min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
                                         "className": "flex-center gap-2 mb-1"
                                     },
@@ -214,27 +215,27 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-secondary text-sm"
+                                        "className": "block text-secondary text-sm"
                                     },
-                                    "text": "2025-10-27 · 김철수"
+                                    "text": "$t:sirsoft-ecommerce.admin.sample.fmt.date_name|date=2025-10-27|name=$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu"
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-secondary text-sm truncate"
+                                        "className": "block text-secondary text-sm truncate"
                                     },
-                                    "text": "프리미엄 멤버십 1년"
+                                    "text": "$t:sirsoft-ecommerce.admin.sample.products.premium_membership_1y"
                                 }
                             ]
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
-                                "className": "text-heading font-medium flex-shrink-0"
+                                "className": "block text-heading font-medium flex-shrink-0"
                             },
                             "text": "₩120,000"
                         }
@@ -243,7 +244,7 @@
                 {
                     "id": "order_item_2",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
                     "actions": [
                         {
                             "type": "click",
@@ -251,12 +252,13 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
+                        "type": "button",
+                        "className": "w-full justify-start text-left flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
                                 "className": "flex-center w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg justify-center flex-shrink-0"
                             },
@@ -273,14 +275,14 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
-                                "className": "flex-1 min-w-0"
+                                "className": "block flex-1 min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
                                         "className": "flex-center gap-2 mb-1"
                                     },
@@ -305,27 +307,27 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-secondary text-sm"
+                                        "className": "block text-secondary text-sm"
                                     },
-                                    "text": "2025-10-27 · 이영희"
+                                    "text": "$t:sirsoft-ecommerce.admin.sample.fmt.date_name|date=2025-10-27|name=$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-secondary text-sm truncate"
+                                        "className": "block text-secondary text-sm truncate"
                                     },
-                                    "text": "스탠다드 플랜 6개월"
+                                    "text": "$t:sirsoft-ecommerce.admin.sample.products.standard_plan_6m"
                                 }
                             ]
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
-                                "className": "text-heading font-medium flex-shrink-0"
+                                "className": "block text-heading font-medium flex-shrink-0"
                             },
                             "text": "₩50,000"
                         }
@@ -334,7 +336,7 @@
                 {
                     "id": "order_item_3",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
                     "actions": [
                         {
                             "type": "click",
@@ -342,12 +344,13 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
+                        "type": "button",
+                        "className": "w-full justify-start text-left flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
                                 "className": "flex-center w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg justify-center flex-shrink-0"
                             },
@@ -364,14 +367,14 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
-                                "className": "flex-1 min-w-0"
+                                "className": "block flex-1 min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
                                         "className": "flex-center gap-2 mb-1"
                                     },
@@ -396,27 +399,27 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-secondary text-sm"
+                                        "className": "block text-secondary text-sm"
                                     },
-                                    "text": "2025-10-26 · 박민수"
+                                    "text": "$t:sirsoft-ecommerce.admin.sample.fmt.date_name|date=2025-10-26|name=$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-secondary text-sm truncate"
+                                        "className": "block text-secondary text-sm truncate"
                                     },
-                                    "text": "베이직 플랜 3개월"
+                                    "text": "$t:sirsoft-ecommerce.admin.sample.products.basic_plan_3m"
                                 }
                             ]
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
-                                "className": "text-heading font-medium flex-shrink-0"
+                                "className": "block text-heading font-medium flex-shrink-0"
                             },
                             "text": "₩30,000"
                         }
@@ -425,7 +428,7 @@
                 {
                     "id": "order_item_4",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
                     "actions": [
                         {
                             "type": "click",
@@ -433,12 +436,13 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
+                        "type": "button",
+                        "className": "w-full justify-start text-left flex-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors border border-gray-200 dark:border-gray-700"
                     },
                     "children": [
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
                                 "className": "flex-center w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg justify-center flex-shrink-0"
                             },
@@ -455,14 +459,14 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
-                                "className": "flex-1 min-w-0"
+                                "className": "block flex-1 min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
                                         "className": "flex-center gap-2 mb-1"
                                     },
@@ -487,27 +491,27 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-secondary text-sm"
+                                        "className": "block text-secondary text-sm"
                                     },
-                                    "text": "2025-10-26 · 정수진"
+                                    "text": "$t:sirsoft-ecommerce.admin.sample.fmt.date_name|date=2025-10-26|name=$t:sirsoft-ecommerce.admin.sample.people.jung_sujin"
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Div",
+                                    "name": "Span",
                                     "props": {
-                                        "className": "text-secondary text-sm truncate"
+                                        "className": "block text-secondary text-sm truncate"
                                     },
-                                    "text": "프로페셔널 플랜 1년"
+                                    "text": "$t:sirsoft-ecommerce.admin.sample.products.professional_plan_1y"
                                 }
                             ]
                         },
                         {
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Span",
                             "props": {
-                                "className": "text-heading font-medium flex-shrink-0"
+                                "className": "block text-heading font-medium flex-shrink-0"
                             },
                             "text": "₩200,000"
                         }

@@ -212,7 +212,7 @@
                                                                                     "handler": "setState",
                                                                                     "params": {
                                                                                         "target": "global",
-                                                                                        "privacyTargets": "{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                                                                        "privacyTargets": "{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false, loadFailed: false })}}"
                                                                                     }
                                                                                 },
                                                                                 {

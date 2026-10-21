@@ -14,7 +14,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{(_local.form?.shipping?.available_countries ?? []).length === 0}}",
+            "if": "{{settings !== undefined && ((_local.form?.shipping?.available_countries ?? []).length === 0)}}",
             "props": {
                 "className": "p-8 text-center text-label-subtle"
             },
@@ -24,7 +24,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "globe",
-                        "className": "text-2xl text-gray-300 dark:text-gray-600 mb-2"
+                        "className": "text-2xl text-gray-500 dark:text-gray-500 mb-2"
                     }
                 },
                 {
@@ -212,7 +212,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "p-1 text-gray-500 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                         "title": "$t:common.delete",
                                                         "disabled": "{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false)}}"
                                                     },

@@ -118,7 +118,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "globe",
-                        "className": "text-3xl text-gray-300 dark:text-gray-600 mb-2"
+                        "className": "text-3xl text-gray-500 dark:text-gray-500 mb-2"
                     }
                 },
                 {
