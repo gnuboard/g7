@@ -22,7 +22,7 @@
         "email": "contact@gnuboard.com",
         "url": "https://gnuboard.com"
     },
-    "release_date": "2026-10-21",
+    "release_date": "2026-10-22",
     "g7_version": ">=7.1.1",
     "dependencies": {
         "modules": {
