@@ -20,7 +20,7 @@ import React from 'react';
 // 기본 컴포넌트 import
 import { Div } from '../basic/Div';
 import { A } from '../basic/A';
-import { Button } from '../basic/Button';
+import { LinkButton } from '../../support/LinkButton';
 import { H3 } from '../basic/H3';
 import { H4 } from '../basic/H4';
 import { P } from '../basic/P';
@@ -180,9 +180,10 @@ const Footer: React.FC<FooterProps> = ({
         >
           {/* 사이트 정보 — 데스크톱(5열)에서만 2칸 차지 */}
           <Div style={isDesktop ? { gridColumn: 'span 2 / span 2' } : undefined}>
-            <H3 className="text-lg font-bold text-gray-900 dark:text-white">{siteName}</H3>
+            {/* 이름·설명은 줄을 바꿔 모두 보인다 — 공백 없는 긴 이름도 칸을 넘지 않는다(#143). */}
+            <H3 className="text-lg font-bold text-gray-900 dark:text-white break-words">{siteName}</H3>
             {siteDescription && (
-              <P className="mt-2 text-sm text-gray-600 dark:text-gray-400">{siteDescription}</P>
+              <P className="mt-2 text-sm text-gray-600 dark:text-gray-400 break-words">{siteDescription}</P>
             )}
 
             {/* 소셜 링크 */}
@@ -213,12 +214,13 @@ const Footer: React.FC<FooterProps> = ({
               <Ul className="mt-4 space-y-2">
                 {group.links.map((link, linkIndex) => (
                   <Li key={linkIndex}>
-                    <Button
-                      onClick={() => navigate(link.href)}
+                    <LinkButton
+                      href={link.href}
+                      onNavigate={() => navigate(link.href)}
                       className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer"
                     >
                       {link.label}
-                    </Button>
+                    </LinkButton>
                   </Li>
                 ))}
               </Ul>
@@ -231,7 +233,8 @@ const Footer: React.FC<FooterProps> = ({
           className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800 flex justify-between items-center gap-4"
           style={{ flexDirection: isMobile ? 'column' : 'row' }}
         >
-          <P className="text-sm text-gray-500 dark:text-gray-400">
+          {/* 저작권 줄은 「Powered by」 와 같은 flex 줄이라 줄어들 수 있게 하고 아무 데서나 줄을 바꾼다(#143). */}
+          <P className="text-sm text-gray-500 dark:text-gray-400 min-w-0 wrap-anywhere">
             {copyrightText || `© ${currentYear} ${siteName}. All rights reserved.`}
           </P>
           <P className="text-sm text-gray-500 dark:text-gray-400">

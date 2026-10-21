@@ -45,7 +45,7 @@ class ConfirmPurchaseWarningAccuracyTest extends ModuleTestCase
      * `modules/sirsoft-ecommerce/tests/Unit/Lang` 는 5단계다. 6단계로 고정하면 활성
      * 사본에서 저장소 **밖**(`htdocs/`)을 가리켜, 언어 파일이 멀쩡한데도
      * `assertFileExists` 가 「파일이 없다」로 터진다 — 가드가 스스로를 무력화한다
-     * (#599 세션2 계획서준수검증 2차 결함3).
+     * (#599 계획서 준수 검증 결함).
      *
      * 그래서 `artisan` 과 `composer.json` 이 **함께** 있는 디렉터리를 만날 때까지
      * 올라간다. 둘 중 하나만 보면 다른 PHP 프로젝트에서도 멈출 수 있어 둘 다 요구한다.
@@ -94,6 +94,12 @@ class ConfirmPurchaseWarningAccuracyTest extends ModuleTestCase
         ];
     }
 
+    /**
+     * 지정한 JSON 파일에서 구매확정 경고 문구를 읽어 돌려줍니다.
+     *
+     * @param  string  $path  경고 문구가 담긴 JSON 파일의 절대 경로
+     * @return string|null 경고 문구, 파일이나 키가 없으면 null
+     */
     private function readWarningAt(string $path): ?string
     {
         if (! is_file($path)) {
@@ -117,6 +123,12 @@ class ConfirmPurchaseWarningAccuracyTest extends ModuleTestCase
         return is_string($node) ? $node : null;
     }
 
+    /**
+     * 템플릿 언어 파셜에서 로케일별 구매확정 경고 문구를 읽어 돌려줍니다.
+     *
+     * @param  string  $locale  읽을 로케일 코드(ko·en 등)
+     * @return string|null 경고 문구, 파일이나 키가 없으면 null
+     */
     private function readWarning(string $locale): ?string
     {
         return $this->readWarningAt(
@@ -130,6 +142,8 @@ class ConfirmPurchaseWarningAccuracyTest extends ModuleTestCase
      * @scenario surface=claim_contract
      *
      * @effects confirmed_status_keeps_exchange_and_return_open
+     *
+     * @return void 반환값 없음
      */
     public function test_confirmed_status_still_allows_exchange_and_return(): void
     {
@@ -163,6 +177,8 @@ class ConfirmPurchaseWarningAccuracyTest extends ModuleTestCase
      * @scenario surface=warning_copy
      *
      * @effects warning_does_not_claim_exchange_or_return_blocked
+     *
+     * @return void 반환값 없음
      */
     public function test_confirm_warning_does_not_claim_exchange_or_return_are_blocked(): void
     {
@@ -211,6 +227,8 @@ class ConfirmPurchaseWarningAccuracyTest extends ModuleTestCase
      * @scenario surface=warning_copy
      *
      * @effects warning_does_not_claim_exchange_or_return_blocked
+     *
+     * @return void 반환값 없음
      */
     public function test_every_locale_copy_of_the_warning_keeps_exchange_and_return_open(): void
     {

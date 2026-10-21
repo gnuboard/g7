@@ -28,6 +28,9 @@
 7. [RadioGroup](#radiogroup)
 8. [SearchBar](#searchbar)
 9. [HtmlContent](#htmlcontent)
+10. [SearchableDropdown](#searchabledropdown)
+11. [TabNavigation · TabNavigationScroll](#tabnavigation--tabnavigationscroll)
+12. [메뉴 · 카드 · 바로가기 링크](#메뉴--카드--바로가기-링크)
 
 ---
 
@@ -297,6 +300,10 @@
 | `defaultVariant` | string | - | 기본 태그 색상 |
 | `name` | string | - | 폼 필드 이름 |
 | `className` | string | - | 추가 CSS 클래스 |
+| `aria-label` | string | - | 입력칸 접근 가능한 이름. 있으면 곁 라벨을 잇지 않는다. 보이는 제목이 없는 자리에서는 반드시 준다 |
+| `aria-labelledby` | string | - | 입력칸 이름이 될 요소 id |
+
+> **MultilingualTagInput** 도 같은 `aria-label`·`aria-labelledby` 를 받는다. 이름 차례는 `aria-label` → `aria-labelledby` → 곁 라벨(`form-label` 등) → (마지막 수단) `placeholder` 다 — placeholder 는 입력하면 사라지므로 곁 라벨이 없는 자리에서는 `aria-label` 을 준다.
 
 ### TagOption 구조
 
@@ -398,6 +405,7 @@
 | `name` | string | - | 폼 필드 이름 |
 | `showCodeOnMobile` | boolean | `false` | 모바일에서 언어 코드로 표시 |
 | `className` | string | - | 추가 CSS 클래스 |
+| `ariaLabel` | string | - | 입력칸 접근 가능한 이름(`aria-label` 로 줘도 같다). 켜진 언어가 둘 이상이면 각 언어 칸이 「{이름} ({언어명})」, 하나면 「{이름}」으로 읽힌다. 없으면 컴포넌트 바깥 곁의 라벨(`form-label` 등)을 잇는다 — 표 안처럼 곁 라벨이 없는 자리에서는 반드시 준다 |
 
 ### 레이아웃 모드
 
@@ -770,6 +778,68 @@ G7에서는 콘텐츠의 렌더링 모드를 DB의 `*_mode` 컬럼(`'text'` / `'
 - `isHtml=true`: DOMPurify FORBID 방식 — `script`, `iframe`, `form` 등 위험 태그 차단, 나머지 허용
 - 외부 링크(`http://`, `https://`)에 `rel="noopener noreferrer"` 자동 추가
 - `purifyConfig`로 커스터마이징 가능하나, 보안 기본값(`FORBID_TAGS`, `FORBID_ATTR`)은 항상 유지
+
+---
+
+## SearchableDropdown
+
+**템플릿**: `sirsoft-admin_basic`
+
+검색어로 옵션을 좁혀 고르는 드롭다운(단일·다중). 트리거 단추는 「{이름} {현재 값}」으로 읽힌다.
+
+### 접근 가능한 이름
+
+| Prop | 타입 | 기본값 | 설명 |
+| ---- | ---- | ------ | ---- |
+| `aria-label` | string | - | 트리거 단추 이름. 단추는 「{이름} {현재 값}」(예: 「작성자 홍길동」)으로 읽힌다. 고른 값이 없으면(값이 빈 문자열이거나 옵션에 없는 값도 포함) 안내 글자(`triggerLabel`)는 잇지 않고 이름만 읽힌다 |
+| `aria-labelledby` | string | - | 이름이 될 요소 id. 단추는 「{그 요소 글자} {현재 값}」으로 읽힌다 |
+
+둘 다 없으면 단추 앞의 곁 라벨(`form-label`·`filter-label` 등)을 이름으로 잇고 현재 값을 뒤에 붙인다. 곁 라벨도 없으면 고른 값만 읽혀 무엇을 고르는 칸인지 알 수 없으므로, 라벨 없는 자리에서는 `aria-label` 을 준다. 펼친 목록의 검색칸은 「검색」으로 읽힌다.
+
+---
+
+## TabNavigation · TabNavigationScroll
+
+**템플릿**: `sirsoft-admin_basic`
+
+넓은 화면에서는 탭 단추, 좁은 화면(반응형 기준 미만)에서는 선택 상자 하나로 그린다. 좁은 화면 선택 상자는 「{이름} {현재 탭}」으로 읽힌다.
+
+| Prop | 타입 | 기본값 | 설명 |
+| ---- | ---- | ------ | ---- |
+| `aria-label` | string | 「섹션 이동」 | 좁은 화면 선택 상자의 이름. 없으면 공용 문구 「섹션 이동」(`common.section_navigation`)이 이름이 된다 — 이름이 없으면 현재 탭 글자만 읽혀 무엇을 고르는 칸인지 알 수 없다 |
+| `tabs[].href` | string | - | 탭이 가리키는 주소(예: `/admin/settings?tab=mail`). 주면 넓은 화면 탭을 `<a role="tab" href>` 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열린다. 보통 클릭은 지금처럼 `onTabChange`(저장 안 한 변경 확인 흐름 유지), TabNavigationScroll 은 종전 스크롤 이동. 비활성 탭은 종전 단추 (#757) |
+
+사용자 템플릿(`sirsoft-basic`) TabNavigation 도 `tabs[].href` 를 받는다 — 주면 그 탭이 `<a role="tab" aria-selected href>`, 묶음은 `role="tablist"`(화살표 키 이동·좁은 화면 선택 상자는 없다). 사용자 템플릿에만 있는 prop:
+
+| Prop | 타입 | 기본값 | 설명 |
+| ---- | ---- | ------ | ---- |
+| `tabHrefMergeQuery` | boolean | `false` | 탭 주소(`tabs[].href`)에 현재 주소의 쿼리를 합친다(탭 주소 자신의 키가 이긴다). 같은 화면 안에서 쿼리만 바꾸는 탭(예: 상품 상세 `?tab=`)이 목록 문맥을 이고 갈 때 (#757) |
+
+---
+
+## 메뉴 · 카드 · 바로가기 링크
+
+**템플릿**: `sirsoft-admin_basic`, `sirsoft-basic`(표의 「사용자 템플릿」 행) (#757)
+
+화면을 옮기는 항목에 주소를 주면 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 된다. 보통 클릭은 지금처럼 각 컴포넌트의 콜백으로 간다. 보통 클릭 판정은 엔진 `G7Core.navigation.isPlainLeftClick` 한 곳이다([A · Pagination 링크](component-props.md#a--pagination-링크)). 바깥 주소(다른 출처 `http(s)://`)는 `target="_blank" rel="noopener noreferrer"` 로 그리고 SPA 이동을 하지 않는다. 실행 스킴(`javascript:`)·`#`·빈 값은 링크로 그리지 않는다.
+
+| 컴포넌트 | prop / 데이터 | 렌더 · 보통 클릭 |
+| -------- | ------------- | ---------------- |
+| ActionMenu | `items[].href` · `items[].mergeQuery` · `items[].target` | `<a role="menuitem" href>`. 보통 클릭은 `onItemClick` 그대로. `target: "_blank"` 면 새 창 링크(`rel="noopener noreferrer"`)로 그리고 보통 클릭도 브라우저가 새 창으로 연다 — 항목 동작은 부르지 않으므로 종전 `openWindow` 항목을 이것으로 바꾼다. 메뉴에서 Ctrl·Shift+Enter 도 새 탭. `mergeQuery: true` 면 현재 주소 쿼리를 href 에 합친다 — 보통 클릭이 목록 조건을 넘기는(navigate `:mergeQuery`) 항목은 새 탭도 같은 조건이 가도록 함께 켠다. DataGrid `rowActions` 항목도 같다(`<item href="/admin/users/{{row.uuid}}/edit" :mergeQuery="true"/>`) |
+| SortableMenuList | `itemHref` · `:itemHrefMergeQuery` | 항목 편집 주소(행 식, 예: `/admin/menus?id={{row.id}}&mode=edit` — `skipBindingKeys` 에 등록돼 항목마다 평가). 주면 항목 이름이 행 전체를 덮는 링크(보통 클릭은 `onSelect` 그대로, 수정키 클릭은 새 탭에서 그 항목 편집 화면). 끌기 손잡이·펼침 단추·스위치는 링크 밖 위층이고 링크 자체는 끌리지 않는다(끌어 옮기기는 손잡이로만). 여러 개 선택 모드에서는 링크를 그리지 않는다 |
+| FileTreePicker · FileTree | `nodes[].href` · `:hrefMergeQuery` | 노드에 그 파일을 여는 주소(예: 레이아웃 편집 화면 `?route=…`)를 주면 이름이 행을 덮는 링크 — 보통 클릭은 `onSelect` 그대로(저장 안 한 편집 흐름 유지), 수정키 클릭은 새 탭에서 그 파일. 트리 방향키·Enter 는 그대로이고 링크는 탭 순서 밖, 이름 바꾸기·삭제는 링크 밖 위층. 주소로 가리킬 수 없는 항목(부분 레이아웃·확장 조각)은 `href` 를 비워 링크가 아니다 |
+| DropdownMenuItem | `href` | `<a role="menuitem" href>`. 보통 클릭은 `onClick`(없으면 SPA 이동) |
+| CardGrid | `cardHref` · `cardLinkLabel` | 카드는 `div` 그대로이고 카드 전체를 덮는 링크를 내용 아래층에 깐다 — 링크 안에 단추·스위치가 들어가지 않고, 카드 빈 곳·글자를 누르면 링크, 안쪽 단추·스위치·메뉴는 그 요소만 동작한다. 행 식(`/admin/x/{{row.id}}`) — `skipBindingKeys` 에 등록돼 카드마다 평가된다. 링크 이름은 `cardLinkLabel`(행 식, 예: `{{row.name}} 편집`), 없으면 카드 글자 전체. 카드가 쌓임 맥락을 만들므로 카드 안 펼침 요소는 포털로 그린다 |
+| CardGrid · ExtensionCardGrid | `pageHref` · `:pageHrefMergeQuery` | 내장 쪽 번호가 `<a href>`(`{page}` 자리에 번호 — 예: `/admin/boards?page={page}`). 보통 클릭은 `onPageChange` 그대로([Pagination](component-props.md#pagination)) |
+| ExtensionCardGrid | `items[].href` · `items[].secondaryAction.href` · `items[].actions[].href` | 카드·목록 행은 `div` 그대로이고 확장 이름이 카드 전체를 덮는 링크다(보통 클릭은 `onItemClick`). 제어부(단추·스위치·메뉴)는 링크 위층이라 링크 안에 들어가지 않는다. 보조 단추(레이아웃 편집 등)는 `secondaryAction.href` 로 링크(보통 클릭은 `onSecondaryAction`, 비활성이면 종전 단추), 메뉴 항목은 `actions[].href` 로 `<a role="menuitem">`(보통 클릭은 `onAction`) |
+| PageHeader | `actions[].href` | 바로가기 단추가 `<a>`(`disabled` 면 종전 단추). 보통 클릭은 `onClick`(없으면 SPA 이동) |
+| Breadcrumb · PageHeader | `items[].href` · `items[].onClick` (PageHeader 는 `breadcrumbItems`) | `href` 가 있는 항목은 `<a href>`(`onClick` 도 있으면 보통 클릭만 `onClick`, 수정키 클릭은 새 탭). `href` 없이 `onClick` 만 있는 항목은 단추 — 주소 없는 `<a href="#">` 는 그리지 않는다 |
+| AdminSidebar | 메뉴 데이터 `url` | 레이아웃 변경 없음 — 메뉴를 `<a href>` 로 그리고 현재 메뉴는 `aria-current="page"` |
+| UserProfile | `user.uuid` | 레이아웃 변경 없음 — 드롭다운의 이름·이메일 칸이 `/admin/users/{uuid}`, 정보 수정 항목이 `/admin/users/{uuid}/edit` 링크 |
+| NotificationCenter | 알림 `url` · `onNotificationRead` | 알림 본문이 링크(삭제 단추는 링크 밖 형제). 보통 클릭은 `onNotificationClick`(이동 + 읽음). Ctrl·Meta·Shift·가운데 클릭이나 바깥 주소처럼 브라우저가 새 탭에서 연 안 읽은 알림은 `onNotificationClick` 대신 `onNotificationRead`(알림 객체)로 읽음 처리만 알리고 목록은 열어 둔다(`canUpdate` 가 false 면 부르지 않음) |
+| ProductCard (사용자 템플릿) | 새 prop 없음 · `preserveListQuery` | `onClick` 이 없으면 카드 전체가 상품 상세 주소 링크, `preserveListQuery` 면 현재 목록 쿼리를 href 에도 합친다. `onClick` 을 주면 종전 단추 |
+| NotificationCenter (사용자 템플릿) | 알림 `notifications[].url` | 관리자 템플릿과 같은 계약 — `url` 이 있으면 알림 아이콘·본문이 `<a href>`(바깥 주소면 새 창), 보통 클릭은 `onNotificationClick`, 삭제 단추는 링크 밖 형제 |
+| Header · MobileNav · Footer · UserInfo (사용자 템플릿) | 새 prop 없음 | 데이터 주소(메뉴 `url` · `linkGroups[].links[].href` · `profilePath` · 메뉴 `path`)를 `<a href>` 로 그린다 |
 
 ---
 

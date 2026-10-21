@@ -4,6 +4,7 @@
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "$t:sirsoft-verification_nhnkcp.settings.title",
         "description": "$t:sirsoft-verification_nhnkcp.settings.description"
     },
@@ -18,6 +19,33 @@
             "auth_required": true,
             "initLocal": "form",
             "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
             "comment": "저장된 플러그인 설정을 폼 초기값으로 싣는다. 저장 응답에서 사이트코드·암호화 키가 정규화되어 돌아오므로 저장 후에도 다시 받는다"
         }
     ],
@@ -72,7 +100,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "text-xs verification-nhnkcp-tone-warning"
                                 },
                                 "text": "$t:sirsoft-verification_nhnkcp.plugin_read_only"
                             }
@@ -105,7 +133,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "space-y-1 text-info-soft"
+                                            "className": "space-y-1 text-xs verification-nhnkcp-tone-info"
                                         },
                                         "children": [
                                             {
@@ -278,7 +306,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-sm font-semibold text-warning-soft"
+                                                    "className": "text-sm font-semibold verification-nhnkcp-tone-warning"
                                                 },
                                                 "text": "$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_title"
                                             },
@@ -286,7 +314,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "mt-1 text-warning-soft"
+                                                    "className": "mt-1 text-xs verification-nhnkcp-tone-warning"
                                                 },
                                                 "text": "$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_body"
                                             }
@@ -715,7 +743,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "text-xs text-amber-600 dark:text-amber-400 text-right"
+                                                            "className": "text-xs text-amber-700 dark:text-amber-400 text-right"
                                                         },
                                                         "text": "$t:sirsoft-verification_nhnkcp.settings.duplicate_field.warning"
                                                     }
@@ -798,19 +826,19 @@
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/plugins"
+                                            "bypassLeaveGuard": true
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary"
+                                    "href": "/admin/plugins",
+                                    "className": "button btn btn-secondary"
                                 },
                                 "children": [
                                     {

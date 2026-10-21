@@ -12,9 +12,6 @@
  *   찜 목록·검색 결과에서 상품 상세로 나가는 이동은 다른 도메인으로의 이동이므로
  *   기본값(false)을 유지해 목록 상태를 승계하지 않는다.
  *
- * @scenario surface=product_grid|wishlist|search
- * @effects navigation_preserves_list_query
- *
  * @vitest-environment jsdom
  */
 
@@ -53,12 +50,15 @@ afterEach(() => {
  * @returns navigate 액션 (없으면 undefined)
  */
 function clickCardAndGetNav(): Record<string, unknown> | undefined {
-    const card = screen.getAllByRole('button')[0];
+    // onClick 이 없는 카드는 상세 주소 링크다(새 탭으로 열 수 있게) — 보통 클릭은 종전처럼 navigate 를 발행한다
+    const card = screen.getAllByRole('link')[0];
     card.click();
     return dispatched.find((a) => a.handler === 'navigate');
 }
 
 describe('#75 상품 카드 클릭이 목록 컨텍스트를 상세로 나른다', () => {
+    // @scenario leg=enter
+    // @effects list_entry_carries_list_query
     it('preserveListQuery 면 mergeQuery: true 와 빈 query 로 이동한다', () => {
         render(<ProductCard product={product as never} shopBase="/shop" preserveListQuery />);
 
@@ -70,6 +70,8 @@ describe('#75 상품 카드 클릭이 목록 컨텍스트를 상세로 나른다
         expect((nav?.params as Record<string, unknown>).query).toEqual({});
     });
 
+    // @scenario leg=enter_outside_cluster
+    // @effects outside_cluster_entry_drops_list_query
     it('기본값(찜 목록·검색 결과)은 목록 상태를 승계하지 않는다', () => {
         render(<ProductCard product={product as never} shopBase="/shop" />);
 
@@ -80,6 +82,8 @@ describe('#75 상품 카드 클릭이 목록 컨텍스트를 상세로 나른다
         expect((nav?.params as Record<string, unknown>).mergeQuery).toBeUndefined();
     });
 
+    // @scenario leg=enter
+    // @effects card_click_callback_skips_navigation
     it('onClick 콜백이 주어지면 navigate 를 발행하지 않는다 (기존 동작 유지)', () => {
         const onClick = vi.fn();
         render(<ProductCard product={product as never} shopBase="/shop" preserveListQuery onClick={onClick} />);

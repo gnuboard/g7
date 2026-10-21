@@ -320,7 +320,7 @@ class MarketingAdminControllerTest extends PluginTestCase
      * 동의가 쌓인 시스템 채널을 빼는 요청은 시스템 채널 보호 사유로만 거절하고 `blocked_channel_keys` 를 싣지 않는다.
      *
      * 시스템 채널은 「비활성화로 전환」으로 되살리는 대상이 아니다 — 이 키를 돌려주면 화면이 동의 회원 안내 창을
-     * 띄울 수 있었다(2026-10-07 실측 O-M2-11, 직접 API 호출 시 `blocked_channel_keys:["email_subscription"]`).
+     * 띄울 수 있었다(2026-10-07 실측, 직접 API 호출 시 `blocked_channel_keys:["email_subscription"]`).
      *
      * @scenario case=field_validation
      *

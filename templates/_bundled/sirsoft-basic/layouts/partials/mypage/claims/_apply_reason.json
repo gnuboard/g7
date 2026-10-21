@@ -78,7 +78,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 dark:text-red-400 ml-0.5"
+                                        "className": "text-red-600 dark:text-red-400 ml-0.5"
                                     },
                                     "text": "*"
                                 }
@@ -100,6 +100,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:claim.apply.reason_label",
                                 "className": "{{_local.claimValidationErrors?.reason_code ? 'w-full px-3 py-2 text-sm border-2 border-red-500 dark:border-red-500 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white' : 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}}",
                                 "value": "{{_local.claimReason ?? ''}}"
                             },
@@ -132,7 +133,7 @@
                             "name": "Span",
                             "if": "{{_local.claimValidationErrors?.reason_code}}",
                             "props": {
-                                "className": "text-xs text-red-500 dark:text-red-400 mt-1 block"
+                                "className": "text-xs text-red-600 dark:text-red-400 mt-1 block"
                             },
                             "text": "{{Array.isArray(_local.claimValidationErrors?.reason_code) ? _local.claimValidationErrors.reason_code[0] : _local.claimValidationErrors?.reason_code}}"
                         },
@@ -194,6 +195,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:claim.apply.reason_detail_label",
                                 "className": "w-full px-3 py-2 min-h-20 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                                 "placeholder": "$t:claim.apply.reason_detail_placeholder",
                                 "maxLength": 1000,
@@ -205,7 +207,7 @@
                             "name": "Span",
                             "if": "{{_local.claimValidationErrors?.reason_detail}}",
                             "props": {
-                                "className": "text-xs text-red-500 dark:text-red-400 mt-1 block"
+                                "className": "text-xs text-red-600 dark:text-red-400 mt-1 block"
                             },
                             "text": "{{Array.isArray(_local.claimValidationErrors?.reason_detail) ? _local.claimValidationErrors.reason_detail[0] : _local.claimValidationErrors?.reason_detail}}"
                         }
@@ -233,7 +235,7 @@
                             "text": "$t:claim.apply.images_hint|count={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 0}}|max={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 0}}|size={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.image_max_size_kb ?? 0}}"
                         },
                         {
-                            "comment": "장수·용량 상한을 **둘 다** 컴포지트에 넘긴다. 넘기지 않던 동안에는 용량 초과 파일이 컴포지트 목록에 `big.jpg 8.52 MB` · `1/5개 첨부됨` 으로 **첨부된 것처럼 남았다** — 핸들러가 걸러 실제로 올라가지는 않지만, 토스트가 5초 뒤 사라지면 화면과 실제가 갈린다(2026-09-22 #599 3차 실측 T2-D2).\n          종전에 넘기지 않은 이유는 「컴포지트가 조용히 걸러 아무 일도 없어 보인다」였는데, 실은 컴포지트가 `onUploadError` 를 부르고 있었고 **이 화면이 그 이벤트를 받지 않았을 뿐**이다. 아래에서 받아 그 자리에서 사유를 띄운다.\n          허용 확장자(`accept`)도 서버가 내려 준다(`settings.accept` — 서버가 받는 확장자 목록에서 만든 값). 화면이 리터럴을 들면 서버가 확장자를 바꿨을 때 고를 수 있는 파일과 받는 파일이 갈린다.\n          값이 없을 때의 폴백은 **null**(미선언)이다 — `maxSize` 에 0 을 넘기면 컴포지트가 모든 파일을 「0MB 초과」 로 거절한다. 미선언이면 컴포지트는 거르지 않고 핸들러가 설정값으로 판정한다.\n          `maxSize` 는 MB 단위라 서버가 같은 상한을 MB 로도 내려 준다(`image_max_size_mb`) — 화면이 나눗셈을 하면 반올림 규칙이 화면마다 갈린다. 판정 기준은 화면 안내 문구와 **같은 설정값**(`image_max_size_kb`)이고, 핸들러(`setClaimImageFiles` → `filterClaimFilesByLimits()`)도 같은 값으로 한 번 더 거른다 — 설정이 바뀌어도 둘이 갈리지 않는다.",
+                            "comment": "장수·용량 상한을 **둘 다** 컴포지트에 넘긴다. 넘기지 않던 동안에는 용량 초과 파일이 컴포지트 목록에 `big.jpg 8.52 MB` · `1/5개 첨부됨` 으로 **첨부된 것처럼 남았다** — 핸들러가 걸러 실제로 올라가지는 않지만, 토스트가 5초 뒤 사라지면 화면과 실제가 갈린다(2026-09-22 #599 실측).\n          종전에 넘기지 않은 이유는 「컴포지트가 조용히 걸러 아무 일도 없어 보인다」였는데, 실은 컴포지트가 `onUploadError` 를 부르고 있었고 **이 화면이 그 이벤트를 받지 않았을 뿐**이다. 아래에서 받아 그 자리에서 사유를 띄운다.\n          허용 확장자(`accept`)도 서버가 내려 준다(`settings.accept` — 서버가 받는 확장자 목록에서 만든 값). 화면이 리터럴을 들면 서버가 확장자를 바꿨을 때 고를 수 있는 파일과 받는 파일이 갈린다.\n          값이 없을 때의 폴백은 **null**(미선언)이다 — `maxSize` 에 0 을 넘기면 컴포지트가 모든 파일을 「0MB 초과」 로 거절한다. 미선언이면 컴포지트는 거르지 않고 핸들러가 설정값으로 판정한다.\n          `maxSize` 는 MB 단위라 서버가 같은 상한을 MB 로도 내려 준다(`image_max_size_mb`) — 화면이 나눗셈을 하면 반올림 규칙이 화면마다 갈린다. 판정 기준은 화면 안내 문구와 **같은 설정값**(`image_max_size_kb`)이고, 핸들러(`setClaimImageFiles` → `filterClaimFilesByLimits()`)도 같은 값으로 한 번 더 거른다 — 설정이 바뀌어도 둘이 갈리지 않는다.",
                             "type": "composite",
                             "name": "FileUploader",
                             "actions": [
@@ -269,7 +271,7 @@
                             "name": "Span",
                             "if": "{{!!_local.claimFieldErrors?.images}}",
                             "props": {
-                                "className": "text-xs text-red-500 dark:text-red-400 mt-1 block"
+                                "className": "text-xs text-red-600 dark:text-red-400 mt-1 block"
                             },
                             "text": "{{_local.claimFieldErrors?.images ?? ''}}"
                         },

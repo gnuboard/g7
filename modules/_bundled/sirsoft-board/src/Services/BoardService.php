@@ -36,6 +36,9 @@ use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Support\BoardReadScope;
+use Modules\Sirsoft\Board\Support\PostQueryExtensions;
+use Modules\Sirsoft\Board\Support\ReadHookContext;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -61,6 +64,7 @@ class BoardService
      */
     private const BOARD_SORT_COLUMNS = [
         'id',
+        'display_order',
         'slug',
         'type',
         'is_active',
@@ -133,16 +137,24 @@ class BoardService
             });
         }
 
-        // 정렬 — 요청 유래 값은 닫힌 집합으로만 해석 (미허용 컬럼은 기본값 fallback: 이중 방어)
+        // 정렬 — 요청 유래 값은 닫힌 집합으로만 해석 (미허용 컬럼은 기본값 fallback: 이중 방어).
+        // 기본은 관리자가 정한 표시 순서(오름차순)이고, 다른 컬럼을 고르면 방향 기본값은 종전처럼 desc 다.
+        $defaultDirection = ($filters['sort_by'] ?? 'display_order') === 'display_order' ? 'asc' : 'desc';
         [$sortSpec] = $this->resolveSortSpec(
             $filters,
             self::BOARD_SORT_COLUMNS,
-            'created_at',
+            'display_order',
+            $defaultDirection,
         );
         $query->orderBy($sortSpec['column'], $sortSpec['direction']);
 
-        // 비고유 컬럼 동률 구간에서도 전순서 보장 (페이지 경계 중복/누락 방지 규정)
-        $query->orderBy('id', 'desc');
+        // 비고유 컬럼 동률 구간에서도 전순서 보장 (페이지 경계 중복/누락 방지 규정).
+        // 표시 순서의 동점은 「만든 순서」라 created_at·id 오름차순, 그 밖의 컬럼은 같은 방향의 id 로 정한다.
+        if ($sortSpec['column'] === 'display_order') {
+            $query->orderBy('created_at')->orderBy('id');
+        } else {
+            $query->orderBy('id', $sortSpec['direction']);
+        }
 
         // 페이지네이션 (1~999 클램프 — 게이트 우회 내부 호출 대비 이중 방어)
         // 상한 999 는 IndexBoardRequest 와 동일해야 한다: 게시판은 운영자 등록
@@ -213,19 +225,116 @@ class BoardService
      * (sirsoft-board.{slug}.posts.read)을 호출자 시점에 적용해, 디렉토리 경로가
      * 비공개 게시판·글 제목의 우회 노출로가 되지 않게 합니다.
      *
+     * 기본 순서는 관리자가 정한 표시 순서다(같은 순서는 만든 순서·id).
+     *
      * @param  string  $orderBy  정렬 기준 컬럼
      * @param  string  $orderDirection  정렬 방향
      * @return Collection 호출자가 열람 가능한 활성 게시판 컬렉션
      */
     public function getReadableActiveBoards(
-        string $orderBy = 'created_at',
-        string $orderDirection = 'desc'
+        string $orderBy = 'display_order',
+        string $orderDirection = 'asc'
     ): Collection {
         $user = Auth::user();
 
         return $this->getActiveBoards($orderBy, $orderDirection)
-            ->filter(fn ($board) => PermissionHelper::check("sirsoft-board.{$board->slug}.posts.read", $user))
+            ->filter(fn (Board $board) => $this->isBoardReadable($board, $user))
             ->values();
+    }
+
+    /**
+     * 호출자가 게시판을 열람할 수 있는지 판정합니다.
+     *
+     * 게시판 목록 화면(/boards)·사용자 메뉴(board-menu)가 같은 기준을 쓰도록 한 곳에 둔다.
+     *
+     * @param  Board  $board  대상 게시판
+     * @param  User|null  $user  호출자 (null 이면 비회원)
+     * @return bool 열람 가능 여부
+     */
+    private function isBoardReadable(Board $board, ?User $user): bool
+    {
+        return PermissionHelper::check("sirsoft-board.{$board->slug}.posts.read", $user);
+    }
+
+    /**
+     * 사용자 메뉴(board-menu)용 게시판 목록을 조회합니다.
+     *
+     * 공용 캐시(활성 게시판 전체)에서 꺼낸 뒤 호출자가 열람할 수 있는 게시판만 남긴다 — 캐시에 사용자별
+     * 결과를 담지 않으므로 역할 권한이 바뀌어도 다음 요청에 바로 반영된다. 결과 훅 리스너에는 복제본을
+     * 넘긴다: array 캐시 저장소는 직렬화 없이 같은 인스턴스를 돌려주므로 리스너가 모델 속성을 바꾸면
+     * 같은 요청 안의 다음 호출이 오염된다.
+     *
+     * @return Collection 호출자가 열람할 수 있는 활성 게시판 컬렉션 (id, name, slug, display_order, created_at)
+     */
+    public function getMenuBoards(): Collection
+    {
+        $context = ReadHookContext::make();
+
+        HookManager::doAction('sirsoft-board.board.before_menu_list', $context);
+
+        $user = $context['user'];
+        $boards = $this->getCachedActiveBoardsForMenu()
+            ->filter(fn (Board $board) => $this->isBoardReadable($board, $user))
+            ->map(fn (Board $board) => clone $board)
+            ->values();
+
+        $boards = HookManager::applyFilters('sirsoft-board.board.filter_menu_list_result', $boards, $context);
+
+        HookManager::doAction('sirsoft-board.board.after_menu_list', $boards, $context);
+
+        return $boards;
+    }
+
+    /**
+     * 사용자 게시판 목록 화면(/boards)용 게시판 목록을 조회합니다.
+     *
+     * 호출자가 열람할 수 있는 활성 게시판을 표시 순서로 돌려준다. 게시판별 최근글은 컨트롤러가
+     * 이 결과(리스너가 고친 목록)에 붙인다.
+     *
+     * @param  int  $recentPostsLimit  게시판별 최근글 개수(요청 값 — 리스너 판단용)
+     * @return Collection 호출자가 열람할 수 있는 활성 게시판 컬렉션
+     */
+    public function getPublicBoardList(int $recentPostsLimit = 0): Collection
+    {
+        $context = ReadHookContext::make(['recent_posts_limit' => $recentPostsLimit]);
+
+        HookManager::doAction('sirsoft-board.board.before_public_list', $context);
+
+        $boards = $this->getReadableActiveBoards();
+
+        $boards = HookManager::applyFilters('sirsoft-board.board.filter_public_list_result', $boards, $context);
+
+        HookManager::doAction('sirsoft-board.board.after_public_list', $boards, $context);
+
+        return $boards;
+    }
+
+    /**
+     * 사용자 게시판 상세 정보를 조회합니다.
+     *
+     * 없거나 비활성인 게시판은 null 이다(존재 여부를 숨기려고 컨트롤러가 404 로 응답). 그때는 조회 전
+     * 훅만 발행하고 결과·조회 후 훅은 발행하지 않는다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return Board|null 활성 게시판 (없거나 비활성이면 null)
+     */
+    public function getPublicBoardBySlug(string $slug): ?Board
+    {
+        $context = ReadHookContext::make(['slug' => $slug]);
+
+        HookManager::doAction('sirsoft-board.board.before_public_show', $context);
+
+        $board = $this->getBoardBySlug($slug, checkScope: false);
+
+        if (! $board || ! $board->is_active) {
+            return null;
+        }
+
+        $board = HookManager::applyFilters('sirsoft-board.board.filter_public_show_result', $board, $context);
+
+        HookManager::doAction('sirsoft-board.board.after_public_show', $board, $context);
+
+        return $board;
     }
 
     /**
@@ -296,8 +405,11 @@ class BoardService
     public function getCachedStats(): array
     {
         $ttl = (int) g7_core_settings('cache.default_ttl', 86400);
+        $context = ReadHookContext::make();
 
-        return $this->cache->remember('stats', function () {
+        HookManager::doAction('sirsoft-board.board.before_stats', $context);
+
+        $stats = $this->cache->remember('stats', function () {
             $boardStats = $this->getActiveBoardStats();
 
             return [
@@ -309,6 +421,13 @@ class BoardService
                 'comments' => $boardStats['comments'],
             ];
         }, $ttl, tags: ['board-stats']);
+
+        // 결과 훅은 캐시를 읽은 뒤에 발행한다 — 콜백 안에서 거르면 첫 호출자의 결과가 공용 캐시에 남는다
+        $stats = HookManager::applyFilters('sirsoft-board.board.filter_stats_result', $stats, $context);
+
+        HookManager::doAction('sirsoft-board.board.after_stats', $stats, $context);
+
+        return $stats;
     }
 
     /**
@@ -328,14 +447,29 @@ class BoardService
         // 게시판 이름은 언어별 값이라 캐시를 언어마다 나눈다 — 키에 언어가 없으면 먼저 채운 언어의 이름이
         // 다른 언어 화면에 그대로 나갔다(2026-10-07 실측: 한국어 화면에 영어 게시판 이름·「10 minutes ago」).
         $locale = app()->getLocale();
+        $context = ReadHookContext::make(['limit' => $limit]);
+
+        HookManager::doAction('sirsoft-board.post.before_recent_list', $context);
+
+        // 키의 v2 는 항목에 작성자 ID(읽기 스코프 판정용)를 담기 전의 캐시를 다시 읽지 않기 위한 것이다.
+        // 확장이 최근 게시글을 사람·언어마다 좁히면 그 축(filter_list_cache_variant)이 키 끝에 붙는다 — 없으면 키는 그대로
         $posts = $this->cache->remember(
-            "recent_posts_{$limit}_{$locale}",
+            "recent_posts_v2_{$limit}_{$locale}".PostQueryExtensions::cacheSuffix('recent'),
             fn () => $this->getRecentPosts($limit),
             $ttl,
             tags: ['board-posts']
         );
 
-        return $this->refreshCachedPostTimes($this->filterItemsByBoardReadPermission($posts, 'board_slug'));
+        $posts = $this->refreshCachedPostTimes(
+            $this->filterItemsByBoardReadPermission($posts, 'board_slug', fn (array $item) => $item['_owner_id'] ?? null)
+        );
+
+        // 결과 훅은 캐시 뒤·호출자 권한 필터 뒤에 발행한다 — 리스너는 이미 걸러진 목록을 받는다
+        $posts = HookManager::applyFilters('sirsoft-board.post.filter_recent_list_result', $posts, $context);
+
+        HookManager::doAction('sirsoft-board.post.after_recent_list', $posts, $context);
+
+        return $posts;
     }
 
     /**
@@ -357,14 +491,26 @@ class BoardService
         // 모듈 업데이트는 이 캐시를 비우지 않으므로 키를 그대로 두면 TTL 동안 옛 값이 응답된다.
         // 게시판 이름·작성자 상태 문구가 언어별 값이라 언어마다 나눈다(최근 게시글과 같은 이유).
         $locale = app()->getLocale();
+        $context = ReadHookContext::make(['period' => $period, 'limit' => $limit]);
+
+        HookManager::doAction('sirsoft-board.post.before_popular_list', $context);
+
         $posts = $this->cache->remember(
-            "popular_posts_v2_{$period}_{$limit}_{$locale}",
+            "popular_posts_v2_{$period}_{$limit}_{$locale}".PostQueryExtensions::cacheSuffix('popular'),
             fn () => $this->getPopularPosts($period, $limit),
             $ttl,
             tags: ['board-posts']
         );
 
-        return $this->refreshCachedPostTimes($this->filterItemsByBoardReadPermission($posts, 'board_slug'));
+        $posts = $this->refreshCachedPostTimes(
+            $this->filterItemsByBoardReadPermission($posts, 'board_slug', fn (array $item) => $item['author']['id'] ?? null)
+        );
+
+        $posts = HookManager::applyFilters('sirsoft-board.post.filter_popular_list_result', $posts, $context);
+
+        HookManager::doAction('sirsoft-board.post.after_popular_list', $posts, $context);
+
+        return $posts;
     }
 
     /**
@@ -381,6 +527,10 @@ class BoardService
         // 호출자 기준으로 적용한다(캐시 오염 회피 — 저권한 사용자에게 고권한 결과가 새지 않도록).
         // 게시판 이름·설명이 언어별 값이라 언어마다 나눈다.
         $locale = app()->getLocale();
+        $context = ReadHookContext::make(['limit' => $limit]);
+
+        HookManager::doAction('sirsoft-board.board.before_popular_list', $context);
+
         $boards = $this->cache->remember(
             "popular_boards_{$limit}_{$locale}",
             fn () => $this->getPopularBoards($limit),
@@ -388,7 +538,13 @@ class BoardService
             tags: ['board-list']
         );
 
-        return $this->filterItemsByBoardReadPermission($boards, 'slug');
+        $boards = $this->filterItemsByBoardReadPermission($boards, 'slug');
+
+        $boards = HookManager::applyFilters('sirsoft-board.board.filter_popular_list_result', $boards, $context);
+
+        HookManager::doAction('sirsoft-board.board.after_popular_list', $boards, $context);
+
+        return $boards;
     }
 
     /**
@@ -476,6 +632,9 @@ class BoardService
         // 상한에 걸려 거부되면 그 앞에서 만든 게시판·역할·권한까지 함께 되돌려야 반쪽 게시판이
         // 남지 않는다.
         $board = DB::transaction(function () use ($data, $permissions, $boardManagerIds, $boardStepIds) {
+            // 새 게시판(복사본 포함)은 표시 순서의 맨 끝에 붙는다
+            $data['display_order'] = $this->boardRepository->nextDisplayOrder();
+
             return $this->createBoardWithRolesAndPermissions($data, $permissions, $boardManagerIds, $boardStepIds);
         });
 
@@ -563,7 +722,7 @@ class BoardService
         if ($boardStepIds !== null) {
             $syncData['board_step_ids'] = $boardStepIds;
         }
-        // 새 게시판 — 생성자 본인 한 명만 관리자로 두는 것은 상한 밖 위임 관리자에게도 허용된다(K4F-2)
+        // 새 게시판 — 생성자 본인 한 명만 관리자로 두는 것은 상한 밖 위임 관리자에게도 허용된다
         $this->syncBoardRoleUsers($board, $syncData, isNewBoard: true);
 
         return $board;
@@ -755,8 +914,8 @@ class BoardService
         // 원본 게시판 설정 복사 (게시글은 복사하지 않음)
         $copyData = $originalBoard->toArray();
 
-        // 자동 생성 필드 제거
-        unset($copyData['id'], $copyData['created_at'], $copyData['updated_at']);
+        // 자동 생성 필드 제거 — 표시 순서도 생성 경로가 맨 끝 값을 새로 매긴다
+        unset($copyData['id'], $copyData['created_at'], $copyData['updated_at'], $copyData['display_order']);
 
         // slug는 copy 붙여서 (사용자가 변경 필요함)
         $copyData['slug'] = $copyData['slug'].'-copy';
@@ -968,7 +1127,7 @@ class BoardService
      * 않는 위임 관리자도 새 게시판에는 본인 한 명을 관리자로 둘 수 있으므로(syncBoardRoleUsers 의
      * 생성자 본인 예외), 폼은 이 판정이 거짓이어도 본인을 관리자로 채우고(복사는 원본 명단 대신, 스텝은
      * 비움) `_meta.can_assign_board_members=false` 로 다른 담당자를 지정할 수 없음만 알린다 — 화면은 이
-     * 값으로 담당자 칸을 잠그고 이유를 보인다(7.1.0 전수 실측 O-K4-3, K4F-2).
+     * 값으로 담당자 칸을 잠그고 이유를 보인다(7.1.0 전수 실측).
      *
      * @param  array<string, mixed>  $permissionRoles  권한 키 => 역할 식별자 목록 (설정 기본값 또는 복사 원본 ACL, 프론트 형식 `{roles:[…]}` 도 받음)
      * @return bool 지정할 수 있으면 true
@@ -1015,7 +1174,7 @@ class BoardService
      *
      * 예외 하나: 같은 요청에서 **새로 만든 게시판**의 관리자 명단이 생성자 본인 한 명뿐이면 상한을 보지 않는다.
      * 새로 만드는 게시판의 관리자가 되는 것은 기존 게시판에 대한 권한 상승이 아니고, 이것이 없으면 기본 ACL
-     * 밖의 위임 관리자는 게시판 생성 권한이 있어도 게시판을 만들 수 없었다(7.1.0 실측 K4F-2, 결정
+     * 밖의 위임 관리자는 게시판 생성 권한이 있어도 게시판을 만들 수 없었다(7.1.0 실측, 결정
      * 2026-10-08). 다른 회원을 함께 넣거나 스텝을 지정하면 종전대로 상한을 받는다.
      *
      * @param  Board  $board  대상 게시판
@@ -1127,6 +1286,62 @@ class BoardService
     }
 
     /**
+     * 게시판 표시 순서를 저장합니다.
+     *
+     * 전체 게시판 id 목록(활성·비활성 전부)을 새 순서로 받아 1..N 으로 다시 매긴다. 목록이 현재 게시판
+     * 집합과 같은지는 요청 검증(ReorderBoardsRequest)이 먼저 본다 — 모달을 연 사이 다른 관리자가 게시판을
+     * 만들거나 지웠다면 옛 목록으로 덮어쓰지 않게 한다. 표시 순서는 게시판 전체에 걸친 값이라 게시판 조회·수정
+     * 권한을 모두 범위 제한(본인만·소유역할) 없이 가진 사람만 바꿀 수 있다.
+     *
+     * @param  array<int, int>  $boardIds  새 순서의 게시판 id 목록
+     * @return array<int, array{id: int, display_order: int}> 저장된 순서 (id 오름차순)
+     *
+     * @throws AccessDeniedHttpException 게시판 조회·수정 권한 중 하나라도 범위가 제한된 경우
+     */
+    public function reorderBoards(array $boardIds): array
+    {
+        // 「전체 범위만 허용」 — 범위(본인만·소유역할)가 붙은 수정 권한으로는 전체 게시판 순서를 바꿀 수 없다.
+        // 조회 권한도 같다: 범위가 좁으면 볼 수 없는 게시판까지 자리를 정하게 되고, 모달 목록도 전체가 아니다
+        $actor = Auth::user();
+        if ($actor !== null && (
+            $actor->getEffectiveScopeForPermission('sirsoft-board.boards.update') !== null
+            || $actor->getEffectiveScopeForPermission('sirsoft-board.boards.read') !== null
+        )) {
+            throw new AccessDeniedHttpException(__('auth.scope_denied'));
+        }
+
+        $boardIds = array_values(array_map('intval', $boardIds));
+
+        HookManager::doAction('sirsoft-board.board.before_reorder', $boardIds);
+
+        $before = $this->boardRepository->getDisplayOrderMap();
+
+        $idToOrder = [];
+        foreach ($boardIds as $index => $id) {
+            $idToOrder[$id] = $index + 1;
+        }
+
+        DB::transaction(function () use ($idToOrder) {
+            $this->boardRepository->updateDisplayOrders($idToOrder);
+        });
+
+        // 메뉴·게시판 목록·인기 게시판 캐시가 옛 순서를 들고 있다
+        $this->clearAllBoardCaches();
+
+        // 조회 후 훅은 커밋 뒤에 발행한다 — 큐 리스너가 커밋 전 값을 읽지 않게(큐 드라이버 규칙)
+        DB::afterCommit(function () use ($boardIds, $before) {
+            HookManager::doAction('sirsoft-board.board.after_reorder', $boardIds, $before);
+        });
+
+        $after = $this->boardRepository->getDisplayOrderMap();
+
+        return array_map(
+            fn (int $id) => ['id' => $id, 'display_order' => $after[$id]],
+            array_keys($after)
+        );
+    }
+
+    /**
      * 전체 게시글 수를 집계합니다.
      *
      * @return int 전체 게시글 개수
@@ -1170,7 +1385,10 @@ class BoardService
      */
     public function getRecentPosts(int $limit): array
     {
-        return $this->boardRepository->getRecentPosts($limit);
+        return $this->boardRepository->getRecentPosts(
+            $limit,
+            PostQueryExtensions::collect(['recent'], ['audience' => 'user'])
+        );
     }
 
     /**
@@ -1182,7 +1400,11 @@ class BoardService
      */
     public function getPopularPosts(string $period = 'week', int $limit = 20): array
     {
-        return $this->boardRepository->getPopularPosts($period, $limit);
+        return $this->boardRepository->getPopularPosts(
+            $period,
+            $limit,
+            PostQueryExtensions::collect(['popular'], ['audience' => 'user'])
+        );
     }
 
     /**
@@ -1196,7 +1418,14 @@ class BoardService
      */
     public function getBoardRecentPosts(string $slug, int $limit): array
     {
-        return $this->boardRepository->getBoardRecentPosts($slug, $limit);
+        return $this->boardRepository->getBoardRecentPosts(
+            $slug,
+            $limit,
+            PostQueryExtensions::collect(['board_recent'], [
+                'audience' => 'user',
+                'board' => fn () => $this->boardRepository->findBySlug($slug),
+            ])
+        );
     }
 
     /**
@@ -1204,11 +1433,19 @@ class BoardService
      *
      * @param  int  $boardId  게시판 ID
      * @param  int  $limit  조회 개수
+     * @param  Board|null  $board  이미 조회한 게시판 (확장 맥락에 싣는다 — 없으면 확장 리스너가 있을 때만 조회)
      * @return array<int, array<string, mixed>> 결과 배열
      */
-    public function getBoardRecentPostsById(int $boardId, int $limit): array
+    public function getBoardRecentPostsById(int $boardId, int $limit, ?Board $board = null): array
     {
-        return $this->boardRepository->getBoardRecentPostsById($boardId, $limit);
+        return $this->boardRepository->getBoardRecentPostsById(
+            $boardId,
+            $limit,
+            PostQueryExtensions::collect(['board_recent'], [
+                'audience' => 'user',
+                'board' => $board ?? fn () => $this->boardRepository->find($boardId),
+            ])
+        );
     }
 
     /**
@@ -1426,20 +1663,39 @@ class BoardService
      * 현재 호출자 기준으로 적용한다. 고권한 사용자의 결과가 캐시에 남아 저권한/비회원
      * 사용자에게 새는 것을 막는다.
      *
+     * 글 항목이면 읽기 권한의 스코프(본인만·소유역할)도 본다 — 보유만 보면 「본인 글만」 회원에게
+     * 남의 글 제목이 최근글·인기글로 나간다. 판정용 작성자 키(`_owner_id`)는 응답에서 뺀다.
+     *
      * @param  array<int, array<string, mixed>>  $items  캐시된 목록
      * @param  string  $slugKey  각 항목에서 게시판 슬러그를 담은 키
+     * @param  callable|null  $ownerOf  항목의 작성자 회원 ID 를 꺼내는 함수 (게시판 항목이면 null — 스코프 미적용)
      * @return array<int, array<string, mixed>> 읽기 권한을 통과한 항목만 남긴 목록
      */
-    private function filterItemsByBoardReadPermission(array $items, string $slugKey): array
+    private function filterItemsByBoardReadPermission(array $items, string $slugKey, ?callable $ownerOf = null): array
     {
         $user = Auth::user();
 
-        return array_values(array_filter($items, function ($item) use ($slugKey, $user) {
+        $allowed = array_filter($items, function ($item) use ($slugKey, $user, $ownerOf) {
             $slug = $item[$slugKey] ?? null;
 
-            return $slug !== null
-                && PermissionHelper::check("sirsoft-board.{$slug}.posts.read", $user);
-        }));
+            if ($slug === null || ! PermissionHelper::check("sirsoft-board.{$slug}.posts.read", $user)) {
+                return false;
+            }
+
+            if ($ownerOf === null) {
+                return true;
+            }
+
+            $ownerId = $ownerOf($item);
+
+            return BoardReadScope::allowsItem($slug, $ownerId !== null ? (int) $ownerId : null);
+        });
+
+        return array_values(array_map(function (array $item) {
+            unset($item['_owner_id']);
+
+            return $item;
+        }, $allowed));
     }
 
     /**

@@ -88,12 +88,12 @@ return [
         'image_unreadable' => '업로드한 이미지 파일을 읽을 수 없습니다.',
     ],
 
-    // 발송 건너뜀 (채널 드라이버 send() 사전 조건 미충족 — 코어 발송 이력에 "실패"로 기록됨)
+    // 발송 불가 (채널 드라이버 send() 사전 조건 미충족 — 코어 발송 이력에 "실패"로 기록되므로 문구도 「발송하지 못했습니다」, 7.1.1 출시 전)
     'send_skipped' => [
-        'alimtalk_template_not_approved' => '승인된 알림톡 템플릿이 없거나 알림톡 발송이 꺼져 있어 발송을 건너뛰었습니다. (알림 유형: :type)',
-        'sms_template_missing' => 'SMS 본문이 설정되지 않아 발송을 건너뛰었습니다. (알림 유형: :type)',
-        'recipient_phone_missing' => '수신자 전화번호가 없어 발송을 건너뛰었습니다. (알림 유형: :type)',
-        'message_body_empty' => '발송 본문이 비어 있어 발송을 건너뛰었습니다. (알림 유형: :type)',
+        'alimtalk_template_not_approved' => '승인된 알림톡 템플릿이 없거나 알림톡 발송이 꺼져 있어 발송하지 못했습니다. (알림 유형: :type)',
+        'sms_template_missing' => 'SMS 본문이 설정되지 않아 발송하지 못했습니다. (알림 유형: :type)',
+        'recipient_phone_missing' => '수신자 전화번호가 없어 발송하지 못했습니다. (알림 유형: :type)',
+        'message_body_empty' => '발송 본문이 비어 있어 발송하지 못했습니다. (알림 유형: :type)',
     ],
 
     // 알림 템플릿 라이프사이클 (#597 — BizppurioTemplateController 응답·상태 가드)
@@ -206,6 +206,13 @@ return [
             'channel_label' => '발송 채널(문자/알림톡)',
             'settings_url' => '메시징 환경설정 URL',
             'site_url' => '사이트 URL',
+        ],
+    ],
+    // 콘솔 명령 출력
+    'console' => [
+        'sync_template_status' => [
+            'no_requested' => '검수중(requested) 템플릿이 없어 카카오 조회를 건너뜁니다.',
+            'done' => '검수중 템플릿 :checked건 점검, :transitioned건 상태 전이.',
         ],
     ],
 ];

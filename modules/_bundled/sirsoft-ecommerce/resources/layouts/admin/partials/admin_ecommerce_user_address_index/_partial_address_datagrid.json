@@ -125,6 +125,7 @@
                             ],
                             "props": {
                                 "name": "sort",
+                                "aria-label": "$t:common.sort_order",
                                 "className": "w-40",
                                 "value": "{{query.sort || 'created_at_desc'}}",
                                 "options": [
@@ -173,6 +174,7 @@
                             ],
                             "props": {
                                 "name": "perPage",
+                                "aria-label": "$t:common.per_page",
                                 "className": "w-20",
                                 "value": "{{query.per_page || '20'}}",
                                 "options": [
@@ -247,12 +249,6 @@
                     "event": "onRowAction",
                     "handler": "switch",
                     "cases": {
-                        "view_member": {
-                            "handler": "openWindow",
-                            "params": {
-                                "path": "/admin/users/{{$args[1]?.member?.uuid}}"
-                            }
-                        },
                         "search_member": {
                             "handler": "sequence",
                             "actions": [
@@ -305,6 +301,9 @@
                 }
             ],
             "props": {
+                "pageHref": "/admin/ecommerce/user-addresses?page={page}",
+                "pageHrefMergeQuery": true,
+                "rowLabelField": "recipient_name",
                 "data": "{{addresses?.data?.data || []}}",
                 "pagination": true,
                 "serverSidePagination": true,
@@ -319,11 +318,13 @@
                 "idField": "id",
                 "visibleColumns": "{{_local.visibleColumns}}",
                 "selectedCountText": "",
-                "emptyMessage": "$t:sirsoft-ecommerce.admin.user_addresses.table.empty",
+                "emptyMessage": "{{addresses === undefined ? '' : $t('sirsoft-ecommerce.admin.user_addresses.table.empty')}}",
                 "actionsColumnHeader": "$t:common.actions",
                 "rowActions": [
                     {
                         "id": "view_member",
+                        "href": "/admin/users/{{row.member?.uuid}}",
+                        "target": "_blank",
                         "label": "$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member",
                         "iconName": "fa-regular fa-user",
                         "disabledField": "member.uuid"
@@ -383,12 +384,6 @@
                                         "event": "onItemClick",
                                         "handler": "switch",
                                         "cases": {
-                                            "view_member": {
-                                                "handler": "openWindow",
-                                                "params": {
-                                                    "path": "/admin/users/{{row.member?.uuid}}"
-                                                }
-                                            },
                                             "search_member": {
                                                 "comment": "손에 든 회원 한정도 이 한 명으로 맞춘다 — URL 만 갈면 필터 칸이 이전 선택을 든 채로 남는다",
                                                 "handler": "sequence",
@@ -426,6 +421,8 @@
                                     "items": [
                                         {
                                             "id": "view_member",
+                                            "href": "/admin/users/{{row.member?.uuid}}",
+                                            "target": "_blank",
                                             "label": "$t:sirsoft-ecommerce.admin.user_addresses.actions.view_member",
                                             "iconName": "user"
                                         },
@@ -441,7 +438,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                            "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
                                         },
                                         "children": [
                                             {
@@ -449,7 +446,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "fa-regular fa-user",
-                                                    "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                    "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
                                                 }
                                             },
                                             {

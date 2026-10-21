@@ -263,7 +263,14 @@ return [
             ],
         ],
     ],
+
+    // 게시판 표시 순서 저장 (관리자 게시판 목록 「순서 변경」)
+    'boards' => [
+        'reorder_stale' => '掲示板一覧が変更されました。並び順変更ウィンドウを閉じて、もう一度開いてください。',
+    ],
+
     'attributes' => [
+        'board_ids' => '掲示板の並び順',
         'settings' => [
             'basic_defaults.type' => '掲示板タイプ',
             'basic_defaults.per_page' => 'ページあたりの投稿数',
@@ -275,6 +282,7 @@ return [
             'basic_defaults.use_reply' => '返信使用有無',
             'basic_defaults.max_reply_depth' => '最大返信深さ',
             'basic_defaults.reply_delete_policy' => '返信の削除方式',
+            'basic_defaults.secret_reply_visibility' => '非公開返信の閲覧範囲',
             'basic_defaults.max_comment_depth' => '最大コメント深さ',
             'basic_defaults.comment_order' => 'コメント並べ替え',
             'basic_defaults.show_view_count' => '閲覧数表示',
@@ -407,6 +415,7 @@ return [
             'override_values.per_page_mobile' => 'モバイルページあたりの投稿数',
             'override_values.max_reply_depth' => '最大返信深さ',
             'override_values.reply_delete_policy' => '返信の削除方式',
+            'override_values.secret_reply_visibility' => '非公開返信の閲覧範囲',
             'override_values.max_comment_depth' => '最大コメント深さ',
             'override_values.min_title_length' => '最小タイトル長',
             'override_values.max_title_length' => '最大タイトル長',
@@ -761,6 +770,7 @@ return [
         'permissions' => '権限',
         'permissions.*.roles' => '権限ロール',
         'reply_delete_policy' => '返信の削除方式',
+        'secret_reply_visibility' => '非公開返信の閲覧範囲',
         'attachment_ids' => '添付ファイル',
         'password' => 'パスワード',
     ],

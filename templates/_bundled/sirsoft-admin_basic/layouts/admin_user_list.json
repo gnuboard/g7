@@ -510,6 +510,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "iconName": "refresh",
                                     "variant": "outline",
                                     "size": "md"
@@ -518,22 +519,23 @@
                             {
                                 "id": "add_user_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "등록 폼은 회원 목록 클러스터 안이다 — 취소하고 돌아왔을 때 보고 있던 페이지·검색 조건이 그대로여야 한다 (#75).",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/users/create",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
+                                    "href": "/admin/users/create",
+                                    "mergeQuery": true,
                                     "disabled": "{{users?.data?.abilities?.can_create !== true}}",
-                                    "className": "flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "button flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                 },
                                 "children": [
                                     {
@@ -727,6 +729,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "btn btn-sm btn-success",
                                             "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
                                         },
@@ -750,6 +753,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "btn btn-sm btn-neutral",
                                             "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
                                         },
@@ -773,6 +777,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "btn btn-sm btn-danger",
                                             "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
                                         },
@@ -796,6 +801,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "btn btn-sm btn-warning",
                                             "disabled": "{{!_global.selectedIds_admin_users || _global.selectedIds_admin_users.length === 0}}"
                                         },
@@ -951,6 +957,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.sort_order",
                                             "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
                                             "className": "w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                             "options": [
@@ -1035,6 +1042,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.per_page",
                                             "value": "{{query.per_page || '10'}}",
                                             "className": "px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 text-sm focus:ring-2 focus:ring-blue-500",
                                             "options": [
@@ -1158,7 +1166,10 @@
                             }
                         ],
                         "props": {
+                            "pageHref": "/admin/users?page={page}",
+                            "pageHrefMergeQuery": true,
                             "selectedCountText": "",
+                            "rowLabelField": "name",
                             "data": "{{users?.data?.data}}",
                             "sortable": true,
                             "sortField": "{{query.sort_by}}",
@@ -1178,17 +1189,22 @@
                             "showColumnSelector": false,
                             "visibleColumns": "{{_global.visibleColumns_admin_users}}",
                             "responsiveBreakpoint": 768,
+                            "emptyMessage": "{{users === undefined ? '' : $t('common.no_data')}}",
                             "actionsColumnHeader": "$t:common.actions",
                             "rowActions": [
                                 {
                                     "id": "view",
                                     "label": "$t:admin.users.actions.view",
-                                    "iconName": "eye"
+                                    "iconName": "eye",
+                                    "href": "/admin/users/{{row.uuid}}",
+                                    "mergeQuery": true
                                 },
                                 {
                                     "id": "edit",
                                     "label": "$t:admin.users.actions.edit",
                                     "iconName": "pencil",
+                                    "href": "/admin/users/{{row.uuid}}/edit",
+                                    "mergeQuery": true,
                                     "disabledField": "abilities.can_update"
                                 },
                                 {
@@ -1421,6 +1437,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing}}",
                                 "className": "btn btn-secondary"
                             },
@@ -1508,6 +1525,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
                                 "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
@@ -1580,6 +1598,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing}}",
                                 "className": "btn btn-secondary"
                             },
@@ -1667,6 +1686,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
                                 "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
@@ -1739,6 +1759,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "btn btn-secondary",
                                 "disabled": "{{_global.isDeleting}}"
                             },
@@ -1819,6 +1840,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeleting}}"
                             },
@@ -1890,6 +1912,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
                             },
                             "children": [
@@ -1951,6 +1974,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing}}",
                                 "className": "btn btn-secondary"
                             },
@@ -2038,6 +2062,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
                                 "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
@@ -2110,6 +2135,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing}}",
                                 "className": "btn btn-secondary"
                             },
@@ -2197,8 +2223,9 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
-                                "className": "flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "flex-center gap-2 px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [
                                 {

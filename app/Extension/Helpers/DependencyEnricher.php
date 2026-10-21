@@ -7,6 +7,7 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\ExtensionStatus;
 use App\Support\ExtensionIntegrations;
+use App\Support\LocalizedValue;
 use Composer\Semver\Semver;
 use Illuminate\Support\Facades\App;
 
@@ -157,23 +158,17 @@ class DependencyEnricher
         $name = $record->name ?? null;
 
         if (is_array($name)) {
-            $locale = App::getLocale();
-            $fallbackLocale = config('app.fallback_locale', 'ko');
-
-            return (string) ($name[$locale] ?? $name[$fallbackLocale] ?? reset($name) ?: $fallback);
+            return LocalizedValue::pick($name, App::getLocale()) ?? $fallback;
         }
 
         if (is_string($name) && str_starts_with($name, '{')) {
             $decoded = json_decode($name, true);
             if (is_array($decoded)) {
-                $locale = App::getLocale();
-                $fallbackLocale = config('app.fallback_locale', 'ko');
-
-                return (string) ($decoded[$locale] ?? $decoded[$fallbackLocale] ?? reset($decoded) ?: $fallback);
+                return LocalizedValue::pick($decoded, App::getLocale()) ?? $fallback;
             }
         }
 
-        // 빈 문자열 이름도 식별자로 대체한다 — 화면은 이 값을 그대로 보여 주므로 빈 칸이 된다(#736 O-F10).
+        // 빈 문자열 이름도 식별자로 대체한다 — 화면은 이 값을 그대로 보여 주므로 빈 칸이 된다(#736).
         return is_string($name) && $name !== '' ? $name : $fallback;
     }
 }

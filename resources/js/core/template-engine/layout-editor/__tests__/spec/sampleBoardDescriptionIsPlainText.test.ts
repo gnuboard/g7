@@ -2,7 +2,7 @@
  * sampleBoardDescriptionIsPlainText.test.ts — 편집기 표본의 게시판 설명이 평문인지 정적 가드
  *
  * 게시판 설명(`board.description`)은 다국어 평문 칸이고(게시판 저장 요청 `TranslatableField`), 사용자 게시판 화면은 이를
- * 글자 노드(`{{posts?.data?.board?.description}}`)로 그린다. 표본이 `<p>…</p>` 를 담아 7.1.0 실측(영역 I2)에서 편집기
+ * 글자 노드(`{{posts?.data?.board?.description}}`)로 그린다. 표본이 `<p>…</p>` 를 담아 7.1.0 실측에서 편집기
  * 미리보기 게시판 머리에 「<p>회원들이 자유롭게 소통하는 공간입니다.</p>」가 태그째 보였다(실화면에는 없는 모습).
  *
  * 모집단은 저장소에서 파생한다 — 번들 편집기 스펙 전부에서 `board` 객체의 `description` 문자열.

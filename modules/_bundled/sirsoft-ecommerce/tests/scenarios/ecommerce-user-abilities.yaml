@@ -33,4 +33,4 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/EcommerceUserAbilitiesTest.php
 
 notes: |
-  2026-09-26 — 기존 테스트에 소유 매니페스트가 없어 새로 만들었다(3차 validate-plan 에서 주문 상품 행 없는 취소 테스트를 고치며 파일을 건드림).
+  2026-09-26 — 기존 테스트에 소유 매니페스트가 없어 새로 만들었다(validate-plan 에서 주문 상품 행 없는 취소 테스트를 고치며 파일을 건드림).

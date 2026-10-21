@@ -103,7 +103,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs space-y-0.5 ml-6"
+                                "className": "text-red-700 dark:text-red-400 text-xs space-y-0.5 ml-6"
                             },
                             "children": [
                                 {
@@ -177,7 +177,7 @@
                                             "comment": "빈 목록 안내",
                                             "type": "basic",
                                             "name": "Tr",
-                                            "if": "{{!$parent._local.form?.order_settings?.banks || $parent._local.form.order_settings.banks.length === 0}}",
+                                            "if": "{{settings !== undefined && (!$parent._local.form?.order_settings?.banks || $parent._local.form.order_settings.banks.length === 0)}}",
                                             "children": [
                                                 {
                                                     "type": "basic",
@@ -225,6 +225,7 @@
                                                             "props": {
                                                                 "type": "text",
                                                                 "value": "{{bank.code ?? ''}}",
+                                                                "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: bank._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_management.code')}}",
                                                                 "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.code_placeholder",
                                                                 "className": "{{$parent._local.bankModalErrors?.['banks.' + bank._idx + '.code'] ? 'input input-error min-w-[80px]' : 'input min-w-[80px]'}}",
                                                                 "disabled": "{{$parent._computed.isReadOnly}}"
@@ -272,6 +273,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "value": "{{typeof bank.name === 'object' ? bank.name : {ko: bank.name ?? '', en: ''}}}",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{bank.code || $t('common.row_n', {n: bank._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_management.name')}}",
                                                                         "layout": "tabs",
                                                                         "name": "{{'bank_name_' + bank._idx}}",
                                                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_management.name_placeholder",

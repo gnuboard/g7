@@ -2,10 +2,14 @@
 
 namespace Tests\Feature\Console\Commands\Extension;
 
-use App\Enums\ExtensionStatus;
+use App\Contracts\Extension\ModuleInterface;
+use App\Extension\ExtensionManager;
+use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
 use App\Models\Module;
 use App\Models\Plugin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
 use Tests\TestCase;
 
 /**
@@ -22,15 +26,20 @@ class ComposerInstallCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 모듈·플러그인 매니저가 확장 목록을 읽어 두게 초기화한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
         // 모듈/플러그인 매니저 초기화
-        $moduleManager = app(\App\Extension\ModuleManager::class);
+        $moduleManager = app(ModuleManager::class);
         $moduleManager->loadModules();
 
-        $pluginManager = app(\App\Extension\PluginManager::class);
+        $pluginManager = app(PluginManager::class);
         $pluginManager->loadPlugins();
     }
 
@@ -40,16 +49,28 @@ class ComposerInstallCommandTest extends TestCase
 
     /**
      * 식별자와 --all 모두 생략 시 사용법을 표시합니다.
+     *
+     * @scenario command=module
+     *
+     * @effects composer_install_command_shows_usage_without_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_module_composer_install_shows_usage_without_arguments(): void
     {
         $this->artisan('module:composer-install')
             ->assertExitCode(1)
-            ->expectsOutputToContain('모듈 식별자를 지정하거나 --all 옵션을 사용하세요');
+            ->expectsOutputToContain(__('modules.commands.composer_install.missing_identifier'));
     }
 
     /**
      * 존재하지 않는 모듈에 대해 에러를 출력합니다.
+     *
+     * @scenario command=module
+     *
+     * @effects composer_install_command_fails_for_unknown_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_module_composer_install_fails_for_nonexistent_module(): void
     {
@@ -58,18 +79,35 @@ class ComposerInstallCommandTest extends TestCase
     }
 
     /**
-     * 외부 의존성이 없는 모듈은 스킵합니다.
+     * 외부 의존성이 없는 모듈은 composer install 을 부르지 않고 안내만 남긴 채 성공 종료합니다.
+     *
+     * 활성 디렉터리(`modules/`)에 어떤 모듈이 깔려 있는지는 환경마다 다르므로, 모듈 조회와 의존성 판정은
+     * 대역으로 고정하고 명령의 분기(안내 문구·성공 종료·설치 미호출)만 잰다.
+     *
+     * @scenario command=module
+     *
+     * @effects composer_install_command_skips_extension_without_dependencies
+     *
+     * @return void 반환값 없음
      */
     public function test_module_composer_install_skips_module_without_dependencies(): void
     {
-        // sirsoft-ecommerce 모듈은 이번 변경으로 htmlpurifier 의존성이 추가되었지만,
-        // 테스트에서는 실제 composer install이 실행되므로 다른 접근이 필요.
-        // php만 require하는 모듈이 있다면 스킵 동작을 검증.
-        // 여기서는 설치된 모듈 중 php만 require하는 경우를 테스트합니다.
+        $identifier = 'probe-no_deps';
 
-        // DB에 모듈 레코드 생성 (실제 모듈 디렉토리가 필요)
-        // 이 테스트는 실제 모듈이 로드되어야 하므로, sirsoft-board 등 외부 의존성 없는 모듈이 있는지 확인
-        $this->assertTrue(true); // 기본 통과 (실제 모듈 구조에 의존하는 통합 테스트)
+        $moduleManager = Mockery::mock(ModuleManager::class);
+        $moduleManager->shouldReceive('loadModules')->andReturnNull();
+        $moduleManager->shouldReceive('getModule')->with($identifier)->andReturn(Mockery::mock(ModuleInterface::class));
+        $this->app->instance(ModuleManager::class, $moduleManager);
+
+        $extensionManager = Mockery::mock(ExtensionManager::class);
+        $extensionManager->shouldReceive('hasComposerDependencies')->once()->with('modules', $identifier)->andReturnFalse();
+        $extensionManager->shouldNotReceive('runComposerInstall');
+        $extensionManager->shouldNotReceive('updateComposerAutoload');
+        $this->app->instance(ExtensionManager::class, $extensionManager);
+
+        $this->artisan('module:composer-install', ['identifier' => $identifier])
+            ->expectsOutputToContain(__('modules.composer_install.no_dependencies', ['module' => $identifier]))
+            ->assertExitCode(0);
     }
 
     // ========================================================================
@@ -78,16 +116,28 @@ class ComposerInstallCommandTest extends TestCase
 
     /**
      * 식별자와 --all 모두 생략 시 사용법을 표시합니다.
+     *
+     * @scenario command=plugin
+     *
+     * @effects composer_install_command_shows_usage_without_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_composer_install_shows_usage_without_arguments(): void
     {
         $this->artisan('plugin:composer-install')
             ->assertExitCode(1)
-            ->expectsOutputToContain('플러그인 식별자를 지정하거나 --all 옵션을 사용하세요');
+            ->expectsOutputToContain(__('plugins.commands.composer_install.missing_identifier'));
     }
 
     /**
      * 존재하지 않는 플러그인에 대해 에러를 출력합니다.
+     *
+     * @scenario command=plugin
+     *
+     * @effects composer_install_command_fails_for_unknown_extension
+     *
+     * @return void 반환값 없음
      */
     public function test_plugin_composer_install_fails_for_nonexistent_plugin(): void
     {
@@ -101,6 +151,12 @@ class ComposerInstallCommandTest extends TestCase
 
     /**
      * extension:composer-install이 module과 plugin 커맨드를 모두 호출합니다.
+     *
+     * @scenario command=extension
+     *
+     * @effects extension_composer_install_runs_module_and_plugin_steps
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_composer_install_runs_both_module_and_plugin(): void
     {
@@ -112,6 +168,12 @@ class ComposerInstallCommandTest extends TestCase
 
     /**
      * --no-dev 옵션이 정상적으로 전달됩니다.
+     *
+     * @scenario command=extension
+     *
+     * @effects extension_composer_install_accepts_no_dev_option
+     *
+     * @return void 반환값 없음
      */
     public function test_extension_composer_install_passes_no_dev_option(): void
     {

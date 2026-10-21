@@ -44,8 +44,9 @@ function findAllByType(root: any, type: string, name?: string): any[] {
 function collectI18nKeys(obj: any, keys: Set<string> = new Set()): Set<string> {
     if (!obj) return keys;
     if (typeof obj === 'string') {
-        const matches = obj.match(/\$t:[a-zA-Z0-9_.\-]+/g);
-        if (matches) matches.forEach(m => keys.add(m));
+        // 지연 번역 접두(`$t:defer:` — 셀 안 행 이름)는 키가 아니다
+        const matches = obj.match(/\$t:(?:defer:)?[a-zA-Z0-9_.\-]+/g);
+        if (matches) matches.forEach(m => keys.add(m.replace('$t:defer:', '$t:')));
     } else if (Array.isArray(obj)) {
         obj.forEach(item => collectI18nKeys(item, keys));
     } else if (typeof obj === 'object') {
@@ -58,6 +59,8 @@ function collectI18nKeys(obj: any, keys: Set<string> = new Set()): Set<string> {
 // 1. 메인 레이아웃 메타/구조
 // ──────────────────────────────────────────────
 describe('메인 레이아웃 (admin_ecommerce_shipping_policy_list)', () => {
+    // @scenario section=main_layout
+    // @effects layout_meta_declared
     it('기본 메타 속성이 올바르다', () => {
         expect(listLayout.version).toBe('1.0.0');
         expect(listLayout.layout_name).toBe('admin_ecommerce_shipping_policy_list');
@@ -65,6 +68,8 @@ describe('메인 레이아웃 (admin_ecommerce_shipping_policy_list)', () => {
         expect(listLayout.permissions).toContain('sirsoft-ecommerce.shipping-policies.read');
     });
 
+    // @scenario section=main_layout
+    // @effects layout_meta_declared
     it('meta.title에 다국어 키를 사용한다', () => {
         expect(listLayout.meta.title).toBe('$t:sirsoft-ecommerce.admin.shipping_policy.title');
     });
@@ -77,6 +82,8 @@ describe('State 구조', () => {
     const state = initStateOf(listLayout);
     const { initGlobal } = listLayout;
 
+    // @scenario section=state
+    // @effects initial_state_shape
     it('local state에 필터 기본값이 정의되어 있다', () => {
         expect(state.filter).toBeDefined();
         expect(state.filter.search).toBe('');
@@ -86,6 +93,8 @@ describe('State 구조', () => {
         expect(state.filter.is_active).toBe('');
     });
 
+    // @scenario section=state
+    // @effects initial_state_shape
     it('local state에 selectAll, sortBy, perPage가 있다', () => {
         expect(state.selectedItems).toEqual([]);
         expect(state.selectAll).toBe(false);
@@ -93,6 +102,8 @@ describe('State 구조', () => {
         expect(state.perPage).toBe('20');
     });
 
+    // @scenario section=state
+    // @effects initial_state_shape
     it('global state에 모달/벌크 관련 상태가 있다', () => {
         expect(initGlobal.targetPolicy).toBeNull();
         expect(initGlobal.targetDefaultPolicy).toBeNull();
@@ -110,10 +121,14 @@ describe('State 구조', () => {
 describe('Data Sources', () => {
     const { data_sources } = listLayout;
 
+    // @scenario section=data_sources
+    // @effects data_sources_declared
     it('2개 data_source가 정의되어 있다', () => {
         expect(data_sources).toHaveLength(2);
     });
 
+    // @scenario section=data_sources
+    // @effects data_sources_declared
     it('shipping_policies API가 올바르게 설정되어 있다', () => {
         const ds = data_sources.find((d: any) => d.id === 'shipping_policies');
         expect(ds).toBeDefined();
@@ -123,6 +138,8 @@ describe('Data Sources', () => {
         expect(ds.auth_required).toBe(true);
     });
 
+    // @scenario section=data_sources
+    // @effects data_sources_declared
     it('shipping_policies params가 query 기반이다', () => {
         const ds = data_sources.find((d: any) => d.id === 'shipping_policies');
         const { params } = ds;
@@ -135,6 +152,8 @@ describe('Data Sources', () => {
         expect(params.is_active).toContain('query.is_active');
     });
 
+    // @scenario section=data_sources
+    // @effects data_sources_declared
     it('ecommerce_settings data_source 가 있고 국가 정보를 제공한다 (별도 shipping_available_countries 미사용)', () => {
         // 별도 shipping_available_countries 데이터소스 → ecommerce_settings 단일 ds 로 통합
         // 국가 목록은 ecommerce_settings.data.shipping.available_countries 경로에서 조회
@@ -149,6 +168,8 @@ describe('Data Sources', () => {
 // 4. init_actions
 // ──────────────────────────────────────────────
 describe('init_actions', () => {
+    // @scenario section=init_actions
+    // @effects init_actions_declared
     it('setState로 query에서 필터 값을 복원한다', () => {
         // 개수로 고정하지 않는다. 여기의 계약은 "query 에서 필터를 복원하는 setState 가 있는가" 다.
         const { init_actions } = listLayout;
@@ -179,6 +200,8 @@ describe('init_actions', () => {
 // 5. named_actions
 // ──────────────────────────────────────────────
 describe('named_actions', () => {
+    // @scenario section=named_actions
+    // @effects named_actions_declared
     it('searchShippingPolicies가 navigate + replace로 정의되어 있다', () => {
         const action = listLayout.named_actions.searchShippingPolicies;
         expect(action.handler).toBe('navigate');
@@ -186,12 +209,16 @@ describe('named_actions', () => {
         expect(action.params.path).toBe('/admin/ecommerce/shipping-policies');
     });
 
+    // @scenario section=named_actions
+    // @effects named_actions_declared
     it('searchShippingPolicies query에 countries[] 파라미터가 있다', () => {
         const { query } = listLayout.named_actions.searchShippingPolicies.params;
         expect(query['countries[]']).toBeDefined();
         expect(query['countries[]']).toContain('_local.filter.countries');
     });
 
+    // @scenario section=named_actions
+    // @effects named_actions_declared
     it('searchShippingPolicies query에 모든 필터 파라미터가 있다', () => {
         const { query } = listLayout.named_actions.searchShippingPolicies.params;
         expect(query.search).toBeDefined();
@@ -208,18 +235,26 @@ describe('Partials 참조', () => {
     const allNodes = flattenAll(listLayout);
     const partialRefs = allNodes.filter((n: any) => n.partial).map((n: any) => n.partial);
 
+    // @scenario section=partials
+    // @effects partials_referenced
     it('content 슬롯에 _partial_filter.json 참조가 있다', () => {
         expect(partialRefs).toContainEqual(expect.stringContaining('_partial_filter.json'));
     });
 
+    // @scenario section=partials
+    // @effects partials_referenced
     it('content 슬롯에 _partial_datagrid.json 참조가 있다', () => {
         expect(partialRefs).toContainEqual(expect.stringContaining('_partial_datagrid.json'));
     });
 
+    // @scenario section=partials
+    // @effects partials_referenced
     it('content 슬롯에 _partial_bulk_actions.json 참조가 있다', () => {
         expect(partialRefs).toContainEqual(expect.stringContaining('_partial_bulk_actions.json'));
     });
 
+    // @scenario section=partials
+    // @effects partials_referenced
     it('5개 모달 partial이 있다', () => {
         expect(listLayout.modals).toHaveLength(5);
         const modalPartials = listLayout.modals.map((m: any) => m.partial);
@@ -235,15 +270,21 @@ describe('Partials 참조', () => {
 // 7. DataGrid Partial
 // ──────────────────────────────────────────────
 describe('DataGrid Partial (_partial_datagrid.json)', () => {
+    // @scenario section=datagrid
+    // @effects datagrid_structure
     it('DataGrid 컴포넌트로 정의되어 있다', () => {
         expect(datagridPartial.type).toBe('composite');
         expect(datagridPartial.name).toBe('DataGrid');
     });
 
+    // @scenario section=datagrid
+    // @effects datagrid_structure
     it('selectable이 true이다', () => {
         expect(datagridPartial.props.selectable).toBe(true);
     });
 
+    // @scenario section=datagrid
+    // @effects datagrid_structure
     it('data가 shipping_policies를 참조한다', () => {
         expect(datagridPartial.props.data).toContain('shipping_policies');
     });
@@ -251,10 +292,14 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
     describe('컬럼 구조', () => {
         const columns = datagridPartial.props.columns;
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('5개 컬럼이 정의되어 있다 (is_default, name, countries, fee_summary, is_active)', () => {
             expect(columns).toHaveLength(5);
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('is_default 컬럼이 Toggle을 사용한다', () => {
             const col = columns.find((c: any) => c.field === 'is_default');
             expect(col).toBeDefined();
@@ -262,12 +307,16 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             expect(toggle).toBeDefined();
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('name_localized 컬럼이 sortable이다', () => {
             const col = columns.find((c: any) => c.field === 'name_localized');
             expect(col).toBeDefined();
             expect(col.sortable).toBe(true);
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('countries_display 컬럼이 country_settings iteration으로 국기를 표시한다', () => {
             const col = columns.find((c: any) => c.field === 'countries_display');
             expect(col).toBeDefined();
@@ -279,6 +328,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             expect(iterNode.iteration.item_var).toBe('countryCode');
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('fee_summary 컬럼이 row.fee_summary를 표시한다', () => {
             const col = columns.find((c: any) => c.field === 'fee_summary');
             expect(col).toBeDefined();
@@ -286,6 +337,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             expect(textNode.text).toContain('row.fee_summary');
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('is_active 컬럼이 Toggle + apiCall toggle-active를 사용한다', () => {
             const col = columns.find((c: any) => c.field === 'is_active');
             expect(col).toBeDefined();
@@ -296,6 +349,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             expect(apiAction.target).toContain('toggle-active');
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('기존 flat 컬럼(shipping_method, carrier, charge_policy, currency_code)이 제거되었다', () => {
             const fieldNames = columns.map((c: any) => c.field);
             expect(fieldNames).not.toContain('shipping_method');
@@ -307,6 +362,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
     });
 
     describe('rowActions', () => {
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('edit, copy, delete 액션이 있다', () => {
             const { rowActions } = datagridPartial.props;
             const actionIds = rowActions.map((a: any) => a.id);
@@ -315,6 +372,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             expect(actionIds).toContain('delete');
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('delete 액션이 danger variant이다', () => {
             const deleteAction = datagridPartial.props.rowActions.find((a: any) => a.id === 'delete');
             expect(deleteAction.variant).toBe('danger');
@@ -324,11 +383,15 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
     describe('subRowChildren (국가별 상세)', () => {
         const subRow = datagridPartial.props.subRowChildren;
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('subRowChildren이 정의되어 있다', () => {
             expect(subRow).toBeDefined();
             expect(Array.isArray(subRow)).toBe(true);
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('country_settings가 비어있을 때 안내 메시지를 표시한다', () => {
             const allNodes = flattenAll({ children: subRow });
             const emptyNode = allNodes.find(
@@ -338,6 +401,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             expect(emptyNode.text).toContain('no_country_settings');
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('country_settings iteration으로 국가별 상세를 표시한다', () => {
             const allNodes = flattenAll({ children: subRow });
             const iterNode = allNodes.find(
@@ -348,6 +413,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             expect(iterNode.iteration.index_var).toBe('csIdx');
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('국가별 상세에 국기+코드, 배송방법, 부과정책 정보가 있다', () => {
             const allNodes = flattenAll({ children: subRow });
             // 국기 아이콘
@@ -369,6 +436,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             expect(policyNode).toBeDefined();
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('국가별 상세에 도서산간 배지(KR 전용)가 있다', () => {
             const allNodes = flattenAll({ children: subRow });
             const extraFeeBadge = allNodes.find(
@@ -378,6 +447,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             expect(extraFeeBadge.text).toContain('extra_fee_badge');
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('국가별 상세에 비활성 배지가 있다', () => {
             const allNodes = flattenAll({ children: subRow });
             const inactiveBadge = allNodes.find(
@@ -387,6 +458,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             expect(inactiveBadge.text).toContain('inactive');
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('국가별 상세에 free_threshold 표시가 있다', () => {
             const allNodes = flattenAll({ children: subRow });
             const thresholdNode = allNodes.find(
@@ -399,6 +472,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
     });
 
     describe('DataGrid 이벤트 액션', () => {
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('onSelectionChange에서 global bulkSelectedItems를 업데이트한다', () => {
             const selAction = asArray(datagridPartial?.actions).find(
                 (a: any) => a.event === 'onSelectionChange'
@@ -409,6 +484,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             expect(selAction.params.bulkSelectedItems).toContain('$args[0]');
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('onRowAction에서 switch로 edit/copy/delete를 분기한다', () => {
             const rowAction = asArray(datagridPartial?.actions).find(
                 (a: any) => a.event === 'onRowAction'
@@ -420,6 +497,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             expect(rowAction.cases.delete).toBeDefined();
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('edit 액션이 navigate로 수정 페이지로 이동한다', () => {
             const rowAction = asArray(datagridPartial?.actions).find(
                 (a: any) => a.event === 'onRowAction'
@@ -428,6 +507,8 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             expect(rowAction.cases.edit.params.path).toContain('/edit');
         });
 
+        // @scenario section=datagrid
+        // @effects datagrid_structure
         it('copy 액션이 sequence(setState → openModal)이다', () => {
             const rowAction = asArray(datagridPartial?.actions).find(
                 (a: any) => a.event === 'onRowAction'
@@ -444,10 +525,14 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
 // 8. 필터 Partial
 // ──────────────────────────────────────────────
 describe('필터 Partial (_partial_filter.json)', () => {
+    // @scenario section=filter
+    // @effects country_filter_dynamic
     it('filter_section ID가 있다', () => {
         expect(filterPartial.id).toBe('filter_section');
     });
 
+    // @scenario section=filter
+    // @effects country_filter_dynamic
     it('검색 입력 필드가 있다', () => {
         const allNodes = flattenAll(filterPartial);
         const searchInput = allNodes.find(
@@ -461,10 +546,14 @@ describe('필터 Partial (_partial_filter.json)', () => {
         const allNodes = flattenAll(filterPartial);
         const countryFilter = findById(filterPartial, 'country_filter');
 
+        // @scenario section=filter
+        // @effects country_filter_dynamic
         it('country_filter 섹션이 있다', () => {
             expect(countryFilter).toBeDefined();
         });
 
+        // @scenario section=filter
+        // @effects country_filter_dynamic
         it('ecommerce_settings.shipping.available_countries 가 있을 때만 표시된다', () => {
             // shipping_available_countries 데이터소스 → ecommerce_settings 통합 후
             // 표시 조건도 ecommerce_settings.data.shipping.available_countries 길이 검사로 변경
@@ -472,6 +561,8 @@ describe('필터 Partial (_partial_filter.json)', () => {
             expect(countryFilter.if).toContain('available_countries');
         });
 
+        // @scenario section=filter
+        // @effects country_filter_dynamic
         it('동적 iteration으로 국가 Checkbox를 생성한다 (ecommerce_settings 기반)', () => {
             const iterNodes = allNodes.filter(
                 (n: any) => n.iteration?.source?.includes('ecommerce_settings')
@@ -482,6 +573,8 @@ describe('필터 Partial (_partial_filter.json)', () => {
             expect(iterNode.iteration.item_var).toBe('acountry');
         });
 
+        // @scenario section=filter
+        // @effects country_filter_dynamic
         it('국가 Checkbox가 _local.filter.countries를 토글한다', () => {
             const iterNodes = allNodes.filter(
                 (n: any) => n.iteration?.source?.includes('ecommerce_settings')
@@ -496,6 +589,8 @@ describe('필터 Partial (_partial_filter.json)', () => {
             expect(checkboxNodes.length).toBeGreaterThan(0);
         });
 
+        // @scenario section=filter
+        // @effects country_filter_dynamic
         it('전체 선택 Checkbox가 있다', () => {
             const allCheckbox = allNodes.find(
                 (n: any) =>
@@ -515,6 +610,8 @@ describe('필터 Partial (_partial_filter.json)', () => {
 describe('페이지 헤더', () => {
     const allNodes = flattenAll(listLayout);
 
+    // @scenario section=page_header
+    // @effects page_header_rendered
     it('H1 타이틀이 있다', () => {
         const h1 = allNodes.find(
             (n: any) => n.name === 'H1' && n.text?.includes('shipping_policy.title')
@@ -522,15 +619,20 @@ describe('페이지 헤더', () => {
         expect(h1).toBeDefined();
     });
 
-    it('배송정책 등록 버튼이 create 페이지로 이동한다', () => {
-        const buttons = allNodes.filter((n: any) => n.name === 'Button');
-        const createBtn = buttons.find((btn: any) => {
-            const children = flattenAll(btn);
+    // @scenario section=page_header
+    // @effects page_header_rendered
+    it('배송정책 등록 링크가 create 페이지로 이동한다', () => {
+        // 새 탭으로도 열리도록 링크(A href)다 — 보통 클릭은 path 없는 navigate 가 href 로 이동(#757 2단계)
+        const links = allNodes.filter((n: any) => n.name === 'A');
+        const createLink = links.find((a: any) => {
+            const children = flattenAll(a);
             return children.some((c: any) => c.text?.includes('shipping_policy.add'));
         });
-        expect(createBtn).toBeDefined();
-        const navAction = createBtn.actions?.find((a: any) => a.handler === 'navigate');
-        expect(navAction.params.path).toContain('/create');
+        expect(createLink).toBeDefined();
+        expect(createLink.props.href).toContain('/create');
+        const navAction = createLink.actions?.find((a: any) => a.handler === 'navigate');
+        expect(navAction.params.path).toBeUndefined();
+        expect(navAction.params.mergeQuery).toBe(true);
     });
 });
 
@@ -540,6 +642,8 @@ describe('페이지 헤더', () => {
 describe('정렬 및 페이지네이션', () => {
     const allNodes = flattenAll(listLayout);
 
+    // @scenario section=sort_pagination
+    // @effects sort_and_pagination_wired
     it('정렬 Select에 5개 옵션이 있다', () => {
         const sortSelect = allNodes.find(
             (n: any) => n.name === 'Select' && n.props?.name === 'sortBy'
@@ -554,6 +658,8 @@ describe('정렬 및 페이지네이션', () => {
         expect(values).toContain('sort_order_asc');
     });
 
+    // @scenario section=sort_pagination
+    // @effects sort_and_pagination_wired
     it('페이지당 항목 수 Select에 10/20/50/100 옵션이 있다', () => {
         const perPageSelect = allNodes.find(
             (n: any) => n.name === 'Select' && n.props?.name === 'perPage'
@@ -565,6 +671,8 @@ describe('정렬 및 페이지네이션', () => {
 
     // 외부 Pagination 컴포넌트는 제거되고 DataGrid 내장 pagination 으로 전환됨
     // (쿠폰/주문/상품 리스트와 일관 — DataGrid serverSidePagination + alwaysShowPagination)
+    // @scenario section=sort_pagination
+    // @effects sort_and_pagination_wired
     it('외부 Pagination 컴포넌트는 제거되었다 (DataGrid 내장 pagination 사용)', () => {
         const pagination = allNodes.find((n: any) => n.name === 'Pagination');
         expect(pagination).toBeUndefined();
@@ -575,11 +683,15 @@ describe('정렬 및 페이지네이션', () => {
 // 11. 빈 상태(Empty State) — 레퍼런스(쿠폰/주문/상품)와 일관: DataGrid emptyMessage 단독
 // ──────────────────────────────────────────────
 describe('빈 상태 (Empty State) — DataGrid emptyMessage 단독', () => {
+    // @scenario section=empty_state
+    // @effects single_empty_message
     it('별도 empty_state 카드 블록이 제거되었다 (이중 표시 회귀 방지)', () => {
         const emptyState = findById(listLayout, 'empty_state');
         expect(emptyState).toBeUndefined();
     });
 
+    // @scenario section=empty_state
+    // @effects single_empty_message
     it('DataGrid가 emptyMessage prop으로 빈 상태를 처리한다', () => {
         expect(datagridPartial.props.emptyMessage).toBeDefined();
         expect(datagridPartial.props.emptyMessage).toContain('empty.title');
@@ -592,6 +704,8 @@ describe('빈 상태 (Empty State) — DataGrid emptyMessage 단독', () => {
 describe('데이터 영역 조건부 렌더링 제거 (레퍼런스 일관)', () => {
     const allNodes = flattenAll(listLayout);
 
+    // @scenario section=conditional_render
+    // @effects no_conditional_data_area
     it('DataGrid partial에 데이터 존재 if 조건이 없다 (항상 렌더)', () => {
         const datagridRef = allNodes.find(
             (n: any) => n.partial?.includes('_partial_datagrid.json')
@@ -600,6 +714,8 @@ describe('데이터 영역 조건부 렌더링 제거 (레퍼런스 일관)', ()
         expect(datagridRef.if).toBeUndefined();
     });
 
+    // @scenario section=conditional_render
+    // @effects no_conditional_data_area
     it('bulk_actions partial에 데이터 존재 if 조건이 없다', () => {
         const bulkRef = allNodes.find(
             (n: any) => n.partial?.includes('_partial_bulk_actions.json')
@@ -608,12 +724,16 @@ describe('데이터 영역 조건부 렌더링 제거 (레퍼런스 일관)', ()
         expect(bulkRef.if).toBeUndefined();
     });
 
+    // @scenario section=conditional_render
+    // @effects no_conditional_data_area
     it('table_header_bar에 데이터 존재 if 조건이 없다', () => {
         const headerBar = findById(listLayout, 'table_header_bar');
         expect(headerBar).toBeDefined();
         expect(headerBar.if).toBeUndefined();
     });
 
+    // @scenario section=conditional_render
+    // @effects no_conditional_data_area
     it('외부 pagination_section 블록이 제거되었다', () => {
         const pagination = findById(listLayout, 'pagination_section');
         expect(pagination).toBeUndefined();
@@ -624,17 +744,23 @@ describe('데이터 영역 조건부 렌더링 제거 (레퍼런스 일관)', ()
 // 11-2. DataGrid 내장 pagination (서버사이드)
 // ──────────────────────────────────────────────
 describe('DataGrid 내장 pagination', () => {
+    // @scenario section=builtin_pagination
+    // @effects datagrid_builtin_pagination
     it('serverSidePagination + alwaysShowPagination 이 설정되어 있다', () => {
         expect(datagridPartial.props.pagination).toBe(true);
         expect(datagridPartial.props.serverSidePagination).toBe(true);
         expect(datagridPartial.props.alwaysShowPagination).toBe(true);
     });
 
+    // @scenario section=builtin_pagination
+    // @effects datagrid_builtin_pagination
     it('serverCurrentPage/serverTotalPages 가 데이터소스 pagination을 참조한다', () => {
         expect(datagridPartial.props.serverCurrentPage).toContain('shipping_policies?.data?.pagination?.current_page');
         expect(datagridPartial.props.serverTotalPages).toContain('shipping_policies?.data?.pagination?.last_page');
     });
 
+    // @scenario section=builtin_pagination
+    // @effects datagrid_builtin_pagination
     it('onPageChange 액션이 navigate replace + mergeQuery 로 page를 갱신한다', () => {
         const onPageChange = (datagridPartial.actions || []).find(
             (a: any) => a.event === 'onPageChange'
@@ -651,6 +777,8 @@ describe('DataGrid 내장 pagination', () => {
 // 11-3. 데이터소스 initLocal 제거 (검색 후 _localInit 트리거 차단)
 // ──────────────────────────────────────────────
 describe('데이터소스 initLocal 제거 (검색 후 필터 보존 방어)', () => {
+    // @scenario section=no_init_local
+    // @effects filter_preserved_after_search
     it('shipping_policies 데이터소스에 initLocal이 없다', () => {
         const ds = (listLayout.data_sources || []).find((d: any) => d.id === 'shipping_policies');
         expect(ds).toBeDefined();
@@ -662,6 +790,8 @@ describe('데이터소스 initLocal 제거 (검색 후 필터 보존 방어)', (
 // 12. 다국어 키 경로 무결성
 // ──────────────────────────────────────────────
 describe('다국어 키 경로 무결성', () => {
+    // @scenario section=i18n
+    // @effects i18n_keys_namespaced
     it('모든 i18n 키가 sirsoft-ecommerce 모듈 네임스페이스를 사용한다', () => {
         const keys = collectI18nKeys(listLayout);
         const datagridKeys = collectI18nKeys(datagridPartial);
@@ -669,11 +799,15 @@ describe('다국어 키 경로 무결성', () => {
         const allKeys = new Set([...keys, ...datagridKeys, ...filterKeys]);
 
         allKeys.forEach(key => {
-            // admin / enums / editor(데이터소스 라벨) 네임스페이스 허용
-            expect(key).toMatch(/^\$t:sirsoft-ecommerce\.(admin|enums|editor)\./);
+            // admin / enums / editor(데이터소스 라벨) 네임스페이스 허용.
+            // 관리자 템플릿 공용 키(common.sort_order·common.per_page·common.row_cell 등 — 칸 이름 규칙 #757)도 허용
+            // 코어 공용 오류 문구(다시 받기 실패 토스트 — engine-v1.82.0 오류 처리기 문맥)도 허용
+            expect(key).toMatch(/^\$t:(sirsoft-ecommerce\.(admin|enums|editor)|common|core\.errors)\./);
         });
     });
 
+    // @scenario section=i18n
+    // @effects i18n_keys_namespaced
     it('다국어 키가 20개 이상 사용된다', () => {
         const keys = collectI18nKeys(listLayout);
         const datagridKeys = collectI18nKeys(datagridPartial);

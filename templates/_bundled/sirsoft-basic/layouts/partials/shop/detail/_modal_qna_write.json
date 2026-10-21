@@ -57,7 +57,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "box",
-                                "className": "text-gray-400 dark:text-gray-500"
+                                "className": "text-gray-500 dark:text-gray-300"
                             }
                         }
                     ]
@@ -83,7 +83,7 @@
                             "name": "Span",
                             "if": "{{!!_global.qnaEditId && !!_global.qnaCreatedAt}}",
                             "props": {
-                                "className": "block text-xs text-gray-400 dark:text-gray-500 mt-0.5"
+                                "className": "block text-xs text-gray-500 dark:text-gray-300 mt-0.5"
                             },
                             "text": "$t:shop.qna.written_at|value={{_global.qnaCreatedAt | datetime}}"
                         }
@@ -191,6 +191,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.qna.category",
                                 "className": "{{(_global.qnaErrors?.category) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500'}}",
                                 "value": "{{_global.qnaForm.category ?? ''}}",
                                 "options": "{{[{ value: '', label: $t('shop.qna.category_placeholder') }].concat(((_global.qnaModalBoardSettings)?.categories ?? []).map(function(c) { return typeof c === 'object' ? { value: c.value, label: c.label ?? c.value } : { value: c, label: c }; }))}}",
@@ -202,7 +203,7 @@
                             "name": "Span",
                             "if": "{{_global.qnaErrors?.category}}",
                             "props": {
-                                "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                             },
                             "text": "{{(_global.qnaErrors?.category ?? [])[0] ?? ''}}"
                         }
@@ -241,8 +242,9 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.qna.title",
                                 "type": "text",
-                                "className": "{{(_global.qnaErrors?.title) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500'}}",
+                                "className": "{{(_global.qnaErrors?.title) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500'}}",
                                 "placeholder": "$t:shop.qna.title_placeholder",
                                 "value": "{{_global.qnaForm.title ?? ''}}",
                                 "disabled": "{{_global.qnaSubmitting}}"
@@ -253,7 +255,7 @@
                             "name": "Span",
                             "if": "{{_global.qnaErrors?.title}}",
                             "props": {
-                                "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                             },
                             "text": "{{(_global.qnaErrors?.title ?? [])[0] ?? ''}}"
                         }
@@ -292,7 +294,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "{{(_global.qnaErrors?.content) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none'}}",
+                                "aria-label": "$t:shop.qna.content",
+                                "className": "{{(_global.qnaErrors?.content) ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none'}}",
                                 "placeholder": "$t:shop.qna.content_placeholder",
                                 "rows": 5,
                                 "value": "{{_global.qnaForm.content ?? ''}}",
@@ -304,7 +307,7 @@
                             "name": "Span",
                             "if": "{{_global.qnaErrors?.content}}",
                             "props": {
-                                "className": "text-red-500 dark:text-red-400 text-xs mt-1 block"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                             },
                             "text": "{{(_global.qnaErrors?.content ?? [])[0] ?? ''}}"
                         }

@@ -7,6 +7,10 @@
     "id": "identity_log_datagrid",
     "type": "composite",
     "name": "DataGrid",
+    "blur_until_loaded": {
+        "enabled": true,
+        "data_sources": "identityLogs"
+    },
     "actions": [
         {
             "comment": "쪽 번호만 주소에 갈아 끼우고 걸어 둔 조건은 그대로 물려받는다. 표 몸통에 덮개를 씌워 새 쪽이 올 때까지 이전 내용이 깜박이지 않게 한다.",
@@ -28,6 +32,8 @@
         "data": "{{identityLogs?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,
+        "pageHref": "/admin/identity/logs?page={page}",
+        "pageHrefMergeQuery": true,
         "serverCurrentPage": "{{identityLogs?.data?.pagination?.current_page ?? 1}}",
         "serverTotalPages": "{{identityLogs?.data?.pagination?.last_page ?? null}}",
         "serverHasMorePages": "{{identityLogs?.data?.pagination?.has_more_pages ?? false}}",
@@ -35,8 +41,8 @@
         "alwaysShowPagination": true,
         "idField": "id",
         "selectable": false,
-        "loading": "{{identityLogs?.loading}}",
         "expandable": true,
+        "emptyMessage": "{{identityLogs === undefined ? '' : $t('common.no_data')}}",
         "expandChildren": [
             {
                 "type": "basic",

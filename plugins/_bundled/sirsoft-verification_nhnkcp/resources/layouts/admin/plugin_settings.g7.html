@@ -1,8 +1,22 @@
 <!-- NHN KCP 본인인증 연동 설정 화면 -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
-  <meta title="$t:sirsoft-verification_nhnkcp.settings.title" description="$t:sirsoft-verification_nhnkcp.settings.description"/>
+  <meta leave_guard="{{_local.hasChanges === true}}" title="$t:sirsoft-verification_nhnkcp.settings.title" description="$t:sirsoft-verification_nhnkcp.settings.description"/>
   <!-- 저장된 플러그인 설정을 폼 초기값으로 싣는다. 저장 응답에서 사이트코드·암호화 키가 정규화되어 돌아오므로 저장 후에도 다시 받는다 -->
-  <data-source id="settings" label_key="$t:sirsoft-verification_nhnkcp.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <data-source id="settings" label_key="$t:sirsoft-verification_nhnkcp.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+  </data-source>
   <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
     <permission>core.plugins.update</permission>
@@ -12,12 +26,12 @@
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-verification_nhnkcp.settings.title" description="$t:sirsoft-verification_nhnkcp.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
         <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-warning-soft">$t:sirsoft-verification_nhnkcp.plugin_read_only</span>
+        <span class="text-xs verification-nhnkcp-tone-warning">$t:sirsoft-verification_nhnkcp.plugin_read_only</span>
       </div>
       <div data-ref="info_panel" class="alert-info">
         <div class="flex gap-3">
           <icon name="circle-info" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
-          <div class="space-y-1 text-info-soft">
+          <div class="space-y-1 text-xs verification-nhnkcp-tone-info">
             <p>$t:sirsoft-verification_nhnkcp.settings.info.activation</p>
             <p>$t:sirsoft-verification_nhnkcp.settings.info.logs</p>
           </div>
@@ -49,8 +63,8 @@
         <div class="flex gap-3">
           <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
           <div>
-            <h3 class="text-sm font-semibold text-warning-soft">$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_title</h3>
-            <p class="mt-1 text-warning-soft">$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_body</p>
+            <h3 class="text-sm font-semibold verification-nhnkcp-tone-warning">$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_title</h3>
+            <p class="mt-1 text-xs verification-nhnkcp-tone-warning">$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_body</p>
           </div>
         </div>
       </div>
@@ -131,7 +145,7 @@
                   <span>$t:sirsoft-verification_nhnkcp.settings.duplicate_field.ci</span>
                 </label>
               </div>
-              <p class="text-xs text-amber-600 dark:text-amber-400 text-right">$t:sirsoft-verification_nhnkcp.settings.duplicate_field.warning</p>
+              <p class="text-xs text-amber-700 dark:text-amber-400 text-right">$t:sirsoft-verification_nhnkcp.settings.duplicate_field.warning</p>
             </div>
           </div>
           <div data-ref="field_duplicate_block_enabled" class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -147,12 +161,12 @@
         </div>
       </div>
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+        <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
           <on type="click">
-            <navigate path="/admin/plugins"/>
+            <navigate :bypassLeaveGuard="true"/>
           </on>
           <span>$t:common.cancel</span>
-        </button>
+        </a>
         <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 저장. 성공 응답을 폼에 되돌리는 것이 핵심이다 — 서버가 사이트코드 프리픽스를 떼고 암호화 키를 마스크해 돌려주는데, 뒤이은 refetch 만으로는 운영자가 직접 친 입력칸이 갱신되지 않아 화면에만 옛 입력이 남는다 -->

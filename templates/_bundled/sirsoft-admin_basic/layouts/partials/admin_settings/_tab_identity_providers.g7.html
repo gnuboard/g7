@@ -17,7 +17,7 @@
             <span data-if="{{_local.errors?.['identity.purpose_providers.' + purpose.id]}}" class="form-error">{{_local.errors?.['identity.purpose_providers.' + purpose.id]?.[0] ?? ''}}</span>
           </div>
         </div>
-        <div data-if="{{(identityPurposes?.data ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.settings.identity.purposes.empty</div>
+        <div data-if="{{identityPurposes !== undefined &amp;&amp; (identityPurposes?.data ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.settings.identity.purposes.empty</div>
       </div>
     </div>
     <div data-ref="card_identity_providers" class="admin-card">
@@ -30,14 +30,14 @@
               <span class="text-primary text-sm font-semibold block">{{provider.label}}</span>
               <span class="text-tertiary font-mono">{{provider.id}}</span>
             </div>
-            <span class="{{provider.is_available ? 'text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-success-soft' : 'text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'}}">{{provider.is_available ? '$t:admin.settings.identity.providers.available' : '$t:admin.settings.identity.providers.unavailable'}}</span>
+            <span class="{{provider.is_available ? 'text-xs px-2 py-1 rounded-full bg-green-50 dark:bg-green-900 text-success-soft' : 'text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}}">{{provider.is_available ? '$t:admin.settings.identity.providers.available' : '$t:admin.settings.identity.providers.unavailable'}}</span>
           </div>
           <div data-each="channel in provider.channels ?? []" class="flex flex-wrap gap-2 mt-2">
             <span class="text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-info-soft">{{channel}}</span>
           </div>
         </div>
       </div>
-      <div data-if="{{(identityProviders?.data ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.settings.identity.providers.empty</div>
+      <div data-if="{{identityProviders !== undefined &amp;&amp; (identityProviders?.data ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.settings.identity.providers.empty</div>
     </div>
   </div>
 </partial>

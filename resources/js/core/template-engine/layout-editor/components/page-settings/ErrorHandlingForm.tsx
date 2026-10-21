@@ -189,36 +189,94 @@ function ErrorActionEditor({
       return;
     }
     const r = normalized.find((x) => x.id === h);
-    if (r) onPatch(buildAction(r, {}));
+    if (!r) return;
+    const built = buildAction(r, {}) as Record<string, unknown>;
+    if (h !== 'sequence' && h !== 'parallel') {
+      onPatch(built as ErrorAction);
+      return;
+    }
+    // 순차·동시 실행은 굽기 산출 모양(최상위 actions)으로 저장한다 — 레시피는 params.actions 로 짓는다(W7).
+    const { actions: recipeActions, ...restParams } = (built.params ?? {}) as Record<string, unknown>;
+    const { params: _recipeParams, ...rest } = built;
+    onPatch({
+      ...rest,
+      ...(Object.keys(restParams).length > 0 ? { params: restParams } : {}),
+      actions: Array.isArray(recipeActions) ? recipeActions : [],
+    } as ErrorAction);
   };
 
   // 7종 + 설정안함.
   const HANDLER_OPTIONS = ['', 'showErrorPage', 'navigate', 'openModal', 'toast', 'setState', 'sequence', 'parallel'];
 
-  // sequence/parallel 의 하위 동작 배열.
+  // 이 칸이 다루지 않는 동작 — 분기(conditions·switch)·참조(action-ref)·조건부(if)·모르는 핸들러. 선택칸에 그리면
+  // 빈 값으로 보이고, 손대면 원래 동작이 사라진다. 코드 편집기에서 고치도록 읽기 전용으로 둔다(#753).
+  // 동작이 여럿인 배열도 — 첫 동작만 그려 고치면 나머지를 덮는다.
+  const codeOnly = !!single && (
+    (handler !== '' && !HANDLER_OPTIONS.includes(handler))
+    || single.conditions !== undefined
+    || single.cases !== undefined
+    || single.actionRef !== undefined
+    || single.if !== undefined
+    || (Array.isArray(action) && action.length > 1)
+  );
+
+  // 칸이 다루지 않는 부속 키 — 단일 동작의 값을 고쳐도 그대로 옮긴다. 엔진은 처리기를 통째로 실행하므로
+  // (engine-v1.80.0) 처리기의 onSuccess·resultTo 등이 사라지면 저장한 동작이 조용히 바뀐다.
+  const carryUnhandledKeys = (next: ErrorAction): ErrorAction => {
+    if (!single || Array.isArray(next)) return next;
+    const source = single as Record<string, unknown>;
+    const kept = Object.fromEntries(
+      CARRIED_ACTION_KEYS.filter((key) => source[key] !== undefined).map((key) => [key, source[key]]),
+    );
+    return { ...kept, ...(next as Record<string, unknown>) } as ErrorAction;
+  };
+
+  // sequence/parallel 의 하위 동작 배열 — 굽기 산출 모양(최상위 actions)과 params.actions 둘 다 읽는다.
+  const singleParams = (single?.params ?? undefined) as Record<string, unknown> | undefined;
   const seqActions = isSeq && single
-    ? (Array.isArray((single.params as Record<string, unknown> | undefined)?.actions)
-        ? ((single.params as Record<string, unknown>).actions as Array<Record<string, unknown>>)
-        : [])
+    ? (Array.isArray(single.actions)
+        ? (single.actions as Array<Record<string, unknown>>)
+        : Array.isArray(singleParams?.actions)
+          ? (singleParams!.actions as Array<Record<string, unknown>>)
+          : [])
     : [];
+
+  // 하위 목록 저장 — 최상위 actions 로 쓰고 다른 키(comment·params 의 다른 값)는 보존한다.
+  // params 에 actions 만 있었으면 params 키 자체를 지운다(굽기 산출 모양과 같게).
+  const patchSequenceActions = (next: Array<Record<string, unknown>>): void => {
+    const { actions: _oldActions, params: oldParams, ...rest } = (single ?? {}) as Record<string, unknown>;
+    const { actions: _oldParamActions, ...restParams } = (oldParams ?? {}) as Record<string, unknown>;
+    onPatch({
+      ...rest,
+      handler,
+      ...(Object.keys(restParams).length > 0 ? { params: restParams } : {}),
+      actions: next,
+    } as ErrorAction);
+  };
 
   return (
     <div data-testid={`g7le-error-action-${code}`} style={editor}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <select
-          data-testid={`g7le-error-handler-${code}`}
-          value={handler}
-          onChange={(e) => setHandler(e.target.value)}
-          style={{ ...select, flex: 1 }}
-        >
-          {HANDLER_OPTIONS.map((h) => (
-            <option key={h} value={h}>
-              {h === '' ? t('layout_editor.error.handler_none') : t(`layout_editor.error.handler_${h}`)}
-            </option>
-          ))}
-        </select>
+        {codeOnly ? (
+          <p data-testid={`g7le-error-code-only-${code}`} style={{ ...codeOnlyNotice, flex: 1 }}>
+            ⓘ {t('layout_editor.error.handler_code_only')}
+          </p>
+        ) : (
+          <select
+            data-testid={`g7le-error-handler-${code}`}
+            value={handler}
+            onChange={(e) => setHandler(e.target.value)}
+            style={{ ...select, flex: 1 }}
+          >
+            {HANDLER_OPTIONS.map((h) => (
+              <option key={h} value={h}>
+                {h === '' ? t('layout_editor.error.handler_none') : t(`layout_editor.error.handler_${h}`)}
+              </option>
+            ))}
+          </select>
+        )}
         {/* 항목별 코드 미리보기(`</>`) — 지정한 값이 코드로 어떻게 표현되는지 확인(다른 UI 와 일관). */}
-        {handler !== '' ? (
+        {handler !== '' || codeOnly ? (
           <button
             type="button"
             data-testid={`g7le-error-code-${code}`}
@@ -234,11 +292,11 @@ function ErrorActionEditor({
 
       {/* 동작별 추가 입력 — 단일 동작은 공용 ParamFieldList(모든 칸 데이터칩·후보 select·상태 키–값),
           sequence/parallel 은 중첩 카드 목록. */}
-      {isSeq ? (
+      {codeOnly ? null : isSeq ? (
         <div data-testid={`g7le-error-actions-${code}`}>
           <ActionListBuilder
             actions={seqActions}
-            onChange={(next) => onPatch({ handler, params: { actions: next } })}
+            onChange={(next) => patchSequenceActions(next)}
             t={t}
             recipes={recipes}
             candidatePools={pools}
@@ -253,7 +311,7 @@ function ErrorActionEditor({
           values={values}
           t={t}
           pools={pools}
-          onChange={(next) => onPatch(next)}
+          onChange={(next) => onPatch(carryUnhandledKeys(next))}
           testIdPrefix={`g7le-error-action-${code}-edit`}
         />
       ) : null}
@@ -271,12 +329,16 @@ function ErrorActionEditor({
   );
 }
 
+/** 오류 처리 칸이 다루지 않지만 단일 동작을 고칠 때 보존하는 키 (#753) */
+const CARRIED_ACTION_KEYS = ['comment', 'onSuccess', 'onError', 'resultTo', 'errorHandling'] as const;
+
 const form: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 };
 const heading: React.CSSProperties = { margin: 0, fontSize: 13, fontWeight: 700, color: '#0f172a' };
 const hint: React.CSSProperties = { margin: 0, fontSize: 11, color: '#94a3b8' };
 const degrade: React.CSSProperties = { margin: 0, fontSize: 12, color: '#b45309', background: '#fef3c7', padding: '8px 10px', borderRadius: 6 };
 const editor: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 };
 const select: React.CSSProperties = { padding: '5px 8px', fontSize: 12, border: '1px solid #cbd5e1', borderRadius: 6 };
+const codeOnlyNotice: React.CSSProperties = { margin: 0, fontSize: 12, color: '#475569', background: '#f1f5f9', padding: '6px 8px', borderRadius: 6 };
 // 코드 미리보기(`</>`) 버튼 — ActionListBuilder 카드와 동일 시각(아이콘 버튼, 활성 시 강조).
 const codeBtn: React.CSSProperties = { flex: '0 0 auto', width: 26, height: 26, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', color: '#64748b', cursor: 'pointer', fontFamily: 'ui-monospace, monospace' };
 const codeBtnActive: React.CSSProperties = { ...codeBtn, background: '#0f172a', borderColor: '#0f172a', color: '#e2e8f0' };

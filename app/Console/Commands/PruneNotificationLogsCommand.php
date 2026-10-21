@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Services\NotificationLogService;
 use Illuminate\Console\Command;
 
@@ -10,15 +11,17 @@ use Illuminate\Console\Command;
  */
 class PruneNotificationLogsCommand extends Command
 {
+    use ParsesDaysOption;
+
     /**
      * The name and signature of the console command.
      */
-    protected $signature = 'notification-log:prune {--days=90 : 보존 기간(일)}';
+    protected $signature = 'notification-log:prune {--days=90 : 보관 기간(일)}';
 
     /**
      * The console command description.
      */
-    protected $description = '보존 기간이 지난 알림 발송 이력을 삭제합니다';
+    protected $description = '보관 기간이 지난 알림 발송 이력을 삭제합니다';
 
     /**
      * Execute the console command.
@@ -31,10 +34,18 @@ class PruneNotificationLogsCommand extends Command
      */
     public function handle(NotificationLogService $service): int
     {
-        $days = (int) $this->option('days');
+        $days = $this->parseDaysOption();
+
+        if ($days === false) {
+            return self::FAILURE;
+        }
+
+        $days ??= 90;
+
         $deleted = $service->prune($days);
 
-        $this->info("알림 발송 이력 {$deleted}건이 삭제되었습니다. (보존 {$days}일)");
+        [$shownDays, $floorNote] = $this->retentionForDisplay($days);
+        $this->info(__('common.console.prune_done.notification_logs', ['count' => $deleted, 'days' => $shownDays]).$floorNote);
 
         return self::SUCCESS;
     }

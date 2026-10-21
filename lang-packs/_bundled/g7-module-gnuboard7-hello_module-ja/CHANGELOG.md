@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.2] - 2026-10-21
+
+### Added
+
+- Hello 모듈 0.2.1 의 설치 시드 콘솔 출력(시작·샘플·완료 안내 3건)의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 출력이 키 그대로 보입니다.
+
 ## [1.0.1] - 2026-10-10
 
 ### Added

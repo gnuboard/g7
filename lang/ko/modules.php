@@ -12,6 +12,18 @@ return [
     ],
 
     'commands' => [
+        // `module:refresh-layout` 명령 출력
+        'refresh_layout' => [
+            'refreshing' => '모듈 \':module\' 레이아웃 갱신 중...',
+            'success' => '모듈 \':module\' 레이아웃 갱신 완료',
+            'failed' => '모듈 \':module\' 레이아웃 갱신 실패',
+            'none_active' => '활성화된 모듈이 없습니다.',
+            'refreshing_all' => '모든 활성 모듈 레이아웃 갱신 중...',
+            'item_refreshing' => ':identifier 갱신 중...',
+            'item_done' => ':identifier 완료',
+            'item_failed' => ':identifier 실패',
+            'summary' => '총 :success개 성공, :failed개 실패',
+        ],
         'list' => [
             'headers' => [
                 'identifier' => '식별자',
@@ -41,9 +53,21 @@ return [
         ],
         'activate' => [
             'success' => '모듈 ":module" 활성화 완료',
+            'language_packs_restored' => '언어팩 :count개를 함께 켰습니다: :list',
+            'language_packs_kept' => '다시 켜지 않은 언어팩: :list (관리자 화면에서 다시 켤 수 있습니다)',
+            'language_pack_restore_failed' => '언어팩 ":pack" 을(를) 다시 켜지 못했습니다: :error',
+            'option_without_language_packs' => '이 확장을 끌 때 함께 꺼진 언어팩을 다시 켜지 않습니다 (기본은 함께 켭니다)',
             'not_installed' => '":module" 모듈이 설치되지 않았습니다.',
             'already_active' => '":module" 모듈은 이미 활성화되어 있습니다.',
             'layouts_registered' => ':count개 레이아웃 등록됨',
+            // `module:activate` 의존성 미충족 안내
+            'required_modules' => '필요한 모듈:',
+            'required_plugins' => '필요한 플러그인:',
+            'missing_status' => [
+                'not_installed' => '미설치',
+                'inactive' => '비활성',
+            ],
+            'force_hint' => '강제로 활성화하려면 --force 옵션을 사용하세요.',
         ],
         'deactivate' => [
             'success' => '모듈 ":module" 비활성화 완료',
@@ -51,6 +75,11 @@ return [
             'not_active' => '":module" 모듈은 활성화되어 있지 않습니다.',
             'warning' => '모듈의 라우트와 기능이 비활성화되었습니다.',
             'layouts_deleted' => ':count개 레이아웃 삭제됨',
+            // `module:deactivate` 의존 확장 안내
+            'dependent_templates' => '의존하는 템플릿 목록:',
+            'dependent_modules' => '의존하는 모듈 목록:',
+            'dependent_plugins' => '의존하는 플러그인 목록:',
+            'force_hint' => '강제로 비활성화하려면 --force 옵션을 사용하세요.',
         ],
         'uninstall' => [
             'success' => '모듈 ":module" 삭제 완료',
@@ -70,6 +99,8 @@ return [
             'confirm_question' => '정말로 삭제하시겠습니까?',
             'aborted' => '모듈 삭제가 취소되었습니다.',
             'not_installed' => '":module" 모듈이 설치되지 않았습니다.',
+            // `module:uninstall` --delete-data 경고
+            'delete_data_warning' => '--delete-data: 마이그레이션 롤백 및 환경설정 파일이 함께 삭제됩니다.',
         ],
         'cache_clear' => [
             'clearing_all' => '모든 모듈 캐시를 삭제합니다...',
@@ -108,6 +139,67 @@ return [
             'layout_strategy' => '레이아웃 전략: :strategy',
             'modified_layouts_warning' => '관리자가 수정한 레이아웃·확장 조각 :count개가 덮어씌워집니다:',
             'modified_layout_item' => '  - :name (수정일: :date)',
+        ],
+        // `module:build`·`module:seed`·`module:composer-install`·`module:vendor-bundle`·`module:vendor-verify` 명령 출력
+        'build' => [
+            'missing_identifier' => '모듈 식별자를 지정하거나 --all 옵션을 사용하세요.',
+            'usage' => '사용법:',
+            'not_found' => '모듈을 찾을 수 없습니다: :identifier',
+            'not_found_detail' => '_bundled 및 활성 디렉토리 모두 존재하지 않습니다.',
+            'source' => '빌드 소스: :source (:path)',
+            'source_active' => '활성',
+            'package_json_missing' => 'package.json 파일이 없습니다: :path',
+            'package_json_hint' => '모듈 프론트엔드 구조를 먼저 생성하세요.',
+            'no_assets' => '모듈에 빌드할 에셋이 없습니다: :identifier',
+            'installing_dependencies' => '의존성 설치 중...',
+            'npm_install_failed' => 'npm install 실패',
+            'watch_start' => '파일 감시 모드로 빌드 시작: :identifier',
+            'watch_hint' => 'Ctrl+C로 종료할 수 있습니다.',
+            'start' => '빌드 시작: :identifier',
+            'start_production' => '빌드 시작: :identifier (프로덕션)',
+            'pruned' => '이전 산출물 정리: :files',
+            'done' => '빌드 완료: :identifier',
+            'components_manifest_written' => 'components.json 생성됨 (컴포넌트 :count개)',
+            'components_manifest_failed' => 'components.json 생성 실패 (편집 모드 컨트롤 노출 제한)',
+            'cache_version_bumped' => '캐시 버전 갱신됨',
+            'apply_hint' => '활성 디렉토리에 반영하려면: php artisan module:update :identifier',
+            'no_targets' => '빌드할 모듈이 없습니다.',
+            'start_all' => '모든 모듈 빌드 시작 (:source)',
+            'start_all_production' => '모든 모듈 빌드 시작 (:source) (프로덕션)',
+            'targets' => '대상 모듈: :list',
+            'summary' => '빌드 결과: 성공 :success개, 실패 :failed개',
+        ],
+        'seed' => [
+            'production_requires_force' => '프로덕션 환경에서는 --force 옵션이 필요합니다.',
+            'not_active' => '모듈이 활성화되어 있지 않습니다: :identifier',
+            'activate_hint' => '먼저 php artisan module:activate :identifier 명령을 실행하세요.',
+            'no_seeder_directory' => '모듈에 시더 디렉토리가 없습니다: :identifier',
+            'seeder_class_not_found' => '시더 클래스를 찾을 수 없습니다: :class',
+            'start' => '시더 실행 시작: :identifier',
+            'class' => '클래스: :class',
+            'done' => '시더 실행 완료: :identifier',
+            'no_active' => '활성화된 모듈이 없습니다.',
+            'no_seedable' => '시더가 있는 활성 모듈이 없습니다.',
+            'start_all' => '모든 활성 모듈 시더 실행 시작',
+            'targets' => '대상 모듈: :list',
+            'summary' => '시더 실행 결과: 성공 :success개, 실패 :failed개',
+        ],
+        'composer_install' => [
+            'missing_identifier' => '모듈 식별자를 지정하거나 --all 옵션을 사용하세요.',
+            'usage' => '사용법:',
+            'autoload_refreshed' => '오토로드 캐시 갱신 완료',
+            'none_installed' => '설치된 모듈이 없습니다.',
+            'duplicate_packages' => '중복 패키지 감지:',
+            'start_all' => '모든 모듈의 Composer 의존성 설치 시작',
+            'item_done' => '완료: :identifier',
+            'item_failed' => '실패: :identifier',
+        ],
+        'vendor_bundle' => [
+            'missing_identifier' => '식별자 또는 --all 옵션을 지정해야 합니다.',
+            'usage' => '사용법:',
+        ],
+        'vendor_verify' => [
+            'missing_identifier' => '식별자 또는 --all 옵션을 지정해야 합니다.',
         ],
     ],
 
@@ -199,6 +291,7 @@ return [
         'delete_directory_failed' => '모듈 디렉토리 삭제에 실패했습니다: :error',
         'update_failed' => '모듈 ":module" 업데이트에 실패했습니다: :error',
         'invalid_layout_strategy' => '유효하지 않은 레이아웃 전략입니다. (overwrite 또는 keep만 허용)',
+        'invalid_layout_source' => '유효하지 않은 레이아웃 설치 소스입니다. (auto 또는 json만 허용)',
         'invalid_vendor_mode' => '유효하지 않은 Vendor 설치 모드입니다. (auto, composer, bundled만 허용)',
     ],
 

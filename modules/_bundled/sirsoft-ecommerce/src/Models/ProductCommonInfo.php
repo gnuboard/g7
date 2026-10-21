@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Models;
 use App\Casts\AsUnicodeJson;
 use App\Extension\HookManager;
 use App\Search\Contracts\FulltextSearchable;
+use App\Support\LocalizedValue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Scout\Searchable;
@@ -17,6 +19,7 @@ use Laravel\Scout\Searchable;
 class ProductCommonInfo extends Model implements FulltextSearchable
 {
     use Searchable;
+
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
         'content_mode' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.content_mode', 'type' => 'text'],
@@ -47,7 +50,7 @@ class ProductCommonInfo extends Model implements FulltextSearchable
     /**
      * 현재 로케일의 공통정보명 반환
      *
-     * @param string|null $locale 로케일 (기본값: 현재 앱 로케일)
+     * @param  string|null  $locale  로케일 (기본값: 현재 앱 로케일)
      * @return string
      */
     public function getLocalizedName(?string $locale = null): string
@@ -59,13 +62,13 @@ class ProductCommonInfo extends Model implements FulltextSearchable
             return '';
         }
 
-        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
+        return LocalizedValue::pick($name, $locale) ?? '';
     }
 
     /**
      * 현재 로케일의 안내 내용 반환
      *
-     * @param string|null $locale 로케일 (기본값: 현재 앱 로케일)
+     * @param  string|null  $locale  로케일 (기본값: 현재 앱 로케일)
      * @return string
      */
     public function getLocalizedContent(?string $locale = null): string
@@ -77,7 +80,7 @@ class ProductCommonInfo extends Model implements FulltextSearchable
             return '';
         }
 
-        return $content[$locale] ?? $content[config('app.fallback_locale', 'ko')] ?? $content[array_key_first($content)] ?? '';
+        return LocalizedValue::pick($content, $locale) ?? '';
     }
 
     /**
@@ -93,8 +96,8 @@ class ProductCommonInfo extends Model implements FulltextSearchable
     /**
      * 활성 공통정보만 조회하는 스코프
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query 쿼리 빌더
-     * @return \Illuminate\Database\Eloquent\Builder 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
+     * @return Builder 쿼리 빌더
      */
     public function scopeActive($query)
     {
@@ -104,8 +107,8 @@ class ProductCommonInfo extends Model implements FulltextSearchable
     /**
      * 정렬 순서대로 조회하는 스코프
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query 쿼리 빌더
-     * @return \Illuminate\Database\Eloquent\Builder 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
+     * @return Builder 쿼리 빌더
      */
     public function scopeOrdered($query)
     {
@@ -115,8 +118,8 @@ class ProductCommonInfo extends Model implements FulltextSearchable
     /**
      * 기본 공통정보만 조회하는 스코프
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query 쿼리 빌더
-     * @return \Illuminate\Database\Eloquent\Builder 쿼리 빌더
+     * @param  Builder  $query  쿼리 빌더
+     * @return Builder 쿼리 빌더
      */
     public function scopeDefault($query)
     {

@@ -102,6 +102,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "flex-center gap-2 btn btn-secondary"
                                         },
                                         "children": [
@@ -123,22 +124,23 @@
                                     {
                                         "id": "header_edit_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "comment": "이 회원 수정 화면으로. 보던 목록 상태를 이고 가므로 수정을 마치고 목록까지 되짚어 나가도 자리가 남는다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/users/{{route?.id}}/edit",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
+                                            "href": "/admin/users/{{route?.id}}/edit",
+                                            "mergeQuery": true,
                                             "disabled": "{{user?.data?.abilities?.can_update !== true}}",
-                                            "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            "className": "button flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                         },
                                         "children": [
                                             {
@@ -196,6 +198,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "disabled": "{{user?.data?.abilities?.can_update !== true}}",
                                             "className": "flex-center gap-2 btn btn-warning"
                                         },
@@ -546,7 +549,7 @@
                                                                         "if": "{{user?.data?.email_verified_at}}",
                                                                         "props": {
                                                                             "name": "check-circle",
-                                                                            "className": "text-base text-green-500"
+                                                                            "className": "text-base text-green-600"
                                                                         }
                                                                     },
                                                                     {
@@ -1667,23 +1670,17 @@
                                         "children": [
                                             {
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "actions": [
                                                     {
                                                         "comment": "회원 한정으로 알림함을 연다 — 그쪽 화면이 배너로 \"이 회원만 보는 중\" 임을 알린다.",
                                                         "type": "click",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/member-notifications",
-                                                            "query": {
-                                                                "user_uuid": "{{user?.data?.uuid}}"
-                                                            }
-                                                        }
+                                                        "handler": "navigate"
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "btn btn-secondary"
+                                                    "href": "/admin/member-notifications?user_uuid={{user?.data?.uuid}}",
+                                                    "className": "button btn btn-secondary"
                                                 },
                                                 "children": [
                                                     {

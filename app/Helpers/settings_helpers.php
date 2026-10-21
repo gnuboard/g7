@@ -1,6 +1,7 @@
 <?php
 
 use App\Support\ExtensionSettingsMirror;
+use App\Support\SettingsVersion;
 use Illuminate\Support\Facades\Config;
 
 if (! function_exists('g7_settings')) {
@@ -95,6 +96,7 @@ if (! function_exists('g7_refresh_module_settings_config')) {
      * 모듈 설정 저장에는 코어 공통 지점이 없어 각 모듈의 SettingsService 가 직접 저장합니다.
      * 그 서비스가 자기 캐시를 비우는 자리에서 이 헬퍼를 호출하면, 상주 프로세스에서도
      * `g7_module_settings()` 가 저장 직후의 값을 읽습니다 (공개이슈 #109).
+     * 다른 상주 프로세스(큐 워커)를 위해 설정 버전도 올립니다 — 워커는 작업 시작 전에 비교해 다시 읽습니다.
      *
      * @param  string  $identifier  모듈 식별자 (예: sirsoft-ecommerce)
      * @return void
@@ -102,6 +104,7 @@ if (! function_exists('g7_refresh_module_settings_config')) {
     function g7_refresh_module_settings_config(string $identifier): void
     {
         app(ExtensionSettingsMirror::class)->refreshModule($identifier);
+        SettingsVersion::bump();
     }
 }
 

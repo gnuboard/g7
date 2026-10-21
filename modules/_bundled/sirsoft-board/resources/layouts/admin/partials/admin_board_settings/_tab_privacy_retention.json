@@ -8,13 +8,6 @@
     "type": "basic",
     "name": "Div",
     "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'privacy_retention'}}",
-    "classMap": {
-        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-        "variants": {
-            "readonly": "opacity-60",
-            "normal": ""
-        }
-    },
     "children": [
         {
             "id": "privacy_retention_section",

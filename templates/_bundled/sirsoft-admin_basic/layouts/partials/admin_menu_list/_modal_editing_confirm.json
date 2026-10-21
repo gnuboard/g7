@@ -1,0 +1,192 @@
+{
+    "comment": "메뉴 편집·등록 중 다른 메뉴를 고를 때 뜨는 이탈 확인 창. 왼쪽 목록이 고른 메뉴를 대기 자리(`_global.pendingMenu*`)에\n  잡아 두고 이 창을 연다 — 이 창이 **이동을 완결하는 자리**이자 **입력을 버리는 유일한 경로**다(이커머스 브랜드·분류 목록과 같은 규칙).\n  「계속 편집하기」 는 대기 값만 비우고 창을 닫는다. 「변경사항 버리기」 는 목록의 보통 선택과 같은 순서로 옮긴다 —\n  주소를 대기 메뉴로 갈아끼우고(대기 값을 비우기 전에), 선택·보기 판·오류·「고친 것 있음」 을 맞춘 뒤 단건을 받아 역할 배지를 채운다.\n  다른 화면으로 떠나는 이동(사이드바·뒤로가기·새로고침)은 이 창이 아니라 화면의 이탈 가드(meta.leave_guard)가 묻는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "메뉴 편집 중 이탈 확인 모달"
+    },
+    "id": "menu_editing_confirm_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.menus.modals.editing_title",
+        "size": "medium"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-shrink-0 mt-0.5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "className": "text-xl text-amber-600 dark:text-amber-400"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-primary text-base mb-2"
+                                    },
+                                    "text": "$t:admin.menus.modals.editing_message"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label"
+                                    },
+                                    "text": "$t:admin.menus.modals.editing_confirm_message"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "id": "menu_editing_continue_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "계속 편집 — 대기 값만 비우고 창을 닫는다(고친 값·편집 판은 그대로)",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "pendingMenuId": null,
+                                        "pendingMenu": null
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.menus.modals.editing_continue"
+                        }
+                    ]
+                },
+                {
+                    "id": "menu_editing_discard_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "입력을 버리고 대기 메뉴로 — 주소부터 갈아끼우고(대기 값을 비우기 전에) 선택을 옮긴다. 목록 응답에는 하위 메뉴의 역할이\n            실려 있지 않아 보통 선택처럼 단건을 받아 채운다. 창 닫기는 맨 뒤다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "replaceUrl",
+                                    "if": "{{!!_global.pendingMenu?.slug}}",
+                                    "params": {
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "menu": "{{_global.pendingMenu?.slug}}",
+                                            "mode": "view"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "selectedMenuId": "{{_global.pendingMenuId}}",
+                                        "selectedMenu": "{{_global.pendingMenu}}",
+                                        "panelMode": "view",
+                                        "formErrors": null,
+                                        "hasChanges": false
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/admin/menus/{{_global.pendingMenuId}}",
+                                    "if": "{{!!_global.pendingMenuId}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "GET"
+                                    },
+                                    "onSuccess": {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedMenu": "{{response.data}}"
+                                        }
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "pendingMenuId": null,
+                                        "pendingMenu": null
+                                    }
+                                },
+                                {
+                                    "handler": "closeModal"
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.menus.modals.editing_discard"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -76,6 +76,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 게시판의 `use_scrap` 설정이 꺼져 있는 경우 |
+| 403 | Forbidden | 게시글 조회 권한 범위(「본인만」·「소유역할」) 밖 글 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | `postId` 가 `slug` 게시판 소속이 아니거나 존재하지 않는 경우 (교차 접근 차단) |
 | 500 | Server Error | 처리 중 서버 오류 (입력 오류가 아니다 — 종전 400) |
 

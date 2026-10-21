@@ -20,6 +20,11 @@ use Tests\TestCase;
  */
 class UnifiedConfirmRegressionTest extends TestCase
 {
+    /**
+     * 확인 결과를 그대로 출력하는 프로브 커맨드를 Artisan 에 등록한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,6 +33,15 @@ class UnifiedConfirmRegressionTest extends TestCase
         $this->app['Illuminate\Contracts\Console\Kernel']->registerCommand(new ProbeCommand);
     }
 
+    /**
+     * --no-interaction 실행이면 묻지 않고 기본값 no 를 돌려주는지 검증한다.
+     *
+     * @scenario answer=non_interactive
+     *
+     * @effects confirm_returns_default_without_prompt_when_non_interactive
+     *
+     * @return void 반환값 없음
+     */
     public function test_no_interaction_returns_default_no(): void
     {
         $this->artisan('test:probe-confirm --default=no --no-interaction')
@@ -35,6 +49,15 @@ class UnifiedConfirmRegressionTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * --no-interaction 실행이면 묻지 않고 기본값 yes 를 돌려주는지 검증한다.
+     *
+     * @scenario answer=non_interactive
+     *
+     * @effects confirm_returns_default_without_prompt_when_non_interactive
+     *
+     * @return void 반환값 없음
+     */
     public function test_no_interaction_returns_default_yes(): void
     {
         $this->artisan('test:probe-confirm --default=yes --no-interaction')
@@ -42,6 +65,15 @@ class UnifiedConfirmRegressionTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * yes 답변은 한 번에 yes 로 결정되는지 검증한다.
+     *
+     * @scenario answer=valid
+     *
+     * @effects confirm_valid_answer_resolves_immediately
+     *
+     * @return void 반환값 없음
+     */
     public function test_yes_input_resolves_immediately(): void
     {
         $this->artisan('test:probe-confirm --default=no')
@@ -50,6 +82,15 @@ class UnifiedConfirmRegressionTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * 기본값이 yes 여도 no 답변은 한 번에 no 로 결정되는지 검증한다.
+     *
+     * @scenario answer=valid
+     *
+     * @effects confirm_valid_answer_resolves_immediately
+     *
+     * @return void 반환값 없음
+     */
     public function test_no_input_resolves_immediately_when_default_yes(): void
     {
         $this->artisan('test:probe-confirm --default=yes')
@@ -58,6 +99,15 @@ class UnifiedConfirmRegressionTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * 짧은 답 y 가 yes 로 해석되는지 검증한다.
+     *
+     * @scenario answer=valid
+     *
+     * @effects confirm_valid_answer_resolves_immediately
+     *
+     * @return void 반환값 없음
+     */
     public function test_short_y_resolves_to_yes(): void
     {
         $this->artisan('test:probe-confirm --default=no')
@@ -66,6 +116,15 @@ class UnifiedConfirmRegressionTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * 대문자 YES 가 yes 로 해석되는지 검증한다.
+     *
+     * @scenario answer=valid
+     *
+     * @effects confirm_valid_answer_resolves_immediately
+     *
+     * @return void 반환값 없음
+     */
     public function test_uppercase_yes_resolves_to_yes(): void
     {
         $this->artisan('test:probe-confirm --default=no')
@@ -74,6 +133,15 @@ class UnifiedConfirmRegressionTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * 빈 답변이면 기본값 yes 를 쓰는지 검증한다.
+     *
+     * @scenario answer=empty
+     *
+     * @effects confirm_empty_answer_uses_default
+     *
+     * @return void 반환값 없음
+     */
     public function test_empty_input_uses_default_yes(): void
     {
         $this->artisan('test:probe-confirm --default=yes')
@@ -82,6 +150,15 @@ class UnifiedConfirmRegressionTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * 빈 답변이면 기본값 no 를 쓰는지 검증한다.
+     *
+     * @scenario answer=empty
+     *
+     * @effects confirm_empty_answer_uses_default
+     *
+     * @return void 반환값 없음
+     */
     public function test_empty_input_uses_default_no(): void
     {
         $this->artisan('test:probe-confirm --default=no')
@@ -90,28 +167,45 @@ class UnifiedConfirmRegressionTest extends TestCase
             ->assertExitCode(0);
     }
 
+    /**
+     * 잘못된 답변이면 안내를 보이고 다시 물어 유효한 답에서 결정되는지 검증한다.
+     *
+     * @scenario answer=invalid_then_valid
+     *
+     * @effects confirm_invalid_answer_shows_notice_and_reasks
+     *
+     * @return void 반환값 없음
+     */
     public function test_invalid_input_loops_until_valid(): void
     {
         $this->artisan('test:probe-confirm --default=no')
             ->expectsQuestion('진행할까요? (yes/no) [no]', 'yell_no')
-            ->expectsOutput('  yes, y, no, n 중 하나로 입력해 주세요.')
+            ->expectsOutput('  '.__('common.console.console_confirm.invalid_answer'))
             ->expectsQuestion('진행할까요? (yes/no) [no]', 'y')
             ->expectsOutput('result=yes')
             ->assertExitCode(0);
     }
 
+    /**
+     * 잘못된 답변이 여러 번 이어져도 그때마다 안내 후 재질문하고 마지막 유효한 답으로 결정되는지 검증한다.
+     *
+     * @scenario answer=invalid_then_valid
+     *
+     * @effects confirm_invalid_answer_shows_notice_and_reasks
+     *
+     * @return void 반환값 없음
+     */
     public function test_multiple_invalid_inputs_loop_then_resolve(): void
     {
         $this->artisan('test:probe-confirm --default=yes')
             ->expectsQuestion('진행할까요? (yes/no) [yes]', 'foo')
-            ->expectsOutput('  yes, y, no, n 중 하나로 입력해 주세요.')
+            ->expectsOutput('  '.__('common.console.console_confirm.invalid_answer'))
             ->expectsQuestion('진행할까요? (yes/no) [yes]', 'bar')
-            ->expectsOutput('  yes, y, no, n 중 하나로 입력해 주세요.')
+            ->expectsOutput('  '.__('common.console.console_confirm.invalid_answer'))
             ->expectsQuestion('진행할까요? (yes/no) [yes]', 'no')
             ->expectsOutput('result=no')
             ->assertExitCode(0);
     }
-
 }
 
 /**
@@ -126,6 +220,11 @@ class ProbeCommand extends Command
 
     protected $description = '회귀 테스트용 confirm 프로브';
 
+    /**
+     * --default 옵션으로 기본값을 정해 통합 확인을 묻고 결과를 result=yes 또는 result=no 로 출력한다.
+     *
+     * @return int 항상 성공 종료 코드
+     */
     public function handle(): int
     {
         $default = $this->option('default') === 'yes';

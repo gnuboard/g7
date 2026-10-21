@@ -55,7 +55,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-red-500 dark:text-red-400 font-medium"
+                                        "className": "text-sm text-red-600 dark:text-red-400 font-medium"
                                     },
                                     "text": "$t:mypage.notifications.unread_count|count={{notification_unread_count.data?.unread_count ?? 0}}"
                                 },
@@ -190,7 +190,7 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "text-sm text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                         "type": "button",
                                         "disabled": "{{userNotifications?.data?.abilities?.can_delete !== true}}",
                                         "title": "{{userNotifications?.data?.abilities?.can_delete === true ? '' : '$t:mypage.notifications.no_permission'}}"
@@ -221,61 +221,73 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}"
+                                        "className": "relative block p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}"
                                     }
                                 }
                             },
-                            "actions": [
+                            "props": {
+                                "className": "relative block p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}"
+                            },
+                            "children": [
                                 {
-                                    "type": "click",
-                                    "handler": "sequence",
+                                    "comment": "카드 전체가 링크다 — 안쪽 조작(작성자 메뉴·삭제 등)을 링크 밖에 두려고 빈 링크가 카드를 덮고, 그 조작은 링크 위(z-20)에 둔다.\n               이동 주소가 이 사이트 주소가 아니면(실행 주소·다른 사이트·//host) href 를 알림 목록으로 바꾼다(fallbackHref) — 바깥 주소가 href 에 남아\n               가운데 클릭·「새 탭에서 열기」로 열리던 것을 막는다. 보통 클릭도 같은 착지점으로 간다(navigate fallbackPath, 7.1.1).",
+                                    "type": "basic",
+                                    "name": "A",
                                     "actions": [
                                         {
-                                            "handler": "apiCall",
-                                            "target": "/api/user/notifications/{{notification.id}}/read",
-                                            "if": "{{!notification.read_at && userNotifications?.data?.abilities?.can_update === true}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PATCH"
-                                            },
-                                            "onSuccess": [
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
                                                 {
-                                                    "handler": "refetchDataSource",
+                                                    "handler": "apiCall",
+                                                    "target": "/api/user/notifications/{{notification.id}}/read",
+                                                    "if": "{{!notification.read_at && userNotifications?.data?.abilities?.can_update === true}}",
+                                                    "auth_required": true,
                                                     "params": {
-                                                        "dataSourceId": "notification_unread_count"
+                                                        "method": "PATCH"
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "notification_unread_count"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "notificationCount": "{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message}}"
+                                                        }
                                                     }
                                                 },
                                                 {
-                                                    "handler": "setState",
+                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 알림 대상으로 이동 — 목적지는 알림이 지정한 임의 화면이므로 알림 목록 클러스터 밖이다.\n                   주소가 안전하지 않으면(실행 주소·다른 사이트·//host) 머물지 않고 알림 목록으로 간다 — 상단·모바일 알림과 같은 착지점(7.1.1 「정해 둔 화면으로 이동」).",
+                                                    "handler": "navigate",
+                                                    "if": "{{notification.url}}",
                                                     "params": {
-                                                        "target": "global",
-                                                        "notificationCount": "{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}"
+                                                        "path": "{{notification.url || null}}",
+                                                        "fallbackPath": "/mypage/notifications"
                                                     }
                                                 }
-                                            ],
-                                            "onError": {
-                                                "handler": "toast",
-                                                "params": {
-                                                    "type": "error",
-                                                    "message": "{{error.message}}"
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "comment": "audit:allow layout-list-context-navigate-merge-query 알림 대상으로 이동 — 목적지는 알림이 지정한 임의 화면이므로 알림 목록 클러스터 밖이다.",
-                                            "handler": "navigate",
-                                            "if": "{{notification.url}}",
-                                            "params": {
-                                                "path": "{{notification.url}}"
-                                            }
+                                            ]
                                         }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "className": "p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}"
-                            },
-                            "children": [
+                                    ],
+                                    "props": {
+                                        "href": "{{notification.url || null}}",
+                                        "fallbackHref": "/mypage/notifications",
+                                        "aria-label": "{{notification.subject ?? notification.body ?? ''}}",
+                                        "className": "absolute inset-0 z-10 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
+                                    }
+                                },
                                 {
                                     "type": "basic",
                                     "name": "Div",
@@ -322,13 +334,13 @@
                                                                 "portable": {
                                                                     "props": {
                                                                         "name": "{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}",
-                                                                        "className": "text-base {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
+                                                                        "className": "text-base {{notification.type === 'order' ? 'text-green-700 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-700 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
                                                                     }
                                                                 }
                                                             },
                                                             "props": {
                                                                 "name": "{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}",
-                                                                "className": "text-xl {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
+                                                                "className": "text-xl {{notification.type === 'order' ? 'text-green-700 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-700 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"
                                                             }
                                                         }
                                                     ]
@@ -372,7 +384,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{notification.type_label}}",
                                                                     "props": {
-                                                                        "className": "flex-shrink-0 px-2 py-0.5 text-xs rounded {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}}"
+                                                                        "className": "flex-shrink-0 px-2 py-0.5 text-xs rounded {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}}"
                                                                     },
                                                                     "text": "{{notification.type_label}}"
                                                                 }
@@ -426,7 +438,7 @@
                                                             "props": {
                                                                 "aria-label": "$t:common.delete",
                                                                 "title": "{{userNotifications?.data?.abilities?.can_delete === true ? '$t:common.delete' : '$t:mypage.notifications.no_permission'}}",
-                                                                "className": "flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "className": "relative z-20 flex-shrink-0 p-1.5 text-gray-500 dark:text-gray-500 hover:text-red-700 dark:hover:text-red-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                                 "type": "button",
                                                                 "disabled": "{{userNotifications?.data?.abilities?.can_delete !== true}}"
                                                             },
@@ -448,7 +460,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm text-gray-600 dark:text-gray-400 mb-1"
+                                                        "className": "text-sm text-gray-600 dark:text-gray-400 mb-1 break-words"
                                                     },
                                                     "text": "{{notification.body ?? ''}}"
                                                 },
@@ -457,7 +469,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "{{notification.created_at | datetime}}"
                                                 }
@@ -473,7 +485,7 @@
                     "comment": "알림 없음",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!userNotifications.data.data || userNotifications.data.data.length === 0}}",
+                    "if": "{{userNotifications !== undefined && (!userNotifications.data.data || userNotifications.data.data.length === 0)}}",
                     "responsive": {
                         "portable": {
                             "props": {
@@ -490,7 +502,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "bell-off",
-                                "className": "text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3"
+                                "className": "text-5xl mx-auto text-gray-500 dark:text-gray-500 mb-3"
                             }
                         },
                         {

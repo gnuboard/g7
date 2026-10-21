@@ -62,7 +62,7 @@ const G7Core = (window as any).G7Core;
  * 같은 배열을 넓은 화면 표와 좁은 화면 카드가 함께 편집하는 화면(게시판 환경설정 반응 유형 아이콘)에서는
  * 한 인스턴스가 첨부를 지운 직후 폭 전환·반복 행 재마운트로 새로 생긴 인스턴스가 지우기 전 값을 initialFiles 로
  * 한 번 받는다. 지운 기록이 인스턴스마다 따로면 새 인스턴스는 지운 첨부를 목록에 올리고 썸네일을 내려받다
- * 404 를 남긴다(7.1.0 실측 O-K1-6). 서버에서 지운 첨부는 어느 인스턴스에서도 다시 그릴 수 없으므로 함께 기록한다.
+ * 404 를 남긴다(7.1.0 실측). 서버에서 지운 첨부는 어느 인스턴스에서도 다시 그릴 수 없으므로 함께 기록한다.
  */
 const sessionDeletedAttachmentIds = new Set<number>();
 
@@ -260,7 +260,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
 
     const next = [...filteredFiles, ...sessionUploaded];
     // 같은 항목이 같은 순서로 있으면 상태를 바꾸지 않는다 — 부모가 렌더마다 새 빈 배열(같은 내용의 새 배열)을
-    // 넘겨도 다시 그리기가 이어지지 않게 한다(7.1.0 O-PD-2)
+    // 넘겨도 다시 그리기가 이어지지 않게 한다(7.1.0)
     setExistingFiles((prev) => (prev.length === next.length && prev.every((f, i) => f === next[i]) ? prev : next));
   }, [initialFiles]);
 
@@ -294,7 +294,7 @@ export function useFileUploader(options: UseFileUploaderOptions): UseFileUploade
       }
 
       for (const file of filesToAdd) {
-        // 빈 파일(0바이트) — 서버가 받지 않으므로(코어 AttachmentFileContent) 고르는 자리에서 걸러 안내한다(7.1.0 N O-N7).
+        // 빈 파일(0바이트) — 서버가 받지 않으므로(코어 AttachmentFileContent) 고르는 자리에서 걸러 안내한다(7.1.0 실측).
         if (file.size === 0) {
           onUploadError?.(t('attachment.empty_file', { name: file.name }), file);
           continue;

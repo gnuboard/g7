@@ -11,6 +11,8 @@ use App\Extension\Vendor\VendorMode;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
+use App\Support\UpdateChildEnv;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -139,6 +141,31 @@ trait BundledExtensionUpdatePrompt
             $strategies,
             $rebuildSearchIndex,
         );
+    }
+
+    /**
+     * 번들 일괄 업데이트 결과로 종료 코드를 정하고, 실패가 있으면 경고 1줄을 남깁니다.
+     *
+     * 코어는 이미 새 버전이어도 번들 확장 하나가 실패했으면 종료 코드 1 을 돌려준다 — 자동화 스크립트가 성공으로 읽고
+     * 넘어가면 실패한 확장이 옛 버전·옛 레이아웃으로 조용히 남는다(#144). `core:update` 와 단독
+     * `core:execute-upgrade-steps` 가 같은 규칙을 쓰도록 한 곳에 둔다.
+     *
+     * @param  array{failed?: int}  $promptResult  {@see runBundledExtensionUpdatePrompt()} 결과
+     * @param  string  $version  업데이트된 코어 버전 (안내 문구용)
+     * @return int 실패가 없으면 `Command::SUCCESS`, 있으면 `Command::FAILURE`
+     */
+    protected function bundledUpdateExitCode(array $promptResult, string $version): int
+    {
+        $failed = (int) ($promptResult['failed'] ?? 0);
+
+        if ($failed === 0) {
+            return Command::SUCCESS;
+        }
+
+        $this->newLine();
+        $this->warn(__('extensions.commands.bundled_update.exit_failure', ['version' => $version, 'failed' => $failed]));
+
+        return Command::FAILURE;
     }
 
     /**
@@ -360,8 +387,9 @@ trait BundledExtensionUpdatePrompt
                 2 => ['pipe', 'w'],
             ];
 
-            // ENV 합집합 (G7_UPDATE_IN_PROGRESS 등 핵심 플래그 자식에 전달)
-            $env = array_merge(getenv(), $_ENV);
+            // ENV 합집합 + 업데이트 트리면 APP_VERSION·G7_UPDATE_IN_PROGRESS 고정 (#145 F10 — 상속 env 의 옛 버전이
+            // 자식의 config/hooks 캐시에 구워지지 않게 한다)
+            $env = UpdateChildEnv::build();
 
             // audit:allow spawn-after-vendor-swap-clears-package-manifest 이 spawn 은 vendor 를 바꾸지 않고,
             // 두 호출처가 모두 clearAllCaches() 뒤다 — CoreUpdateCommand Step 11(패키지 매니페스트 재생성)
@@ -399,10 +427,18 @@ trait BundledExtensionUpdatePrompt
 
             fclose($pipes[1]);
             fclose($pipes[2]);
-            proc_close($process);
+            $exitCode = proc_close($process);
 
             if ($resultPayload === null) {
-                Log::warning('번들 spawn 자식이 결과 페이로드를 출력하지 않음 — 카운트 0 으로 처리');
+                // 결과를 못 남기고 비정상 종료한 자식(치명 오류·메모리 초과 등)은 실패 1건으로 센다 — 0/0 으로 두면
+                // 부모가 성공으로 끝내 자동화 스크립트가 실패를 알 수 없다(#144). 정상 종료인데 결과가 없으면 종전대로 0/0.
+                if ($exitCode !== 0) {
+                    Log::warning('번들 spawn 자식이 결과 페이로드 없이 비정상 종료 — 실패 1건으로 처리', ['exit_code' => $exitCode]);
+
+                    return ['success' => 0, 'failed' => 1];
+                }
+
+                Log::warning('번들 spawn 자식이 결과 페이로드를 출력하지 않음 — 카운트 0 으로 처리', ['exit_code' => $exitCode]);
 
                 return ['success' => 0, 'failed' => 0];
             }

@@ -13,7 +13,7 @@
     "children": [
         {
             "type": "basic",
-            "name": "Div",
+            "name": "Button",
             "actions": [
                 {
                     "comment": "구획 접기/펼치기",
@@ -26,7 +26,9 @@
                 }
             ],
             "props": {
-                "className": "card-header"
+                "type": "button",
+                "className": "flex w-full justify-start text-left card-header",
+                "aria-expanded": "{{_local.ui.otherInfoExpanded !== false}}"
             },
             "children": [
                 {
@@ -50,7 +52,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon transition-transform duration-200 {{_local.ui.otherInfoExpanded !== false ? 'rotate-180' : ''}}"
+                        "className": "admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.otherInfoExpanded !== false ? 'rotate-180' : ''}}"
                     }
                 }
             ]
@@ -178,7 +180,7 @@
                                     "id": "no_labels_available",
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{product_labels?.data?.unavailable !== true && !(product_labels?.data?.data ?? []).length}}",
+                                    "if": "{{product_labels !== undefined && (product_labels?.data?.unavailable !== true && !(product_labels?.data?.data ?? []).length)}}",
                                     "props": {
                                         "className": "w-full text-center text-label-subtle py-2"
                                     },
@@ -243,11 +245,12 @@
                                             },
                                             "children": [
                                                 {
-                                                    "type": "basic",
-                                                    "name": "Span",
+                                                    "comment": "라벨 칩 — 운영자 색은 바탕에만 쓰고 글자색은 Badge 가 바탕과 4.5 이상이 되도록 계산한다",
+                                                    "type": "composite",
+                                                    "name": "Badge",
                                                     "props": {
-                                                        "className": "px-2 py-0.5 rounded text-xs font-medium",
-                                                        "style": "background-color: {{((product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.color ?? '#6B7280') + '20'}}; color: {{(product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.color ?? '#6B7280'}}"
+                                                        "size": "md",
+                                                        "customColor": "{{(product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.color ?? '#6B7280'}}"
                                                     },
                                                     "text": "{{$localized((product_labels?.data?.data ?? []).find(l => l.id === _local.ui.lastClickedLabelId)?.name) ?? ''}}"
                                                 },
@@ -265,7 +268,7 @@
                                                     "name": "Span",
                                                     "if": "{{!(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at}}",
                                                     "props": {
-                                                        "className": "text-sm text-gray-400 dark:text-gray-500 italic"
+                                                        "className": "text-sm text-gray-500 dark:text-gray-400 italic"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.no_period"
                                                 }
@@ -312,7 +315,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium"
+                                                        "className": "text-blue-600 hover:text-blue-700 dark:hover:text-blue-400 dark:text-blue-400 font-medium"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.edit"
                                                 },
@@ -343,7 +346,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-amber-600 hover:text-amber-700 dark:text-amber-400 font-medium"
+                                                        "className": "text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300 font-medium"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.unassign"
                                                 },
@@ -374,7 +377,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-red-600 hover:text-red-700 dark:text-red-400 font-medium"
+                                                        "className": "text-red-600 hover:text-red-700 dark:hover:text-red-400 dark:text-red-400 font-medium"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.delete"
                                                 }
@@ -413,7 +416,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_7d"
@@ -433,7 +436,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_14d"
@@ -453,7 +456,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_30d"
@@ -473,7 +476,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "px-3 py-1 text-xs rounded-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.inline_period.preset_permanent"
@@ -512,6 +515,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "date",
+                                                        "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.product.labels.title')}}",
                                                         "className": "input",
                                                         "value": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.started_at ?? ''}}",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.started_at",
@@ -543,6 +547,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "date",
+                                                        "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.product.labels.title')}}",
                                                         "className": "input",
                                                         "value": "{{(_local.form.label_assignments ?? []).find(a => a.label_id === _local.ui.lastClickedLabelId)?.ended_at ?? ''}}",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.labels.ended_at",
@@ -590,7 +595,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": "{{!!route?.itemCode}}"
+                                                "hasChanges": true
                                             }
                                         }
                                     ],
@@ -656,7 +661,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": "{{!!route?.itemCode}}"
+                                                "hasChanges": true
                                             }
                                         }
                                     ],
@@ -739,7 +744,7 @@
                                                         "target": "local",
                                                         "form.purchase_restriction": "none",
                                                         "form.allowed_roles": [],
-                                                        "hasChanges": "{{!!route?.itemCode}}"
+                                                        "hasChanges": true
                                                     }
                                                 }
                                             ],
@@ -782,7 +787,7 @@
                                                         "target": "local",
                                                         "form.purchase_restriction": "restricted",
                                                         "form.allowed_roles": [],
-                                                        "hasChanges": "{{!!route?.itemCode}}"
+                                                        "hasChanges": true
                                                     }
                                                 }
                                             ],
@@ -844,7 +849,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
-                                                "hasChanges": "{{!!route?.itemCode}}"
+                                                "hasChanges": true
                                             }
                                         }
                                     ],
@@ -889,7 +894,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.allowed_roles}}",
                                     "props": {
-                                        "className": "block text-red-500 dark:text-red-400 text-xs mt-1"
+                                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
                                     },
                                     "text": "{{_local.errors?.allowed_roles?.[0] ?? ''}}"
                                 }

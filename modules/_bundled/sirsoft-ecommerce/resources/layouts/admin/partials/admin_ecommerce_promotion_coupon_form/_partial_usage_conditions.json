@@ -148,7 +148,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg flex-center gap-2 text-sm"
+                                        "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg flex-center gap-2 text-sm"
                                     },
                                     "children": [
                                         {
@@ -184,7 +184,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700"
+                                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-700"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.delete_selected"
                                 }
@@ -231,6 +231,7 @@
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.search_field",
                                                         "value": "{{_local.productSearchField}}",
                                                         "className": "input w-32",
                                                         "options": [
@@ -348,7 +349,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "px-3 py-1.5 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white text-sm rounded"
+                                                "className": "px-3 py-1.5 bg-green-700 hover:bg-green-800 dark:bg-green-700 dark:hover:bg-green-800 text-white text-sm rounded"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.add_selected"
                                         }
@@ -454,6 +455,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "rowLabelField": "name_localized",
                                                 "data": "{{_local.productSearchResults ?? []}}",
                                                 "selectable": true,
                                                 "selectionScope": "free",
@@ -529,6 +531,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "rowLabelField": "name_localized",
                                         "data": "{{_local.form?.products ?? []}}",
                                         "selectable": true,
                                         "selectionScope": "free",
@@ -589,7 +592,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg flex-center gap-2 text-sm"
+                                        "className": "px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg flex-center gap-2 text-sm"
                                     },
                                     "children": [
                                         {
@@ -625,7 +628,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700"
+                                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-700"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.delete_selected"
                                 }
@@ -724,7 +727,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "px-3 py-1.5 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white text-sm rounded"
+                                                "className": "px-3 py-1.5 bg-green-700 hover:bg-green-800 dark:bg-green-700 dark:hover:bg-green-800 text-white text-sm rounded"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.search.add_selected"
                                         }
@@ -802,6 +805,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "rowLabelField": "path",
                                         "data": "{{_local.form?.categories ?? []}}",
                                         "selectable": true,
                                         "selectionScope": "free",

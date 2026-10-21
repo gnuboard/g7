@@ -8,13 +8,6 @@
     "type": "basic",
     "name": "Div",
     "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'general'}}",
-    "classMap": {
-        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-        "variants": {
-            "readonly": "opacity-60",
-            "normal": ""
-        }
-    },
     "children": [
         {
             "id": "general_section",

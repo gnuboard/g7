@@ -113,7 +113,7 @@ describe('내 신고 — 상태 표시', () => {
     // @effects mypage_reports_status_badge_has_four_branches
     it('화면이 보내는 상태 값이 서버 ReportStatus 에 실재한다', () => {
         // 모집단은 손으로 적지 않는다 — 백엔드 enum 선언에서 파생한다.
-        // 화면이 쓰는 값을 여기 베껴 적으면 양쪽이 같이 틀려도 green 이 된다(2026-09-16 5차 실측).
+        // 화면이 쓰는 값을 여기 베껴 적으면 양쪽이 같이 틀려도 green 이 된다(2026-09-16 실측).
         const enumSrc = readFileSync(
             resolve(
                 __dirname,
@@ -167,7 +167,8 @@ describe('내 신고 — 상태 표시', () => {
     it('신고 대상이 사라졌으면 톤을 낮추고 배지로 말한다', () => {
         expect(/report\.target_deleted/.test(json)).toBe(true);
         expect(/reports\.target_deleted/.test(json)).toBe(true);
-        expect(/opacity-60/.test(json)).toBe(true);
+        // 톤 낮춤은 opacity-75 — 60 이면 카드 글자가 대비 4.5 를 넘지 못한다
+        expect(/opacity-75/.test(json)).toBe(true);
     });
 
     // @scenario case=subtab_lists_reports_with_status_badges

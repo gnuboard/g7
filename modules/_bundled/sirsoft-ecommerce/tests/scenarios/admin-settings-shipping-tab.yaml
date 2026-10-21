@@ -1,0 +1,42 @@
+feature: 관리자 환경설정 — 배송설정 탭(기본 국가·해외배송·배송가능국가 표/카드·해외배송 끄기 확인 창)
+
+description: |
+  쇼핑몰 환경설정의 「배송설정」 탭은 기본 배송국가와 해외배송 켜기/끄기, 배송가능국가 목록(넓은 화면 표 ·
+  좁은 화면 카드)을 한 화면에서 고친다. 레이아웃 구조 시험(`shippingPolicySettingsTab.test.tsx`)이
+  탭 등록·partial 형식·바인딩(수정하면 「변경 있음」 표시)·국가 추가 흐름·행 스위치와 삭제·기본 배지·
+  해외배송 끄기 확인 창·다국어 네임스페이스·다크 모드 짝을 잠근다.
+
+  결정 사항:
+    - 좁은 화면 카드는 표와 **같은 상태 경로·같은 핸들러**로 행을 고친다 — 두 곳이 갈라지면 한쪽 화면에서만
+      스위치가 다르게 동작한다(카드 핸들러 = 표 핸들러 동일성 단언).
+    - 해외배송을 끌 때는 확인 창을 거친다 — 켜진 해외 국가가 한꺼번에 꺼지기 때문이다. 켤 때는 바로 반영한다.
+    - 도서산간 전역 설정 카드는 이 탭에서 뺐다(배송정책 단위로 옮김) — 다시 들어오지 않게 잠근다.
+
+  이 매니페스트는 #757(입력칸 이름) 작업 중 의미 색 클래스를 이커머스 자산(`ecommerce-tone-*`)으로 바꾸며
+  이 시험을 고칠 때, 시험에 소유 매니페스트가 없던 상태(기존 부채)를 함께 정리한 것이다.
+
+axes:
+  surface:
+    - settings_tab    # 환경설정 메인 레이아웃 + 배송설정 탭 본문(_tab_shipping)
+    - country_table   # 배송가능국가 표(넓은 화면)
+    - country_cards   # 배송가능국가 카드(좁은 화면)
+    - disable_modal   # 해외배송 끄기 확인 창
+
+effects:
+  - shipping_tab_registered_in_settings                       # 환경설정 탭 목록에 배송설정이 주문설정 다음으로 있고 탭 partial 이 포함된다
+  - shipping_partials_are_well_formed                         # 탭·표 partial 의 meta·id·탭 매칭 조건
+  - shipping_basic_card_binds_default_country_and_intl_toggle # 기본 국가 선택칸(활성 국가에서 동적) + 해외배송 스위치 수동 바인딩(켜기 즉시, 끄기 확인 창)
+  - available_country_add_flow                                # 국가 추가 버튼·폼(코드 + 언어별 이름)·비활성 조건·추가·취소
+  - remote_area_card_removed_from_settings                    # 도서산간 전역 카드가 탭에서 제거된 상태 유지
+  - country_list_shows_empty_state                            # 국가가 없을 때 빈 상태 표시
+  - country_rows_toggle_delete_and_default_badge              # 행 스위치·삭제(기본 국가 제외, 해외배송 꺼짐 시 비활성)·기본 배지
+  - shipping_edits_mark_settings_dirty                        # 수동 바인딩 경로가 모두 hasChanges 를 켠다
+  - disable_intl_shipping_requires_confirm                    # 해외배송 끄기 확인 창의 취소·확인 흐름과 루트 모달 등록
+  - shipping_i18n_keys_namespaced                             # 탭·표·카드의 다국어 키가 sirsoft-ecommerce 네임스페이스이고 필수 키가 있다
+  - shipping_dark_mode_pairs                                  # 다크 모드 클래스 짝
+  - country_list_swaps_to_cards_on_portable                   # 좁은 화면(responsive.portable)에서 표 대신 카드 partial
+  - country_cards_mirror_table_rows                           # 카드 헤더·본문이 표 행과 같은 정보(국기·코드·국가명·스위치·삭제·기본 배지)
+  - country_cards_handlers_match_table                        # 카드 스위치·삭제 핸들러가 표와 동일
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/shippingPolicySettingsTab.test.tsx

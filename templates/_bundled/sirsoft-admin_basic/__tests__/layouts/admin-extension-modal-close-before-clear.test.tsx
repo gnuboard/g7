@@ -15,7 +15,7 @@ import { resolve, join } from 'node:path';
 type Json = Record<string, any>;
 
 const PARTIALS = resolve(__dirname, '../../layouts/partials');
-// 언어팩 관리의 번들 언어팩 설치 창도 같은 순서 결함을 가졌다(7.1.0 validate q2 — 식별자·범위·버전 칸이 비어 그려짐).
+// 언어팩 관리의 번들 언어팩 설치 창도 같은 순서 결함을 가졌다(7.1.0 전수 실측 — 식별자·범위·버전 칸이 비어 그려짐).
 const DIRS = ['admin_module_list', 'admin_plugin_list', 'admin_template_list', 'admin_language_pack_list'];
 const SELECTED_KEYS = ['selectedModule', 'selectedPlugin', 'selectedTemplate', 'selectedBundledLanguagePack'];
 

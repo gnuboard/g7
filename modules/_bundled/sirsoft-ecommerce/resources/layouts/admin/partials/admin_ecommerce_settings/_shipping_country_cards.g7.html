@@ -13,20 +13,20 @@
           </div>
         </div>
         <div class="flex-center gap-2 shrink-0">
-          <toggle data-type="composite" checked="{{country.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false) &amp;&amp; country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}">
+          <toggle data-type="composite" checked="{{country.is_active ?? false}}" ariaLabel="$t:common.row_cell|row={{country.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.countries.is_active')}}" size="sm" disabled="{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false) &amp;&amp; country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}">
             <on type="change">
               <!-- 사용 여부. 끄면 주문 시 그 나라를 고를 수 없게 되고, 이미 받은 주문에는 영향이 없다. -->
               <set-state target="local" form.shipping.available_countries="{{(_local.form?.shipping?.available_countries ?? []).map((c, i) => i === country._idx ? {...c, is_active: !(c.is_active ?? false)} : c)}}" :hasChanges="true"/>
             </on>
           </toggle>
-          <button data-if="{{country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}" type="button" class="btn-icon text-error disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false)}}" aria-label="$t:common.delete">
+          <button data-if="{{country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}" type="button" class="btn-icon ecommerce-tone-error disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false)}}" aria-label="$t:common.delete">
             <on type="click">
               <!-- 국가 삭제. -->
               <set-state target="local" form.shipping.available_countries="{{(_local.form?.shipping?.available_countries ?? []).filter((_, i) => i !== country._idx)}}" :hasChanges="true"/>
             </on>
             <icon name="fa-solid fa-trash" class="text-sm"/>
           </button>
-          <span data-if="{{country.code === (_local.form?.shipping?.default_country ?? 'KR')}}" class="text-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full">$t:sirsoft-ecommerce.admin.settings.shipping.countries.default_badge</span>
+          <span data-if="{{country.code === (_local.form?.shipping?.default_country ?? 'KR')}}" class="ecommerce-tone-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full text-xs">$t:sirsoft-ecommerce.admin.settings.shipping.countries.default_badge</span>
         </div>
       </div>
     </div>

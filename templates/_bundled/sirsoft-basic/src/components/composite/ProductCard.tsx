@@ -17,6 +17,9 @@ import { Span } from '../basic/Span';
 import { H3 } from '../basic/H3';
 import { Img } from '../basic/Img';
 import type { EditorAttrs } from '../../types';
+import { LinkButton } from '../../support/LinkButton';
+import { solidChipColors } from '../../support/accessibleColor';
+import { mergeQueryIntoHref } from '../../support/navigationLink';
 
 /**
  * 선호 통화를 전역 상태에서 읽고, 변경을 구독하는 훅.
@@ -231,23 +234,22 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const nameHighlighted = product.name_highlighted;
   const descriptionHtml = product.description_highlighted ?? product.short_description;
 
+  const base = shopBase === '/' ? '' : shopBase;
+  // 상세 페이지는 product_code 기준 라우팅. code 미제공 시 id 로 폴백(하위호환).
+  const detailPath = `${base}/products/${product.product_code ?? product.id}`;
+
   const handleClick = () => {
     if (onClick) {
       onClick(product.id);
     } else {
-      const base = shopBase === '/' ? '' : shopBase;
-      // 상세 페이지는 product_code 기준 라우팅. code 미제공 시 id 로 폴백(하위호환).
-      const identifier = product.product_code ?? product.id;
-      navigate(`${base}/products/${identifier}`, preserveListQuery);
+      navigate(detailPath, preserveListQuery);
     }
   };
 
-  return (
-    <Button
-      onClick={handleClick}
-      className={`block w-full text-left group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${className}`}
-      id={id} {...editorAttrs}
-    >
+  const cardClassName = `block w-full text-left group bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer ${className}`;
+
+  const content = (
+    <>
       {/* 이미지 영역 */}
       <Div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">
         {/* 상품 이미지 */}
@@ -260,9 +262,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* 판매 상태 오버레이 */}
         {isNotOnSale && (
-          <Div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+          <Div className="absolute inset-0 bg-black/70 flex items-center justify-center">
             <Span className={`text-lg font-bold ${
-              product.sales_status === 'sold_out' ? 'text-red-300' :
+              product.sales_status === 'sold_out' ? 'text-red-200' :
               product.sales_status === 'suspended' ? 'text-amber-300' :
               'text-blue-300'
             }`} style={{ textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
@@ -273,7 +275,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* 할인율 뱃지 (좌상단) - 품절/판매중단 시 숨김 */}
         {hasDiscount && product.sales_status !== 'sold_out' && product.sales_status !== 'suspended' && (
-          <Span className="absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
+          <Span className="absolute top-2 left-2 px-2 py-1 bg-red-600 dark:bg-red-600 text-white dark:text-white text-xs font-bold rounded">
             {product.discount_rate}%
           </Span>
         )}
@@ -281,15 +283,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
         {/* 상품 라벨/뱃지 (우하단) */}
         {labels.length > 0 && (
           <Div className="absolute bottom-2 right-2 flex gap-1 flex-wrap justify-end">
-            {labels.map((label, idx) => (
-              <Span
-                key={idx}
-                className="text-xs text-white font-medium px-1.5 py-0.5 rounded"
-                style={{ backgroundColor: label.color || '#6b7280' }}
-              >
-                {label.name}
-              </Span>
-            ))}
+            {labels.map((label, idx) => {
+              // 바탕은 운영자 라벨 색 그대로, 글자는 검정·흰색 중 그 바탕과 대비가 큰 쪽 — 흰 글자 고정이면 밝은 라벨 색
+              // (초록·노랑 500 등)에서 2 안팎으로 읽히지 않는다. 읽을 수 없는 색 값은 기본 회색으로 그린다.
+              const chip = solidChipColors(label.color) ?? solidChipColors('#6b7280')!;
+              return (
+                <Span
+                  key={idx}
+                  className="text-xs font-medium px-1.5 py-0.5 rounded"
+                  style={{ backgroundColor: chip.background, color: chip.color }}
+                >
+                  {label.name}
+                </Span>
+              );
+            })}
           </Div>
         )}
       </Div>
@@ -335,7 +342,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {getStarTypes(product.rating_avg ?? 0).map((type, idx) => (
             <Span
               key={idx}
-              className={`text-xs ${type === 'empty' ? 'text-gray-300 dark:text-gray-600' : 'text-yellow-400'}`}
+              className={`text-xs ${type === 'empty' ? 'text-gray-500 dark:text-gray-500' : 'text-yellow-700 dark:text-yellow-400'}`}
             >
               {type === 'full' && <i className="fa-solid fa-star" />}
               {type === 'half' && <i className="fa-solid fa-star-half-stroke" />}
@@ -345,7 +352,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <Span className="text-xs text-gray-600 dark:text-gray-400 ml-0.5">
             {(product.rating_avg ?? 0).toFixed(1)}
           </Span>
-          <Span className="text-xs text-gray-400 dark:text-gray-500">
+          <Span className="text-xs text-gray-500 dark:text-gray-400">
             ({product.review_count ?? 0})
           </Span>
         </Div>
@@ -362,7 +369,29 @@ const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </Div>
       </Div>
-    </Button>
+    </>
+  );
+
+  // 상세로 가는 카드는 링크 — 가운데 클릭·Ctrl+클릭으로 새 탭에 연다(#757). 목록 문맥을 승계하면 href 에도 같은 쿼리를 싣는다.
+  // 레이아웃이 onClick 으로 따로 처리하는 카드는 주소를 알 수 없으므로 단추 그대로다.
+  if (onClick) {
+    return (
+      <Button onClick={handleClick} className={cardClassName} id={id} {...editorAttrs}>
+        {content}
+      </Button>
+    );
+  }
+
+  return (
+    <LinkButton
+      href={preserveListQuery ? mergeQueryIntoHref(detailPath) : detailPath}
+      onNavigate={handleClick}
+      className={cardClassName}
+      id={id}
+      {...(editorAttrs as Record<string, unknown>)}
+    >
+      {content}
+    </LinkButton>
   );
 };
 

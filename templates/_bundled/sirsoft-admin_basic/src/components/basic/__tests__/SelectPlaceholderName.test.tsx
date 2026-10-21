@@ -29,7 +29,10 @@ describe('선택 상자 안내 글자', () => {
 
         const button = screen.getByRole('button', { name: '브랜드를 선택하세요' });
         expect(button).toBeInTheDocument();
-        expect(screen.getByText('브랜드를 선택하세요').className).toContain('dark:text-gray-500');
+        // 안내 글자는 기본 버튼 바탕(gray-100 / 다크 gray-700)에서도 4.5 이상이어야 한다 — gray-500 4.39·다크 gray-400 3.96 은
+        // 미달이라(실측: 브랜드 선택칸 안내) 의미 클래스 .input 의 placeholder 와 같은 gray-600 / 다크 gray-300 으로 올렸다
+        expect(screen.getByText('브랜드를 선택하세요').className).toContain('text-gray-600');
+        expect(screen.getByText('브랜드를 선택하세요').className).toContain('dark:text-gray-300');
     });
 
     /**
@@ -47,10 +50,10 @@ describe('선택 상자 안내 글자', () => {
      * @scenario case=c03
      * @effects select_trigger_named
      */
-    it('aria-label 을 넘기면 바깥 상자가 아니라 버튼에 단다', () => {
+    it('aria-label 을 넘기면 바깥 상자가 아니라 버튼에 단다 — 이름 뒤에 현재 값이 이어 읽힌다(#757)', () => {
         const { container } = render(<Select options={options} value={1} aria-label="브랜드" />);
 
-        expect(screen.getByRole('button', { name: '브랜드' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '브랜드 브랜드 A' })).toBeInTheDocument();
         expect((container.firstChild as HTMLElement).getAttribute('aria-label')).toBeNull();
     });
 });

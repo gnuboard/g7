@@ -1,0 +1,21 @@
+feature: 없는 게시판 주소 — 404 브라우저 회귀 (7.1.1)
+
+description: |
+  비회원이 존재할 수 없는 slug 로 게시판 목록을 열면 로그인 이동·401·403 이 아니라 404 화면이 뜨고,
+  글 목록·글 보기 API 가 404 로 답하는지 본다. 데이터를 만들지 않는다.
+
+axes:
+  case:
+    - guest_screen
+    - guest_api
+
+effects:
+  - missing_board_screen_is_404
+  - missing_board_not_login_redirect
+  - missing_board_api_is_404
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Playwright/specs/user/missing-board-not-found.spec.ts
+
+notes: |
+  단위 계약은 board-missing-board-not-found.yaml(PHPUnit) 이 소유한다.

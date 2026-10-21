@@ -1,0 +1,25 @@
+feature: board_menu_read_permission
+
+description: |
+  사용자 게시판 메뉴(board-menu)는 호출자가 열람할 수 있는 게시판만 돌려준다(#142, D3). 판정은 게시판 목록
+  화면(/boards)과 같은 `sirsoft-board.{slug}.posts.read` 이다. 공용 캐시(활성 게시판 전체)는 그대로 두고
+  꺼낸 뒤 사용자별로 거르므로, 캐시가 따뜻할 때 역할 권한이 바뀌어도 다음 요청에 바로 반영된다.
+  게시판 축(공개·회원전용·비활성)은 한 시험이 세 종류를 함께 만들고 메뉴 집합 전체를 단언하므로, 각 시험이 세 값을 함께 덮는다
+  — 비활성은 어느 시점에도 나오지 않는다.
+
+axes:
+  viewer: [guest, member, admin]
+  board: [public, members_only, inactive]
+  cache: [cold, warm]
+
+effects:
+  - guest_menu_excludes_members_only_board
+  - member_menu_includes_members_only_board
+  - inactive_board_never_listed
+  - warm_cache_reflects_permission_change
+  - menu_matches_public_board_list_set
+  - menu_order_follows_display_order
+  - menu_minimal_fields_and_localized_names
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/BoardMenuApiTest.php

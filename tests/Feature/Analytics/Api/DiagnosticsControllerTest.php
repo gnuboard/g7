@@ -453,7 +453,7 @@ class DiagnosticsControllerTest extends AnalyticsApiTestCase
     /**
      * 적재 실패 행마다 그 주소가 실제로 가려진 값인지 싣는지 확인합니다.
      *
-     * 열 이름이 설정을 따라 「IP (마스킹됨)」이 되어도 설정 전 행은 원래 주소다(7.1.0 실측 O-E8).
+     * 열 이름이 설정을 따라 「IP (마스킹됨)」이 되어도 설정 전 행은 원래 주소다(7.1.0 실측).
      *
      * @return void 없음
      *

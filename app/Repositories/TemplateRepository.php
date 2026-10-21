@@ -2,11 +2,13 @@
 
 namespace App\Repositories;
 
+use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Models\Template;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class TemplateRepository implements TemplateRepositoryInterface
 {
@@ -185,11 +187,15 @@ class TemplateRepository implements TemplateRepositoryInterface
         $activeTemplates = Template::where('status', ExtensionStatus::Active->value)->get();
 
         if ($activeTemplates->isEmpty()) {
-            return new Collection();
+            return new Collection;
         }
 
         // TemplateManager를 통해 각 템플릿의 의존성 확인
-        $templateManager = app(\App\Contracts\Extension\TemplateManagerInterface::class);
+        $templateManager = app(TemplateManagerInterface::class);
+
+        // 콘솔 부팅은 템플릿 로딩을 건너뛴다 — 불러오지 않으면 getTemplate() 이 null 이라 역의존성이 비고,
+        // 크론·큐 워커가 템플릿이 쓰는 확장을 그대로 자동 비활성화했다(#145 F4). 이미 불러왔으면 비용 없음.
+        $templateManager->ensureLoaded();
 
         return $activeTemplates->filter(function (Template $template) use ($templateManager, $moduleIdentifier) {
             $templateData = $templateManager->getTemplate($template->identifier);
@@ -222,11 +228,15 @@ class TemplateRepository implements TemplateRepositoryInterface
         $activeTemplates = Template::where('status', ExtensionStatus::Active->value)->get();
 
         if ($activeTemplates->isEmpty()) {
-            return new Collection();
+            return new Collection;
         }
 
         // TemplateManager를 통해 각 템플릿의 의존성 확인
-        $templateManager = app(\App\Contracts\Extension\TemplateManagerInterface::class);
+        $templateManager = app(TemplateManagerInterface::class);
+
+        // 콘솔 부팅은 템플릿 로딩을 건너뛴다 — 불러오지 않으면 getTemplate() 이 null 이라 역의존성이 비고,
+        // 크론·큐 워커가 템플릿이 쓰는 확장을 그대로 자동 비활성화했다(#145 F4). 이미 불러왔으면 비용 없음.
+        $templateManager->ensureLoaded();
 
         return $activeTemplates->filter(function (Template $template) use ($templateManager, $pluginIdentifier) {
             $templateData = $templateManager->getTemplate($template->identifier);
@@ -250,7 +260,7 @@ class TemplateRepository implements TemplateRepositoryInterface
      */
     public function findAutoDeactivated(): Collection
     {
-        if (! \Illuminate\Support\Facades\Schema::hasColumn('templates', 'deactivated_reason')) {
+        if (! Schema::hasColumn('templates', 'deactivated_reason')) {
             return new Collection;
         }
 

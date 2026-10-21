@@ -6,8 +6,12 @@ use App\Repositories\JsonConfigRepository;
 use App\Support\AllowedExtensions;
 use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
+use App\Support\LocalizedValue;
 use App\Support\OutboundProxy;
+use App\Support\WorkerSettingsRefresher;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\ServiceProvider;
 use Predis\Client;
 
@@ -35,22 +39,42 @@ class SettingsServiceProvider extends ServiceProvider
         // 같은 인스턴스를 해석해야 교체(스텁 주입)가 모든 경로에 통한다.
         $this->app->singleton(ExtensionSettingsMirror::class);
 
+        // 큐 워커 설정 다시 읽기 — 프로세스 수명 동안 마지막으로 본 설정 버전을 기억해야 하므로 의도된 싱글톤이다(#724).
+        $this->app->singleton(WorkerSettingsRefresher::class);
+
         // JsonConfigRepository를 직접 인스턴스화 (DI 컨테이너 사용 불가)
         $configRepository = new JsonConfigRepository;
 
         // 각 설정 파일이 존재하는 경우에만 해당 설정을 오버라이드
+        $this->applyRuntimeSettings($configRepository);
+
+        // 드라이버 계열은 부팅 때만 적용한다 — 큐 워커 도중에는 바꾸지 않고 저장 시 queue:restart 가 맡는다
+        $this->applyDriverConfig($configRepository);
+        $this->applyPublicAssetDiskConfig($configRepository);
+
+        // 코어 설정을 g7_settings.core prefix로 저장
+        $this->loadCoreSettingsToConfig($configRepository);
+    }
+
+    /**
+     * 드라이버 계열을 뺀 코어 설정을 Laravel config 에 적용합니다.
+     *
+     * 부팅(register)과 큐 워커의 설정 다시 읽기({@see WorkerSettingsRefresher})가 같은 코드를 쓴다 — 두 경로의 결과가
+     * 갈리지 않게 한다. 메일·앱·디버그·업로드·코어 업데이트·GeoIP·본인인증이 대상이다. 각 묶음이 쓰는 config 키는
+     * 드라이버 계열(큐·캐시·세션·파일시스템 연결)과 겹치지 않는다.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
+     */
+    public function applyRuntimeSettings(JsonConfigRepository $configRepository): void
+    {
         $this->applyMailConfig($configRepository);
         $this->applyAppConfig($configRepository);
         $this->applyDebugConfig($configRepository);
-        $this->applyDriverConfig($configRepository);
-        $this->applyPublicAssetDiskConfig($configRepository);
         $this->applyUploadConfig($configRepository);
         $this->applyCoreUpdateConfig($configRepository);
         $this->applyGeoIpConfig($configRepository);
         $this->applyIdentityConfig($configRepository);
-
-        // 코어 설정을 g7_settings.core prefix로 저장
-        $this->loadCoreSettingsToConfig($configRepository);
     }
 
     /**
@@ -76,7 +100,16 @@ class SettingsServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // 부트스트랩 후 추가 설정 적용 가능
+        // 큐 작업 시작 직전에 설정 버전을 비교해 바뀌었으면 다시 읽는다 — 워커는 부팅 때 읽은 설정을
+        // 프로세스가 끝날 때까지 들고 있다(#724). sync 연결 작업은 웹 요청 안에서 돌므로 비교하지 않는다
+        // (요청마다 캐시를 조회하지 않기 위해서다).
+        Queue::before(function (JobProcessing $event) {
+            if ($event->connectionName === 'sync') {
+                return;
+            }
+
+            $this->app->make(WorkerSettingsRefresher::class)->refreshIfChanged();
+        });
     }
 
     /**
@@ -240,22 +273,8 @@ class SettingsServiceProvider extends ServiceProvider
         }
 
         if (is_array($value)) {
-            $locale = config('app.locale', 'ko');
-            if (isset($value[$locale]) && is_string($value[$locale])) {
-                return $value[$locale];
-            }
-            $fallback = config('app.fallback_locale', 'en');
-            if (isset($value[$fallback]) && is_string($value[$fallback])) {
-                return $value[$fallback];
-            }
-            // 첫 string 값 폴백
-            foreach ($value as $candidate) {
-                if (is_string($candidate)) {
-                    return $candidate;
-                }
-            }
-
-            return '';
+            // 사이트 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148 — SEO resolveLocalizedValue 와 같은 SSoT)
+            return LocalizedValue::pick($value, (string) config('app.locale', 'ko')) ?? '';
         }
 
         return (string) ($value ?? '');

@@ -203,6 +203,8 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
     if (testUtils) testUtils.cleanup();
   });
 
+  // @scenario core_compat=incompatible
+  // @effects incompatible_update_shows_force_checkbox
   it('is_compatible=false 일 때 호환성 안내 패널과 force 체크박스가 렌더된다', async () => {
     testUtils = createLayoutTest(
       buildLayout({
@@ -239,15 +241,17 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
     expect(checkbox.checked).toBe(false);
   });
 
-  // 진행 버튼은 amber-600 클래스로 식별 (텍스트는 $t: 키 또는 번역됨에 따라 달라짐)
+  // 진행 버튼은 amber-700 클래스로 식별(흰 글자 대비 4.5:1 — amber-600 은 3.19) (텍스트는 $t: 키 또는 번역됨에 따라 달라짐)
   function getConfirmButton(): HTMLButtonElement | null {
     const buttons = Array.from(document.querySelectorAll('button'));
     return (
-      (buttons.find(b => b.className.includes('bg-amber-600')) as HTMLButtonElement) ||
+      (buttons.find(b => b.className.includes('bg-amber-700')) as HTMLButtonElement) ||
       null
     );
   }
 
+  // @scenario core_compat=incompatible
+  // @effects force_unchecked_blocks_confirm
   it('is_compatible=false + force 미체크 시 진행 버튼이 disabled', async () => {
     testUtils = createLayoutTest(
       buildLayout({
@@ -273,6 +277,8 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
     expect(button!.disabled).toBe(true);
   });
 
+  // @scenario core_compat=incompatible
+  // @effects force_checked_enables_confirm
   it('is_compatible=false + force 체크 시 진행 버튼이 enabled', async () => {
     testUtils = createLayoutTest(
       buildLayout({
@@ -298,6 +304,8 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
     expect(button!.disabled).toBe(false);
   });
 
+  // @scenario core_compat=compatible
+  // @effects compatible_update_skips_force_checkbox
   it('is_compatible=true 일 때 호환성 패널/체크박스가 렌더되지 않고 진행 버튼 enabled', async () => {
     testUtils = createLayoutTest(
       buildLayout({
@@ -324,6 +332,8 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
     expect(button!.disabled).toBe(false);
   });
 
+  // @scenario core_compat=incompatible
+  // @effects confirm_sends_force_in_update_body
   it('진행 버튼 actions에 force 바인딩이 apiCall body 에 포함되어 있다', () => {
     // partial JSON 구조 검증 — sequence 내부 apiCall body.force 값
     const buttonsRow = modalPartial.children[modalPartial.children.length - 1];
@@ -343,6 +353,8 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
     );
   });
 
+  // @scenario core_compat=incompatible
+  // @effects force_checkbox_toggles_global_flag
   it('체크박스 클릭 액션이 _global.pluginForceUpdate 를 토글한다', () => {
     // partial 구조에서 체크박스 onChange 핸들러가 setState target=global, pluginForceUpdate 토글인지 검증
     function findCheckbox(node: any): any | null {

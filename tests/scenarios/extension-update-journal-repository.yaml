@@ -1,0 +1,30 @@
+feature: 확장 업데이트 진행 기록 Repository — 파일 저장·조회·삭제 (7.1.1 출시 전)
+
+description: |
+  확장 업데이트 진행 기록(`App\Extension\Helpers\ExtensionUpdateJournal`)의 저장 계층이다. 기록은 DB 가 아니라
+  `storage/app/extension_update_journal/{type}/{identifier}.json` 파일에 둔다(결정 — 새 컬럼·마이그레이션 없음).
+  `ExtensionUpdateJournalRepositoryInterface` 를 코어 프로바이더가 파일 기반 구현(`ExtensionUpdateJournalRepository`)에 묶고,
+  기록 클래스와 멈춘 업데이트 정리(`StuckUpdateRecovery`)는 이 인터페이스로만 읽고 쓰고 지운다.
+
+  읽거나 쓰지 못해도 예외를 던지지 않는다 — 깨진 JSON·판 정보 없는 저장본은 「기록 없음」으로 보고 업데이트는 종전 동작으로 진행한다.
+  축 operation 은 Repository 가 맡는 동작이다 — 컨테이너 바인딩, 바인딩이 없을 때(코어 업그레이드 도중 직전 판 프로바이더) 구현 클래스 대체, 저장·조회·삭제 왕복, 읽을 수 없는 저장본, 저장본 정규화.
+
+axes:
+  operation: [binding, unbound_fallback, round_trip, unreadable, normalize]
+
+effects:
+  - journal_repository_bound_to_file_implementation
+  - unbound_interface_falls_back_to_file_implementation
+  - saved_journal_read_back_unchanged
+  - deleted_journal_not_found
+  - delete_missing_journal_is_noop
+  - unreadable_journal_file_treated_as_absent
+  - journal_without_versions_treated_as_absent
+  - stored_fields_normalized_to_defaults
+
+test_files:
+  - tests/Unit/Repositories/ExtensionUpdateJournalRepositoryTest.php
+
+notes: |
+  이어받기·건너뛰기·실패 정리 규칙(기록 클래스)과 끊긴 업데이트를 이어 도는 흐름은 이 매니페스트 밖이다 —
+  tests/Unit/Extension/ExtensionUpdateJournalTest.php · tests/Feature/Extension/UnfinishedUpdateStepsResumeTest.php 가 잰다.

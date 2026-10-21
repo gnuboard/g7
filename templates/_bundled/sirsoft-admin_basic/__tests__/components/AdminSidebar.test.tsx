@@ -84,12 +84,14 @@ const createMenu = (): MenuItem[] => [
 
 describe('AdminSidebar', () => {
   describe('URL 있는 부모 메뉴 (클릭/토글 분리)', () => {
+    // @scenario surface=url_parent
+    // @effects menu_navigates_spa, parent_toggles_submenu
     it('텍스트/아이콘 영역 클릭 시 네비게이션이 실행된다', () => {
       render(<AdminSidebar menu={createMenu()} currentLocale="ko" />);
 
       // "이커머스" 텍스트를 포함하는 버튼 클릭
       const ecommerceLabel = screen.getByText('이커머스');
-      const navButton = ecommerceLabel.closest('button');
+      const navButton = ecommerceLabel.closest('a');  // URL 메뉴는 링크(#757 — 새 탭 열기)
       expect(navButton).toBeTruthy();
 
       fireEvent.click(navButton!);
@@ -102,6 +104,8 @@ describe('AdminSidebar', () => {
       );
     });
 
+    // @scenario surface=url_parent
+    // @effects menu_navigates_spa, parent_toggles_submenu
     it('chevron 버튼 클릭 시 토글만 발생하고 네비게이션은 발생하지 않는다', () => {
       render(<AdminSidebar menu={createMenu()} currentLocale="ko" />);
 
@@ -123,6 +127,8 @@ describe('AdminSidebar', () => {
   });
 
   describe('URL 없는 부모 메뉴 (전체 클릭 = 토글)', () => {
+    // @scenario surface=toggle_parent
+    // @effects parent_toggles_submenu
     it('전체 영역 클릭 시 하위 메뉴가 토글된다', () => {
       render(<AdminSidebar menu={createMenu()} currentLocale="ko" />);
 
@@ -143,11 +149,13 @@ describe('AdminSidebar', () => {
   });
 
   describe('리프 메뉴 (자식 없음 + URL 있음)', () => {
+    // @scenario surface=leaf
+    // @effects menu_navigates_spa
     it('클릭 시 네비게이션이 실행된다', () => {
       render(<AdminSidebar menu={createMenu()} currentLocale="ko" />);
 
       // 대시보드 클릭
-      const dashboardButton = screen.getByText('대시보드').closest('button');
+      const dashboardButton = screen.getByText('대시보드').closest('a');  // URL 메뉴는 링크(#757 — 새 탭 열기)
       expect(dashboardButton).toBeTruthy();
 
       fireEvent.click(dashboardButton!);
@@ -162,6 +170,8 @@ describe('AdminSidebar', () => {
   });
 
   describe('collapsed 모드', () => {
+    // @scenario surface=collapsed
+    // @effects collapsed_hides_labels
     it('collapsed 시 텍스트 라벨이 표시되지 않는다', () => {
       render(<AdminSidebar menu={createMenu()} collapsed={true} currentLocale="ko" />);
 
@@ -170,6 +180,8 @@ describe('AdminSidebar', () => {
       expect(screen.queryByText('이커머스')).toBeNull();
     });
 
+    // @scenario surface=collapsed
+    // @effects collapsed_hides_labels
     it('collapsed 시 chevron 버튼이 표시되지 않는다', () => {
       render(<AdminSidebar menu={createMenu()} collapsed={true} currentLocale="ko" />);
 

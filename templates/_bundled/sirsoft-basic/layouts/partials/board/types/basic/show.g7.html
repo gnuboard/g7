@@ -23,22 +23,24 @@
           <!-- 배지 그룹 (비밀글 아이콘 > 카테고리 > 공지) - 배지가 있을 때만 표시 -->
           <div data-if="{{post?.data?.category || post?.data?.is_notice || post?.data?.is_secret || post?.data?.status === 'blinded'}}" class="flex items-center gap-3 flex-shrink-0 mr-3">
             <!-- 공지 배지 -->
-            <span data-if="{{post?.data?.is_notice}}" class="px-2 py-1 text-xs font-bold bg-blue-600 text-white dark:bg-blue-500 rounded">$t:board.notice</span>
-            <!-- 카테고리 배지 -->
-            <span data-if="{{post?.data?.category}}" class="px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">{{post.data.category}}</span>
+            <span data-if="{{post?.data?.is_notice}}" class="px-2 py-1 text-xs font-bold bg-blue-600 text-white dark:bg-blue-600 rounded">$t:board.notice</span>
+            <!-- 카테고리 배지 — 줄지 않는 배지 묶음 안이라 폭 상한(max-w-32) + 한 줄 … . 상한이 없던 때 띄어쓰기 없는 긴 분류 이름이 카드 밖으로 나가 390px 에서 문서가 628px 로 넓어졌다(7.1.1). -->
+            <span data-if="{{post?.data?.category}}" class="px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded truncate max-w-32" title="{{post.data.category}}">{{post.data.category}}</span>
             <!-- 비밀글 아이콘 -->
             <icon data-if="{{post?.data?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
             <!-- 블라인드 아이콘 -->
-            <icon data-if="{{post?.data?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-500 dark:text-orange-400 flex-shrink-0"/>
+            <icon data-if="{{post?.data?.status === 'blinded'}}" name="eye-slash" size="sm" class="text-orange-600 dark:text-orange-400 flex-shrink-0"/>
           </div>
           <!-- 제목 + NEW 배지 (붙여서 표시) -->
           <div class="flex items-center gap-2 flex-1 min-w-0">
             <!-- 제목 -->
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{post?.data?.title ?? ''}}</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white min-w-0 wrap-anywhere">{{post?.data?.title ?? ''}}</h1>
+            <!-- 확장 자리 — 확장이 제목 옆에 배지를 붙인다(#149). 이 파일은 게시판 유형 세 갈래에 include 되므로 data-ref 로 지목하면 basic 에만 닿는다 — 이 확장점은 세 갈래 모두에 들어간다 -->
+            <extension-point name="board_post_header_badges" class="contents" data-extension-point="board_post_header_badges" post="{{post?.data}}" postId="{{post?.data?.id}}" boardSlug="{{route?.slug}}" context="board_show"/>
             <!-- 삭제됨 배지 -->
             <span data-if="{{post?.data?.deleted_at}}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
             <!-- 새글 배지 (제목 바로 옆) -->
-            <span data-if="{{post?.data?.is_new}}" class="px-2 py-1 text-xs font-bold bg-red-500 dark:bg-red-600 text-white dark:text-white rounded flex-shrink-0">N</span>
+            <span data-if="{{post?.data?.is_new}}" class="px-2 py-1 text-xs font-bold bg-red-600 dark:bg-red-600 text-white dark:text-white rounded flex-shrink-0">N</span>
           </div>
         </div>
         <!-- 작성자 정보 + 조회수/댓글수 -->
@@ -77,7 +79,7 @@
           <!-- 오른쪽: 작성자 + 날짜 -->
           <div class="flex items-center gap-2">
             <span class="text-gray-500 dark:text-gray-400">{{post?.data?.parent?.author?.name ?? ''}}</span>
-            <span class="text-gray-400 dark:text-gray-500" title="{{post?.data?.parent?.created_at ?? ''}}">{{post?.data?.parent?.created_at_formatted ?? ''}}</span>
+            <span class="text-gray-500 dark:text-gray-400" title="{{post?.data?.parent?.created_at ?? ''}}">{{post?.data?.parent?.created_at_formatted ?? ''}}</span>
           </div>
         </div>
         <!-- 2줄: 제목 (클릭 시 원글로 이동) -->
@@ -85,16 +87,16 @@
           <!-- 비밀글 아이콘 -->
           <icon data-if="{{post?.data?.parent?.is_secret}}" name="lock" size="sm" class="text-gray-500 dark:text-gray-400"/>
           <!-- 카테고리 배지 -->
-          <span data-if="{{post?.data?.parent?.category}}" class="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">{{post?.data?.parent?.category ?? ''}}</span>
+          <span data-if="{{post?.data?.parent?.category}}" class="shrink-0 truncate max-w-32 px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" title="{{post?.data?.parent?.category ?? ''}}">{{post?.data?.parent?.category ?? ''}}</span>
           <!-- 제목 (클릭 가능, 굵게) -->
-          <a href="/board/{{route.slug}}/{{post?.data?.parent?.id ?? ''}}" class="font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{{post?.data?.parent?.title ?? ''}}</a>
+          <a href="/board/{{route.slug}}/{{post?.data?.parent?.id ?? ''}}" class="min-w-0 wrap-anywhere font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{{post?.data?.parent?.title ?? ''}}</a>
           <!-- 삭제됨 배지 -->
           <span data-if="{{post?.data?.parent?.deleted_at}}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 flex-shrink-0">$t:board.post.deleted_badge</span>
         </div>
         <!-- 3줄: 내용 (토글로 접기/펼치기) -->
         <div class="text-sm text-gray-600 dark:text-gray-400 mb-3 {{_local?.parentContentExpanded ? '' : 'line-clamp-2'}}">
           <!-- 블라인드 처리된 경우 -->
-          <span data-if="{{post?.data?.parent?.status === 'blinded'}}" class="italic text-orange-500 dark:text-orange-400">$t:board.blinded_post</span>
+          <span data-if="{{post?.data?.parent?.status === 'blinded'}}" class="italic text-orange-700 dark:text-orange-400">$t:board.blinded_post</span>
           <!-- 비밀글인 경우 -->
           <span data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; post?.data?.parent?.is_secret &amp;&amp; post?.data?.parent?.content === null}}" class="text-gray-500 dark:text-gray-400 italic">$t:board.posts.detail.reply_secret_content</span>
           <!-- 일반 글인 경우 - 내용 -->
@@ -106,7 +108,7 @@
         </div>
         <!-- 4줄: 더보기/접기 토글 버튼 (왼쪽 정렬, 화살표 아이콘) - 200자 이상이고 블라인드 아닌 경우만 표시 -->
         <div data-if="{{post?.data?.parent?.status !== 'blinded' &amp;&amp; (post?.data?.parent?.content ?? '').length > 200}}" class="flex justify-start">
-          <button class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-transparent border-0 p-0 cursor-pointer flex items-center gap-1">
+          <button type="button" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-transparent border-0 p-0 cursor-pointer flex items-center gap-1">
             <on type="click">
               <!-- 원글 인용 펼치기·접기 — 답글을 볼 때 위에 붙는 원글 미리보기 얘기다(아래 답글 목록의 같은 이름 토글과 다른 값). -->
               <set-state target="local" parentContentExpanded="{{!_local?.parentContentExpanded}}"/>
@@ -130,7 +132,7 @@
           </p>
           <p data-if="{{post?.data?.trigger_type}}" class="mt-3 text-sm text-gray-600 dark:text-gray-400 font-medium">$t:board.blinded_reason.{{post?.data?.trigger_type}}</p>
           <!-- 원글 보기/숨기기 토글 버튼 -->
-          <button data-if="{{post?.data?.content}}" class="mt-4 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors flex items-center gap-2 mx-auto cursor-pointer">
+          <button type="button" data-if="{{post?.data?.content}}" class="mt-4 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors flex items-center gap-2 mx-auto cursor-pointer">
             <on type="click">
               <set-state target="local" showBlindedPostContent="{{!_local?.showBlindedPostContent}}"/>
             </on>
@@ -152,7 +154,7 @@
         </div>
         <!-- 회원 비밀글 - 비로그인 시 로그인 안내 -->
         <div data-if="{{post?.data?.content === null &amp;&amp; !post?.data?.is_guest_post &amp;&amp; !_global.currentUser?.uuid &amp;&amp; post?.data?.status !== 'blinded'}}" class="text-center py-12">
-          <icon name="lock" size="3x" class="mx-auto text-gray-400 dark:text-gray-500 mb-4"/>
+          <icon name="lock" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-4"/>
           <p class="text-gray-600 dark:text-gray-400 mb-6">$t:board.secret_post_login_required</p>
           <button type="button" class="px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 cursor-pointer">
             <on type="click">
@@ -163,12 +165,12 @@
         </div>
         <!-- 회원 비밀글 - 로그인했으나 권한 없음 -->
         <div data-if="{{post?.data?.content === null &amp;&amp; !post?.data?.is_guest_post &amp;&amp; _global.currentUser?.uuid &amp;&amp; post?.data?.status !== 'blinded'}}" class="text-center py-12">
-          <icon name="lock" size="3x" class="mx-auto text-gray-400 dark:text-gray-500 mb-4"/>
+          <icon name="lock" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-4"/>
           <p class="text-gray-600 dark:text-gray-400">$t:board.secret_post_no_permission</p>
         </div>
         <!-- 비회원 비밀글 - 비밀번호 입력 필요 -->
         <div data-if="{{post?.data?.content === null &amp;&amp; post?.data?.is_guest_post &amp;&amp; post?.data?.status !== 'blinded'}}" class="text-center py-12">
-          <icon name="lock" size="3x" class="mx-auto text-gray-400 dark:text-gray-500 mb-4"/>
+          <icon name="lock" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-4"/>
           <p class="text-gray-600 dark:text-gray-400 mb-6">$t:board.secret_post_locked</p>
           <!-- 비밀번호 입력 폼 -->
           <form data-key="secretPasswordForm" id="secretPasswordForm" class="max-w-md mx-auto">
@@ -181,8 +183,8 @@
               <api-call target="/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/verify-password" auth_mode="optional" method="POST" body="{{_local?.secretPasswordForm}}">
                 <success>
                   <update-data-source dataSourceId="post" data="{{result}}"/>
-                  <!-- 열람 확인 토큰 보관 — 비밀번호를 맞혔다는 사실은 이 응답에서만 살아 있다. 댓글·답글·신고는 각각 별도 요청이라, 이 토큰을 넘기지 않으면 원문을 연 사람도 화면이 내준 버튼에서 전부 거부된다. _user_base 의 globalHeaders 가 board API 요청에 자동으로 싣는다. -->
-                  <set-state target="global" secretViewToken="{{result.secret_view_token ?? ''}}"/>
+                  <!-- 열람 확인 토큰 보관 — 비밀번호를 맞혔다는 사실은 이 응답의 토큰에 실려 온다. 댓글·답글·신고·답변 열람은 각각 별도 요청이라, 이 토큰을 넘기지 않으면 원문을 연 사람도 화면이 내준 버튼에서 전부 거부된다. 탭 세션(sessionStorage)에 두어 답변 링크(전체 이동)·새로고침 뒤에도 남게 하고, _user_base 의 globalHeaders 가 board API 요청에 자동으로 싣는다. -->
+                  <action handler="saveSecretViewToken" token="{{result.secret_view_token ?? ''}}" expiresAt="{{result.secret_view_expires_at ?? ''}}"/>
                   <set-state target="local" :isVerifyingPassword="false"/>
                   <toast type="success" message="$t:board.password_verified"/>
                 </success>
@@ -214,6 +216,51 @@
             </div>
           </form>
         </div>
+        <!-- 원글 비밀번호로 열기 — 이 답변의 조상에 비밀번호가 있는 비회원 글이 있으면(서버가 thread_password_available 로 알려 준다) 위 잠금 안내 아래에 함께 보인다. 답변 주소로 바로 들어온 비회원 질문자가 자기 원글 비밀번호로 답변을 연다. 로그인 버튼은 위 안내에 그대로 남는다. 어느 조상이 맞았는지는 서버가 알려 주지 않는다. -->
+        <div data-if="{{post?.data?.content === null &amp;&amp; post?.data?.thread_password_available &amp;&amp; post?.data?.status !== 'blinded'}}" class="text-center pb-12 {{post?.data?.is_guest_post ? '' : 'border-t border-gray-200 dark:border-gray-700 pt-8'}}">
+          <p class="text-gray-600 dark:text-gray-400 mb-4">$t:board.secret_thread_password_hint</p>
+          <form data-key="threadPasswordForm" id="threadPasswordForm" class="max-w-md mx-auto">
+            <on type="submit">
+              <!-- 확인 중 표시를 먼저 켠다 — 요청을 내는 아래 블록과 나란히 걸려 있어 순서가 곧 이 표시가 먼저 켜짐을 뜻한다. -->
+              <set-state target="local" :isVerifyingThreadPassword="true"/>
+            </on>
+            <on type="submit">
+              <!-- 원글 비밀번호 확인 — 맞으면 서버가 그 원글에 대한 열람 확인을 같은 토큰에 더하고, 이제 열리는 이 답변을 돌려준다. 받은 글로 데이터소스를 갈아끼우고 토큰을 탭 세션에 둔다(같은 스레드의 다른 답변·원글도 이 토큰으로 열린다). 틀리면 입력칸만 비운다. -->
+              <api-call target="/api/modules/sirsoft-board/boards/{{route.slug}}/posts/{{route.id}}/verify-thread-password" auth_mode="optional" method="POST" body="{{_local?.threadPasswordForm}}">
+                <success>
+                  <update-data-source dataSourceId="post" data="{{result}}"/>
+                  <action handler="saveSecretViewToken" token="{{result.secret_view_token ?? ''}}" expiresAt="{{result.secret_view_expires_at ?? ''}}"/>
+                  <set-state target="local" :isVerifyingThreadPassword="false"/>
+                  <toast type="success" message="$t:board.password_verified"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isVerifyingThreadPassword="false">
+                    <field name="threadPasswordForm">
+                      <field name="password" value=""/>
+                    </field>
+                  </set-state>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </on>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input type="password" name="password" placeholder="$t:board.secret_thread_password_placeholder" aria-label="$t:board.secret_thread_password_placeholder" class="flex-1 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="{{_local.threadPasswordForm?.password ?? ''}}">
+                <on type="change">
+                  <!-- 원글 비밀번호 입력 — 폼 자동바인딩과 같은 이름(threadPasswordForm)에 담아 제출이 그대로 실어 보내게 한다. -->
+                  <set-state target="local">
+                    <field name="threadPasswordForm">
+                      <field name="password" value="{{$event.target.value}}"/>
+                    </field>
+                  </set-state>
+                </on>
+              </input>
+              <button type="submit" class="px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local?.isVerifyingThreadPassword}}">
+                <icon data-if="{{_local?.isVerifyingThreadPassword}}" name="spinner" size="sm" class="animate-spin mr-2"/>
+                <span>{{_local?.isVerifyingThreadPassword ? '$t:common.confirming' : '$t:common.confirm'}}</span>
+              </button>
+            </div>
+          </form>
+        </div>
         <!-- 게시글 내용 (정상) -->
         <extension-point name="html_content" data-if="{{post?.data?.status !== 'blinded' &amp;&amp; post?.data?.content !== null}}" content="{{post?.data?.content ?? ''}}" isHtml="{{(post?.data?.content_mode ?? 'text') === 'html'}}" class="prose dark:prose-invert max-w-none mb-6">
           <default>
@@ -221,10 +268,12 @@
           </default>
         </extension-point>
       </div>
-      <!-- 게시글 하단 바 — 반응(추천/비추천) 영역과 액션 버튼(답변/신고/수정/삭제)을 한 줄에 좌우로 배치. 반응은 왼쪽, 액션은 오른쪽. 둘 중 하나만 표시될 때도 justify-between 으로 정렬 유지. 둘 다 없으면 바 자체 미노출. -->
+      <!-- 게시글 하단 바 — 반응(추천/비추천) 영역과 액션 버튼(답변/신고/수정/삭제)을 한 줄에 좌우로 배치. 반응은 왼쪽, 액션은 오른쪽. 휴대폰 폭에서는 두 묶음을 풀어(contents) 단추가 한 흐름으로 이어 채우게 한다 — 묶음마다 줄을 따로 써 3줄이 되던 것을 2줄로. 둘 중 하나만 표시될 때도 justify-between 으로 정렬 유지. 둘 다 없으면 바 자체 미노출. -->
       <div data-if="{{(post?.data?.board?.use_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0) || post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report)}}" class="flex flex-wrap items-center justify-between gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+        <responsive on="portable" class="flex flex-wrap items-center gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700"/>
         <!-- 반응(추천/비추천) 영역 — 반응 사용 on + 게시판이 켠 유형이 1개 이상일 때만 노출(확정 11). 활성 유형을 iteration 으로 순회해 유형별 버튼(아이콘+라벨+개수, 개수 0도 항상 노출, 확정 09). 본인 글은 버튼/개수는 노출하되 클릭 불가(확정 08). 비로그인은 안내 후 로그인 유도, 로그인 사용자는 같은 유형 재클릭=해제·다른 유형=전환. -->
         <div data-if="{{post?.data?.board?.use_reaction &amp;&amp; (post?.data?.board?.reaction_type_options ?? []).length > 0 &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null)}}" class="flex flex-wrap items-center gap-2">
+          <responsive on="portable" class="contents"/>
           <div data-each="reactionType, reactionIdx in {{post?.data?.board?.reaction_type_options ?? []}}">
             <!-- 반응 유형 버튼 — 하이라이트는 클릭 즉시 이동(_local.myReactionTypeId override, 없으면 서버값), 개수는 react API 응답의 reaction_counts 로 갱신(_local.reactionCounts override). 처리 중(_local.reactingTypeId)은 짧은 로딩(스피너+비활성, 실제 disabled). 본인 글은 시각적으로만 비활성 톤이며 disabled 는 걸지 않는다 — disabled 버튼은 클릭 이벤트 자체가 발생하지 않아 안내 토스트를 띄울 수 없으므로, 클릭은 받고 switch 분기에서 토스트로 안내한다. 실패 시 override 를 클릭 전 값으로 롤백. 활성 상태는 배경색+테두리+하단 밑줄로 표시(상시 확대는 제거 — 부자연스럽다는 검수 피드백). 클릭하는 순간에만 active:scale-95 로 살짝 눌리는 촉각 피드백을 주며, 손을 떼면 즉시 원래 크기로 복귀(순수 CSS :active 의사클래스, 상태 관리 불필요). -->
             <button data-testid="post-react-{{reactionType.id}}" type="button" title="{{reactionType.name ?? ''}}" disabled="{{(_local?.reactingTypeId ?? null) !== null}}" aria-pressed="{{(_local?.reactionApplied ? _local?.myReactionTypeId : post?.data?.my_reaction_type_id) === reactionType.id}}" aria-disabled="{{(_local?.reactingTypeId ?? null) !== null}}" class="{{(_local?.reactionApplied ? _local?.myReactionTypeId : post?.data?.my_reaction_type_id) === reactionType.id ? 'px-4 py-2 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg flex items-center gap-1.5 font-medium active:scale-95 transition-transform duration-150 ease-out' : 'px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1.5 active:scale-95 transition-transform duration-150 ease-out'}}{{(post?.data?.is_author || (_local?.reactingTypeId ?? null) !== null) ? ' cursor-not-allowed opacity-60' : ' cursor-pointer'}}">
@@ -267,21 +316,23 @@
           </div>
         </div>
         <!-- 액션 버튼 영역 (답변, 신고, 수정, 삭제) - 비회원 글은 항상 표시 (수정/삭제용). 하단 바 오른쪽에 배치. 반응 영역이 없으면 justify-between 이 이 그룹만 오른쪽으로 민다. -->
-        <div data-if="{{post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report) || post?.data?.board?.use_scrap}}" class="flex items-center justify-end gap-2 ml-auto">
-          <!-- 답변 버튼 (답변 기능 활성화 + depth 제한 + 블라인드 아닌 게시글 + 비밀글은 검증 후) -->
-          <button data-if="{{post?.data?.board?.use_reply &amp;&amp; !post?.data?.is_notice &amp;&amp; (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) &amp;&amp; post?.data?.abilities?.can_write &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; !post?.data?.deleted_at &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null)}}" class="px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-1 cursor-pointer">
+        <div data-if="{{post?.data?.is_guest_post || post?.data?.is_author || post?.data?.abilities?.can_manage || post?.data?.board?.use_reply || (_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report) || post?.data?.board?.use_scrap}}" class="flex flex-wrap items-center justify-end gap-2 ml-auto">
+          <responsive on="portable" class="contents"/>
+          <!-- 답변 버튼 (답변 기능 활성화 + depth 제한 + 블라인드 아닌 게시글 + 비밀글은 검증 후 + 열 수 없는 비밀 조상이 없을 때). 남의 비밀글 아래 공개 답변에 답변을 달면 그 사람이 스레드의 앵커가 되어 비밀 조상이 열리므로, 서버가 막는 경우(reply_locked_by_secret_ancestor)를 미리 감춘다. -->
+          <a href="/board/{{route.slug}}/write?parent_id={{route.id}}" :mergeQuery="true" data-if="{{post?.data?.board?.use_reply &amp;&amp; !post?.data?.is_notice &amp;&amp; (post?.data?.depth ?? 0) < (post?.data?.board?.max_reply_depth ?? 1) &amp;&amp; post?.data?.abilities?.can_write &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; !post?.data?.deleted_at &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null) &amp;&amp; !post?.data?.reply_locked_by_secret_ancestor}}" class="px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-1 cursor-pointer">
             <on type="click">
-              <navigate path="/board/{{route.slug}}/write" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query parent_id="{{route.id}}"/>
               </navigate>
             </on>
             <icon name="reply" size="sm"/>
             <span>$t:board.post.reply</span>
-          </button>
+          </a>
           <!-- 신고 버튼 — 미신고 상태 (모달 오픈) -->
-          <button data-if="{{_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !post?.data?.is_author &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null) &amp;&amp; !post?.data?.is_already_reported}}" class="px-4 py-2 text-sm border border-orange-300 dark:border-orange-600 text-orange-600 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors flex items-center gap-1 cursor-pointer">
+          <button type="button" data-if="{{_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !post?.data?.is_author &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null) &amp;&amp; !post?.data?.is_already_reported}}" class="px-4 py-2 text-sm border border-orange-300 dark:border-orange-600 text-orange-700 dark:text-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors flex items-center gap-1 cursor-pointer">
             <on type="click">
-              <!-- 공용 신고 모달 설정 -->
+              <!-- 공용 신고 모달 설정 — 앞서 연 댓글 신고의 대상 칸(댓글 내용·작성자)을 먼저 null 로 지운다(기본 deep 병합은 이번 객체에 없는 키를 남긴다, 7.1.1) -->
+              <set-state target="global" :reportModal="null"/>
               <set-state target="global">
                 <field name="reportModal">
                   <field name="type" value="post"/>
@@ -289,7 +340,7 @@
                 </field>
               </set-state>
               <!-- 모달은 modals 섹션이므로 _global로 초기화 -->
-              <set-state target="global">
+              <set-state target="global" :reportErrors="null">
                 <field name="reportForm">
                   <field name="reason_type" value=""/>
                   <field name="reason_detail" value=""/>
@@ -301,12 +352,12 @@
             <span>$t:board.post.report</span>
           </button>
           <!-- 신고 버튼 — 이미 신고한 상태 (클릭 불가) -->
-          <button data-if="{{_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !post?.data?.is_author &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null) &amp;&amp; post?.data?.is_already_reported}}" :disabled="true" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 rounded-lg flex items-center gap-1 cursor-not-allowed opacity-60">
+          <button type="button" data-if="{{_global.currentUser?.uuid &amp;&amp; post?.data?.board?.use_report &amp;&amp; !post?.data?.is_author &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null) &amp;&amp; post?.data?.is_already_reported}}" :disabled="true" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 rounded-lg flex items-center gap-1 cursor-not-allowed opacity-60">
             <icon name="flag" size="sm"/>
             <span>$t:board.post.reported</span>
           </button>
           <!-- 스크랩 버튼 — use_scrap 활성 게시판에만 노출. is_scraped 에 따라 아이콘/색/텍스트 전환(aria-pressed 로도 알림 — 반응 버튼과 같은 방식), 재클릭 시 확인 없이 즉시 토글(확정 09). 비회원은 로그인 유도(확정 §10). scrap_count 표시(확정 10). -->
-          <button data-if="{{post?.data?.board?.use_scrap &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; !post?.data?.deleted_at}}" data-testid="post-scrap-btn" type="button" disabled="{{_local.scrapLoading ?? false}}" aria-pressed="{{!!(_local.isScraped ?? post?.data?.is_scraped)}}" class="{{(_local.isScraped ?? post?.data?.is_scraped) ? 'px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed' : 'px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'}}">
+          <button data-if="{{post?.data?.board?.use_scrap &amp;&amp; post?.data?.status !== 'blinded' &amp;&amp; !post?.data?.deleted_at}}" data-testid="post-scrap-btn" type="button" disabled="{{_local.scrapLoading ?? false}}" aria-pressed="{{!!(_local.isScraped ?? post?.data?.is_scraped)}}" class="{{(_local.isScraped ?? post?.data?.is_scraped) ? 'px-4 py-2 text-sm border border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed' : 'px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed'}}">
             <on type="click">
               <conditions>
                 <!-- 비회원: 로그인 안내 후 원글 복귀용 로그인 페이지 이동 -->
@@ -338,18 +389,18 @@
             <span>{{(_local.isScraped ?? post?.data?.is_scraped) ? '$t:board.post.scrapped' : '$t:board.post.scrap'}} {{_local.scrapCount ?? post?.data?.scrap_count ?? 0}}</span>
           </button>
           <!-- 수정 버튼 ((회원 권한 && 본인 글) || 비회원 글 || manager 권한) && 삭제되지 않은 글 -->
-          <button data-if="{{!post?.data?.deleted_at &amp;&amp; ((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer">
+          <a href="/board/{{route.slug}}/{{route.id}}/edit" :mergeQuery="true" data-if="{{!post?.data?.deleted_at &amp;&amp; ((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 cursor-pointer">
             <on type="click">
               <!-- 비회원/회원 모두 form.json에서 비밀번호 검증 처리 -->
-              <navigate path="/board/{{route.slug}}/{{route.id}}/edit" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
             <icon name="pencil" class="text-sm"/>
             <span>$t:common.edit</span>
-          </button>
+          </a>
           <!-- 삭제 버튼 ((회원 권한 && 본인 글) || 비회원 글 || manager 권한) && 삭제되지 않은 글 -->
-          <button data-if="{{!post?.data?.deleted_at &amp;&amp; ((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}" class="px-4 py-2 text-sm border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1 cursor-pointer">
+          <button type="button" data-if="{{!post?.data?.deleted_at &amp;&amp; ((post?.data?.is_author &amp;&amp; post?.data?.abilities?.can_write) || post?.data?.is_guest_post || post?.data?.abilities?.can_manage)}}" class="px-4 py-2 text-sm border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1 cursor-pointer">
             <on type="click">
               <!-- 공용 삭제 모달 설정 (비회원 본인 글은 isGuest=true, manager 권한이 있으면 비밀번호 불필요) -->
               <set-state target="global">
@@ -371,7 +422,7 @@
     <!-- 댓글 조회 권한 없음 안내 (댓글 기능 활성화 + 조회 권한 X) -->
     <div data-if="{{post?.data?.board?.use_comment &amp;&amp; !post?.data?.abilities?.can_read_comments &amp;&amp; (!post?.data?.is_secret || post?.data?.content !== null)}}" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow">
       <div class="px-6 py-8 text-center">
-        <icon name="lock" size="xl" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+        <icon name="lock" size="xl" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
         <p class="text-gray-500 dark:text-gray-400">$t:board.no_comment_read_permission</p>
       </div>
     </div>

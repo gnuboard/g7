@@ -331,9 +331,14 @@ describe('상세 셸 — 라우트·데이터소스·모달 (S9a)', () => {
    * @effects claim_detail_list_return_preserves_context
    */
   it('[목록] 버튼이 목록 컨텍스트를 승계한다', () => {
-    const action = (byId(shell, 'cd_010_list_button').actions as Node[])[0];
+    const link = byId(shell, 'cd_010_list_button');
+    const action = (link.actions as Node[])[0];
 
-    expect(action.params.path).toBe('/admin/ecommerce/claims');
+    // 링크다(#757 WP-L) — 주소는 href, 새 탭도 같은 조건이 되게 링크 자체가 쿼리를 합친다
+    expect(link.name).toBe('A');
+    expect(link.props.href).toBe('/admin/ecommerce/claims');
+    expect(link.props.mergeQuery).toBe(true);
+    expect(action.params.path).toBeUndefined();
     expect(action.params.mergeQuery).toBe(true);
     expect(action.params.query).toEqual({});
   });
@@ -1194,7 +1199,7 @@ describe('환불 실행 — 취소 가능 금액과 실행 (D18·D19)', () => {
   /**
    * 계좌가 없으면 [환불하기] 가 잠긴다 — 계좌를 적거나 동의를 켜야 풀린다. (T2-D6)
    *
-   * 2026-09-22 #599 3차 실측 L-8 — 이 창은 계좌를 **보여 주기만** 해서, 무통장으로 10,000원을
+   * 2026-09-22 #599 실측 — 이 창은 계좌를 **보여 주기만** 해서, 무통장으로 10,000원을
    * 받은 주문의 환불을 계좌 세 칸이 빈 채로 실행할 수 있었다. 돈은 한 푼도 나가지 않았는데
    * 신청서만 `completed` 로 닫혔고, 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었다.
    *

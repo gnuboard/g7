@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
+use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
@@ -69,6 +70,8 @@ class OrderShippingResource extends BaseApiResource
 
     /**
      * 스냅샷 기반 배송방법 라벨을 해석합니다.
+     *
+     * @return string|null 배송방법 라벨 (없으면 null)
      */
     private function resolveSnapshotShippingMethodLabel(): ?string
     {
@@ -84,7 +87,7 @@ class OrderShippingResource extends BaseApiResource
             if (is_array($name)) {
                 $locale = app()->getLocale();
 
-                return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? null;
+                return LocalizedValue::pick($name, $locale);
             }
 
             return null;

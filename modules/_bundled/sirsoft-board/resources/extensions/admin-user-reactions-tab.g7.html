@@ -50,11 +50,10 @@
           <span>$t:sirsoft-board.admin.users.reactions.none</span>
         </p>
         <!--
-          이동은 `navigate` 액션으로 한다. `href="{{식}}"` 은 렌더 시 prop 값이 undefined 가 되어
-          DOM 에 속성 자체가 실리지 않는다(2026-09-15 브라우저 실측) — 링크가 조용히 죽는다.
-          같은 화면의 표에서 쓰는 `navigate path="…{{식}}"` 은 정상 평가된다.
+          주소는 `href` 가 갖는다 — 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 그 주소로 연다.
+          보통 클릭은 아래 `navigate` 가 같은 화면 안에서 옮긴다(링크의 기본 이동은 엔진이 막는다).
         -->
-        <a data-ref="view_member_reactions" data-testid="user-reactions-link" data-if="{{(user?.data?.board_reactions?.count ?? 0) > 0}}" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+        <a href="/admin/boards/reactions?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_reactions" data-testid="user-reactions-link" data-if="{{(user?.data?.board_reactions?.count ?? 0) > 0}}" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
           <on type="click">
             <navigate path="/admin/boards/reactions">
               <query user_uuid="{{user?.data?.uuid ?? ''}}"/>

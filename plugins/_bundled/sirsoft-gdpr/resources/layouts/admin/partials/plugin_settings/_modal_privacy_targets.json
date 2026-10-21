@@ -262,12 +262,24 @@
                     ]
                 },
                 {
+                    "comment": "다시 받기에 실패하면 엔진이 값을 null 로 둔다 — 「대상이 없습니다」 대신 불러오기 실패를 알린다",
+                    "id": "privacy_targets_load_failed",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{privacyTargets === null}}",
+                    "props": {
+                        "role": "alert",
+                        "className": "py-6 text-center text-sm text-red-600 dark:text-red-400"
+                    },
+                    "text": "$t:sirsoft-gdpr.common.list_load_failed"
+                },
+                {
                     "id": "privacy_targets_empty",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{(privacyTargets?.data?.data ?? []).length === 0}}",
+                    "if": "{{privacyTargets !== undefined && privacyTargets !== null && ((privacyTargets?.data?.data ?? []).length === 0)}}",
                     "props": {
-                        "className": "flex flex-col items-center gap-3 text-center text-gray-400 dark:text-gray-500 py-6"
+                        "className": "flex flex-col items-center gap-3 text-center text-gray-500 dark:text-gray-400 py-6"
                     },
                     "children": [
                         {

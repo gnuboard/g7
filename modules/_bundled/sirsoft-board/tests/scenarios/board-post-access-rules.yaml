@@ -28,6 +28,9 @@ effects:
   - secret_mode_disabled_rejects_is_secret_true
   - secret_mode_enabled_allows_user_to_choose
   - secret_mode_always_forces_all_posts_secret
+  # 비밀글 조회 권한의 역할 범위(본인만·소유역할)가 실제로 적용된다 (#789 D9)
+  - self_scoped_read_secret_masks_others_secret_post
+  - role_scoped_read_secret_opens_member_posts_only
   - secret_mode_always_guest_post_becomes_secret
   - user_with_read_secret_permission_can_view_secret_content
   - user_without_read_secret_sees_masked_content

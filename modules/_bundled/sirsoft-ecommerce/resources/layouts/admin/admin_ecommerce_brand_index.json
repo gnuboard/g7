@@ -4,6 +4,7 @@
     "layout_name": "admin_ecommerce_brand_index",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}",
         "title": "$t:sirsoft-ecommerce.admin.brand.title",
         "description": "$t:sirsoft-ecommerce.admin.brand.description"
     },
@@ -30,10 +31,29 @@
                     }
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "목록·상세 양쪽이 함께 쓰는 단일 출처. 검색·정렬은 URL 쿼리를 그대로 넘기므로 주소가 바뀌면 다시 받고, 저장 후에도 `refetchOnMount` 로 최신값을 되받는다. 폼(form) 초기값은 여기 init-local 로 두지 않는다 — 데이터 소스의 init-local 은 기본값이 아니라 「응답 경로 → 폼 경로」 매핑이라 빈 값(\"\")이 응답 전체로 읽혀, 목록을 받을 때마다 입력 중인 이름 칸을 목록 응답으로 덮었다. 빈 폼은 「추가」 버튼이 심는다"
@@ -141,6 +161,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "btn-icon",
                                             "aria-label": "$t:sirsoft-ecommerce.common.refresh"
                                         },
@@ -201,6 +222,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "disabled": "{{brands?.data?.abilities?.can_create !== true}}",
                                             "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         },

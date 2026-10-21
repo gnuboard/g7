@@ -5,6 +5,8 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\ActivityLog\ChangeDetector;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Coupon;
 use Modules\Sirsoft\Ecommerce\Models\CouponIssue;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
@@ -47,6 +49,7 @@ class CouponActivityLogListener implements HookListenerInterface
      * 훅 이벤트 처리 (기본 핸들러)
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -62,6 +65,7 @@ class CouponActivityLogListener implements HookListenerInterface
      *
      * @param  Coupon  $coupon  생성된 쿠폰
      * @param  array  $data  생성 데이터
+     * @return void 반환값 없음
      */
     public function handleAfterCreate(Coupon $coupon, array $data): void
     {
@@ -80,6 +84,7 @@ class CouponActivityLogListener implements HookListenerInterface
      * @param  Coupon  $coupon  수정된 쿠폰
      * @param  array  $data  수정 데이터
      * @param  array|null  $snapshot  수정 전 스냅샷 (Service에서 전달)
+     * @return void 반환값 없음
      */
     public function handleAfterUpdate(Coupon $coupon, array $data, ?array $snapshot = null): void
     {
@@ -100,6 +105,7 @@ class CouponActivityLogListener implements HookListenerInterface
      * after_delete 훅은 $couponId (int)만 전달합니다.
      *
      * @param  int  $couponId  삭제된 쿠폰 ID
+     * @return void 반환값 없음
      */
     public function handleAfterDelete(int $couponId): void
     {
@@ -117,6 +123,7 @@ class CouponActivityLogListener implements HookListenerInterface
      * @param  Coupon  $coupon  발급 대상 쿠폰
      * @param  CouponIssue  $couponIssue  생성된 발급 레코드
      * @param  int  $userId  발급 대상 회원 ID
+     * @return void 반환값 없음
      */
     public function handleAfterDirectIssue(Coupon $coupon, CouponIssue $couponIssue, int $userId): void
     {
@@ -136,6 +143,7 @@ class CouponActivityLogListener implements HookListenerInterface
      * 쿠폰 발급 취소 후 로그 기록
      *
      * @param  CouponIssue  $couponIssue  취소된 발급 레코드
+     * @return void 반환값 없음
      */
     public function handleAfterIssueCancel(CouponIssue $couponIssue): void
     {
@@ -165,30 +173,38 @@ class CouponActivityLogListener implements HookListenerInterface
      * @param  mixed  $issueStatus  변경된 발급 상태 (Enum)
      * @param  int  $count  변경된 수
      * @param  array  $snapshots  수정 전 스냅샷 맵 [couponId => array] (Service에서 전달)
+     * @return void 반환값 없음
      */
     public function handleAfterBulkStatus(array $ids, mixed $issueStatus, int $count, array $snapshots = []): void
     {
         $coupons = $this->couponRepository->findByIdsKeyed($ids);
 
-        foreach ($ids as $couponId) {
-            $coupon = $coupons->get($couponId);
-            if (! $coupon) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($coupons, $ids, $issueStatus, $snapshots) {
+                foreach ($ids as $couponId) {
+                    $coupon = $coupons->get($couponId);
+                    if (! $coupon) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$couponId] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($coupon, $snapshot) : null;
+                    $snapshot = $snapshots[$couponId] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($coupon, $snapshot) : null;
 
-            $this->logActivity('coupon.bulk_status', [
-                'loggable' => $coupon,
-                'description_key' => 'sirsoft-ecommerce::activity_log.description.coupon_bulk_status',
-                'description_params' => ['count' => 1],
-                'properties' => [
-                    'coupon_id' => $couponId,
-                    'issue_status' => $issueStatus instanceof \BackedEnum ? $issueStatus->value : $issueStatus,
-                ],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('coupon.bulk_status', [
+                        'loggable' => $coupon,
+                        'description_key' => 'sirsoft-ecommerce::activity_log.description.coupon_bulk_status',
+                        'description_params' => ['count' => 1],
+                        'properties' => [
+                            'coupon_id' => $couponId,
+                            'issue_status' => $issueStatus instanceof \BackedEnum ? $issueStatus->value : $issueStatus,
+                        ],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 }

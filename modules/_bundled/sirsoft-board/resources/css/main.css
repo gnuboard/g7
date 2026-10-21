@@ -54,13 +54,13 @@
     translate: 0.125rem 0;
 }
 
-/* 흐린 안내 — 삭제된 게시판 표시 (신고 상세) */
+/* 흐린 안내 — 삭제된 게시판 표시 (신고 상세). 흐려도 글자 대비 4.5:1 은 지킨다(흰 바탕 4.83, 다크 gray-800 위 5.64) */
 .board-muted-note {
-    color: var(--color-gray-400, oklch(70.7% 0.022 261.325)); /* gray-400 */
+    color: var(--color-gray-500, oklch(55.1% 0.027 264.364)); /* gray-500 */
 }
 
 .dark .board-muted-note {
-    color: color-mix(in oklab, var(--color-gray-500, oklch(55.1% 0.027 264.364)) 80%, transparent); /* gray-500/80 */
+    color: var(--color-gray-400, oklch(70.7% 0.022 261.325)); /* gray-400 */
 }
 
 /* 일괄 적용 확인 창의 항목 묶음 구분선 */
@@ -102,4 +102,45 @@
 
 .dark .board-confirm-button:hover {
     background-color: color-mix(in oklab, var(--color-green-900, oklch(39.3% 0.095 152.535)) 20%, transparent); /* green-900/20 */
+}
+
+/* 경고 글자색 — 관리자 템플릿 의미 클래스(text-warning-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.board-tone-warning {
+    color: var(--color-yellow-700, oklch(55.4% 0.135 66.442)); /* yellow-700 */
+}
+
+.dark .board-tone-warning {
+    color: var(--color-yellow-300, oklch(90.5% 0.182 98.111)); /* yellow-300 */
+}
+
+/* 위험 글자색 — 관리자 템플릿 의미 클래스(text-danger-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.board-tone-danger {
+    color: var(--color-red-700, oklch(50.5% 0.213 27.518)); /* red-700 */
+}
+
+.dark .board-tone-danger {
+    color: var(--color-red-300, oklch(80.8% 0.114 19.571)); /* red-300 */
+}
+
+/* 안내 글자색 — 관리자 템플릿 의미 클래스(text-info-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.board-tone-info {
+    color: var(--color-blue-700, oklch(48.8% 0.243 264.376)); /* blue-700 */
+}
+
+.dark .board-tone-info {
+    color: var(--color-blue-300, oklch(80.9% 0.105 251.813)); /* blue-300 */
+}
+
+/*
+ * 관리자 템플릿 빌드 CSS 에 규칙이 없는 유틸리티 — 템플릿이 자기 레이아웃만 훑어 만들므로 이 모듈 레이아웃에만 있는
+ * 클래스는 여기서 싣는다. 템플릿 유틸리티와 같은 `utilities` 층에 두어 다크·호버 변형의 우선순위를 그대로 따른다.
+ * 층 순서 선언은 이 파일이 템플릿 CSS 보다 먼저 실려도 층 순서가 뒤집히지 않게 한다(템플릿과 같은 순서).
+ */
+@layer properties, theme, base, components, utilities;
+
+@layer utilities {
+    .p-2\.5 { padding: calc(var(--spacing, 0.25rem) * 2.5); } /* 신고 상세 조치 확인 창의 재공개 안내 */
+    .hover\:bg-amber-800:hover { background-color: var(--color-amber-800, oklch(47.3% 0.137 46.201)); } /* 일괄 적용 단추(흰 글자 대비 7.13:1) */
+    .bg-blue-50\/30 { background-color: color-mix(in oklab, var(--color-blue-50, oklch(97% 0.014 254.604)) 30%, transparent); } /* 게시판 유형 관리 창 — 수정 중인 입력 묶음 바탕(라이트) */
+    .dark .dark\:bg-blue-900\/10 { background-color: color-mix(in oklab, var(--color-blue-900, oklch(37.9% 0.146 265.522)) 10%, transparent); } /* 게시판 유형 관리 창 — 수정 중인 입력 묶음 바탕(다크) */
 }

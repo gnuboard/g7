@@ -23,7 +23,7 @@ class ConversionRepository implements ConversionRepositoryInterface
     {
         // 생성 시각은 앱이 UTC 로 찍는다. DB 기본값(`CURRENT_TIMESTAMP`)에 맡기면 DB 세션 시간대가
         // 서울인 서버에서 같은 행의 다른 시각(UTC)과 9시간 어긋난 벽시계가 남는다 — 다른 원장 표(방문·액션·
-        // 봇·실패)는 이미 이렇게 찍는다(7.1.0 실측 O-E11).
+        // 봇·실패)는 이미 이렇게 찍는다(7.1.0 실측).
         $attributes['created_at'] ??= AnalyticsClock::now();
 
         return AnalyticsConversion::query()->create($attributes);

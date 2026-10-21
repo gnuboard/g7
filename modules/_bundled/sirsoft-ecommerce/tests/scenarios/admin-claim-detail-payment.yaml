@@ -94,7 +94,7 @@ effects:
   - claim_refund_execute_requires_confirm_modal
   - claim_refund_modal_does_not_read_parent_local
   - claim_refund_execute_seeds_modal_context
-  # T2-D6 (#599 3차 실측 L-8) — 계좌 없이 「환불완료」가 찍히던 길을 창에서 먼저 막는다
+  # (#599 실측) — 계좌 없이 「환불완료」가 찍히던 길을 창에서 먼저 막는다
   - claim_refund_execute_modal_gates_on_the_bank_account
   - claim_refund_execute_modal_clears_the_bank_inputs_on_open
   - claim_refund_execute_body_carries_the_typed_bank_account
@@ -201,13 +201,15 @@ notes: |
   안내를 두지 않으면 카드가 통째로 사라져 운영자가 "아직 안 불러왔다" 와 "결제 건이 없다" 를
   구분할 수 없다.
 
-  **브라우저 실측의 선행 조건**은 S9a 와 같다 — `playwright:seed-ecommerce` 의 클레임 축이
-  아직 stub 이라(계획서 이월 4) spec 은 목록 API 로 신청서를 발견해 진행하고, 한 건도 없으면
-  그 사실을 드러내며 건너뛴다.
+  **브라우저 실측의 선행 조건**은 S9a 와 같다 — 유형만 맞으면 되는 시험은 목록 API 로 운영
+  신청서를 발견해 진행하고, 한 건도 없으면 그 사실을 드러내며 건너뛴다. 계좌가 빈 승인
+  환불신청서가 있어야 끝까지 재는 확인 창 계좌 칸 시험(`refund_modal_account_rows_follow_selected_method`)은
+  워커 단위 fixture `claimDetailSeed`(`playwright:seed-claim-detail --tag`)가 그 신청서를
+  세운다(#757).
 
 validation:
   audit_rule: frontend-change-requires-e2e
-  browser_check: Playwright MCP   # #599 3차 실측 세션2 — 실제 주문·신청으로 재실측
+  browser_check: Playwright MCP   # #599 실측 — 실제 주문·신청으로 재실측
   note: |
     T2-D6(계좌도 동의도 없으면 [환불하기]가 잠긴다)의 브라우저 축은 Playwright MCP 재실측이
     덮는다. spec 을 새로 두지 않는 이유는 이 축이 **무통장 결제 → 배송완료 → 환불신청 → 승인**

@@ -43,6 +43,7 @@
                     ],
                     "props": {
                         "name": "previewLanguage",
+                        "aria-label": "$t:common.language",
                         "className": "w-28",
                         "value": "{{_local.previewLanguage}}",
                         "options": "{{(_global.appConfig?.supportedLocales ?? ['ko', 'en']).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"
@@ -190,20 +191,7 @@
                 {
                     "type": "basic",
                     "name": "Span",
-                    "text": "총 "
-                },
-                {
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                        "className": "text-blue-600 dark:text-blue-400 font-medium"
-                    },
-                    "text": "4개"
-                },
-                {
-                    "type": "basic",
-                    "name": "Span",
-                    "text": "의 배너 · 3초 간격 자동 전환"
+                    "text": "$t:sirsoft-ecommerce.admin.sample.fmt.slider_summary|count=4"
                 }
             ]
         }

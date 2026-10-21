@@ -1,0 +1,31 @@
+feature: 정리·통계 커맨드의 일수 옵션 검증 — 0 이상 정수가 아니면 오류 종료하고 아무것도 처리하지 않는다 (7.1.1 출시 전)
+
+description: |
+  정리·통계 커맨드가 `--days`(`storage:prune-leftovers` 는 `--backup-days` 도)를 `(int)` 로 읽어, `abc` 는 0, `-5` 는 음수가 되고
+  보관 하한(1일)으로 깎여 기본값보다 더 많이 지웠다(`notification-delivery:prune --days=abc` → 「보관 1일」 로 실행).
+  공용 트레이트 `App\Console\Commands\Traits\ParsesDaysOption` 이 0 이상의 정수만 받고, 아니면 「--{옵션} 값은 0 이상의 정수여야
+  합니다 (입력: …)」 를 출력하고 실패(1)로 끝낸다. `0` 은 종전대로 받는다 — 하한은 도메인 계층 소유
+  (`DataRetentionCommandsTest::test_retention_floor_is_enforced_below_the_command`, core-gc-schedules 매니페스트).
+
+  대상: notification-delivery:prune · notification-log:prune · schedules:prune-history · seo:prune-stats · seo:stats ·
+  identity:prune-logs · activity-log:prune · analytics:prune · attachments:prune-orphans · storage:prune-leftovers(--days·--backup-days).
+
+  축 case 는 검증 갈래다 — 잘못된 값(`abc`·`-5`·`1.5`)을 11개 커맨드·옵션 전부에 넣는 데이터 프로바이더 행(33건)과,
+  지울 행이 있는 상태에서 오타가 아무것도 지우지 않고 올바른 값은 종전대로 지우는지 보는 행이다.
+
+axes:
+  case: [invalid_value_on_every_days_command, typo_with_prunable_rows, zero_days_floor]
+
+effects:
+  - invalid_days_option_exits_with_failure
+  - invalid_days_option_message_names_option_min_and_value
+  - invalid_days_option_prunes_nothing
+  - valid_days_option_prunes_as_before
+  # 문구 (7.1.1 출시 전): 조사 무관 표현, 0일은 적용된 하한으로 출력
+  - invalid_days_option_message_reads_naturally
+  - zero_days_output_reports_applied_floor
+  # 완료 문구 용어 통일·activity-log 법정 하한 표시 (7.1.1 출시 전 실측, 2026-10-18)
+  - prune_completion_uses_one_retention_term
+
+test_files:
+  - tests/Feature/Console/DaysOptionValidationTest.php

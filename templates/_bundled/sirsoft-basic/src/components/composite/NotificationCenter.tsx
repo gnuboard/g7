@@ -6,6 +6,7 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Input } from '../basic/Input';
 import type { EditorAttrs } from '../../types';
+import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -31,6 +32,11 @@ export interface NotificationItem {
   read?: boolean;
   iconName?: IconName;
   data?: Record<string, unknown>;
+  /**
+   * 알림의 이동 주소(응답 `url`) — 이 사이트 주소면 알림 본문을 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭 「새 탭에서 열기」가 된다(#757).
+   * 바깥 주소·실행 주소는 링크로 그리지 않는다(줄 클릭 → `onNotificationClick` → 레이아웃의 `fallbackPath`).
+   */
+  url?: string;
   onClick?: () => void;
 }
 
@@ -318,7 +324,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         <Icon name={IconName.Bell} className="w-5 h-5" />
         {/* 고정 w-5 원에 「99+」(약 23px)가 들어가면 양옆으로 넘친다 — 최소 폭 + 좌우 여백으로 늘어나게 둔다 */}
         {displayCount > 0 && (
-          <Span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center text-xs font-bold text-white bg-red-500 dark:bg-red-600 rounded-full">
+          <Span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center text-xs font-bold text-white bg-red-600 dark:bg-red-600 rounded-full">
             {displayCount > 99 ? '99+' : displayCount}
           </Span>
         )}
@@ -384,27 +390,24 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               <>
                 {notifications.map((notification) => {
                   const isUnread = !notification.read;
-                  return (
-                    <Div
-                      key={notification.id}
-                      data-notification-id={notification.id}
-                      data-unread={isUnread ? 'true' : 'false'}
-                      onClick={() => {
-                        notification.onClick?.();
-                        onNotificationClick?.(notification);
-                        setShowNotifications(false);
-                      }}
-                      className={`group flex items-start gap-3 px-4 py-3 text-left border-b border-gray-100 dark:border-gray-700 transition-colors cursor-pointer ${
-                        isUnread
-                          ? 'bg-blue-50/70 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30'
-                          : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 opacity-70'
-                      }`}
-                    >
+                  // 알림 클릭 — 종전 동작(항목 콜백 → 알림 클릭 콜백 → 닫기)
+                  const activate = () => {
+                    notification.onClick?.();
+                    onNotificationClick?.(notification);
+                    setShowNotifications(false);
+                  };
+                  // 이동 주소가 이 사이트 주소면 아이콘·본문을 링크로 감싼다. 삭제 단추는 링크 밖 형제로 둔다(상호작용 요소 중첩 금지).
+                  // 바깥 주소(다른 사이트)는 링크로 그리지 않는다 — 새 창 링크로 그리면 보통 클릭도 바깥 사이트를 열고 읽음·이동 콜백을
+                  // 건너뛰었다. 링크가 아니면 줄 클릭이 콜백을 부르고, 레이아웃 navigate 의 fallbackPath 가 알림 목록으로 보낸다(7.1.1).
+                  const resolved = resolveLinkHref(notification.url);
+                  const link = resolved && !resolved.external ? resolved : null;
+                  const body = (
+                    <>
                       {notification.iconName && (
                         <Icon
                           name={notification.iconName}
                           className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                            isUnread ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'
+                            isUnread ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-500'
                           }`}
                         />
                       )}
@@ -420,15 +423,44 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                         </Div>
                         <Div
                           className={`text-sm mt-1 line-clamp-2 ${
-                            isUnread ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-500'
+                            isUnread ? 'text-gray-700 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'
                           }`}
                         >
                           {notification.message}
                         </Div>
-                        <Div className="text-gray-400 dark:text-gray-500 text-xs mt-1 font-mono">
+                        <Div className="text-gray-500 dark:text-gray-400 text-xs mt-1 font-mono">
                           {notification.time}
                         </Div>
                       </Div>
+                    </>
+                  );
+                  return (
+                    <Div
+                      key={notification.id}
+                      data-notification-id={notification.id}
+                      data-unread={isUnread ? 'true' : 'false'}
+                      onClick={activate}
+                      className={`group flex items-start gap-3 px-4 py-3 text-left border-b border-gray-100 dark:border-gray-700 transition-colors cursor-pointer ${
+                        isUnread
+                          ? 'bg-blue-50/70 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                          : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                      }`}
+                    >
+                      {link ? (
+                        <a
+                          href={link.href}
+                          className="flex items-start gap-3 flex-1 min-w-0"
+                          onClick={(event) => {
+                            // 줄(바깥 Div)의 클릭 처리가 다시 부르지 않게 여기서 멈춘다 — 수정키 클릭은 브라우저에 맡긴다
+                            event.stopPropagation();
+                            handleLinkClick(event, activate);
+                          }}
+                        >
+                          {body}
+                        </a>
+                      ) : (
+                        body
+                      )}
                       <Div className="flex flex-col items-center gap-2 flex-shrink-0">
                         {isUnread && (
                           <Span className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mt-1.5" />
@@ -439,7 +471,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                               e.stopPropagation();
                               onDelete(notification);
                             }}
-                            className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
                             aria-label={tOr('common.delete_notification', 'Delete notification')}
                           >
                             <Icon name={IconName.Trash} className="w-4 h-4" />
@@ -453,15 +485,15 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 {hasMore && (
                   <Div ref={sentinelRef} className="px-4 py-3 text-center">
                     {loading ? (
-                      <Span className="text-sm text-gray-400 dark:text-gray-500">...</Span>
+                      <Span className="text-sm text-gray-500 dark:text-gray-400">...</Span>
                     ) : (
-                      <Span className="text-sm text-gray-400 dark:text-gray-500" />
+                      <Span className="text-sm text-gray-500 dark:text-gray-400" />
                     )}
                   </Div>
                 )}
                 {loading && !hasMore && notifications.length > 0 && (
                   <Div className="px-4 py-2 text-center">
-                    <Span className="text-sm text-gray-400 dark:text-gray-500">...</Span>
+                    <Span className="text-sm text-gray-500 dark:text-gray-400">...</Span>
                   </Div>
                 )}
               </>

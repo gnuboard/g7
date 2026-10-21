@@ -55,7 +55,7 @@
                 {
                     "comment": "전체보기 버튼",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "if": "{{(searchResults?.data?.posts_count ?? 0) > 0}}",
                     "actions": [
                         {
@@ -63,7 +63,6 @@
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "/search",
                                 "mergeQuery": true,
                                 "query": {
                                     "type": "posts",
@@ -75,6 +74,8 @@
                         }
                     ],
                     "props": {
+                        "href": "/search?type=posts&board_slug=&page=&cursor=",
+                        "mergeQuery": true,
                         "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                     },
                     "children": [
@@ -116,22 +117,29 @@
                     }
                 },
                 {
+                    "comment": "카드 전체가 링크다 — 하이라이트 HTML 을 링크 밖에 두려고 빈 링크가 카드를 덮는다(이름은 일반 글자 제목). 초점 테두리는 안쪽(ring-inset) — 바깥 목록 상자가 overflow:hidden 이라 바깥 테두리는 잘린다",
                     "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "audit:allow layout-list-context-navigate-merge-query 검색 결과 → 원문(게시글) 이동 — 검색 목록과 다른 클러스터로 나가는 이동이다.",
-                            "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "{{post?.url}}"
-                            }
-                        }
-                    ],
+                    "name": "Div",
                     "props": {
-                        "className": "block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                        "className": "relative block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
                     },
                     "children": [
+                        {
+                            "type": "basic",
+                            "name": "A",
+                            "actions": [
+                                {
+                                    "comment": "audit:allow layout-list-context-navigate-merge-query 검색 결과 → 원문(게시글) 이동 — 검색 목록과 다른 클러스터로 나가는 이동이다.",
+                                    "type": "click",
+                                    "handler": "navigate"
+                                }
+                            ],
+                            "props": {
+                                "href": "{{post?.url}}",
+                                "aria-label": "{{post?.title ?? ''}}",
+                                "className": "absolute inset-0 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
+                            }
+                        },
                         {
                             "comment": "제목 라인 (게시판명 + 제목)",
                             "type": "basic",
@@ -146,7 +154,7 @@
                                     "name": "Span",
                                     "if": "{{post?.board_name}}",
                                     "props": {
-                                        "className": "flex-shrink-0 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded"
+                                        "className": "flex-shrink-0 truncate max-w-32 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded"
                                     },
                                     "text": "{{post?.board_name}}"
                                 },
@@ -156,7 +164,20 @@
                                     "name": "HtmlContent",
                                     "props": {
                                         "content": "{{post?.title_highlighted ?? post?.title}}",
-                                        "className": "font-medium text-gray-900 dark:text-white [&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-500/40 [&_mark]:px-0.5 [&_mark]:rounded"
+                                        "className": "min-w-0 wrap-anywhere font-medium text-gray-900 dark:text-white [&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-500/40 [&_mark]:px-0.5 [&_mark]:rounded"
+                                    }
+                                },
+                                {
+                                    "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 결과의 글을 읽는다",
+                                    "type": "extension_point",
+                                    "name": "board_post_row_badges",
+                                    "props": {
+                                        "className": "contents",
+                                        "data-extension-point": "board_post_row_badges",
+                                        "post": "{{post}}",
+                                        "postId": "{{post?.id}}",
+                                        "boardSlug": "{{post?.board_slug}}",
+                                        "context": "search_all"
                                     }
                                 }
                             ]
@@ -296,7 +317,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "mt-1 text-xs text-gray-400 dark:text-gray-500"
+                        "className": "mt-1 text-xs text-gray-500 dark:text-gray-400"
                     },
                     "text": "$t:search.failed.suggestion"
                 }

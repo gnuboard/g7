@@ -10,6 +10,7 @@ use Modules\Sirsoft\Board\Http\Requests\Admin\IndexScrapRequest;
 use Modules\Sirsoft\Board\Http\Resources\AdminPostScrapCollection;
 use Modules\Sirsoft\Board\Services\PostScrapService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 관리자용 게시글 스크랩 관리 컨트롤러
@@ -86,6 +87,9 @@ class PostScrapController extends AdminBaseController
             }
 
             return $this->success('sirsoft-board::messages.scrap.admin.removed');
+        } catch (AccessDeniedHttpException) {
+            // 스크랩 관리 권한의 스코프 밖 — Exception 이 삼켜 500 이 되지 않게 먼저 받는다
+            return $this->error('auth.scope_denied', 403);
         } catch (Exception $e) {
             return $this->error('sirsoft-board::messages.scrap.delete_failed', 500);
         }
@@ -109,6 +113,9 @@ class PostScrapController extends AdminBaseController
                 200,
                 ['count' => $count]
             );
+        } catch (AccessDeniedHttpException) {
+            // 범위 밖 스크랩이 섞였다 — 전량 거부(아무것도 지우지 않음)
+            return $this->error('auth.scope_denied', 403);
         } catch (Exception $e) {
             return $this->error('sirsoft-board::messages.scrap.admin.bulk_delete_failed', 500);
         }

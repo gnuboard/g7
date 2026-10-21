@@ -239,7 +239,7 @@ describe('코드 편집기 — HTML 기본 · JSON 읽기 전용 (#476)', () => 
   });
 });
 
-describe('코드 편집기 — 컴파일 실패 시 경고·좌표 표기 (2026-10-07 실측 O-I1-10·O-I1-11)', () => {
+describe('코드 편집기 — 컴파일 실패 시 경고·좌표 표기 (2026-10-07 실측)', () => {
   const markupEditor = findAll(layoutJson, (n) => n.name === 'CodeWorkspace')[0];
   const compile = actionsOf(markupEditor).find((a) => a.handler === 'apiCall' && stringify(targetOf(a)).includes('markup-compile'));
 
@@ -318,7 +318,7 @@ describe('코드 편집기 — 검사 경고·오류 줄로 이동 (7.1.0 P16)',
 
   /**
    * 레이아웃만 고치고 빌드하지 않으면 새 Tailwind 유틸은 화면 CSS 에 없다 — 브라우저는 모르는 클래스를 조용히
-   * 무시하므로 항목 버튼의 점선 밑줄(누를 수 있다는 표시)이 오류 없이 사라진다(7.1.0 validate q2, `decoration-dotted`
+   * 무시하므로 항목 버튼의 점선 밑줄(누를 수 있다는 표시)이 오류 없이 사라진다(7.1.0 전수 실측, `decoration-dotted`
    * 누락 실측). 줄 이동 버튼·정보 토글·접히는 블록이 쓰는 클래스(식 안 문자열 포함)가 빌드 CSS 에 모두 있어야 한다.
    *
    * @effects code_editor_issue_rows_reveal_source_line

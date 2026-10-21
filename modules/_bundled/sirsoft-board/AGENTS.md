@@ -6,7 +6,7 @@
 
 ```text
 1. 유형: 모듈 (sirsoft-board) — 게시판·게시글·댓글·신고·게시판별 알림설정 도메인. 관리자 CRUD + 공개 API 만 소유하고, 방문자 화면(목록/상세/글쓰기)은 템플릿이 그린다
-2. 확장 방식: 발행 훅 90개(전량 action/filter) — 새 콘텐츠 타입 연동은 `EcommerceInquiryHookListener` 식 필터 훅 위임 패턴을 참고
+2. 확장 방식: 발행 훅 167개(전량 action/filter, 사용자 조회 19곳의 before·filter_*_result·after, 목록 쿼리 확장·목록 캐시 축 포함) — 새 콘텐츠 타입 연동은 `EcommerceInquiryHookListener` 식 필터 훅 위임 패턴을 참고
 3. 건드리면 안 되는 것: 비밀글 게이팅(`SecretContentGate`)을 우회하는 신규 조회 경로, `chunk()`(OFFSET) 로 삭제·갱신 순회, count 컬럼(posts_count 등) 직접 갱신
 4. 작업 위치: `modules/_bundled/sirsoft-board` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan module:update sirsoft-board --force`
@@ -69,6 +69,7 @@
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan module:update sirsoft-board --force` |
 | `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan module:update sirsoft-board --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 <!-- @generated:directory-map END -->
@@ -134,18 +135,18 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 105개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 95개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 19개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 발행 훅 | 167개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 104개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 22개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 7개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
-| 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
+| 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
 | 스케줄 | 2개 | [스케줄](docs/extension-points.md#스케줄) |
 | 알림 정의 | 7개 | [알림 정의](docs/extension-points.md#알림-정의) |
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
-발행 훅 90개는 전부 `action`/`filter` 이며 코어 브로드캐스트 채널은 쓰지 않습니다(구독 훅
+발행 훅 167개는 전부 `action`/`filter` 이며 코어 브로드캐스트 채널은 쓰지 않습니다(구독 훅
 목록의 이커머스 8개가 예로 보여주듯, **콘텐츠를 다른 도메인이 재사용하는 자리는 훅이지 상속이
 아닙니다**). 새 게시판 세부 검증 규칙을 추가하려면 `board.store_validation_rules`/
 `update_validation_rules` filter 를, 게시판 생성 후 부가 리소스를 함께 만들려면
@@ -153,7 +154,9 @@
 3단 패턴은 전 도메인(board/comment/report/attachment)에 동일하게 반복되므로, 하나를 배우면
 나머지에 그대로 적용됩니다. 훅 리스너 16개 중 `EcommerceInquiryHookListener` 는 이 모듈의
 CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 형태의 확장 사례입니다 — 새로운
-"게시판을 흉내 낸 도메인"을 만들 때 참고할 선례입니다.
+"게시판을 흉내 낸 도메인"을 만들 때 참고할 선례입니다. 목록을 **좁히는** 확장은 결과 훅이 아니라
+`post.list_query_extensions`(조건 함수 등록)와 그 짝인 `post.filter_list_cache_variant`(캐시 축)를 씁니다 —
+게시판 저장소 인터페이스를 감싸지 않습니다([목록 쿼리 확장 훅](docs/extension-points.md#목록-쿼리-확장-훅-121)).
 <!-- @intent END -->
 
 ## 5. 수정 시 동반 의무
@@ -165,6 +168,8 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-board` 재실행 + `docs/api/**` 갱신
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 관리자 템플릿의 빌드된 CSS 에 존재하는지 확인하고 없으면 `resources/css/main.css` 에 `board-` 접두 클래스로 정의한 뒤 `php artisan module:build sirsoft-board --production`
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
+- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 한국어 문구에 「이(가)」「(으)로」처럼 조사를 괄호로 남기거나 자리표시 바로 뒤에 조사를 붙이지 않는다(값의 받침에 따라 틀린 문장이 된다) — 「값이」「상태로」「에 대해」처럼 받침과 무관한 말로 잇는다. 새 FormRequest 에 `in`·`exists`·`required_with` 같은 규칙을 두면 칸별 문구를 주거나 `Concerns\ProvidesFallbackRuleMessages` 를 쓴다(코어 기본 문구는 조사 자리표시를 남긴다). 잠금: `tests/Unit/Lang/KoreanParticlePlaceholderTest.php`
 - [ ] 검증 문구의 항목 이름 자리에 필드 키(`sort`, `board id`)가 보이지 않게 한다 — 새 요청 칸은 `attributes()` 로 이름을 주거나, 게시판 공용 이름 `validation.fallback_attributes`(ko·en·ja 팩 모두)에 더하고 요청에 `Concerns\ProvidesFallbackRuleMessages` 를 쓴다. 배열 항목(`키.*`)은 부모 칸 이름을 물려받는다. 잠금: `tests/Feature/ValidationAttributeNameTest.php`(게시판 요청 전부를 ko·en 으로 조립해 본다)
 - [ ] 비밀글이 관여하는 새 조회 경로(댓글·첨부·검색 결과 등)를 추가할 때 `SecretContentGate` 재적용 (KVE-2026-1914 — 부모에서 한 번 판정하고 끝나지 않는다)
@@ -173,6 +178,7 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec.json` 을 함께 갱신 — 샘플이 없는 `data_source` 는 편집기 캔버스에서만 빈 화면이 되고 실제 화면은 정상이라 오류도 경고도 남지 않는다. 반영은 `php artisan module:update sirsoft-board --force`
 - [ ] 개인정보 보유기간 핸들러(`src/Privacy/`)를 고칠 때는 건수(`preview()`)·대상 명단(`targets()`)·실행(`process()`)이 **같은 조건식**을 쓰는지, 명단 권한(`targetPermissions()` = 설정 읽기 + 게시판 관리 읽기)과 식별 최소 열(본문·첨부 제외)을 지키는지 확인 — 계약 전체는 [코어 개인정보 보유기간 처리 가이드](../../../docs/backend/privacy-retention.md)
 - [ ] 새 `.g7.html` 을 만들었다면 저작 트랙 종료 게이트(`LayoutMarkup` PHPUnit 스위트)의 코퍼스 목록에 등재하고, 파일 헤더·데이터소스·모달·액션 블록 주석(S21, `docs/frontend/layout-markup.md` §10.5)을 채운다 — 굽기·왕복이 초록이어도 이 스위트만 미등재·미주석을 잡는다(2026-09-26 develop-7.1.0 1차 병합 판독: 게시판 개인정보 조치 창이 미등재·미주석으로 들어왔다).
+- [ ] 게시판 이름·글 제목처럼 입력값을 그리는 관리자 화면 글은 넘침을 막는다 — 단추·배지와 같은 flex 줄의 글은 감싼 칸 `min-w-0` + 글 `min-w-0 wrap-anywhere`, 카드의 한 줄 요약(게시판 · 작성자 · 시각)은 `truncate`. `.admin_layout_root` 가 `overflow-hidden` 이라 문서 넘침은 늘 0 이므로 `#right_content_area` 초과분으로 잰다 (#143)
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_board_form`·`admin_board_post_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고, 생성 모드에서도 폼을 채우는 데이터소스(`boards` form-data·`form_data`)의 `initLocal` 은 `{"_merge":"replace","form":"{{data}}"}` 맵으로 둔다 — 문자열형 `initLocal` 은 엔진이 기존 form 과 깊은 병합해 직전 글의 id·게시판 다국어 이름이 등록 폼에 남는다(트러블슈팅 state-global 사례 7)
 
 ## 6. 금지 패턴
@@ -186,10 +192,13 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 | 게시판별 동적 권한/역할을 board 삭제와 별도 시점에 정리 | `BoardService` 삭제 흐름 안에서 즉시 정리(또는 stale cleanup 이 `getDynamicPermissionIdentifiers()` 로 정확히 판정하게 유지) | 정리가 늦으면 존재하지 않는 게시판의 권한이 역할에 남아 관리 화면에 유령 항목이 뜬다 |
 | 새 콘텐츠 타입을 board 코드에 `if ($type === 'inquiry')` 로 직접 분기 | `EcommerceInquiryHookListener` 처럼 필터 훅으로 CRUD 를 위임 | board 코드가 알지 못하는 도메인이 늘어날수록 분기가 무한 증식한다 |
 | 레이아웃 표현식에서 누산기에 멤버 대입 (`grouped[k] = []` · `.push()`) 하거나 rest 구조분해 (`const { a, ...rest } = obj`) 사용 | `map` / `filter` / `reduce(Object.assign)` / `Object.fromEntries` 로 누산 없이 구성 | 표현식 평가기가 그 구문을 거부해 **식 전체가 평가되지 않는다.** `iteration.source` 면 배열이 아니게 되어 그 목록이 통째로 렌더되지 않고, `apiCall` body 면 원문 문자열이 그대로 전송된다 — 둘 다 오류도 경고도 남지 않는다 (일괄 적용 확인 창에서 실제 발생) |
+| 게시판 관리 권한(`manager`·`admin.manage`)을 `PermissionHelper::check()` 로 직접 판정 | `ChecksBoardPermission`(`hasBoardManagePermission`·`checkBoardPermission`) 을 거친다 | 보유만 보면 「본인이 만든 게시판만」 위임 관리자가 남의 게시판에서 관리자로 판정된다 — 게시판 라우트는 미들웨어 범위 검사가 돌지 않는다(#789). 래칫 테스트가 0건을 고정한다 |
+| 비밀글 하위 쓰기 중 답변(답글)만 `canWriteChild()` 로 판정 | 답변은 `SecretContentGate::canWriteReply()` — 부모의 모든 비밀 조상을 지금 열 수 있어야 한다 | 경로 규칙은 답변 작성자에게 조상 글을 열어 준다. 비밀글 아래 공개 답변에 외부인이 답변을 달 수 있으면 그 외부인이 비밀글을 본다(#789). 댓글·신고는 앵커를 만들지 않아 `canWriteChild()` 그대로다 |
 | 일괄 적용 대상 설정 키를 `sectionMap` 에만 추가 | 같은 키의 `bulk_apply.field_labels` 라벨을 ko/en(+번들 ja)에 함께 추가 | 라벨이 없으면 확인 창에 원시 다국어 키가 그대로 노출된다 |
 | 게시판 권한(role_permissions)이나 게시판 관리자·스텝 명단을 바꾸는 새 경로를 `BoardPermissionService::assignRolesToPermission()`·`syncBoardRoleUsers()` 를 거치지 않고 직접 `attach`/`sync` | 기존 두 지점을 재사용하거나, 새 지점에서 `PermissionEscalationGuard`(권한은 `assertGrantWithinActorCeiling`, 역할 배정은 `assertRoleAssignmentWithinActorCeiling`)를 쓰기 전에 호출 | 한 경로만 상한을 걸면 나머지가 자기부여 우회로가 된다 — 권한 저장만 막았을 때 담당자 지정·일괄 적용이 같은 결과를 냈다 (KVE-2026-2367) |
 | 요청의 `temp_key` 를 형식 검증 없이 임시 경로(`{slug}/temp/{temp_key}`)에 넣거나, 조회된 임시 첨부가 없는데도 그 디렉토리를 `deleteDirectory` | `ValidatesTempKey`(UUID 만) + 현재 사용자가 올린 임시 첨부가 있을 때만 이동·정리 | `../../..` 같은 키가 정리 경로를 모듈 저장소 루트로 끌어올려 전 모듈 파일이 지워진다 (KVE-2026-2349 — 응답은 201 이라 드러나지 않았다) |
 | 임시 첨부를 본경로로 옮긴 뒤 임시 디렉토리 정리(`deleteDirectory`)의 예외를 그대로 던지게 두기 | `AttachmentService::linkTempAttachmentsWithMove()` 처럼 정리만 `try/catch` 로 감싸 경고 로그(`게시판 임시 첨부 디렉토리 정리 실패`)를 남기고 연결 결과는 그대로 반환 | 정리는 부수 작업이다. 막 옮긴 대용량 파일을 운영체제가 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던지고, 그 예외가 글 저장 전체를 「게시글 등록에 실패했습니다」(500)로 되돌려 파일은 본경로·DB 는 임시 경로를 가리키는 어긋남이 남았다(#703). 정리에 실패해 남는 것은 빈 임시 디렉토리뿐이다 |
+| 레이아웃·확장 조각의 메뉴·목록·제목 단추에 폭(`w-full`·`flex-1`)만 주고 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다 | 템플릿 기본 단추가 가운데 정렬을 넣는다(사용자 `Button` 의 `justify-center` 병합, 관리자 `.button`) — 넓어진 단추의 글이 가운데로 간다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -197,10 +206,10 @@ CRUD 흐름 자체를 **자기 도메인으로 대체**하는 가장 무거운 �
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 232개 | `modules/_bundled/sirsoft-board/tests` |
-| Vitest | 83개 | `vitest.config.ts` |
-| Playwright | 36개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 135개 | `tests/scenarios` |
+| PHPUnit | 265개 | `modules/_bundled/sirsoft-board/tests` |
+| Vitest | 99개 | `vitest.config.ts` |
+| Playwright | 39개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 177개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -218,6 +227,17 @@ cd modules/_bundled/sirsoft-board && npm run test:e2e -- specs/<대상>.spec.ts
 
 무필터 전체 실행은 금지되어 있습니다 — 변경 범위에 걸리는 대상만 지정해 실행합니다.
 <!-- @generated:test-commands END -->
+
+### E2E 시드 커맨드
+
+화면·API 로 만들 수 없거나(작성 시각·삭제된 행) 글 쿨다운에 막히는 전제는 시드 커맨드가 세운다. 모두 3중 가드(CLI · `G7_PLAYWRIGHT_BYPASS=1` · APP_DEBUG)를 거치고 `--teardown` 으로 되돌린다. 코어 쪽 책임 분리 표는 [docs/testing/e2e-testing.md](../../../docs/testing/e2e-testing.md) §4.
+
+| 커맨드 | 세우는 전제 |
+| --- | --- |
+| `playwright:seed-board-posts --tag=<워커>` | 쪽당 2건·글 3건인 공개 게시판 `e2e-nav-{tag}` + 기본 `user` 역할 회원과 토큰(페이지 번호·게시글 행·글쓰기 링크 실측, 사용자 템플릿 `user-navigation-links.spec.ts`) |
+| `playwright:seed-board-reaction` | 반응 화면의 세 상태 행·비활성 반응 유형 |
+| `playwright:seed-board-retention` | 오래전에 쓴 비회원·회원 글(개인정보 보유기간 처리) |
+| `playwright:seed-board-scrap` | 스크랩 화면의 세 상태 행 |
 
 ## 8. 문서 목차
 

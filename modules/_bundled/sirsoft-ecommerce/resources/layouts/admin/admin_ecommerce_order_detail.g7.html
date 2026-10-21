@@ -18,6 +18,17 @@
       <on-code code="404">
         <show-error-page target="content"/>
       </on-code>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
     </error-handling>
     <init-local>
       <field name="order_number" value="{{data.order_number ?? ''}}"/>
@@ -160,10 +171,10 @@
             <div class="page-description flex-center gap-2 flex-wrap">
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.order_number:</span>
               <span class="font-medium text-gray-900 dark:text-gray-100">{{order.data.order_number}}</span>
-              <span class="text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-gray-500 dark:text-gray-400">|</span>
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.order_date:</span>
               <span class="font-medium text-gray-900 dark:text-gray-100">{{order.data.ordered_at_formatted}}</span>
-              <span class="text-gray-300 dark:text-gray-600">|</span>
+              <span class="text-gray-500 dark:text-gray-400">|</span>
               <span class="text-secondary">$t:sirsoft-ecommerce.admin.order.detail.status:</span>
               <badge data-type="composite" variant="{{order.data.order_status_variant}}">{{order.data.order_status_label}}</badge>
               <!-- 부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그) -->
@@ -172,14 +183,14 @@
           </div>
           <div class="page-actions">
             <!-- 주문 목록으로. 보던 검색·상태 필터·페이지를 그대로 이고 간다 — 주문 하나를 처리하고 목록으로 돌아가는 왕복이 이 화면의 기본 동선이다 -->
-            <button data-ref="list_button" type="button" class="btn btn-outline">
+            <a href="/admin/ecommerce/orders" :mergeQuery="true" data-ref="list_button" class="btn btn-outline">
               <on type="click">
-                <navigate path="/admin/ecommerce/orders" :mergeQuery="true">
+                <navigate :mergeQuery="true">
                   <query/>
                 </navigate>
               </on>
               $t:sirsoft-ecommerce.common.list
-            </button>
+            </a>
           </div>
         </div>
         <include src="partials/admin_ecommerce_order_detail/_partial_order_progress.g7.html"/>

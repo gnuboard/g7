@@ -110,6 +110,7 @@ namespace App\Http\Controllers\Api\Public;
 
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Services\Template\TemplateService;
+use App\Support\Filesystem\PathGuard;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -145,8 +146,9 @@ class TemplateAssetController extends PublicBaseController
         $basePath = base_path("templates/{$identifier}");
         $filePath = realpath("{$basePath}/{$file}");
 
-        // 4. 디렉토리 탈출 방지
-        if (!$filePath || !str_starts_with($filePath, $basePath)) {
+        // 4. 디렉토리 탈출 방지 — 폴더 경계로 판정 (App\Support\Filesystem\PathGuard)
+        //    문자열 접두 비교(str_starts_with)는 이름이 비슷한 이웃 폴더(templates/foo-evil)를 통과시킨다
+        if (!$filePath || !PathGuard::isWithin($basePath, $filePath)) {
             return $this->forbidden('messages.template.invalid_path');
         }
 
@@ -235,7 +237,8 @@ class TemplateService
 |------|------|
 | ✅ 활성화된 템플릿만 접근 가능 | 비활성 템플릿 에셋 접근 차단 |
 | ✅ 화이트리스트 기반 확장자 검증 | 허용된 확장자만 제공 |
-| ✅ 디렉토리 탈출 공격 방지 | `realpath()`, `str_starts_with()` 사용 |
+| ✅ 디렉토리 탈출 공격 방지 | `realpath()` 뒤 `PathGuard::isWithin($base, $path)` 로 폴더 경계 판정 (실제 서빙은 `SafeTemplatePath` 규칙이 같은 판정을 한다) |
+| ❌ 문자열 접두 비교로 경계 판정 금지 | `str_starts_with($path, $base)` 는 이웃 폴더(`layouts-evil` 등)를 통과시키고, 리눅스·Windows 구분자 차이도 못 맞춘다 |
 | ✅ MIME 타입 명시적 설정 | Content-Type 헤더 지정 |
 | ✅ 적절한 캐싱 헤더 | `Cache-Control`, `immutable` |
 | ❌ 비활성 템플릿 에셋 접근 금지 | 활성화 여부 검증 필수 |

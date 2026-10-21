@@ -4,6 +4,7 @@
     "layout_name": "admin_role_form",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "{{route?.id ? '$t:admin.roles.form.edit_title' : '$t:admin.roles.form.create_title'}}",
         "description": "{{route?.id ? '$t:admin.roles.form.edit_description' : '$t:admin.roles.form.create_description'}}"
     },
@@ -38,10 +39,29 @@
                     }
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "fallback": {
@@ -73,10 +93,29 @@
                     }
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "fallback": {
@@ -96,6 +135,33 @@
             "initLocal": "form",
             "fallback": {
                 "data": null
+            },
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
             },
             "comment": "복제 진입(`?clone_from=`) 전용. 원본을 받아 폼 초기값으로 그대로 푼다 — 복제는 서버가 아니라\n       **여기서 값을 채워 새로 저장하는 방식**이므로 저장 전까지 원본은 손대지 않는다.\n       등록 모드에서만 돈다(수정 중에 복제 쿼리가 붙어 있어도 무시)."
         },
@@ -153,6 +219,14 @@
         ]
     },
     "init_actions": [
+        {
+            "comment": "들어올 때마다 「고친 것 있음」 을 끈다 — 이탈 확인(meta.leave_guard)이 읽는 값이라, 같은 레이아웃의 다른 역할로 넘어와도 직전 표시가 남지 않게 한다",
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "hasChanges": false
+            }
+        },
         {
             "comment": "생성 모드: 역할 수정 화면에서 SPA 로 넘어오면 같은 레이아웃(admin_role_form)이라 엔진이 `_local` 을 비우지 않아 직전 역할의 form(id·identifier 등)이 등록 폼에 남는다. form=null 로 먼저 지운다(깊은 병합이 객체 대신 null 로 덮어써 완전 삭제). 복제 진입(clone_from)은 clone_source 의 initLocal 이 init_actions 뒤에 병합되므로 영향 없음.",
             "handler": "setState",
@@ -274,7 +348,7 @@
                         "trackChanges": true,
                         "actions": [
                             {
-                                "comment": "저장. 등록/수정/복제가 한 자리로 모인다 — 복제도 `route.id` 가 없으므로 등록으로 나간다.\n               검증 실패는 필드 오류를 전역 `formErrors` 에 담아 각 칸이 읽게 하고, 403·500 은 문구만\n               다르게 낸다. 어느 갈래든 진행 표시를 끈다(빠뜨리면 저장 버튼이 잠긴 채 남는다).\n               접근 가능 메뉴(menu_ids)는 메뉴 수정 권한이 있고 관리자 역할이 아닐 때만 싣는다 — 안 실으면 서버는 메뉴를\n               건드리지 않는다. 트리에 보이는 메뉴(관리할 수 있는 메뉴)로만 거른다: 관리 밖 메뉴의 기존 할당은 서버가\n               보존하고, 복제 진입이 원본의 관리 밖 메뉴를 새 역할로 끌어오지 않게 한다.",
+                                "comment": "저장. 등록/수정/복제가 한 자리로 모인다 — 복제도 `route.id` 가 없으므로 등록으로 나간다.\n               검증 실패는 필드 오류를 전역 `formErrors` 에 담아 각 칸이 읽게 하고, 403·500 은 문구만\n               다르게 낸다. 어느 갈래든 진행 표시를 끈다(빠뜨리면 저장 버튼이 잠긴 채 남는다).\n               접근 가능 메뉴(menu_ids)는 메뉴 수정 권한이 있고 관리자 역할이 아닐 때만 싣는다 — 안 실으면 서버는 메뉴를\n               건드리지 않는다. 트리에 보이는 메뉴(관리할 수 있는 메뉴)로만 거른다: 관리 밖 메뉴의 기존 할당은 서버가\n               보존하고, 복제 진입이 원본의 관리 밖 메뉴를 새 역할로 끌어오지 않게 한다.\n               범위를 가질 수 없는 역할(비회원 — 응답의 supports_permission_scope 가 false)을 수정할 때는 권한마다\n               scope_type 을 null 로 비워 보낸다. 예전에 저장된 범위 값이 남아 있으면 서버가 422 로 거부한다.",
                                 "type": "submit",
                                 "handler": "sequence",
                                 "actions": [
@@ -298,7 +372,7 @@
                                                 "description": "{{_local.form.description_raw ?? form.description}}",
                                                 "is_active": "{{_local.form.is_active === true}}",
                                                 "password_expiry_policy": "{{_local.form.password_expiry_policy ?? 'inherit'}}",
-                                                "permissions": "{{_local.form.permission_values ?? []}}",
+                                                "permissions": "{{!!route?.id && _local.form?.supports_permission_scope === false ? (_local.form.permission_values ?? []).map(v => ({ id: v.id, scope_type: null })) : (_local.form.permission_values ?? [])}}",
                                                 "menu_ids": "{{role_menus_tree?.data?.abilities?.can_update === true && _local.form?.identifier !== 'admin' ? (_local.form?.menu_ids ?? []).filter(menuId => (role_menus_tree?.data?.data ?? []).flatMap(m => [m.id, ...(m.children ?? []).map(c => c.id)]).includes(menuId)) : undefined}}"
                                             }
                                         },
@@ -320,11 +394,32 @@
                                                     }
                                                 },
                                                 {
-                                                    "handler": "navigate",
+                                                    "comment": "수정이면 화면에 머문다 — 역할을 다시 받아 폼을 서버 값(정규화된 범위·메뉴)으로 채우고 변경 표시를 푼다",
+                                                    "handler": "refetchDataSource",
+                                                    "if": "{{!!route?.id}}",
                                                     "params": {
-                                                        "path": "/admin/roles",
+                                                        "dataSourceId": "role"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "if": "{{!!route?.id}}",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": false
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "등록·복제면 방금 만든 역할의 수정 화면으로 간다(목록 조건은 잇고 복제 진입 쿼리 clone_from 은 버린다).\n                       `replace` 를 붙이지 않는다 — 엔진의 replace 는 같은 화면의 쿼리만 바꾸는 이동이라 route.id 가 등록 화면 값(없음)에\n                       머물러, 넘어간 수정 화면의 「저장」이 PUT 대신 등록(POST)으로 나갔다. 라우트 전환을 타야 route.id 가 생긴다.",
+                                                    "handler": "navigate",
+                                                    "if": "{{!route?.id}}",
+                                                    "params": {
+                                                        "bypassLeaveGuard": true,
+                                                        "path": "{{'/admin/roles/' + response.data.id + '/edit'}}",
                                                         "mergeQuery": true,
-                                                        "query": {}
+                                                        "query": {
+                                                            "clone_from": ""
+                                                        }
                                                     }
                                                 }
                                             ]
@@ -438,7 +533,7 @@
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-red-500 ml-1"
+                                                                    "className": "text-red-600 dark:text-red-400 ml-1"
                                                                 },
                                                                 "text": "*"
                                                             }
@@ -461,7 +556,7 @@
                                                         "name": "Span",
                                                         "if": "{{_global.formErrors?.name || _global.formErrors?.name_raw}}",
                                                         "props": {
-                                                            "className": "text-red-500 text-xs"
+                                                            "className": "text-red-600 dark:text-red-400 text-xs"
                                                         },
                                                         "text": "{{_global.formErrors?.name?.[0] ?? _global.formErrors?.name_raw?.[0] ?? ''}}"
                                                     }
@@ -489,7 +584,7 @@
                                                                 "name": "Span",
                                                                 "if": "{{!route?.id}}",
                                                                 "props": {
-                                                                    "className": "text-red-500 ml-1"
+                                                                    "className": "text-red-600 dark:text-red-400 ml-1"
                                                                 },
                                                                 "text": "*"
                                                             }
@@ -513,7 +608,7 @@
                                                         "name": "Span",
                                                         "if": "{{_global.formErrors?.identifier}}",
                                                         "props": {
-                                                            "className": "text-red-500 text-xs mt-1"
+                                                            "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                                                         },
                                                         "text": "{{_global.formErrors?.identifier?.[0] ?? ''}}"
                                                     },
@@ -568,7 +663,7 @@
                                                         "name": "Span",
                                                         "if": "{{_global.formErrors?.description || _global.formErrors?.description_raw}}",
                                                         "props": {
-                                                            "className": "text-red-500 text-xs"
+                                                            "className": "text-red-600 dark:text-red-400 text-xs"
                                                         },
                                                         "text": "{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}"
                                                     }
@@ -748,6 +843,31 @@
                                         },
                                         "children": [
                                             {
+                                                "comment": "비회원 역할 안내 — 소유자를 가릴 수 없어 범위가 적용되지 않으므로 트리가 범위 드롭다운을 그리지 않는다. 그 이유를 같은 자리에서 알린다. 수정 모드에서만 — 비회원 역할을 복제한 새 역할은 일반 역할이라 범위를 고를 수 있다.",
+                                                "id": "guest_scope_unsupported_hint",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!!route?.id && _local.form?.supports_permission_scope === false}}",
+                                                "props": {
+                                                    "className": "flex-center gap-2 mb-3 text-sm text-gray-600 dark:text-gray-400"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "circle-info",
+                                                            "className": "text-base text-blue-500 dark:text-blue-400 flex-shrink-0"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:admin.roles.form.guest_scope_unsupported_hint"
+                                                    }
+                                                ]
+                                            },
+                                            {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "iteration": {
@@ -781,6 +901,7 @@
                                                                     "data": "{{permissions?.data?.data?.permissions?.[permType]?.permissions ?? []}}",
                                                                     "value": "{{_local.form.permission_values ?? []}}",
                                                                     "scopeOptions": "{{permissions?.data?.data?.scope_options ?? []}}",
+                                                                    "scopeDisabled": "{{!!route?.id && _local.form?.supports_permission_scope === false}}",
                                                                     "className": "max-h-[500px] overflow-y-auto",
                                                                     "installedModules": "{{_global.installedModules}}",
                                                                     "installedPlugins": "{{_global.installedPlugins}}"
@@ -898,21 +1019,22 @@
                                 "comment": "취소하고 역할 목록으로. 보던 목록 상태를 이고 간다",
                                 "id": "footer_cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/roles",
+                                            "bypassLeaveGuard": true,
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                    "href": "/admin/roles",
+                                    "mergeQuery": true,
+                                    "className": "button px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                 },
                                 "text": "$t:common.cancel"
                             },
@@ -972,22 +1094,24 @@
                         "children": [
                             {
                                 "comment": "저장. 폼 밖에 있는 버튼이라 form 속성으로 위쪽 역할 폼에 연결한다 — 그 폼에 같은 id 가 있어야 눌리므로 둘은 짝이다",
+                                "id": "mobile_cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/roles",
+                                            "bypassLeaveGuard": true,
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
+                                    "href": "/admin/roles",
+                                    "mergeQuery": true,
+                                    "className": "button flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
                                 },
                                 "text": "$t:common.cancel"
                             },

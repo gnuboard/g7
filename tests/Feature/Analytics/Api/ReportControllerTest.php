@@ -917,7 +917,7 @@ class ReportControllerTest extends AnalyticsApiTestCase
      * 봇 「최근 요청」이 고른 기간 안의 요청만 싣는지 확인합니다.
      *
      * 화면의 다른 숫자(봇 요청·봇 종류·봇별 집계)는 모두 고른 기간을 따르는데 최근 요청만 늘 최신
-     * 50건이라, 어제 하루를 골라도 오늘 아침 요청이 목록에 섞였다(7.1.0 실측 O-E10).
+     * 50건이라, 어제 하루를 골라도 오늘 아침 요청이 목록에 섞였다(7.1.0 실측).
      *
      * @return void 없음
      *
@@ -958,6 +958,43 @@ class ReportControllerTest extends AnalyticsApiTestCase
             $this->assertSame(['/today', '/yesterday'], $urls('from=2026-10-05&to=2026-10-06'), '이틀이면 둘 다 최신순');
         } finally {
             Carbon::setTestNow();
+        }
+    }
+
+    /**
+     * 부가 값이 없는 행의 `extra` 가 응답 원문에서 빈 맵 `{}` 로 나가는지 확인합니다(#758, 7.1.1 출시 전).
+     *
+     * 서비스는 `{}`(stdClass)를 돌려도, 신선도를 붙이는 미들웨어·봇 화면이 응답을 연관 배열로 풀었다
+     * 다시 싸면 모든 `{}` 가 `[]` 로 바뀐다. 그래서 `json()` 이 아닌 응답 원문을 본다.
+     *
+     * @return void 없음
+     *
+     * @scenario endpoint=reports, role=read, period=preset
+     *
+     * @effects empty_extra_stays_an_empty_map_in_raw_response
+     */
+    public function test_empty_extra_stays_an_empty_map_in_raw_response(): void
+    {
+        $this->dimensionRow(StatsDimension::PageUrl->value, 'example.test/', ['extra' => null]);
+        $this->dimensionRow(StatsDimension::Country->value, 'KR', ['extra' => null]);
+        $this->dimensionRow(StatsDimension::BotName->value, 'Googlebot', [
+            'visitor_type' => VisitorType::Bot->value,
+            'extra' => null,
+        ]);
+
+        $admin = $this->readAdmin();
+
+        foreach ([
+            '/api/admin/analytics/reports/page_url?preset=today',
+            '/api/admin/analytics/reports/country?preset=today',
+            '/api/admin/analytics/overview?preset=today',
+            '/api/admin/analytics/bots?preset=today',
+        ] as $uri) {
+            $raw = (string) $this->actingAs($admin)->getJson($uri)->assertOk()->getContent();
+
+            $this->assertStringContainsString('"extra":{}', $raw, $uri.' — 부가 값 없는 행의 extra 가 빈 맵이 아니다');
+            $this->assertStringNotContainsString('"extra":[]', $raw, $uri.' — 빈 맵이 빈 목록으로 다시 인코딩됐다');
+            $this->assertStringContainsString('"freshness":{', $raw, $uri.' — 신선도는 그대로 붙어야 한다');
         }
     }
 }

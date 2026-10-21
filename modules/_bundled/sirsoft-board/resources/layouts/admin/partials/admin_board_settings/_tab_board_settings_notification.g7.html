@@ -1,10 +1,6 @@
 <!-- 「기본값」 탭의 알림 구획 — 새 게시판이 물려받을 알림 두 갈래(새 글이 올라오면 관리자에게 · 답글·댓글이 달리면 글쓴이에게). 어느 채널로 보낼지는 여기가 아니라 「알림 정의」 탭이 정한다 -->
 <partial description="게시판 설정 > 알림 탭">
   <div data-ref="notification" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
-    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
-      <variant when="readonly">opacity-60</variant>
-      <variant when="normal"></variant>
-    </class-map>
     <section-layout data-type="layout" data-ref="section_notification" class="admin-card">
       <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.notification</h3>
       <div class="row-stack">
@@ -22,7 +18,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.notify_author_description</p>
               </div>
             </label>
-            <toggle data-type="composite" name="basic_defaults.notify_author" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle ariaLabel="$t:sirsoft-board.admin.settings.fields.notify_author" data-type="composite" name="basic_defaults.notify_author" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
         <div data-ref="field_notify_admin_on_post" class="">
@@ -39,7 +35,7 @@
                 <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.notify_admin_on_post_description</p>
               </div>
             </label>
-            <toggle data-type="composite" name="basic_defaults.notify_admin_on_post" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
+            <toggle ariaLabel="$t:sirsoft-board.admin.settings.fields.notify_admin_on_post" data-type="composite" name="basic_defaults.notify_admin_on_post" class="flex-shrink-0" disabled="{{_computed.isReadOnly}}"/>
           </div>
         </div>
       </div>

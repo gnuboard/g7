@@ -5,7 +5,7 @@
         "ko": "인증 앱 2단계 인증 (TOTP)",
         "en": "Authenticator App Two-Factor (TOTP)"
     },
-    "version": "1.0.0",
+    "version": "1.0.1",
     "license": "MIT",
     "description": {
         "ko": "인증 앱이 만드는 6자리 코드(RFC 6238 TOTP)로 로그인 2단계 인증을 받는 플러그인. G7 코어 IDV 인프라에 Provider 로 등록된다.",
@@ -22,6 +22,10 @@
         "js": {
             "entry": "resources/js/index.ts",
             "output": "dist/js/plugin.iife.js"
+        },
+        "css": {
+            "entry": "resources/css/main.css",
+            "output": "dist/css/plugin.css"
         },
         "handlers": true
     },

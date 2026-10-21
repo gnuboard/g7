@@ -14,6 +14,11 @@ namespace Modules\Sirsoft\Ecommerce\Services;
  */
 class SignupCurrencyResolver
 {
+    /**
+     * 가입 통화 리졸버를 생성합니다.
+     *
+     * @param  EcommerceSettingsService  $settings  이커머스 설정 서비스
+     */
     public function __construct(
         protected EcommerceSettingsService $settings
     ) {}
@@ -30,19 +35,34 @@ class SignupCurrencyResolver
         $currencies = is_array($lc['currencies'] ?? null) ? $lc['currencies'] : [];
         $defaultCurrency = $lc['default_currency'] ?? 'KRW';
 
-        // locale 정규화 (ko-KR → ko)
-        $normalized = $locale ? strtolower(explode('-', explode('_', $locale)[0])[0]) : null;
+        // locale 정규화 — 소문자 + '_'→'-' (zh_TW → zh-tw). 화면 짝 initPreferredCurrency.ts 와 같은 규칙 (#148)
+        $normalize = static fn ($value): string => str_replace('_', '-', strtolower((string) $value));
+        $primaryOf = static fn (string $value): string => explode('-', $value)[0];
+        $normalized = $locale ? $normalize($locale) : null;
 
-        // 1) locale 매칭 통화 수집
+        // 1) locale 매칭 통화 수집 — 정확일치(zh-TW → TWD[zh-TW])가 먼저, 없으면 주 언어(fil → PHP[fil-PH], ja-JP → JPY[ja])
         $matched = [];
-        if ($normalized !== null && $normalized !== '') {
+        if ($normalized !== null && $primaryOf($normalized) !== '') {
+            $localesOf = static fn (array $currency): array => array_map(
+                $normalize,
+                is_array($currency['locales'] ?? null) ? $currency['locales'] : []
+            );
+
             foreach ($currencies as $currency) {
-                $locales = array_map(
-                    fn ($l) => strtolower((string) $l),
-                    is_array($currency['locales'] ?? null) ? $currency['locales'] : []
-                );
-                if (in_array($normalized, $locales, true)) {
+                if (in_array($normalized, $localesOf($currency), true)) {
                     $matched[] = $currency;
+                }
+            }
+
+            if ($matched === []) {
+                $primary = $primaryOf($normalized);
+                foreach ($currencies as $currency) {
+                    foreach ($localesOf($currency) as $currencyLocale) {
+                        if ($primaryOf($currencyLocale) === $primary) {
+                            $matched[] = $currency;
+                            break;
+                        }
+                    }
                 }
             }
         }

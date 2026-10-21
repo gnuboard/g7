@@ -1,20 +1,16 @@
 <!-- 「기본값」 탭 맨 아래의 일괄 적용 구획 — 위 탭들에서 체크해 둔 항목(`bulkApplyFields`)을 이미 있는 게시판에 소급해 덮어쓴다. 여기서는 «어디에»(전체냐 고른 것이냐)만 정하고, 실제 실행은 확인 창이 맡는다 -->
 <partial description="게시판 설정 > 일괄 적용 섹션">
   <div data-ref="bulk_apply" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
-    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
-      <variant when="readonly">opacity-60</variant>
-      <variant when="normal"></variant>
-    </class-map>
     <!-- ========== 섹션 9: 기존 게시판에 일괄 적용 ========== -->
     <section-layout data-type="layout" data-ref="section_bulk_apply" class="admin-card">
       <h3 class="card-title">$t:sirsoft-board.admin.settings.bulk_apply.title</h3>
       <div data-if="{{(boards_list?.data?.data ?? []).length > 0}}" class="flex flex-col gap-3 mt-2">
         <div class="alert-warning">
           <icon name="triangle-exclamation" class="text-amber-600 dark:text-amber-400 flex-shrink-0" size="sm"/>
-          <p class="text-warning-soft">$t:sirsoft-board.admin.settings.bulk_apply.checked_fields_notice</p>
+          <p class="text-xs board-tone-warning">$t:sirsoft-board.admin.settings.bulk_apply.checked_fields_notice</p>
         </div>
       </div>
-      <div data-ref="no_boards_notice" data-if="{{!(boards_list?.data?.data ?? []).length}}" class="flex-center p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg gap-3">
+      <div data-ref="no_boards_notice" data-if="{{boards_list !== undefined &amp;&amp; (!(boards_list?.data?.data ?? []).length)}}" class="flex-center p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg gap-3">
         <icon name="circle-info" class="text-gray-500 dark:text-gray-400 flex-shrink-0" size="sm"/>
         <p class="text-sm text-gray-600 dark:text-gray-300">$t:sirsoft-board.admin.settings.bulk_apply.no_boards_notice</p>
       </div>
@@ -52,7 +48,7 @@
         </div>
         <div data-if="{{_local.bulkApplyAll === false}}" class="mt-3 p-3 rounded-lg board-bulk-apply-scope border border-gray-200 dark:border-gray-700">
           <p class="text-tertiary mb-2">$t:sirsoft-board.admin.settings.bulk_apply.select_boards_hint</p>
-          <tag-input data-type="composite" value="{{_local._bulkApplyBoardIds ?? []}}" options="{{$computed.boardOptions ?? []}}" placeholder="$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder" class="w-full" disabled="{{!_computed.canBulkApply}}">
+          <tag-input data-type="composite" aria-label="$t:sirsoft-board.admin.settings.bulk_apply.target_boards" value="{{_local._bulkApplyBoardIds ?? []}}" options="{{$computed.boardOptions ?? []}}" placeholder="$t:sirsoft-board.admin.settings.bulk_apply.select_boards_placeholder" class="w-full" disabled="{{!_computed.canBulkApply}}">
             <on type="change">
               <!-- 적용할 게시판을 고른다 — 이 값은 폼과 함께 저장되는 설정이 아니라 이번 적용에만 쓰는 것이라 `_` 로 시작하는 임시 키에 담는다 -->
               <set-state target="local" _bulkApplyBoardIds="{{$event.target.value}}"/>
@@ -62,7 +58,7 @@
       </div>
       <p data-ref="bulk_apply_no_permission" data-if="{{!_computed.isReadOnly &amp;&amp; !_computed.canBulkApply &amp;&amp; (boards_list?.data?.data ?? []).length > 0}}" class="form-hint mt-6">$t:sirsoft-board.admin.settings.bulk_apply.no_permission</p>
       <div data-if="{{(boards_list?.data?.data ?? []).length > 0}}" class="flex justify-end mt-6">
-        <button data-ref="bulk_apply_button" type="button" disabled="{{!_computed.canBulkApply}}" class="flex-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="bulk_apply_button" type="button" disabled="{{!_computed.canBulkApply}}" class="flex-center gap-2 px-4 py-2 bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:bg-amber-700 dark:hover:bg-amber-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 일괄 적용 실행. 고른 항목만 덮어쓰므로 체크하지 않은 설정은 각 게시판의 값이 그대로 남는다 -->
             <sequence>

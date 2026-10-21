@@ -13,6 +13,7 @@ use App\Rules\IpOrCidr;
 use App\Rules\ValidOutboundProxyUrl;
 use App\Search\Engines\DatabaseFulltextEngine;
 use App\Services\DriverRegistryService;
+use App\Services\Queue\QueueWorkerRegistry;
 use App\Services\SettingsService;
 use App\Support\AllowedExtensions;
 use App\Support\AssetUrl;
@@ -678,6 +679,13 @@ class SaveSettingsRequest extends FormRequest
             'drivers.session_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_SESSION_DRIVERS), $this->getDriverUsabilityRule('session')]),
             'drivers.session_lifetime' => ['nullable', 'integer', 'min:'.config('core.settings_limits.drivers_session_lifetime_min', 1), 'max:'.config('core.settings_limits.drivers_session_lifetime_max', 43200)], // 1분 ~ 30일
             'drivers.queue_driver' => $this->getTabRules($tab, 'drivers', [Rule::in(self::SUPPORTED_QUEUE_DRIVERS), $this->getDriverUsabilityRule('queue')]),
+            // 큐 워커 등록 (#139) — 연결 중복(V2)·현재 드라이버 연결 누락(V3)·큐 목록 연결(V4)·빈 큐 목록(V5)·
+            // 연결 안 큐 중복(V9)은 연결 이름을 문구에 넣어야 해서 withValidator 의 after 콜백이 판정한다.
+            'drivers.queue_connections' => ['nullable', 'array'],
+            'drivers.queue_connections.*' => ['string', Rule::in(app(QueueWorkerRegistry::class)->registrableConnectionNames())],
+            'drivers.queue_names' => ['nullable', 'array'],
+            'drivers.queue_names.*' => ['array', 'max:20'],
+            'drivers.queue_names.*.*' => ['required', 'string', 'max:64', 'regex:/^[A-Za-z0-9][A-Za-z0-9_.-]*$/'],
             'drivers.websocket_enabled' => ['nullable', 'boolean'],
             'drivers.websocket_app_id' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
             'drivers.websocket_app_key' => [Rule::requiredIf(fn () => $this->boolean('drivers.websocket_enabled')), 'nullable', 'string', 'max:255'],
@@ -986,7 +994,86 @@ class SaveSettingsRequest extends FormRequest
             $this->validateIpRestrictionSelfLockout($validator);
             $this->validatePrivacyDormantThresholds($validator);
             $this->validatePasswordExpiryThresholds($validator);
+            $this->validateQueueWorkers($validator);
         });
+    }
+
+    /**
+     * 큐 워커 등록(연결·연결별 큐)의 교차 규칙을 검사합니다 (#139 V2·V3·V4·V5·V9).
+     *
+     * - V2 같은 연결이 두 번 — 두 번째 칸에 오류
+     * - V3 현재 큐 드라이버(sync 가 아닌) 연결을 목록에서 뺐다 — 목록이 비면 「현재 드라이버 연결 하나」라 통과
+     * - V4 큐 목록의 키가 등록할 수 없는(정의되지 않은) 연결 — 화면 밖 직접 요청 방어
+     * - V5 등록한 연결의 큐 목록이 비었다
+     * - V9 한 연결 안에 같은 큐 이름이 두 번 — 와일드카드 `distinct` 는 연결을 넘어 비교하므로 쓰지 않는다
+     *
+     * 형식 오류(배열이 아님)는 rules() 가 먼저 보고하므로 여기서는 배열일 때만 본다.
+     *
+     * @param  Validator  $validator  검증기 인스턴스
+     * @return void 검증기에 오류를 직접 더한다
+     */
+    private function validateQueueWorkers(Validator $validator): void
+    {
+        $drivers = $this->input('drivers');
+
+        if (! is_array($drivers)) {
+            return;
+        }
+
+        $connections = $drivers['queue_connections'] ?? null;
+        $queueNames = $drivers['queue_names'] ?? null;
+
+        if (is_array($connections)) {
+            $seen = [];
+            foreach (array_values($connections) as $index => $connection) {
+                if (is_string($connection) && in_array($connection, $seen, true)) {
+                    $validator->errors()->add("drivers.queue_connections.{$index}", __('validation.settings.queue_connection_duplicate'));
+                }
+                $seen[] = $connection;
+            }
+
+            $driver = (string) ($drivers['queue_driver'] ?? config('queue.default', 'sync'));
+            $registrable = app(QueueWorkerRegistry::class)->registrableConnectionNames();
+
+            if ($connections !== [] && in_array($driver, $registrable, true) && ! in_array($driver, $connections, true)) {
+                $validator->errors()->add('drivers.queue_connections', __('validation.settings.queue_connection_default_required', ['driver' => $driver]));
+            }
+        }
+
+        if (! is_array($queueNames)) {
+            return;
+        }
+
+        $registrable = app(QueueWorkerRegistry::class)->registrableConnectionNames();
+        $registered = is_array($connections) ? $connections : [];
+
+        foreach ($queueNames as $connection => $names) {
+            if (! in_array((string) $connection, $registrable, true)) {
+                $validator->errors()->add('drivers.queue_names', __('validation.settings.queue_names_connection_unknown', ['connection' => (string) $connection]));
+
+                continue;
+            }
+
+            if (! is_array($names)) {
+                continue;
+            }
+
+            if ($names === [] && in_array((string) $connection, $registered, true)) {
+                $validator->errors()->add("drivers.queue_names.{$connection}", __('validation.settings.queue_names_required', ['connection' => (string) $connection]));
+
+                continue;
+            }
+
+            $seen = [];
+            foreach ($names as $name) {
+                if (is_string($name) && $name !== '' && in_array($name, $seen, true)) {
+                    $validator->errors()->add("drivers.queue_names.{$connection}", __('validation.settings.queue_name_duplicate', ['connection' => (string) $connection, 'name' => $name]));
+
+                    break;
+                }
+                $seen[] = $name;
+            }
+        }
     }
 
     /**
@@ -1478,6 +1565,16 @@ class SaveSettingsRequest extends FormRequest
             'drivers.session_lifetime.max' => __('validation.settings.session_lifetime_max'),
             'drivers.queue_driver.required' => __('validation.settings.queue_driver_required'),
             'drivers.queue_driver.in' => __('validation.settings.queue_driver_invalid'),
+            'drivers.queue_connections.array' => __('validation.settings.queue_connection_invalid'),
+            'drivers.queue_connections.*.string' => __('validation.settings.queue_connection_invalid'),
+            'drivers.queue_connections.*.in' => __('validation.settings.queue_connection_invalid'),
+            'drivers.queue_names.array' => __('validation.settings.queue_name_invalid'),
+            'drivers.queue_names.*.array' => __('validation.settings.queue_name_invalid'),
+            'drivers.queue_names.*.max' => __('validation.settings.queue_names_max'),
+            'drivers.queue_names.*.*.required' => __('validation.settings.queue_name_required'),
+            'drivers.queue_names.*.*.string' => __('validation.settings.queue_name_invalid'),
+            'drivers.queue_names.*.*.max' => __('validation.settings.queue_name_max'),
+            'drivers.queue_names.*.*.regex' => __('validation.settings.queue_name_invalid'),
             'drivers.websocket_enabled.boolean' => __('validation.settings.websocket_enabled_boolean'),
             'drivers.websocket_app_id.required' => __('validation.settings.websocket_app_id_required'),
             'drivers.websocket_app_id.max' => __('validation.settings.websocket_app_id_max'),
@@ -1731,6 +1828,11 @@ class SaveSettingsRequest extends FormRequest
             'drivers.session_driver' => __('validation.attributes.session_driver'),
             'drivers.session_lifetime' => __('validation.attributes.session_lifetime'),
             'drivers.queue_driver' => __('validation.attributes.queue_driver'),
+            'drivers.queue_connections' => __('validation.attributes.queue_connections'),
+            'drivers.queue_connections.*' => __('validation.attributes.queue_connections'),
+            'drivers.queue_names' => __('validation.attributes.queue_names'),
+            'drivers.queue_names.*' => __('validation.attributes.queue_names'),
+            'drivers.queue_names.*.*' => __('validation.attributes.queue_name'),
             'drivers.websocket_enabled' => __('validation.attributes.websocket_enabled'),
             'drivers.websocket_app_id' => __('validation.attributes.websocket_app_id'),
             'drivers.websocket_app_key' => __('validation.attributes.websocket_app_key'),

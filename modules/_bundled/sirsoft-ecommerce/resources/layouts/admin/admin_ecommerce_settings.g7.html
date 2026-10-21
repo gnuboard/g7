@@ -1,14 +1,26 @@
 <!-- 쇼핑몰 환경설정 (운영자) — 열 개 탭을 한 레이아웃에 싣고 탭 이름을 URL 쿼리에 남긴다. 탭마다
   필요한 자료가 달라 각 데이터소스에 `if` 로 자기 탭 조건을 걸어 두었고(안 보는 탭 것은 부르지
-  않는다), 저장은 아래 버튼 하나가 현재 탭 몫만 골라 보낸다. -->
+  않는다), 저장은 아래 버튼 하나가 현재 탭 몫만 골라 보낸다. e2e:allow 탭 전환 이벤트 받기의 세 동작을
+  `<sequence>` 로 감싸 주석 자리를 맞춘 것뿐이라 산출 JSON 은 comment 외 동일하다 — 화면 동작 변화 없음(#789). -->
 <layout name="admin_ecommerce_settings" version="1.0.0" extends="_admin_base">
-  <meta title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
+  <meta leave_guard="{{_local.hasChanges === true}}" title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
   <!-- 전 탭의 설정값을 한 덩어리로 받아 폼에 심는다 — 이 한 응답이 열 탭을 모두 덮는다. 탭 전환은 같은 화면으로의 재진입(navigate replace)이라 refetchOnMount 로 다시 받아 폼을 덮는다 — 그래서 저장하지 않은 변경이 있으면 탭 줄이 옮기기 전에 묻는다. 저장 뒤에는 서버가 정규화한 값으로 되맞추려고 다시 받는다 -->
   <data-source id="settings" label_key="$t:sirsoft-ecommerce.editor.data_source.settings" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
     <error-handling>
       <on-code code="403">
         <show-error-page target="content"/>
       </on-code>
+      <default>
+        <!-- 그 밖의 실패(500·네트워크)도 오류 화면으로 — 설정을 못 받으면 폼이 빈 채로 서서 탭마다 「등록된 택배사가 없습니다」 같은 빈 안내가 뜨고, 그대로 저장하면 빈 값이 나간다. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
     </error-handling>
   </data-source>
   <!-- 개인정보 보유기간 대상 건수 — 「개인정보 보유기간」 탭의 뱃지가 읽는다. 저장된 설정 기준이라 저장 성공 뒤 다시 읽는다. 꺼져 있어도 서버가 센다(꺼짐은 `enabled` 로 구분) — null 은 응답을 받기 전 fallback 뿐이다 -->
@@ -48,6 +60,16 @@
        명단은 코어 공통 대상 목록 API 가 이 모듈 핸들러를 식별자로 찾아 내려준다. -->
   <data-source id="privacyTargets" label_key="$t:sirsoft-ecommerce.editor.data_source.privacyTargets" type="api" endpoint="/api/admin/privacy/{{_global.privacyTargets?.path ?? 'retention-targets/sirsoft-ecommerce.order'}}" method="GET" :auto_fetch="false" :auth_required="true" loading_strategy="progressive">
     <params :per_page="20"/>
+    <success>
+      <!-- 다시 받기에 성공하면 실패 표시를 내린다 -->
+      <set-state target="global" :privacyTargets.loadFailed="false"/>
+    </success>
+    <error-handling>
+      <default>
+        <!-- 다시 받기(refetch)가 실패하면 창이 알 수 있게 표시를 남긴다 — 엔진 판과 무관하게 창은 이 표시로 오류 안내를 가른다(여는 버튼이 `privacyTargets` 객체를 통째로 새로 써서 다음 열기 때 지워진다) -->
+        <set-state target="global" :privacyTargets.loadFailed="true"/>
+      </default>
+    </error-handling>
   </data-source>
   <!-- SEO 탭에서만 — 생성된 정적 페이지 수·마지막 생성 시각처럼 설정값이 아니라 현재 캐시 상태를 보여 주는 값이다 -->
   <data-source id="seoStats" label_key="$t:sirsoft-ecommerce.editor.data_source.seoStats" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/settings/seo-cache-info" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'seo'}}" :auto_fetch="true" :auth_required="true"/>
@@ -55,7 +77,15 @@
   <data-source id="carriers" label_key="$t:sirsoft-ecommerce.editor.data_source.carriers" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-carriers" method="GET" if="{{(query.tab || _global.activeEcommerceSettingsTab || 'basic_info') === 'shipping'}}" :auto_fetch="true" :auth_required="true">
     <error-handling>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -76,7 +106,15 @@
     </fallback>
     <error-handling>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -181,23 +219,23 @@
     <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
       <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
-        <icon name="fas fa-lock" class="text-yellow-600 dark:text-yellow-400"/>
-        <span class="text-warning-soft">$t:sirsoft-ecommerce.common.read_only_notice</span>
+        <icon name="fas fa-lock" class="text-yellow-700 dark:text-yellow-400"/>
+        <span class="ecommerce-tone-warning-soft text-xs">$t:sirsoft-ecommerce.common.read_only_notice</span>
       </div>
       <!-- className 은 sticky-tab-nav-responsive 를 쓴다 — 이 화면의 콘텐츠 래퍼가 admin-page-content-responsive(p-4 sm:p-6 lg:p-8) 라 뷰포트마다 좌우 패딩이 다르기 때문. 고정 24px 를 가정하는 sticky-tab-nav(-mx-6 px-6)를 쓰면 폰(p-4=16px)에서 좌우로 8px 씩 과다 bleed 되어 콘텐츠 영역을 넘친다. -->
       <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}}" variant="default" class="sticky-tab-nav-responsive">
         <prop name="tabs">
-          <item id="basic_info" label="$t:sirsoft-ecommerce.admin.settings.tabs.basic_info"/>
-          <item id="language_currency" label="$t:sirsoft-ecommerce.admin.settings.tabs.language_currency"/>
-          <item id="seo" label="$t:sirsoft-ecommerce.admin.settings.tabs.seo"/>
-          <item id="order_settings" label="$t:sirsoft-ecommerce.admin.settings.tabs.order_settings"/>
-          <item id="claim" label="$t:sirsoft-ecommerce.admin.settings.tabs.claim"/>
-          <item id="shipping" label="$t:sirsoft-ecommerce.admin.settings.tabs.shipping"/>
-          <item id="review_settings" label="$t:sirsoft-ecommerce.admin.settings.tabs.review_settings"/>
-          <item id="notification_definitions" label="$t:sirsoft-ecommerce.admin.settings.tabs.notification_definitions"/>
-          <item id="identity_policies" label="$t:sirsoft-ecommerce.admin.settings.tabs.identity_policies"/>
-          <item id="mileage" label="$t:sirsoft-ecommerce.admin.settings.tabs.mileage"/>
-          <item id="privacy_retention" label="$t:sirsoft-ecommerce.admin.settings.tabs.privacy_retention"/>
+          <item id="basic_info" href="/admin/ecommerce/settings?tab=basic_info" label="$t:sirsoft-ecommerce.admin.settings.tabs.basic_info"/>
+          <item id="language_currency" href="/admin/ecommerce/settings?tab=language_currency" label="$t:sirsoft-ecommerce.admin.settings.tabs.language_currency"/>
+          <item id="seo" href="/admin/ecommerce/settings?tab=seo" label="$t:sirsoft-ecommerce.admin.settings.tabs.seo"/>
+          <item id="order_settings" href="/admin/ecommerce/settings?tab=order_settings" label="$t:sirsoft-ecommerce.admin.settings.tabs.order_settings"/>
+          <item id="claim" href="/admin/ecommerce/settings?tab=claim" label="$t:sirsoft-ecommerce.admin.settings.tabs.claim"/>
+          <item id="shipping" href="/admin/ecommerce/settings?tab=shipping" label="$t:sirsoft-ecommerce.admin.settings.tabs.shipping"/>
+          <item id="review_settings" href="/admin/ecommerce/settings?tab=review_settings" label="$t:sirsoft-ecommerce.admin.settings.tabs.review_settings"/>
+          <item id="notification_definitions" href="/admin/ecommerce/settings?tab=notification_definitions" label="$t:sirsoft-ecommerce.admin.settings.tabs.notification_definitions"/>
+          <item id="identity_policies" href="/admin/ecommerce/settings?tab=identity_policies" label="$t:sirsoft-ecommerce.admin.settings.tabs.identity_policies"/>
+          <item id="mileage" href="/admin/ecommerce/settings?tab=mileage" label="$t:sirsoft-ecommerce.admin.settings.tabs.mileage"/>
+          <item id="privacy_retention" href="/admin/ecommerce/settings?tab=privacy_retention" label="$t:sirsoft-ecommerce.admin.settings.tabs.privacy_retention"/>
         </prop>
         <on type="change" event="onTabChange">
           <!-- 저장하지 않은 변경이 있으면 바로 옮기지 않고 확인 창을 연다 — 저장은 지금 탭의 구획만 보내고, 탭을 옮기면 설정을 다시 받아 고친 값이 저장된 값으로 돌아가기 때문이다(말없이 사라지지 않게) -->
@@ -207,28 +245,36 @@
               <open-modal target="modal_ecommerce_settings_unsaved_tab"/>
             </when>
             <else>
-              <sequence>
-                <!-- 탭을 옮기면 열어 둔 인라인 추가 폼도 함께 정리한다(확인 창 「저장하지 않고 이동」 partials/admin_ecommerce_settings/_modal_unsaved_tab_switch 도 같은 목록 — 함께 고친다). 페이지 [저장] 가드는 이 플래그들을 **탭과 무관하게** 읽으므로, 남겨 두면 폼을 연 채 다른 탭으로 간 운영자는 그 뒤로 어느 탭에서도 저장하지 못하고 화면에 있지도 않은 폼을 확정하라는 안내만 받는다(브라우저 실측으로 재현 — S10 17차). 각 폼의 '취소' 가 비우는 것과 같은 범위를 비운다: 플래그 + 입력 버퍼 + 그 폼의 오류. 가드가 열거식이므로 새 인라인 폼이 생기면 여기에도 더해야 한다. -->
-                <set-state target="local" :errors="null" :isAddingExchangeReason="false" :exchangeReasonForm="null" :exchangeReasonFormErrors="null" :isAddingReturnReason="false" :returnReasonForm="null" :returnReasonFormErrors="null" :isAddingRefundReason="false" :refundReasonForm="null" :refundReasonFormErrors="null" :isAddingCarrier="false" :carrierForm="null" :carrierFormErrors="null" :isAddingShippingType="false" :shippingTypeForm="null" :shippingTypeFormErrors="null" :isAddingCountry="false" :newCountry="null" :isAddingCurrency="false" :form.newCurrency="null" :isAddingMileageCurrency="false" :form.newMileageCurrency="null" :claimReasonTab="null"/>
-                <set-state target="global" activeEcommerceSettingsTab="{{$args[0]}}"/>
-                <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
-                <navigate path="/admin/ecommerce/settings" :replace="true">
-                  <query tab="{{$args[0]}}"/>
-                </navigate>
-              </sequence>
+              <!-- 탭 전환은 탭 본문 틀(ecommerce_settings_tab_content)의 이벤트 받기가 전담한다 — 확인 창 [이동] 도 같은 이벤트만 보낸다 -->
+              <emit-event event="sirsoft-ecommerce:settings-switch-tab">
+                <field name="data">
+                  <field name="tab" value="{{$args[0]}}"/>
+                </field>
+              </emit-event>
             </else>
           </conditions>
         </on>
       </tab-navigation>
       <div data-ref="ecommerce_settings_tab_content" class="tab-content">
+        <on listen="sirsoft-ecommerce:settings-switch-tab">
+          <!-- 탭 전환의 단일 처리처 — 탭 줄(변경 없음)과 확인 창 [이동] 이 이 이벤트만 보낸다. 정리 목록은 여기 한 곳(새 인라인 폼이 생기면 여기에만 더한다). 페이지 [저장] 가드는 인라인 추가 폼 플래그를 탭과 무관하게 읽으므로, 남겨 두면 폼을 연 채 다른 탭으로 간 운영자는 어느 탭에서도 저장하지 못한다(S10 17차). 각 폼의 '취소' 가 비우는 범위(플래그 + 입력 버퍼 + 그 폼의 오류)와 「변경 있음」·오류를 비운다. 이 받기는 페이지 문맥이라 target=local 이 페이지 폼 렌더러 상태에 닿는다(모달 문맥의 local 은 닿지 않아 옮긴 뒤 첫 입력에 옛 값이 되살아났다 — 실측 C7) -->
+          <sequence>
+            <set-state target="local" :hasChanges="false" :errors="null" :isAddingExchangeReason="false" :exchangeReasonForm="null" :exchangeReasonFormErrors="null" :isAddingReturnReason="false" :returnReasonForm="null" :returnReasonFormErrors="null" :isAddingRefundReason="false" :refundReasonForm="null" :refundReasonFormErrors="null" :isAddingCarrier="false" :carrierForm="null" :carrierFormErrors="null" :isAddingShippingType="false" :shippingTypeForm="null" :shippingTypeFormErrors="null" :isAddingCountry="false" :newCountry="null" :isAddingCurrency="false" :form.newCurrency="null" :isAddingMileageCurrency="false" :form.newMileageCurrency="null" :claimReasonTab="null"/>
+            <set-state target="global" activeEcommerceSettingsTab="{{_eventData.tab}}" :pendingEcommerceSettingsTab="null"/>
+            <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다. -->
+            <navigate path="/admin/ecommerce/settings" :replace="true">
+              <query tab="{{_eventData.tab}}"/>
+            </navigate>
+          </sequence>
+        </on>
         <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
           <div class="flex gap-3">
             <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
             <div>
-              <h3 class="text-error-strong">$t:sirsoft-ecommerce.admin.settings.validation_error</h3>
-              <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
+              <h3 class="ecommerce-tone-error-strong text-sm font-medium">$t:sirsoft-ecommerce.admin.settings.validation_error</h3>
+              <p data-if="{{typeof _local.errors === 'string'}}" class="ecommerce-tone-error-soft mt-2 text-sm">{{_local.errors}}</p>
               <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-                <li class="text-error-soft">{{message}}</li>
+                <li class="ecommerce-tone-error-soft text-sm">{{message}}</li>
               </ul>
             </div>
           </div>
@@ -246,13 +292,13 @@
         <include src="partials/admin_ecommerce_settings/_tab_privacy_retention.g7.html"/>
       </div>
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <button data-ref="cancel_button" class="btn btn-secondary">
+        <a href="/admin" data-ref="cancel_button" class="btn btn-secondary">
           <on type="click">
-            <navigate path="/admin"/>
+            <navigate :bypassLeaveGuard="true"/>
           </on>
           <span>$t:common.cancel</span>
-        </button>
-        <button data-ref="save_button" data-testid="ecommerce-settings-save" disabled="{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
+        </a>
+        <button type="button" data-ref="save_button" data-testid="ecommerce-settings-save" disabled="{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 저장 — 보낼 몸통을 현재 탭 몫으로 좁힌다. 전 탭을 한꺼번에 보내면 보고 있지도 않은 탭의
               값까지 덮어쓰기 때문이고, 서버도 `_tab` 으로 검증 범위를 가른다(문의 설정은 여러 탭에

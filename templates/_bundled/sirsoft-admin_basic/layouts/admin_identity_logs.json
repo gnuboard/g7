@@ -307,7 +307,7 @@
                             }
                         ],
                         "props": {
-                            "tabs": "{{[{id: '', label: '$t:admin.identity.logs.tab_all'}].concat((identityProviders?.data ?? []).map(pv => ({id: pv.id, label: pv.label ?? pv.id, iconName: pv.icon})))}}",
+                            "tabs": "{{[{id: '', label: '$t:admin.identity.logs.tab_all', href: '/admin/identity/logs'}].concat((identityProviders?.data ?? []).map(pv => ({id: pv.id, label: pv.label ?? pv.id, iconName: pv.icon, href: '/admin/identity/logs?provider_id=' + encodeURIComponent(pv.id) + '&page=1'})))}}",
                             "activeTabId": "{{query.provider_id ?? ''}}",
                             "variant": "default",
                             "className": "sticky-tab-nav mb-6"
@@ -391,6 +391,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "sortBy",
+                                                    "aria-label": "$t:common.sort_order",
                                                     "className": "w-36 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                                     "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
                                                     "options": [
@@ -431,6 +432,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "perPage",
+                                                    "aria-label": "$t:common.per_page",
                                                     "className": "w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
                                                     "value": "{{query.per_page || '20'}}",
                                                     "options": [

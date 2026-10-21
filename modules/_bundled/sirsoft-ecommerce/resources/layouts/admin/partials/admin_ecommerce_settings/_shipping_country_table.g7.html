@@ -2,8 +2,8 @@
   같은 배열을 편집한다. 해외배송을 껐다면 이 목록은 남되 쓰이지 않는다. -->
 <partial description="배송설정 - 배송가능국가 테이블">
   <div data-ref="shipping_country_table_container" class="table-container">
-    <div data-if="{{(_local.form?.shipping?.available_countries ?? []).length === 0}}" class="p-8 text-center text-label-subtle">
-      <icon name="globe" class="text-2xl text-gray-300 dark:text-gray-600 mb-2"/>
+    <div data-if="{{settings !== undefined &amp;&amp; ((_local.form?.shipping?.available_countries ?? []).length === 0)}}" class="p-8 text-center text-label-subtle">
+      <icon name="globe" class="text-2xl text-gray-500 dark:text-gray-500 mb-2"/>
       <p>$t:sirsoft-ecommerce.admin.settings.shipping.countries.empty</p>
     </div>
     <div data-ref="country_list" data-if="{{(_local.form?.shipping?.available_countries ?? []).length > 0}}" class="overflow-x-auto">
@@ -31,7 +31,7 @@
               <span>{{$localized(country.name, 'sirsoft-ecommerce::settings.countries.' + (country.code ?? '') + '.name')}}</span>
             </td>
             <td class="text-center">
-              <toggle data-type="composite" checked="{{country.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false) &amp;&amp; country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}">
+              <toggle data-type="composite" checked="{{country.is_active ?? false}}" ariaLabel="$t:common.row_cell|row={{country.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.countries.is_active')}}" size="sm" disabled="{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false) &amp;&amp; country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}">
                 <on type="change">
                   <!-- 사용 여부. 끄면 주문 시 그 나라를 고를 수 없게 된다. -->
                   <set-state target="local" form.shipping.available_countries="{{(_local.form?.shipping?.available_countries ?? []).map((c, i) => i === country._idx ? {...c, is_active: !(c.is_active ?? false)} : c)}}" :hasChanges="true"/>
@@ -39,14 +39,14 @@
               </toggle>
             </td>
             <td>
-              <button data-if="{{country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}" type="button" class="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false)}}">
+              <button data-if="{{country.code !== (_local.form?.shipping?.default_country ?? 'KR')}}" type="button" class="p-1 text-gray-500 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="$t:common.delete" disabled="{{_computed.isReadOnly || !(_local.form?.shipping?.international_shipping_enabled ?? false)}}">
                 <on type="click">
                   <!-- 국가 삭제. -->
                   <set-state target="local" form.shipping.available_countries="{{(_local.form?.shipping?.available_countries ?? []).filter((_, i) => i !== country._idx)}}" :hasChanges="true"/>
                 </on>
                 <icon name="trash" class="text-sm"/>
               </button>
-              <span data-if="{{country.code === (_local.form?.shipping?.default_country ?? 'KR')}}" class="text-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full">$t:sirsoft-ecommerce.admin.settings.shipping.countries.default_badge</span>
+              <span data-if="{{country.code === (_local.form?.shipping?.default_country ?? 'KR')}}" class="ecommerce-tone-info-soft inline-flex items-center px-2 py-0.5 font-medium bg-blue-100 dark:bg-blue-900/30 rounded-full text-xs">$t:sirsoft-ecommerce.admin.settings.shipping.countries.default_badge</span>
             </td>
           </tr>
         </tbody>

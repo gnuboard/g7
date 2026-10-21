@@ -31,7 +31,7 @@
       </div>
       <div data-ref="filter_card" class="admin-card mb-6">
         <div data-ref="search_row" class="flex-center flex-wrap gap-3 mb-6">
-          <select name="searchField" class="w-32" value="{{_local.searchField}}">
+          <select name="searchField" aria-label="$t:common.search_field" class="w-32" value="{{_local.searchField}}">
             <options>
               <option value="order_number">$t:sirsoft-ecommerce.admin.deposit.search.field.order_number</option>
               <option value="depositor_name">$t:sirsoft-ecommerce.admin.deposit.search.field.depositor_name</option>
@@ -50,7 +50,7 @@
                 <set-state target="_local" searchKeyword="{{$event.target.value}}"/>
               </on>
             </input>
-            <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+            <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"/>
           </div>
           <button aria-label="$t:common.refresh" title="$t:common.refresh" type="button" class="btn btn-icon">
             <icon name="arrows-rotate" class="text-base"/>
@@ -121,8 +121,8 @@
         <div data-ref="date_filter" class="flex-center flex-wrap gap-3">
           <span class="text-label w-20">$t:sirsoft-ecommerce.admin.deposit.filter.deposit_date</span>
           <div class="flex-center gap-2">
-            <icon name="calendar" class="text-base icon-muted"/>
-            <input type="date" placeholder="$t:sirsoft-ecommerce.admin.deposit.filter.start_date" class="input w-36" value="{{_local.startDate}}">
+            <icon name="calendar" class="text-base icon-muted text-gray-500 dark:text-gray-400"/>
+            <input type="date" aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.deposit.filter.deposit_date')}}" placeholder="$t:sirsoft-ecommerce.admin.deposit.filter.start_date" class="input w-36" value="{{_local.startDate}}">
               <on type="change">
                 <!-- 기간 시작일. 옆의 1일·1주일 같은 빠른 선택 버튼도 결국 이 값을 채우는 자리다 -->
                 <set-state target="_local" startDate="{{$event.target.value}}"/>
@@ -130,8 +130,8 @@
             </input>
           </div>
           <div class="flex-center gap-2">
-            <icon name="calendar" class="text-base icon-muted"/>
-            <input type="date" placeholder="$t:sirsoft-ecommerce.admin.deposit.filter.end_date" class="input w-36" value="{{_local.endDate}}">
+            <icon name="calendar" class="text-base icon-muted text-gray-500 dark:text-gray-400"/>
+            <input type="date" aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.deposit.filter.deposit_date')}}" placeholder="$t:sirsoft-ecommerce.admin.deposit.filter.end_date" class="input w-36" value="{{_local.endDate}}">
               <on type="change">
                 <!-- 기간 종료일 — 시작일과 짝을 이루며, 비워 두면 그 끝을 열어 둔 것으로 다룬다 -->
                 <set-state target="_local" endDate="{{$event.target.value}}"/>
@@ -146,7 +146,7 @@
         </div>
       </div>
       <div data-ref="batch_action_bar" class="flex-center gap-4 mb-4 px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-        <span class="text-sm text-secondary">0개 선택됨</span>
+        <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.sample.fmt.selected_count|count=0</span>
         <button type="button" class="btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
           <on type="click">
             <open-modal target="modal_bulk_match"/>
@@ -155,9 +155,9 @@
         </button>
       </div>
       <div data-ref="table_header" class="flex-between mb-4">
-        <span class="text-sm text-secondary">총 11개</span>
+        <span class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.sample.fmt.total_count|count=11</span>
         <div class="flex-center gap-3">
-          <select name="sortBy" class="w-44" value="{{_local.sortBy}}">
+          <select name="sortBy" aria-label="$t:common.sort_order" class="w-44" value="{{_local.sortBy}}">
             <options>
               <option value="deposit_date_desc">$t:sirsoft-ecommerce.admin.deposit.table.sort.deposit_date_desc</option>
               <option value="deposit_date_asc">$t:sirsoft-ecommerce.admin.deposit.table.sort.deposit_date_asc</option>
@@ -169,12 +169,12 @@
               <set-state target="_local" sortBy="{{$event.target.value}}"/>
             </on>
           </select>
-          <select name="perPage" class="w-32" value="{{_local.perPage}}">
+          <select name="perPage" aria-label="$t:common.per_page" class="w-32" value="{{_local.perPage}}">
             <options>
-              <option value="10">10개씩 보기</option>
-              <option value="20">20개씩 보기</option>
-              <option value="50">50개씩 보기</option>
-              <option value="100">100개씩 보기</option>
+              <option value="10">$t:sirsoft-ecommerce.admin.sample.fmt.per_page|count=10</option>
+              <option value="20">$t:sirsoft-ecommerce.admin.sample.fmt.per_page|count=20</option>
+              <option value="50">$t:sirsoft-ecommerce.admin.sample.fmt.per_page|count=50</option>
+              <option value="100">$t:sirsoft-ecommerce.admin.sample.fmt.per_page|count=100</option>
             </options>
             <on type="change">
               <!-- 한 쪽에 담을 건수 -->
@@ -185,20 +185,20 @@
       </div>
       <div data-ref="data_table_wrapper" class="overflow-x-auto">
         <responsive on="portable">
-          <div data-ref="mobile_select_all" class="flex-center gap-2 mb-4">
+          <label data-ref="mobile_select_all" class="flex-center gap-2 mb-4 cursor-pointer">
             <input type="checkbox" class="rounded"/>
-            <span class="text-sm text-primary">전체선택 (10/10)</span>
-          </div>
+            <span class="text-sm text-primary">$t:sirsoft-ecommerce.admin.sample.fmt.select_all_count|selected=10|total=10</span>
+          </label>
           <div data-ref="mobile_card_list">
             <div data-ref="mobile_card_1" class="admin-card">
               <div class="flex items-start gap-3 mb-3">
-                <input type="checkbox" class="rounded mt-1"/>
+                <input type="checkbox" aria-label="$t:common.select_item|name=ORD20240127-002" class="rounded mt-1"/>
                 <div class="flex-1">
                   <div class="flex-between mb-1">
-                    <span class="text-primary font-medium">이영희</span>
+                    <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.sample.people.lee_younghee</span>
                     <span class="badge-status badge-status-ready">$t:sirsoft-ecommerce.admin.deposit.status.virtual_account</span>
                   </div>
-                  <div class="text-lg font-semibold text-primary">159,000원</div>
+                  <div class="text-lg font-semibold text-primary">₩159,000</div>
                 </div>
               </div>
               <div class="space-y-2 text-sm mb-4">
@@ -208,11 +208,11 @@
                 </div>
                 <div class="flex justify-between">
                   <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.deposit.mobile.bank_account</span>
-                  <span class="text-primary">우리은행 1002-467-890123</span>
+                  <span class="text-primary">$t:sirsoft-ecommerce.admin.sample.fmt.bank_account|bank=$t:sirsoft-ecommerce.admin.sample.banks.woori|account=1002-467-890123</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.deposit.mobile.member</span>
-                  <span class="text-primary">이영희</span>
+                  <span class="text-primary">$t:sirsoft-ecommerce.admin.sample.people.lee_younghee</span>
                 </div>
               </div>
               <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
@@ -233,13 +233,13 @@
             </div>
             <div data-ref="mobile_card_2" class="admin-card">
               <div class="flex items-start gap-3 mb-3">
-                <input type="checkbox" class="rounded mt-1"/>
+                <input type="checkbox" aria-label="$t:common.select_row_n|n=2" class="rounded mt-1"/>
                 <div class="flex-1">
                   <div class="flex-between mb-1">
-                    <span class="text-primary font-medium">박민수</span>
+                    <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</span>
                     <span class="badge-status badge-status-processing">$t:sirsoft-ecommerce.admin.deposit.status.bank_transfer</span>
                   </div>
-                  <div class="text-lg font-semibold text-primary">49,000원</div>
+                  <div class="text-lg font-semibold text-primary">₩49,000</div>
                 </div>
               </div>
               <div class="space-y-2 text-sm mb-4">
@@ -249,12 +249,12 @@
                 </div>
                 <div class="flex justify-between">
                   <span class="text-label-subtle">$t:sirsoft-ecommerce.admin.deposit.mobile.bank_account</span>
-                  <span class="text-primary">카카오뱅크 789-012-3456</span>
+                  <span class="text-primary">$t:sirsoft-ecommerce.admin.sample.fmt.bank_account|bank=$t:sirsoft-ecommerce.admin.sample.banks.kakaobank|account=789-012-3456</span>
                 </div>
               </div>
               <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
                 <div class="flex-center gap-2">
-                  <button type="button" class="btn btn-sm flex-1 text-pink-500 dark:text-pink-400 border border-pink-300 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/20 dark:border-pink-700 dark:hover:bg-pink-900/30">
+                  <button type="button" class="btn btn-sm flex-1 text-pink-700 dark:text-pink-400 border border-pink-300 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/20 dark:border-pink-700 dark:hover:bg-pink-900/30">
                     <on type="click">
                       <open-modal target="modal_manual_match"/>
                     </on>
@@ -275,7 +275,7 @@
           <thead class="bg-gray-50 dark:bg-gray-800">
             <tr>
               <th class="text-table-header px-4 py-3 text-left w-10">
-                <input type="checkbox" class="rounded"/>
+                <input type="checkbox" aria-label="$t:common.select_all" class="rounded"/>
               </th>
               <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.table.columns.no</th>
               <th class="text-table-header px-4 py-3 text-left">$t:sirsoft-ecommerce.admin.deposit.table.columns.payment_method</th>
@@ -291,24 +291,24 @@
             </tr>
           </thead>
           <tbody class="divider-list bg-white dark:bg-gray-900">
-            <tr class="hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
               <td class="px-4 py-4">
-                <input type="checkbox" class="rounded"/>
+                <input type="checkbox" aria-label="$t:common.select_item|name=ORD20240127-002" class="rounded"/>
               </td>
               <td class="px-4 py-4 text-primary">2</td>
               <td class="px-4 py-4">
                 <span class="badge-status badge-status-ready">$t:sirsoft-ecommerce.admin.deposit.status.virtual_account</span>
               </td>
-              <td class="px-4 py-4 text-primary">우리은행 1002-467-890123</td>
-              <td class="px-4 py-4 text-primary">이영희</td>
-              <td class="px-4 py-4 text-right text-primary font-medium">159,000원</td>
+              <td class="px-4 py-4 text-primary">$t:sirsoft-ecommerce.admin.sample.fmt.bank_account|bank=$t:sirsoft-ecommerce.admin.sample.banks.woori|account=1002-467-890123</td>
+              <td class="px-4 py-4 text-primary">$t:sirsoft-ecommerce.admin.sample.people.lee_younghee</td>
+              <td class="px-4 py-4 text-right text-primary font-medium">₩159,000</td>
               <td class="px-4 py-4">
                 <div class="text-primary">2024-01-27</div>
                 <div class="text-secondary text-xs">14:32:15</div>
               </td>
               <td class="px-4 py-4 text-primary">ORD20240127-002</td>
               <td class="px-4 py-4">
-                <div class="text-primary">이영희</div>
+                <div class="text-primary">$t:sirsoft-ecommerce.admin.sample.people.lee_younghee</div>
                 <div class="text-secondary text-xs">user001</div>
               </td>
               <td class="empty-state-cell">
@@ -326,23 +326,23 @@
                 </button>
               </td>
             </tr>
-            <tr class="hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800">
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
               <td class="px-4 py-4">
-                <input type="checkbox" class="rounded"/>
+                <input type="checkbox" aria-label="$t:common.select_row_n|n=2" class="rounded"/>
               </td>
               <td class="px-4 py-4 text-primary">3</td>
               <td class="px-4 py-4">
                 <span class="badge-status badge-status-processing">$t:sirsoft-ecommerce.admin.deposit.status.bank_transfer</span>
               </td>
-              <td class="px-4 py-4 text-primary">카카오뱅크 789-012-3456</td>
-              <td class="px-4 py-4 text-primary">박민수</td>
-              <td class="px-4 py-4 text-right text-primary font-medium">49,000원</td>
+              <td class="px-4 py-4 text-primary">$t:sirsoft-ecommerce.admin.sample.fmt.bank_account|bank=$t:sirsoft-ecommerce.admin.sample.banks.kakaobank|account=789-012-3456</td>
+              <td class="px-4 py-4 text-primary">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</td>
+              <td class="px-4 py-4 text-right text-primary font-medium">₩49,000</td>
               <td class="px-4 py-4">
                 <div class="text-primary">2024-01-27</div>
                 <div class="text-secondary text-xs">11:25:45</div>
               </td>
               <td class="px-4 py-4">
-                <button type="button" class="btn btn-sm text-pink-500 dark:text-pink-400 border border-pink-300 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/20 dark:border-pink-700 dark:hover:bg-pink-900/30">
+                <button type="button" class="btn btn-sm text-pink-700 dark:text-pink-300 border border-pink-300 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/20 dark:border-pink-700 dark:hover:bg-pink-900/30">
                   <on type="click">
                     <open-modal target="modal_manual_match"/>
                   </on>

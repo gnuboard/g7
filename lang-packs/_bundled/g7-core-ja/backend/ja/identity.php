@@ -108,4 +108,10 @@ return [
             'admin' => '管理者',
         ],
     ],
+    // `identity:expire-challenges` コマンド出力
+    'console' => [
+        'expire_challenges' => [
+            'done' => '本人認証 challenge :count 件を期限切れにしました。',
+        ],
+    ],
 ];

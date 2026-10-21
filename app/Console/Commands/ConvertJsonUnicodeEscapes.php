@@ -54,14 +54,14 @@ class ConvertJsonUnicodeEscapes extends Command
         $chunkSize = (int) $this->option('chunk');
 
         if ($dryRun) {
-            $this->components->info('Dry-run 모드: 실제 변환 없이 대상 건수만 표시합니다.');
+            $this->components->info(__('common.console.json_convert_unicode.dry_run_mode'));
         }
 
         $targets = $this->discoverTargets();
         if ($targetTable) {
             if (! isset($targets[$targetTable])) {
-                $this->components->error("알 수 없는 테이블: {$targetTable}");
-                $this->components->info('사용 가능한 테이블: '.implode(', ', array_keys($targets)));
+                $this->components->error(__('common.console.json_convert_unicode.unknown_table', ['table' => $targetTable]));
+                $this->components->info(__('common.console.json_convert_unicode.available_tables', ['tables' => implode(', ', array_keys($targets))]));
 
                 return self::FAILURE;
             }
@@ -72,7 +72,7 @@ class ConvertJsonUnicodeEscapes extends Command
         $totalSkipped = 0;
 
         if ($targets === []) {
-            $this->components->info('JSON 컬럼을 가진 테이블이 없습니다.');
+            $this->components->info(__('common.console.json_convert_unicode.no_json_tables'));
         }
 
         foreach ($targets as $table => $columns) {
@@ -85,9 +85,9 @@ class ConvertJsonUnicodeEscapes extends Command
 
         $this->newLine();
         if ($dryRun) {
-            $this->components->info("변환 대상: {$totalConverted}건, 스킵(이미 UTF-8): {$totalSkipped}건");
+            $this->components->info(__('common.console.json_convert_unicode.dry_run_summary', ['converted' => $totalConverted, 'skipped' => $totalSkipped]));
         } else {
-            $this->components->info("변환 완료: {$totalConverted}건, 스킵(이미 UTF-8): {$totalSkipped}건");
+            $this->components->info(__('common.console.json_convert_unicode.done_summary', ['converted' => $totalConverted, 'skipped' => $totalSkipped]));
         }
 
         return self::SUCCESS;
@@ -158,12 +158,12 @@ class ConvertJsonUnicodeEscapes extends Command
         $total = $query->count();
 
         if ($total === 0) {
-            $this->components->twoColumnDetail("{$table}.{$column}", '<fg=green>변환 대상 없음</>');
+            $this->components->twoColumnDetail("{$table}.{$column}", '<fg=green>'.__('common.console.json_convert_unicode.nothing_to_convert').'</>');
 
             return [0, 0];
         }
 
-        $this->components->twoColumnDetail("{$table}.{$column}", "대상 {$total}건 처리 중...");
+        $this->components->twoColumnDetail("{$table}.{$column}", __('common.console.json_convert_unicode.processing', ['count' => $total]));
 
         // chunkById(키셋 순회) 필수 — 콜백이 필터 조건 컬럼을 UTF-8 로 다시 써서 처리된
         // 행이 `LIKE '%\u%'` 결과에서 이탈한다. OFFSET 기반 chunk() 는 그만큼 앞으로 밀려
@@ -201,10 +201,13 @@ class ConvertJsonUnicodeEscapes extends Command
                 }
             });
 
-        $label = $dryRun ? '변환 대상' : '변환 완료';
+        $label = $dryRun ? __('common.console.json_convert_unicode.label_target') : __('common.console.json_convert_unicode.label_converted');
         $this->components->twoColumnDetail(
             "  └ {$label}",
-            "<fg=yellow>{$converted}건</> (스킵: {$skipped}건)"
+            __('common.console.json_convert_unicode.column_result', [
+                'converted' => '<fg=yellow>'.__('common.console.json_convert_unicode.converted_count', ['count' => $converted]).'</>',
+                'skipped' => $skipped,
+            ])
         );
 
         return [$converted, $skipped];

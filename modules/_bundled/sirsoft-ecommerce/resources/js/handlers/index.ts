@@ -11,6 +11,8 @@ import { calculateCurrencyPricesHandler } from './calculateCurrencyPrices';
 import { initPreferredCurrencyHandler } from './initPreferredCurrency';
 import { initPreferredShippingCountryHandler } from './initPreferredShippingCountry';
 import { setDateRangeHandler } from './setDateRange';
+import { focusElementHandler } from './focusElement';
+import { stopEventPropagationHandler } from './stopEventPropagation';
 import { setDefaultOptionHandler } from './setDefaultOption';
 import {
     toggleOptionHandler,
@@ -351,6 +353,10 @@ export const handlerMap = {
     initPreferredCurrency: initPreferredCurrencyHandler,
     initPreferredShippingCountry: initPreferredShippingCountryHandler,
     setDateRange: setDateRangeHandler,
+    // 펼침 목록 Esc 닫기 때 초점을 트리거로 돌려준다(헤더 통화 선택)
+    focusElement: focusElementHandler,
+    // 열린 목록의 Esc 만 바깥(서랍 닫기)으로 올라가지 않게 조건부로 전파를 멈춘다(헤더 통화 선택)
+    stopEventPropagation: stopEventPropagationHandler,
     setDefaultOption: setDefaultOptionHandler,
     // 옵션 선택 관련 핸들러
     toggleOption: toggleOptionHandler,

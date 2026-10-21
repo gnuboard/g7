@@ -36,14 +36,14 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "rounded-lg border border-gray-200 bg-blue-50 px-6 py-6 mb-6"
+                    "className": "rounded-lg border border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-950 px-6 py-6 mb-6"
                 },
                 "children": [
                     {
                         "type": "basic",
                         "name": "H1",
                         "props": {
-                            "className": "text-2xl font-bold text-gray-900 mb-2"
+                            "className": "text-2xl font-bold text-gray-900 dark:text-white mb-2"
                         },
                         "text": "$t:user.home.welcome_title"
                     },
@@ -51,7 +51,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-base text-gray-700"
+                            "className": "text-base text-gray-700 dark:text-gray-300"
                         },
                         "text": "$t:user.home.welcome_description"
                     }
@@ -80,7 +80,7 @@
                         "name": "Div",
                         "if": "{{(memos?.data?.data ?? []).length === 0}}",
                         "props": {
-                            "className": "rounded border border-gray-200 bg-gray-50 px-4 py-6 text-center text-gray-500"
+                            "className": "rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-6 text-center text-gray-500 dark:text-gray-400"
                         },
                         "children": [
                             {
@@ -107,14 +107,14 @@
                                     "item_var": "memo"
                                 },
                                 "props": {
-                                    "className": "rounded border border-gray-200 bg-white px-4 py-3 hover:border-blue-400"
+                                    "className": "rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 hover:border-blue-400 dark:hover:border-blue-500"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "text-base font-semibold text-gray-900 mb-1"
+                                            "className": "text-base font-semibold text-gray-900 dark:text-white mb-1 break-words"
                                         },
                                         "text": "{{memo.title ?? ''}}"
                                     },
@@ -122,7 +122,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-sm text-gray-600"
+                                            "className": "text-sm text-gray-600 dark:text-gray-300 break-words"
                                         },
                                         "text": "{{memo.content ?? ''}}"
                                     }
@@ -143,18 +143,16 @@
                 "children": [
                     {
                         "type": "basic",
-                        "name": "Button",
+                        "name": "A",
                         "actions": [
                             {
                                 "type": "click",
-                                "handler": "navigate",
-                                "params": {
-                                    "path": "/"
-                                }
+                                "handler": "navigate"
                             }
                         ],
                         "props": {
-                            "className": "px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 cursor-pointer",
+                            "href": "/",
+                            "className": "inline-flex items-center justify-center px-4 py-2 rounded bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-700 cursor-pointer",
                             "data-testid": "home-button"
                         },
                         "text": "$t:user.home.back_to_home"

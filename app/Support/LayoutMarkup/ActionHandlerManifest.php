@@ -122,6 +122,10 @@ final class ActionHandlerManifest
         // engine-v1.68.0 — 진입점 액션에서 `event.stopPropagation()` 을 부른다.
         // 종전에는 엔진 소비처가 없어 죽은 키였고(S16 F4), 그래서 매니페스트에도 없었다.
         'stopPropagation',
+        // engine-v1.80.1 — 진입점 액션의 기본 동작 차단 방식. 생략 = 자동(실제 주소 `<a href>` 를
+        // 수정키·가운데 버튼 등 보통 클릭이 아니게 누르면 막지도 실행하지도 않아 새 탭으로 열린다),
+        // `true` = 언제나 막고 실행, `false` = 막지 않고 실행. 소비처: ActionDispatcher::createHandler.
+        'preventDefault',
     ];
 
     /**
@@ -149,18 +153,18 @@ final class ActionHandlerManifest
     public const SWITCH_SUBJECT_ATTRIBUTE = 'on';
 
     /**
-     * init_actions 루트 액션이 지니는 키 화이트리스트 (TemplateApp::executeInitActions 실측).
+     * init_actions 루트 액션이 지니는 키 화이트리스트 — 엔진이 실행 경로에서 읽는 키 전부.
      *
-     * executeInitActions 는 자식 actionDef 에 이 키만 전달하고 그 밖(cases·actions·confirm·debounce·
-     * event·key·identity_target·render·onLoad·actionRef·errorHandling)은 **조용히 탈락**시킨다.
-     * 그러므로 init 루트에 화이트리스트 밖 키가 있으면 컴파일 에러로 잡아(중첩 onSuccess 이동 또는
-     * named_actions+actionRef 안내) 무동작 함정을 작성 시점에 차단한다.
+     * executeInitActions 는 항목을 통째로 실행한다(engine-v1.80.0 — 종전에는 10개 키만 골라 담아
+     * sequence·switch·action-ref 가 조용히 탈락했다). 진입점 전용 키(confirm·debounce·stopPropagation·key)만
+     * 금지한다 — 사용자가 직접 누르는 순간에만 의미가 있어 화면 첫 진입 동작에서는 효과가 없다.
      *
      * @var array<int, string>
      */
     private const INIT_ROOT_KEYS = [
-        'handler', 'type', 'target', 'params', 'resultTo', 'onSuccess', 'onError',
-        'if', 'conditions', 'auth_mode', 'auth_required', 'comment',
+        'handler', 'type', 'target', 'params', 'resultTo', 'onSuccess', 'onError', 'errorHandling',
+        'if', 'conditions', 'cases', 'actions', 'actionRef', 'auth_mode', 'auth_required',
+        'identity_target', 'render', 'onLoad', 'comment',
     ];
 
     /** @var array<string, string> kebab 태그 → camel 핸들러명 (단순 핸들러만) */

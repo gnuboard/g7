@@ -15,6 +15,15 @@ use Tests\TestCase;
  */
 class ApiDocPipelineTest extends TestCase
 {
+    /**
+     * 목록 응답에서 배열 항목 필드와 페이지네이션을 추론한다.
+     *
+     * @scenario stage=schema_inference
+     *
+     * @effects response_schema_inferred_from_probe
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 목록_응답에서_배열_항목_필드와_페이지네이션을_추론한다(): void
     {
@@ -45,6 +54,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertSame('홍길동', $fields['name']['sample']);
     }
 
+    /**
+     * 단건 응답에서 객체 필드를 추론한다.
+     *
+     * @scenario stage=schema_inference
+     *
+     * @effects response_schema_inferred_from_probe
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 단건_응답에서_객체_필드를_추론한다(): void
     {
@@ -66,6 +84,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertSame('object', $fields['labels']['type']);
     }
 
+    /**
+     * 표 셀에서 파이프 문자를 이스케이프한다.
+     *
+     * @scenario stage=schema_inference
+     *
+     * @effects response_schema_inferred_from_probe
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 표_셀에서_파이프_문자를_이스케이프한다(): void
     {
@@ -79,6 +106,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString('\\|', $fields['note']['sample']);
     }
 
+    /**
+     * 스캐폴더가 엔드포인트 섹션을 표준 포맷으로 생성한다.
+     *
+     * @scenario stage=section_scaffold
+     *
+     * @effects endpoint_section_uses_standard_format
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 스캐폴더가_엔드포인트_섹션을_표준_포맷으로_생성한다(): void
     {
@@ -128,6 +164,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertLessThan($genEnd, $errorPos);
     }
 
+    /**
+     * 에러 섹션이 라우트 메타에서 대표 상태코드를 추론한다.
+     *
+     * @scenario stage=section_scaffold
+     *
+     * @effects representative_errors_follow_route_meta
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 에러_섹션이_라우트_메타에서_대표_상태코드를_추론한다(): void
     {
@@ -155,6 +200,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString('| 404 | Not Found |', $section);
     }
 
+    /**
+     * optional sanctum 공개조회는 401을 유발하지 않는다.
+     *
+     * @scenario stage=section_scaffold
+     *
+     * @effects representative_errors_follow_route_meta
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function optional_sanctum_공개조회는_401을_유발하지_않는다(): void
     {
@@ -182,6 +236,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString('| 404 | Not Found |', $section);
     }
 
+    /**
+     * 완전 공개 조회는 대표 에러 없음으로 표기한다.
+     *
+     * @scenario stage=section_scaffold
+     *
+     * @effects representative_errors_follow_route_meta
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 완전_공개_조회는_대표_에러_없음으로_표기한다(): void
     {
@@ -201,6 +264,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString('대표 에러 없음', $section);
     }
 
+    /**
+     * optional sanctum 라우트는 선택적 인증으로 표기한다.
+     *
+     * @scenario stage=section_scaffold
+     *
+     * @effects endpoint_section_uses_standard_format
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function optional_sanctum_라우트는_선택적_인증으로_표기한다(): void
     {
@@ -227,6 +299,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringNotContainsString('`auth:sanctum`', $section);
     }
 
+    /**
+     * 컬럼 주석이 있으면 응답 필드 설명으로 채운다.
+     *
+     * @scenario stage=section_scaffold
+     *
+     * @effects endpoint_section_uses_standard_format
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 컬럼_주석이_있으면_응답_필드_설명으로_채운다(): void
     {
@@ -255,6 +336,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString('| unknown_field | string | `x` | <!-- TODO: 설명 --> |', $section);
     }
 
+    /**
+     * 사람이 쓴 설명에 인라인 코드 파이프가 있어도 잘리지 않고 승계된다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 사람이_쓴_설명에_인라인_코드_파이프가_있어도_잘리지_않고_승계된다(): void
     {
@@ -292,6 +382,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString($humanRow, $merged, '인라인 코드 안의 파이프를 셀 구분자로 보아 설명이 잘렸다');
     }
 
+    /**
+     * 쓰기 메서드는 응답 필드를 실측 제외로 표기한다.
+     *
+     * @scenario stage=section_scaffold
+     *
+     * @effects endpoint_section_uses_standard_format
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 쓰기_메서드는_응답_필드를_실측_제외로_표기한다(): void
     {
@@ -313,6 +412,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString('실측 제외: write-method', $section);
     }
 
+    /**
+     * 재생성 시 사람이 작성한 설명을 보존한다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 재생성_시_사람이_작성한_설명을_보존한다(): void
     {
@@ -347,6 +455,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringNotContainsString('TODO: 이 엔드포인트의 용도', $regenerated);
     }
 
+    /**
+     * 재생성 시 파라미터 표의 사람 용도 셀을 보존한다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 재생성_시_파라미터_표의_사람_용도_셀을_보존한다(): void
     {
@@ -388,6 +505,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringNotContainsString('<!-- TODO: 용도 -->', $regenerated);
     }
 
+    /**
+     * 실측 제외 응답 섹션을 사람이 채우면 재생성해도 보존한다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 실측_제외_응답_섹션을_사람이_채우면_재생성해도_보존한다(): void
     {
@@ -432,6 +558,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringNotContainsString('응답 예시는 사람이 작성하세요.', $regenerated);
     }
 
+    /**
+     * 문서에 엔드포인트가 여러 개여도 각자의 응답 본문만 보존한다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 문서에_엔드포인트가_여러_개여도_각자의_응답_본문만_보존한다(): void
     {
@@ -483,6 +618,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertSame(1, substr_count($regenerated, '엔드포인트 2 전용 필드'));
     }
 
+    /**
+     * 실측에 성공해도 사람이 쓴 응답 예시는 덮어쓰지 않는다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 실측에_성공해도_사람이_쓴_응답_예시는_덮어쓰지_않는다(): void
     {
@@ -528,6 +672,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringNotContainsString('<!-- @probed -->', $regenerated);
     }
 
+    /**
+     * 실측이 가능해지면 비어있던 응답 섹션은 실측 결과로 갱신된다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects probe_changes_refresh_generated_parts
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 실측이_가능해지면_비어있던_응답_섹션은_실측_결과로_갱신된다(): void
     {
@@ -557,6 +710,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString('| id |', $regenerated);
     }
 
+    /**
+     * 재생성 시 응답 필드 표의 사람 설명 셀을 보존한다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 재생성_시_응답_필드_표의_사람_설명_셀을_보존한다(): void
     {
@@ -595,6 +757,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString('화면에 표시되는 별명 (중복 허용)', $regenerated);
     }
 
+    /**
+     * 재생성 시 사람이 고쳐쓴 셀은 자동 설명으로 되돌아가지 않는다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 재생성_시_사람이_고쳐쓴_셀은_자동_설명으로_되돌아가지_않는다(): void
     {
@@ -637,6 +808,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString('현금영수증 식별번호', $regenerated);
     }
 
+    /**
+     * 재생성 시 이스케이프된 파이프를 담은 셀도 보존한다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 재생성_시_이스케이프된_파이프를_담은_셀도_보존한다(): void
     {
@@ -676,6 +856,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringNotContainsString('<!-- TODO: 용도 -->', $regenerated);
     }
 
+    /**
+     * GET 인증 엔드포인트 요청 예시가 raw HTTP 요청이다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects request_example_is_raw_http_request
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function ge_t_인증_엔드포인트_요청_예시가_raw_htt_p_요청이다(): void
     {
@@ -709,6 +898,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringNotContainsString('Bearer eyJ', $section);
     }
 
+    /**
+     * 바디 메서드 요청 예시가 json 바디를 가진 raw HTTP 요청이다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects request_example_is_raw_http_request
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 바디_메서드_요청_예시가_json_바디를_가진_raw_htt_p_요청이다(): void
     {
@@ -745,6 +943,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString('실측 제외: write-method — 응답 예시는 사람이 작성', $section);
     }
 
+    /**
+     * 실측 body 응답 예시는 envelope 통짜 json 이다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects response_example_is_truncated_envelope
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 실측_body_응답_예시는_envelope_통짜_json_이다(): void
     {
@@ -769,6 +976,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString('"message": null', $section);
     }
 
+    /**
+     * 목록 응답 예시는 2항목으로 절단된다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects response_example_is_truncated_envelope
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 목록_응답_예시는_2항목으로_절단된다(): void
     {
@@ -802,6 +1018,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString('총 5건 중 2건 표시', $section);
     }
 
+    /**
+     * 요청 응답 예시 블록은 generated 블록 내부에 있어 재생성 대상이다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects example_blocks_scoped_and_idempotent
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 요청_응답_예시_블록은_generated_블록_내부에_있어_재생성_대상이다(): void
     {
@@ -831,6 +1056,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertLessThan($genEnd, $respExample);
     }
 
+    /**
+     * 요청 예시가 generated 블록 안이라 재생성해도 멱등이다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects example_blocks_scoped_and_idempotent
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 요청_예시가_generated_블록_안이라_재생성해도_멱등이다(): void
     {
@@ -864,6 +1098,15 @@ class ApiDocPipelineTest extends TestCase
         $this->assertStringContainsString('GET /api/me HTTP/1.1', $regenerated);
     }
 
+    /**
+     * insert example blocks 는 표와 서술을 건드리지 않고 예시만 삽입한다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects example_blocks_scoped_and_idempotent
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function insert_example_blocks_는_표와_서술을_건드리지_않고_예시만_삽입한다(): void
     {
@@ -925,6 +1168,15 @@ MD;
         $this->assertLessThan(strpos($updated, '@generated:end'), strpos($updated, '**요청 예시**'));
     }
 
+    /**
+     * insert example blocks 는 재삽입 시 멱등이다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects example_blocks_scoped_and_idempotent
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function insert_example_blocks_는_재삽입_시_멱등이다(): void
     {
@@ -967,6 +1219,15 @@ MD;
         $this->assertSame(1, substr_count($twice, '**응답 예시**'));
     }
 
+    /**
+     * 서술에 수기 응답예시가 있으면 블록에 응답예시를 넣지 않는다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects example_blocks_scoped_and_idempotent
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 서술에_수기_응답예시가_있으면_블록에_응답예시를_넣지_않는다(): void
     {
@@ -1023,6 +1284,15 @@ MD;
         $this->assertStringNotContainsString('실측 제외: http-500', $updated);
     }
 
+    /**
+     * 과거 삽입된 블록내 응답예시는 서술에 수기예시가 생기면 제거된다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects example_blocks_scoped_and_idempotent
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 과거_삽입된_블록내_응답예시는_서술에_수기예시가_생기면_제거된다(): void
     {
@@ -1076,6 +1346,15 @@ MD;
         $this->assertStringContainsString('**응답 예시** (정적)', $updated);
     }
 
+    /**
+     * 파일 업로드 요청 예시는 multipart form data 다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects request_example_is_raw_http_request
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 파일_업로드_요청_예시는_multipart_form_data_다(): void
     {
@@ -1100,6 +1379,15 @@ MD;
         $this->assertStringContainsString('name="avatar"', $section);
     }
 
+    /**
+     * GET 요청 예시는 query 파라미터를 url 쿼리스트링으로 붙인다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects request_example_is_raw_http_request
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function ge_t_요청_예시는_query_파라미터를_url_쿼리스트링으로_붙인다(): void
     {
@@ -1123,6 +1411,15 @@ MD;
         $this->assertStringContainsString('type=post', $section);
     }
 
+    /**
+     * 응답 예시는 토큰 비밀번호 등 민감값을 마스킹한다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects example_sensitive_values_masked
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 응답_예시는_토큰_비밀번호_등_민감값을_마스킹한다(): void
     {
@@ -1152,6 +1449,15 @@ MD;
         $this->assertStringContainsString('"token_type": "Bearer"', $section);
     }
 
+    /**
+     * 응답 예시 body의 절대 URL 호스트는 placeholder로 마스킹된다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects example_sensitive_values_masked
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 응답_예시_body의_절대_ur_l_호스트는_placeholder로_마스킹된다(): void
     {
@@ -1167,21 +1473,30 @@ MD;
         // 실측 응답의 페이지네이터 메타·콜백 URL 은 요청 base URL 의 호스트를 그대로 직렬화한다.
         $body = ['success' => true, 'data' => [
             'data' => [['id' => 1]],
-            'first_page_url' => 'https://g7_2.dev/api/admin/users?page=1',
-            'path' => 'https://g7_2.dev/api/admin/users',
-            'callback_url' => 'https://g7_2.dev:8443/callback',
+            'first_page_url' => 'https://dev-site.kr/api/admin/users?page=1',
+            'path' => 'https://dev-site.kr/api/admin/users',
+            'callback_url' => 'https://dev-site.kr:8443/callback',
         ], 'message' => null, 'error' => null];
-        $probeMeta = ['status' => 200, 'skipped_reason' => null, 'base_url' => 'https://g7_2.dev', 'resolved_uri' => '/api/admin/users', 'body' => $body];
+        $probeMeta = ['status' => 200, 'skipped_reason' => null, 'base_url' => 'https://dev-site.kr', 'resolved_uri' => '/api/admin/users', 'body' => $body];
 
         $section = $scaffolder->endpointSection($route, $request, $schema, $probeMeta);
 
-        // 실측 기준 호스트(g7_2.dev)는 응답 예시 어디에도 노출되지 않고 placeholder 로 치환된다.
-        $this->assertStringNotContainsString('g7_2.dev', $section);
+        // 실측 기준 호스트(dev-site.kr)는 응답 예시 어디에도 노출되지 않고 placeholder 로 치환된다.
+        $this->assertStringNotContainsString('dev-site.kr', $section);
         $this->assertStringContainsString('https://api.example.com/api/admin/users?page=1', $section);
         // 포트가 붙은 절대 URL 도 호스트+포트 통째로 마스킹된다.
         $this->assertStringContainsString('https://api.example.com/callback', $section);
     }
 
+    /**
+     * 파라미터 표는 path와 form request 의 동일 이름을 중복 출력하지 않는다.
+     *
+     * @scenario stage=section_scaffold
+     *
+     * @effects endpoint_section_uses_standard_format
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 파라미터_표는_path와_form_request_의_동일_이름을_중복_출력하지_않는다(): void
     {
@@ -1207,6 +1522,15 @@ MD;
         $this->assertSame(1, substr_count($section, '| path | path |'));
     }
 
+    /**
+     * readme 목차는 도메인 파일과 엔드포인트 수를 표로 나열한다.
+     *
+     * @scenario stage=readme_index
+     *
+     * @effects readme_index_regenerated_preserving_prose
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function readme_목차는_도메인_파일과_엔드포인트_수를_표로_나열한다(): void
     {
@@ -1229,6 +1553,15 @@ MD;
         $this->assertLessThan(strpos($readme, 'products.md'), strpos($readme, 'orders.md'));
     }
 
+    /**
+     * readme 재생성은 generated 블록만 갱신하고 사람 서술을 보존한다.
+     *
+     * @scenario stage=readme_index
+     *
+     * @effects readme_index_regenerated_preserving_prose
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function readme_재생성은_generated_블록만_갱신하고_사람_서술을_보존한다(): void
     {
@@ -1260,6 +1593,12 @@ MD;
      *
      * 회귀 배경 (#518): 절단 로직이 페이지네이션 형태(`data.data[]`)만 다뤄, 편집기 스펙처럼
      * 목록이 아닌 응답이 통째로 직렬화됐다. templates.md 한 파일이 115KB → 8.65MB 가 됐다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects response_example_is_truncated_envelope
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 목록이_아닌_큰_응답도_예시_크기_상한으로_절단된다(): void
@@ -1303,6 +1642,12 @@ MD;
      * 회귀 배경 (#518): 전체 재생성이 `@generated` 블록의 파라미터/응답 필드 표를 통째로 다시
      * 조립하면서, 정적 추출로 재현할 수 없는 도메인 설명이 TODO 스텁으로 되돌아갔다
      * (54개 파일 1,181행). `--examples-only` 로만 우회 가능했던 것을 재생성 경로에서 막는다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 재생성이_표의_사람_서술을_todo_로_되돌리지_않는다(): void
@@ -1376,6 +1721,12 @@ MD;
      * 회귀 배경 (#518): 대상 데이터가 없는 상태로 재생성하자 응답 필드 표가 "실측 응답에 필드 없음"
      * 한 줄로 대체됐다 (reviews.md 388줄 소실). "이번에 데이터가 없었다" 는 사실은 이미 문서화된
      * 필드 목록을 지울 근거가 못 된다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 빈_실측이_기존_응답_필드_표를_지우지_않는다(): void
@@ -1434,6 +1785,12 @@ MD;
      * DB 표본이라 매번 덮으면 스펙이 그대로인 문서까지 재실행마다 diff 가 난다). 타입이
      * 바뀌면(스펙 변경) 새 실측값으로 갱신되므로 최신성은 그 경로로 유지된다 —
      * `재생성_시_타입이_같은_필드의_실측_예시값을_보존한다` / `신규_필드와_타입_변경은_실측_예시값을_갱신한다` 참조.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 기존_설명은_도구의_일반_문구로_덮어쓰지_않는다(): void
@@ -1472,6 +1829,12 @@ MD;
 
     /**
      * 상한 이하의 작은 응답은 손대지 않는다 (절단이 정상 예시를 훼손하지 않음).
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects response_example_is_truncated_envelope
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 상한_이하_응답은_그대로_직렬화된다(): void
@@ -1496,6 +1859,12 @@ MD;
      * 회귀: 실측값은 호출 시점 DB 상태가 낳은 표본 하나인데 재생성마다 새 값으로 덮어써서,
      * 코드가 하나도 안 바뀐 무관한 문서 수십 개가 docgen 재실행마다 diff 에 걸렸다
      * (예: `id` 예시값 127 → 43, created_at 날짜 변경).
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects probe_changes_refresh_generated_parts
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 재생성_시_타입이_같은_필드의_실측_예시값을_보존한다(): void
@@ -1542,6 +1911,12 @@ MD;
      * 필드가 새로 생기거나 타입이 바뀌면(= 스펙 변경) 실측 예시값이 갱신된다.
      *
      * 예시값 보존이 "문서가 코드 변경을 영영 반영하지 않는다"로 퇴화하지 않도록 하는 반대편 가드.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects probe_changes_refresh_generated_parts
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 신규_필드와_타입_변경은_실측_예시값을_갱신한다(): void
@@ -1592,6 +1967,12 @@ MD;
      * 회귀: nullable 필드는 표본에 값이 있느냐에 따라 관측 타입이 흔들린다(`loggable_type` 이
      * string ↔ null). "타입이 바뀌면 갱신" 규칙이 이 흔들림을 스펙 변경으로 오인해, 실제 값을
      * 관측해 둔 행을 `null` 로 덮어써 문서가 열화됐다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects probe_changes_refresh_generated_parts
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function nullable_필드가_null_로_관측돼도_기존_예시값을_유지한다(): void
@@ -1635,6 +2016,12 @@ MD;
      * 회귀: 응답 예시는 호출 시점 표본이라 `updated_at` · `cache_version` 처럼 매 실측마다 값이
      * 달라지는 필드가 섞여 들어온다. 매번 새 값으로 덮으면 코드가 하나도 안 바뀐 문서까지
      * docgen 재실행마다 diff 가 난다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects probe_changes_refresh_generated_parts
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 응답_예시는_필드집합이_같으면_유지되고_달라지면_갱신된다(): void
@@ -1691,6 +2078,12 @@ MD;
      * 회귀: 실측 성패는 호출 시점 데이터 유무에 좌우된다(예: DELETE /checkout 은 삭제할 체크아웃이
      * 없으면 404). 실측 실패 시 "실측 제외" 마커로 덮어써서, 이전 실행이 관측해 둔 응답 예시가
      * 통째로 사라졌다. 실측 실패는 "새로 관측하지 못했다"는 뜻이지 기존 관측이 무효라는 뜻이 아니다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects probe_changes_refresh_generated_parts
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 실측_실패_시_기존_실측_응답_예시를_유지한다(): void
@@ -1741,6 +2134,12 @@ MD;
      * 회귀: 에러 표는 라우트 메타에서 대표 상태코드만 추론하는 초안인데, 재생성이 그 초안으로
      * 표를 통째로 덮어써 사람이 채운 도메인 특이 에러(403·404·422·429와 구체적 발생 조건)가
      * "대표 에러 없음" 으로 지워졌다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 재생성_시_사람이_보강한_에러_응답_표를_보존한다(): void
@@ -1787,6 +2186,12 @@ MD;
      *
      * 회귀: 실측 성공 시 `/brands/1`, 실패 시 `/brands/{brand}` 로 바뀌어 같은 엔드포인트의
      * 예시가 재실행마다 흔들렸다.
+     *
+     * @scenario stage=request_response_examples
+     *
+     * @effects request_example_is_raw_http_request
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 요청_예시의_path_파라미터는_placeholder_로_고정된다(): void
@@ -1811,6 +2216,15 @@ MD;
         $this->assertStringNotContainsString('/api/admin/brands/1', $block);
     }
 
+    /**
+     * 같은 라우트명의 GET·POST 는 서로 다른 생성블록 키를 갖는다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects example_blocks_scoped_and_idempotent
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 같은_라우트명의_ge_t_pos_t_는_서로_다른_생성블록_키를_갖는다(): void
     {
@@ -1854,6 +2268,15 @@ MD;
         $this->assertSame($base['name'], $scaffolder->generatedKey(['method' => 'GET'] + $base));
     }
 
+    /**
+     * 같은 라우트명 두 메서드의 사람 서술이 각각 보존된다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 같은_라우트명_두_메서드의_사람_서술이_각각_보존된다(): void
     {
@@ -1902,6 +2325,15 @@ MD;
         $this->assertStringNotContainsString('<!-- TODO: 용도 -->', $merged);
     }
 
+    /**
+     * 사람이 응답 필드 라벨을 고쳐도 채운 본문을 보존한다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 사람이_응답_필드_라벨을_고쳐도_채운_본문을_보존한다(): void
     {
@@ -1944,6 +2376,15 @@ MD;
         $this->assertStringNotContainsString('실측 응답에 필드 없음', $merged, '사람 본문이 마커로 퇴행하면 안 된다');
     }
 
+    /**
+     * 에러 응답 자리의 사람 서술은 대표 에러 없음 초안에 덮이지 않는다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 에러_응답_자리의_사람_서술은_대표_에러_없음_초안에_덮이지_않는다(): void
     {
@@ -1976,6 +2417,15 @@ MD;
         $this->assertStringNotContainsString('대표 에러 없음', $merged, '사람 서술이 자동 초안으로 퇴행하면 안 된다');
     }
 
+    /**
+     * CRLF 문서에서도 사람이 채운 표 셀을 보존한다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function crl_f_문서에서도_사람이_채운_표_셀을_보존한다(): void
     {
@@ -2017,6 +2467,15 @@ MD;
         $this->assertStringNotContainsString('<!-- TODO: 설명 -->', $merged, '보존된 셀이 TODO 로 퇴행하면 안 된다');
     }
 
+    /**
+     * 에러표의 권한 셀은 파이프를 이스케이프한다.
+     *
+     * @scenario stage=section_scaffold
+     *
+     * @effects representative_errors_follow_route_meta
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 에러표의_권한_셀은_파이프를_이스케이프한다(): void
     {
@@ -2057,6 +2516,12 @@ MD;
      * 배경: 에러 표 병합은 같은 상태코드에서 기존 행을 이기게 둔다(409·429 같은 도메인 특이
      * 조건을 사람이 보강해 두기 때문). 그 규칙이 403 에도 그대로 걸리면 라우트 권한을 바꿔도
      * 옛 식별자가 영구히 남아, 문서가 조용히 틀린 권한을 안내한다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects representative_errors_follow_route_meta
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 라우트_권한이_바뀌면_403_행의_권한_식별자가_갱신된다(): void
@@ -2101,6 +2566,12 @@ MD;
 
     /**
      * 식별자 갱신이 사람이 보강한 문구까지 덮어써서는 안 된다 — 갱신 대상은 백틱 식별자뿐이다.
+     *
+     * @scenario stage=regeneration_merge
+     *
+     * @effects human_prose_preserved_on_regeneration
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function forbidden_행_식별자_갱신은_사람이_보강한_조건_문구를_보존한다(): void

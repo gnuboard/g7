@@ -1,0 +1,18 @@
+feature: sirsoft-admin_basic 코어 업데이트 레이아웃
+
+description: |
+  코어 업데이트 중 보이는 점검 화면(관리자·사용자)과 환경설정 정보 탭의 업데이트 확인·결과·변경사항·안내 모달의 구조와
+  렌더링. 점검 화면은 에러 레이아웃 플래그·i18n 키·돌아가기 링크를 갖고, 결과 모달은 업데이트 유무로 갈래가 나뉘며,
+  변경사항 모달은 버전 → 분류 → 항목 3단으로 그린다.
+
+axes:
+  surface: [admin_maintenance, user_maintenance, result_modal, check_button, changelog_modal, guide_modal]
+
+effects:
+  - maintenance_page_structure
+  - update_result_reflects_availability
+  - changelog_renders_versions
+  - guide_shows_command
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/core-update.test.tsx

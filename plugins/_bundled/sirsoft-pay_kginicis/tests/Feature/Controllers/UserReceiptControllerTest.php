@@ -135,7 +135,7 @@ class UserReceiptControllerTest extends PluginTestCase
      *
      * 주문 상세 입금 안내 조각(user_order_show)이 관리자에게만 보여 주는 값이다. 예전에는 화면 스크립트가
      * 은행 이름표를 들고 있었으나 조각으로 옮기며 서버가 계산한다. 화면만 is_admin 으로 숨기고 응답에는 누구에게나
-     * 실렸으므로(7.1.0 abilities 게이트 basic-shop-mypage #7) 주문 조회 권한이 있는 관리자에게만 싣는다.
+     * 실렸으므로(7.1.0 abilities 게이트) 주문 조회 권한이 있는 관리자에게만 싣는다.
      *
      * @scenario viewer=member_session, payment=vbank_waiting
      *

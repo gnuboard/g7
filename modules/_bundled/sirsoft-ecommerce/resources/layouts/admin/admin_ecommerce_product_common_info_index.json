@@ -4,6 +4,7 @@
     "layout_name": "admin_ecommerce_product_common_info_index",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_global.panelMode === 'edit' || _global.panelMode === 'create' || _global.panelMode === 'copy'}}",
         "title": "$t:sirsoft-ecommerce.admin.common_info.title",
         "description": "$t:sirsoft-ecommerce.admin.common_info.description"
     },
@@ -30,10 +31,29 @@
                     }
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "첫 20건만 받고 나머지는 목록 패널의 무한 스크롤이 이어 붙인다. 저장·삭제·기본값 변경 뒤에는 이 소스를 다시 태워 목록과 상세를 서버 값으로 맞춘다"
@@ -178,6 +198,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "btn-icon",
                                             "aria-label": "$t:sirsoft-ecommerce.common.refresh"
                                         },
@@ -245,6 +266,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "disabled": "{{commonInfos?.data?.abilities?.can_create !== true}}",
                                             "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         },

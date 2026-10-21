@@ -84,6 +84,16 @@
                         "type": "string",
                         "required": false,
                         "description": "사용자 정의 클래스"
+                    },
+                    "disabled": {
+                        "type": "boolean",
+                        "required": false,
+                        "description": "참이면 링크를 끈다 — href 를 빼고 aria-disabled·tabIndex -1, 클릭을 막는다"
+                    },
+                    "mergeQuery": {
+                        "type": "boolean",
+                        "required": false,
+                        "description": "참이면 현재 주소의 쿼리를 href 에 합친다(목록 문맥 유지, 새 탭도 같은 주소)"
                     }
                 }
             },

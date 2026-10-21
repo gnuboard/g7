@@ -24,6 +24,16 @@ final class BackupLayoutReader
     use ValidatesLayoutFiles;
 
     /**
+     * 백업 조각 읽기 결과 (백업 경로|식별자 → 조각 식별자 → 원본) — 업데이트 1회에 한 번만 컴파일·경고한다.
+     *
+     * 등록 경로는 템플릿마다·경로마다 백업 기준을 다시 구한다. 종전에는 그때마다 다시 컴파일했고, 읽지 못한 조각은
+     * 공용 읽기 함수가 ERROR 로 남겨 「백업 파일 수 × 템플릿 수 × 경로 수」 줄이 쌓였다(#725).
+     *
+     * @var array<string, array<string, array<string, mixed>>>
+     */
+    private static array $fragmentResults = [];
+
+    /**
      * 백업의 레이아웃을 컴파일합니다.
      *
      * @param  string  $backupPath  백업 디렉토리
@@ -80,27 +90,48 @@ final class BackupLayoutReader
     }
 
     /**
-     * 백업의 확장 조각을 특정 템플릿 표로 컴파일합니다.
+     * 백업의 확장 조각을 컴파일합니다 — 컴파일은 템플릿과 무관하므로 업데이트 1회에 한 번만 한다.
+     *
+     * 읽지 못한 조각은 그것만 빼고(비교 기준 없이 진행) 업데이트 1회에 WARNING 1줄로 모아 알린다 — 못 읽은 파일마다
+     * 원인(행·열)을 싣는다. 백업 레이아웃 쪽({@see layouts()})과 같은 방식이다(#725).
      *
      * @param  string  $backupPath  백업 디렉토리
      * @param  string  $identifier  확장 식별자
-     * @param  string  $templateIdentifier  조각이 붙을 템플릿 식별자
+     * @param  string  $templateIdentifier  쓰지 않는다 — 호출 계약 호환으로만 받는다
      * @return array<string, array<string, mixed>> 조각 식별자 => 원본. 실패한 조각은 빠진다
      */
-    public function fragments(string $backupPath, string $identifier, string $templateIdentifier): array
+    public function fragments(string $backupPath, string $identifier, string $templateIdentifier = ''): array
     {
+        $cacheKey = $backupPath.'|'.$identifier;
+
+        if (isset(self::$fragmentResults[$cacheKey])) {
+            return self::$fragmentResults[$cacheKey];
+        }
+
         $extensionsPath = $backupPath.DIRECTORY_SEPARATOR.'resources'.DIRECTORY_SEPARATOR.'extensions';
 
         if (! File::isDirectory($extensionsPath)) {
-            return [];
+            return self::$fragmentResults[$cacheKey] = [];
         }
 
         $this->compileContextOverride = ['template' => null, 'extension' => $identifier];
+        $this->fragmentReadFailures = [];
 
         try {
-            $definitions = $this->loadFragmentDefinitions($extensionsPath, [], ['source' => $identifier, 'backup' => true], $templateIdentifier);
+            $definitions = $this->loadFragmentDefinitions($extensionsPath, [], ['source' => $identifier, 'backup' => true]);
+            $failures = $this->fragmentReadFailures;
         } finally {
             $this->compileContextOverride = null;
+            $this->fragmentReadFailures = null;
+        }
+
+        if ($failures !== []) {
+            ksort($failures);
+            Log::warning('업데이트 백업 조각 일부를 읽지 못했습니다 — 그 조각만 비교 기준 없이 진행합니다', [
+                'identifier' => $identifier,
+                'backup' => $backupPath,
+                'errors' => $failures,
+            ]);
         }
 
         $originals = [];
@@ -108,6 +139,6 @@ final class BackupLayoutReader
             $originals[$definition['key']] = $definition['data'];
         }
 
-        return $originals;
+        return self::$fragmentResults[$cacheKey] = $originals;
     }
 }

@@ -1,18 +1,18 @@
-// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 W1·W2·W3 통합 뒤 총괄 세션이 권한 회수 계정으로 함께 한다(이력 20261010_0208_710_abilities수정_W3)
+// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 권한을 회수한 계정으로 통합 실측에서 함께 한다
 /**
  * @file admin-board-ability-gate.test.ts
- * @description 게시판 관리자 화면 abilities 게이트 (7.1.0 abilities 게이트 최종 점검 board-admin-a)
+ * @description 게시판 관리자 화면 abilities 게이트 (7.1.0 abilities 게이트 최종 점검)
  *
  * 화면이 쓰기 UI 를 잠그는 근거를 서버 라우트와 같은 권한 축으로 맞춘다.
- * - 생성·복제 폼: form-data 의 abilities.can_create 로 읽기 전용(#1)
- * - 환경설정 SEO 탭: 입력 9칸 잠금 + 「SEO 캐시 초기화」는 코어 환경설정 수정 권한(#2·#3, G06)
- * - 게시판 유형 관리: 게시판 등록 권한(#4)
- * - 알림 채널 토글: 저장 축(게시판 환경설정 수정)과 같게(#5)
- * - 날짜 형식 카드·일괄 적용 대상 카드·체크박스: 읽기 전용/일괄 적용 권한이면 바뀌지 않음(#6·#7, 제품 결정 일괄 적용)
- * - 반응 유형 드래그 손잡이: 읽기 전용이면 숨김(#8, G10)
- * - 이커머스 문의 게시판 「관리자 메뉴에 추가」: 그 게시판 행의 can_update(#9, G07)
- * - 게시판 폼 반응 유형 [관리]: 환경설정 수정 권한(#10)
- * - 대시보드 확장: 데이터 API 와 같은 권한으로 그리기(#12)
+ * - 생성·복제 폼: form-data 의 abilities.can_create 로 읽기 전용
+ * - 환경설정 SEO 탭: 입력 9칸 잠금 + 「SEO 캐시 초기화」는 코어 환경설정 수정 권한(코어·이커머스 SEO 탭과 같은 결함군)
+ * - 게시판 유형 관리: 게시판 등록 권한
+ * - 알림 채널 토글: 저장 축(게시판 환경설정 수정)과 같게
+ * - 날짜 형식 카드·일괄 적용 대상 카드·체크박스: 읽기 전용/일괄 적용 권한이면 바뀌지 않음(일괄 적용은 제품 결정)
+ * - 반응 유형 드래그 손잡이: 읽기 전용이면 숨김(이커머스 드래그 손잡이와 같은 결함군)
+ * - 이커머스 문의 게시판 「관리자 메뉴에 추가」: 그 게시판 행의 can_update
+ * - 게시판 폼 반응 유형 [관리]: 환경설정 수정 권한
+ * - 대시보드 확장: 데이터 API 와 같은 권한으로 그리기
  */
 
 import { describe, it, expect } from 'vitest';
@@ -110,7 +110,7 @@ describe('게시판 환경설정 — 응답 abilities 로 계산하는 잠금 �
   });
 });
 
-describe('게시판 환경설정 SEO 탭 (G06)', () => {
+describe('게시판 환경설정 SEO 탭', () => {
   /**
    * 읽기 전용이면 메타 입력 6칸·체크 3칸이 모두 잠긴다.
    *
@@ -156,7 +156,8 @@ describe('게시판 환경설정 일괄 적용 (제품 결정: 환경설정 수�
    */
   it('일괄 적용 체크박스 전부가 canBulkApply=false 면 disabled', () => {
     const boxes = subTabs.flatMap((tab) => collect(tab, (n) => n.props?.type === 'checkbox' && String(n.props?.checked ?? '').includes('bulkApplyFields')));
-    expect(boxes.length).toBe(35);
+    // 36 = 기존 35 + 답변 탭의 「비밀 답변 열람 범위」(secret_reply_visibility, #789)
+    expect(boxes.length).toBe(36);
     for (const box of boxes) {
       expect(evaluate(box.props.disabled, { _computed: { canBulkApply: false } })).toBe(true);
       expect(evaluate(box.props.disabled, { _computed: { canBulkApply: true } })).toBe(false);
@@ -189,7 +190,7 @@ describe('게시판 환경설정 일괄 적용 (제품 결정: 환경설정 수�
   });
 });
 
-describe('게시판 유형 관리 (#4)', () => {
+describe('게시판 유형 관리', () => {
   /**
    * 등록 권한이 없으면 [게시판 유형 관리]·모달 안의 쓰기 컨트롤이 잠긴다.
    *
@@ -211,7 +212,7 @@ describe('게시판 유형 관리 (#4)', () => {
   });
 });
 
-describe('일반 탭 날짜 형식 카드 (#6)', () => {
+describe('일반 탭 날짜 형식 카드', () => {
   /**
    * 읽기 전용이면 카드를 눌러도 값이 바뀌지 않는다.
    *
@@ -228,7 +229,7 @@ describe('일반 탭 날짜 형식 카드 (#6)', () => {
   });
 });
 
-describe('알림 정의 탭 채널 토글 (#5)', () => {
+describe('알림 정의 탭 채널 토글', () => {
   /**
    * 채널 토글은 저장 경로(게시판 환경설정 PUT)와 같은 축(isReadOnly)으로 잠근다.
    *
@@ -242,7 +243,7 @@ describe('알림 정의 탭 채널 토글 (#5)', () => {
   });
 });
 
-describe('반응 유형 드래그 손잡이 (#8, G10)', () => {
+describe('반응 유형 드래그 손잡이', () => {
   /**
    * 읽기 전용이면 손잡이를 그리지 않고 정렬 결과도 반영하지 않는다.
    *
@@ -260,7 +261,7 @@ describe('반응 유형 드래그 손잡이 (#8, G10)', () => {
   });
 });
 
-describe('게시판 생성·복제 폼 (#1, #10)', () => {
+describe('게시판 생성·복제 폼', () => {
   /**
    * 신규·복제 모드는 can_create 로 읽기 전용이 되고, 편집 모드는 종전대로 can_update 를 본다.
    *
@@ -293,7 +294,7 @@ describe('게시판 생성·복제 폼 (#1, #10)', () => {
   });
 });
 
-describe('확장점 (#9 G07, #12)', () => {
+describe('확장점 (관리자 메뉴 추가·대시보드)', () => {
   /**
    * 문의 게시판 「관리자 메뉴에 추가」는 고른 게시판 행의 can_update 가 true 일 때만 열린다.
    *

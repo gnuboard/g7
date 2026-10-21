@@ -169,7 +169,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
   // autoBinding: 레이아웃의 `:autoBinding="false"` — 엔진이 자동 바인딩 여부를 읽고 그대로 넘기는 속성이라 DOM 에 흘리면 React 가 경고한다
   const { loadingactions, formdata, autoBinding, ...validProps } = props as any;
 
-  // 곁 라벨(`<label class="form-label">`)을 이름으로 잇는다 — 없으면 placeholder 값이 이름으로 읽혔다(7.1.0 J D-J7)
+  // 곁 라벨(`<label class="form-label">`)을 이름으로 잇는다 — 없으면 placeholder 값이 이름으로 읽혔다(7.1.0 실측)
   useAdjacentLabel(internalRef as React.RefObject<HTMLElement | null>, !isCheckableType);
 
   // radio/checkbox: checked 속성 사용

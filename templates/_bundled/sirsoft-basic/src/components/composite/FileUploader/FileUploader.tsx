@@ -25,7 +25,7 @@ import { useFocusRecovery } from './useFocusRecovery';
 import type { FileUploaderProps, FileUploaderRef, Attachment, PendingFile } from './types';
 import { t } from './utils';
 
-/** 안정적인 빈 배열 참조 — 매 렌더마다 새 [] 생성 방지 (useEffect 무한 루프 방지). 얼려 두어 공유 상수가 바뀌지 않게 한다(7.1.0 O-PD-2) */
+/** 안정적인 빈 배열 참조 — 매 렌더마다 새 [] 생성 방지 (useEffect 무한 루프 방지). 얼려 두어 공유 상수가 바뀌지 않게 한다(7.1.0) */
 const EMPTY_FILES = Object.freeze([]) as unknown as Attachment[];
 const EMPTY_ROLE_IDS = Object.freeze([]) as unknown as number[];
 

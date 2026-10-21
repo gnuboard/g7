@@ -116,7 +116,7 @@ enum LayoutMarkupLintCode: string
      *
      * 엔진은 이벤트에 바로 묶인 진입점 액션의 debounce 만 적용한다(ActionDispatcher::bindActionsToProps).
      * 안쪽 액션은 바깥 흐름이 기다려 결과·순서를 이어받으므로 늦출 수 없어 매 이벤트 즉시 실행된다 —
-     * 코드 편집기 내용 검색이 글자마다 요청을 보낸 원인(2026-10-06 실측 D-I1-8). 감싸는 진입점
+     * 코드 편집기 내용 검색이 글자마다 요청을 보낸 원인(2026-10-06 실측). 감싸는 진입점
      * (`<conditions :debounce>`·`<sequence :debounce>`)에 달아야 한다.
      */
     case NestedActionDebounceIgnored = 'nested_action_debounce_ignored';
@@ -129,6 +129,16 @@ enum LayoutMarkupLintCode: string
      * 입력 실행된다. 동작은 그대로 두고 알린다(7.1.0 P13 결정 — 편집기 경고).
      */
     case MixedDebounceFlushed = 'mixed_debounce_flushed';
+
+    /**
+     * 진입점 전용 키(`key`·`stopPropagation`)를 진입점이 아닌 액션에 적음 (#753).
+     *
+     * 엔진은 사용자가 직접 누르는 진입점 액션에서만 이 키를 읽는다(`key` 는 bindActionsToProps 의 키 필터,
+     * `stopPropagation` 은 createHandler 의 DOM 이벤트 전파 차단). 이벤트 받기(`<on listen>`)·실패 처리
+     * (`<fail>`·`<on-code>`)·첫 진입 동작(`<init>`)·다른 액션 안쪽에서는 효과가 없다. 엔진이 이 자리들의 액션을
+     * 통째로 실행하게 된(engine-v1.80.0) 뒤에도 이 키만은 의미가 없어 경고로 알린다.
+     */
+    case EntryOnlyKeyIgnored = 'entry_only_key_ignored';
 
     /**
      * 다국어 경고 본문을 반환합니다.

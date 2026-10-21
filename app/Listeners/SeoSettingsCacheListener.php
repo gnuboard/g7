@@ -5,6 +5,7 @@ namespace App\Listeners;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Seo\Contracts\SeoCacheManagerInterface;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -13,6 +14,10 @@ use Illuminate\Support\Facades\Log;
  * 코어 환경설정의 SEO 탭 저장 시 전체 SEO 캐시를 삭제합니다.
  * SEO 설정(title suffix, cache TTL 등)은 모든 페이지에 영향을 미치므로
  * 전체 캐시를 무효화합니다.
+ *
+ * 비우기는 저장한 요청 안에서 한다(sync) — 큐로 가면 워커가 돌 때까지(워커가 없으면 TTL 까지) 봇이 옛 화면을
+ * 받는다. 본문은 DB::afterCommit 으로 감싸 트랜잭션 안에서 발화하면 커밋 뒤에 비운다 — 커밋 전에 비우면
+ * 다른 요청이 옛 데이터로 다시 채울 틈이 생긴다(#724). 트랜잭션 밖이면 즉시 비운다.
  */
 class SeoSettingsCacheListener implements HookListenerInterface
 {
@@ -27,6 +32,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
             'core.settings.after_save' => [
                 'method' => 'onSettingsSave',
                 'priority' => 20,
+                'sync' => true,
             ],
             // 단건 저장(`PUT /api/admin/settings/{key}`)은 after_save 가 아니라 after_set 을
             // 발화한다. 이 구독이 없으면 SEO 설정을 단건으로 바꿔도 캐시가 남아 있다.
@@ -35,6 +41,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
             'core.settings.after_set' => [
                 'method' => 'onSettingSet',
                 'priority' => 20,
+                'sync' => true,
             ],
         ];
     }
@@ -43,6 +50,7 @@ class SeoSettingsCacheListener implements HookListenerInterface
      * 기본 훅 핸들러 (HookListenerInterface 필수 메서드)
      *
      * @param  mixed  ...$args  훅 인자
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -55,17 +63,20 @@ class SeoSettingsCacheListener implements HookListenerInterface
      * SEO 탭 설정이 저장된 경우에만 전체 캐시를 삭제합니다.
      *
      * @param  mixed  ...$args  훅 인자 ($tab, $mergedSettings, $result)
+     * @return void 반환값 없음
      */
     public function onSettingsSave(...$args): void
     {
-        $tab = $args[0] ?? null;
+        DB::afterCommit(function () use ($args) {
+            $tab = $args[0] ?? null;
 
-        // SEO 탭이 아니면 무시
-        if ($tab !== 'seo') {
-            return;
-        }
+            // SEO 탭이 아니면 무시
+            if ($tab !== 'seo') {
+                return;
+            }
 
-        $this->clearSeoCaches(['tab' => $tab]);
+            $this->clearSeoCaches(['tab' => $tab]);
+        });
     }
 
     /**
@@ -74,28 +85,32 @@ class SeoSettingsCacheListener implements HookListenerInterface
      * seo 카테고리 키가 실제로 저장된 경우에만 전체 캐시를 삭제합니다.
      *
      * @param  mixed  ...$args  훅 인자 ($key, $value, $result)
+     * @return void 반환값 없음
      */
     public function onSettingSet(...$args): void
     {
-        $key = $args[0] ?? null;
-        $result = $args[2] ?? false;
+        DB::afterCommit(function () use ($args) {
+            $key = $args[0] ?? null;
+            $result = $args[2] ?? false;
 
-        if (! is_string($key) || ! str_starts_with($key, 'seo.')) {
-            return;
-        }
+            if (! is_string($key) || ! str_starts_with($key, 'seo.')) {
+                return;
+            }
 
-        // 저장 실패는 상태를 바꾸지 않았으므로 캐시도 그대로 둔다
-        if ($result !== true) {
-            return;
-        }
+            // 저장 실패는 상태를 바꾸지 않았으므로 캐시도 그대로 둔다
+            if ($result !== true) {
+                return;
+            }
 
-        $this->clearSeoCaches(['key' => $key]);
+            $this->clearSeoCaches(['key' => $key]);
+        });
     }
 
     /**
      * SEO 전체 캐시와 sitemap 캐시를 삭제합니다.
      *
      * @param  array  $logContext  로그에 남길 컨텍스트
+     * @return void 반환값 없음
      */
     private function clearSeoCaches(array $logContext): void
     {

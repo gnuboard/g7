@@ -57,19 +57,17 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
-                                    "event": "onClick",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "{{route.path && route.path.indexOf('/admin/modules/') === 0 ? '/admin/modules' : (route.path && route.path.indexOf('/admin/plugins/') === 0 ? '/admin/plugins' : (route.path && route.path.indexOf('/admin/templates/') === 0 ? '/admin/templates' : '/admin/settings?tab=language_packs'))}}"
-                                    }
+                                    "comment": "확장 목록으로 — 링크(#757)라 새 탭으로도 연다. 주소는 href 한 곳",
+                                    "type": "click",
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
-                                "className": "inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 font-medium"
+                                "href": "{{route.path && route.path.indexOf('/admin/modules/') === 0 ? '/admin/modules' : (route.path && route.path.indexOf('/admin/plugins/') === 0 ? '/admin/plugins' : (route.path && route.path.indexOf('/admin/templates/') === 0 ? '/admin/templates' : '/admin/settings?tab=language_packs'))}}",
+                                "className": "button inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 font-medium"
                             },
                             "children": [
                                 {

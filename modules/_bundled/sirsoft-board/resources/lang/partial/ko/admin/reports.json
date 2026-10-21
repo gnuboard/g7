@@ -17,7 +17,7 @@
     "reporter_name": "신고자(최초)",
     "reported_at": "신고일시",
     "last_reported_at": "최근: {{date}}",
-    "last_reported_at_label": "최근",
+    "first_reported_at_label": "최초",
     "target_status": "대상 상태",
     "status": "처리상태",
     "current_status": "현재상태"

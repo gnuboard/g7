@@ -327,4 +327,45 @@ class LanguagePackManifestValidatorTest extends TestCase
         $this->validator->validate($manifest);
         $this->addToAssertionCount(1);
     }
+
+    /**
+     * 세 글자·지역·문자 표기 locale 은 통과합니다 (#148 — 화면 규칙 `LocaleTag` 와 같은 기준).
+     *
+     * @scenario extension_type=language_pack
+     *
+     * @effects manifest_schema_is_validated, manifest_validator_accepts_bcp47_pack_locales
+     *
+     * @return void 반환값 없음
+     */
+    public function test_case_15_three_letter_and_region_tagged_locales_accepted(): void
+    {
+        foreach (['fil', 'fil-PH', 'zh-Hant', 'es-419'] as $locale) {
+            $manifest = $this->coreManifest();
+            $manifest['locale'] = $locale;
+            $manifest['identifier'] = 'g7-core-'.$locale;
+
+            $this->validator->validate($manifest);
+        }
+
+        $this->addToAssertionCount(4);
+    }
+
+    /**
+     * `language_packs.locale` varchar(20) 를 넘는 locale 은 설치 전에 거부합니다 (#148 — 종전 22001).
+     *
+     * @scenario extension_type=language_pack
+     *
+     * @effects manifest_schema_is_validated, manifest_validator_rejects_locale_longer_than_column
+     *
+     * @return void 반환값 없음
+     */
+    public function test_case_16_locale_longer_than_column_rejected(): void
+    {
+        $manifest = $this->coreManifest();
+        $manifest['locale'] = 'fil-Latn-419-abcdefgh';
+        $manifest['identifier'] = 'g7-core-fil-Latn-419-abcdefgh';
+
+        $this->expectException(ValidationException::class);
+        $this->validator->validate($manifest);
+    }
 }

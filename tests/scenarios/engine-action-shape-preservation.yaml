@@ -1,0 +1,41 @@
+feature: 엔진 — 액션 정의를 옮겨 담을 때 키를 버리지 않는다 (engine-v1.80.0, #753)
+
+description: |
+  레이아웃이 적은 액션 정의를 엔진이 다른 자리로 옮겨 실행하면서 키를 골라 담아(handler·target·params·actions 등)
+  분기·연속 실행이 경고 없이 버려졌다. `<on listen>` 안의 sequence·conditions·switch·if·action-ref·target,
+  단일 `<fail>`·`<on-code>`·데이터소스 오류 처리 안의 conditions·switch·if·action-ref·onSuccess, `<init>` 의
+  sequence·switch·action-ref(+ handler 없는 항목의 화면 진입 실패, 중첩 확장 핸들러 미대기), navigate 대체 동작
+  객체의 sequence, switch case 배열, 콜백 prop 의 분기 모양 선평가, 웹소켓 onReceive 단일 객체가 그 결함군이다.
+  엔진은 이제 원본을 통째로 넘긴다(`{ ...원본, type: 'click' }`). 데이터소스 오류 처리 문맥에는 route·query 를
+  싣고, `<on listen>` 의 처리 결과(성공·실패·데이터)를 보낸 쪽 `_local._eventResult` 에 돌려준다.
+
+axes:
+  slot: [listen, fail, on_code, datasource_error, init, navigate_fallback, switch_case, callback_prop, websocket]
+  shape: [single, implicit_sequence, sequence, conditions, switch, if, action_ref, target]
+
+exclusions:
+  - { slot: fail, shape: [implicit_sequence, sequence], reason: "fail 자식 여럿은 굽기가 배열로 만들고 resolver 가 sequence 로 감싼다(종전에도 동작) — 결함은 단일 객체 경로였다" }
+  - { slot: on_code, shape: [single, implicit_sequence, sequence, switch, if, action_ref, target], reason: "on-code 는 errorHandling[코드] 경로로 fail 과 같은 실행기(executeAction catch)를 탄다 — conditions 대표 1종 + fail 행이 나머지 모양을 덮는다" }
+  - { slot: datasource_error, shape: [implicit_sequence, sequence, switch, if, action_ref, target], reason: "같은 resolver 실행기 — 문맥(route·query) 전달과 conditions 대표 1종으로 덮고, 키 보존은 fail 행이 검증" }
+  - { slot: init, shape: [single, implicit_sequence, switch, if, target], reason: "init 은 항목을 통째로 createHandler 에 넘기는지를 한 시험(sequence·switch·actionRef·errorHandling 키 동일성)이 덮는다. 단일·if 는 종전에도 동작" }
+  - { slot: navigate_fallback, shape: [implicit_sequence, conditions, switch, if, action_ref, target], reason: "대체 동작 객체를 통째로 넘기는지 sequence 와 단일(params.path 채움) 두 모양으로 덮는다" }
+  - { slot: switch_case, shape: [single, sequence, conditions, switch, if, action_ref, target], reason: "case 값의 결함은 배열 하나뿐 — 단일 case 는 종전에도 동작" }
+  - { slot: callback_prop, shape: [implicit_sequence, sequence, target], reason: "판별식의 결함은 conditions·switch·actionRef·if 모양 — actions·target 은 종전 판별식이 이미 잡는다" }
+  - { slot: websocket, shape: [implicit_sequence, sequence, conditions, switch, if, action_ref, target], reason: "onReceive 의 결함은 단일 객체 무시 하나 — 목록 정규화 후 실행은 dispatchAction 이 맡는다" }
+
+effects:
+  - listen_runs_full_action
+  - fail_runs_full_action
+  - datasource_error_reads_route_query
+  - init_runs_full_action
+  - event_result_reports_listener_failure
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.actionShapePreservation.test.ts
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.onComponentEventActionShape.test.tsx
+  - resources/js/core/template-engine/__tests__/DataBindingEngine.isActionDefinition.test.ts
+  - resources/js/core/error/__tests__/ErrorHandlingResolver.extraData.test.ts
+  - resources/js/core/__tests__/TemplateApp.test.ts
+  - resources/js/core/__tests__/TemplateApp.initRealExecution.test.ts
+  # 배포 번들 E2E — 프로브 레이아웃(미리보기 API)으로 슬롯별 실행 결과를 잰다
+  - tests/Playwright/specs/engine-action-shape-preservation.spec.ts

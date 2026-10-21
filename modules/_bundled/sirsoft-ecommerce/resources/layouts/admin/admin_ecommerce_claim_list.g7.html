@@ -9,7 +9,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -190,10 +198,10 @@
       <!-- 유형 서브탭. 건수 뱃지는 응답의 `counts` 를 그대로 그린다 — 유형 공통 필터(기간·검색·회원구분)만 반영된 값이라 "그 탭으로 넘어가면 몇 건이 보이는가" 를 답한다. -->
       <tab-navigation data-type="composite" data-ref="claim_type_subtabs" activeTabId="{{query.type ?? 'exchange'}}" variant="default" class="mb-4">
         <prop name="tabs">
-          <item id="exchange" label="$t:sirsoft-ecommerce.admin.claim.subtab.exchange" badge="{{claims?.data?.counts?.exchange ?? 0}}"/>
-          <item id="return" label="$t:sirsoft-ecommerce.admin.claim.subtab.return" badge="{{claims?.data?.counts?.return ?? 0}}"/>
-          <item id="refund" label="$t:sirsoft-ecommerce.admin.claim.subtab.refund" badge="{{claims?.data?.counts?.refund ?? 0}}"/>
-          <item id="cancel" label="$t:sirsoft-ecommerce.admin.claim.subtab.cancel" badge="{{claims?.data?.counts?.cancel ?? 0}}"/>
+          <item id="exchange" href="/admin/ecommerce/claims?type=exchange" label="$t:sirsoft-ecommerce.admin.claim.subtab.exchange" badge="{{claims?.data?.counts?.exchange ?? 0}}"/>
+          <item id="return" href="/admin/ecommerce/claims?type=return" label="$t:sirsoft-ecommerce.admin.claim.subtab.return" badge="{{claims?.data?.counts?.return ?? 0}}"/>
+          <item id="refund" href="/admin/ecommerce/claims?type=refund" label="$t:sirsoft-ecommerce.admin.claim.subtab.refund" badge="{{claims?.data?.counts?.refund ?? 0}}"/>
+          <item id="cancel" href="/admin/ecommerce/claims?type=cancel" label="$t:sirsoft-ecommerce.admin.claim.subtab.cancel" badge="{{claims?.data?.counts?.cancel ?? 0}}"/>
         </prop>
         <on type="change" event="onTabChange">
           <sequence>

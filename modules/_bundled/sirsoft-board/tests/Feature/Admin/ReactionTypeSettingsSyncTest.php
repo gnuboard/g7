@@ -229,7 +229,7 @@ class ReactionTypeSettingsSyncTest extends BoardTestCase
      * 사이트 기본 언어의 이름이 비면 422 — 오류는 이름 칸 전체 키(name)로 돌아온다.
      *
      * 반응 유형 이름은 게시판 유형 이름과 같게 코어 LocaleRequiredTranslatable 로 검증하고, 필수 언어는 사이트
-     * 기본 언어다(2026-10-09 PO 확정 — 다른 언어 화면의 대체 표시가 늘 채워지도록).
+     * 기본 언어다(2026-10-09 확정 — 다른 언어 화면의 대체 표시가 늘 채워지도록).
      *
      * @scenario case=settings_missing_default_name_rejected
      *

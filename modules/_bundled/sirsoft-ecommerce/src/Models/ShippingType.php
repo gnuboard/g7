@@ -3,6 +3,10 @@
 namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Models\Concerns\HasUserOverrides;
+use App\Models\User;
+use App\Support\LocalizedValue;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -64,7 +68,7 @@ class ShippingType extends Model
     /**
      * 요청 단위 캐시 (코드 → 모델)
      *
-     * @var \Illuminate\Database\Eloquent\Collection|null
+     * @var Collection|null
      */
     protected static $codeCache = null;
 
@@ -75,7 +79,7 @@ class ShippingType extends Model
      */
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'created_by');
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
@@ -85,13 +89,13 @@ class ShippingType extends Model
      */
     public function updater(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'updated_by');
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     /**
      * 현재 로케일의 배송유형명 반환
      *
-     * @param string|null $locale 로케일 (기본값: 현재 앱 로케일)
+     * @param  string|null  $locale  로케일 (기본값: 현재 앱 로케일)
      * @return string
      */
     public function getLocalizedName(?string $locale = null): string
@@ -103,7 +107,7 @@ class ShippingType extends Model
             return '';
         }
 
-        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
+        return LocalizedValue::pick($name, $locale) ?? '';
     }
 
     /**
@@ -131,7 +135,7 @@ class ShippingType extends Model
      *
      * shipping_types는 드물게 변경되므로 요청 단위 캐시 적용
      *
-     * @param string $code 배송유형 코드
+     * @param  string  $code  배송유형 코드
      * @return self|null
      */
     public static function getCachedByCode(string $code): ?self
@@ -156,8 +160,8 @@ class ShippingType extends Model
     /**
      * 활성 배송유형만 조회 스코프
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeActive($query)
     {
@@ -167,8 +171,8 @@ class ShippingType extends Model
     /**
      * 정렬 순서대로 조회 스코프
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeOrdered($query)
     {
@@ -178,9 +182,9 @@ class ShippingType extends Model
     /**
      * 카테고리별 조회 스코프
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category 카테고리 (domestic, international, other)
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @param  string  $category  카테고리 (domestic, international, other)
+     * @return Builder
      */
     public function scopeOfCategory($query, string $category)
     {

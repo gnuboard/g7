@@ -1,0 +1,41 @@
+# 시나리오 매니페스트 — 관리자 PG 연동 경로의 주문 권한 범위 재적용 (#789 전수조사)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   target=own(과차단 회귀)은 주문번호 조회 경로에서만 세운다. 거래번호 조회·쓰기 경로의 own 행은 실제 PG 를
+#   부르므로 테스트에서 세울 수 없고, 판정 지점(GuardsOrderScope)은 주문번호 경로와 같다. 배지 목록은 한 테스트가
+#   자기 주문 포함·남의 주문 제외를 함께 단언하고, 원장 감사에는 own/others 구분이 없다. effects 축은 면제하지 않는다.
+feature: admin_order_scope_guard
+
+description: |
+  관리자 PG 연동 경로는 이커머스 주문 권한(`orders.read`·`orders.update`·`claims.execute-refund`)을 걸지만
+  주문을 주문번호 경로·요청 본문의 거래번호로 받아 권한 미들웨어의 범위 검사가 돌지 않았다. 「본인만」·
+  「소유역할」 범위의 관리자가 남의 주문의 거래·에스크로·가상계좌 입금 이력을 보고, 에스크로 배송 등록·
+  가상계좌 환불까지 할 수 있었다.
+
+  - 주문번호 경로: 주문을 찾은 직후 범위 판정, 범위 밖이면 403(500 아님), PG 를 부르지 않는다.
+  - 거래번호 경로: 거래의 주문으로 판정(가상계좌 환불은 본문의 주문번호도 함께). 범위가 좁혀진 관리자에게는
+    이 사이트 주문에 없는 거래번호도 거부.
+  - 테스트 결제 배지 맵: 범위 밖 주문번호를 싣지 않는다.
+  - 원장: 이 플러그인의 관리자 라우트와 강제 지점이 원장에 있고, 감사가 낡은 지점을 잡는다.
+
+axes:
+  target:
+    - others
+    - own
+  route_shape:
+    - order_number
+    - transaction_id
+    - list
+    - ledger_audit
+
+effects:
+  - out_of_scope_order_is_denied_with_403
+  - in_scope_order_is_not_denied
+  - out_of_scope_orders_are_filtered_from_list
+  - plugin_routes_are_ledgered_with_scope_enforcers
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/AdminOrderScopeGuardTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

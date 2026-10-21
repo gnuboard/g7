@@ -56,7 +56,7 @@ class ProvisionLanguagePackCommand extends Command
     {
         $targetLocales = $this->resolveTargetLocales();
         if (empty($targetLocales)) {
-            $this->info('프로비저닝 대상 로케일이 없습니다 (base locale 외 supported_locales 미선언).');
+            $this->info(__('language_packs.commands.provision.no_target_locales'));
 
             return self::SUCCESS;
         }
@@ -74,10 +74,9 @@ class ProvisionLanguagePackCommand extends Command
             ->values();
 
         if ($candidates->isEmpty()) {
-            $this->info(sprintf(
-                '설치하거나 복구할 번들 언어팩이 없습니다 (로케일: %s). 이미 프로비저닝된 상태입니다.',
-                implode(', ', $targetLocales),
-            ));
+            $this->info(__('language_packs.commands.provision.nothing_to_do', [
+                'locales' => implode(', ', $targetLocales),
+            ]));
 
             return self::SUCCESS;
         }
@@ -94,7 +93,7 @@ class ProvisionLanguagePackCommand extends Command
             // 대상 확장 미설치·버전 미달 등으로 설치가 불가한 팩은 best-effort 로 건너뛴다.
             // 대상이 설치돼 있으나 꺼진 팩은 차단 사유가 아니다 — 꺼진 채 설치되고 그 확장을 켤 때 함께 켜진다.
             if ($blockedReason !== null && $blockedReason !== '') {
-                $this->warn(sprintf('건너뜀 (설치 불가: %s): %s', $blockedReason, $identifier));
+                $this->warn(__('language_packs.commands.provision.skipped_blocked', ['reason' => $blockedReason, 'identifier' => $identifier]));
                 $skipped++;
 
                 continue;
@@ -103,27 +102,24 @@ class ProvisionLanguagePackCommand extends Command
             try {
                 $isRepair = (bool) $pack->getAttribute('files_missing');
                 $result = $this->service->installFromBundled($identifier, $autoActivate);
-                $this->info(sprintf(
-                    '%s: %s v%s (status=%s)',
-                    $isRepair ? '복구' : '설치',
-                    $result->identifier,
-                    $result->version,
-                    $result->status,
-                ));
+                $this->info(__($isRepair ? 'language_packs.commands.provision.repaired_item' : 'language_packs.commands.provision.installed_item', [
+                    'identifier' => $result->identifier,
+                    'version' => $result->version,
+                    'status' => $result->status,
+                ]));
                 $isRepair ? $repaired++ : $installed++;
             } catch (Throwable $e) {
-                $this->warn(sprintf('실패 (건너뜀): %s — %s', $identifier, $e->getMessage()));
+                $this->warn(__('language_packs.commands.provision.item_failed', ['identifier' => $identifier, 'error' => $e->getMessage()]));
                 $failed++;
             }
         }
 
-        $this->info(sprintf(
-            '프로비저닝 완료 — 설치 %d, 복구 %d, 건너뜀 %d, 실패 %d',
-            $installed,
-            $repaired,
-            $skipped,
-            $failed,
-        ));
+        $this->info(__('language_packs.commands.provision.summary', [
+            'installed' => $installed,
+            'repaired' => $repaired,
+            'skipped' => $skipped,
+            'failed' => $failed,
+        ]));
 
         // 성과가 하나도 없고 실패만 있었다면 실패로 보고 (멱등 재실행/전량 스킵은 성공).
         return $installed === 0 && $repaired === 0 && $failed > 0 ? self::FAILURE : self::SUCCESS;

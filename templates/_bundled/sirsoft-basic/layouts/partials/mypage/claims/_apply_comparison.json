@@ -82,7 +82,7 @@
             "name": "P",
             "if": "{{_local.claimEstimateLoading !== true && !_local.claimEstimate && _local.claimEditMode === true}}",
             "props": {
-                "className": "text-xs text-gray-400 dark:text-gray-500"
+                "className": "text-xs text-gray-500 dark:text-gray-400"
             },
             "text": "$t:claim.apply.comparison.empty_hint"
         },
@@ -239,7 +239,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500 block"
+                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400 block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -278,7 +278,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500 block"
+                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400 block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -336,7 +336,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500 block"
+                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400 block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -375,7 +375,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500 block"
+                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400 block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -910,7 +910,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500 block"
+                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400 block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -949,7 +949,7 @@
                                                         "item_var": "mc"
                                                     },
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500 block"
+                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400 block"
                                                     },
                                                     "text": "{{mc[1]}}"
                                                 }
@@ -1163,7 +1163,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs text-red-600 dark:text-red-400 mt-1"
+                                        "className": "text-xs text-red-700 dark:text-red-400 mt-1"
                                     },
                                     "text": "$t:claim.apply.comparison.blocked_hint"
                                 }
@@ -1226,7 +1226,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "{{mc.formatted ?? ''}}"
                                                 }
@@ -1283,7 +1283,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "{{mc.formatted ?? ''}}"
                                                 }
@@ -1341,7 +1341,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "{{mc.formatted ?? ''}}"
                                                 }
@@ -1398,7 +1398,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "{{mc.formatted ?? ''}}"
                                                 }
@@ -1455,7 +1455,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-[11px] text-gray-400 dark:text-gray-500"
+                                                        "className": "text-[11px] text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "{{mc.formatted ?? ''}}"
                                                 }
@@ -1516,7 +1516,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500 mt-1"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
                                     },
                                     "text": "$t:claim.apply.comparison.restored_coupons_notice"
                                 }

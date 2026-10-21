@@ -5,7 +5,7 @@
   <div data-testid="cart-item" class="flex gap-4 p-4">
     <!-- 체크박스 -->
     <div class="flex items-center">
-      <checkbox name="cart_item_{{item.id}}" checked="{{_local.selectedItems?.includes(item.id) ?? true}}" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 accent-gray-900 focus:ring-gray-500">
+      <checkbox name="cart_item_{{item.id}}" aria-label="$t:common.select_item|name={{item.product.name ?? ''}}" checked="{{_local.selectedItems?.includes(item.id) ?? true}}" class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 accent-gray-900 focus:ring-gray-500">
         <on type="change">
           <!-- 선택을 바꾸면 합계가 달라지므로 전용 핸들러가 선택 목록을 갱신하고 금액을 다시 받는다 -->
           <action handler="toggleCartItemSelection" itemId="{{item.id}}" selectedItems="{{_local.selectedItems}}"/>
@@ -13,18 +13,18 @@
       </checkbox>
     </div>
     <!-- 상품 이미지 (새 창으로 열기) -->
-    <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" class="flex-shrink-0">
+    <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" rel="noopener" class="flex-shrink-0">
       <div class="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
         <img data-if="{{item.product.thumbnail_url}}" src="{{item.product.thumbnail_url}}" alt="{{item.product.name}}" class="w-full h-full object-cover"/>
         <div data-if="{{!item.product.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
-          <icon name="image" size="lg" class="text-gray-400 dark:text-gray-500"/>
+          <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
         </div>
       </div>
     </a>
     <!-- 상품 정보 -->
     <div class="flex-1 min-w-0">
       <!-- 상품명 (새 창으로 열기) -->
-      <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" class="block w-full text-left no-underline">
+      <a href="{{_global.shopBase}}/products/{{item.product?.product_code ?? item.product_id}}" target="_blank" rel="noopener" class="block w-full text-left no-underline">
         <h3 class="font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate">{{item.product.name}}</h3>
       </a>
       <!-- 상품 옵션 값 (옵션이 있을 때만 표시) -->
@@ -35,25 +35,25 @@
       </div>
       <!-- 배송정책 및 배송비 -->
       <div data-if="{{cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy}}" class="flex items-center gap-2 mt-1">
-        <icon name="truck" size="xs" class="text-gray-400 dark:text-gray-500"/>
+        <icon name="truck" size="xs" class="text-gray-500 dark:text-gray-500"/>
         <span class="text-xs text-gray-500 dark:text-gray-400">{{cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.policy_name}}</span>
-        <span class="text-xs text-gray-400 dark:text-gray-500">/</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400">/</span>
         <!-- 단독 구매 시 배송비 > 0 -->
         <span data-if="{{(cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount ?? 0) > 0}}" class="text-xs text-gray-600 dark:text-gray-300">{{cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount_formatted ?? ''}}</span>
         <!-- 단독 구매 시 무료배송 -->
-        <span data-if="{{(cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount ?? 0) === 0}}" class="text-xs text-green-600 dark:text-green-400">$t:shop.checkout.free_shipping</span>
+        <span data-if="{{(cartItems.data.calculation?.items?.find(ci => ci.product_option_id === item.product_option_id)?.applied_shipping_policy?.standalone_shipping_amount ?? 0) === 0}}" class="text-xs text-green-700 dark:text-green-400">$t:shop.checkout.free_shipping</span>
       </div>
       <div class="mt-1">
         <!-- 정가 취소선 + 할인율 (할인 있을 때만, U4) -->
         <div data-if="{{(item.product_option?.discount_rate ?? 0) > 0}}" class="flex items-center gap-2">
           <!-- 정가 취소선 - 주 통화 -->
-          <span class="text-xs text-gray-400 dark:text-gray-500 line-through">{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400 line-through">{{item.product_option?.multi_currency_list_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.list_price_formatted ?? ''}}</span>
           <!-- 할인율 칩 -->
-          <span class="text-xs font-bold text-red-500">{{item.product_option?.discount_rate}}%</span>
+          <span class="text-xs font-bold text-red-600 dark:text-red-400">{{item.product_option?.discount_rate}}%</span>
         </div>
         <!-- 정가 취소선 - 보조 통화들 (할인 있을 때, 선택 통화 제외) -->
         <div data-if="{{(item.product_option?.discount_rate ?? 0) > 0}}" data-each="currency in {{Object.entries(item.product_option?.multi_currency_list_price ?? {}).filter(([code]) => code !== (_global.preferredCurrency ?? _global.defaultCurrency))}}" class="flex flex-wrap gap-x-2">
-          <span class="text-xs text-gray-400 dark:text-gray-500 line-through">{{currency[1]?.formatted}}</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400 line-through">{{currency[1]?.formatted}}</span>
         </div>
         <!-- 주 통화 -->
         <div class="text-sm font-medium text-gray-900 dark:text-white">{{item.product_option?.multi_currency_selling_price?.[_global.preferredCurrency ?? _global.defaultCurrency]?.formatted ?? item.product_option?.selling_price_formatted ?? ''}}</div>
@@ -88,9 +88,12 @@
         <!-- 배송 불가 표시 (선택 배송국가로 배송 불가 — D1 layer 1) -->
         <span data-if="{{item.is_shippable_to_selected_country === false}}" class="text-sm font-medium text-red-600 dark:text-red-400">$t:shop.shippability.not_shippable</span>
         <!-- 옵션 변경 버튼 -->
-        <button data-if="{{item.product_option}}" data-testid="cart-change-option" class="p-1 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors cursor-pointer" title="$t:shop.cart.change_option" aria-label="$t:shop.cart.change_option">
+        <button type="button" data-if="{{item.product_option}}" data-testid="cart-change-option" class="p-1 text-gray-500 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 transition-colors cursor-pointer" title="$t:shop.cart.change_option" aria-label="$t:shop.cart.change_option">
           <on type="click">
-            <!-- 초기 상태 설정 (모달은 아직 열지 않음) -->
+            <!-- 초기 상태 설정 (모달은 아직 열지 않음). 깊은 병합(기본)은 빈 객체 {} 로 이전 값을 지우지 못한다 — null 로 먼저 지우고 {} 로 다시 쓴다(7.1.1) — 앞 품목에서 고른 옵션 키가 다음 품목 옵션 변경 창에 섞이지 않게 한다.
+                 추가옵션 선택·직접입력 글자도 같다 — 비어 있지 않은 객체를 써도 이번 품목에 없는 앞 품목의 그룹 키가 남아, 추가옵션 있는 품목의 창을 연 뒤
+                 다른 품목에서 「적용」 하면 본문에 앞 품목의 추가옵션이 실려 422(additional_option_invalid)였다(7.1.1). -->
+            <set-state target="local" :selectedOptions="null" :additionalSelections="null" :additionalCustomTexts="null"/>
             <set-state target="local" selectedQuantity="{{item.quantity}}" :selectedOptions="{}" :optionProduct="null" :matchedOption="null" additionalSelections="{{Object.fromEntries((item.additional_options ?? []).map(a => [a.additional_option_id, a.value_id]))}}" additionalCustomTexts="{{Object.fromEntries((item.additional_options ?? []).filter(a => (a.custom_text ?? '') !== '').map(a => [a.additional_option_id, a.custom_text]))}}">
               <field name="optionModal">
                 <field name="visible" :value="false"/>
@@ -125,7 +128,7 @@
           <icon name="settings" size="md"/>
         </button>
         <!-- 삭제 버튼 -->
-        <button type="button" aria-label="$t:shop.cart.delete_item" class="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors cursor-pointer">
+        <button type="button" aria-label="$t:shop.cart.delete_item" class="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer">
           <on type="click">
             <set-state target="local">
               <field name="deleteModal">

@@ -37,10 +37,17 @@
       <!-- 격자는 부모가 한 번만 갖고 사진 버튼이 반복된다 — 반복 노드가 격자를 들면 사진마다 격자가 따로 생겨 한 줄에 하나씩 쌓인다. -->
       <div class="grid grid-cols-5 gap-2">
         <responsive on="portable" class="grid grid-cols-3 gap-2"/>
-        <!-- 사진을 누르면 확대 창을 연다 — 확대 창은 페이지 로컬에서 대상을 읽으므로 그 사진의 서명 주소와 파일명을 먼저 세운 뒤 연다. -->
+        <!-- 사진을 누르면 확대 창을 연다 — 그 사진의 서명 주소와 파일명을 창 고유 전역 이름 공간에 먼저 세운 뒤 연다. 페이지 _local 에
+             두면 영구 마운트된 창이 «닫기» 로 쓴 null 에 가려, 닫기 단추로 닫은 뒤 다른 사진을 열면 빈 창이 됐다(7.1.1) -->
         <button data-each="claimImage in {{claim.data?.claim?.images ?? []}}" type="button" class="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 cursor-pointer hover:opacity-90 transition-opacity">
           <on type="click">
-            <set-state target="local" claimImageViewerUrl="{{claimImage.download_url ?? ''}}" claimImageViewerName="{{claimImage.original_name ?? ''}}"/>
+            <set-state target="global" :claimImageViewer="null"/>
+            <set-state target="global">
+              <field name="claimImageViewer">
+                <field name="url" value="{{claimImage.download_url ?? ''}}"/>
+                <field name="name" value="{{claimImage.original_name ?? ''}}"/>
+              </field>
+            </set-state>
             <open-modal target="modal_claim_image_viewer"/>
           </on>
           <img src="{{claimImage.download_url ?? ''}}" alt="{{claimImage.original_name ?? ''}}" class="w-full h-full object-cover"/>

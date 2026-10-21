@@ -148,7 +148,8 @@ php artisan migrate:rollback
 ```bash
 # 코어 업데이트
 php artisan core:check-updates                                    # 코어 업데이트 확인
-php artisan core:update [--force] [--no-backup] [--no-maintenance] [--vendor-mode=auto|composer|bundled]
+php artisan core:update [--force] [--no-backup] [--no-maintenance] [--vendor-mode=auto|composer|bundled] [--bundled-sources=none|all|id,…]
+php artisan core:bundled-sources list|place <id…>|prune [--force] [--include-modified] [--source=|--zip=]   # 공식 번들 소스 보고·배치·정리 (7.1.1+, prune 기본 미리보기)
 php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용 — 단독 호출 시 migration·resync·.env·캐시·번들 확장 일괄 업데이트 자동 수행. CoreUpdateCommand 내부 spawn 은 --skip-* 5개 옵션 자동 전달)
 
 # 모듈
@@ -396,6 +397,7 @@ php artisan api:docgen-backfill-fields               # 응답 필드 표 TODO �
 # 코어 업데이트
 php artisan core:check-updates                                    # 코어 업데이트 확인
 php artisan core:update [--force] [--no-backup] [--no-maintenance] # 코어 업데이트 실행
+php artisan core:bundled-sources list|place <id…>|prune [--force] [--include-modified] [--source=|--zip=]   # 공식 번들 소스 보고·배치·정리 (7.1.1+, prune 기본 미리보기)
 php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용)
 
 # CLI (Artisan 커맨드)
@@ -565,6 +567,7 @@ php artisan plugin:build sirsoft-payment --active       # 활성 디렉토리에
 # 코어 업데이트
 php artisan core:check-updates                                    # 코어 업데이트 확인
 php artisan core:update [--force] [--no-backup] [--no-maintenance] # 코어 업데이트 실행
+php artisan core:bundled-sources list|place <id…>|prune [--force] [--include-modified] [--source=|--zip=]   # 공식 번들 소스 보고·배치·정리 (7.1.1+, prune 기본 미리보기)
 php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]  # 업그레이드 스텝 단독 실행 (HANDOFF 안내/수동 복구용 — 사전·사후 단계 자동 수행)
 
 # 모듈

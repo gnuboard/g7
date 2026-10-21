@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Analytics\AnalyticsConfig;
+use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Services\Analytics\PruneService;
 use Illuminate\Console\Command;
 
@@ -19,6 +20,8 @@ use Illuminate\Console\Command;
  */
 class PruneCommand extends Command
 {
+    use ParsesDaysOption;
+
     /**
      * 커맨드 이름 및 시그니처
      *
@@ -43,19 +46,24 @@ class PruneCommand extends Command
      */
     public function handle(PruneService $service): int
     {
-        $days = $this->option('days') !== null ? (int) $this->option('days') : null;
+        $days = $this->parseDaysOption();
+
+        if ($days === false) {
+            return self::FAILURE;
+        }
+
         $dryRun = (bool) $this->option('dry-run');
 
         $counts = $service->prune(AnalyticsConfig::fromSettings(), $days, $dryRun);
 
         $this->table(
-            ['대상', $dryRun ? '삭제 대상' : '삭제'],
+            [__('analytics.console.prune.headers.target'), $dryRun ? __('analytics.console.prune.headers.to_delete') : __('analytics.console.prune.headers.deleted')],
             array_map(fn (string $key, int $count): array => [$key, $count], array_keys($counts), $counts),
         );
 
         $this->info($dryRun
-            ? '마른 실행 — 아무것도 지우지 않았습니다.'
-            : sprintf('방문자 통계 %d건을 정리했습니다.', array_sum($counts)));
+            ? __('analytics.console.prune.dry_run')
+            : __('analytics.console.prune.done', ['count' => array_sum($counts)]));
 
         return self::SUCCESS;
     }

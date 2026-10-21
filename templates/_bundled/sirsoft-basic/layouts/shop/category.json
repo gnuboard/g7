@@ -120,20 +120,17 @@
                                     {
                                         "comment": "뒤로가기: 상위 카테고리 있으면 상위로, 없으면 /shop으로",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "{{(category?.data?.breadcrumb ?? []).length > 1 ? _global.shopBase + '/category/' + (category?.data?.breadcrumb ?? []).slice(-2, -1)[0]?.slug : _global.shopBase + '/products'}}"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
+                                            "href": "{{(category?.data?.breadcrumb ?? []).length > 1 ? _global.shopBase + '/category/' + (category?.data?.breadcrumb ?? []).slice(-2, -1)[0]?.slug : _global.shopBase + '/products'}}",
                                             "aria-label": "$t:common.back",
-                                            "className": "p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                            "className": "inline-flex items-center justify-center p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                         },
                                         "children": [
                                             {
@@ -149,12 +146,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "props": {
+                                            "className": "min-w-0 wrap-anywhere"
+                                        },
                                         "text": "{{category?.data?.name_localized ?? $t:shop.categories}}"
                                     }
                                 ]
                             },
                             {
-                                "comment": "설명 + 브레드크럼 한 줄",
+                                "comment": "설명 + 브레드크럼 한 줄. 이름·설명은 줄어들며 줄을 바꾸고, 경로는 칸이 모자라면 다음 줄로 내리며 각 이름은 한 줄 … — 공백 없는 긴 카테고리 이름이 화면을 넘쳤다(#143).",
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
@@ -166,7 +166,7 @@
                                         "name": "P",
                                         "if": "{{!!category?.data?.description_localized}}",
                                         "props": {
-                                            "className": "text-gray-600 dark:text-gray-400"
+                                            "className": "text-gray-600 dark:text-gray-400 min-w-0 wrap-anywhere"
                                         },
                                         "text": "{{category?.data?.description_localized ?? ''}}"
                                     },
@@ -175,7 +175,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400"
+                                            "className": "flex flex-wrap items-center gap-1 text-sm text-gray-500 dark:text-gray-400"
                                         },
                                         "children": [
                                             {
@@ -216,7 +216,7 @@
                                                                 "if": "{{crumb.slug !== route.slug}}",
                                                                 "props": {
                                                                     "href": "{{_global.shopBase}}/category/{{crumb.slug}}",
-                                                                    "className": "hover:text-gray-700 dark:hover:text-gray-300"
+                                                                    "className": "truncate max-w-32 hover:text-gray-700 dark:hover:text-gray-300"
                                                                 },
                                                                 "text": "{{crumb.name}}"
                                                             },
@@ -225,7 +225,7 @@
                                                                 "name": "Span",
                                                                 "if": "{{crumb.slug === route.slug}}",
                                                                 "props": {
-                                                                    "className": "text-gray-900 dark:text-white font-medium"
+                                                                    "className": "truncate max-w-32 text-gray-900 dark:text-white font-medium"
                                                                 },
                                                                 "text": "{{crumb.name}}"
                                                             }
@@ -299,7 +299,7 @@
                                     "type": "text",
                                     "name": "keyword",
                                     "placeholder": "$t:shop.search_placeholder",
-                                    "className": "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
+                                    "className": "flex-1 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                                     "value": "{{_local.keyword ?? query.keyword ?? ''}}"
                                 }
                             },
@@ -322,6 +322,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium"
                                 },
                                 "text": "$t:shop.search"
@@ -329,7 +330,7 @@
                         ]
                     },
                     {
-                        "comment": "하위 카테고리 칩 (자식 카테고리가 있을 때만 표시)",
+                        "comment": "하위 카테고리 칩 (자식 카테고리가 있을 때만 표시). 칩 하나가 줄보다 넓어지지 않게 폭을 줄에 맞추고 이름은 한 줄 … (#143)",
                         "type": "basic",
                         "name": "Div",
                         "if": "{{(category?.data?.children ?? []).length > 0}}",
@@ -344,24 +345,34 @@
                                     "source": "{{category?.data?.children ?? []}}",
                                     "item_var": "sub"
                                 },
+                                "props": {
+                                    "className": "max-w-full"
+                                },
                                 "children": [
                                     {
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "comment": "audit:allow layout-list-context-navigate-merge-query 하위 카테고리 이동 — 다른 목록으로의 이동이라 상위 카테고리의 검색·정렬·페이지를 승계하지 않는다",
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "{{_global.shopBase}}/category/{{sub?.slug}}"
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "className": "px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
+                                            "href": "{{_global.shopBase}}/category/{{sub?.slug}}",
+                                            "className": "inline-flex items-center justify-center max-w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
                                         },
-                                        "text": "{{sub?.name_localized}}"
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "className": "min-w-0 truncate"
+                                                },
+                                                "text": "{{sub?.name_localized}}"
+                                            }
+                                        ]
                                     }
                                 ]
                             }
@@ -403,6 +414,7 @@
                                 ],
                                 "props": {
                                     "name": "sort",
+                                    "aria-label": "$t:common.sort_order",
                                     "value": "{{query.sort ?? 'latest'}}",
                                     "className": "h-9 w-32",
                                     "options": [

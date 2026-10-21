@@ -11,13 +11,13 @@
       </div>
     </div>
     <div class="modal-footer-buttons">
-      <button class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isDeleting}}">
+      <button type="button" class="px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isDeleting}}">
         <on type="click">
           <!-- 삭제 실행. 성공 갈래가 무한 스크롤 상태를 되돌린 뒤 목록을 다시 부르고, 마지막에 선택을 비운다. 이 순서를 바꾸면 지운 항목이 잠깐 다시 보이거나 첫 쪽이 빈다. -->
           <sequence>

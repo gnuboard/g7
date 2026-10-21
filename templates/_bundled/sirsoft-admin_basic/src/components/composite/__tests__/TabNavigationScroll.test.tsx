@@ -34,6 +34,8 @@ describe('TabNavigationScroll', () => {
   ];
 
   let originalG7Core: any;
+  // 진짜 getElementById — 섹션 id 만 가짜로 돌려주고, 실제 요소(aria-labelledby 이름 span 등)는 그대로 찾는다
+  const realGetElementById = document.getElementById.bind(document);
 
   // IntersectionObserver Mock
   let observerCallback: IntersectionObserverCallback;
@@ -88,14 +90,16 @@ describe('TabNavigationScroll', () => {
     global.IntersectionObserver = MockIntersectionObserver;
 
     // getElementById mock (Scroll Spy용)
+    // 실제 요소가 있으면 그것을 돌려준다 — 가짜 객체를 돌려주면 선택 상자의 이름(aria-labelledby) 계산이 깨진다(#757)
     global.document.getElementById = vi.fn((id: string) => {
-      return { id } as HTMLElement;
+      return realGetElementById(id) ?? ({ id } as HTMLElement);
     });
 
   });
 
   afterEach(() => {
     (window as any).G7Core = originalG7Core;
+    global.document.getElementById = realGetElementById;
     vi.clearAllMocks();
   });
 
@@ -575,7 +579,7 @@ describe('TabNavigationScroll', () => {
       // scrollContainerId에 해당하는 element를 반환하도록 설정
       global.document.getElementById = vi.fn((id: string) => {
         if (id === 'scroll-container') return mockContainer;
-        return { id } as HTMLElement;
+        return realGetElementById(id) ?? ({ id } as HTMLElement);
       });
 
       let capturedRoot: Element | Document | null | undefined;
@@ -983,7 +987,7 @@ describe('TabNavigationScroll', () => {
 
   describe('누른 탭 고정 (Scroll Spy)', () => {
     // 회원 상세에서 아래쪽 탭을 누르면 스크롤이 끝나기 전에 Scroll Spy 가 다시 켜져, 스크롤 도중·바닥 도달 때
-    // 보이는 다른 섹션(마지막 탭 등)이 활성으로 바뀌었다(7.1.0 실측 O-KF-2). 누른 탭은 사용자가 직접
+    // 보이는 다른 섹션(마지막 탭 등)이 활성으로 바뀌었다(7.1.0 실측). 누른 탭은 사용자가 직접
     // 스크롤(휠·터치·키보드)할 때까지 활성으로 남는다.
     const spyTabs: Tab[] = [
       { id: 'basic', label: '기본정보' },

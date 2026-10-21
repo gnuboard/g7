@@ -134,56 +134,122 @@ class GenericCatchStatusCodeContractTest extends TestCase
         $found = [];
 
         foreach ($this->collectFiles() as $file) {
-            $lines = file($file['path'], FILE_IGNORE_NEW_LINES);
-            $method = '?';
-
-            foreach ($lines as $i => $line) {
-                if (preg_match('/public function (\w+)\(/', $line, $m)) {
-                    $method = $m[1];
-                }
-
-                // 광역 catch: \Exception / \Throwable / \RuntimeException 단독
-                //
-                // `\RuntimeException` 을 포함하는 이유는 그것이 도메인 예외의 부모가 되기
-                // 때문이다 — 서비스가 도메인 실패를 typed 로 승격하고 나면 이 catch 에
-                // 남는 것은 인프라 예외뿐인데, 4xx 를 돌려주면 그대로 위장된다. 실제로
-                // `User/ProductInquiryController` 4곳이 이 사각에 있었다.
-                if (! preg_match('/\}\s*catch\s*\(\s*\\\\?(Exception|Throwable|RuntimeException)\s*(\$\w+)?\s*\)/', $line)) {
-                    continue;
-                }
-
-                $status = null;
-                for ($j = $i + 1; $j < min($i + 25, count($lines)); $j++) {
-                    if (preg_match('/\}\s*catch\s*\(/', $lines[$j])) {
-                        break;
-                    }
-                    if (preg_match('/^\s*(\d{3}),?\s*$/', $lines[$j], $sm)) {
-                        $status = (int) $sm[1];
-                        break;
-                    }
-                    // ->error('key', 404) 처럼 한 줄에 쓰인 형태.
-                    // 첫 인자에 함수 호출이 올 수 있으므로(`error($e->getMessage(), 422)`)
-                    // 괄호를 배제하지 않는다 — 배제하면 그 형태를 통째로 놓친다.
-                    if (preg_match('/(?:error|moduleError)\(.*?,\s*(\d{3})\s*[,)]/', $lines[$j], $sm)) {
-                        $status = (int) $sm[1];
-                        break;
-                    }
-                    // 상태코드 인자를 아예 생략한 한 줄 호출 — ResponseHelper 기본값 400 이 적용된다.
-                    // 숫자만 찾는 판정은 이 형태를 통째로 놓친다 (실제 사각이었다: WishlistController).
-                    if (preg_match("/moduleError\(\s*'[^']+',\s*'[^']+'\s*\)/", $lines[$j])
-                        || preg_match("/[^e]error\(\s*'[^']+'\s*\)/", $lines[$j])) {
-                        $status = 400;
-                        break;
-                    }
-                }
-
-                if ($status !== null) {
-                    $found[] = ['file' => $file['rel'], 'method' => $method, 'line' => $i + 1, 'status' => $status];
-                }
+            foreach ($this->scanGenericCatchStatuses(file($file['path'], FILE_IGNORE_NEW_LINES)) as $site) {
+                $found[] = ['file' => $file['rel']] + $site;
             }
         }
 
         return $found;
+    }
+
+    /**
+     * 한 파일의 줄 목록에서 generic catch 블록의 응답 상태코드를 추출합니다.
+     *
+     * @param  array<int, string>  $lines  파일의 줄 목록
+     * @return array<int, array{method: string, line: int, status: int}> 메서드·줄별 응답 상태코드 목록
+     */
+    private function scanGenericCatchStatuses(array $lines): array
+    {
+        $found = [];
+        $method = '?';
+
+        foreach ($lines as $i => $line) {
+            if (preg_match('/public function (\w+)\(/', $line, $m)) {
+                $method = $m[1];
+            }
+
+            // 광역 catch: \Exception / \Throwable / \RuntimeException 단독
+            //
+            // `\RuntimeException` 을 포함하는 이유는 그것이 도메인 예외의 부모가 되기
+            // 때문이다 — 서비스가 도메인 실패를 typed 로 승격하고 나면 이 catch 에
+            // 남는 것은 인프라 예외뿐인데, 4xx 를 돌려주면 그대로 위장된다. 실제로
+            // `User/ProductInquiryController` 4곳이 이 사각에 있었다.
+            if (! preg_match('/\}\s*catch\s*\(\s*\\\\?(Exception|Throwable|RuntimeException)\s*(\$\w+)?\s*\)/', $line)) {
+                continue;
+            }
+
+            $catchIndent = strlen($line) - strlen(ltrim($line));
+            $status = null;
+            for ($j = $i + 1; $j < min($i + 25, count($lines)); $j++) {
+                if (preg_match('/\}\s*catch\s*\(/', $lines[$j])) {
+                    break;
+                }
+                // catch 블록이 닫히면 멈춘다. 짧은 catch 뒤에 오는 다음 메서드(문서 주석의 상태코드,
+                // 다른 분기의 `moduleError(..., 403)`)를 이 catch 의 반환으로 오인하지 않게 한다.
+                if (preg_match('/^(\s*)\}\s*$/', $lines[$j], $bm) && strlen($bm[1]) <= $catchIndent) {
+                    break;
+                }
+                if (preg_match('/^\s*(\d{3}),?\s*$/', $lines[$j], $sm)) {
+                    $status = (int) $sm[1];
+                    break;
+                }
+                // ->error('key', 404) 처럼 한 줄에 쓰인 형태.
+                // 첫 인자에 함수 호출이 올 수 있으므로(`error($e->getMessage(), 422)`)
+                // 괄호를 배제하지 않는다 — 배제하면 그 형태를 통째로 놓친다.
+                if (preg_match('/(?:error|moduleError)\(.*?,\s*(\d{3})\s*[,)]/', $lines[$j], $sm)) {
+                    $status = (int) $sm[1];
+                    break;
+                }
+                // 상태코드 인자를 아예 생략한 한 줄 호출 — ResponseHelper 기본값 400 이 적용된다.
+                // 숫자만 찾는 판정은 이 형태를 통째로 놓친다 (실제 사각이었다: WishlistController).
+                if (preg_match("/moduleError\(\s*'[^']+',\s*'[^']+'\s*\)/", $lines[$j])
+                    || preg_match("/[^e]error\(\s*'[^']+'\s*\)/", $lines[$j])) {
+                    $status = 400;
+                    break;
+                }
+            }
+
+            if ($status !== null) {
+                $found[] = ['method' => $method, 'line' => $i + 1, 'status' => $status];
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * 판정기가 catch 블록이 닫힌 뒤의 다음 메서드를 그 catch 의 반환으로 읽지 않는지 고정합니다.
+     *
+     * 짧은 광역 catch(서버 오류 헬퍼 한 줄) 바로 뒤에 422 를 설명하는 문서 주석이나 403 을 돌려주는
+     * 다른 메서드가 오면, 블록 경계를 보지 않는 판정기는 그 숫자를 집어 오탐을 낸다. 실제로 이커머스
+     * 클레임 컨트롤러 4곳(500 을 돌려주는 catch)이 그렇게 위반으로 잡혔다.
+     *
+     * @scenario actor=member, change_mode=manual, address_region=domestic, e2e_browser=chromium
+     *
+     * @effects generic_catch_contract_scanner_stops_at_catch_block_end
+     *
+     * @return void 반환값 없음
+     */
+    public function test_scanner_stops_at_end_of_catch_block(): void
+    {
+        $lines = [
+            '    public function preview(): JsonResponse',
+            '    {',
+            '        try {',
+            '            return $this->ok();',
+            '        } catch (Exception $e) {',
+            '            return $this->claimServerError(\'preview\', $e);',
+            '        }',
+            '    }',
+            '',
+            '    /**',
+            '     * 부수효과 실패를 422 로 알립니다.',
+            '     */',
+            '    public function storeExchange(): JsonResponse',
+            '    {',
+            '        return ResponseHelper::moduleError(\'mod\', \'forbidden\', 403);',
+            '    }',
+        ];
+
+        $this->assertSame([], $this->scanGenericCatchStatuses($lines), 'catch 블록 밖의 상태코드를 집었습니다.');
+
+        $lines[5] = '            return ResponseHelper::error(\'messages.failed\', 422);';
+
+        $this->assertSame(
+            [['method' => 'preview', 'line' => 5, 'status' => 422]],
+            $this->scanGenericCatchStatuses($lines),
+            'catch 블록 안의 4xx 반환을 놓쳤습니다.'
+        );
     }
 
     /**

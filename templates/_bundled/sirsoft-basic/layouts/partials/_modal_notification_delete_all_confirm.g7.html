@@ -9,7 +9,7 @@
         </on>
         $t:common.cancel
       </button>
-      <button class="flex items-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeletingAllNotifications}}" type="button">
+      <button class="flex items-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDeletingAllNotifications}}" type="button">
         <on type="click">
           <!-- 전체 삭제 — 알림을 보여 주는 곳이 셋이라(헤더·드로어·마이페이지 알림함) 셋의 데이터소스를 모두 다시 받아야 한 곳만 비고 나머지가 남는 일이 없다. 마이페이지 것(userNotifications)은 그 화면에서만 실재하고 없으면 조용히 지나간다. -->
           <sequence>

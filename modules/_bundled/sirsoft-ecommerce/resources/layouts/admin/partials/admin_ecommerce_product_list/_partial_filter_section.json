@@ -54,6 +54,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.category",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('category')}}"
                             }
@@ -106,6 +107,7 @@
                                     ],
                                     "props": {
                                         "name": "category1",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.category_step|n=1",
                                         "className": "select-composite w-36",
                                         "value": "{{_local.filter.category1}}",
                                         "options": "{{_computed.category1Options ?? []}}"
@@ -137,6 +139,7 @@
                                     ],
                                     "props": {
                                         "name": "category2",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.category_step|n=2",
                                         "className": "select-composite w-36",
                                         "value": "{{_local.filter.category2}}",
                                         "options": "{{_computed.category2Options ?? []}}"
@@ -167,6 +170,7 @@
                                     ],
                                     "props": {
                                         "name": "category3",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.category_step|n=3",
                                         "className": "select-composite w-36",
                                         "value": "{{_local.filter.category3}}",
                                         "options": "{{_computed.category3Options ?? []}}"
@@ -196,6 +200,7 @@
                                     ],
                                     "props": {
                                         "name": "category4",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.category_step|n=4",
                                         "className": "select-composite w-36",
                                         "value": "{{_local.filter.category4}}",
                                         "options": "{{_computed.category4Options ?? []}}"
@@ -265,6 +270,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.date",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('date')}}"
                             }
@@ -327,7 +333,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "calendar",
-                                                "className": "text-base text-gray-400 dark:text-gray-500"
+                                                "className": "text-base text-gray-500 dark:text-gray-500"
                                             }
                                         },
                                         {
@@ -348,6 +354,7 @@
                                             "props": {
                                                 "type": "date",
                                                 "name": "startDate",
+                                                "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.product.filter.date')}}",
                                                 "value": "{{_local.filter.startDate || ''}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.product.filter.start_date",
                                                 "className": "input w-36"
@@ -357,7 +364,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-400 dark:text-gray-500"
+                                                "className": "text-gray-500 dark:text-gray-400"
                                             },
                                             "text": "~"
                                         },
@@ -379,6 +386,7 @@
                                             "props": {
                                                 "type": "date",
                                                 "name": "endDate",
+                                                "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.product.filter.date')}}",
                                                 "value": "{{_local.filter.endDate || ''}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.product.filter.end_date",
                                                 "className": "input w-36"
@@ -395,7 +403,7 @@
                                     "children": [
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "빠른 기간 버튼 여섯. 핸들러가 시작·종료일을 계산해 돌려주고 그 결과를 `$prev` 로 받아 담는다 — 날짜 계산을 레이아웃 표현식에 두지 않으려는 것이다.",
@@ -421,13 +429,15 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.dateQuick === 'today'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.filter.date_quick.today"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "3일. 주문 목록에는 없는 구간으로, 상품은 최근 등록분을 훑는 일이 잦아 짧은 구간을 더 뒀다.",
@@ -453,13 +463,15 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === '3days' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.dateQuick === '3days'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.filter.date_quick.3days"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "1주일. 눌린 버튼 표시는 `dateQuick` 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다.",
@@ -485,13 +497,15 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.dateQuick === 'week'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.filter.date_quick.week"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "1개월. 기준 날짜는 위 \"등록일/수정일\" 선택을 따른다.",
@@ -517,13 +531,15 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.dateQuick === 'month'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.filter.date_quick.month"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "3개월. 상품은 주문과 달리 오래된 것도 계속 유효하므로 6개월 구간 대신 \"전체\" 를 뒀다.",
@@ -549,13 +565,15 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.dateQuick === '3months'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.filter.date_quick.3months"
                                         },
                                         {
                                             "type": "basic",
-                                            "name": "Div",
+                                            "name": "Button",
                                             "actions": [
                                                 {
                                                     "comment": "전체. 날짜 조건을 비우는 자리라 다른 다섯과 달리 범위를 넓히는 것이 아니라 없앤다.",
@@ -581,7 +599,9 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}"
+                                                "type": "button",
+                                                "className": "{{_local.filter.dateQuick === 'all' ? 'btn-date active' : 'btn-date cursor-pointer'}}",
+                                                "aria-pressed": "{{_local.filter.dateQuick === 'all'}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.filter.date_quick.all"
                                         }
@@ -617,6 +637,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.sales_status",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('salesStatus')}}"
                             }
@@ -836,6 +857,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.display_status",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('displayStatus')}}"
                             }
@@ -990,6 +1012,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.brand",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('brand')}}"
                             }
@@ -1095,6 +1118,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.tax_status",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('taxStatus')}}"
                             }
@@ -1249,6 +1273,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.price",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('price')}}"
                             }
@@ -1334,7 +1359,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-400 dark:text-gray-500 shrink-0"
+                                                "className": "text-gray-500 dark:text-gray-400 shrink-0"
                                             },
                                             "text": "~"
                                         },
@@ -1394,6 +1419,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.stock",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('stock')}}"
                             }
@@ -1439,7 +1465,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-400 dark:text-gray-500 shrink-0"
+                                        "className": "text-gray-500 dark:text-gray-400 shrink-0"
                                     },
                                     "text": "~"
                                 },
@@ -1503,6 +1529,7 @@
                             ],
                             "props": {
                                 "type": "checkbox",
+                                "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.shipping_policy",
                                 "className": "{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}",
                                 "checked": "{{(_local.visibleFilters || []).includes('shippingPolicy')}}"
                             }
@@ -1559,7 +1586,7 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
                     "actions": [
                         {
                             "type": "click",
@@ -1568,6 +1595,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "flex-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200"
                     },
                     "children": [
@@ -1593,7 +1621,7 @@
                     "comment": "프리셋 버튼. 저장된 조건 세트를 통째로 갈아끼우고 펼침 상태를 비운 뒤 주소를 바꾼다 — 지금 걸린 조건과 섞지 않는 것이 프리셋의 뜻이다",
                     "id": "preset_buttons_dynamic_{{presetIdx}}",
                     "type": "basic",
-                    "name": "Div",
+                    "name": "Button",
                     "iteration": {
                         "source": "presets.data || []",
                         "item_var": "preset",
@@ -1685,7 +1713,9 @@
                         }
                     ],
                     "props": {
-                        "className": "{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}"
+                        "type": "button",
+                        "className": "{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}",
+                        "aria-pressed": "{{query.preset_id === String(preset.id)}}"
                     },
                     "text": "{{preset.name}}"
                 }
@@ -1744,6 +1774,7 @@
                             ],
                             "props": {
                                 "name": "searchField",
+                                "aria-label": "$t:common.search_field",
                                 "className": "w-80 shrink-0",
                                 "value": "{{_local.filter.searchField || 'all'}}",
                                 "options": [
@@ -1793,7 +1824,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "search",
-                                        "className": "text-base absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                                        "className": "text-base absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"
                                     }
                                 },
                                 {

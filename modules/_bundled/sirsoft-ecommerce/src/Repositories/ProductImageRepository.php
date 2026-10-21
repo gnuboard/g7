@@ -12,6 +12,11 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductImageRepositoryInter
  */
 class ProductImageRepository implements ProductImageRepositoryInterface
 {
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  ProductImage  $model  상품 이미지 모델
+     */
     public function __construct(
         protected ProductImage $model
     ) {}
@@ -22,6 +27,24 @@ class ProductImageRepository implements ProductImageRepositoryInterface
     public function findById(int $id): ?ProductImage
     {
         return $this->model->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function pluckProductIdsByIds(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return $this->model->newQuery()
+            ->whereIn('id', $ids)
+            ->whereNotNull('product_id')
+            ->distinct()
+            ->pluck('product_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     /**

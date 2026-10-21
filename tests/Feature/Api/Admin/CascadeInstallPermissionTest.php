@@ -16,7 +16,7 @@ use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Tests\TestCase;
 
 /**
- * 확장 설치 창 동반 설치 항목별 권한 검증 (R2).
+ * 확장 설치 창 동반 설치 항목별 권한 검증 (7.1.0 abilities 게이트 점검).
  *
  * 설치 창은 본 확장의 install 권한으로 열리지만, 함께 고른 의존 확장은 설치·활성화까지,
  * 번들 언어팩은 설치·자동 활성화까지 수행된다. 대상 종류의 권한이 없으면 그 항목은

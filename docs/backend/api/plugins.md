@@ -70,6 +70,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | icon_url | string\|null | `/api/extensions/plugin/sirsoft-ckeditor5/icon?v=1.1.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
 | icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
+| stuck_update | boolean | `false` | 업데이트가 도중에 멈춘 상태인지 — `updating` 으로 10분이 지났고 진행 중인 업데이트 잠금이 없으면 `true`. 관리자 카드가 「업데이트 멈춤」 표시와 「정리 후 다시 업데이트」 단추를 보일 때 쓴다 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
 | latest_version | string | `1.0.0` | 감지된 최신 배포 버전 |
 | file_version | string | `1.0.0` | 설치된 파일의 manifest 버전 |
@@ -116,6 +117,7 @@ HTTP/1.1 200
                     "priority": 100
                 },
                 "update_available": false,
+                "stuck_update": false,
                 "update_source": null,
                 "latest_version": "1.0.0",
                 "file_version": "1.0.0",
@@ -252,7 +254,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| plugin | object | `{"identifier":"sirsoft-daum_postcode","status":"active", …}` | 활성화된 플러그인 리소스 (PluginResource — 목록 항목과 동일 필드 구성) |
+| plugin | object | `{"identifier":"sirsoft-daum_postcode","status":"active", …}` | 활성화된 플러그인 리소스 (PluginResource — 목록 항목과 동일 필드 구성). 업데이트의 판 전환이 끝나지 않은 확장이면 `version` 은 기록 판, `file_version` 은 파일 판이고 `update_available` 이 `true` 다 |
 | pending_language_packs | array | `[]` | 이 플러그인 비활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록 (재활성화 대기 후보) |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
 
@@ -516,6 +518,7 @@ _단건 응답: `data` 객체의 필드 — 비활성화된 플러그인 리소�
 | vendor_mode | body | string | 아니오 | `auto`, `composer`, `bundled` | 벤더 설치 모드 (auto/composer/bundled) |
 | dependencies | body | array | 아니오 | — | 함께 설치할 의존 확장 목록 (install-preview 응답 기반 사용자 선택 — 원소 type: module\|plugin, identifier) |
 | language_packs | body | array | 아니오 | — | 함께 설치할 번들 언어팩 식별자 목록 (best-effort cascade 2단계) |
+| layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.plugin.install_validation_rules`).
 
@@ -1097,6 +1100,7 @@ _단건 응답: `data` 객체의 필드._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | plugin_name | body | string | 예 | max 255 | plugin 이름 (식별자) |
+| layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.plugin.refresh_layouts_validation_rules`).
 
@@ -2143,6 +2147,7 @@ _단건 응답: `data` 객체의 필드._
 | vendor_mode | body | string | 아니오 | `auto`, `composer`, `bundled` | 벤더 설치 모드 (auto/composer/bundled) |
 | force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
 | rebuild_search_index | body | boolean | 아니오 | — | 업데이트 후 색인이 누락된 검색 인덱스를 재생성할지 여부 (기본 false). 재생성 중에는 대상 인덱스가 잠기거나 재색인되므로 운영 중인 사이트에서는 접속이 적은 시간에 별도로 수행하는 것을 권장 |
+| layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.plugin.perform_update_validation_rules`).
 

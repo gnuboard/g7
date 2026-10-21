@@ -1,0 +1,17 @@
+# audit:allow scenario-scale-axis-required reason: 일괄 핸들러의 기록 루프를 트랜잭션으로 감쌀 뿐 — 처리 규모 경로 무변경
+
+feature: board_activity_log_bulk_atomic
+
+description: |
+  신고 일괄 상태 변경 활동 로그 핸들러는 큐로 돌며 신고마다 로그 1행을 남긴다(#139). 잡이 중간에 끊겨 재실행되면
+  앞부분이 두 번 기록됐다. 기록 루프를 한 트랜잭션으로 감싸 끊긴 묶음은 커밋되지 않게 한다.
+  기록 순간의 트랜잭션 깊이가 모두 「호출 전 + 1」인지로 확인한다.
+
+axes:
+  handler: [report_bulk_update_status]
+
+effects:
+  - bulk_activity_log_atomic
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/Listeners/BoardBulkActivityLogAtomicTest.php

@@ -32,4 +32,10 @@ return [
     'activities' => [
         'user_registered' => ':name has registered.',
     ],
+    // `dashboard:*` command output
+    'console' => [
+        'broadcast_resources' => [
+            'done' => 'System resource information has been broadcast.',
+        ],
+    ],
 ];

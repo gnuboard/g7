@@ -1,6 +1,6 @@
 /**
  * @file admin-settings-ip-restriction-rules.test.tsx
- * @description 환경설정 > 보안 > IP 접근 제한 규칙 — 스위치 이름과 지난 저장 오류 정리 (7.1.0 실측 O-B6·O-B7)
+ * @description 환경설정 > 보안 > IP 접근 제한 규칙 — 스위치 이름과 지난 저장 오류 정리 (7.1.0 실측)
  *
  * - 규칙 표의 「사용」 스위치는 라벨이 열 머리글에만 있어 스위치 자체에는 이름이 없었다(이름 없는 switch).
  * - 잘못된 IP 로 저장해 422 가 나면 규칙 표 아래 오류가 뜨는데, 규칙을 고치거나(창 열기·사용 토글·삭제) 창을
@@ -41,15 +41,19 @@ describe('IP 접근 제한 규칙 — 스위치 이름', () => {
    * @scenario surface=rules_table
    * @effects rules_table_switch_named
    */
-  it('규칙 표의 사용 스위치는 보이는 라벨 없이 「사용」 이름을 갖고, 카드 판은 종전대로 라벨을 단다', () => {
+  it('규칙 표의 사용 스위치는 보이는 라벨 없이 「{규칙 경로} 사용」 이름을 갖고, 카드 판은 보이는 라벨을 유지한 채 같은 이름을 단다', () => {
     const toggles = nodes(card).filter((n) => n.name === 'Toggle' && String(n.props?.checked ?? '').includes('rule.enabled'));
     expect(toggles).toHaveLength(2);
 
-    const table = toggles.find((t) => t.props?.ariaLabel);
-    expect(table?.props?.ariaLabel).toBe('$t:admin.settings.security.ip_restriction.col_enabled');
-    expect(table?.props?.label).toBeUndefined();
+    // 행마다 같은 「사용」이면 어느 규칙의 스위치인지 알 수 없다 — 행 이름(규칙 경로, 비면 「N번째 행」) + 열 이름(#757 판정 강화 3)
+    const rowName =
+      "$t:common.row_cell|row={{rule.pattern || $t('common.row_n', {n: idx + 1})}}|column={{$t('admin.settings.security.ip_restriction.col_enabled')}}";
+    for (const t of toggles) expect(t.props?.ariaLabel).toBe(rowName);
 
-    const mobile = toggles.find((t) => !t.props?.ariaLabel);
+    const table = toggles.find((t) => !t.props?.label);
+    expect(table).toBeDefined();
+
+    const mobile = toggles.find((t) => t.props?.label);
     expect(mobile?.props?.label).toBe('$t:admin.settings.security.ip_restriction.col_enabled');
   });
 });

@@ -1,0 +1,27 @@
+# 시나리오 매니페스트 — 알림 문안 편집 창의 「특정 회원」 수신자 고르기는 탈퇴 회원을 검색하지 않는다 (7.1.1, 코어 exclude_withdrawn 후속)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스", modules/_bundled/sirsoft-ecommerce/tests/scenarios 의 admin_member_picker_excludes_withdrawn
+
+feature: notification_recipient_excludes_withdrawn
+
+description: >-
+  관리자 환경설정 → 알림 → 알림 문안 편집 창은 코어 회원 검색으로 「특정 회원」 수신자를 고른다. 검색은 기본으로 탈퇴 회원도
+  돌려주는데, 탈퇴 회원은 연락처가 익명화되고 바깥 채널 발송이 막혀 골라도 받지 못한다. 고르는 자리에서 뺀다(`exclude_withdrawn=1`).
+  활동 로그 「행위자」 필터는 탈퇴 회원의 기록을 찾는 자리라 그대로 둔다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/__tests__/layouts/notificationRecipientExcludesWithdrawn.test.ts
+
+coverage_strategy: pairwise
+
+axes:
+  surface:
+    - recipient_picker   # 알림 문안 편집 창 「특정 회원」 (빼야 함)
+    - record_filter      # 활동 로그 「행위자」 필터 (빼지 않음)
+
+effects:
+  - notification_recipient_picker_excludes_withdrawn   # 고르기 창은 exclude_withdrawn=1 을 싣고, 기록 필터는 싣지 않는다
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  note: |
+    수정 전 red 대조(2026-10-19): HEAD 의 _modal_notification_template_form.g7.html 에는 query.exclude_withdrawn 이 없어 첫 단언이 빨개진다.

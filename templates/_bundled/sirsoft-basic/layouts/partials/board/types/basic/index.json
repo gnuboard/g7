@@ -8,25 +8,25 @@
     "name": "Div",
     "children": [
         {
-            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)\n         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 J D-J12).",
+            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)\n         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 실측).\n         제목 칸은 최소 8rem 을 지키며 남는 폭을 쓰고, 그 폭도 안 나오면 버튼 묶음이 다음 줄 오른쪽 끝(ml-auto)으로 내린다 — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). 보통 이름은 수정 전처럼 제목 옆 오른쪽에 둔다.",
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex justify-between items-start gap-3 mb-6"
+                "className": "flex flex-wrap justify-between items-start gap-3 mb-6"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "min-w-0"
+                        "className": "min-w-0 flex-1 basis-32"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H1",
                             "props": {
-                                "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                "className": "text-2xl font-bold text-gray-900 dark:text-white break-words"
                             },
                             "text": "{{posts?.data?.board?.name ?? ''}}"
                         },
@@ -35,7 +35,7 @@
                             "name": "P",
                             "if": "{{posts?.data?.board?.description}}",
                             "props": {
-                                "className": "text-gray-600 dark:text-gray-400 mt-1"
+                                "className": "text-gray-600 dark:text-gray-400 mt-1 break-words"
                             },
                             "text": "{{posts?.data?.board?.description}}"
                         }
@@ -46,7 +46,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center gap-2 shrink-0 whitespace-nowrap"
+                        "className": "flex items-center gap-2 shrink-0 whitespace-nowrap ml-auto"
                     },
                     "children": [
                         {
@@ -89,6 +89,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:board.form.category",
                         "value": "{{query.category || 'all'}}",
                         "className": "w-full sm:w-auto sm:min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm",
                         "options": "{{[{value:'all', label:'$t:board.filter.category_all'},{value:'unclassified', label:'$t:board.filter.category_unclassified'}].concat((posts?.data?.board?.categories ?? []).map(function(c){return{value:c,label:c};}))}}"
@@ -97,14 +98,13 @@
                 {
                     "comment": "삭제된 게시글 포함 토글 버튼 (manager 권한 보유 시에만 표시)",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "if": "{{posts?.data?.abilities?.can_view_deleted}}",
                     "actions": [
                         {
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "/board/{{route.slug}}",
                                 "mergeQuery": true,
                                 "query": {
                                     "del": "{{query.del === '1' ? '' : '1'}}",
@@ -114,7 +114,8 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
+                        "href": "/board/{{route.slug}}?del={{query.del === '1' ? '' : '1'}}&page=1",
+                        "mergeQuery": true,
                         "className": "{{query.del === '1' ? 'inline-flex items-center gap-1.5 px-3 py-2 border-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium' : 'inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700'}}"
                     },
                     "children": [
@@ -157,6 +158,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:common.search_field",
                                 "value": "{{_local.boardSearchField ?? query.search_field ?? 'title_content'}}",
                                 "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                                 "options": [
@@ -279,22 +281,32 @@
                                 {
                                     "comment": "행 클릭 시 현재 목록 상태(category/search/page/del/filters)를 상세 URL 에 부착 (45-1 목록 복귀)",
                                     "type": "basic",
-                                    "name": "Button",
-                                    "actions": [
-                                        {
-                                            "type": "click",
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/board/{{route?.slug}}/{{post?.id}}",
-                                                "mergeQuery": true,
-                                                "query": {}
-                                            }
-                                        }
-                                    ],
+                                    "name": "Div",
                                     "props": {
-                                        "className": "{{post?.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}} block w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-700"
+                                        "className": "relative {{post?.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}} block w-full text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-700"
                                     },
                                     "children": [
+                                        {
+                                            "comment": "카드 전체가 링크다 — 안쪽 조작(작성자 메뉴·삭제 등)을 링크 밖에 두려고 빈 링크가 카드를 덮고, 그 조작은 링크 위(z-20)에 둔다",
+                                            "type": "basic",
+                                            "name": "A",
+                                            "actions": [
+                                                {
+                                                    "type": "click",
+                                                    "handler": "navigate",
+                                                    "params": {
+                                                        "mergeQuery": true,
+                                                        "query": {}
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "href": "/board/{{route?.slug}}/{{post?.id}}",
+                                                "mergeQuery": true,
+                                                "aria-label": "{{post?.title ?? ''}}",
+                                                "className": "absolute inset-0 z-10 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
+                                            }
+                                        },
                                         {
                                             "comment": "데스크톱: 테이블 행",
                                             "type": "basic",
@@ -317,7 +329,7 @@
                                                             "name": "Span",
                                                             "if": "{{post?.row_type === 'notice'}}",
                                                             "props": {
-                                                                "className": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500"
+                                                                "className": "inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-600"
                                                             },
                                                             "children": [
                                                                 {
@@ -343,7 +355,7 @@
                                                             "name": "Span",
                                                             "if": "{{post?.row_type === 'normal'}}",
                                                             "props": {
-                                                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                                                "className": "text-sm text-gray-600 dark:text-gray-400"
                                                             },
                                                             "text": "{{post?.number ?? '-'}}"
                                                         }
@@ -368,7 +380,7 @@
                                                             "props": {
                                                                 "name": "turn-up",
                                                                 "size": "sm",
-                                                                "className": "fa-rotate-90 text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                                "className": "fa-rotate-90 text-gray-500 dark:text-gray-400 flex-shrink-0"
                                                             }
                                                         },
                                                         {
@@ -377,7 +389,7 @@
                                                             "name": "Span",
                                                             "if": "{{post?.category}}",
                                                             "props": {
-                                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0"
+                                                                "className": "inline-block truncate max-w-32 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0"
                                                             },
                                                             "text": "{{post?.category}}"
                                                         },
@@ -400,16 +412,29 @@
                                                             "props": {
                                                                 "name": "eye-slash",
                                                                 "size": "sm",
-                                                                "className": "text-orange-500 dark:text-orange-400 flex-shrink-0"
+                                                                "className": "text-orange-600 dark:text-orange-400 flex-shrink-0"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm font-medium truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}"
+                                                                "className": "text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}}"
                                                             },
                                                             "text": "{{post?.title}}"
+                                                        },
+                                                        {
+                                                            "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 데스크톱 행이라 모바일 카드에도 같은 자리가 있다. 조각은 extensionPointProps.postId 등으로 이 행의 글을 읽는다",
+                                                            "type": "extension_point",
+                                                            "name": "board_post_row_badges",
+                                                            "props": {
+                                                                "className": "contents",
+                                                                "data-extension-point": "board_post_row_badges",
+                                                                "post": "{{post}}",
+                                                                "postId": "{{post?.id}}",
+                                                                "boardSlug": "{{route?.slug}}",
+                                                                "context": "board_list"
+                                                            }
                                                         },
                                                         {
                                                             "comment": "첨부파일 아이콘",
@@ -436,7 +461,7 @@
                                                             "name": "Span",
                                                             "if": "{{posts?.data?.board?.settings?.use_reaction !== false && (post?.reaction_total ?? 0) > 0}}",
                                                             "props": {
-                                                                "className": "text-rose-500 dark:text-rose-400 text-xs font-medium flex-shrink-0 inline-flex items-center gap-0.5"
+                                                                "className": "text-rose-700 dark:text-rose-300 text-xs font-medium flex-shrink-0 inline-flex items-center gap-0.5"
                                                             },
                                                             "children": [
                                                                 {
@@ -469,7 +494,7 @@
                                                             "name": "Span",
                                                             "if": "{{post?.is_new}}",
                                                             "props": {
-                                                                "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0"
+                                                                "className": "px-1.5 py-0.5 text-xs bg-red-600 dark:bg-red-600 text-white rounded flex-shrink-0"
                                                             },
                                                             "text": "N"
                                                         }
@@ -499,7 +524,7 @@
                                                                 "author": "{{post?.author}}",
                                                                 "showDropdown": true,
                                                                 "stopPropagation": true,
-                                                                "className": "text-sm {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"
+                                                                "className": "relative z-20 text-sm {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600 dark:text-gray-400'}}"
                                                             }
                                                         }
                                                     ]
@@ -509,7 +534,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-center whitespace-nowrap {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}",
+                                                        "className": "text-sm text-center whitespace-nowrap {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600 dark:text-gray-400'}}",
                                                         "title": "{{post?.created_at ?? ''}}"
                                                     },
                                                     "text": "{{post?.created_at_formatted ?? ''}}"
@@ -520,7 +545,7 @@
                                                     "name": "Span",
                                                     "if": "{{posts?.data?.board?.settings?.show_view_count !== false}}",
                                                     "props": {
-                                                        "className": "text-sm text-center {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"
+                                                        "className": "text-sm text-center {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600 dark:text-gray-400'}}"
                                                     },
                                                     "text": "{{post?.view_count}}"
                                                 }
@@ -548,7 +573,7 @@
                                                             "name": "Span",
                                                             "if": "{{post?.row_type === 'notice'}}",
                                                             "props": {
-                                                                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500 flex-shrink-0"
+                                                                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-600 flex-shrink-0"
                                                             },
                                                             "children": [
                                                                 {
@@ -574,7 +599,7 @@
                                                             "name": "Span",
                                                             "if": "{{post?.row_type === 'normal'}}",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5"
+                                                                "className": "text-xs text-gray-600 dark:text-gray-400 flex-shrink-0 mt-0.5"
                                                             },
                                                             "text": "#{{post?.number}}"
                                                         },
@@ -604,7 +629,7 @@
                                                                             "props": {
                                                                                 "name": "turn-up",
                                                                                 "size": "sm",
-                                                                                "className": "fa-rotate-90 text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                                                "className": "fa-rotate-90 text-gray-500 dark:text-gray-400 flex-shrink-0"
                                                                             }
                                                                         },
                                                                         {
@@ -613,7 +638,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{post?.category}}",
                                                                             "props": {
-                                                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0"
+                                                                                "className": "inline-block truncate max-w-32 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 flex-shrink-0"
                                                                             },
                                                                             "text": "{{post?.category}}"
                                                                         },
@@ -636,16 +661,30 @@
                                                                             "props": {
                                                                                 "name": "eye-slash",
                                                                                 "size": "sm",
-                                                                                "className": "text-orange-500 dark:text-orange-400 flex-shrink-0"
+                                                                                "className": "text-orange-600 dark:text-orange-400 flex-shrink-0"
                                                                             }
                                                                         },
                                                                         {
+                                                                            "comment": "제목은 한 줄 … — 공백 없는 긴 제목이 N 배지·댓글 수를 화면 밖으로 밀었다(#143)",
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-sm font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}}"
+                                                                                "className": "text-sm font-medium min-w-0 truncate {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}}"
                                                                             },
                                                                             "text": "{{post?.title}}"
+                                                                        },
+                                                                        {
+                                                                            "comment": "확장 자리 — 모바일 카드의 글 배지 자리(#149). 데스크톱 행과 같은 이름이라 조각이 두 번 렌더되고 화면 폭에 따라 한쪽만 보인다",
+                                                                            "type": "extension_point",
+                                                                            "name": "board_post_row_badges",
+                                                                            "props": {
+                                                                                "className": "contents",
+                                                                                "data-extension-point": "board_post_row_badges",
+                                                                                "post": "{{post}}",
+                                                                                "postId": "{{post?.id}}",
+                                                                                "boardSlug": "{{route?.slug}}",
+                                                                                "context": "board_list"
+                                                                            }
                                                                         },
                                                                         {
                                                                             "comment": "첨부파일 아이콘",
@@ -672,7 +711,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{posts?.data?.board?.settings?.use_reaction !== false && (post?.reaction_total ?? 0) > 0}}",
                                                                             "props": {
-                                                                                "className": "text-rose-500 dark:text-rose-400 text-xs font-medium flex-shrink-0 inline-flex items-center gap-0.5"
+                                                                                "className": "text-rose-700 dark:text-rose-300 text-xs font-medium flex-shrink-0 inline-flex items-center gap-0.5"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -705,7 +744,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{post?.is_new}}",
                                                                             "props": {
-                                                                                "className": "px-1.5 py-0.5 text-xs bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0"
+                                                                                "className": "px-1.5 py-0.5 text-xs bg-red-600 dark:bg-red-600 text-white rounded flex-shrink-0"
                                                                             },
                                                                             "text": "N"
                                                                         }
@@ -720,7 +759,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex items-center justify-between text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"
+                                                        "className": "flex items-center justify-between text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600 dark:text-gray-400'}}"
                                                     },
                                                     "children": [
                                                         {
@@ -746,7 +785,7 @@
                                                                         "author": "{{post?.author}}",
                                                                         "showDropdown": true,
                                                                         "stopPropagation": true,
-                                                                        "className": "text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'}}"
+                                                                        "className": "relative z-20 text-xs {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-600 dark:text-gray-400' : 'text-gray-600 dark:text-gray-400'}}"
                                                                     }
                                                                 }
                                                             ]
@@ -812,6 +851,8 @@
                 }
             ],
             "props": {
+                "pageHref": "/board/{{route?.slug}}?page={page}",
+                "pageHrefMergeQuery": true,
                 "currentPage": "{{posts?.data?.pagination?.current_page ?? 1}}",
                 "totalPages": "{{posts?.data?.pagination?.last_page ?? null}}",
                 "hasMorePages": "{{posts?.data?.pagination?.has_more_pages ?? false}}",

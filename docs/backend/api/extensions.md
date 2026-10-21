@@ -79,6 +79,140 @@ HTTP/1.1 200
 
 **권한(7.1.0)** 응답의 `items.{plugins|modules|templates}` 는 현재 사용자가 그 종류의 활성화 권한(`core.{type}s.activate`)을 가진 경우에만 채워지고, 없으면 빈 목록이다.
 
+### GET /api/admin/extensions/unplaced-bundled
+<!-- @generated:start:api.admin.extensions.unplaced-bundled -->
+- **라우트명**: `api.admin.extensions.unplaced-bundled`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\UnplacedBundledNoticeController@index`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.read|core.plugins.read|core.templates.read|core.language_packs.read,false` (넷 중 하나)
+
+**요청 파라미터**
+
+_요청 파라미터 없음._
+
+**요청 예시**
+
+```http
+GET /api/admin/extensions/unplaced-bundled HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| items | object | `{"modules":[],"plugins":[{"identifier":"sirsoft-totp","name":"2단계 인증","version":"1.0.0"}],"templates":[],"language_packs":[]}` | 코어 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 번들을 유형별(`modules`/`plugins`/`templates`/`language_packs`)로 묶은 목록. 각 원소는 식별자(`identifier`), 현재 로케일 이름(`name`), 버전(`version`). 숨김 샘플, 기록 뒤 디스크에 생겼거나 설치된 번들, 이 관리자가 같은 기록에서 닫은 유형, 조회 권한이 없는 유형은 빈 목록 |
+| hash | string\|null | `9f1c…` | 미배치 기록의 해시. 닫기 기준값이며 기록이 바뀌면 달라져 닫은 안내가 다시 보인다. 기록이 없거나 코어 버전이 다르면 `null` |
+| core_version | string | `7.1.2` | 현재 설치된 코어 버전 |
+| command | string | `php artisan core:bundled-sources place` | 배치 명령의 앞부분 |
+| commands | object | `{"plugins":"php artisan core:bundled-sources place sirsoft-totp"}` | 유형별로 그 유형 항목을 모두 배치하는 복사용 명령. 항목이 없는 유형은 키가 없다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "배치하지 않은 공식 번들 안내입니다.",
+    "data": {
+        "items": {
+            "modules": [],
+            "plugins": [
+                {
+                    "identifier": "sirsoft-totp",
+                    "name": "2단계 인증",
+                    "version": "1.0.0"
+                }
+            ],
+            "templates": [],
+            "language_packs": []
+        },
+        "hash": "9f1c2e…",
+        "core_version": "7.1.2",
+        "command": "php artisan core:bundled-sources place",
+        "commands": {
+            "plugins": "php artisan core:bundled-sources place sirsoft-totp"
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 네 종류의 조회 권한이 하나도 없는 경우 |
+
+<!-- @generated:end -->
+
+**설명** 코어 업데이트(또는 `core:bundled-sources`)가 남긴 미배치 기록에서, 코어 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 번들을 유형별로 돌려줍니다. 관리자 목록 화면(모듈·플러그인·템플릿·언어팩)의 안내 블록이 이 응답을 씁니다. 기록 파일이 없거나 손상됐거나 기록의 코어 버전이 현재와 다르면 빈 목록(200)입니다. 응답의 각 유형은 현재 사용자가 그 종류의 조회 권한(`core.{type}s.read`, 언어팩은 `core.language_packs.read`)을 가진 경우에만 채워집니다.
+
+### POST /api/admin/extensions/unplaced-bundled/{type}/dismiss
+<!-- @generated:start:api.admin.extensions.unplaced-bundled.dismiss -->
+- **라우트명**: `api.admin.extensions.unplaced-bundled.dismiss`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\UnplacedBundledNoticeController@dismiss`
+- **인증/권한**: `auth:sanctum` + `permission:core.{type}s.read` (그 종류의 조회 권한, 언어팩은 `core.language_packs.read`)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| type | path | string | 예 | `module`, `plugin`, `template`, `language_pack` | 닫을 안내의 유형. 그 외 값은 404 |
+
+**요청 예시**
+
+```http
+POST /api/admin/extensions/unplaced-bundled/plugin/dismiss HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `data` 객체의 필드._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| type | string | `plugin` | 닫은 안내의 유형 |
+| hash | string\|null | `9f1c…` | 닫기에 쓴 미배치 기록 해시. 기록이 없으면 `null`(닫을 안내가 없음) |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "안내를 닫았습니다.",
+    "data": {
+        "type": "plugin",
+        "hash": "9f1c2e…"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 그 종류의 조회 권한이 없는 경우 |
+| 404 | Not Found | `type` 이 허용값이 아닌 경우 |
+
+<!-- @generated:end -->
+
+**설명** 한 유형의 미배치 공식 번들 안내를 현재 관리자에 한해 닫습니다. 닫기는 관리자별·유형별로 30일 동안 유지되며, 다른 관리자의 안내에는 영향이 없습니다. 이후 코어 업데이트나 `core:bundled-sources list` 가 기록을 새로 써서 해시가 바뀌면 다시 보입니다. 운영자가 `core:bundled-sources place` 나 `prune` 으로 번들을 정리하면 해당 항목은 모든 관리자에게서 사라집니다.
+
 ### POST /api/admin/extensions/{type}/{identifier}/dismiss
 <!-- @generated:start:api.admin.extensions.dismiss -->
 - **라우트명**: `api.admin.extensions.dismiss`

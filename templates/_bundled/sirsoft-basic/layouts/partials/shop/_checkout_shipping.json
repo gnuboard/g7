@@ -13,6 +13,80 @@
             }
         }
     },
+    "onComponentEvent": [
+        {
+            "comment": "「배송지 관리」 창의 「선택」 이 보낸 배송지를 주문서에 적용한다 — 아래 저장된 배송지 칩과 같은 순서(고른 배송지 → 배송지 칸 →\n           우편번호·국가 → 배송비 다시 받기)를 페이지 문맥에서 돈다. 창이 페이지 상태를 직접 고치면 정본에 닿지 않는다(7.1.1)",
+            "event": "sirsoft-basic:checkout-address-selected",
+            "handler": "sequence",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "selectedAddressId": "{{_eventData.address?.id ?? null}}"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "selectedAddressObj": "{{_eventData.address ?? null}}"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "shipping": {
+                            "recipient_name": "{{_eventData.address?.recipient_name}}",
+                            "recipient_phone": "{{_eventData.address?.recipient_phone}}",
+                            "country_code": "{{_eventData.address?.country_code ?? 'KR'}}",
+                            "zipcode": "{{_eventData.address?.zipcode ?? ''}}",
+                            "address": "{{_eventData.address?.address ?? ''}}",
+                            "address_detail": "{{_eventData.address?.address_detail ?? ''}}",
+                            "region": "{{_eventData.address?.region ?? ''}}",
+                            "address_line_1": "{{_eventData.address?.address_line_1 ?? ''}}",
+                            "address_line_2": "{{_eventData.address?.address_line_2 ?? ''}}",
+                            "intl_city": "{{_eventData.address?.city ?? ''}}",
+                            "intl_state": "{{_eventData.address?.state ?? ''}}",
+                            "intl_postal_code": "{{_eventData.address?.postal_code ?? ''}}"
+                        }
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "checkout.zipcode": "{{_eventData.address?.zipcode}}",
+                        "checkout.country_code": "{{_eventData.address?.country_code ?? 'KR'}}"
+                    }
+                },
+                {
+                    "handler": "apiCall",
+                    "target": "/api/modules/sirsoft-ecommerce/checkout",
+                    "auth_mode": "optional",
+                    "params": {
+                        "method": "PUT",
+                        "body": "{{_local.checkout}}"
+                    },
+                    "onSuccess": {
+                        "handler": "updateDataSource",
+                        "params": {
+                            "dataSourceId": "checkoutData",
+                            "data": "{{response}}"
+                        }
+                    },
+                    "onError": {
+                        "handler": "toast",
+                        "params": {
+                            "type": "error",
+                            "message": "{{error.message}}"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
     "props": {
         "className": "bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
     },
@@ -183,21 +257,35 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "px-3 py-1.5 border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 rounded-full text-xs hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1"
+                                "className": "px-3 py-1.5 border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 rounded-full text-xs hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1"
                             }
                         }
                     },
                     "actions": [
                         {
-                            "comment": "배송지 관리 창을 목록 모드로 연다 — 같은 창이 등록/수정 모드로도 열리므로 모드를 먼저 정한다",
+                            "comment": "배송지 관리 창을 목록 모드로 연다 — 같은 창이 등록/수정 모드로도 열리므로 모드를 먼저 정한다.\n               창 상태는 창 고유 전역 이름 공간에 두고, 열 때마다 null 로 비운 뒤 통째로 다시 쓴다 — 페이지 _local 에 쓰면 영구 마운트된\n               창이 쥔 앞 값(수정 폼·앞 배송지)에 가려 닿지 않는다(7.1.1). 창 안 선택은 지금 주문서에 적용된 배송지로 시작한다",
                             "type": "click",
                             "handler": "sequence",
                             "actions": [
                                 {
                                     "handler": "setState",
                                     "params": {
-                                        "target": "local",
-                                        "addressModalMode": "list"
+                                        "target": "global",
+                                        "checkoutAddressModal": null
+                                    }
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "checkoutAddressModal": {
+                                            "mode": "list",
+                                            "editing": null,
+                                            "errors": null,
+                                            "isSaving": false,
+                                            "selectedAddressId": "{{_local.selectedAddressId ?? null}}",
+                                            "selectedAddressObj": "{{_local.selectedAddressObj ?? null}}"
+                                        }
                                     }
                                 },
                                 {
@@ -209,7 +297,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 rounded-full text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1"
+                        "className": "px-4 py-2 border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 rounded-full text-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-1"
                     },
                     "children": [
                         {
@@ -321,7 +409,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -394,6 +482,7 @@
                     ],
                     "props": {
                         "name": "country_code",
+                        "aria-label": "$t:shop.checkout.shipping_country",
                         "value": "{{_local.shipping?.country_code ?? _local.checkout?.country_code ?? 'KR'}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
                         "options": "{{(shippingSettings?.data?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: $localized(c.name) || c.code }))}}"
@@ -437,7 +526,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-1"
+                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                     },
                                     "text": "*"
                                 }
@@ -475,6 +564,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.recipient_name",
                                 "type": "text",
                                 "name": "recipient_name",
                                 "value": "{{_local.shipping?.recipient_name ?? ''}}",
@@ -487,7 +577,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['shipping.recipient_name']}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1 block"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                             },
                             "text": "{{_local.errors?.['shipping.recipient_name']?.[0] ?? ''}}"
                         }
@@ -514,7 +604,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-1"
+                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                     },
                                     "text": "*"
                                 }
@@ -552,6 +642,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.recipient_phone",
                                 "type": "tel",
                                 "name": "recipient_phone",
                                 "value": "{{_local.shipping?.recipient_phone ?? ''}}",
@@ -564,7 +655,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['shipping.recipient_phone']}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1 block"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                             },
                             "text": "{{_local.errors?.['shipping.recipient_phone']?.[0] ?? ''}}"
                         }
@@ -604,7 +695,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -647,6 +738,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:shop.checkout.zipcode",
                                         "type": "text",
                                         "name": "zipcode",
                                         "value": "{{_local.shipping?.zipcode ?? ''}}",
@@ -724,7 +816,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['shipping.zipcode']}}",
                             "props": {
-                                "className": "text-red-500 text-xs block"
+                                "className": "text-red-600 dark:text-red-400 text-xs block"
                             },
                             "text": "{{_local.errors?.['shipping.zipcode']?.[0] ?? ''}}"
                         },
@@ -750,6 +842,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.address",
                                 "type": "text",
                                 "name": "address",
                                 "value": "{{_local.shipping?.address ?? ''}}",
@@ -763,7 +856,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['shipping.address']}}",
                             "props": {
-                                "className": "text-red-500 text-xs block"
+                                "className": "text-red-600 dark:text-red-400 text-xs block"
                             },
                             "text": "{{_local.errors?.['shipping.address']?.[0] ?? ''}}"
                         },
@@ -784,7 +877,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-1"
+                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                     },
                                     "text": "*"
                                 }
@@ -812,6 +905,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.detail_address",
                                 "type": "text",
                                 "name": "address_detail",
                                 "value": "{{_local.shipping?.address_detail ?? ''}}",
@@ -824,7 +918,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['shipping.address_detail']}}",
                             "props": {
-                                "className": "text-red-500 text-xs block"
+                                "className": "text-red-600 dark:text-red-400 text-xs block"
                             },
                             "text": "{{_local.errors?.['shipping.address_detail']?.[0] ?? ''}}"
                         }
@@ -864,7 +958,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -897,6 +991,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.intl_address",
                                 "type": "text",
                                 "name": "address_line_1",
                                 "value": "{{_local.shipping?.address_line_1 ?? ''}}",
@@ -909,7 +1004,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['shipping.address_line_1']}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1 block"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                             },
                             "text": "{{_local.errors?.['shipping.address_line_1']?.[0] ?? ''}}"
                         }
@@ -938,6 +1033,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:shop.checkout.detail_address",
                         "type": "text",
                         "name": "address_line_2",
                         "value": "{{_local.shipping?.address_line_2 ?? ''}}",
@@ -980,7 +1076,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-red-500 ml-1"
+                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                             },
                                             "text": "*"
                                         }
@@ -1008,6 +1104,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:shop.checkout.intl_city",
                                         "type": "text",
                                         "name": "intl_city",
                                         "value": "{{_local.shipping?.intl_city ?? ''}}",
@@ -1020,7 +1117,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['shipping.intl_city']}}",
                                     "props": {
-                                        "className": "text-red-500 text-xs mt-1 block"
+                                        "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                                     },
                                     "text": "{{_local.errors?.['shipping.intl_city']?.[0] ?? ''}}"
                                 }
@@ -1060,6 +1157,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:shop.checkout.intl_state",
                                         "type": "text",
                                         "name": "intl_state",
                                         "value": "{{_local.shipping?.intl_state ?? ''}}",
@@ -1092,7 +1190,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-1"
+                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                     },
                                     "text": "*"
                                 }
@@ -1120,6 +1218,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:shop.checkout.intl_postal_code",
                                 "type": "text",
                                 "name": "intl_postal_code",
                                 "value": "{{_local.shipping?.intl_postal_code ?? ''}}",
@@ -1132,7 +1231,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['shipping.intl_postal_code']}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1 block"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 block"
                             },
                             "text": "{{_local.errors?.['shipping.intl_postal_code']?.[0] ?? ''}}"
                         }
@@ -1186,6 +1285,7 @@
                     ],
                     "props": {
                         "name": "shipping_memo",
+                        "aria-label": "$t:shop.checkout.shipping_memo",
                         "value": "{{_local.shippingMemo ?? ''}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                     },
@@ -1280,6 +1380,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:shop.checkout.shipping_memo",
                         "type": "text",
                         "name": "shipping_memo_custom",
                         "value": "{{_local.shippingMemoCustom ?? ''}}",

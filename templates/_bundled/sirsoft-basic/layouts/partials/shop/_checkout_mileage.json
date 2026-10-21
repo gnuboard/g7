@@ -227,7 +227,7 @@
                     "name": "Div",
                     "if": "{{(checkoutData.data.calculation?.summary?.points_used ?? 0) > 0}}",
                     "props": {
-                        "className": "mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1"
+                        "className": "mt-2 text-sm text-green-700 dark:text-green-400 flex items-center gap-1"
                     },
                     "children": [
                         {

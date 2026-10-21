@@ -13,14 +13,14 @@
       <div class="admin-card">
         <div class="flex-between">
           <span class="text-label-subtle">$t:admin.schedules.stats.total</span>
-          <icon name="clock" class="text-xl text-gray-400 dark:text-gray-500"/>
+          <icon name="clock" class="text-xl text-gray-500 dark:text-gray-500"/>
         </div>
         <div class="text-page-heading mt-2">{{schedules?.data?.statistics?.total ?? 0}}</div>
       </div>
       <div class="admin-card">
         <div class="flex-between">
           <span class="text-label-subtle">$t:admin.schedules.stats.active</span>
-          <icon name="check-circle" class="text-xl text-green-500"/>
+          <icon name="check-circle" class="text-xl text-green-600"/>
         </div>
         <div class="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">{{schedules?.data?.statistics?.active ?? 0}}</div>
       </div>
@@ -41,7 +41,7 @@
     </div>
     <div data-ref="search_filter_area" class="admin-card">
       <div data-ref="search_header_row" class="flex-center flex-wrap gap-3 mb-4">
-        <select data-ref="search_type_select" name="search_type" class="w-28" value="{{_local.searchType || ''}}">
+        <select data-ref="search_type_select" name="search_type" aria-label="$t:common.search_field" class="w-28" value="{{_local.searchType || ''}}">
           <options>
             <option value="">$t:admin.schedules.search_fields.all</option>
             <option value="name">$t:admin.schedules.search_fields.name</option>
@@ -60,7 +60,7 @@
             <action-ref name="searchSchedules"/>
           </on>
         </input>
-        <button data-ref="advanced_search_toggle" class="flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-700">
+        <button type="button" data-ref="advanced_search_toggle" class="flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-100 dark:hover:bg-gray-700">
           <on type="click">
             <!-- 접힌 조건 영역을 여닫는다. 이 값만 전역인데, 아래 초기화 버튼이 같은 자리를 닫아 조건과 함께 되돌리기 때문이다. -->
             <set-state target="global" showAdvancedSearch="{{!_global.showAdvancedSearch}}"/>
@@ -132,7 +132,7 @@
           </div>
           <div data-ref="date_presets" class="flex gap-1">
             <!-- 오늘. 기간 프리셋은 두 날짜를 한 번에 바꾸고 페이지를 1로 되돌린다 — 좁아진 기간에서 보던 페이지 번호는 결과 범위를 벗어난다. 날짜는 계정 시간대(회원 → 사이트 기본)의 달력 날짜다 — 서버가 그 시간대의 하루로 자르므로 브라우저 시간대로 만들면 하루 어긋난다 -->
-            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+            <button type="button" class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
               <on type="click">
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
                   <query created_from="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" created_to="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" :page="1"/>
@@ -141,7 +141,7 @@
               $t:admin.schedules.filters.preset.today
             </button>
             <!-- 최근 7일 -->
-            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+            <button type="button" class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
               <on type="click">
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
                   <query created_from="{{new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" created_to="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" :page="1"/>
@@ -150,7 +150,7 @@
               $t:admin.schedules.filters.preset.week
             </button>
             <!-- 최근 30일 -->
-            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+            <button type="button" class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
               <on type="click">
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
                   <query created_from="{{new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" created_to="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" :page="1"/>
@@ -159,7 +159,7 @@
               $t:admin.schedules.filters.preset.month
             </button>
             <!-- 최근 90일 -->
-            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+            <button type="button" class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
               <on type="click">
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
                   <query created_from="{{new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" created_to="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" :page="1"/>
@@ -168,7 +168,7 @@
               $t:admin.schedules.filters.preset.3months
             </button>
             <!-- 최근 180일 -->
-            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+            <button type="button" class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
               <on type="click">
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
                   <query created_from="{{new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" created_to="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" :page="1"/>
@@ -177,7 +177,7 @@
               $t:admin.schedules.filters.preset.6months
             </button>
             <!-- 최근 1년 -->
-            <button class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
+            <button type="button" class="px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
               <on type="click">
                 <navigate path="/admin/schedules" :mergeQuery="true" :replace="true" transition_overlay_target="schedules_data_grid__body">
                   <query created_from="{{new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" created_to="{{new Date().toLocaleDateString('sv-SE', { timeZone: current_user?.data?.timezone || _global.settings?.general?.timezone || undefined })}}" :page="1"/>
@@ -257,7 +257,7 @@
         </div>
         <div data-ref="module_filter_row" class="flex-center flex-wrap gap-3">
           <span class="text-body font-medium min-w-[80px]">$t:admin.schedules.filters.module</span>
-          <select name="module_filter" class="w-48" value="{{query.module || ''}}">
+          <select name="module_filter" aria-label="$t:admin.schedules.filters.module" class="w-48" value="{{query.module || ''}}">
             <options>
               <option value="">$t:admin.schedules.filters.all</option>
             </options>
@@ -271,7 +271,7 @@
         </div>
       </div>
       <div data-ref="search_buttons" class="mt-4 pt-4 flex justify-center gap-2">
-        <button data-ref="search_button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors">
+        <button type="button" data-ref="search_button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors">
           <on type="click">
             <action-ref name="searchSchedules"/>
           </on>
@@ -284,7 +284,7 @@
           </on>
           <icon name="arrows-rotate" class="text-base"/>
         </button>
-        <button data-ref="reset_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors">
+        <button type="button" data-ref="reset_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors">
           <on type="click">
             <!-- 조건을 전부 털고 질의 없는 주소로 간다(다른 조건들과 달리 여기만 합치지 않는다 —
               합치면 지우려던 조건이 그대로 남는다). 접어 둔 영역도 함께 닫는다.
@@ -305,7 +305,7 @@
     <div data-ref="bulk_actions_area" class="flex-between flex-wrap gap-4 mb-4">
       <div data-ref="bulk_actions_left" class="flex-center gap-3">
         <span class="text-label">$t:admin.schedules.selected_count|count={{_global.selectedScheduleIds?.length ?? 0}}</span>
-        <select name="bulk_status" class="w-32" placeholder="$t:admin.schedules.bulk.status_change" value="" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_update !== true}}">
+        <select name="bulk_status" aria-label="$t:admin.schedules.bulk.status_change" class="w-32" placeholder="$t:admin.schedules.bulk.status_change" value="" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_update !== true}}">
           <options>
             <option value="active">$t:admin.schedules.status.active</option>
             <option value="inactive">$t:admin.schedules.status.inactive</option>
@@ -315,7 +315,7 @@
             <set-state target="global" bulkStatusAction="{{$event.target.value}}"/>
           </on>
         </select>
-        <select name="bulk_action" class="w-32" placeholder="$t:admin.schedules.bulk.action_run" value="" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_run !== true}}">
+        <select name="bulk_action" aria-label="$t:admin.schedules.bulk.action_run" class="w-32" placeholder="$t:admin.schedules.bulk.action_run" value="" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_run !== true}}">
           <options>
             <option value="run">$t:admin.schedules.actions.run</option>
           </options>
@@ -324,7 +324,7 @@
             <set-state target="global" bulkAction="{{$event.target.value}}"/>
           </on>
         </select>
-        <button class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_update !== true}}">
+        <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.selectedScheduleIds?.length || schedules?.data?.abilities?.can_update !== true}}">
           <on type="click">
             <!-- handler:'if' 는 미등록 핸들러이고 액션 레벨 'condition' 도 엔진이 무시한다. 등록된 conditions 핸들러 형태로 표기. -->
             <conditions>
@@ -348,7 +348,7 @@
       </div>
       <div data-ref="list_info_right" class="flex-center gap-3 py-3">
         <span class="text-body font-medium">$t:admin.schedules.total_count|count={{schedules?.data?.pagination?.total ?? 0}}</span>
-        <select name="sort_by" class="w-40" value="{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}">
+        <select name="sort_by" aria-label="$t:common.sort_order" class="w-40" value="{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}">
           <options>
             <option value="created_at_desc">$t:admin.schedules.sort.created_at_desc</option>
             <option value="created_at_asc">$t:admin.schedules.sort.created_at_asc</option>
@@ -364,7 +364,7 @@
             </navigate>
           </on>
         </select>
-        <select name="per_page" class="w-24" value="{{query.per_page ?? '20'}}">
+        <select name="per_page" aria-label="$t:common.per_page" class="w-24" value="{{query.per_page ?? '20'}}">
           <options>
             <option value="10">$t:admin.schedules.per_page.10</option>
             <option value="20">$t:admin.schedules.per_page.20</option>
@@ -380,12 +380,12 @@
         </select>
       </div>
     </div>
-    <data-grid data-type="composite" selectedCountText="" data-ref="schedules_data_grid" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{schedules?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{schedules?.data?.abilities?.can_update === true}}" selectionScope="page" :showColumnSelector="true" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+    <data-grid data-type="composite" selectedCountText="" data-ref="schedules_data_grid" rowLabelField="name" :data-blur-until-loaded="true" data="{{schedules?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/schedules?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{schedules?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{schedules?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{schedules?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{schedules?.data?.abilities?.can_update === true}}" selectionScope="page" :showColumnSelector="true" :responsiveBreakpoint="768" emptyMessage="{{schedules === undefined ? '' : $t('common.no_data')}}" actionsColumnHeader="$t:common.actions">
       <column field="name" header="$t:admin.schedules.columns.name" :sortable="false">
         <cell>
           <div>
             <span class="font-medium text-gray-900 dark:text-white">{{row.name}}</span>
-            <code class="block text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 font-mono mt-1 max-w-xs truncate">{{row.command}}</code>
+            <code class="block text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300 font-mono mt-1 max-w-xs truncate">{{row.command}}</code>
           </div>
         </cell>
       </column>
@@ -407,7 +407,7 @@
       <column field="next_run_at" header="$t:admin.schedules.columns.next_run" :sortable="false">
         <cell>
           <span data-if="{{row.is_active &amp;&amp; row.next_run_at}}" class="text-label">{{row.next_run_at | datetime}}</span>
-          <span data-if="{{!row.is_active}}" class="text-sm text-gray-400 dark:text-gray-500">-</span>
+          <span data-if="{{!row.is_active}}" class="text-sm text-gray-500 dark:text-gray-400">-</span>
         </cell>
       </column>
       <column field="last_run_at" header="$t:admin.schedules.columns.last_run" :sortable="false">
@@ -416,7 +416,7 @@
             <span class="text-label">{{row.last_run_at | datetime}}</span>
             <span data-if="{{row.last_duration}}" class="block text-tertiary mt-0.5">$t:defer:admin.schedules.duration_display|duration={{row.last_duration}}</span>
           </div>
-          <span data-if="{{!row.last_run_at}}" class="text-sm text-gray-400 dark:text-gray-500">-</span>
+          <span data-if="{{!row.last_run_at}}" class="text-sm text-gray-500 dark:text-gray-400">-</span>
         </cell>
       </column>
       <column field="last_result" header="$t:admin.schedules.columns.last_result" :sortable="false">
@@ -424,7 +424,7 @@
           <span data-if="{{row.last_result === 'success'}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">$t:admin.schedules.result.success</span>
           <span data-if="{{row.last_result === 'failed'}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">$t:admin.schedules.result.failed</span>
           <span data-if="{{row.last_result === 'running'}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">$t:admin.schedules.result.running</span>
-          <span data-if="{{row.last_result === 'never' || !row.last_result}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">$t:admin.schedules.result.never</span>
+          <span data-if="{{row.last_result === 'never' || !row.last_result}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">$t:admin.schedules.result.never</span>
         </cell>
       </column>
       <column field="is_active" header="$t:admin.schedules.columns.status" :sortable="false">

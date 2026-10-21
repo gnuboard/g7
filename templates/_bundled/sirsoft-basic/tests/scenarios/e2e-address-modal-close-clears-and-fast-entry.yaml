@@ -1,0 +1,45 @@
+feature: 배송지 창 닫으면 이름 공간 비우기 · 수정 창 뒤 새 주소 빠른 입력 저장 본문 브라우저 회귀 (7.1.1)
+
+description: |
+  회원 마이페이지 배송지 창과 주문서 「배송지 관리」 창.
+  ① 「수정」 창을 닫고 「새 주소」 를 열어 네 칸을 칸 사이 쉼 없이 넣은 뒤 저장 — 등록 POST 1회, 본문에 네 칸이 모두 있고
+     앞 배송지 id·값이 섞이지 않으며 PUT 이 없다. 「쉼 없이」 는 칸마다 click 을 거치지 않고(동작 가능 대기가 미뤄진 전역 렌더를
+     먼저 흘려보낸다) 한 작업 안에서 네이티브 value setter + input/change 이벤트를 네 칸에 잇달아 보내는 것이다(상태 직접 쓰기 아님).
+     저장 성공 갈래도 비운다 — 마이페이지는 창이 닫히며 `_global.editingAddress` 가 null, 주문서는 창이 목록으로 남고
+     `_global.checkoutAddressModal.editing` 만 null.
+  ② 입력 중인 창을 X·Esc·바깥 클릭·취소·「선택」 으로 닫으면 `_global.editingAddress`·`_global.checkoutAddressModal` 이 null 이다.
+     「선택」 은 이름 공간을 비우기 전에 고른 배송지를 이벤트로 넘겨 주문서 배송지 적용 요청(PUT checkout)의 우편번호가 그 배송지다.
+  ③ data-key 복원 축 — 마이페이지 배송지 폼 레이아웃 응답에 `dataKey: "_global.editingAddress"` 를 되살리고 이름 있는 칸의
+     change 점 경로 쓰기를 걷어(이 브라우저에서만) 엔진 고침만으로 네 칸이 남는지 잰다.
+  배송지 목록 조회는 가짜 배송지 1건으로 모의하고 쓰기는 가로챈다. 주문서 축은 진행 중 주문서가 있을 때만 돈다.
+
+axes:
+  case:
+    - mypage_edit_close_then_new_fast
+    - mypage_new_fast_datakey_restored
+    - mypage_close_x
+    - mypage_close_escape
+    - mypage_close_backdrop
+    - mypage_close_cancel
+    - checkout_edit_close_then_new_fast
+    - checkout_close_select
+    - checkout_close_x
+    - checkout_close_escape
+    - checkout_close_backdrop
+    - checkout_close_cancel
+
+effects:
+  - create_body_has_every_field
+  - create_body_no_previous_address
+  - modal_namespace_null_after_close
+  - modal_namespace_null_after_save
+  - checkout_editing_null_after_save_modal_stays
+  - select_hands_address_to_checkout
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/address-modal-close-clears-and-fast-entry.spec.ts
+
+notes: |
+  계정 필요(G7_E2E_TOKEN 등 실행 환경변수) — 없으면 건너뛴다.
+  수정 전 대조는 G7_E2E_ENGINE_BUNDLE 로 직전 엔진 번들을 이 브라우저에만 끼운다 — mypage_new_fast_datakey_restored 가 red 여야 한다.
+  레이아웃 고침(data-key 걷음)이 그대로인 *_edit_close_then_new_fast 는 옛 엔진에서도 green 일 수 있다(레이아웃 단독 방어).

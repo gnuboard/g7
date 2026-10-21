@@ -4,6 +4,7 @@ namespace App\Http\Requests\Template;
 
 use App\Extension\HookManager;
 use App\Rules\ValidExtensionIdentifier;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -27,7 +28,7 @@ class InstallTemplateRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -39,6 +40,8 @@ class InstallTemplateRequest extends FormRequest
             'dependencies.*.identifier' => ['required_with:dependencies', 'string', 'max:255'],
             'language_packs' => ['nullable', 'array'],
             'language_packs.*' => ['string', 'max:255'],
+            // 레이아웃 설치 소스(auto|json) — 이 요청 동안만 설정을 덮는다. 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따른다.
+            'layout_source' => ['nullable', 'string', 'in:auto,json'],
         ];
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
@@ -56,6 +59,7 @@ class InstallTemplateRequest extends FormRequest
             'template_name.required' => __('templates.validation.name_required'),
             'template_name.string' => __('templates.validation.name_string'),
             'template_name.max' => __('templates.validation.name_max'),
+            'layout_source.in' => __('templates.errors.invalid_layout_source'),
         ];
     }
 }

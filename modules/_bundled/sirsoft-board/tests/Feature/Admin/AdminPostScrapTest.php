@@ -4,7 +4,9 @@ namespace Modules\Sirsoft\Board\Tests\Feature\Admin;
 
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Enums\ScopeType;
 use App\Extension\HookManager;
+use App\Helpers\PermissionHelper;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -908,6 +910,133 @@ class AdminPostScrapTest extends BoardTestCase
 
         $user = User::factory()->create();
         $user->roles()->attach($role->id);
+
+        return $user;
+    }
+
+    // ==========================================
+    // 스코프 재적용 (#789 §6.3 B7·B8)
+    // ==========================================
+
+    /**
+     * 「본인만」 스코프 조회 권한은 목록에서 자기 스크랩만 본다.
+     *
+     * @scenario case=admin_scrap_index_filtered_by_scope
+     *
+     * @effects admin_scrap_index_filtered_by_scope
+     *
+     * @return void 반환값 없음
+     */
+    public function test_self_scoped_viewer_lists_only_own_scraps(): void
+    {
+        $operator = $this->createScopedScrapOperator(ScopeType::Self);
+        $own = $this->scrap($operator, $this->createTestPost(['title' => '내 스크랩']));
+        $this->scrap($this->memberA, $this->createTestPost(['title' => '남의 스크랩']));
+
+        $response = $this->actingAs($operator)->getJson($this->indexUrl());
+
+        $response->assertStatus(200);
+        $response->assertJsonCount(1, 'data.data');
+        $response->assertJsonPath('data.data.0.id', $own);
+    }
+
+    /**
+     * 「본인만」 스코프 관리 권한으로 남의 스크랩 단건 삭제는 403(500 아님)이고 행이 남는다.
+     *
+     * @scenario case=admin_scrap_destroy_out_of_scope_forbidden
+     *
+     * @effects admin_scrap_destroy_out_of_scope_forbidden
+     *
+     * @return void 반환값 없음
+     */
+    public function test_self_scoped_manager_cannot_destroy_others_scrap(): void
+    {
+        $operator = $this->createScopedScrapOperator(ScopeType::Self);
+        $others = $this->scrap($this->memberA, $this->createTestPost());
+
+        $this->actingAs($operator)
+            ->deleteJson("/api/modules/sirsoft-board/admin/scraps/{$others}")
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('board_post_scraps', ['id' => $others]);
+    }
+
+    /**
+     * 「본인만」 스코프 관리 권한으로 자기 스크랩 단건 삭제는 된다 (대조군).
+     *
+     * @scenario case=admin_scrap_destroy_in_scope_allowed
+     *
+     * @effects admin_scrap_destroy_in_scope_allowed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_self_scoped_manager_can_destroy_own_scrap(): void
+    {
+        $operator = $this->createScopedScrapOperator(ScopeType::Self);
+        $own = $this->scrap($operator, $this->createTestPost());
+
+        $this->actingAs($operator)
+            ->deleteJson("/api/modules/sirsoft-board/admin/scraps/{$own}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('board_post_scraps', ['id' => $own]);
+    }
+
+    /**
+     * 일괄 삭제에 범위 밖 스크랩이 하나라도 섞이면 전량 403 이고 어느 행도 지워지지 않는다.
+     *
+     * @scenario case=admin_scrap_bulk_out_of_scope_rejects_all
+     *
+     * @effects admin_scrap_bulk_out_of_scope_rejects_all
+     *
+     * @return void 반환값 없음
+     */
+    public function test_self_scoped_manager_bulk_destroy_with_others_scrap_rejects_all(): void
+    {
+        $operator = $this->createScopedScrapOperator(ScopeType::Self);
+        $own = $this->scrap($operator, $this->createTestPost());
+        $others = $this->scrap($this->memberA, $this->createTestPost());
+
+        $this->actingAs($operator)
+            ->deleteJson('/api/modules/sirsoft-board/admin/scraps/bulk', ['ids' => [$own, $others]])
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('board_post_scraps', ['id' => $own]);
+        $this->assertDatabaseHas('board_post_scraps', ['id' => $others]);
+    }
+
+    /**
+     * 스크랩 조회·관리 권한을 주어진 스코프로 가진 운영자를 만듭니다 (권한 행에 스코프 메타 포함).
+     *
+     * @param  ScopeType  $scope  스코프
+     * @return User 운영자
+     */
+    private function createScopedScrapOperator(ScopeType $scope): User
+    {
+        $role = Role::firstOrCreate(
+            ['identifier' => 'sirsoft-board.scrap-scoped-operator-test'],
+            ['name' => ['ko' => '스크랩 스코프 운영자', 'en' => 'Scoped Scrap Operator']]
+        );
+
+        foreach (['sirsoft-board.scraps.view', 'sirsoft-board.scraps.manage'] as $identifier) {
+            $permission = Permission::updateOrCreate(
+                ['identifier' => $identifier],
+                [
+                    'name' => ['ko' => $identifier, 'en' => $identifier],
+                    'type' => 'admin',
+                    'resource_route_key' => 'scrap',
+                    'owner_key' => 'user_id',
+                ]
+            );
+            $role->permissions()->syncWithoutDetaching([$permission->id => ['scope_type' => $scope->value]]);
+        }
+
+        PermissionHelper::clearPermissionScopeCache();
+
+        $user = User::factory()->create();
+        $user->roles()->attach($role->id);
+        // 스크랩하려면 게시판 읽기 권한이 필요하다 (user 역할)
+        $user->roles()->attach(Role::where('identifier', 'user')->value('id'));
 
         return $user;
     }

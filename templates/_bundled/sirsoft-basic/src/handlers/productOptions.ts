@@ -14,6 +14,7 @@
  */
 
 import { formatCurrencyHandler } from './formatCurrency';
+import { localizedText } from '../support/localizedText';
 
 /**
  * 옵션 그룹 구조 (다국어 지원)
@@ -379,7 +380,7 @@ export function toAdditionalOptionSelectionsPayload(
 function getGroupKey(group: OptionGroup): string {
   if (group.name_localized) return group.name_localized;
   if (typeof group.name === 'string') return group.name;
-  return (group.name as Record<string, string>)?.ko ?? '';
+  return localizedText(group.name) ?? '';
 }
 
 /**
@@ -404,7 +405,7 @@ function getOptionValueByGroupKey(
     });
     if (item) {
       if (typeof item.value === 'string') return item.value;
-      return (item.value as Record<string, string>)?.ko ?? Object.values(item.value)[0];
+      return localizedText(item.value);
     }
     return undefined;
   }
@@ -436,10 +437,10 @@ function convertOptionValuesToRecord(
   for (const item of optionValues) {
     const key = typeof item.key === 'string'
       ? item.key
-      : (item.key as Record<string, string>)?.ko ?? Object.values(item.key)[0] ?? '';
+      : localizedText(item.key) ?? '';
     const value = typeof item.value === 'string'
       ? item.value
-      : (item.value as Record<string, string>)?.ko ?? Object.values(item.value)[0] ?? '';
+      : localizedText(item.value) ?? '';
     if (key) {
       result[key] = value;
     }
@@ -469,6 +470,31 @@ function findMatchingOption(
       return optValue === selectedValue;
     });
   });
+}
+
+/**
+ * 옵션 선택(`currentSelection`)을 비운다 — null 을 먼저 쓰고 빈 객체를 쓴다.
+ *
+ * 커스텀 핸들러의 `context.setState` 는 엔진이 `G7Core.state.setLocal` 로 승격해 렌더러 상태(저장소 A)를
+ * 함수형 갱신으로 쓴다. engine-v1.81.2 이전 엔진에서는 그 결과가 앞 상태와 다시 깊게 병합돼 `__mergeMode: 'shallow'` 로
+ * `{}` 를 써도 앞 선택(`{색상: 네이비, 사이즈: L}`)의 키가 저장소 A 에 남았고, 화면 문맥(`deepMerge(B, A)`)이
+ * 그 값을 그대로 보여 줬다. 그래서 다음에 윗칸만 고르면 옛 아랫칸 값이 그 문맥에서 합쳐져 줄이 저절로 담겼다
+ * (7.1.1 — 「네이비/L」 담은 뒤 「블랙」 만 골라 「블랙/L」 이 담김). A 에 앞 선택이 남으면 줄 수량·삭제·추가옵션 핸들러의
+ * 깊은 쓰기가 `setLocal` 에서 그 잎 키를 저장소 B 에 보충해 getLocal 까지 앞 선택으로 되살아났다(7.1.1).
+ *
+ * engine-v1.81.2 부터는 엔진이 shallow·replace 표지를 지켜 `{}` 한 번으로 비워지고, 늦은 렌더 사본에만 남은 키도 화면에
+ * 보이지 않는다. 그래도 null 을 먼저 쓰는 것은 그대로 둔다 — 이전 엔진과의 호환이자 이중 안전장치다(null 은 깊은 병합에서도
+ * 덮어쓴다, 레이아웃의 「빈 객체로 비우는 setState 는 null 로 먼저 지운다」 와 같은 규칙). 줄 수량·삭제·추가옵션 핸들러는
+ * `currentSelection` 을 싣지 않으므로 이 한 곳으로 함께 닫힌다.
+ *
+ * 함께 쓰는 다른 상태(줄 목록 등)는 두 쓰기에 모두 싣는다 — 어느 쓰기만 읽어도 같은 줄 목록이다.
+ *
+ * @param context 액션 컨텍스트
+ * @param updates 함께 실을 다른 상태(줄 목록 등)
+ */
+function clearCurrentSelection(context: ActionContext, updates: Record<string, any> = {}): void {
+  context.setState?.({ ...updates, currentSelection: null, __mergeMode: 'shallow' });
+  context.setState?.({ ...updates, currentSelection: {}, __mergeMode: 'shallow' });
 }
 
 /**
@@ -512,7 +538,7 @@ export function addSelectedItemIfCompleteHandler(
   // 매칭되는 ProductOption 찾기
   const matchedOption = findMatchingOption(optionGroups, currentSelection, options ?? []);
   if (!matchedOption) {
-    context.setState?.({ currentSelection: {}, __mergeMode: 'shallow' });
+    clearCurrentSelection(context);
     return;
   }
 
@@ -525,7 +551,7 @@ export function addSelectedItemIfCompleteHandler(
     // 이미 추가된 옵션 → 토스트 알림 + 선택 초기화
     const G7Core = (window as any).G7Core;
     G7Core?.toast?.warning?.(G7Core?.t?.('sirsoft-ecommerce.shop.already_added_option') ?? '이미 추가된 옵션입니다.');
-    context.setState?.({ currentSelection: {}, __mergeMode: 'shallow' });
+    clearCurrentSelection(context);
     return;
   }
 
@@ -586,11 +612,9 @@ export function addSelectedItemIfCompleteHandler(
   };
 
   const nextItems = [...items, newItem];
-  context.setState?.({
+  clearCurrentSelection(context, {
     selectedOptionItems: nextItems,
     selectedTotalMultiCurrency: buildSelectedTotalMultiCurrency(nextItems),
-    currentSelection: {},
-    __mergeMode: 'shallow',
   });
 }
 

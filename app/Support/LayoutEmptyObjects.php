@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Support\LayoutMarkup\EmptyMap;
+use Illuminate\Database\Eloquent\Model;
 use stdClass;
 
 /**
@@ -9,32 +11,39 @@ use stdClass;
  *
  * 레이아웃 content 는 `array` 캐스트(연관 배열 디코드)로 읽혀 빈 객체 `{}` 가 빈 배열 `[]` 과
  * 구별되지 않는다. 그대로 응답하면 원본·DB 행이 `{}` 인 자리가 `[]` 로 나가, 화면이
- * `_local.expandedNotifications` 같은 키-값 상태를 배열로 받는다(7.1.0 실측 O-K3-4).
+ * `_local.expandedNotifications` 같은 키-값 상태를 배열로 받는다(7.1.0 실측).
  *
  * 병합·확장 적용 단계의 PHP 코드는 섹션·구조 키(`props`, `params` 자체, `initLocal` 자체 등)를
  * 배열로 다루므로 그 자리는 배열로 둔다. 빈 객체를 stdClass 로 보존하는 곳은 PHP 가 해석하지
  * 않고 화면에 그대로 넘기는 「값 자리」뿐이다.
  *
- * - `initLocal`·`initGlobal`·`initIsolated`·`state` 섹션의 값과 그 아래
- * - 어느 깊이든 `params`·`fallback` 키의 값 아래 (키 자신의 값이 빈 객체면 배열로 둔다)
+ * - `initLocal`·`initGlobal`·`initIsolated`·`state`·`defines`·`computed` 섹션의 값과 그 아래
+ * - 어느 깊이든 `params`·`fallback`·`props`·`isolatedState`·`data`·`headers`·`extensionPointProps` 키의 값 아래
+ *   (키 자신의 값이 빈 객체면 배열로 둔다 — `props: {}` 처럼 PHP 가 구조로 다루는 자리)
+ *
+ * 화면이 그대로 받는 자리(props 값·responsive props 값·overlay `injections[].props` 값·격리 상태·정적 데이터·
+ * 요청 헤더·defines·computed 값)까지 넓힌 것은 #758 이다. 그 값을 PHP 가 배열로 병합하는 곳(`inject_props` 의
+ * `_merge` 등)은 빈 stdClass 를 받을 수 있으므로 `is_array` 로 가른다.
  *
  * 섹션 자체가 비어 있으면(`"meta": {}` 등) 응답 직전 {@see restoreRootMapSections()} 가 `{}` 로 돌려놓는다.
+ * 다시 저장하거나 원문 그대로 응답할 때는 이 규칙 대신 {@see rawPreserving()} 으로 모든 `{}` 를 지킨다.
  */
 final class LayoutEmptyObjects
 {
     /**
-     * 값이 화면 상태 초기값인 루트 섹션 — 이 섹션 안의 빈 객체를 보존한다.
+     * 값이 화면에 그대로 가는 루트 섹션 — 이 섹션 안의 빈 객체를 보존한다 (상태 초기값, 상수·계산식 정의).
      *
      * @var list<string>
      */
-    private const VALUE_SECTIONS = ['initLocal', 'initGlobal', 'initIsolated', 'state'];
+    private const VALUE_SECTIONS = ['initLocal', 'initGlobal', 'initIsolated', 'state', 'defines', 'computed'];
 
     /**
-     * 이 키의 값 아래 빈 객체를 보존한다 (액션 인자, 데이터 소스 대체값).
+     * 이 키의 값 아래 빈 객체를 보존한다 (액션 인자, 데이터 소스 대체값·정적 데이터·헤더, 컴포넌트 props·격리 상태,
+     * 확장 지점이 주입 컴포넌트에 넘기는 호스트 props).
      *
      * @var list<string>
      */
-    private const VALUE_KEYS = ['params', 'fallback'];
+    private const VALUE_KEYS = ['params', 'fallback', 'props', 'isolatedState', 'data', 'headers', 'extensionPointProps'];
 
     /**
      * 키-값 맵으로 정의된 루트 섹션 — 비어 있으면 응답에서 `{}` 로 낸다.
@@ -75,6 +84,34 @@ final class LayoutEmptyObjects
     }
 
     /**
+     * 모델의 저장 원문을 빈 객체 전부를 보존해 읽습니다 — 다시 저장하거나 그대로 응답할 때 쓴다 (#758).
+     *
+     * `array` 캐스트(`$model->content`)는 `{}` 를 `[]` 로 만든다. 그 값을 버전·복원·이름 바꾸기·편집기 응답으로
+     * 다시 쓰면 DB 원문의 `{}` 가 영구히 `[]` 로 굳는다. 빈 객체 자리는 {@see EmptyMap} 표식으로 남고, 캐스트로
+     * 저장하거나 `json_encode` 할 때 `{}` 로 직렬화된다.
+     *
+     * @param  Model  $model  레이아웃·확장·버전·미리보기 모델
+     * @param  string  $attribute  JSON 원문 컬럼
+     * @return array 디코드된 본문 (원문이 문자열이 아니거나 객체·배열로 읽히지 않으면 캐스트 결과)
+     */
+    public static function rawPreserving(Model $model, string $attribute = 'content'): array
+    {
+        $raw = $model->getRawOriginal($attribute);
+
+        if (is_string($raw) && $raw !== '') {
+            $decoded = EmptyMap::decodePreserving($raw);
+
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        $cast = $model->{$attribute};
+
+        return is_array($cast) ? $cast : [];
+    }
+
+    /**
      * 보존해 둔 빈 객체를 다시 빈 배열로 되돌립니다 (배열만 다루는 소비자용 — SEO 렌더러 등).
      *
      * @param  array  $layout  레이아웃
@@ -85,6 +122,9 @@ final class LayoutEmptyObjects
         foreach ($layout as $key => $value) {
             if ($value instanceof stdClass) {
                 $layout[$key] = self::toArrays(get_object_vars($value));
+            } elseif (EmptyMap::is($value)) {
+                // 원문 보존 디코드({@see rawPreserving()})의 표식 — 편집 모드 `__editor.original` 등에서 섞여 온다
+                $layout[$key] = [];
             } elseif (is_array($value)) {
                 $layout[$key] = self::toArrays($value);
             }

@@ -6,6 +6,7 @@ use App\Casts\AsUnicodeJson;
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
 use App\Search\Contracts\FulltextSearchable;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -155,7 +156,8 @@ class Category extends Model implements FulltextSearchable
         $locale = $locale ?? app()->getLocale();
         $name = $this->name;
 
-        return $name[$locale] ?? $name[config('app.fallback_locale', 'ko')] ?? $name[array_key_first($name)] ?? '';
+        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        return LocalizedValue::pick($name, $locale) ?? '';
     }
 
     /**
@@ -233,6 +235,7 @@ class Category extends Model implements FulltextSearchable
      * 호출자가 먼저 예열합니다. 예열하지 않아도 동작은 같고 쿼리 수만 달라집니다.
      *
      * @param  array<int, int>  $categoryIds  경로를 그릴 카테고리 ID 목록
+     * @return void 반환값 없음
      */
     public static function prefetchAncestors(array $categoryIds): void
     {
@@ -255,6 +258,7 @@ class Category extends Model implements FulltextSearchable
      * 한 번만 부르면 되며, 그러면 조상 조회가 응답당 1회로 고정됩니다.
      *
      * @param  iterable<self>  $categories  path 가 적재된 카테고리들
+     * @return void 반환값 없음
      */
     public static function prefetchAncestorsFor(iterable $categories): void
     {
@@ -265,6 +269,7 @@ class Category extends Model implements FulltextSearchable
      * path 문자열에서 조상 ID 를 뽑아 한 번에 적재합니다.
      *
      * @param  Collection<int, self>  $categories  path 가 있는 카테고리들
+     * @return void 반환값 없음
      */
     private static function warmAncestorsFromPaths(Collection $categories): void
     {
@@ -289,6 +294,8 @@ class Category extends Model implements FulltextSearchable
      *
      * 캐시 수명은 요청 스코프입니다. 같은 프로세스에서 카테고리를 바꾼 뒤 다시 경로를
      * 그려야 하는 경우(테스트·콘솔 작업)에 호출합니다.
+     *
+     * @return void 반환값 없음
      */
     public static function flushAncestorPrefetch(): void
     {
@@ -350,6 +357,8 @@ class Category extends Model implements FulltextSearchable
 
     /**
      * path 자동 생성 (저장 전 호출)
+     *
+     * @return void 반환값 없음
      */
     public function generatePath(): void
     {
@@ -409,13 +418,17 @@ class Category extends Model implements FulltextSearchable
      * 무효화는 카테고리·상품 변경 지점이 담당한다({@see self::flushTreeCache()}).
      * 트리에 상품 수 집계가 함께 실리므로 상품 변경도 무효화 대상이다.
      *
+     * 상품 수 기준은 두 가지다 — 관리자 화면은 연결된 상품 전부를, 공개 화면은 공개 상품 목록과
+     * 같은 기준(전시 상품, {@see Product::scopeVisible()})만 센다. 기준마다 캐시 키가 갈린다.
+     *
      * @param  int|null  $parentId  부모 ID (null이면 루트부터)
      * @param  bool  $onlyActive  활성 카테고리만 조회할지 여부
+     * @param  bool  $visibleProductsOnly  상품 수에 전시 상품만 셀지 여부 (공개 응답용)
      * @return Collection 트리 구조 카테고리 컬렉션
      */
-    public static function getTree(?int $parentId = null, bool $onlyActive = false): Collection
+    public static function getTree(?int $parentId = null, bool $onlyActive = false, bool $visibleProductsOnly = false): Collection
     {
-        $key = self::treeCacheKey($parentId, $onlyActive);
+        $key = self::treeCacheKey($parentId, $onlyActive, $visibleProductsOnly);
 
         $cached = app(CacheInterface::class)->get($key);
 
@@ -423,7 +436,7 @@ class Category extends Model implements FulltextSearchable
             return $cached;
         }
 
-        $tree = self::buildTree($parentId, $onlyActive);
+        $tree = self::buildTree($parentId, $onlyActive, $visibleProductsOnly);
 
         // TTL 은 무효화 훅이 닿지 않는 경로(직접 SQL 수정 등)에 대한 안전망일 뿐,
         // 정상 경로의 반영 지연은 flushTreeCache() 가 없앤다.
@@ -437,20 +450,26 @@ class Category extends Model implements FulltextSearchable
      *
      * 캐시 키는 (부모, 활성여부) 조합이라 변경 하나가 어느 조합에 영향을 주는지
      * 특정하기 어렵다 — 조합 수가 적으므로 전량을 비운다.
+     *
+     * @return void 반환값 없음
      */
     public static function flushTreeCache(): void
     {
         $cache = app(CacheInterface::class);
 
         foreach ([true, false] as $onlyActive) {
-            $cache->forget(self::treeCacheKey(null, $onlyActive));
+            foreach ([true, false] as $visibleProductsOnly) {
+                $cache->forget(self::treeCacheKey(null, $onlyActive, $visibleProductsOnly));
+            }
         }
 
         // 부모 지정 트리는 그 부모 ID 로 키가 갈린다. 태그를 지원하지 않는 드라이버가
         // 있으므로 존재하는 카테고리 ID 만 훑어 지운다 (카테고리 수는 수백 단위).
         foreach (self::query()->pluck('id') as $id) {
             foreach ([true, false] as $onlyActive) {
-                $cache->forget(self::treeCacheKey((int) $id, $onlyActive));
+                foreach ([true, false] as $visibleProductsOnly) {
+                    $cache->forget(self::treeCacheKey((int) $id, $onlyActive, $visibleProductsOnly));
+                }
             }
         }
     }
@@ -460,14 +479,16 @@ class Category extends Model implements FulltextSearchable
      *
      * @param  int|null  $parentId  부모 ID
      * @param  bool  $onlyActive  활성만 여부
+     * @param  bool  $visibleProductsOnly  전시 상품만 센 트리 여부
      * @return string 캐시 키
      */
-    private static function treeCacheKey(?int $parentId, bool $onlyActive): string
+    private static function treeCacheKey(?int $parentId, bool $onlyActive, bool $visibleProductsOnly = false): string
     {
         return sprintf(
-            'sirsoft-ecommerce.category.tree.%s.%s',
+            'sirsoft-ecommerce.category.tree.%s.%s%s',
             $parentId === null ? 'root' : $parentId,
-            $onlyActive ? 'active' : 'all'
+            $onlyActive ? 'active' : 'all',
+            $visibleProductsOnly ? '.visible' : ''
         );
     }
 
@@ -476,15 +497,18 @@ class Category extends Model implements FulltextSearchable
      *
      * @param  int|null  $parentId  루트로 삼을 부모 ID
      * @param  bool  $onlyActive  활성 카테고리만 포함할지 여부
+     * @param  bool  $visibleProductsOnly  상품 수에 전시 상품만 셀지 여부
      * @return Collection 트리 구조 카테고리 컬렉션
      */
-    private static function buildTree(?int $parentId, bool $onlyActive): Collection
+    private static function buildTree(?int $parentId, bool $onlyActive, bool $visibleProductsOnly = false): Collection
     {
         $query = self::with([
             'images',
             'parent:id,name,slug', // parent에서 필요한 필드만 선택
         ])
-            ->withCount('products')
+            ->withCount($visibleProductsOnly
+                ? ['products' => fn ($products) => $products->visible()]
+                : 'products')
             ->orderBy('sort_order')
             ->orderBy('id');
 

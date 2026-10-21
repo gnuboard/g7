@@ -15,7 +15,8 @@ description: |
     - 결제 플러그인은 그 확장점에 **자기 배지와 자기 데이터 소스만** 끼운다. 다른 PG 를 참조하지 않는다.
     - 간편결제 원 수단 라벨은 서버 필터 훅 `sirsoft-ecommerce.order.filter_payment_method_display_label` 로
       플러그인이 자기 결제에만 채운다. 화면은 `payment_method_display_label ?? payment_method_label`.
-    - 업데이트 복원 리스너는 overlay 뿐 아니라 확장점 조각도 되살린다.
+    - 플러그인 업데이트 뒤에는 코어 재등록이 overlay 뿐 아니라 확장점 조각도 활성 템플릿에 다시 등록한다(#725 — 플러그인마다
+      두던 복원 리스너는 꺼진 템플릿까지 행을 만들어 지웠다).
 
 axes:
   payment_plugin: [none, kginicis, nhnkcp, nicepayments]
@@ -38,9 +39,7 @@ test_files:
   - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/layouts/adminOrderListPaymentMethodBadge.test.ts
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/ProvidePaymentMethodDisplayLabelListenerTest.php
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/ProvidePaymentMethodDisplayLabelListenerTest.php
-  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
-  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
-  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/RestoreLayoutExtensionsAfterUpdateListenerTest.php
+  - tests/Feature/LayoutMarkup/PaymentPluginUpdateFragmentConvergenceTest.php
 
 limitations:
   - "셀 템플릿 안 확장점은 서빙 조립에서 채워진다. 위지윅 편집기의 확장점 시각 편집은 `children` 트리만 다루므로 셀 안 확장점은 편집기 캔버스에서 조각 편집 대상으로 잡히지 않는다."

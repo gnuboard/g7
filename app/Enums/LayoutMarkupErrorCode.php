@@ -347,7 +347,8 @@ enum LayoutMarkupErrorCode: string
     case ConfirmNotAtRoot = 'confirm_not_at_root';
 
     /**
-     * init 루트 액션에 축소 화이트리스트 밖 키를 사용함 (executeInitActions 가 침묵 탈락).
+     * init 루트 액션에 진입점 전용 키(confirm·debounce·stopPropagation·key 등 화이트리스트 밖)를 사용함
+     * — 화면 첫 진입 동작에는 사용자가 누르는 순간이 없어 효과가 없다.
      */
     case InitActionKeyForbidden = 'init_action_key_forbidden';
 

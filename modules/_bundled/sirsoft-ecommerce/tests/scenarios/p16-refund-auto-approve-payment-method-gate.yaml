@@ -38,7 +38,7 @@ axes:
 effects:
   - stopped_payment_method_holds_refund_at_requested          # 정지 수단은 접수에서 멈춘다
   - refund_bank_required_before_intake_for_paid_vbank         # 입금완료 가상계좌는 계좌가 있어야 접수된다
-  # T2-D6 (#599 3차 실측 L-8) — 관리자 [환불하기]도 같은 술어로 계좌를 요구한다
+  # (#599 실측) — 관리자 [환불하기]도 같은 술어로 계좌를 요구한다
   - admin_refund_execution_requires_a_bank_account            # 계좌 없이 실행하면 422
   - admin_refund_execution_records_the_bank_account_it_was_given  # 실행하며 적은 계좌가 신청서에 남는다
   - admin_refund_execution_allows_forcing_without_a_bank_account  # 동의하면 직권 실행 (운영 결정)

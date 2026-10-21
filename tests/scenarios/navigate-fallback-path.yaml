@@ -1,0 +1,40 @@
+feature: navigate 대체 경로(fallbackPath) — 거부·빈 이동 주소 대신 갈 안전한 경로
+
+description: |
+  같은 탭 이동은 거부된 주소(실행 스킴·다른 출처·`//host`·백슬래시 우회)로 **이동하지 않는다**(engine-v1.80.1, 결정).
+  그런데 로그인 완료·본인 확인 완료처럼 **반드시 어딘가로 가야 하는 자리**는 `{{query.redirect}}`·서버 응답의 복귀 주소가
+  거부되거나 비면 그 화면에 머물러 버린다(실측 — 사용자 로그인 `?redirect=javascript:…` 뒤 로그인 화면 잔류).
+  표현식으로 주소를 직접 거르면 우회 변형을 레이아웃마다 다시 짜야 하므로 엔진이 대체 인자를 준다(확정 「엔진에 대체 경로 인자」).
+
+  - `params.fallbackPath`(마크업 `<navigate path="…" fallbackPath="/"/>`): `path` 가 비었거나 거부되면 `fallbackPath` 로 이동한다.
+    `fallbackPath` 도 같은 판정을 거치고, 그것도 비었거나 거부면 이동하지 않는다. `fallbackPath` 가 없으면 종전 그대로(거부 → 무동작).
+  - 기존 `params.fallback`(engine-v1.40.0 — 미등록 라우트에서 실행할 핸들러)과는 다른 인자다(이름 충돌 회피).
+  - 봇(SEO) HTML 도 같은 판정으로 링크를 만든다 — path 가 거부·빈 값이면 fallbackPath 로 링크.
+  - audit 룰 `layout-navigate-untrusted-path-fallback`: path 가 쿼리·서버 응답 유래 식인데 `fallbackPath` 가 없으면 error.
+
+  축 path_kind 는 navigate path 가 풀린 값(relative = `admin/users`·`./x`·`?q` — 같은 탭 최종 판정이 거부하는 상대 경로), 축 fallback_path 는 fallbackPath 인자 상태.
+
+axes:
+  path_kind: [same_origin_path, empty, script_scheme, offsite, relative, same_origin_full_url]
+  fallback_path: [absent, valid, rejected]
+
+exclusions:
+  - { path_kind: [same_origin_path, same_origin_full_url], fallback_path: rejected, reason: "path 가 받아들여지면 fallbackPath 는 읽히지 않는다 — valid 칸이 대표" }
+  - { path_kind: same_origin_full_url, fallback_path: absent, reason: "fallbackPath 없는 같은 출처 전체 주소는 navigation-target-policy 매니페스트가 잠근다(종전 그대로)" }
+
+effects:
+  - accepted_path_ignores_fallback_path
+  - rejected_path_uses_fallback_path
+  - empty_path_uses_fallback_path
+  - rejected_fallback_path_is_no_op
+  - absent_fallback_path_keeps_no_op
+  - bot_link_uses_fallback_path
+  - markup_fallback_path_compiles_to_params
+  - editor_recipe_keeps_fallback_path
+
+test_files:
+  # 배포 번들 종단 — 거부·빈 주소 + fallbackPath 착지(SPA 이동, 실행 주소 미실행)
+  - tests/Playwright/specs/layout-expression-sandbox.spec.ts
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.navigateFallbackPath.test.ts
+  - tests/Unit/Seo/ComponentHtmlMapperNavigateFallbackPathTest.php
+  - tests/Unit/Support/LayoutMarkup/NavigateFallbackPathMarkupTest.php

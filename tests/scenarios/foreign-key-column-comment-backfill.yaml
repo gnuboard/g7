@@ -1,0 +1,19 @@
+feature: 외래키 컬럼 comment — 신규 설치 소스 교정과 기설치본 백필
+
+description: |
+  `foreignId()->constrained()->comment()` 형태는 comment 가 컬럼이 아니라 외래키 정의에 붙어 DB 에 방출되지 않았다.
+  신규 설치는 마이그레이션이 만든 스키마에 외래키 컬럼 comment 가 실재해야 하고, 기설치본은 업그레이드 백필 스텝이
+  빈 comment 만 채우며 운영자가 넣은 값·컬럼 정의·외래키 제약을 바꾸지 않고, 다시 돌려도 결과가 같아야 한다.
+
+axes:
+  install: [fresh_install, existing_install]
+
+effects:
+  - fk_column_comment_emitted_on_fresh_install
+  - empty_fk_column_comment_backfilled
+  - operator_written_comment_preserved
+  - backfill_idempotent
+  - backfill_keeps_column_definition_and_constraint
+
+test_files:
+  - tests/Feature/Upgrade/BackfillForeignKeyColumnCommentsTest.php

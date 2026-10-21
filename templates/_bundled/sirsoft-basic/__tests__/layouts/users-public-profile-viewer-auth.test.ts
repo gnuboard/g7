@@ -1,6 +1,6 @@
 /**
  * @file users-public-profile-viewer-auth.test.ts
- * @description 공개 프로필·작성글 화면의 글 목록·건수는 «보는 사람 권한» 기준이다 (7.1.0 실측 O-K4-7)
+ * @description 공개 프로필·작성글 화면의 글 목록·건수는 «보는 사람 권한» 기준이다 (7.1.0 실측)
  *
  * 서버(`/users/{uuid}/posts`, `/users/{uuid}/posts/stats`)는 optional.sanctum 이라 토큰이 실리면
  * 그 회원이 읽을 수 있는 게시판(회원전용 등)의 글까지 세고, 토큰이 없으면 비로그인 기준으로 센다.
@@ -30,7 +30,7 @@ function source(layout: any, id: string): any {
   return found;
 }
 
-describe('공개 프로필 글 목록·건수 데이터 소스는 보는 사람 토큰을 싣는다 (O-K4-7)', () => {
+describe('공개 프로필 글 목록·건수 데이터 소스는 보는 사람 토큰을 싣는다', () => {
   const cases: Array<[string, string]> = [
     ['layouts/users/show.json', 'postStats'],
     ['layouts/users/show.json', 'recentPosts'],

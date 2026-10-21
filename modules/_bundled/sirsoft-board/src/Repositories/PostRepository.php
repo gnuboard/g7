@@ -30,6 +30,7 @@ use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\PostScrap;
 use Modules\Sirsoft\Board\Models\Reaction;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
@@ -58,9 +59,10 @@ class PostRepository implements PostRepositoryInterface
      * @param  int  $perPage  페이지당 항목 수 (일반 게시글 기준)
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
      * @param  Board|null  $board  게시판 모델 (이미 조회된 경우 전달하여 중복 쿼리 방지)
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 list·notice·reply — 없으면 지금과 같다)
      * @return Paginator 페이지네이션된 게시글 목록 (simplePaginate — COUNT 쿼리 제거)
      */
-    public function paginate(string $slug, array $filters = [], int $perPage = 15, bool $withTrashed = false, ?Board $board = null): Paginator
+    public function paginate(string $slug, array $filters = [], int $perPage = 15, bool $withTrashed = false, ?Board $board = null, ?PostQueryExtensions $extensions = null): Paginator
     {
         $currentPage = $filters['page'] ?? request()->input('page', 1);
 
@@ -89,6 +91,7 @@ class PostRepository implements PostRepositoryInterface
             perPage: $perPage,
             currentPage: $currentPage,
             board: $board,
+            extensions: $extensions,
         );
     }
 
@@ -97,7 +100,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  array  $filters  필터 조건
-     * @return void
+     * @return void 반환값 없음
      */
     private function applyFilters($query, array $filters): void
     {
@@ -217,16 +220,17 @@ class PostRepository implements PostRepositoryInterface
      *
      * 관리자 목록은 원글 한 줄 아래 그 답글 줄을 이어 그리고 페이지·총 건수를 원글 단위로 센다. 그래서 답글이
      * 걸리면 답글 자체가 아니라 그 답글이 달린 맨 위 원글을 결과로 세고, 원글 아래 답글 줄은 종전처럼 함께 보인다
-     * (7.1.0 실측 O-K3-13). 목록 쿼리와 총 건수 쿼리가 같은 ID 를 써야 페이지와 건수가 맞는다.
+     * (7.1.0 실측). 목록 쿼리와 총 건수 쿼리가 같은 ID 를 써야 페이지와 건수가 맞는다.
      * 답글 매칭에는 권한 범위를 걸지 않는다 — 결과가 되는 원글이 범위 검사를 받고, 범위 안 원글의 답글 줄은
      * 검색과 무관하게 이미 모두 보인다.
      *
      * @param  int|null  $boardId  게시판 ID
      * @param  array  $filters  필터 (search, search_field, search_author_email)
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부 (목록과 같게)
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 reply — 확장이 숨긴 답글은 원글을 끌어오지 않는다)
      * @return array<int, int> 맨 위 원글 ID
      */
-    private function resolveReplyMatchRootIds(?int $boardId, array $filters, bool $withTrashed): array
+    private function resolveReplyMatchRootIds(?int $boardId, array $filters, bool $withTrashed, ?PostQueryExtensions $extensions = null): array
     {
         $rawKeyword = (string) $filters['search'];
         $likeKeyword = $this->escapeLikeKeyword($rawKeyword);
@@ -243,6 +247,8 @@ class PostRepository implements PostRepositoryInterface
         if ($withTrashed) {
             $replyQuery->withTrashed();
         }
+
+        $extensions?->apply('reply', $replyQuery);
 
         // 걸린 답글 수에 상한을 둔다 — 흔한 낱말이 답글 전량에 걸려도 한 번에 메모리로 올리지 않는다
         $cap = PaginationLimits::resultCap('board.posts');
@@ -549,9 +555,10 @@ class PostRepository implements PostRepositoryInterface
      * @param  int  $id  게시글 ID
      * @param  int|null  $boardId  게시판 ID (전달 시 Board 재조회 생략)
      * @param  Board|null  $board  이미 조회한 게시판 모델 (전달 시 board 관계 적재까지 생략)
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 thread — 상세의 답글 스레드)
      * @return Post|null 게시글 모델 (카운트 포함)
      */
-    public function findWithCounts(string $slug, int $id, ?int $boardId = null, ?Board $board = null): ?Post
+    public function findWithCounts(string $slug, int $id, ?int $boardId = null, ?Board $board = null, ?PostQueryExtensions $extensions = null): ?Post
     {
         // 호출자가 이미 손에 쥔 Board 를 넘기면 그 인스턴스를 그대로 쓴다 (#519 F3).
         // $board 는 아래 답글 로딩에서 참조하므로 어느 경로로 오든 정의돼 있어야 한다
@@ -606,7 +613,7 @@ class PostRepository implements PostRepositoryInterface
 
             // loadAllDescendantReplies는 board_id만 필요하므로 Board 모델 대신 조회된 board 사용
             $board = $board ?? $post->board;
-            $allReplies = $this->loadAllDescendantReplies($post->id, $board, $hasDeletePermission);
+            $allReplies = $this->loadAllDescendantReplies($post->id, $board, $hasDeletePermission, $extensions);
             $post->setRelation('replies', $allReplies);
         }
 
@@ -622,9 +629,10 @@ class PostRepository implements PostRepositoryInterface
      * @param  int  $postId  부모 게시글 ID
      * @param  Board|null  $board  게시판 모델
      * @param  bool  $withTrashed  삭제된 답글 포함 여부 (관리자 권한 시 true)
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 thread — 확장이 숨긴 답글 아래 답글은 이어 읽지 않는다)
      * @return \Illuminate\Database\Eloquent\Collection 직접 자식 답글 (각 답글에 하위 replies 관계 설정됨)
      */
-    private function loadAllDescendantReplies(int $postId, ?Board $board, bool $withTrashed = false): \Illuminate\Database\Eloquent\Collection
+    private function loadAllDescendantReplies(int $postId, ?Board $board, bool $withTrashed = false, ?PostQueryExtensions $extensions = null): \Illuminate\Database\Eloquent\Collection
     {
         // 모든 하위 답글을 한 번에 가져오기 (재귀 쿼리 대신 반복 방식)
         $allReplies = collect();
@@ -656,6 +664,8 @@ class PostRepository implements PostRepositoryInterface
             if ($withTrashed) {
                 $query->withTrashed();
             }
+
+            $extensions?->apply('thread', $query);
 
             $batch = $query->get();
 
@@ -695,9 +705,10 @@ class PostRepository implements PostRepositoryInterface
      * @param  string  $slug  게시판 슬러그
      * @param  array  $filters  필터 조건
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 count·reply — list 와 같은 조건이어야 건수가 맞는다)
      * @return BoundedCount 일반 게시글 수 + 정확도 (답글, 공지 제외)
      */
-    public function countNormalPosts(string $slug, array $filters = [], bool $withTrashed = false): BoundedCount
+    public function countNormalPosts(string $slug, array $filters = [], bool $withTrashed = false, ?PostQueryExtensions $extensions = null): BoundedCount
     {
         $board = Board::where('slug', $slug)->first();
 
@@ -719,11 +730,14 @@ class PostRepository implements PostRepositoryInterface
 
         // 관리자 목록은 답글에 걸린 검색어도 그 원글로 센다 — 목록(buildSortedPostList)과 같은 ID 를 쓴다
         if (! empty($filters['search_replies']) && ! empty($filters['search'])) {
-            $filters['reply_match_root_ids'] = $this->resolveReplyMatchRootIds($board?->id, $filters, $withTrashed);
+            $filters['reply_match_root_ids'] = $this->resolveReplyMatchRootIds($board?->id, $filters, $withTrashed, $extensions);
         }
 
         // 필터 적용
         $this->applyFilters($query, $filters);
+
+        // 확장 조건은 코어 조건을 다 건 뒤에 붙인다 — 확장은 결과를 좁히기만 한다
+        $extensions?->apply('count', $query);
 
         // 총 건수는 상한까지만 센다. 검색어가 걸린 목록은 매칭 수가 데이터 증가에 비례하고,
         // 이 값은 목록 화면이 열릴 때마다 계산된다. 상한 이하면 지금과 값이 같고, 초과할
@@ -741,9 +755,10 @@ class PostRepository implements PostRepositoryInterface
      * @param  array  $filters  정렬 파라미터 (order_by, order_direction)
      * @param  bool  $withTrashed  삭제된 게시글 포함 여부 (기본: false)
      * @param  int|null  $boardId  게시판 ID (전달 시 Board 재조회 생략)
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 adjacent)
      * @return array{prev: Post|null, next: Post|null} 이전/다음 게시글
      */
-    public function getAdjacentPosts(string $slug, int $id, array $filters = [], bool $withTrashed = false, ?int $boardId = null): array
+    public function getAdjacentPosts(string $slug, int $id, array $filters = [], bool $withTrashed = false, ?int $boardId = null, ?PostQueryExtensions $extensions = null): array
     {
         // boardId가 전달되면 Board 모델 재조회 없이 직접 사용
         if (! $boardId) {
@@ -753,6 +768,10 @@ class PostRepository implements PostRepositoryInterface
             }
             $boardId = $board->id;
         }
+
+        // 목록과 같은 읽기 스코프로 이전/다음 후보를 거른다 — 서비스가 컨텍스트별 식별자를 넘긴다(#789)
+        $scopePermission = $filters['scope_permission'] ?? null;
+        unset($filters['scope_permission']);
 
         $category = $filters['category'] ?? null;
         $orderBy = $filters['order_by'] ?? 'id';
@@ -788,7 +807,8 @@ class PostRepository implements PostRepositoryInterface
 
         $currentValue = $currentPost->{$orderBy};
 
-        // 기본 조건: 공지 제외, 원글만, 게시 상태
+        // 기본 조건: 공지 제외, 원글만, 게시 상태. 확장 조건은 이 팩토리 **안**에서 건다 — 이전/다음을 찾는
+        // 모든 쿼리(동률 비교·created_at 의 MAX/MIN 서브쿼리 포함)가 이 팩토리를 거치므로 한 곳으로 다 덮인다.
         $baseQuery = fn () => Post::query()
             ->where('board_id', $boardId)
             ->where('is_notice', false)
@@ -796,6 +816,8 @@ class PostRepository implements PostRepositoryInterface
             ->where('status', PostStatus::Published->value)
             ->when(! $withTrashed, fn ($q) => $q->whereNull('deleted_at'))
             ->when($category, fn ($q) => $q->where('category', $category))
+            ->when($scopePermission, fn ($q) => PermissionHelper::applyPermissionScope($q, $scopePermission))
+            ->tap(fn ($q) => $extensions?->apply('adjacent', $q))
             ->select(['id', 'title']);
 
         // 이전/다음 글 조회 (2단계: strict 비교 → tie-breaking)
@@ -901,6 +923,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  int|null  $perPage  페이지당 원글 수 (null이면 전체 조회)
      * @param  int  $currentPage  현재 페이지 번호
      * @param  Board|null  $board  게시판 모델 (재조회 회피용 공유 인스턴스)
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 list·notice·reply)
      * @return Collection|LengthAwarePaginator 정렬된 게시글 컬렉션 또는 페이지네이터
      */
     private function buildSortedPostList(
@@ -912,7 +935,8 @@ class PostRepository implements PostRepositoryInterface
         array $filters = [],
         ?int $perPage = null,
         int $currentPage = 1,
-        ?Board $board = null
+        ?Board $board = null,
+        ?PostQueryExtensions $extensions = null
     ) {
         // board가 전달되지 않은 경우에만 DB 조회 (하위 호환 유지)
         if (! $board) {
@@ -946,6 +970,8 @@ class PostRepository implements PostRepositoryInterface
             } else {
                 $noticeQuery->whereNull('deleted_at');
             }
+
+            $extensions?->apply('notice', $noticeQuery);
 
             if (! empty($relations)) {
                 $noticeQuery->with($relations);
@@ -982,11 +1008,14 @@ class PostRepository implements PostRepositoryInterface
 
         // 관리자 목록은 답글에 걸린 검색어도 그 원글로 찾는다 — 총 건수(countNormalPosts)와 같은 ID 를 쓴다
         if (! empty($filters['search_replies']) && ! empty($filters['search'])) {
-            $filters['reply_match_root_ids'] = $this->resolveReplyMatchRootIds($boardId, $filters, $withTrashed);
+            $filters['reply_match_root_ids'] = $this->resolveReplyMatchRootIds($boardId, $filters, $withTrashed, $extensions);
         }
 
         // 필터 적용 (원글 단위 — 답글은 3단계에서 원글 아래에 붙인다)
         $this->applyFilters($parentQuery, $filters);
+
+        // 확장 조건은 코어 조건을 다 건 뒤에 붙인다 — 지연 조인이 이 빌더를 복제하므로 안쪽·바깥 모두 덮인다
+        $extensions?->apply('list', $parentQuery);
 
         // 정렬 (order_by 파라미터 사용, 기본값: id)
         $orderBy = $filters['order_by'] ?? 'id';
@@ -1076,6 +1105,8 @@ class PostRepository implements PostRepositoryInterface
                     $levelQuery->whereNull('deleted_at');
                 }
 
+                $extensions?->apply('reply', $levelQuery);
+
                 if (! empty($relations)) {
                     $levelQuery->with($relations);
                 }
@@ -1155,9 +1186,10 @@ class PostRepository implements PostRepositoryInterface
      * 이 합은 받은 댓글 수라 「내가 쓴 댓글」 목록 건수와 다르다.
      *
      * @param  int  $userId  사용자 ID
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 user_stats — 게시글 쪽 집계만)
      * @return array{total_posts: int, total_comments: int, total_views: int} 활동 통계
      */
-    public function getUserActivityStats(int $userId): array
+    public function getUserActivityStats(int $userId, ?PostQueryExtensions $extensions = null): array
     {
         // 비활성 게시판 제외
         $inactiveBoardIds = $this->getInactiveBoardIds();
@@ -1167,6 +1199,7 @@ class PostRepository implements PostRepositoryInterface
         if (! empty($inactiveBoardIds)) {
             $postsQuery->whereNotIn('board_id', $inactiveBoardIds);
         }
+        $extensions?->apply('user_stats', $postsQuery);
         $totalPosts = $postsQuery->count();
 
         // 쿼리 2: SUM(comments_count) + SUM(view_count) — idx_board_posts_user_board_stats 커버링
@@ -1176,6 +1209,7 @@ class PostRepository implements PostRepositoryInterface
         if (! empty($inactiveBoardIds)) {
             $statsQuery->whereNotIn('board_id', $inactiveBoardIds);
         }
+        $extensions?->apply('user_stats', $statsQuery);
         $sums = $statsQuery->selectRaw('COALESCE(SUM(comments_count), 0) as total_comments, COALESCE(SUM(view_count), 0) as total_views')
             ->first();
 
@@ -1196,9 +1230,10 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  int  $userId  사용자 ID
      * @param  array<int>  $excludeBoardIds  세지 않을 게시판 ID 목록
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 user_stats — 게시글 수만, 댓글 수는 미적용)
      * @return array{posts_count: int, comments_count: int} 공개 게시글/댓글 통계
      */
-    public function getUserPublicStats(int $userId, array $excludeBoardIds = []): array
+    public function getUserPublicStats(int $userId, array $excludeBoardIds = [], ?PostQueryExtensions $extensions = null): array
     {
         // 목록(getUserAuthoredActivities)과 같은 게시판 기준 — 비활성 게시판과 보는 사람이 읽을 수 없는
         // 게시판의 글·댓글은 세지 않는다(2026-10-07 실측: 비로그인 통계에 회원전용 게시판 글이 섞였다).
@@ -1207,6 +1242,7 @@ class PostRepository implements PostRepositoryInterface
         $postsCount = Post::where('user_id', $userId)
             ->where('status', PostStatus::Published->value)
             ->when($excludeIds !== [], fn ($q) => $q->whereNotIn('board_id', $excludeIds))
+            ->tap(fn ($q) => $extensions?->apply('user_stats', $q))
             ->count();
 
         $commentsCount = Comment::where('user_id', $userId)
@@ -1228,9 +1264,10 @@ class PostRepository implements PostRepositoryInterface
      * @param  int  $userId  사용자 ID
      * @param  array  $filters  필터 조건 (board_slug, search, activity_type, sort, viewer_id, exclude_board_slugs, exclude_board_ids)
      * @param  int  $perPage  페이지당 항목 수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 user_activity)
      * @return LengthAwarePaginator 게시글 활동 목록
      */
-    public function getUserActivities(int $userId, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    public function getUserActivities(int $userId, array $filters = [], int $perPage = 20, ?PostQueryExtensions $extensions = null): LengthAwarePaginator
     {
         $boardSlugFilter = $filters['board_slug'] ?? null;
         $search = $filters['search'] ?? null;
@@ -1281,11 +1318,11 @@ class PostRepository implements PostRepositoryInterface
         // 여기서 열람자까지 보고 분기를 바꾸면 `commented` 요청이 조용히 `authored` 결과를
         // 돌려주게 되어 저장소 계약이 깨진다.
         if ($activityType === 'commented') {
-            return $this->getUserCommentedActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $orderColumn, $orderDirection, $perPage, $cachedTotal, $viewerId);
+            return $this->getUserCommentedActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $orderColumn, $orderDirection, $perPage, $cachedTotal, $viewerId, $extensions);
         }
 
         // authored (기본값, 공개 프로필 포함)
-        return $this->getUserAuthoredActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $isOwnView, $orderColumn, $orderDirection, $perPage, $cachedTotal, $searchField);
+        return $this->getUserAuthoredActivities($userId, $boardIdFilter, $excludeBoardIds, $search, $isOwnView, $orderColumn, $orderDirection, $perPage, $cachedTotal, $searchField, $extensions);
     }
 
     /**
@@ -1301,6 +1338,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  int|null  $cachedTotal  캐시된 총 건수
      * @param  string  $searchField  검색 대상 (title_content|title|content)
      * @param  array<int, int>  $excludeBoardIds  제외할 게시판 ID 목록
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 user_activity)
      * @return LengthAwarePaginator 게시글 활동 목록
      */
     private function getUserAuthoredActivities(
@@ -1313,7 +1351,8 @@ class PostRepository implements PostRepositoryInterface
         string $orderDirection,
         int $perPage,
         ?int $cachedTotal = null,
-        string $searchField = 'title_content'
+        string $searchField = 'title_content',
+        ?PostQueryExtensions $extensions = null
     ): LengthAwarePaginator {
         // JOIN 대신 whereNotIn으로 비활성 게시판 제외 — idx_board_posts_user_created 인덱스 활용
         $inactiveBoardIds = $this->getInactiveBoardIds();
@@ -1344,6 +1383,8 @@ class PostRepository implements PostRepositoryInterface
                 }
             });
         }
+
+        $extensions?->apply('user_activity', $query);
 
         // 본문(content)은 목록 가공에 앞부분만 쓰이지만 태그 제거 후 길이가 줄어드는 것을 감안해
         // 넉넉히 잘라 읽는다. 잘라 읽기는 이번 페이지 분량(outer)에서만 일어난다.
@@ -1412,6 +1453,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  int  $perPage  페이지당 항목 수
      * @param  int|null  $cachedTotal  캐시된 총 건수 (null 이면 COUNT 수행)
      * @param  int|null  $viewerId  열람자 ID (대상 본인이 아니면 비밀글 본문 마스킹)
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 user_activity — 바깥 쿼리에 조인이 붙으므로 조건은 컬럼을 한정해야 한다)
      * @return LengthAwarePaginator 댓글 단 게시글 목록
      */
     private function getUserCommentedActivities(
@@ -1423,7 +1465,8 @@ class PostRepository implements PostRepositoryInterface
         string $orderDirection,
         int $perPage,
         ?int $cachedTotal = null,
-        ?int $viewerId = null
+        ?int $viewerId = null,
+        ?PostQueryExtensions $extensions = null
     ): LengthAwarePaginator {
         // 테이블명은 모델에서 얻는다 — 문자열로 박으면 테이블명이 바뀔 때 조용히 깨진다
         $postsTable = (new Post)->getTable();
@@ -1461,6 +1504,8 @@ class PostRepository implements PostRepositoryInterface
         if (! empty($allExcludeIds)) {
             $query->whereNotIn("{$postsTable}.board_id", $allExcludeIds);
         }
+
+        $extensions?->apply('user_activity', $query);
 
         // 목록 컬럼: 본문 전체 대신 앞부분만 (가공 후 표시 자수보다 넉넉히 잘라 읽는다).
         // SUBSTRING 은 빌더에 대응 표현이 없는 표준 SQL 함수라 이 한 곳만 raw 로 남긴다.
@@ -1556,6 +1601,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  string  $direction  정렬 방향 (asc, desc)
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 search)
      * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
      */
     public function searchByKeyword(
@@ -1564,11 +1610,12 @@ class PostRepository implements PostRepositoryInterface
         string $orderBy = 'created_at',
         string $direction = 'desc',
         int $perPage = 10,
-        int $page = 1
+        int $page = 1,
+        ?PostQueryExtensions $extensions = null
     ): BoundedPage {
         // 종전에는 같은 FULLTEXT 술어를 count() 로 한 번, get() 으로 또 한 번 실행했다.
         // 페이지네이터 한 번으로 합치고, 총 건수에는 상한을 건다.
-        $query = $this->buildPublicSearchQuery($slug, $keyword)
+        $query = $this->buildPublicSearchQuery($slug, $keyword, $extensions)
             ->with('user')
             ->orderBy($orderBy, $direction)
             // 전순서 보장 — 정렬 컬럼이 비고유라 페이지 경계에서 행이 겹치거나 샐 수 있다
@@ -1587,12 +1634,13 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $keyword  검색 키워드
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 search)
      * @return BoundedCount 일치하는 게시글 수 (정확도 포함)
      */
-    public function countByKeyword(string $slug, string $keyword): BoundedCount
+    public function countByKeyword(string $slug, string $keyword, ?PostQueryExtensions $extensions = null): BoundedCount
     {
         return BoundedPaginator::count(
-            $this->buildPublicSearchQuery($slug, $keyword),
+            $this->buildPublicSearchQuery($slug, $keyword, $extensions),
             PaginationLimits::resultCap('search')
         );
     }
@@ -1606,6 +1654,8 @@ class PostRepository implements PostRepositoryInterface
      * @param  string  $direction  정렬 방향 (asc, desc)
      * @param  int  $perPage  페이지당 항목 수
      * @param  int  $page  페이지 번호
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 search_across)
      * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
      */
     public function searchAcrossBoards(
@@ -1614,11 +1664,13 @@ class PostRepository implements PostRepositoryInterface
         string $orderBy = 'created_at',
         string $direction = 'desc',
         int $perPage = 10,
-        int $page = 1
+        int $page = 1,
+        array $readScope = [],
+        ?PostQueryExtensions $extensions = null
     ): BoundedPage {
         // count() + get() 이중 실행을 페이지네이터 한 번으로 합친다.
         // 다른 탭 조회 시 배지용 COUNT 까지 더해 같은 술어가 3회 실행되던 경로다.
-        $query = $this->buildPublicSearchQueryByIds($boardIds, $keyword)
+        $query = $this->buildPublicSearchQueryByIds($boardIds, $keyword, $readScope, $extensions)
             ->with('user', 'board')
             ->orderBy($orderBy, $direction)
             ->orderBy('id', $direction === 'asc' ? 'asc' : 'desc');
@@ -1639,11 +1691,13 @@ class PostRepository implements PostRepositoryInterface
         string $keyword,
         array $sortKeys,
         int $perPage = 10,
-        ?string $cursor = null
+        ?string $cursor = null,
+        array $readScope = [],
+        ?PostQueryExtensions $extensions = null
     ): CursorPaginator {
         // 커서 모드에는 OFFSET 이 없다. 깊은 페이지에서 건너뛸 행을 실제로 읽던 비용이
         // 사라지므로 상한 COUNT 도 이 경로에서는 하지 않는다 (총 건수는 배지 집계 담당).
-        $query = $this->buildPublicSearchQueryByIds($boardIds, $keyword)
+        $query = $this->buildPublicSearchQueryByIds($boardIds, $keyword, $readScope, $extensions)
             ->with('user', 'board');
 
         return KeysetPaginator::paginate(
@@ -1660,12 +1714,14 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  array  $boardIds  검색 대상 게시판 ID 목록
      * @param  string  $keyword  검색 키워드
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 search_across — 목록·커서와 같은 집합)
      * @return BoundedCount 키워드와 일치하는 게시글 수 (정확도 포함)
      */
-    public function countAcrossBoards(array $boardIds, string $keyword): BoundedCount
+    public function countAcrossBoards(array $boardIds, string $keyword, array $readScope = [], ?PostQueryExtensions $extensions = null): BoundedCount
     {
         return BoundedPaginator::count(
-            $this->buildPublicSearchQueryByIds($boardIds, $keyword),
+            $this->buildPublicSearchQueryByIds($boardIds, $keyword, $readScope, $extensions),
             PaginationLimits::resultCap('search')
         );
     }
@@ -1675,9 +1731,10 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $keyword  검색 키워드
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 search)
      * @return Builder
      */
-    private function buildPublicSearchQuery(string $slug, string $keyword)
+    private function buildPublicSearchQuery(string $slug, string $keyword, ?PostQueryExtensions $extensions = null)
     {
         $board = Board::where('slug', $slug)->first();
 
@@ -1687,6 +1744,7 @@ class PostRepository implements PostRepositoryInterface
             ->where('is_secret', false);
 
         $this->applyKeywordSearch($query, $keyword);
+        $extensions?->apply('search', $query);
 
         return $query;
     }
@@ -1696,18 +1754,68 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  array  $boardIds  게시판 ID 목록
      * @param  string  $keyword  검색 키워드
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve() — 비면 스코프 없음)
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 search_across)
      * @return Builder
      */
-    private function buildPublicSearchQueryByIds(array $boardIds, string $keyword)
+    private function buildPublicSearchQueryByIds(array $boardIds, string $keyword, array $readScope = [], ?PostQueryExtensions $extensions = null)
     {
         $query = Post::query()
             ->whereIn('board_id', $boardIds)
             ->where('status', PostStatus::Published->value)
             ->where('is_secret', false);
 
+        $this->applyCrossBoardReadScope($query, $readScope);
         $this->applyKeywordSearch($query, $keyword);
+        $extensions?->apply('search_across', $query);
 
         return $query;
+    }
+
+    /**
+     * 여러 게시판을 가로지르는 쿼리에 게시판별 읽기 스코프(본인만·소유역할)를 겁니다.
+     *
+     * `posts.read` 의 스코프는 게시판마다 다르다 — 전체인 게시판은 그대로, 본인만인 게시판은 내 글만,
+     * 소유역할인 게시판은 나와 역할을 공유하는 회원의 글만 남긴다(비회원 글은 닫힌다). 코어
+     * `PermissionHelper::applyPermissionScope` 와 같은 의미를 게시판별로 OR 로 묶은 것이다.
+     * 명세의 self·role 이 모두 비면 아무것도 덧붙이지 않는다(전 게시판이 전체 범위).
+     *
+     * @param  Builder  $query  게시글 쿼리
+     * @param  array  $readScope  읽기 스코프 명세 (BoardReadScope::resolve())
+     * @return void 반환값 없음
+     */
+    private function applyCrossBoardReadScope(Builder $query, array $readScope): void
+    {
+        $self = $readScope['self'] ?? [];
+        $role = $readScope['role'] ?? [];
+
+        if ($self === [] && $role === []) {
+            return;
+        }
+
+        $full = $readScope['full'] ?? [];
+        $userId = $readScope['user_id'] ?? null;
+        $roleIds = $readScope['role_ids'] ?? [];
+
+        $query->where(function (Builder $w) use ($full, $self, $role, $userId, $roleIds) {
+            // 조건이 하나도 붙지 않으면 행이 없어야 한다(fail-closed)
+            $w->whereRaw('1 = 0');
+
+            if ($full !== []) {
+                $w->orWhereIn('board_id', $full);
+            }
+
+            if ($self !== [] && $userId !== null) {
+                $w->orWhere(fn (Builder $q) => $q->whereIn('board_id', $self)->where('user_id', $userId));
+            }
+
+            if ($role !== [] && $roleIds !== []) {
+                // 코어 PermissionHelper::applyPermissionScope 의 소유역할 판정과 같은 서브쿼리
+                $w->orWhere(fn (Builder $q) => $q->whereIn('board_id', $role)->whereIn('user_id', function ($sub) use ($roleIds) {
+                    $sub->select('user_id')->from('user_roles')->whereIn('role_id', $roleIds);
+                }));
+            }
+        });
     }
 
     /**
@@ -1720,7 +1828,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  Builder  $query  쿼리 빌더
      * @param  string  $keyword  검색 키워드
-     * @return void
+     * @return void 반환값 없음
      */
     private function applyKeywordSearch(Builder $query, string $keyword): void
     {
@@ -1792,14 +1900,16 @@ class PostRepository implements PostRepositoryInterface
      *
      * @param  int  $boardId  게시판 ID
      * @param  int  $chunkSize  청크 크기
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 sitemap)
      * @return iterable<Post> 공개 게시글 순회자 (id, updated_at 만 조회)
      */
-    public function streamPublishedForSitemap(int $boardId, int $chunkSize = 500): iterable
+    public function streamPublishedForSitemap(int $boardId, int $chunkSize = 500, ?PostQueryExtensions $extensions = null): iterable
     {
         return Post::query()
             ->where('board_id', $boardId)
             ->where('status', PostStatus::Published)
             ->where('is_secret', false)
+            ->tap(fn ($q) => $extensions?->apply('sitemap', $q))
             ->select(['id', 'updated_at'])
             ->orderBy('id')
             ->lazyById($chunkSize);
@@ -2175,7 +2285,7 @@ class PostRepository implements PostRepositoryInterface
      * @param  int  $boardId  게시판 ID
      * @param  int  $size  청크 크기
      * @param  callable  $callback  청크마다 호출될 콜백 (int[] $postIds)
-     * @return void
+     * @return void 반환값 없음
      */
     public function eachIdChunkByBoardId(int $boardId, int $size, callable $callback): void
     {
@@ -2284,7 +2394,7 @@ class PostRepository implements PostRepositoryInterface
      *
      * 날짜는 사이트 표준시의 하루로 풀어 UTC 범위로 센다 — 집계 표(board_stats)는 모든 운영자가 함께 보는
      * 하루 1행이라 보는 사람마다 경계를 달리할 수 없고, UTC 자정으로 자르면 한국 시간 새벽 0~9시 글이 전날로
-     * 묶인다(7.1.0 O-CF3).
+     * 묶인다(7.1.0).
      *
      * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시)
      * @return int 해당 날짜 작성 게시글 수
@@ -2309,9 +2419,10 @@ class PostRepository implements PostRepositoryInterface
      * 다른 메서드(검색/인기/카테고리 목록 등)와 동일한 "원글만" 컨벤션 유지.
      *
      * @param  int  $limit  조회 건수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 admin_dashboard)
      * @return \Illuminate\Database\Eloquent\Collection<int, Post> 최신 게시글 컬렉션
      */
-    public function getRecentAcrossBoards(int $limit): \Illuminate\Database\Eloquent\Collection
+    public function getRecentAcrossBoards(int $limit, ?PostQueryExtensions $extensions = null): \Illuminate\Database\Eloquent\Collection
     {
         return Post::query()
             ->whereNull('deleted_at')
@@ -2320,9 +2431,112 @@ class PostRepository implements PostRepositoryInterface
             // 비밀글은 제목 공개 정책(2026-02-04)에 따라 관리자에게 제목을 노출한다(제외하지 않음).
             ->where('status', PostStatus::Published->value)
             ->whereHas('board', fn ($q) => $q->where('is_active', true))
+            ->tap(fn ($q) => $extensions?->apply('admin_dashboard', $q))
             ->with(['board', 'user'])
             ->orderByDesc('created_at')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findThreadNodes(int $boardId, array $ids): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return $this->threadNodeQuery($boardId)->whereIn('id', $ids)->get()
+            ->map(fn ($row) => $this->toThreadNode($row))
+            ->all();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findThreadChildNodes(int $boardId, array $parentIds): array
+    {
+        $parentIds = array_values(array_unique(array_map('intval', $parentIds)));
+
+        if ($parentIds === []) {
+            return [];
+        }
+
+        // audit:allow query-unbounded-get reason: 대상은 한 스레드 답변 트리의 한 레벨 — 경로 판정은 레벨 전량을 봐야 앵커 누락이 없고(collectDescendantIds 와 같은 사유), 호출부의 방문 가드·순회 상한(SecretThreadAccess::MAX_WALK)이 유한 종료를 보장한다
+        return $this->threadNodeQuery($boardId)->whereIn('parent_id', $parentIds)->get()
+            ->map(fn ($row) => $this->toThreadNode($row))
+            ->all();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function userHasReplyInBoard(int $boardId, int $userId): bool
+    {
+        return Post::query()
+            ->where('board_id', $boardId)
+            ->where('user_id', $userId)
+            ->whereNotNull('parent_id')
+            ->exists();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function findPasswordHashesByIds(int $boardId, array $ids): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return Post::query()
+            ->where('board_id', $boardId)
+            ->whereIn('id', $ids)
+            ->whereNotNull('password')
+            ->toBase()
+            ->pluck('password', 'id')
+            ->mapWithKeys(fn ($hash, $id) => [(int) $id => (string) $hash])
+            ->all();
+    }
+
+    /**
+     * 스레드 노드 요약 조회의 공통 쿼리를 만듭니다.
+     *
+     * 삭제 글도 싣는다 — 구조(부모 사슬)는 삭제와 무관한 사실이고, 앵커 자격만 살아 있는 글로
+     * 제한한다. 비밀번호는 해시 대신 존재 여부만 싣는다.
+     *
+     * @param  int  $boardId  게시판 ID
+     * @return \Illuminate\Database\Query\Builder 쿼리 빌더
+     */
+    private function threadNodeQuery(int $boardId): \Illuminate\Database\Query\Builder
+    {
+        return Post::withTrashed()
+            ->where('board_id', $boardId)
+            ->select(['id', 'parent_id', 'user_id', 'is_secret', 'deleted_at'])
+            ->selectRaw('(password IS NOT NULL) as has_password')
+            ->toBase();
+    }
+
+    /**
+     * 쿼리 행을 스레드 노드 요약 배열로 바꿉니다.
+     *
+     * @param  object  $row  쿼리 행
+     * @return array{id: int, parent_id: int|null, user_id: int|null, is_secret: bool, alive: bool, has_password: bool} 노드 요약
+     */
+    private function toThreadNode(object $row): array
+    {
+        return [
+            'id' => (int) $row->id,
+            'parent_id' => $row->parent_id !== null ? (int) $row->parent_id : null,
+            'user_id' => $row->user_id !== null ? (int) $row->user_id : null,
+            'is_secret' => (bool) $row->is_secret,
+            'alive' => $row->deleted_at === null,
+            'has_password' => (bool) $row->has_password,
+        ];
     }
 }

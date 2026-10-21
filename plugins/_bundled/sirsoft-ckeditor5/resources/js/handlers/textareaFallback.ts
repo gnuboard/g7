@@ -12,6 +12,11 @@
  * @module textareaFallback
  */
 
+import { getLocaleLabel } from './localeLabel';
+import { attachExternalContentSync } from './externalContentSync';
+import type { ExternalContentSyncHandle } from './externalContentSync';
+import { registerExternalSync } from './editorInstances';
+
 /** 폴백 요소를 식별하는 data 속성 */
 const FALLBACK_ATTR = 'data-ckeditor5-fallback';
 
@@ -46,6 +51,11 @@ export interface TextareaFallbackOptions {
      * 내려앉아도 저장 대상이 아닌 것은 그대로여야 한다.
      */
     trackChanges?: boolean;
+    /**
+     * 초기값이 속한 화면의 경로(편집기 재동기화의 `seedPath`). 입력칸이 서기를 기다리는 사이 화면을 옮겼으면 앞 화면
+     * 경로를 넘겨, 앞 화면 값으로 선 입력칸이 새 화면 값으로 다시 서게 한다. 없으면 지금 경로.
+     */
+    seedPath?: string;
 }
 
 /** 컨테이너별 폴백 상태 (재시도 시 값 승계에 쓴다) */
@@ -53,6 +63,8 @@ const fallbackState = new WeakMap<HTMLElement, {
     multilingual: boolean;
     values: Record<string, string>;
     activeLocale: string;
+    /** 값 칸(단일 `''`·로케일)별 외부 폼 값 재동기화 핸들 */
+    syncs: Map<string, ExternalContentSyncHandle>;
 }>();
 
 /**
@@ -158,6 +170,33 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
 
     let currentLocale = activeLocale;
 
+    // 같은 레이아웃 안에서 편집 대상이 바뀌면(글 수정 → 새 글 쓰기, 글 A → 글 B) 조각이 다시 마운트되지 않아
+    // 평문 입력칸도 이전 글 본문을 그대로 들고 있다. 편집기와 같은 재동기화를 칸마다 붙여, 새 값이 오면 입력칸을
+    // 다시 세우고 그 전에는 폼으로 내보내지 않는다(입력하면 이전 글 본문이 새 글 폼에 들어가므로).
+    const syncs = new Map<string, ExternalContentSyncHandle>();
+    const slotKey = (): string => (multilingual ? currentLocale : '');
+    (multilingual ? locales : ['']).forEach((key) => {
+        const handle = attachExternalContentSync({
+            getData: () => (key === slotKey() ? textarea.value : (values[key] ?? '')),
+            setData: (value: string) => {
+                values[key] = value;
+                if (key === slotKey()) {
+                    textarea.value = value;
+                }
+            },
+        }, { name, locale: key, multilingual, seedPath: options.seedPath, seedValue: values[key] ?? '' });
+        syncs.set(key, handle);
+        if (container.id) {
+            registerExternalSync(container.id, handle);
+        }
+    });
+    /**
+     * 폼으로 내보내도 되는지 — 모든 칸이 이전 글 값을 벗어났을 때만.
+     *
+     * @return bool 내보내도 되면 true
+     */
+    const mayEmit = (): boolean => [...syncs.values()].every((handle) => handle.shouldEmit());
+
     if (multilingual) {
         const tabsEl = document.createElement('div');
         tabsEl.className = 'ckeditor5-locale-tabs';
@@ -187,7 +226,8 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
             if (index === 0) {
                 button.classList.add('is-default');
             }
-            button.textContent = locale.toUpperCase();
+            // 언어팩 이름 → 내장 표 → 코드 (#148)
+            button.textContent = getLocaleLabel(locale);
 
             const check = document.createElement('span');
             check.dataset.check = '1';
@@ -201,7 +241,9 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
                 currentLocale = locale;
                 textarea.value = values[locale] ?? '';
                 textarea.dataset.locale = locale;
-                syncFallbackToForm(name, values, false, tracksChanges);
+                if (mayEmit()) {
+                    syncFallbackToForm(name, values, false, tracksChanges);
+                }
                 refreshTabs();
             });
 
@@ -215,7 +257,11 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
 
         textarea.addEventListener('input', () => {
             values[currentLocale] = textarea.value;
-            syncFallbackToForm(name, values, true, tracksChanges);
+            // 로케일 맵을 통째로 보내므로 한 칸이라도 이전 글 값이면 보내지 않는다
+            if (mayEmit()) {
+                syncs.get(currentLocale)?.noteEmitted(textarea.value);
+                syncFallbackToForm(name, values, true, tracksChanges);
+            }
             refreshTabs();
         });
     } else {
@@ -223,13 +269,16 @@ export function renderTextareaFallback(options: TextareaFallbackOptions): void {
 
         textarea.addEventListener('input', () => {
             values[''] = textarea.value;
-            syncFallbackToForm(name, textarea.value, true, tracksChanges);
+            if (mayEmit()) {
+                syncs.get('')?.noteEmitted(textarea.value);
+                syncFallbackToForm(name, textarea.value, true, tracksChanges);
+            }
         });
     }
 
     container.appendChild(textarea);
 
-    fallbackState.set(container, { multilingual, values, activeLocale: currentLocale });
+    fallbackState.set(container, { multilingual, values, activeLocale: currentLocale, syncs });
 
     // 폴백으로 내려앉았다는 사실 자체를 폼 상태에 반영한다 — 사용자가 아무것도 입력하지
     // 않고 저장해도 서버가 평문으로 처리하도록.
@@ -269,6 +318,7 @@ export function removeTextareaFallback(container: HTMLElement): boolean {
         return false;
     }
 
+    fallbackState.get(container)?.syncs.forEach((handle) => handle.stop());
     container.innerHTML = '';
     fallbackState.delete(container);
 

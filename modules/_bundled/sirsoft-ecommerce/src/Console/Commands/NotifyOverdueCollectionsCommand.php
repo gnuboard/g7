@@ -52,12 +52,20 @@ class NotifyOverdueCollectionsCommand extends Command
         $result = $this->exchangeService->notifyOverdueCollections($limit, $isDryRun);
 
         if ($isDryRun) {
-            $this->info("[dry-run] 알림 대상 {$result['notified']}건 / 회수 대기 없음 {$result['skipped']}건 (검사 {$result['scanned']}건)");
+            $this->info('[dry-run] '.__('sirsoft-ecommerce::messages.console.notify_overdue_collections.dry_run', [
+                'notified' => $result['notified'],
+                'skipped' => $result['skipped'],
+                'scanned' => $result['scanned'],
+            ]));
 
             return Command::SUCCESS;
         }
 
-        $this->info("선교환 회수 지연 알림: 검사 {$result['scanned']}건 / 알림 {$result['notified']}건 / 회수 대기 없음 {$result['skipped']}건");
+        $this->info(__('sirsoft-ecommerce::messages.console.notify_overdue_collections.done', [
+            'scanned' => $result['scanned'],
+            'notified' => $result['notified'],
+            'skipped' => $result['skipped'],
+        ]));
 
         Log::info('[claim.exchange] 선교환 회수 지연 알림 배치', [
             'limit' => $limit,

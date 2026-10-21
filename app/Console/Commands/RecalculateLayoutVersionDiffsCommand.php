@@ -32,11 +32,11 @@ class RecalculateLayoutVersionDiffsCommand extends Command
      */
     public function handle(LayoutVersionRepositoryInterface $repository): int
     {
-        $this->info('레이아웃 버전 변경 요약 재계산을 시작합니다...');
+        $this->info(__('layouts.console.versions_recalculate_diffs.start'));
 
         $updated = $repository->recalculateAllChangeSummaries();
 
-        $this->info("버전 {$updated}건의 변경 요약을 재계산했습니다.");
+        $this->info(__('layouts.console.versions_recalculate_diffs.done', ['count' => $updated]));
 
         return self::SUCCESS;
     }

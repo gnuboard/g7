@@ -6,13 +6,21 @@
   <!-- 역할 목록. 어떤 실패든 화면을 에러로 갈아끼운다 — 역할이 안 보이는 상태에서 "역할 없음" 으로
        읽히면 새로 만들려 들기 때문이다. -->
   <data-source id="roles" label_key="$t:editor.data_source.roles" type="api" endpoint="/api/admin/roles" method="GET" :auto_fetch="true" auth_mode="required">
-    <params search="{{query.search}}" page="{{query.page ?? 1}}" :per_page="20"/>
+    <params search="{{query.search}}" extension_type="{{query.extension_type}}" page="{{query.page ?? 1}}" :per_page="20"/>
     <error-handling>
       <on-code code="403">
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
     <fallback>
@@ -39,29 +47,43 @@
     <div data-ref="role_list_content" class="admin-page-content">
       <responsive on="portable" class="admin-page-content-compact"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:admin.roles.title" description="$t:admin.roles.description">
-        <button data-ref="refresh_button" class="btn-icon" aria-label="$t:admin.roles.refresh">
+        <button type="button" data-ref="refresh_button" class="btn-icon" aria-label="$t:admin.roles.refresh">
           <on type="click">
             <refetch-data-source dataSourceId="roles"/>
           </on>
           <icon data-ref="refresh_icon" name="refresh" size="md"/>
         </button>
-        <button data-ref="add_role_button" disabled="{{roles?.data?.abilities?.can_create !== true}}" class="flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <a data-ref="add_role_button" href="/admin/roles/create" :mergeQuery="true" disabled="{{roles?.data?.abilities?.can_create !== true}}" class="button flex-center gap-2 px-4 h-10 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
           <on type="click">
             <!-- 새 역할 만들기. 만들기를 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다 -->
-            <navigate path="/admin/roles/create" :mergeQuery="true">
-              <query/>
-            </navigate>
+            <navigate :mergeQuery="true"><query/></navigate>
           </on>
           <icon name="plus" size="md"/>
           <span>$t:admin.roles.add_role</span>
-        </button>
+        </a>
       </page-header>
       <!-- 보호 역할 안내 — 행 메뉴의 삭제·수정과 사용 여부 스위치가 왜 잠겨 있는지 알려 준다.
            잠금 자체는 서버가 행마다 실어 준 `abilities` 가 정한다(코어·확장 역할 삭제 불가,
            수정·토글은 슈퍼 관리자만 — 서버 가드와 같은 판정). -->
       <p data-ref="protected_roles_hint" class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:admin.roles.protected_roles_hint</p>
-      <div data-ref="search_bar_wrapper" class="flex justify-end mb-6">
-        <responsive on="portable" class="mb-6"/>
+      <div data-ref="search_bar_wrapper" class="flex justify-end gap-2 mb-6">
+        <responsive on="portable" class="flex flex-col gap-2 mb-6"/>
+        <select data-ref="extension_type_filter" name="extension_type" class="w-40" value="{{query.extension_type || ''}}" aria-label="$t:admin.roles.filters.extension_type">
+          <responsive on="portable" class="w-full"/>
+          <options>
+            <option value="">$t:admin.roles.filters.extension_type_all</option>
+            <option value="core">$t:admin.roles.filters.extension_type_core</option>
+            <option value="module">$t:admin.roles.filters.extension_type_module</option>
+            <option value="plugin">$t:admin.roles.filters.extension_type_plugin</option>
+            <option value="custom">$t:admin.roles.filters.extension_type_custom</option>
+          </options>
+          <on type="change">
+            <!-- 소유 구분 — 시스템(코어)·모듈·플러그인이 만든 역할과 직접 만든 역할을 나눠 본다. 검색어는 잇고 쪽은 1로 되돌린다 -->
+            <navigate path="/admin/roles" :mergeQuery="true" :replace="true" transition_overlay_target="roles_data_grid__body">
+              <query extension_type="{{$event.target.value || undefined}}" :page="1"/>
+            </navigate>
+          </on>
+        </select>
         <search-bar data-type="composite" data-ref="search_bar" placeholder="$t:admin.roles.search_placeholder" value="{{_local.searchQuery || ''}}" class="w-64">
           <responsive on="portable" class="w-full"/>
           <on type="change">
@@ -76,7 +98,7 @@
           </on>
         </search-bar>
       </div>
-      <data-grid data-type="composite" data-ref="roles_data_grid" :data-blur-until-loaded="true" data="{{roles?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{roles?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{roles?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{roles?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+      <data-grid pageHref="/admin/roles?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="roles_data_grid" :data-blur-until-loaded="true" data="{{roles?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{roles?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{roles?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{roles?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true" idField="id" :responsiveBreakpoint="768" emptyMessage="{{roles === undefined ? '' : $t('common.no_data')}}" actionsColumnHeader="$t:common.actions">
         <column field="name" header="$t:admin.roles.columns.name" :sortable="false">
           <cell>
             <div class="flex-center gap-2">
@@ -119,7 +141,7 @@
         </column>
         <column field="is_active" header="$t:admin.roles.columns.status" :sortable="false">
           <cell>
-            <toggle data-type="composite" checked="{{row.is_active}}" disabled="{{row.abilities?.can_toggle_status !== true}}" size="sm">
+            <toggle data-type="composite" checked="{{row.is_active}}" ariaLabel="$t:defer:common.row_cell|row={{row.name}}|column={{$t('admin.roles.columns.status')}}" disabled="{{row.abilities?.can_toggle_status !== true}}" size="sm">
               <on type="change">
                 <!-- 사용 여부 토글. 성공 문구는 **누른 뒤의 상태**(`$event.target.checked`)로 고르고,
                      목록을 다시 받아 서버가 실제로 저장한 값으로 스위치를 되맞춘다.
@@ -142,8 +164,8 @@
         </column>
         <column field="created_at" header="$t:admin.roles.columns.created_at" :sortable="false"/>
         <prop name="rowActions">
-          <item id="edit" label="$t:common.edit" iconName="pencil" disabledField="abilities.can_update"/>
-          <item id="clone" label="$t:admin.roles.actions.clone" iconName="copy" disabledField="abilities.can_create"/>
+          <item id="edit" label="$t:common.edit" iconName="pencil" href="/admin/roles/{{row.id}}/edit" :mergeQuery="true" disabledField="abilities.can_update"/>
+          <item id="clone" label="$t:admin.roles.actions.clone" iconName="copy" href="/admin/roles/create?clone_from={{row.id}}" :mergeQuery="true" disabledField="abilities.can_create"/>
           <item id="delete" label="$t:common.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete"/>
         </prop>
         <on type="change" event="onPageChange">

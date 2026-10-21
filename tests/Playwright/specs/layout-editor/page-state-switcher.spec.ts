@@ -260,7 +260,7 @@ test.describe('@layout-editor 페이지 상태 토글 (S6-3)', () => {
   });
   /** @effects active_state_survives_enter_iteration_item_edit, iteration_item_inherits_host_route_scope */
   test('반복 항목 편집에 들어가도 상태 토글과 고른 상태가 유지된다', async ({ page }) => {
-    // PO 실측 결함: 반복 항목 편집 모드가 states scope 비대상이라 토글이 사라지고 상태가
+    // 실측 결함: 반복 항목 편집 모드가 states scope 비대상이라 토글이 사라지고 상태가
     // 기본값으로 풀렸다. 항목 템플릿은 그 화면의 상태 뒤에 있으므로(알림톡 템플릿 행은
     // templates_tab 에서만 존재) 상태가 풀리면 편집 대상 자체가 캔버스에서 사라진다.
     const token = issueToken('core.templates.layouts.edit');

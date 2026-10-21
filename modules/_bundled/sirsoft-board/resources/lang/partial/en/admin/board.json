@@ -16,7 +16,19 @@
     "filter_type_card": "Card Grid",
     "status": "Status",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "reorder": {
+      "button": "Reorder",
+      "title": "Reorder boards",
+      "description": "Boards appear in this order in the user menu and board list. An inactive board returns to this position when it is turned back on.",
+      "drag_handle": "Drag to move {{name}}",
+      "move_up": "Move {{name}} up",
+      "move_down": "Move {{name}} down",
+      "inactive": "Inactive",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel"
+    }
   },
   "create": {
     "title": "Create Board"

@@ -7,6 +7,7 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\LayoutSourceType;
 use App\Extension\HookManager;
 use App\Http\Requests\Layout\Concerns\CompilesMarkupContent;
+use App\Http\Requests\Layout\Concerns\DecodesLayoutContentPreserving;
 use App\Rules\NoExternalUrls;
 use App\Rules\SafeLayoutExpressions;
 use App\Rules\ValidDataSourceMerge;
@@ -31,6 +32,7 @@ use Illuminate\Validation\Rule;
 class UpdateLayoutContentRequest extends FormRequest
 {
     use CompilesMarkupContent;
+    use DecodesLayoutContentPreserving;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -63,15 +65,11 @@ class UpdateLayoutContentRequest extends FormRequest
 
         $content = $this->input('content');
 
-        // content가 JSON 문자열인 경우 배열로 변환
-        if (is_string($content)) {
-            $decoded = json_decode($content, true);
-
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                $this->merge(['content' => $decoded]);
-                $content = $decoded;
-            }
-            // JSON 파싱 실패 시 원본 유지 (검증에서 'array' 규칙으로 실패 처리)
+        // content 가 JSON 문자열이거나 JSON 객체 본문이면 빈 객체 `{}` 를 보존해 다시 읽는다 (#758).
+        // 파싱 실패 시 원본 유지 (검증에서 'array' 규칙으로 실패 처리)
+        if ($this->input('format') !== 'markup' && $content !== null) {
+            $content = $this->decodeContentPreserving();
+            $this->merge(['content' => $content]);
         }
 
         // 편집기 응답의 상속/주입/partial 노드 + 편집기 전용 메타 제거.
@@ -271,7 +269,8 @@ class UpdateLayoutContentRequest extends FormRequest
      */
     public function validated($key = null, $default = null): mixed
     {
-        $validated = parent::validated($key, $default);
+        // 검증은 빈 객체 표식을 배열로 낮춘 사본으로 했으므로 원문의 `{}` 자리를 먼저 되살린다 (#758)
+        $validated = $this->restoreValidatedContent(parent::validated($key, $default), $key);
 
         if ($key !== null || ! is_array($validated) || ! isset($validated['content']) || ! is_array($validated['content'])) {
             return $validated;
@@ -419,6 +418,15 @@ class UpdateLayoutContentRequest extends FormRequest
             // 에러 레이아웃 표식 — ErrorPageHandler 가 소비
             'content.meta.is_error_layout' => ['nullable', 'boolean'],
             'content.meta.error_code' => ['nullable', 'integer'],
+            // 저장하지 않은 변경 이탈 확인 — 엔진 LeaveGuard 가 소비({{식}} 문자열·$t: 문구)
+            'content.meta.leave_guard' => ['nullable', 'string'],
+            'content.meta.leave_message' => ['nullable', 'string'],
+            // 레이아웃 편집기 [기본 정보] 탭이 쓰는 키 — 메뉴 아이콘·편집기 트리 라벨(MetaForm, 라우트 트리·모달 후보 라벨이 소비)
+            'content.meta.icon' => ['nullable', 'string', 'max:255'],
+            'content.meta.editor_label' => ['nullable', 'string', 'max:255'],
+            // 작성 도구 표기(번들 JSON 의 `_` 접두 키) — 런타임은 쓰지 않지만 저장에서 떨어지면 다음 업데이트의 3-way 병합이
+            // 운영자가 meta 를 고친 것으로 본다
+            'content.meta._e2e_allow' => ['nullable', 'string'],
 
             // SEO 메타데이터
             // 주의: content.meta.seo 도 'array' 규칙 + 하위 키 일부 명시이므로 SEO 페이지 생성기가
@@ -436,6 +444,10 @@ class UpdateLayoutContentRequest extends FormRequest
             'content.meta.seo.toggle_setting' => ['nullable', 'string'],
             'content.meta.seo.vars' => ['nullable', 'array'],
             'content.meta.seo.extensions' => ['nullable', 'array'],
+            // 편집기 SEO 탭이 쓰고 서버가 읽는 키 — 편집기 공유 미리보기의 제목·설명 대체값(SeoOgPreviewService)·트위터 카드(SeoMetaResolver — 검색로봇 화면에도 나감)
+            'content.meta.seo.title' => ['nullable', 'string'],
+            'content.meta.seo.description' => ['nullable', 'string'],
+            'content.meta.seo.twitter' => ['nullable', 'array'],
 
             // 모달 컴포넌트 정의
             'content.modals' => ['nullable', 'array'],
@@ -602,6 +614,25 @@ class UpdateLayoutContentRequest extends FormRequest
                 }
             }
         });
+    }
+
+    /**
+     * 검증 문구의 필드 라벨 — 레이아웃 meta 의 편집기·이탈 확인·SEO 키
+     *
+     * @return array<string, string> 필드 키 => 라벨
+     */
+    public function attributes(): array
+    {
+        return [
+            'content.meta.icon' => __('validation.attributes.layout_meta_icon'),
+            'content.meta.editor_label' => __('validation.attributes.layout_meta_editor_label'),
+            'content.meta._e2e_allow' => __('validation.attributes.layout_meta_authoring_note'),
+            'content.meta.leave_guard' => __('validation.attributes.layout_meta_leave_guard'),
+            'content.meta.leave_message' => __('validation.attributes.layout_meta_leave_message'),
+            'content.meta.seo.title' => __('validation.attributes.layout_seo_title'),
+            'content.meta.seo.description' => __('validation.attributes.layout_seo_description'),
+            'content.meta.seo.twitter' => __('validation.attributes.layout_seo_twitter'),
+        ];
     }
 
     /**

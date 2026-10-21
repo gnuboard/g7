@@ -5,7 +5,7 @@
     <span data-ref="b_001_selected_count" class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.order.bulk.selected_count|count={{(_local.selectedItems || []).length}}</span>
     <div class="flex-center flex-wrap gap-2">
       <!-- B-002, D-030 ~ D-039 -->
-      <select data-ref="b_002_order_status_select" name="bulkOrderStatus" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkOrderStatus || ''}}" disabled="{{orders?.data?.abilities?.can_update !== true}}">
+      <select data-ref="b_002_order_status_select" name="bulkOrderStatus" aria-label="$t:sirsoft-ecommerce.admin.order.bulk.status_placeholder" class="w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkOrderStatus || ''}}" disabled="{{orders?.data?.abilities?.can_update !== true}}">
         <options>
           <option value="" disabled>$t:sirsoft-ecommerce.admin.order.bulk.status_placeholder</option>
           <option value="pending_payment">$t:sirsoft-ecommerce.admin.order.status.payment_pending</option>
@@ -26,7 +26,7 @@
       <!-- B-003 -->
       <span data-ref="b_003_shipping_label" class="text-label whitespace-nowrap">$t:sirsoft-ecommerce.admin.order.bulk.shipping_label</span>
       <!-- B-004, D-040 ~ D-044 -->
-      <select data-ref="b_004_courier_select" name="bulkCourier" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkCourier || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.bulk.courier_placeholder" disabled="{{orders?.data?.abilities?.can_update !== true}}" options="{{active_carriers?.data ?? []}}">
+      <select data-ref="b_004_courier_select" name="bulkCourier" aria-label="$t:sirsoft-ecommerce.admin.order.bulk.courier_placeholder" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkCourier || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.bulk.courier_placeholder" disabled="{{orders?.data?.abilities?.can_update !== true}}" options="{{active_carriers?.data ?? []}}">
         <on type="change">
           <set-state target="_local" bulkCourier="{{$event.target.value}}"/>
         </on>
@@ -40,8 +40,8 @@
     </div>
     <div class="flex-1"/>
     <!-- B-006 -->
-    <button data-ref="b_006_bulk_apply_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedItems || _local.selectedItems.length === 0 || orders?.data?.abilities?.can_update !== true}}">
-      <responsive on="portable" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50">$t:sirsoft-ecommerce.admin.order.bulk.apply_full</responsive>
+    <button data-ref="b_006_bulk_apply_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.selectedItems || _local.selectedItems.length === 0 || orders?.data?.abilities?.can_update !== true}}">
+      <responsive on="portable" class="w-full px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50">$t:sirsoft-ecommerce.admin.order.bulk.apply_full</responsive>
       <on type="click">
         <set-state target="global" bulkOrderStatus="{{_local.bulkOrderStatus}}" bulkCourier="{{_local.bulkCourier}}" bulkTrackingNumber="{{_local.bulkTrackingNumber}}" bulkSelectedItems="{{_local.selectedItems}}"/>
         <action handler="sirsoft-ecommerce.buildOrderBulkConfirmData"/>

@@ -64,6 +64,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | icon_url | string\|null | `/api/extensions/template/sirsoft-admin_basic/icon?v=1.1.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
 | icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
+| stuck_update | boolean | `false` | 업데이트가 도중에 멈춘 상태인지 — `updating` 으로 10분이 지났고 진행 중인 업데이트 잠금이 없으면 `true`. 관리자 카드가 「업데이트 멈춤」 표시와 「정리 후 다시 업데이트」 단추를 보일 때 쓴다 |
 | update_source | null | `null` | 업데이트 감지 출처 (github, bundled 등) |
 | latest_version | string | `1.0.4` | 감지된 최신 배포 버전 |
 | file_version | string | `1.0.4` | 설치된 파일의 manifest 버전 |
@@ -102,6 +103,7 @@ HTTP/1.1 200
                 },
                 "dependencies_met": true,
                 "update_available": false,
+                "stuck_update": false,
                 "update_source": null,
                 "latest_version": "1.0.4",
                 "file_version": "1.0.4",
@@ -253,7 +255,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| template | object | `{"identifier":"sirsoft-admin_basic","status":"active", …}` | 활성화된 템플릿 리소스 (TemplateResource 목록 필드 전체 — identifier/vendor/name/version/type/status/description/dependencies/dependencies_met/update_available/update_source/latest_version/file_version/github_url/github_changelog_url/is_pending/is_bundled/deactivated_reason/deactivated_at/incompatible_required_version/abilities) |
+| template | object | `{"identifier":"sirsoft-admin_basic","status":"active", …}` | 활성화된 템플릿 리소스 (TemplateResource 목록 필드 전체 — identifier/vendor/name/version/type/status/description/dependencies/dependencies_met/update_available/update_source/latest_version/file_version/github_url/github_changelog_url/is_pending/is_bundled/deactivated_reason/deactivated_at/incompatible_required_version/abilities). 업데이트의 판 전환이 끝나지 않은 확장이면 `version` 은 기록 판, `file_version` 은 파일 판이고 `update_available` 이 `true` 다 |
 | pending_language_packs | array | `[]` | 이 템플릿 재활성화로 함께 되살아날 수 있는 비활성 번들 언어팩 목록 (각 항목: id, identifier, locale, locale_native_name) |
 
 **응답 예시**
@@ -503,6 +505,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource)._
 | template_name | body | string | 예 | max 255 | template 이름 (식별자) |
 | dependencies | body | array | 아니오 | — | 함께 설치할 의존 확장 목록 (install-preview 응답 기반 사용자 선택분, 각 원소 type: module\|plugin, identifier) |
 | language_packs | body | array | 아니오 | — | 함께 설치할 동반 번들 언어팩 식별자 배열 (설치 성공 후 best-effort 설치) |
+| layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.template.install_validation_rules`).
 
@@ -979,6 +982,7 @@ _단건 응답: `data` 객체의 필드._
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | template_name | body | string | 예 | max 255 | template 이름 (식별자) |
+| layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.template.refresh_layouts_validation_rules`).
 
@@ -78226,7 +78230,7 @@ HTTP/1.1 200
                                 "widget": "datasource-picker"
                             }
                         ],
-                        "expr": "({src}?.data?.length ?? 0) === 0"
+                        "expr": "({src}?.data?.length ?? -1) === 0"
                     },
                     {
                         "value": "dsLoading",
@@ -78238,7 +78242,7 @@ HTTP/1.1 200
                                 "widget": "datasource-picker"
                             }
                         ],
-                        "expr": "{src}?.loading"
+                        "expr": "typeof {src} === 'undefined'"
                     },
                     {
                         "value": "fieldEquals",
@@ -93051,7 +93055,7 @@ HTTP/1.1 200
                             "bio": "커뮤니티 운영과 CS를 담당하고 있습니다.",
                             "timezone": "Asia/Seoul",
                             "admin_memo": "2025년 우수 운영자. CS 응대 만족도 1위. 콘텐츠 신고 처리 권한 보유.",
-                            "ip_address": "203.241.18.92",
+                            "ip_address": "203.0.113.10",
                             "email_verified_at": "2025-08-20 10:14:55",
                             "last_login_at": "2026-06-03 08:40:12",
                             "created_at": "2025-08-20 09:58:31",
@@ -97357,6 +97361,7 @@ _단건 응답: `data` 객체의 필드._
 | templateName | path | string | 예 | — | 대상 template의 이름 (식별자) |
 | layout_strategy | body | string | 아니오 | `overwrite`, `keep` | 업데이트 시 레이아웃 처리 전략 (overwrite: 새 파일로 전면 교체, keep: 운영자 수정본에 새 버전 3자 병합) |
 | force | body | boolean | 아니오 | — | 강제 실행 여부 (안전 확인/선행 검사 우회) |
+| layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.template.perform_update_validation_rules`).
 
@@ -97691,7 +97696,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿의 컴포넌트 정의(components.json)를 서빙하는 공개 엔드포인트입니다(TemplateService::getComponentsFilePath). 프론트엔드 렌더 엔진 부팅에 사용합니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache`(파일 수정 즉시 반영)로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다.
+**설명** 템플릿의 컴포넌트 정의(components.json)를 서빙하는 공개 엔드포인트입니다(TemplateService::getComponentsFilePath). 프론트엔드 렌더 엔진 부팅에 사용합니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache`(파일 수정 즉시 반영)로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다. 매니페스트의 빈 맵(`props: {}` 등)은 `{}` 그대로 응답한다(7.1.1 부터).
 
 
 ### GET /api/templates/{identifier}/config
@@ -97977,7 +97982,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 활성 템플릿의 설정 파일(template.json, error_config 등 메타데이터)을 서빙하는 공개 엔드포인트입니다. 응답에 확장 캐시 버전(`cache_version`)을 포함해 프론트엔드가 후속 API 호출에 사용하게 하며, 비활성/미존재 템플릿은 404입니다. 1시간 캐시됩니다. 서버 캐시는 템플릿 라이프사이클(`template:update` / `template:cache-clear` / 비활성화 / 삭제) 시점에 즉시 무효화되어 최신 매니페스트가 반영됩니다. 인증이 필요 없습니다.
+**설명** 활성 템플릿의 설정 파일(template.json, error_config 등 메타데이터)을 서빙하는 공개 엔드포인트입니다. 응답에 확장 캐시 버전(`cache_version`)을 포함해 프론트엔드가 후속 API 호출에 사용하게 하며, 비활성/미존재 템플릿은 404입니다. 1시간 캐시됩니다. 서버 캐시는 템플릿 라이프사이클(`template:update` / `template:cache-clear` / 비활성화 / 삭제) 시점에 즉시 무효화되어 최신 매니페스트가 반영됩니다. 인증이 필요 없습니다. 원본 파일의 빈 맵(예: `dependencies.modules: {}`)은 `{}` 그대로 응답한다 — 7.1.0 까지는 `[]` 였다.
 
 
 ### GET /api/templates/{identifier}/editor-spec
@@ -174411,7 +174416,7 @@ HTTP/1.1 200
                                 "widget": "datasource-picker"
                             }
                         ],
-                        "expr": "({src}?.data?.length ?? 0) === 0"
+                        "expr": "({src}?.data?.length ?? -1) === 0"
                     },
                     {
                         "value": "dsLoading",
@@ -174423,7 +174428,7 @@ HTTP/1.1 200
                                 "widget": "datasource-picker"
                             }
                         ],
-                        "expr": "{src}?.loading"
+                        "expr": "typeof {src} === 'undefined'"
                     },
                     {
                         "value": "fieldEquals",
@@ -189236,7 +189241,7 @@ HTTP/1.1 200
                             "bio": "커뮤니티 운영과 CS를 담당하고 있습니다.",
                             "timezone": "Asia/Seoul",
                             "admin_memo": "2025년 우수 운영자. CS 응대 만족도 1위. 콘텐츠 신고 처리 권한 보유.",
-                            "ip_address": "203.241.18.92",
+                            "ip_address": "203.0.113.10",
                             "email_verified_at": "2025-08-20 10:14:55",
                             "last_login_at": "2026-06-03 08:40:12",
                             "created_at": "2025-08-20 09:58:31",
@@ -189905,7 +189910,7 @@ _이 엔드포인트는 `success`/`message`/`data` 봉투를 사용하지 않습
 
 <!-- @generated:end -->
 
-**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). 지원하지 않는 로케일/파일 부재 시 404입니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다. 서버 캐시 키는 `v` 쿼리와 무관하게 **서버 현재 확장 캐시 버전**으로만 만들며(임의 `v` 값으로 캐시 엔트리를 늘릴 수 없음 — KVE-2026-2336), `v` 는 위 HTTP 캐시 정책 판단에만 쓰입니다.
+**설명** 활성 템플릿의 다국어 파일(lang/{locale}.json)을 활성화된 모듈의 다국어 데이터와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getLanguageDataWithModules). `{locale}` 은 언어팩 설치 규칙과 같은 BCP 47 형식(`App\Support\LocaleTag`)을 받습니다 — `ko`·`fil`·`fil-PH`·`zh-Hant`·`es-419` 처럼 소문자 주 언어 2~3자 + 선택 문자 표기(`Hant`) + 선택 지역(`PH`·`419`), 최대 20자(7.1.1, #148). 정규형이 아닌 표기(`fil-ph`·`fil_PH`·`KO`)는 라우트가 맞지 않아 404, 형식은 맞지만 사이트가 켜지 않은 언어와 20자 초과는 서비스 단계에서 404(`locale_not_supported`)입니다 — 종전 500 이던 형식 위반 사유(`invalid_locale`)도 404 로 응답합니다. 지원하지 않는 로케일/파일 부재 시 404입니다. 조건부 캐시가 적용됩니다 — 응답에 ETag 가 부착되며 `If-None-Match` 일치 시 본문 없는 `304` 를 반환하고, Cache-Control 은 프로덕션 `public, max-age=3600` / 그 외 환경 `no-cache` 로 분기합니다. 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다. 서버 캐시 키는 `v` 쿼리와 무관하게 **서버 현재 확장 캐시 버전**으로만 만들며(임의 `v` 값으로 캐시 엔트리를 늘릴 수 없음 — KVE-2026-2336), `v` 는 위 HTTP 캐시 정책 판단에만 쓰입니다.
 
 
 ### GET /api/templates/{identifier}/layout-attachments/{attachment}/file
@@ -190141,6 +190146,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 템플릿의 라우트 정의(routes.json)를 활성화된 모듈의 라우트와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getRoutesDataWithModules). 프론트엔드 라우팅 부팅에 사용합니다. 캐시 헤더는 **`v` 쿼리를 명시한 요청에만** 적용됩니다 — 버전 키드 URL 은 확장 변경 시 URL 자체가 바뀌므로 ETag + `If-None-Match` 304 + Cache-Control(프로덕션 `public, max-age=3600` / 그 외 `no-cache`)이 안전하고, 무버전 요청(핸드셰이크 폴백)은 종전대로 캐시 헤더 없이 신선 응답합니다. 단 라우트 병합이 열화 상태(확장 업데이트 진행 중 등)면 `v` 명시 요청이어도 공개 캐시 헤더를 부여하지 않습니다 — 열화 응답이 브라우저/CDN 에 1시간 박제되는 것을 막습니다(서버측 캐시 회피와 동일 규율). 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다. 서버 캐시 키는 `v` 쿼리와 무관하게 **서버 현재 확장 캐시 버전**으로만 만들며(임의 `v` 값으로 캐시 엔트리를 늘릴 수 없음 — KVE-2026-2336), `v` 는 위 HTTP 캐시 정책 판단에만 쓰입니다. 존재하지 않는 템플릿 등 오류 결과는 서버 캐시에 남기지 않습니다.
+**설명** 템플릿의 라우트 정의(routes.json)를 활성화된 모듈의 라우트와 병합해 서빙하는 공개 엔드포인트입니다(TemplateService::getRoutesDataWithModules). 프론트엔드 라우팅 부팅에 사용합니다. 캐시 헤더는 **`v` 쿼리를 명시한 요청에만** 적용됩니다 — 버전 키드 URL 은 확장 변경 시 URL 자체가 바뀌므로 ETag + `If-None-Match` 304 + Cache-Control(프로덕션 `public, max-age=3600` / 그 외 `no-cache`)이 안전하고, 무버전 요청(핸드셰이크 폴백)은 종전대로 캐시 헤더 없이 신선 응답합니다. 단 라우트 병합이 열화 상태(확장 업데이트 진행 중 등)면 `v` 명시 요청이어도 공개 캐시 헤더를 부여하지 않습니다 — 열화 응답이 브라우저/CDN 에 1시간 박제되는 것을 막습니다(서버측 캐시 회피와 동일 규율). 정적 게시본(`/build/ext/{v}/…`)이 있으면 프론트는 그 정적 파일을 우선 수신하며, 본 API 는 미게시/부분게시/GC 직후의 **폴백 경로**입니다. 인증이 필요 없습니다. 서버 캐시 키는 `v` 쿼리와 무관하게 **서버 현재 확장 캐시 버전**으로만 만들며(임의 `v` 값으로 캐시 엔트리를 늘릴 수 없음 — KVE-2026-2336), `v` 는 위 HTTP 캐시 정책 판단에만 쓰입니다. 존재하지 않는 템플릿 등 오류 결과는 서버 캐시에 남기지 않습니다. routes.json(템플릿·모듈·플러그인)의 빈 맵은 `{}` 그대로 응답한다(7.1.1 부터). SEO·사이트맵처럼 같은 데이터를 PHP 에서 배열로 읽는 소비자는 종전대로 연관 배열을 받는다.
 
 

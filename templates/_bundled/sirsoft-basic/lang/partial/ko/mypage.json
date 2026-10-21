@@ -185,6 +185,7 @@
         "points_used": "마일리지 사용",
         "points_earning": "적립 예정",
         "view_detail": "상세보기",
+        "status_filter_label": "주문 상태",
         "empty": "주문 내역이 없습니다.",
         "go_shopping": "쇼핑하러 가기",
         "status": {
@@ -507,6 +508,7 @@
         "reports": {
             "filter": {
                 "all_statuses": "전체 상태",
+                "status_label": "처리 상태",
                 "all_targets": "전체 대상"
             },
             "status": {

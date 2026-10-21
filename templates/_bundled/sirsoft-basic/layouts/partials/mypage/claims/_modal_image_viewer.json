@@ -4,7 +4,7 @@
         "description": "클레임 첨부 사진 확대 보기 모달",
         "editor_label": "$t:user.modal_label.mypage_claims.image_viewer_modal"
     },
-    "comment": "§5-4 의 모달 id 규약(claim_ 접두)을 따른다 — 다른 화면의 모달 id 와 충돌하지 않게. 대상은 여는 지점이 페이지 로컬(claimImageViewerUrl)에 세우고 여기서는 그것만 읽는다.\n첨부는 한시 서명 URL 로만 열린다. 화면이 해시로 주소를 조립하면 서명이 빠져 403 이 되므로 서버가 준 download_url 을 그대로 쓴다.",
+    "comment": "§5-4 의 모달 id 규약(claim_ 접두)을 따른다 — 다른 화면의 모달 id 와 충돌하지 않게. 대상은 여는 지점이 창 고유 전역 이름 공간(_global.claimImageViewer)에 세우고 여기서는 그것만 읽는다.\n첨부는 한시 서명 URL 로만 열린다. 화면이 해시로 주소를 조립하면 서명이 빠져 403 이 되므로 서버가 준 download_url 을 그대로 쓴다.\n그 서명 URL 이 전역에 남지 않도록 창을 닫으면 이름 공간을 비운다 — 닫기 단추는 직접, 창 머리 닫기·Esc·바깥 클릭(엔진 closeModal 로만 이어진다)은\n열려 있는 동안 내내 붙어 있는 그림 틀의 unmount 에서 비운다(7.1.1 security.md 「_global 민감 정보 금지」 의 창 이름 공간 예외).",
     "id": "modal_claim_image_viewer",
     "type": "composite",
     "name": "Modal",
@@ -16,6 +16,18 @@
         {
             "type": "basic",
             "name": "Div",
+            "lifecycle": {
+                "onUnmount": [
+                    {
+                        "comment": "창이 닫혀 본문이 내려갈 때(어느 갈래로 닫든) 한시 서명 URL 을 지운다",
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "claimImageViewer": null
+                        }
+                    }
+                ]
+            },
             "props": {
                 "className": "p-4"
             },
@@ -23,21 +35,21 @@
                 {
                     "type": "basic",
                     "name": "Img",
-                    "if": "{{!!_local.claimImageViewerUrl}}",
+                    "if": "{{!!_global.claimImageViewer?.url}}",
                     "props": {
-                        "src": "{{_local.claimImageViewerUrl}}",
-                        "alt": "{{_local.claimImageViewerName ?? ''}}",
+                        "src": "{{_global.claimImageViewer?.url}}",
+                        "alt": "{{_global.claimImageViewer?.name ?? ''}}",
                         "className": "w-full h-auto rounded-lg object-contain bg-gray-100 dark:bg-gray-900"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "P",
-                    "if": "{{!!_local.claimImageViewerName}}",
+                    "if": "{{!!_global.claimImageViewer?.name}}",
                     "props": {
                         "className": "mt-2 text-xs text-gray-500 dark:text-gray-400 text-center break-all"
                     },
-                    "text": "{{_local.claimImageViewerName}}"
+                    "text": "{{_global.claimImageViewer?.name}}"
                 }
             ]
         },
@@ -58,16 +70,15 @@
                             "handler": "sequence",
                             "actions": [
                                 {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "local",
-                                        "claimImageViewerUrl": null,
-                                        "claimImageViewerName": null
-                                    }
-                                },
-                                {
                                     "handler": "closeModal",
                                     "target": "modal_claim_image_viewer"
+                                },
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "claimImageViewer": null
+                                    }
                                 }
                             ]
                         }

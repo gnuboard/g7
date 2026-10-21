@@ -126,7 +126,7 @@
                                             "props": {
                                                 "name": "image",
                                                 "size": "lg",
-                                                "className": "text-gray-400 dark:text-gray-500"
+                                                "className": "text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     ]
@@ -155,7 +155,7 @@
                                     "props": {
                                         "className": "text-sm text-gray-500 dark:text-gray-400 mt-1"
                                     },
-                                    "text": "{{$parent._local.optionModal.targetItem?.option_name_localized ?? $parent._local.optionModal.targetItem?.option_name?.ko ?? ''}}"
+                                    "text": "{{$parent._local.optionModal.targetItem?.option_name_localized ?? $localized($parent._local.optionModal.targetItem?.option_name)}}"
                                 },
                                 {
                                     "type": "basic",
@@ -285,6 +285,7 @@
                                                 }
                                             ],
                                             "props": {
+                                                "aria-label": "{{group.name_localized ?? group.name}}",
                                                 "className": "{{$parent._local.optionErrors?.product_option_id ? 'w-full border-red-500 focus:ring-red-500 focus:border-red-500' : 'w-full'}}",
                                                 "value": "{{$parent._local.selectedOptions?.[group.name_localized] ?? ''}}",
                                                 "placeholder": "$t:shop.select",
@@ -357,7 +358,7 @@
                                                     "name": "Span",
                                                     "if": "{{addGroup.is_required}}",
                                                     "props": {
-                                                        "className": "text-red-500 dark:text-red-400 ml-0.5"
+                                                        "className": "text-red-600 dark:text-red-400 ml-0.5"
                                                     },
                                                     "text": "*"
                                                 }
@@ -368,18 +369,19 @@
                                             "name": "Select",
                                             "actions": [
                                                 {
-                                                    "comment": "추가옵션을 비우면 그 그룹의 선택과 직접입력 글자를 함께 지운다 — 선택을 지웠는데 딸린\n                     문구만 남아 주문에 실려 가는 것을 막는다",
+                                                    "comment": "추가옵션을 비우면 그 그룹의 선택과 직접입력 글자를 함께 지운다 — 선택을 지웠는데 딸린\n                     문구만 남아 주문에 실려 가는 것을 막는다. 지우는 것은 그 키를 «뺀» 객체가 아니라 그 키를 null 로 쓴 객체다 — 기본(deep)\n                     병합은 이번 객체에 없는 키를 남기므로 키를 빼면 지운 선택이 그대로 남아 적용 본문에 실렸다(7.1.1). 적용 본문은 null 선택을 거른다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "$parent._local",
-                                                        "additionalSelections": "{{$event.target.value === '' ? Object.fromEntries(Object.entries($parent._local.additionalSelections ?? {}).filter(([k]) => Number(k) !== Number(addGroup.id))) : Object.assign({}, $parent._local.additionalSelections ?? {}, { [addGroup.id]: Number($event.target.value) })}}",
-                                                        "additionalCustomTexts": "{{Object.fromEntries(Object.entries($parent._local.additionalCustomTexts ?? {}).filter(([k]) => Number(k) !== Number(addGroup.id)))}}"
+                                                        "additionalSelections": "{{Object.assign({}, $parent._local.additionalSelections ?? {}, { [addGroup.id]: $event.target.value === '' ? null : Number($event.target.value) })}}",
+                                                        "additionalCustomTexts": "{{Object.assign({}, $parent._local.additionalCustomTexts ?? {}, { [addGroup.id]: null })}}"
                                                     }
                                                 }
                                             ],
                                             "props": {
                                                 "data-testid": "modal-add-option-{{addGroup.id}}",
+                                                "aria-label": "{{addGroup.name}}",
                                                 "className": "w-full",
                                                 "value": "{{$parent._local.additionalSelections?.[addGroup.id] ?? ''}}",
                                                 "placeholder": "$t:shop.additional_option_placeholder",
@@ -408,18 +410,19 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
-                                                            "comment": "공백만 남으면 키 자체를 지운다 — 빈 문자열을 «입력했다» 로 저장하지 않기 위해서다",
+                                                            "comment": "공백만 남으면 그 키를 null 로 지운다 — 빈 문자열을 «입력했다» 로 저장하지 않기 위해서다. 키를 뺀 객체를 쓰면 기본(deep) 병합이\n                       앞 글자를 남긴다(7.1.1)",
                                                             "type": "input",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "$parent._local",
-                                                                "additionalCustomTexts": "{{$event.target.value.trim() === '' ? Object.fromEntries(Object.entries($parent._local.additionalCustomTexts ?? {}).filter(([k]) => Number(k) !== Number(addGroup.id))) : Object.assign({}, $parent._local.additionalCustomTexts ?? {}, { [addGroup.id]: $event.target.value })}}"
+                                                                "additionalCustomTexts": "{{Object.assign({}, $parent._local.additionalCustomTexts ?? {}, { [addGroup.id]: $event.target.value.trim() === '' ? null : $event.target.value })}}"
                                                             }
                                                         }
                                                     ],
                                                     "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{addGroup.name ?? ''}}|column={{$t('shop.additional_option_custom_text_label')}}",
                                                         "type": "text",
-                                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500",
                                                         "value": "{{$parent._local.additionalCustomTexts?.[addGroup.id] ?? ''}}",
                                                         "placeholder": "$t:shop.additional_option_custom_text_placeholder",
                                                         "maxLength": 255
@@ -455,7 +458,7 @@
                                     "props": {
                                         "className": "text-sm text-gray-700 dark:text-gray-300"
                                     },
-                                    "text": "{{$parent._local.matchedOption?.option_name_localized ?? $parent._local.matchedOption?.option_name?.ko ?? ''}}"
+                                    "text": "{{$parent._local.matchedOption?.option_name_localized ?? $localized($parent._local.matchedOption?.option_name)}}"
                                 },
                                 {
                                     "type": "basic",
@@ -488,7 +491,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-gray-600 dark:text-gray-400"
                                                     },
                                                     "text": "{{currency[1]?.formatted}}"
                                                 }
@@ -525,7 +528,7 @@
                             "name": "Div",
                             "if": "{{$parent._local.matchedOption?.stock_quantity <= 10}}",
                             "props": {
-                                "className": "{{$parent._local.matchedOption?.stock_quantity <= 0 ? 'text-xs text-red-500 dark:text-red-400 mt-1 font-medium' : 'text-xs text-gray-500 dark:text-gray-400 mt-1'}}"
+                                "className": "{{$parent._local.matchedOption?.stock_quantity <= 0 ? 'text-xs text-red-700 dark:text-red-400 mt-1 font-medium' : 'text-xs text-gray-600 dark:text-gray-400 mt-1'}}"
                             },
                             "text": "{{$parent._local.matchedOption?.stock_quantity <= 0 ? '$t:shop.cart.option_modal.out_of_stock' : '$t:shop.cart.option_modal.stock_count|count=' + ($parent._local.matchedOption?.stock_quantity ?? 0)}}"
                         },
@@ -534,7 +537,7 @@
                             "name": "Div",
                             "if": "{{$parent._local.matchedOption?.stock_quantity > 10}}",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                "className": "text-xs text-gray-600 dark:text-gray-400 mt-1"
                             },
                             "text": "$t:shop.cart.option_modal.stock_count|count={{$parent._local.matchedOption?.stock_quantity ?? 0}}"
                         }

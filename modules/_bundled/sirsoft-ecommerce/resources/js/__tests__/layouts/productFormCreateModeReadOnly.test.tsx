@@ -1,6 +1,6 @@
 /**
  * @file productFormCreateModeReadOnly.test.tsx
- * @description 상품 등록 화면도 등록 권한이 없으면 입력칸까지 잠긴다 (7.1.0 abilities 게이트 products#3)
+ * @description 상품 등록 화면도 등록 권한이 없으면 입력칸까지 잠긴다 (7.1.0 abilities 게이트)
  *
  * 「상품 등록」 권한이 없는 운영자가 상품 관리 > [상품 등록](복사 진입 포함)에 들어오면 [저장]만 잠기고
  * 입력칸 약 96곳은 그대로 입력되던 결함의 회귀 테스트다. 수정 모드는 이미 수정 권한이 없으면 입력칸까지
@@ -171,7 +171,7 @@ beforeEach(() => {
   registry = createMockComponentRegistryWithBasics();
 });
 
-describe('products#3 — 등록 모드도 등록 권한이 없으면 입력칸까지 잠근다', () => {
+describe('등록 모드도 등록 권한이 없으면 입력칸까지 잠근다', () => {
   /**
    * @scenario surface=admin, permission=missing
    * @effects admin_product_form_create_mode_inputs_locked

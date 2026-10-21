@@ -11,7 +11,7 @@
 2. Filter 훅: applyFilters() - 데이터 변형 (type => 'filter' 필수!)
 3. 네이밍: [vendor-module].[entity].[action]_[timing]
 4. 우선순위: 1-5(높음), 10(기본), 15+(낮음)
-5. Service 패턴: before_* → filter_* → 로직 → after_*
+5. Service 패턴: before_* → filter_* → 로직 → after_* (조회 결과 훅은 캐시를 읽은 뒤·권한 후처리 뒤에 — §조회 결과 훅과 캐시)
 6. 공개 훅의 이름·인자 모양은 마이너에서 바꾸지 않는다 — 새 훅 추가 + 옛 훅 deprecated, 제거는 메이저
 ```
 
@@ -243,6 +243,32 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 예제: 이커머스 `UserListMileageFilterListener`(마일리지 잔액 범위)·`UserListAddressFilterListener`(배송지 국가·등록 여부).
 화면 쪽 규약은 [관리자 목록 필터 컨벤션](../frontend/admin-list-filter-convention.md) 을 본다.
 
+### 목록 쿼리 확장 훅(`*.list_query_extensions`) 표준
+
+확장이 다른 확장·코어의 **목록 쿼리에 조건을 더하는** 표준 형태다. 이름은 `{vendor-module}.{entity}.list_query_extensions`
+(코어는 `core.{entity}.list_query_extensions`) 이고 filter 다. 리스너는 받은 배열에 **조건 함수**
+`fn (Builder $query, array $context): void` 를 더해 돌려준다. 발행하는 쪽은 자기 조건을 다 건 **뒤에** 조건 함수를
+붙이므로 확장은 결과를 좁히기만 한다. 구현 예: 코어 회원 목록(`core.user.list_query_extensions`, 위 절),
+게시판 목록(`sirsoft-board.post.list_query_extensions` — 목록·건수·공지·답글·상세의 답글 스레드·이전/다음·검색·통합검색·최근/인기·
+마이페이지·프로필·관리자 대시보드·사이트맵을 `$context['context']` 로 구분, 게시판 모듈의 확장 포인트 문서).
+
+발행하는 쪽 규칙:
+
+- 훅은 Service·리스너에서 발행하고, 저장소에는 모은 조건을 값 객체·인자로 넘겨 **적용만** 한다(저장소는 훅을 모른다).
+- 같은 목록의 행과 건수(페이지 수)는 같은 조건을 받아야 한다 — 건수 경로에도 같은 훅을 발행한다.
+- 리스너가 없으면 쿼리·결과·캐시 키가 지금과 같아야 한다.
+- 목록 캐시가 있으면 **캐시 축 훅**(`{vendor-module}.{entity}.filter_list_cache_variant`)을 짝으로 둔다. 리스너가 돌려준
+  축 값(스칼라 목록)으로 키 접미사를 만들고, 비면 키를 바꾸지 않는다. 조건을 사람·언어마다 다르게 거는 리스너는
+  같은 축을 이 훅으로 돌려줘야 한다 — 돌려주지 않으면 먼저 연 사람의 건수·위젯이 다른 사람에게 보인다.
+- 저장된 총계(글 수 컬럼·일별 통계)처럼 쿼리가 아닌 숫자는 조건으로 나눌 수 없다. 반영되지 않는 값을 문서에 적는다.
+
+리스너 규칙은 위 절과 같다 — 저장소 서브쿼리(`whereIn`)로 걸고, 조인이 있는 쿼리에서는 `$query->qualifyColumn()` 으로
+컬럼을 한정하고, 볼 권한이 없는 운영자에게는 걸지 않는다.
+
+> `*.filter_list_query`·`*.filter_list_params` 는 **검색 조건 배열**을 고치는 필터이며 쿼리 빌더가 아니다
+> (예: `sirsoft-page.page.filter_list_query`, `sirsoft-ecommerce.product.filter_public_list_params`). 쿼리에 조건을 더하려면
+> 이 절의 `*.list_query_extensions` 를 쓴다.
+
 ### 알림 추출의 선택 채널
 
 `{hookPrefix}.notification.extract_data` 반환의 `context.channels`에 채널 ID 배열을 지정하면
@@ -377,13 +403,13 @@ sirsoft-ecommerce.product.after_update
 sirsoft-ecommerce.product.filter_create_data
 
 # 조회 작업
-sirsoft-ecommerce.product.before_list
-sirsoft-ecommerce.product.after_list
-sirsoft-ecommerce.product.filter_list_query
-sirsoft-ecommerce.product.filter_list_result
-sirsoft-ecommerce.product.before_show
-sirsoft-ecommerce.product.after_show
-sirsoft-ecommerce.product.filter_show_result
+sirsoft-ecommerce.product.before_public_list
+sirsoft-ecommerce.product.filter_public_list_params   # 검색 조건 배열 필터 — 쿼리 빌더가 아니다
+sirsoft-ecommerce.product.after_public_list
+sirsoft-ecommerce.product.filter_list_params          # 관리자 목록의 검색 조건 배열 필터
+sirsoft-ecommerce.product.filter_popular_list_result  # 결과 필터
+sirsoft-ecommerce.product.after_read
+sirsoft-board.post.list_query_extensions              # 목록 쿼리에 조건 함수를 더한다 — §목록 쿼리 확장 훅 표준
 
 # 이벤트/기타
 sirsoft-ecommerce.order.on_payment_success
@@ -561,6 +587,49 @@ core.analytics.extension_purged          # (Action) 확장을 데이터까지 �
 ```
 
 > `sitemap.index.collect_for_resource` 는 제3자 확장이 리소스 하나에 대한 sitemap 항목을 추가/보정할 때 씁니다(filter — `'type' => 'filter'` 명시 필수). `core.seo.sitemap.after_regenerate_failed` 는 재생성 잡이 실패했을 때 확장이 알림/복구를 걸 수 있는 action 훅입니다.
+
+### 조회 결과 훅과 캐시
+
+조회 작업도 변경 작업처럼 `before_*` / `filter_*_result` / `after_*` 세 훅을 둔다. 확장은 결과 훅으로 목록을 재정렬·변환하거나 값을 덧붙인다. 결과 훅은 **캐시와 권한 후처리의 바깥**에 있어야 한다 — 위치를 잘못 잡으면 한 사용자의 결과가 모든 방문자에게 나간다.
+
+1. **Service 계층에서 발행한다.** 컨트롤러·Repository 에서 발행하지 않는다. Service 메서드를 관리자 화면과 함께 쓰면 사용자 맥락(`$context === 'user'`)에서만 발행해 관리자 조회 동작을 바꾸지 않는다.
+2. **캐시를 읽은 뒤에 발행한다.** `remember()` 콜백 안에서 `applyFilters()` 를 부르면 처음 채운 요청의 결과(그 사용자의 권한·언어로 거른 값)가 공용 캐시에 저장된다. 캐시는 사용자와 무관한 값으로 채우고, 결과 훅은 꺼낸 값에 적용한다.
+3. **사용자별 권한 후처리 뒤에 발행한다.** 열람 권한으로 거르기·시간 표시 다시 계산 같은 사용자별 처리를 먼저 하고 결과 훅을 부른다. 리스너는 이미 걸러진 목록을 받으므로 권한 필터를 다시 구현하지 않는다(리스너가 목록에 항목을 더하면 그 항목의 열람 판정은 리스너 책임이다).
+4. **리스너는 같은 타입의 새 값을 돌려준다.** 컬렉션은 `map()`·`reverse()` 등으로 새 컬렉션을, 페이지네이터는 `through()`·`setCollection()` 으로 고쳐 돌려준다. 캐시에서 꺼낸 모델을 제자리에서 바꾸지 않는다 — `array` 캐시 저장소는 직렬화 없이 같은 인스턴스를 돌려주므로 같은 요청의 다음 호출이 오염된다. 캐시된 모델 컬렉션을 넘기는 Service 는 복제본을 넘긴다.
+5. **페이지네이터에서 항목을 빼도 건수(`total`·`last_page`)는 그대로다.** 결과 훅은 변환·재정렬·주석 용도이고, 목록을 좁히려면 조회 쿼리 단계의 확장 지점을 쓴다.
+6. **리스너는 가볍게 둔다.** 결과 훅은 요청마다 동기로 돈다. 무거운 일(외부 호출·집계)은 `after_*` 액션 훅에서 큐로 보낸다.
+
+훅 인자는 `(값, 요청 정보 배열)` 이다. 요청 정보에는 현재 사용자(`user`, 비회원은 `null`)와 화면 언어(`locale`)가 들어 있고, 경로마다 필요한 값(게시판·필터·조회 대상 회원 등)이 더해진다. `after_*` 는 결과 훅이 돌려준 값을 받는다. 단건 조회에서 대상이 없으면 `before_*` 만 발행한다.
+
+```php
+// 올바른 예 — 캐시를 읽고, 사용자별로 거른 뒤, 복제본에 결과 훅을 적용한다
+public function getMenuBoards(): Collection
+{
+    $context = ['user' => Auth::user(), 'locale' => app()->getLocale()];
+
+    HookManager::doAction('sirsoft-board.board.before_menu_list', $context);
+
+    $boards = $this->cache->remember('board_menu', fn () => $this->repository->getActiveBoardsForMenu(), $ttl, tags: ['board-menu'])
+        ->filter(fn (Board $board) => PermissionHelper::check("sirsoft-board.{$board->slug}.posts.read", $context['user']))
+        ->map(fn (Board $board) => clone $board)
+        ->values();
+
+    $boards = HookManager::applyFilters('sirsoft-board.board.filter_menu_list_result', $boards, $context);
+
+    HookManager::doAction('sirsoft-board.board.after_menu_list', $boards, $context);
+
+    return $boards;
+}
+```
+
+```php
+// 잘못된 예 — 콜백 안에서 거른 결과가 공용 캐시에 저장된다
+$boards = $this->cache->remember('board_menu', function () {
+    return HookManager::applyFilters('sirsoft-board.board.filter_menu_list_result', $this->repository->getActiveBoardsForMenu());
+}, $ttl);
+```
+
+서버 훅은 어느 화면이 불렀는지 모른다. 리스너를 등록하면 같은 API 를 쓰는 모든 화면(헤더 메뉴·모바일 메뉴·검색엔진용 페이지 등)의 결과가 함께 바뀐다. 한 템플릿의 한 화면에서만 순서를 바꾸려면 레이아웃의 데이터 바인딩에서 정렬한다(예: `{{[...(boards.data ?? [])].reverse()}}`).
 
 ### 방문자 통계 확장 기여 훅 페이로드
 
@@ -848,15 +917,15 @@ class SyncDatabaseTranslations
 
 ## 큐 자동 실행
 
-Action 훅 리스너는 환경설정의 **큐 드라이버** 설정에 따라 자동으로 동기/비동기 실행됩니다. 리스너 개발자가 별도로 설정할 필요 없습니다.
+Action 훅 리스너는 환경설정의 **큐 드라이버** 설정에 따라 자동으로 동기/비동기 실행됩니다. 리스너 개발자가 별도로 설정할 필요 없습니다 — 큐 실행 조건(큐 이름·재시도·제한 시간 등)을 바꿔야 할 때만 아래 [큐 옵션](#큐-옵션--등록-큐만-허용폴백timeout-클램프)을 선언합니다.
 
 ### 큐 드라이버별 동작
 
 | 큐 드라이버 | 리스너 실행 방식 | 큐 워커 필요 |
 |------------|-----------------|-------------|
 | `sync` | 즉시 실행 (동기) | 불필요 |
-| `database` | jobs 테이블 저장 → 워커 처리 | 필요 (`php artisan queue:work`) |
-| `redis` | Redis 큐 저장 → 워커 처리 | 필요 (`php artisan queue:work`) |
+| `database` | jobs 테이블 저장 → 워커 처리 | 필요 — 환경설정 → 드라이버 → 「큐 워커」에 등록한 연결·큐마다 `php artisan queue:work {연결} --queue={큐,…}` (화면이 명령을 보여 준다) |
+| `redis` | Redis 큐 저장 → 워커 처리 | 필요 — 위와 같음 |
 | 커스텀 (플러그인 추가) | 해당 드라이버 큐 → 워커 처리 | 필요 |
 
 > **Filter 훅**은 반환값 체인이므로 **항상 동기 실행**됩니다 (큐 드라이버 무관).
@@ -887,6 +956,11 @@ public static function getSubscribedHooks(): array
 | 판정 | 예 |
 |------|-----|
 | `sync` 필수 | 쿠폰 차감·복원, 적립금 차감·복원 등 실패 시 호출자 트랜잭션을 되돌려야 하는 처리 · 호출자가 넘긴 객체에 값을 채워 돌려받는 처리(방문자 통계 `core.analytics.archive.day` 의 수집기 — 큐로 가면 사본에 채워져 집계에 돌아오지 않는다) · 다음 요청의 판정에 바로 쓰이는 보안 카운터(로그인 실패 횟수·계정 잠금과 성공 시 초기화 — 큐로 가면 워커가 없거나 밀린 동안 실패가 세지지 않아 잠금이 걸리지 않는다) |
+| `sync` 필수 | 요청 안 메모리(싱글톤·scoped 서비스의 속성, static 캐시) 비우기 — 큐로 가면 워커 프로세스의 사본만 비우고 웹 요청은 옛 값을 계속 쓴다 |
+| `sync` 필수 | 공유 캐시 무효화(검색엔진용 화면 캐시·카테고리 트리 같은 여러 화면이 읽는 캐시) — 큐로 가면 워커가 돌 때까지, 워커가 없으면 TTL 이 끝날 때까지 옛 화면이 보인다. 본문은 `DB::afterCommit(fn () => ...)` 으로 감싸 트랜잭션 안에서 발화해도 커밋 뒤에 비운다(커밋 전에 비우면 다른 요청이 옛 데이터로 다시 채운다). 무거운 다시 그리기·대량 재색인은 별도 큐 리스너로 나눈다 |
+| `sync` 필수 | 같은 응답·바로 다시 연 화면에 보이는 파생 데이터 갱신(상품 총재고·옵션 그룹, 가입 직후 배정값, 저장한 동의값) |
+| `sync` 필수 | `before_*` 훅에서 삭제 전 데이터 정리 — 큐로 가면 커밋 뒤에 돌아 외래키가 이미 값을 지운 상태에서 정리 대상을 찾지 못하고, 실패해도 삭제를 되돌리지 못한다 |
+| `sync` 필수 | 같은 발송·처리 사이클의 문맥을 잇는 리스너(발송 로그 기록과 그 로그에 외부 발송 건을 잇는 리스너) — 큐로 가면 요청 단위 문맥이 작업 경계에서 사라지고, 가리기 전 본문이 큐 인자로 남는다 |
 | 기본값(큐) 유지 | 활동 로그, 알림 발송, 통계 갱신 등 실패해도 호출자를 되돌리지 않는 후속 처리 |
 
 선언만으로는 검증되지 않는다 — 회귀 테스트는 리스너를 손으로 `addAction` 하지 말고 실제 등록 경로(`HookListenerRegistrar::register()`)를 태운 뒤, **호출자 트랜잭션 안에서 반영되는지**와 **예외가 호출자를 롤백시키는지**를 단언한다. 손으로 등록하면 프로덕션이 쓰지 않는 경로를 검증하게 되어, 커밋 이후 실행 문제를 그대로 통과시킨다.
@@ -899,16 +973,58 @@ public static function getSubscribedHooks(): array
 | `priority` | int | `10` | 실행 우선순위 (낮을수록 먼저) |
 | `type` | string | `'action'` | `'action'` 또는 `'filter'` |
 | `sync` | bool | `false` | `true`: 큐 드라이버 무관하게 동기 실행 |
+| `queue` | array | `[]` | 큐로 도는 Action 의 실행 옵션(아래 10개 키). Filter·`sync: true` 와 함께 쓰면 무시하고 경고한다 |
+
+#### 큐 옵션 키 (`'queue' => [...]`)
+
+라라벨 큐 리스너와 같은 10개 키다. 적지 않은 키는 종전 기본값(재시도 3·제한 시간 없음·커밋 후 실행·기본 연결/큐)을 쓴다. 허용 범위를 벗어난 키는 **그 키만** 버리고 경고 로그를 남긴다(다른 키는 살린다).
+
+| 키 | 허용 값 | 설명 |
+| --- | --- | --- |
+| `connection` | 64자 이하 문자열 | 큐 연결. **운영자가 등록한 연결만** 쓴다 — 미등록이면 기본 연결 + 경고 |
+| `queue` | `[A-Za-z0-9_.:-]` 1~64자 | 큐 이름. **등록된 큐만** 쓴다 — 미등록이면 그 연결의 기본 큐 + 경고 |
+| `delay` | 0 이상 정수(초) | 처음 실행까지 지연 |
+| `after_commit` | bool | `false` 면 호출자 트랜잭션 커밋을 기다리지 않는다(기본 `true`). 호출자가 롤백하면 결과가 드라이버마다 다르다 — database 큐는 잡이 같은 트랜잭션에 적재돼 함께 사라지고(실행 안 됨), redis 큐는 이미 넣은 잡이 남아 실행되며, sync 는 롤백 전에 이미 실행됐다 |
+| `tries` | 1~25 정수 | 최대 시도 횟수(0=무제한은 허용하지 않는다) |
+| `timeout` | 1 이상 정수(초) | 제한 시간. 연결의 `retry_after` 이상이면 줄인다(아래) |
+| `backoff` | 0 이상 정수 또는 그 목록 | 재시도 간격 |
+| `retry_until` | 1 이상 정수(초) | 디스패치 시점부터 이 시간까지 재시도(있으면 `tries` 는 무시된다 — 라라벨 규칙) |
+| `max_exceptions` | 1 이상 정수 | 이 횟수만큼 예외가 나면 실패(재예약·release 는 세지 않는다) |
+| `fail_on_timeout` | bool | 제한 시간 초과를 재시도 없이 실패로 |
+
+```php
+public static function getSubscribedHooks(): array
+{
+    return [
+        'sirsoft-board.post.after_create' => [
+            'method' => 'handlePostCreated',
+            'queue' => ['queue' => 'notifications', 'tries' => 5, 'timeout' => 60, 'backoff' => [10, 60]],
+        ],
+    ];
+}
+```
+
+동적 구독(`HookListenerRegistrar::registerDynamicAction()`)은 마지막 인자 `queueOptions` 로 같은 배열을 넘긴다.
+
+### 큐 옵션 — 등록 큐만 허용·폴백·timeout 클램프
+
+- **등록 큐만 허용** — 큐·연결 이름은 자유지만 실제로 쓰이는 것은 운영자가 환경설정 → 드라이버 → 「큐 워커」에 등록한 것뿐이다. 아무 워커도 보지 않는 큐에 잡을 쌓아 두면 그 일은 영영 실행되지 않기 때문이다. 미등록이면 기본값으로 보내고 경고를 남긴다(같은 경고는 1시간에 한 번). 보낸 횟수와 마지막 사례(리스너·가리킨 연결·큐)는 「큐 워커」 구역에 경고 안내로 뜨고(마지막 발생 뒤 24시간 보관), 상태 API `placement.fallback` 에도 실린다.
+- **timeout 클램프** — `timeout` 이 해석된 연결의 `retry_after` 이상이면 `retry_after − 10` 초로 줄여 보내고 경고한다. 그대로 두면 실행이 끝나기 전에 다른 워커가 같은 잡을 다시 집어 같은 일을 두 번 한다. 화면에 「제한 시간 조정 n건」이 뜬다. 정말 오래 도는 일은 긴 작업 연결(`database-long`·`redis-long`, `retry_after` 3900초)과 `long` 큐를 쓰라고 운영자에게 안내한다.
+- **다시 실행 요청** — 리스너가 「다른 사본이 같은 일을 처리 중이라 지금은 끝낼 수 없다」면 `App\Exceptions\RetryHookListenerLaterException($delaySeconds)` 를 던진다. 큐 잡이면 그 시간 뒤로 되돌리고(실패가 아니다 — 시도 횟수 1을 쓴다), sync 드라이버면 경고만 남긴다.
+- **이벤트 ID** — 리스너 잡마다 디스패치 때 uuid 가 붙고 재시도·재예약된 사본도 같은 값이다. 실행 중에 `App\Extension\HookContextCapture::eventId()` 로 읽어 「이 사건에서 이미 한 일」을 가려낸다(알림 수신자별 중복 방지가 이 값을 쓴다). 큐를 거치지 않는 동기 실행에서는 null 이다.
+- **큐 안에서 또 잡을 띄우는 리스너** — SEO 캐시 리스너처럼 큐 잡 안에서 다시 잡(사이트맵 생성 등)을 디스패치하면 큐를 두 번 거친다. 지연이 문제면 `'queue'` 옵션으로 첫 잡의 큐·지연을 조정한다.
 
 ### 내부 구현
 
 `HookListenerRegistrar`가 리스너 등록 시 큐/동기 분기를 처리합니다:
 
-- Action + `sync: false` (기본) → `DispatchHookListenerJob`으로 래핑하여 `dispatch()`
+- Action + `sync: false` (기본) → `DispatchHookListenerJob`으로 래핑하여 `dispatch()` — `'queue'` 옵션이 있으면 디스패치 직전에 `ListenerQueueOptions::apply()` 가 잡 프로퍼티(연결·큐·tries·timeout 등)를 채운다. 라라벨은 이 값을 디스패치 시점에 payload 로 굳히므로 재시도 중 설정이 바뀌어도 그 잡은 처음 값을 유지한다. 옵션이 없으면 종전과 같은 payload 다
 - Action + `sync: true` → 기존 방식 동기 실행
 - Filter → 항상 동기 실행
 
 `DispatchHookListenerJob`은 리스너 클래스명과 메서드명을 직렬화하고, 큐 워커에서 DI 컨테이너로 리스너를 재생성하여 호출합니다.
+
+리스너 클래스는 훅이 발화할 때 지연 로딩합니다. 확장 업데이트가 리스너 클래스를 지우면, 업데이트를 실행한 프로세스에는 부팅 때 등록한 옛 구독이 남아 있습니다 — 그 구독은 클래스가 없으면 **건너뛰고**(필터는 값을 그대로 넘김, 큐 액션은 싣지 않음) WARNING 을 한 번 남깁니다. 다음 프로세스는 새 판의 구독으로 부팅합니다. 그래서 리스너를 지우는 판으로 업데이트해도 업데이트 완료 훅에서 실패하지 않습니다.
 
 ### 사용자 컨텍스트 자동 복원
 
@@ -948,6 +1064,8 @@ HookManager::addAction('hook.context.restore', function (array $context) {
 - 큐 디스패치 시 인자는 `HookArgumentSerializer`로 직렬화됩니다. Eloquent Model은 PK로 변환 후 워커에서 DB 재조회합니다.
 - Closure 등 직렬화 불가능한 인자는 null로 대체되므로, 훅 인자로 Closure를 전달하지 마세요.
 - 큐 드라이버가 `database`/`redis`일 때 큐 워커가 미실행이면 작업이 적체됩니다.
+- 요청 단위로 한 번 읽어 들고 있는 메모 서비스(설정·기본값 해석기 등)는 `singleton` 이 아니라 `scoped` 로 등록합니다. 큐 워커는 작업마다 scoped 인스턴스만 비우고 싱글톤은 프로세스가 끝날 때까지 살리므로, 싱글톤이면 워커가 다시 시작할 때까지 옛 값을 씁니다. scoped 로 만들 수 없는 static 캐시는 `Queue::before()` 에서 비웁니다(연결 이름이 `sync` 인 작업은 웹 요청 안에서 돌므로 건너뜁니다).
+- 큐 워커는 작업을 시작하기 직전에 설정 버전을 비교해, 그사이 관리자가 코어·모듈·플러그인 설정을 저장했으면 설정(드라이버 계열 제외)과 설정 미러를 다시 읽습니다. 확장의 설정 저장 서비스는 `g7_refresh_module_settings_config()`(모듈)·`PluginSettingsService`(플러그인) 공통 지점을 거쳐야 이 신호가 남습니다. 큐·캐시 같은 드라이버 설정은 전처럼 저장 시 워커 재시작으로 반영됩니다.
 - 사용자 컨텍스트는 자동 복원되지만, `request()->session()` 등 세션 의존 정보는 복원되지 않습니다 (큐 컨텍스트는 단발 실행).
 - 훅 인자에 비밀번호·토큰 같은 비밀값 원문을 싣지 마세요. 큐 구독자가 하나라도 있으면 인자 사본이 작업 대기 표(`jobs`, 처리에 실패하면 `failed_jobs`)에 남습니다. 요청 데이터를 통째로 넘기는 훅은 `Arr::except($data, ['password', 'password_confirmation'])` 처럼 비밀값을 빼고 넘깁니다(`core.auth.after_register`·`core.auth.record_consents`·`core.user.after_create`·`core.user.after_update` 가 이렇게 합니다). 비밀값이 꼭 필요한 구독자는 `'sync' => true` 로 받고, 그 훅의 인자 표에 비밀값이 있다고 적습니다(`core.auth.after_reset_password_request` 의 재설정 토큰).
 
@@ -1350,7 +1468,7 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 
 | 장치 | 위치 | 하는 일 |
 |------|------|---------|
-| 공개 훅 목록 | [hook-catalog.md](hook-catalog.md) (자동 생성) | 코어가 발화하는 훅 이름·유형·인자 개수. 기본 제공 확장의 훅은 각 확장의 확장 지점 문서(`docs/extension-points.md` 「발행 훅」)에 있다 |
+| 공개 훅 목록 | [hook-catalog.md](hook-catalog.md) (자동 생성) | 코어가 발화하는 훅 이름·유형·인자 개수. 기본 제공 확장의 훅은 각 확장의 확장 지점 문서(예: `modules/_bundled/sirsoft-board/docs/extension-points.md` 「발행 훅」)에 있다 |
 | 옛 이름 병행 발화 | `HookManager::doActionWithLegacyName()` · `applyFiltersWithLegacyName()` | 표준 이름을 먼저 발화하고, 옛 이름에 구독자가 있을 때만 같은 인자로 한 번 더 발화한다 |
 | 변경 검사 | G7 개발 과정(공개판에는 포함하지 않는다) | 직전 공개 릴리스와 현재 코드를 각각 훑어, 공개 훅의 이름 삭제·인자 개수 감소를 막는다. 아직 배포되지 않은 훅은 개발 중에 바꿀 수 있다 |
 

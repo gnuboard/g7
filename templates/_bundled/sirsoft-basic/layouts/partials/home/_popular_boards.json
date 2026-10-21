@@ -22,7 +22,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "flame",
-                        "className": "text-xl text-orange-500"
+                        "className": "text-xl text-orange-600"
                     }
                 },
                 {
@@ -47,17 +47,15 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/board/{{board.slug}}"
-                            }
+                            "handler": "navigate"
                         }
                     ],
                     "props": {
+                        "href": "/board/{{board.slug}}",
                         "className": "w-full text-left flex items-center justify-between py-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors cursor-pointer"
                     },
                     "children": [
@@ -72,7 +70,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300"
+                                        "className": "w-6 h-6 shrink-0 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300"
                                     },
                                     "text": "{{index + 1}}"
                                 },
@@ -80,7 +78,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                        "className": "text-sm font-medium text-gray-900 dark:text-white truncate"
                                     },
                                     "text": "{{board.name}}"
                                 }
@@ -90,7 +88,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded"
+                                "className": "shrink-0 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded"
                             },
                             "text": "{{board.posts_count | number}}"
                         }
@@ -101,9 +99,9 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{!popular_boards.data || popular_boards.data.length === 0}}",
+            "if": "{{popular_boards !== undefined && (!popular_boards.data || popular_boards.data.length === 0)}}",
             "props": {
-                "className": "text-center py-8 text-gray-500 dark:text-gray-400 flex-grow flex flex-col items-center justify-center min-h-[200px]"
+                "className": "text-center py-8 text-gray-800 dark:text-gray-300 flex-grow flex flex-col items-center justify-center min-h-[200px]"
             },
             "children": [
                 {

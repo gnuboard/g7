@@ -26,7 +26,7 @@ class CouponSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('쿠폰 더미 데이터 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.coupon.start'));
 
         $this->deleteExistingData();
         $coupons = $this->createCoupons();
@@ -35,7 +35,7 @@ class CouponSeeder extends Seeder
 
         $couponCount = Coupon::count();
         $issueCount = CouponIssue::count();
-        $this->command->info("쿠폰 더미 데이터 {$couponCount}건, 발급 내역 {$issueCount}건이 성공적으로 생성되었습니다.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.coupon.done', ['coupons' => $couponCount, 'issues' => $issueCount]));
     }
 
     /**
@@ -48,13 +48,13 @@ class CouponSeeder extends Seeder
         $issueCount = CouponIssue::count();
         if ($issueCount > 0) {
             CouponIssue::query()->delete();
-            $this->command->warn("기존 쿠폰 발급 내역 {$issueCount}건을 삭제했습니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.coupon.purged_issues', ['count' => $issueCount]));
         }
 
         $couponCount = Coupon::withTrashed()->count();
         if ($couponCount > 0) {
             Coupon::withTrashed()->forceDelete();
-            $this->command->warn("기존 쿠폰 {$couponCount}건을 삭제했습니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.coupon.purged_coupons', ['count' => $couponCount]));
         }
     }
 
@@ -1340,11 +1340,11 @@ class CouponSeeder extends Seeder
 
             $count = $index + 1;
             if ($count % 10 === 0) {
-                $this->command->line("  - 쿠폰 {$count}개 생성 완료");
+                $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.coupon.progress_created', ['count' => $count]));
             }
         }
 
-        $this->command->line('  - 쿠폰 총 '.count($createdCoupons).'개 생성 완료');
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.coupon.created_total', ['count' => count($createdCoupons)]));
 
         return $createdCoupons;
     }
@@ -1361,7 +1361,7 @@ class CouponSeeder extends Seeder
         $categoryIds = Category::pluck('id')->toArray();
 
         if (empty($productIds) && empty($categoryIds)) {
-            $this->command->warn('상품/카테고리 데이터가 없어 피벗 연결을 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.coupon.skip_pivots'));
 
             return;
         }
@@ -1401,7 +1401,7 @@ class CouponSeeder extends Seeder
             }
         }
 
-        $this->command->line("  - 상품 피벗 {$attachedProducts}건, 카테고리 피벗 {$attachedCategories}건 연결 완료");
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.coupon.pivots_attached', ['products' => $attachedProducts, 'categories' => $attachedCategories]));
     }
 
     /**
@@ -1414,7 +1414,7 @@ class CouponSeeder extends Seeder
     {
         $userIds = User::pluck('id')->toArray();
         if (empty($userIds)) {
-            $this->command->warn('사용자 데이터가 없어 발급 내역 생성을 건너뜁니다.');
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.coupon.skip_issues'));
 
             return;
         }
@@ -1423,7 +1423,7 @@ class CouponSeeder extends Seeder
         $totalIssues = 0;
         $userCount = count($userIds);
 
-        $this->command->line("  - 쿠폰을 사용자({$userCount}명)에게 발급 시작...");
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.coupon.issue_start', ['count' => $userCount]));
 
         foreach ($coupons as $index => $coupon) {
             $couponIssueCount = 0;
@@ -1483,11 +1483,11 @@ class CouponSeeder extends Seeder
 
             $count = $index + 1;
             if ($count % 10 === 0) {
-                $this->command->line("  - 쿠폰 {$count}개 발급 완료");
+                $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.coupon.progress_issued', ['count' => $count]));
             }
         }
 
-        $this->command->line("  - 발급 내역 {$totalIssues}건 생성 완료 (다운로드 쿠폰은 약 1/3만 발급, 총 수량 상한 준수)");
+        $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.coupon.issues_done', ['count' => $totalIssues]));
     }
 
     /**

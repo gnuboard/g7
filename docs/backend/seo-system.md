@@ -722,7 +722,9 @@ sitemap/_tmp/              생성 중 임시 디렉토리 (커밋 시 정리)
 
 봇 요청 스레드에서 동기 생성하면 대용량(수백만 URL)에서 메모리 초과·타임아웃이 발생하므로 생성은 항상 큐가 담당합니다. 잡은 유니크 락(`seo-sitemap`)을 쓰므로 캐시 미스가 몰려도 동시에 여러 건이 실행되지 않습니다.
 
-**전용 큐(`GenerateSitemapJob::QUEUE = 'sitemap'`)**: 사이트맵 생성 잡은 `sitemap` 전용 큐로 라우팅됩니다. 배포 시 이 큐 워커를 별도로 띄우되 **워커를 1개만** 배치해야 합니다(`php artisan queue:work --queue=sitemap` — supervisor 프로그램을 기본 큐와 분리해 등록). 이유: ①긴 생성 작업이 기본(`default`) 큐의 방송·알림을 막지 않아 진행상황이 실시간으로 흐르고, ②워커가 1개뿐이라 잡이 동시에 두 번 실행되지 않습니다(큐 `retry_after` 가 잡 실행보다 짧아도 단일 워커라 재예약 중복 실행이 발생하지 않음). `sitemap` 큐 워커가 없으면 재생성 잡이 처리되지 않으니 주의합니다.
+**전용 큐(`GenerateSitemapJob::QUEUE = 'sitemap'`)**: 사이트맵 생성 잡은 `sitemap` 전용 큐로 라우팅됩니다. 배포 시 이 큐 워커를 별도로 띄우되 **워커를 1개만** 배치해야 합니다(`php artisan queue:work --queue=sitemap` — supervisor 프로그램을 기본 큐와 분리해 등록). 이유: ①긴 생성 작업이 기본(`default`) 큐의 방송·알림을 막지 않아 진행상황이 실시간으로 흐르고, ②워커가 1개뿐이라 잡이 동시에 두 번 실행되지 않습니다(큐 `retry_after` 가 잡 실행보다 짧아도 단일 워커라 재예약 중복 실행이 발생하지 않음). `sitemap` 큐 워커가 없으면 재생성 잡이 처리되지 않으니 주의합니다. 「큐 워커」 등록(환경설정 → 드라이버)에 `sitemap` 큐를 넣어 두면 화면에서 대기 건수·워커 신호를 볼 수 있습니다.
+
+재시도는 `tries` 3·`backoff` 120초로 끝이 정해지고 `retryUntil` 은 두지 않습니다(#139) — 라라벨은 `retryUntil` 이 있으면 `tries` 를 무시하며, 종전 마감 30분이 timeout 30분과 같아 시간 초과 뒤 재시도할 수 없었고 큐에서 30분 넘게 기다리면 한 번도 돌지 못한 채 실패했습니다. 중복 방지 잠금 `uniqueFor` 는 재시도 전체 기간 `1800×3 + 120×2 + 1800 = 7440` 초(약 2시간)를 덮습니다 — 워커가 강제 종료되면 최대 그 시간 동안 재생성이 막히는 것은 감수합니다. 사이트맵 잡은 긴 작업 큐(`long`)로 옮기지 않습니다 — 전용 큐·단일 워커가 이미 재예약 중복을 막습니다.
 
 **완료/실패 알림**: 관리자 수동 재생성(위 API)은 실행한 관리자 ID 를 잡에 실어, 완료 시 `sitemap_regenerated`, **최종 실패(재시도 소진, `Job::failed()`) 시** `sitemap_regenerate_failed` 알림을 그 관리자에게 발송합니다(기본 채널: 앱 내 알림). 매 시도 실패마다 발화하는 `core.seo.sitemap.after_regenerate_failed` 훅이 아니라 최종 실패 시 1회만 발화하는 `core.seo.sitemap.regenerate_failed_final` 훅에 알림이 연결되어, 재시도 중 실패가 반복되거나 결국 성공해도 실패 알림이 중복/오발송되지 않습니다. 스케줄러·증분·봇 재생성은 실행 관리자가 없어 알림을 보내지 않습니다.
 
@@ -1061,10 +1063,19 @@ config에 없는 컴포넌트는 `<div>` fallback으로 렌더링됩니다.
 | 함수 | 설명 | 예시 |
 |------|------|------|
 | `$t('key')` | 번역 키 해석 (`$t:key`와 동일) | `{{$t('shop.product.sold_out')}}` |
+| `$t('key', {이름: 값})` | 인자 치환 (engine-v1.80.1 과 같은 규칙) | `{{$t('common.row_n', {n: i + 1})}}` |
 | `$localized(expr)` | 다국어 객체 → 현재 로케일 값 | `{{$localized(product.name)}}` |
 
-- `$t()`: 기존 `$t:key` prefix 방식의 함수 호출 구문. 삼항 내부에서 사용 가능
-- `$localized()`: `{ko: "상품", en: "Product"}` → 현재 로케일(`ko`) → `"상품"`. fallback: ko → 첫 번째 값
+- `$t()`: 기존 `$t:key` prefix 방식의 함수 호출 구문. 삼항 내부에서 사용 가능. 두 번째 인수가 객체면 값(산술·`||`·삼항 식 포함)을 글자로 풀어 치환하고, 객체가 아니면 인자 없는 호출과 같다. 비어 있는 값은 빈 글자
+- 인자 치환은 `$t:키|…`·`$t()` 모두 한 번에(`strtr`) 한다 — 앞 인자 값에 든 뒤 인자 자리표시자(`{{column}}`)를 다시 치환하지 않는다
+- `$localized()`: `{ko: "상품", en: "Product"}` → 현재 로케일(`ko`) → `"상품"`. fallback: 사이트 기본 언어(`app.site_locale`) → en → 첫 번째 값, 빈 문자열은 건너뜀(`App\Support\LocalizedValue::pick()` — 화면 `$localized` 와 같은 규칙)
+
+### ExpressionEvaluator — 빈 바인딩 뒤 남은 부호 정리
+
+봇 화면이 풀지 못한 식(`+{{미지원함수()}}`)이 빈 글자가 되면 앞뒤 부호만 남으므로, `evaluate()` 는 **빈 바인딩이 있었을 때만** 결과가 2글자 이하의 부호(`+`·`-`·`/`·`*`)뿐이면 빈 글자로 바꿉니다.
+
+- 바인딩이 없는 글자(`/`·`-`)와 비지 않은 바인딩 값(`{{home}}` → `/`)은 그대로 둡니다 — 일반 화면과 같은 값. 7.1.1 이전에는 이것까지 지워 홈 링크(`href="/"`)가 봇 화면에서 href 없는 `<a>` 로 나갔습니다.
+- URL 자리(`href`·`src`·`fallbackHref`·이동 액션 `path`)는 세 번째 인자 `dropOrphanOperators: false` 로 평가해 정리하지 않습니다 — `/{{빈값}}` 도 일반 화면처럼 `/` 입니다.
 
 ### ExpressionEvaluator — 객체 리터럴 / 스프레드 연산자
 
@@ -1219,9 +1230,11 @@ SEO 렌더링은 `renderComponent()` 진입 시점에 이 값을 해석해 데�
 | `callbacks` (extension_point 호스트) | ✅ | ❌ (의도) | 미처리 | 주입 단계에서 `extensionPointCallbacks` 로 부착 — 봇 화면에는 액션 실행기가 없음 |
 | `type: "extension_point"` 호스트 (반복 항목 안 포함) | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::renderComponent` → `renderTag` (`div` 폴백) | 주입된 children 을 감싸는 래퍼. `iteration` 항목 안에서도 같은 경로로 그 항목의 컨텍스트로 그린다 — React 는 engine-v1.73.0 에서 `renderItemChildren` 분기를 더해 이 동작에 맞췄다. 호스트 속성은 양쪽 모두 허용 목록만 싣고, `layout`/`columns`/`gap` 을 컨테이너 클래스로 접는 것은 React 만 한다(봇 화면의 내용에는 영향 없음) |
 | `computed` / `extends` / 파셜 | ✅ | ✅ | `app/Seo/SeoRenderer.php::resolveComputed` / `app/Services/LayoutService.php::getLayout` | 레이아웃 병합·설치 시점에 처리 |
-| `$t:` / `$t:defer:` | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::resolveTranslation` | 봇 화면은 지연 개념이 없어 동일 키로 해석 |
+| `$t:` / `$t:defer:` | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::resolveTranslation` | 봇 화면은 지연 개념이 없어 동일 키로 해석. 인자 값의 `{{…}}`(파이프·`\|\|` 포함)는 인자를 나눈 뒤 푼다(engine-v1.80.1). **빈 인자 값(`이름=`·`{{없는.경로}}`)은 빈 글자로 치환한다** — 일반 화면은 그 인자를 빼서 자리표시자(`{{name}}`)가 남지만(빈 인자 진단 단서), 봇 화면은 없는 키를 빈 글자로 내는 것과 같은 이유로 색인 HTML 에 자리표시자를 싣지 않는다(의도된 차이). 값이 빌 수 있는 줄은 레이아웃에서 `if` 로 숨기거나 대체 문구를 준다 |
+| `$t(키, 인자)` 식 안 인자 | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::evaluateTranslationFunction` / `translateKey` | engine-v1.80.1 — 객체 인자 치환, 값은 글자 그대로 |
 | `$t:키\|count=N` 복수형 변형(`키_one` 등) | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::pluralVariant` | engine-v1.78.7 — 현재 로케일 CLDR 범주로 `키_{범주}` 를 먼저, 없거나 other 면 기본 키. intl 이 없으면 ko·ja·zh 등 other, 나머지 1 → one 근사([다국어 처리](../frontend/data-binding-i18n.md#수에-따른-단수복수-engine-v1787)) |
 | `actions` | ✅ | 링크만 | `app/Seo/ComponentHtmlMapper.php::extractLinkAction` | 페이지 이동/새 창 열기 액션만 `<a href>` 로 승격 |
+| 정적 링크(`a`)의 `target`·`rel`·`fallbackHref`·`disabled` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::presetAnchorAttributes` | 템플릿 `A` 컴포넌트와 같은 규칙(7.1.1) — `target="_blank"` 면 `rel` 에 `noopener noreferrer` 를 합치고(받은 토큰 유지), `fallbackHref` 가 있으면 이 사이트 주소가 아닌 href(다른 사이트·`//host`·`https://이 사이트//다른호스트`·`#`·실행 스킴)를 그 주소로, `disabled` 가 참이면 href 를 빼고 `role="link"`. 대체 주소가 없는 href 는 양쪽 모두 그대로(실행 스킴만 `#`) — 같은 출처 전체 주소·외부 주소를 경로로 바꾸지 않는다. `mergeQuery` 는 봇 화면이 합치지 않는다(이동 액션의 `mergeQuery` 와 같음) |
 | `extensionPointCallbacks` | ✅ | ❌ (의도) | 미처리 | 액션 실행기 부재 |
 | `lifecycle` / `dataKey` / `trackChanges` | ✅ | ❌ (무해) | 미처리 | 입력·생명주기 전용 |
 | `slot` / `slotOrder` | ✅ | ❌ (무해) | `app/Services/LayoutService.php::replaceSlots` 에서 선처리 | 레이아웃 병합 단계에서 제거 |
@@ -1563,7 +1576,7 @@ SEO 렌더링 시 레이아웃의 `init_actions`에서 `setState` 핸들러를 �
 
 #### 동작 원리
 
-1. `init_actions` 배열에서 `handler: "setState"` 항목만 추출
+1. `init_actions` 배열에서 `handler: "setState"` 항목만 추출 — `handler: "sequence"`·`"parallel"` 항목은 `actions`(없으면 `params.actions`) 안으로 내려가 같은 규칙으로 읽는다(깊이 상한 10, 엔진이 `<init>` 의 sequence 를 실행하게 된 engine-v1.80.0 짝)
 2. `target: "global"`인 항목은 스킵 (SEO `_global`은 별도 주입)
 3. `params`의 메타 키(`target`, `handler`, `comment`)를 제외한 나머지를 `_local`에 매핑
 4. `{{expression}}` 값은 현재 컨텍스트(`query`, `route` 등)로 평가
@@ -1611,6 +1624,8 @@ SEO 렌더링 시 레이아웃의 `init_actions`에서 `setState` 핸들러를 �
 | `loadFromLocalStorage` | 서버 사이드에서 localStorage 미존재 |
 | `closeModal` | SEO에서 모달 상태 불필요 |
 | `navigate` | SEO 렌더링은 단일 페이지 |
+| `conditions` · `switch` | 봇 렌더러는 분기를 평가하지 않는다 — 분기 안의 setState 는 반영하지 않는다(`if` 도 지금처럼 무시) |
+| `actionRef`(`<action-ref>`) | 봇 렌더러는 `named_actions` 를 따라가지 않는다 — 참조한 named action 안의 setState 는 반영하지 않는다. 봇 화면 초기값이 필요하면 init 최상위나 `sequence` 안에 직접 적는다 |
 | 기타 비-setState | _local 초기화와 무관 |
 
 ### 파이프라인 흐름
@@ -1651,7 +1666,7 @@ SEO 렌더링 시 `navigate`/`openWindow` 핸들러가 정의된 컴포넌트에
 | 핸들러 | 변환 결과 | 비고 |
 |--------|----------|------|
 | `navigate` | `<a href="...">` | 내부 페이지 이동 |
-| `openWindow` | `<a href="..." target="_blank">` | 새 탭/외부 링크 |
+| `openWindow` | `<a href="..." target="_blank" rel="noopener noreferrer">` | 새 탭/외부 링크 (`target: "_self"` 는 `navigate` 와 같이 같은 탭 링크) |
 
 #### 지원 패턴
 
@@ -1670,6 +1685,13 @@ SEO 렌더링 시 `navigate`/`openWindow` 핸들러가 정의된 컴포넌트에
 | 미해석 `{{}}` 잔존 | `_local.*`, `$event.*` 등 런타임 전용 값 |
 | `_global` 참조 + globalResolver 미설정/실패 | SEO 컨텍스트에서 해석 불가 |
 | Fragment (빈 태그) | 래퍼 없어 링크 적용 불가 |
+| 실행 스킴(`javascript:`·`vbscript:`·`data:`) | 클라이언트 이동 판정과 같음 |
+| 같은 탭 이동의 다른 출처(`https://다른 사이트`·`//host`·`/\host`·사용자 정보 포함) | 클라이언트가 이동하지 않는 값 — 쿼리 유래 주소의 외부 링크 주입 방지 |
+| 새 창의 https 아닌 외부 주소 | 클라이언트 `openWindow` 가 열지 않는 값 |
+
+navigate 의 대체 경로 `fallbackPath` 도 클라이언트와 같습니다 — path 가 비었거나 거부되면 `fallbackPath` 로 링크하고, 그것도 거부되면 링크를 만들지 않습니다. path 가 봇이 모르는 실행 시점 값(`_local`·`_isolated`·`$event`·`$args`)이면 대체 경로로도 링크하지 않습니다. 정적 경로는 식 평가를 거치지 않습니다(첫 화면 `/` 가 평가기의 남은 연산자 정리에 지워지지 않게).
+
+같은 출처 판정은 사이트 주소(`app.url`) 또는 이 요청의 주소와 스킴·호스트·포트(기본 포트 정규화)를 비교합니다. 같은 출처 전체 주소(`https://이 사이트/board/free?page=2`)는 경로(`/board/free?page=2`)로 바꿔 링크에 씁니다.
 
 #### 태그별 변환 전략
 

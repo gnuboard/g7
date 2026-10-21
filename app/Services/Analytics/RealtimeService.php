@@ -112,7 +112,8 @@ class RealtimeService
                     'ip' => $includeIp && $visit->ip !== null ? (string) $visit->ip : null,
                     'user' => $this->memberSummary($memberMap[(int) ($visit->user_id ?? 0)] ?? null),
                     // 확장이 이 방문에 붙이는 값(장바구니 금액 등). 코어 필드를 덮지 못하게 한 칸 아래에 둔다.
-                    'extensions' => $this->extensionFields($visit),
+                    // 이름표로 읽는 맵이라 비면 `[]` 가 아니라 `{}` 로 낸다 (7.1.1 출시 전)
+                    'extensions' => $this->extensionFields($visit) ?: new \stdClass,
                 ];
             })->all(),
         ];

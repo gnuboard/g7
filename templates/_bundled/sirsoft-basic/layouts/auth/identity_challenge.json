@@ -270,6 +270,7 @@
                                                                         "handler": "navigate",
                                                                         "params": {
                                                                             "path": "{{_local.return_url ?? '/'}}",
+                                                                            "fallbackPath": "/",
                                                                             "mergeQuery": true,
                                                                             "query": {
                                                                                 "verification_token": "{{response.data.verification_token ?? ''}}",

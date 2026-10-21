@@ -198,6 +198,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "data-testid": "admin-reaction-member-banner-clear",
                                     "className": "px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
                                 },
@@ -254,8 +255,9 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "data-testid": "admin-reaction-bulk-delete",
-                                            "className": "px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "className": "px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
                                             "disabled": "{{reactions?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
                                         },
                                         "children": [
@@ -306,7 +308,7 @@
                                 }
                             },
                             {
-                                "comment": "정렬 변경. 정렬 축이 반응일 하나뿐이므로 방향만 바꾸고 페이지를 1로 되돌린다",
+                                "comment": "정렬 변경. 정렬 축이 반응일 하나뿐이므로 방향만 바꾸고 페이지를 1로 되돌린다. 다른 열은 서버가 정렬하지 못해 :sortable=\"false\" 다(7.1.1 — 종전에는 어느 머리든 날짜 방향만 뒤집혔다)",
                                 "type": "change",
                                 "event": "onSortChange",
                                 "handler": "sequence",
@@ -399,6 +401,9 @@
                             }
                         ],
                         "props": {
+                            "pageHrefMergeQuery": true,
+                            "pageHref": "/admin/boards/reactions?page={page}",
+                            "rowLabelField": "target_title",
                             "data": "{{reactions?.data?.data}}",
                             "sortable": true,
                             "sortField": "created_at",
@@ -417,20 +422,23 @@
                             "showColumnSelector": false,
                             "responsiveBreakpoint": 768,
                             "showFirstLast": true,
-                            "emptyMessage": "$t:sirsoft-board.admin.reactions.table_empty",
+                            "emptyMessage": "{{reactions === undefined ? '' : (reactions === null ? $t('sirsoft-board.common.list_load_failed') : $t('sirsoft-board.admin.reactions.table_empty'))}}",
                             "actionsColumnHeader": "$t:common.actions",
                             "selectedCountText": "",
                             "rowActions": [
                                 {
+                                    "href": "/admin/board/{{row.board?.slug}}/post/{{row.post_id}}",
                                     "id": "go_to_post",
                                     "label": "$t:sirsoft-board.admin.reactions.actions.go_to_post",
                                     "iconName": "file-lines",
                                     "disabledField": "board.slug"
                                 },
                                 {
+                                    "href": "/admin/users/{{row.member?.uuid}}",
                                     "id": "go_to_member",
                                     "label": "$t:sirsoft-board.admin.reactions.actions.go_to_member",
-                                    "iconName": "user"
+                                    "iconName": "user",
+                                    "disabledField": "member.uuid"
                                 },
                                 {
                                     "id": "delete",
@@ -458,6 +466,7 @@
                                 },
                                 {
                                     "field": "member",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-board.admin.reactions.columns.member",
                                     "cellChildren": [
                                         {
@@ -480,16 +489,10 @@
                                                             "if": "{{!!row.member?.uuid}}",
                                                             "actions": [
                                                                 {
-                                                                    "comment": "회원 이름 메뉴 — 형제 목록(이커머스 마일리지 내역)과 같은 두 갈래다. 상세는 **새 창**으로\n                         열어 이 목록의 검색 조건을 잃지 않게 하고, 「이 회원으로 검색」은 같은 창에서 회원 조건만\n                         갈아끼운다(user_uuid — 목록이 이미 읽는 필터라 배너도 그대로 선다).",
+                                                                    "comment": "회원 이름 메뉴 — 「회원 정보 보기」는 항목 자체가 새 탭 링크(href + target=_blank, #757)라 여기 갈래가 없다\n                         (새 탭이라 이 목록의 검색 조건을 잃지 않는다). 「이 회원으로 검색」만 같은 창에서 회원 조건을\n                         갈아끼운다(user_uuid — 목록이 이미 읽는 필터라 배너도 그대로 선다).",
                                                                     "event": "onItemClick",
                                                                     "handler": "switch",
                                                                     "cases": {
-                                                                        "view_member": {
-                                                                            "handler": "openWindow",
-                                                                            "params": {
-                                                                                "path": "/admin/users/{{row.member?.uuid}}"
-                                                                            }
-                                                                        },
                                                                         "search_member": {
                                                                             "handler": "navigate",
                                                                             "params": {
@@ -509,6 +512,8 @@
                                                                 "position": "right",
                                                                 "items": [
                                                                     {
+                                                                        "href": "/admin/users/{{row.member?.uuid}}",
+                                                                        "target": "_blank",
                                                                         "id": "view_member",
                                                                         "label": "$t:sirsoft-board.admin.reactions.cell.view_member",
                                                                         "iconName": "user"
@@ -567,6 +572,7 @@
                                 },
                                 {
                                     "field": "target_title",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-board.admin.reactions.columns.target",
                                     "cellClassName": "max-w-xs",
                                     "cellChildren": [
@@ -595,19 +601,17 @@
                                                         },
                                                         {
                                                             "type": "basic",
-                                                            "name": "Span",
+                                                            "name": "A",
                                                             "if": "{{!row.is_target_deleted && !!row.board}}",
                                                             "actions": [
                                                                 {
                                                                     "comment": "살아 있는 대상이고 게시판도 남아 있을 때만 원글로 건너뛴다 — 삭제된 대상·게시판 삭제 행은 갈 곳이 없다",
                                                                     "type": "click",
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "/admin/board/{{row.board?.slug}}/post/{{row.post_id}}"
-                                                                    }
+                                                                    "handler": "navigate"
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "href": "/admin/board/{{row.board?.slug}}/post/{{row.post_id}}",
                                                                 "className": "font-medium truncate cursor-pointer hover:underline"
                                                             },
                                                             "text": "{{row.target_title}}"
@@ -617,7 +621,7 @@
                                                             "name": "Span",
                                                             "if": "{{row.is_target_deleted || !row.board}}",
                                                             "props": {
-                                                                "className": "font-medium truncate line-through text-gray-400 dark:text-gray-500"
+                                                                "className": "font-medium truncate line-through text-gray-500 dark:text-gray-400"
                                                             },
                                                             "text": "{{row.target_title}}"
                                                         }
@@ -639,6 +643,7 @@
                                 },
                                 {
                                     "field": "board",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-board.admin.reactions.columns.board_name",
                                     "cellChildren": [
                                         {
@@ -683,6 +688,7 @@
                                 },
                                 {
                                     "field": "reaction_type",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-board.admin.reactions.columns.reaction_type",
                                     "cellChildren": [
                                         {
@@ -735,6 +741,7 @@
                                 },
                                 {
                                     "field": "target_status",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-board.admin.reactions.columns.target_status",
                                     "cellChildren": [
                                         {
@@ -833,6 +840,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
@@ -915,6 +923,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "data-testid": "admin-reaction-delete-confirm",
                                 "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.reactionDeleteLoading}}"
@@ -1003,6 +1012,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
@@ -1081,6 +1091,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "data-testid": "admin-reaction-bulk-delete-confirm",
                                 "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.reactionBulkDeleteLoading}}"
@@ -1168,6 +1179,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
                             },
                             "children": [

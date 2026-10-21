@@ -1,0 +1,18 @@
+feature: 게시판 첨부 응답 meta 의 빈 값 모양을 코어 첨부와 맞춤
+
+description: |
+  코어 첨부 응답은 7.1.1(#758)에서 meta 가 비면 `{}`, 없으면 null 로 나가도록 바뀌었는데,
+  게시판 첨부 응답(`AttachmentResource`)은 저장값을 그대로 내보내 빈 배열이면 `[]` 로 나갔다.
+  게시판 응답도 같은 약속을 따른다.
+
+# axis 의미: 갈라지는 축은 «저장된 meta 값의 모양» 하나다 — 빈 배열·없음(null)·이미지 크기 값.
+axes:
+  meta: [empty, missing, image]
+
+effects:
+  - board_attachment_meta_empty_is_object
+  - board_attachment_meta_missing_is_null
+  - board_attachment_meta_value_kept
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Unit/AttachmentResourceMetaShapeTest.php

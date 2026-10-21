@@ -1734,7 +1734,7 @@ describe('택배사 카드 validation 에러', () => {
             (s: any) => s.props?.value?.includes('$carrier.type')
         );
         expect(typeSelect?.props?.className).toContain('_local.errors');
-        // 관리자 템플릿에 `select-error` 규칙은 없다 — 오류 테두리는 입력칸과 같은 `input-error` (7.1.0 출시 점검 D3-4)
+        // 관리자 템플릿에 `select-error` 규칙은 없다 — 오류 테두리는 입력칸과 같은 `input-error` (7.1.0 출시 점검)
         expect(typeSelect?.props?.className).toContain('input-error');
         expect(typeSelect?.props?.className).not.toContain('select-error');
     });

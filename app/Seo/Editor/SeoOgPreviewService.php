@@ -6,6 +6,7 @@ use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Extension\HookManager;
 use App\Seo\SeoMetaResolver;
+use App\Support\LocalizedValue;
 
 /**
  * OG/Twitter/구조화 미리보기 서비스 — 편집기 [검색엔진] 탭.
@@ -28,6 +29,13 @@ use App\Seo\SeoMetaResolver;
  */
 class SeoOgPreviewService
 {
+    /**
+     * OG 미리보기 서비스를 생성합니다.
+     *
+     * @param  SeoMetaResolver  $metaResolver  SEO 메타 해석기
+     * @param  ModuleManagerInterface  $moduleManager  모듈 관리자
+     * @param  PluginManagerInterface  $pluginManager  플러그인 관리자
+     */
     public function __construct(
         private readonly SeoMetaResolver $metaResolver,
         private readonly ModuleManagerInterface $moduleManager,
@@ -41,7 +49,7 @@ class SeoOgPreviewService
      * @param  array  $context  편집기 샘플 컨텍스트
      * @param  array  $routeParams  샘플 라우트 파라미터
      * @param  array|null  $ownSeo  이 레이아웃이 직접 선언한 meta.seo(base 병합 전, `__editor.original`).
-     *  병합본에는 있으나 own 에는 없는 og/twitter 키 = base 상속(SEO-B).
+     *                              병합본에는 있으나 own 에는 없는 og/twitter 키 = base 상속(SEO-B).
      *                              미전달 시 종전 동작(상속/자체 구분 없이 모두 layout 출처).
      * @param  string|null  $locale  자동값 연결 칩 라벨(seoOgDefaultMeta) 해석 로케일. null 이면 app locale.
      * @return array{defaultsAvailable: bool, missing: array, og: array, twitter: array, structured: array}
@@ -258,7 +266,7 @@ class SeoOgPreviewService
      *  1. **번역 키 문자열**(`'sirsoft-ecommerce::seo.product_name'`) — `__()` 로 해석한다.
      *     모듈 lang 파일(+번들 언어팩)이 그 키를 번역하므로 **추가 언어(ja 등)에 자동 대응**한다(권장).
      *  2. 인라인 다국어 맵(`['ko' => '상품 이름', 'en' => '...']`) — 맵에서 로케일 픽(하위호환).
-     *     ko/en 만 담기면 그 외 로케일은 en 폴백(언어팩 미대응 — 권장하지 않음).
+     *     ko/en 만 담기면 그 외 로케일은 사이트 기본 언어 → 영어로 대신(언어팩 미대응 — 권장하지 않음).
      *
      * `['image' => ['expr' => '{{...}}', 'label' => 'pkg::seo.image']]`
      * → `['image' => ['expr' => '{{...}}', 'label' => '상품 이미지'(해석값)]]`. expr 누락/비문자열 키는 버림.
@@ -285,7 +293,7 @@ class SeoOgPreviewService
                 $label = (is_string($resolved) && $resolved !== $label) ? $resolved : '';
             } elseif (is_array($label)) {
                 // 하위호환 — 인라인 다국어 맵.
-                $label = $label[$locale] ?? $label['en'] ?? reset($label) ?: '';
+                $label = LocalizedValue::pick($label, $locale) ?? '';
             }
             $out[$key] = ['expr' => $def['expr'], 'label' => (string) $label];
         }

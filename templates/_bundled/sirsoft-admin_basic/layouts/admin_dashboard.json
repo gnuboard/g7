@@ -311,6 +311,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "className": "btn-icon",
                                     "aria-label": "$t:admin.dashboard.refresh"
                                 },
@@ -376,22 +377,16 @@
                                         "comment": "자산 주소 방식이 어긋났다는 경고에서 설정 화면으로 바로 보낸다 — 대시보드에서 문제를 알리고 고칠 자리까지 데려가는 것이 이 링크의 몫이다",
                                         "id": "asset_url_mode_drift_link",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "type": "click",
-                                                "handler": "navigate",
-                                                "params": {
-                                                    "path": "/admin/settings",
-                                                    "query": {
-                                                        "tab": "general"
-                                                    }
-                                                }
+                                                "handler": "navigate"
                                             }
                                         ],
                                         "props": {
-                                            "type": "button",
-                                            "className": "mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline cursor-pointer"
+                                            "href": "/admin/settings?tab=general",
+                                            "className": "button mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-amber-900 dark:text-amber-200 underline hover:no-underline cursor-pointer"
                                         },
                                         "text": "$t:admin.dashboard.asset_url_mode_drift_action"
                                     }
@@ -427,7 +422,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "{{alert.icon ?? 'info-circle'}}",
-                                            "className": "{{alert.type === 'warning' ? 'text-amber-600 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"
+                                            "className": "{{alert.type === 'warning' ? 'text-amber-700 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"
                                         }
                                     },
                                     {
@@ -526,7 +521,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
                                                             "disabled": "{{alert.abilities?.can_recover !== true}}"
                                                         },
                                                         "children": [
@@ -555,21 +550,18 @@
                                                     {
                                                         "id": "top_alert_navigate_button_{{$idx}}",
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "if": "{{!alert.recover_endpoint && !!alert.action_url}}",
                                                         "actions": [
                                                             {
                                                                 "comment": "복구 API 는 없지만 갈 곳은 있는 알림(보존일을 고치라는 경고 등). 주소도 글자도 알림이 실어 온 값을 쓴다 —\n                       버튼이 뜨는 조건은 종류가 아니라 **이동 주소를 실어 왔는가**라 새 알림이 이동을 붙일 때 화면을 고치지 않는다.\n                       절대 주소로 와도 같은 사이트 안이면 경로만 떼어 SPA 이동한다.",
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "type": "button",
-                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
+                                                            "href": "{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}",
+                                                            "className": "button inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded"
                                                         },
                                                         "children": [
                                                             {
@@ -834,19 +826,16 @@
                                             {
                                                 "id": "recent_notifications_more_btn",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "actions": [
                                                     {
                                                         "type": "click",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/notification-logs"
-                                                        }
+                                                        "handler": "navigate"
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                    "href": "/admin/notification-logs",
+                                                    "className": "button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
                                                 },
                                                 "text": "$t:admin.dashboard.extension_status.more"
                                             }
@@ -856,9 +845,9 @@
                                         "id": "recent_notifications_empty",
                                         "type": "basic",
                                         "name": "P",
-                                        "if": "{{(dashboard_recent_notifications?.data ?? []).length === 0}}",
+                                        "if": "{{dashboard_recent_notifications !== undefined && (dashboard_recent_notifications?.data ?? []).length === 0}}",
                                         "props": {
-                                            "className": "text-sm text-slate-500 dark:text-slate-400 text-center py-6"
+                                            "className": "text-sm text-slate-600 dark:text-slate-400 text-center py-6"
                                         },
                                         "text": "$t:admin.dashboard.recent_notifications.empty"
                                     },
@@ -985,19 +974,16 @@
                                             {
                                                 "id": "activity_more_btn",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "actions": [
                                                     {
                                                         "type": "click",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/activity-logs"
-                                                        }
+                                                        "handler": "navigate"
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                    "href": "/admin/activity-logs",
+                                                    "className": "button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
                                                 },
                                                 "text": "$t:admin.dashboard.extension_status.more"
                                             }
@@ -1042,7 +1028,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-heading"
+                                                                    "className": "text-heading break-words"
                                                                 },
                                                                 "text": "{{activity.title}}"
                                                             },
@@ -1051,7 +1037,7 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "text-label-subtle"
+                                                                    "className": "text-label-subtle break-words"
                                                                 },
                                                                 "text": "{{activity.description}}"
                                                             }
@@ -1093,17 +1079,15 @@
                             {
                                 "id": "modules_badge",
                                 "type": "basic",
-                                "name": "Div",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/modules"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
+                                    "href": "/admin/modules",
                                     "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
                                 },
                                 "children": [
@@ -1139,17 +1123,15 @@
                             {
                                 "id": "plugins_badge",
                                 "type": "basic",
-                                "name": "Div",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/plugins"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
+                                    "href": "/admin/plugins",
                                     "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
                                 },
                                 "children": [
@@ -1185,17 +1167,15 @@
                             {
                                 "id": "templates_badge",
                                 "type": "basic",
-                                "name": "Div",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/templates/admin"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
+                                    "href": "/admin/templates/admin",
                                     "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
                                 },
                                 "children": [
@@ -1231,17 +1211,15 @@
                             {
                                 "id": "language_packs_badge",
                                 "type": "basic",
-                                "name": "Div",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "/admin/settings?tab=language_packs"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
+                                    "href": "/admin/settings?tab=language_packs",
                                     "className": "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
                                 },
                                 "children": [
@@ -1342,19 +1320,16 @@
                                             {
                                                 "id": "module_more_btn",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "actions": [
                                                     {
                                                         "type": "click",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/modules"
-                                                        }
+                                                        "handler": "navigate"
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                    "href": "/admin/modules",
+                                                    "className": "button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
                                                 },
                                                 "text": "$t:admin.dashboard.extension_status.more"
                                             }
@@ -1479,19 +1454,16 @@
                                             {
                                                 "id": "plugin_more_btn",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "actions": [
                                                     {
                                                         "type": "click",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/plugins"
-                                                        }
+                                                        "handler": "navigate"
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                    "href": "/admin/plugins",
+                                                    "className": "button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
                                                 },
                                                 "text": "$t:admin.dashboard.extension_status.more"
                                             }
@@ -1616,19 +1588,16 @@
                                             {
                                                 "id": "template_more_btn",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "actions": [
                                                     {
                                                         "type": "click",
-                                                        "handler": "navigate",
-                                                        "params": {
-                                                            "path": "/admin/templates/admin"
-                                                        }
+                                                        "handler": "navigate"
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
-                                                    "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                                    "href": "/admin/templates/admin",
+                                                    "className": "button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
                                                 },
                                                 "text": "$t:admin.dashboard.extension_status.more"
                                             }
@@ -1773,7 +1742,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "{{alert.icon ?? 'info-circle'}}",
-                                                            "className": "{{alert.type === 'warning' ? 'text-amber-600 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"
+                                                            "className": "{{alert.type === 'warning' ? 'text-amber-700 dark:text-amber-400 mt-0.5 shrink-0' : (alert.type === 'info' ? 'text-blue-600 dark:text-blue-400 mt-0.5 shrink-0' : 'text-gray-500 dark:text-gray-400 mt-0.5 shrink-0')}}"
                                                         }
                                                     },
                                                     {
@@ -1872,7 +1841,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
                                                                             "disabled": "{{alert.abilities?.can_recover !== true}}"
                                                                         },
                                                                         "children": [
@@ -1901,21 +1870,18 @@
                                                                     {
                                                                         "id": "alert_navigate_button_{{$idx}}",
                                                                         "type": "basic",
-                                                                        "name": "Button",
+                                                                        "name": "A",
                                                                         "if": "{{!alert.recover_endpoint && !!alert.action_url}}",
                                                                         "actions": [
                                                                             {
                                                                                 "comment": "복구 API 는 없지만 갈 곳은 있는 알림(보존일을 고치라는 경고 등). 주소도 글자도 알림이 실어 온 값을 쓴다 —\n                           버튼이 뜨는 조건은 종류가 아니라 **이동 주소를 실어 왔는가**라 새 알림이 이동을 붙일 때 화면을 고치지 않는다.\n                           절대 주소로 와도 같은 사이트 안이면 경로만 떼어 SPA 이동한다.",
                                                                                 "type": "click",
-                                                                                "handler": "navigate",
-                                                                                "params": {
-                                                                                    "path": "{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}"
-                                                                                }
+                                                                                "handler": "navigate"
                                                                             }
                                                                         ],
                                                                         "props": {
-                                                                            "type": "button",
-                                                                            "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded"
+                                                                            "href": "{{String(alert.action_url).startsWith('http') ? '/' + String(alert.action_url).split('/').slice(3).join('/') : String(alert.action_url)}}",
+                                                                            "className": "button inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded"
                                                                         },
                                                                         "children": [
                                                                             {

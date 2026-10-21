@@ -1,0 +1,26 @@
+feature: 콘솔 확인 프롬프트 통합 동작
+
+description: |
+  매니저 커맨드(코어·모듈·플러그인·템플릿 삭제·업데이트 등)가 쓰는 확인 프롬프트를 잠근다.
+  입력 정규화 헬퍼(ConsoleConfirm), 커맨드 트레이트(HasUnifiedConfirm), Artisan 실행 경로가
+  같은 규칙을 따른다: 유효한 답(yes·y·no·n, 대소문자·공백 무시)은 한 번에 결정하고, 빈 답은
+  기본값을 쓰고, 무효한 답은 안내 후 다시 묻는다. 비대화 실행이거나 답을 받을 수 없으면(EOF·
+  응답 불가 환경) 묻지 않고 기본값을 돌려준다. 질문에는 기본값 힌트가 한 번만 붙는다.
+
+axes:
+  answer: [non_interactive, unanswerable, valid, empty, invalid_then_valid]   # 프롬프트가 받는 응답 상황
+
+effects:
+  - confirm_answer_parse_normalizes_case_and_whitespace          # yes·y·no·n 정규화, 그 외는 무효(null)
+  - confirm_valid_answer_resolves_immediately                    # 유효한 답은 재질문 없이 결정
+  - confirm_empty_answer_uses_default                            # 빈 답은 기본값
+  - confirm_invalid_answer_shows_notice_and_reasks               # 무효한 답은 안내 후 재질문
+  - confirm_returns_default_without_prompt_when_non_interactive  # --no-interaction 이면 묻지 않고 기본값
+  - confirm_returns_default_without_prompt_when_answer_unavailable # EOF·응답 불가 환경이면 묻지 않고 기본값
+  - confirm_prompt_marks_default_in_hint                         # 질문 끝에 (yes/no) [기본값] 힌트
+  - confirm_prompt_has_no_duplicate_empty_default_brackets       # 빈 [] 기본값 표시가 겹쳐 나오지 않음
+
+test_files:
+  - tests/Unit/Console/Helpers/ConsoleConfirmTest.php
+  - tests/Unit/Console/Commands/Traits/HasUnifiedConfirmTest.php
+  - tests/Feature/Console/UnifiedConfirmRegressionTest.php

@@ -46,6 +46,34 @@ class QueueStatsRepository implements QueueStatsRepositoryInterface
     }
 
     /**
+     * 큐 이름별로 처리를 기다리는 일의 수를 셉니다.
+     *
+     * `jobs.queue` 에는 인덱스가 있어 GROUP BY 가 표 전체를 훑지 않는다.
+     *
+     * @return array<string, int> 큐 이름 => 대기 중인 일의 수 (셀 수 없으면 빈 배열)
+     */
+    public function pendingJobsByQueue(): array
+    {
+        $table = (string) config('queue.connections.database.table', 'jobs');
+
+        try {
+            if (! Schema::hasTable($table)) {
+                return [];
+            }
+
+            return DB::table($table)
+                ->select('queue', DB::raw('COUNT(*) as aggregate'))
+                ->groupBy('queue')
+                ->pluck('aggregate', 'queue')
+                ->map(fn ($count): int => (int) $count)
+                ->all();
+        } catch (Throwable) {
+            // pendingJobs() 와 같은 이유 — 상태 화면은 큐를 못 읽어도 깨지지 않는다.
+            return [];
+        }
+    }
+
+    /**
      * 큐 표의 행 수를 셉니다.
      *
      * @param  string  $table  표 이름

@@ -240,7 +240,8 @@
                 "close": "닫기",
                 "open_policy_page": "본문 페이지 열기",
                 "no_policy_url": "등록된 개인정보처리방침 주소가 없습니다.",
-                "legacy_slug_note": "이전 형식(페이지 슬러그 「{slug}」)으로 기록된 버전입니다. 당시 링크가 가리키던 주소를 보여 줍니다."
+                "legacy_slug_note": "이전 형식(페이지 슬러그 「{slug}」)으로 기록된 버전입니다. 당시 링크가 가리키던 주소를 보여 줍니다.",
+                "load_failed": "정책 판 내용을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요."
             },
             "not_found": "해당 정책 버전을 찾을 수 없습니다.",
             "history_page_summary": "총 {total}건 · {current} / {last} 페이지",
@@ -345,7 +346,8 @@
     },
     "common": {
         "loading": "불러오는 중...",
-        "refresh": "새로고침"
+        "refresh": "새로고침",
+        "list_load_failed": "목록을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요."
     },
     "banner": {
         "re_appear_reason": "쿠키 정책이 버전 {version} 로 변경되어 동의를 다시 확인합니다.",

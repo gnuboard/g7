@@ -212,7 +212,7 @@
                                                                                     "handler": "setState",
                                                                                     "params": {
                                                                                         "target": "global",
-                                                                                        "privacyTargets": "{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false })}}"
+                                                                                        "privacyTargets": "{{({ path: 'retention-targets/sirsoft-ecommerce.order', currentPage: 1, hasMore: true, isLoadingMore: false, loadFailed: false })}}"
                                                                                     }
                                                                                 },
                                                                                 {
@@ -338,7 +338,7 @@
                                                             "name": "Span",
                                                             "if": "{{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.status === 'failed'}}",
                                                             "props": {
-                                                                "className": "text-error-soft"
+                                                                "className": "ecommerce-tone-error-soft text-sm"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.requester_name ?? $t('sirsoft-ecommerce.admin.settings.privacy_retention.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:sirsoft-ecommerce.order']?.run?.error ?? ''}}"
                                                         }
@@ -483,7 +483,7 @@
                                             "name": "P",
                                             "if": "{{_local.form?.privacy_retention?.mode === 'delete'}}",
                                             "props": {
-                                                "className": "text-error-soft"
+                                                "className": "ecommerce-tone-error-soft text-sm"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.delete_warning"
                                         }

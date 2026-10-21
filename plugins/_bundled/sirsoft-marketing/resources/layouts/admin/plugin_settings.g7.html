@@ -1,6 +1,6 @@
 <!-- 마케팅 플러그인 환경설정 화면 — 수신 채널을 더하고 지우고 순서를 정하며, 각 채널이 가리킬 약관 페이지를 연결한다 -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
-  <meta title="$t:sirsoft-marketing.settings.title" description="$t:sirsoft-marketing.settings.description"/>
+  <meta leave_guard="{{_local.hasChanges === true}}" title="$t:sirsoft-marketing.settings.title" description="$t:sirsoft-marketing.settings.description"/>
   <!-- 현재 설정값. 채널 목록은 편집 창과 오가야 해서 화면 상태가 아니라 전역에 풀어 둔다 -->
   <data-source id="settings" label_key="$t:sirsoft-marketing.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
     <success>
@@ -9,6 +9,19 @@
         <set-state target="global" channels="{{typeof response.data.data.channels === 'string' ? (JSON.parse(response.data.data.channels) ?? []) : (response.data.data.channels ?? [])}}"/>
       </sequence>
     </success>
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
   </data-source>
   <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
@@ -19,7 +32,7 @@
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-marketing.settings.title" description="$t:sirsoft-marketing.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
         <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-warning-soft">$t:sirsoft-marketing.plugin_read_only</span>
+        <span class="text-xs text-yellow-700 dark:text-yellow-300">$t:sirsoft-marketing.plugin_read_only</span>
       </div>
       <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
         <div class="flex gap-3">
@@ -58,10 +71,12 @@
           <div data-ref="channels_table_section" class="px-6 py-4">
             <div class="flex-between mb-3">
               <p class="text-body font-medium">$t:sirsoft-marketing.settings.fields.channels.label</p>
-              <button type="button" class="flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly}}">
+              <button type="button" class="flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly}}">
                 <on type="click">
-                  <!-- 채널 추가 — 빈 채널을 전역에 세우고 편집 창을 연다(창이 별도 컨텍스트라 편집 대상은 전역으로만 오간다) -->
+                  <!-- 채널 추가 — 빈 채널을 전역에 세우고 편집 창을 연다(창이 별도 컨텍스트라 편집 대상은 전역으로만 오간다).
+                       먼저 null 로 비운다 — 이름(label)이 deep 병합되면 앞 채널의 다른 언어 문구가 새 채널에 남는다(7.1.1) -->
                   <sequence>
+                    <set-state target="global" :editingChannel="null"/>
                     <set-state target="global">
                       <field name="editingChannel">
                         <field name="key" value=""/>
@@ -92,15 +107,15 @@
                 <div class="col-span-2 hidden sm:block"/>
               </div>
               <div data-ref="channels_table_rows_{{channelIdx}}" data-each="channel, channelIdx in _global.channels ?? (typeof _local.form.channels === 'string' ? JSON.parse(_local.form.channels) : (_local.form.channels ?? []))" class="divide-y divide-gray-100 dark:divide-gray-700">
-                <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50">
+                <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <div class="col-span-6 sm:col-span-4">
                     <div class="flex-center gap-2 flex-wrap">
                       <!-- 채널 라벨 — 현재 로케일 우선. ko 고정이면 다른 언어로 운영하는 관리자에게도 한국어가 나간다. 시스템 채널은 저장 맵에 없는 로케일(언어팩으로 늘어난 언어)을 플러그인 번역으로 보강한다 — 운영자가 만든 채널은 키가 번역 키와 우연히 겹칠 수 있어 저장 맵만 쓴다 -->
-                      <span class="text-heading">{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : (channel.label?.[$locale] ?? channel.label?.ko ?? channel.label?.en ?? channel.key)}}</span>
-                      <span data-if="{{channel.is_system}}" class="text-info-soft inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900">$t:sirsoft-marketing.settings.channels.system_badge</span>
+                      <span class="text-heading">{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : ($localized(channel.label) || channel.key)}}</span>
+                      <span data-if="{{channel.is_system}}" class="text-xs text-blue-700 dark:text-blue-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900">$t:sirsoft-marketing.settings.channels.system_badge</span>
                     </div>
                     <span class="text-hint font-mono mt-0.5">{{channel.key}}</span>
-                    <span data-if="{{!!channel.page_slug}}" class="block sm:hidden text-xs text-blue-400 dark:text-blue-500 font-mono mt-0.5">{{channel.page_slug}}</span>
+                    <span data-if="{{!!channel.page_slug}}" class="block sm:hidden text-xs text-blue-600 dark:text-blue-400 font-mono mt-0.5">{{channel.page_slug}}</span>
                   </div>
                   <div class="hidden sm:block sm:col-span-4">
                     <span class="text-label-subtle font-mono">{{channel.page_slug || '-'}}</span>
@@ -117,17 +132,19 @@
                     </toggle>
                   </div>
                   <div class="col-span-2 flex justify-end gap-1 sm:gap-2">
-                    <button aria-label="$t:common.edit" title="$t:common.edit" type="button" class="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly}}">
+                    <button aria-label="$t:common.edit" title="$t:common.edit" type="button" class="p-1.5 text-gray-500 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly}}">
                       <on type="click">
-                        <!-- 채널 편집 — 그 행을 전역에 옮겨 담고 편집 창을 연다 -->
+                        <!-- 채널 편집 — 그 행을 전역에 옮겨 담고 편집 창을 연다. 먼저 null 로 비운다 — 기본(deep) 병합은 이름(label) 다국어 객체를
+                             합쳐, 앞서 연 채널에만 있던 언어 문구가 이 채널에 실려 확정된다(7.1.1) -->
                         <sequence>
+                          <set-state target="global" :editingChannel="null"/>
                           <set-state target="global" editingChannel="{{{ ...channel, _editing: true, _labelTouched: false }}}"/>
                           <open-modal target="channel_edit_modal"/>
                         </sequence>
                       </on>
                       <icon name="pen" size="sm"/>
                     </button>
-                    <button aria-label="$t:common.delete" title="$t:common.delete" data-if="{{!channel.is_system}}" type="button" class="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly}}">
+                    <button aria-label="$t:common.delete" title="$t:common.delete" data-if="{{!channel.is_system}}" type="button" class="p-1.5 text-gray-500 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isPluginReadOnly}}">
                       <on type="click">
                         <!-- 채널 삭제 — 목록에서 빼고 변경 표시를 세운다(저장을 눌러야 서버에 반영된다). 시스템 채널에는 이 버튼이 없다 -->
                         <sequence>
@@ -188,12 +205,12 @@
         </div>
       </div>
       <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+        <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
           <on type="click">
-            <navigate path="/admin/plugins"/>
+            <navigate :bypassLeaveGuard="true"/>
           </on>
           <span>$t:common.cancel</span>
-        </button>
+        </a>
         <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 저장은 두 번에 나눠 나간다 — 채널 목록은 전용 엔드포인트가 받고 동의 항목은 플러그인 설정이 받는다. 채널 저장이 성공한 뒤에야 설정을 보내므로, 채널 쪽이 실패하면 동의 설정은 손대지 않은 채로 남는다 -->
@@ -264,7 +281,7 @@
           <p data-if="{{!_global.editingChannel?._editing &amp;&amp; (_global.editingChannel?.key ?? '') !== '' &amp;&amp; (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key)}}" class="text-error-soft mt-1">$t:sirsoft-marketing.settings.channel_modal.key_duplicate</p>
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-marketing.settings.channel_modal.label_ko</label>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-marketing.settings.channels.col_label</label>
           <div data-ref="channel_label_field">
             <on type="blur">
               <!-- 항목명 입력칸(언어 탭 포함)을 떠나면 그때부터 이름 필수 안내를 보인다 — 창을 막 연 입력 전에는 빨간 안내를 띄우지 않는다 -->
@@ -324,7 +341,7 @@
       <div class="row-stack">
         <p class="text-body">$t:sirsoft-marketing.settings.channel_deactivate_modal.message</p>
         <ul class="list-disc list-inside space-y-1">
-          <li data-each="blockedChannel in (_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channelDeactivation?.keys ?? []).includes(ch.key))" class="text-heading">{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : (blockedChannel.label?.[$locale] ?? blockedChannel.label?.ko ?? blockedChannel.label?.en ?? blockedChannel.key)}} ({{blockedChannel.key}})</li>
+          <li data-each="blockedChannel in (_global.channelDeactivation?.saved ?? []).filter((ch) => (_global.channelDeactivation?.keys ?? []).includes(ch.key))" class="text-heading">{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : ($localized(blockedChannel.label) || blockedChannel.key)}} ({{blockedChannel.key}})</li>
         </ul>
         <div class="flex justify-end gap-2 mt-4">
           <button type="button" class="btn btn-secondary">

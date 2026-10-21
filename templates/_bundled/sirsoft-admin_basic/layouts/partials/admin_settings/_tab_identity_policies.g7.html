@@ -19,6 +19,9 @@
             <!-- 정책 등록 창 열기 — **창 상태를 여기서 통째로 만들어 넣는다**(창은 자기 초기값이 없다).
                  기본값도 이 자리에 있고, `isNew` 로 창이 등록 모드임을 안다. -->
             <sequence>
+              <!-- 앞서 연 정책의 창 상태를 먼저 비운다 — deep 병합은 conditions: {} 로 앞 조건(signup_stage 등)을 지우지 못하고,
+                   추가 폼에 없는 user_overrides 도 남는다. 비운 뒤 아래에서 새로 세운다. -->
+              <set-state target="global" :identity_policy_form_modal="null"/>
               <set-state target="global">
                 <field name="identity_policy_form_modal">
                   <field name="form">
@@ -54,12 +57,12 @@
             <span class="font-mono text-[10px] text-indigo-600 dark:text-indigo-400">{{purpose.id}}</span>
             <span>{{purpose.label ?? purpose.id}}</span>
           </span>
-          <span data-if="{{(identityPurposes?.data ?? []).filter(p => p.source_type === 'core').length === 0}}" class="text-tertiary italic">$t:admin.identity.policies.purposes_empty</span>
+          <span data-if="{{identityPurposes !== undefined &amp;&amp; (identityPurposes?.data ?? []).filter(p => p.source_type === 'core').length === 0}}" class="text-tertiary italic">$t:admin.identity.policies.purposes_empty</span>
         </div>
       </div>
       <div data-ref="filter_card" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2 md:flex-row md:items-center">
-        <!-- 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 G2 실측). 값은 쿼리로만 다룬다. -->
-        <select name="filter.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+        <!-- 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 실측). 값은 쿼리로만 다룬다. -->
+        <select name="filter.scope" aria-label="$t:admin.identity.policies.col.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
           <options>
             <option value="">$t:admin.identity.policies.all_scopes</option>
             <option value="route">$t:admin.identity.policies.scope.route</option>
@@ -80,7 +83,7 @@
             </navigate>
           </on>
         </select>
-        <select name="filter.source_type" :autoBinding="false" value="{{query.source_type ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+        <select name="filter.source_type" aria-label="$t:admin.identity.policies.col.source_type" :autoBinding="false" value="{{query.source_type ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
           <options>
             <option value="">$t:admin.identity.policies.all_sources</option>
             <option value="core">$t:admin.identity.policies.source.core</option>
@@ -181,7 +184,9 @@
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right">{{policy.grace_minutes ?? 0}}</td>
                 <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right tabular-nums">{{policy.priority ?? 100}}</td>
                 <td class="px-3 py-2">
-                  <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
+                  <!-- 스위치 이름은 「{인증 목적} ({정책 키}) 활성」 — 정책에는 사람용 이름이 없어 키만 주면 내부 키로 읽힌다.
+                       목적이 같은 정책이 여럿이라 키를 괄호로 이어 서로 가른다. 좁은 화면 카드 판도 같은 이름을 쓴다. -->
+                  <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" ariaLabel="$t:common.row_cell|row={{((identityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose) ? ((identityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose) + ' (' + (policy.key ?? '') + ')' : (policy.key ?? '')}}|column={{$t('admin.identity.policies.col.enabled')}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                     <on type="change">
                       <!-- 사용 여부 토글(표 판). **성공이든 실패든 목록을 다시 받는다** — 실패 쪽에서도
                            받아야 스위치가 눌린 모양으로 남지 않는다. 좁은 화면 카드 판에 같은 배선이 있다. -->
@@ -204,7 +209,7 @@
                   </toggle>
                 </td>
                 <td class="px-3 py-2">
-                  <span class="{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
+                  <span class="{{policy.source_type === 'admin' ? 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft' : 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
                 </td>
                 <td class="px-3 py-2 text-right whitespace-nowrap">
                   <button type="button" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600" disabled="{{policy.abilities?.can_update !== true}}">
@@ -212,6 +217,9 @@
                       <!-- 수정 창 열기 — 등록과 같은 창을 쓰되 `isNew=false` 로 넣고 행의 값을 그대로 채운다.
      `source_type` 을 함께 담는 것이 중요하다 — 창이 그 값으로 키·범위·대상을 잠글지 정한다. -->
                       <sequence>
+                        <!-- 앞서 연 정책의 창 상태를 먼저 비운다 — deep 병합은 conditions: {} 로 앞 조건(signup_stage 등)을 지우지 못하고,
+                             추가 폼에 없는 user_overrides 도 남는다. 비운 뒤 아래에서 새로 세운다. -->
+                        <set-state target="global" :identity_policy_form_modal="null"/>
                         <set-state target="global">
                           <field name="identity_policy_form_modal">
                             <field name="form">
@@ -263,23 +271,23 @@
                 <div class="text-primary font-mono text-xs break-all">{{policy.key ?? ''}}</div>
                 <div class="form-hint">
                   <span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span>
-                  <span class="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+                  <span class="mx-1.5 text-gray-500 dark:text-gray-400">·</span>
                   <span class="font-mono break-all">{{policy.target ?? ''}}</span>
                 </div>
               </div>
-              <span class="{{policy.source_type === 'admin' ? 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft flex-shrink-0' : 'inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft flex-shrink-0'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
+              <span class="{{policy.source_type === 'admin' ? 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-info-soft flex-shrink-0' : 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft flex-shrink-0'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
             </div>
             <div class="flex-between gap-3">
               <div class="text-tertiary">
                 <span>{{(identityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}</span>
-                <span class="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+                <span class="mx-1.5 text-gray-500 dark:text-gray-400">·</span>
                 <span>$t:admin.identity.policies.col.grace_minutes</span>
                 <span class="ml-1 font-medium text-gray-700 dark:text-gray-300">{{policy.grace_minutes ?? 0}}</span>
-                <span class="mx-1.5 text-gray-300 dark:text-gray-600">·</span>
+                <span class="mx-1.5 text-gray-500 dark:text-gray-400">·</span>
                 <span>$t:admin.identity.policies.col.priority</span>
                 <span class="ml-1 font-medium text-gray-700 dark:text-gray-300 tabular-nums">{{policy.priority ?? 100}}</span>
               </div>
-              <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
+              <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" ariaLabel="$t:common.row_cell|row={{((identityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose) ? ((identityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose) + ' (' + (policy.key ?? '') + ')' : (policy.key ?? '')}}|column={{$t('admin.identity.policies.col.enabled')}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                 <on type="change">
                   <!-- 사용 여부 토글(좁은 화면 카드 판) — 표 판과 같은 배선이다. -->
                   <api-call :auth_required="true" target="/api/admin/identity/policies/{{policy.id}}" method="PUT">
@@ -306,6 +314,9 @@
                   <!-- 수정 창 열기 — 등록과 같은 창을 쓰되 `isNew=false` 로 넣고 행의 값을 그대로 채운다.
      `source_type` 을 함께 담는 것이 중요하다 — 창이 그 값으로 키·범위·대상을 잠글지 정한다. -->
                   <sequence>
+                    <!-- 앞서 연 정책의 창 상태를 먼저 비운다 — deep 병합은 conditions: {} 로 앞 조건(signup_stage 등)을 지우지 못하고,
+                         추가 폼에 없는 user_overrides 도 남는다. 비운 뒤 아래에서 새로 세운다. -->
+                    <set-state target="global" :identity_policy_form_modal="null"/>
                     <set-state target="global">
                       <field name="identity_policy_form_modal">
                         <field name="form">
@@ -346,16 +357,16 @@
             </div>
           </div>
         </div>
-        <div data-if="{{(policies?.data?.data ?? []).length === 0}}" class="py-10 text-center text-label-subtle">$t:admin.identity.policies.empty</div>
+        <div data-if="{{policies !== undefined &amp;&amp; (policies?.data?.data ?? []).length === 0}}" class="py-10 text-center text-label-subtle">$t:admin.identity.policies.empty</div>
         <div data-ref="policy_pagination" class="footer-buttons-between">
           <span class="text-tertiary">$t:admin.identity.policies.pagination_summary|total={{policies?.data?.meta?.total ?? 0}}|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? '?'}}</span>
           <div class="flex-center gap-1">
-            <button type="button" disabled="{{(policies?.data?.meta?.current_page ?? 1) <= 1}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            <a href="/admin/settings?tab=identity&amp;page={{Math.max(1, (policies?.data?.meta?.current_page ?? 1) - 1)}}" :mergeQuery="true" disabled="{{(policies?.data?.meta?.current_page ?? 1) <= 1}}" class="button px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 이전 페이지 — 페이지네이션 컴포넌트가 아니라 손으로 만든 버튼이라 **여기서 하한을
                      지킨다**(1 아래로 내려가지 않게). 버튼 자체도 첫 페이지에서 잠긴다. -->
-                <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
-                  <query tab="identity" page="{{Math.max(1, (policies?.data?.meta?.current_page ?? 1) - 1)}}"/>
+                <navigate :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
+                  <query/>
                   <field name="scroll">
                     <field name="container" value="#right_content_area"/>
                     <field name="to" value="#identity_section_policies"/>
@@ -365,13 +376,13 @@
                 </navigate>
               </on>
               <span>$t:common.prev</span>
-            </button>
+            </a>
             <span class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200">$t:admin.identity.policies.page_indicator|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? '?'}}</span>
-            <button type="button" disabled="{{!((policies?.data?.meta?.has_more_pages === true) || ((policies?.data?.meta?.current_page ?? 1) < (policies?.data?.meta?.last_page ?? 0)))}}" class="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+            <a href="/admin/settings?tab=identity&amp;page={{policies?.data?.meta?.last_page ? Math.min(policies.data.meta.last_page, (policies?.data?.meta?.current_page ?? 1) + 1) : ((policies?.data?.meta?.current_page ?? 1) + 1)}}" :mergeQuery="true" disabled="{{!((policies?.data?.meta?.has_more_pages === true) || ((policies?.data?.meta?.current_page ?? 1) < (policies?.data?.meta?.last_page ?? 0)))}}" class="button px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 다음 페이지 — 이전 버튼과 대칭으로 마지막 페이지를 상한으로 지킨다. -->
-                <navigate path="/admin/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
-                  <query tab="identity" page="{{policies?.data?.meta?.last_page ? Math.min(policies.data.meta.last_page, (policies?.data?.meta?.current_page ?? 1) + 1) : ((policies?.data?.meta?.current_page ?? 1) + 1)}}"/>
+                <navigate :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="policies">
+                  <query/>
                   <field name="scroll">
                     <field name="container" value="#right_content_area"/>
                     <field name="to" value="#identity_section_policies"/>
@@ -381,7 +392,7 @@
                 </navigate>
               </on>
               <span>$t:common.next</span>
-            </button>
+            </a>
           </div>
         </div>
       </div>

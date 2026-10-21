@@ -175,7 +175,7 @@
         <div data-ref="trend_chart_frame" class="h-[220px] sm:h-[260px]">
           <line-chart data-type="composite" data-ref="trend_chart" data-if="{{(analytics_overview?.data?.series?.points ?? []).length > 0}}" labels="{{(analytics_overview?.data?.series?.points ?? []).map(p => String(p.ts ?? '').replace('T', ' ').slice(5, 16))}}" datasets="{{[{label: $t('admin.analytics.common.visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.visitors ?? 0), color: '#7C3AED', fill: true}, {label: $t('admin.analytics.common.visits'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.visits ?? 0), color: '#0EA5E9'}, {label: $t('admin.analytics.common.pageviews'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.pageviews ?? 0), color: '#F59E0B'}, {label: $t('admin.analytics.overview.new_visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.new_visitors ?? 0), color: '#10B981'}, {label: $t('admin.analytics.overview.returning_visitors'), data: (analytics_overview?.data?.series?.points ?? []).map(p => p.returning_visitors ?? 0), color: '#F43F5E'}]}}" height="100%" :showLegend="true" :showYGrid="true" :showYAxis="true"/>
         </div>
-        <empty-state data-type="composite" data-ref="trend_empty" data-if="{{!analytics_overview?.loading &amp;&amp; (analytics_overview?.data?.series?.points ?? []).length === 0}}" iconName="chart-line" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-8"/>
+        <empty-state data-type="composite" data-ref="trend_empty" data-if="{{analytics_overview !== undefined &amp;&amp; (analytics_overview?.data?.series?.points ?? []).length === 0}}" iconName="chart-line" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.common.empty_description" class="py-8"/>
         <!-- 방문자 키가 일자마다 바뀌므로(config_id) 여러 날에 걸친 진짜 순방문자는 원리적으로 셀 수
              없다. 기간을 넓히면 같은 사람이 날마다 다시 세어진다 — 그 정의를 화면에 밝힌다(계획서 D11). -->
         <p data-ref="visitors_daily_sum_note" class="text-label-subtle mt-3">$t:admin.analytics.overview.visitors_daily_sum_note</p>
@@ -211,15 +211,13 @@
         <div data-ref="top_pages_card" class="admin-card">
           <div class="flex-between mb-3">
             <h3 class="section-heading">$t:admin.analytics.overview.top.pages</h3>
-            <button type="button" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <a href="/admin/analytics/pages" :mergeQuery="true" class="button text-sm text-blue-600 dark:text-blue-400 hover:underline">
               <on type="click">
                 <!-- 인기 페이지 전체 — 지금 질의(기간·단위·제외)를 병합해 페이지 리포트로 간다. 기본 탭이 이 목록과 같은 페이지 주소 집계다. -->
-                <navigate path="/admin/analytics/pages" :mergeQuery="true">
-                  <query/>
-                </navigate>
+                <navigate :mergeQuery="true"><query/></navigate>
               </on>
               $t:admin.analytics.common.more
-            </button>
+            </a>
           </div>
           <!-- 390px 에서는 세 목록을 다 펼치면 15행이 쌓여 스크롤이 길어진다 — 모바일만 접고
                md 이상에서는 `md:block` 이 그대로 3열을 펼친다(계획서 §4.11 개요 모바일). -->
@@ -231,7 +229,7 @@
             <icon name="{{_local.openTop?.pages ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
           </button>
           <div data-ref="top_pages_body" id="top_pages_body" class="{{_local.openTop?.pages ? 'block' : 'hidden md:block'}}">
-          <p data-if="{{(analytics_overview?.data?.top?.pages ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.common.empty_title</p>
+          <p data-if="{{analytics_overview !== undefined &amp;&amp; (analytics_overview?.data?.top?.pages ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.common.empty_title</p>
           <div data-each="row, $idx in {{analytics_overview?.data?.top?.pages ?? []}}" class="flex-between gap-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
             <span class="text-body truncate" title="{{row.label ?? ''}}">{{row.label_display ?? row.label ?? '-'}}</span>
             <span class="text-heading whitespace-nowrap">{{(row.visits ?? 0) | number}}</span>
@@ -241,16 +239,14 @@
         <div data-ref="top_referrers_card" class="admin-card">
           <div class="flex-between mb-3">
             <h3 class="section-heading">$t:admin.analytics.overview.top.referrers</h3>
-            <button type="button" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <a href="/admin/analytics/referrers?tab=sites" :mergeQuery="true" class="button text-sm text-blue-600 dark:text-blue-400 hover:underline">
               <on type="click">
                 <!-- 유입 전체 — 같은 조건으로 유입 리포트의 사이트 탭을 연다. 개요의 상위 유입은 사이트(도메인) 단위라 유형 탭이 아니라
                      이 탭이 짝이다. -->
-                <navigate path="/admin/analytics/referrers" :mergeQuery="true">
-                  <query tab="sites"/>
-                </navigate>
+                <navigate :mergeQuery="true"><query/></navigate>
               </on>
               $t:admin.analytics.common.more
-            </button>
+            </a>
           </div>
           <!-- 390px 에서는 세 목록을 다 펼치면 15행이 쌓여 스크롤이 길어진다 — 모바일만 접고
                md 이상에서는 `md:block` 이 그대로 3열을 펼친다(계획서 §4.11 개요 모바일). -->
@@ -262,7 +258,7 @@
             <icon name="{{_local.openTop?.referrers ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
           </button>
           <div data-ref="top_referrers_body" id="top_referrers_body" class="{{_local.openTop?.referrers ? 'block' : 'hidden md:block'}}">
-          <p data-if="{{(analytics_overview?.data?.top?.referrers ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.common.empty_title</p>
+          <p data-if="{{analytics_overview !== undefined &amp;&amp; (analytics_overview?.data?.top?.referrers ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.common.empty_title</p>
           <div data-each="row, $idx in {{analytics_overview?.data?.top?.referrers ?? []}}" class="flex-between gap-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
             <span class="text-body truncate" title="{{row.label ?? ''}}">{{row.label_display ?? row.label ?? '-'}}</span>
             <span class="text-heading whitespace-nowrap">{{(row.visits ?? 0) | number}}</span>
@@ -272,15 +268,13 @@
         <div data-ref="top_countries_card" class="admin-card">
           <div class="flex-between mb-3">
             <h3 class="section-heading">$t:admin.analytics.overview.top.countries</h3>
-            <button type="button" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            <a href="/admin/analytics/regions" :mergeQuery="true" class="button text-sm text-blue-600 dark:text-blue-400 hover:underline">
               <on type="click">
                 <!-- 국가 전체 — 같은 조건으로 지역 리포트를 연다(기본 탭이 국가다). -->
-                <navigate path="/admin/analytics/regions" :mergeQuery="true">
-                  <query/>
-                </navigate>
+                <navigate :mergeQuery="true"><query/></navigate>
               </on>
               $t:admin.analytics.common.more
-            </button>
+            </a>
           </div>
           <!-- 390px 에서는 세 목록을 다 펼치면 15행이 쌓여 스크롤이 길어진다 — 모바일만 접고
                md 이상에서는 `md:block` 이 그대로 3열을 펼친다(계획서 §4.11 개요 모바일). -->
@@ -292,7 +286,7 @@
             <icon name="{{_local.openTop?.countries ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
           </button>
           <div data-ref="top_countries_body" id="top_countries_body" class="{{_local.openTop?.countries ? 'block' : 'hidden md:block'}}">
-          <p data-if="{{(analytics_overview?.data?.top?.countries ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.common.empty_title</p>
+          <p data-if="{{analytics_overview !== undefined &amp;&amp; (analytics_overview?.data?.top?.countries ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.analytics.common.empty_title</p>
           <div data-each="row, $idx in {{analytics_overview?.data?.top?.countries ?? []}}" class="flex-between gap-3 py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
             <span class="text-body truncate" title="{{row.label ?? ''}}">{{row.label_display ?? row.label ?? '-'}}</span>
             <span class="text-heading whitespace-nowrap">{{(row.visits ?? 0) | number}}</span>

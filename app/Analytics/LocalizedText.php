@@ -2,6 +2,8 @@
 
 namespace App\Analytics;
 
+use App\Support\LocalizedValue;
+
 /**
  * 확장 선언의 로케일별 문구 처리
  *
@@ -45,7 +47,7 @@ final class LocalizedText
      * @param  array<string, string>  $map  로케일 맵
      * @param  string  $fallback  맵이 비었을 때 돌려줄 값
      * @param  string|null  $locale  고를 로케일 (없으면 현재 앱 로케일)
-     * @return string 문구 (지정 로케일 → en → 첫 값 → fallback)
+     * @return string 문구 (지정 로케일 → 사이트 기본 언어 → en → 첫 값 → fallback)
      */
     public static function pick(array $map, string $fallback, ?string $locale = null): string
     {
@@ -53,8 +55,7 @@ final class LocalizedText
             return $fallback;
         }
 
-        $locale ??= app()->getLocale();
-
-        return $map[$locale] ?? $map['en'] ?? reset($map);
+        // 지정 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        return LocalizedValue::pick($map, $locale) ?? $fallback;
     }
 }

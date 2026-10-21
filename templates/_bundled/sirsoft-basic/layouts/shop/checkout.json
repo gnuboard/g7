@@ -4,7 +4,7 @@
     "layout_name": "shop/checkout",
     "extends": "_user_base",
     "meta": {
-        "title": "주문서 작성",
+        "title": "$t:shop.checkout.title",
         "description": "주문서 작성 페이지 - 상품 확인, 주문자/배송지 정보, 결제 방법 선택 (PC/모바일 반응형)"
     },
     "data_sources": [
@@ -69,6 +69,31 @@
                 "404": {
                     "handler": "openModal",
                     "target": "tempOrderNotFoundModal"
+                },
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "장바구니에서 선택된 상품 또는 바로구매 상품 정보 + 저장된 promotions 데이터 복원. country_code 쿼리로 배송국가를 전달해 해당 국가 배송비로 미리보기 계산한다(init_actions 시드 _local.checkout.country_code 우선, 미설정 시 동일 fallback 체인). 우편번호는 도서산간/주별 세부 차등에만 관여하며 국가 결정과 무관."
@@ -195,20 +220,15 @@
             "discount_code": null,
             "zipcode": null
         },
-        "downloadableCoupons": null,
-        "downloadableCouponsLoading": false,
-        "downloadableCouponsPage": 1,
         "isSubmittingOrder": false,
         "errors": null,
         "orderError": null,
         "selectedDbank": null,
-        "addressModalMode": "list",
         "selectedAddressId": null,
         "checkoutDefaultAddressPrefilled": false,
         "selectedAddressObj": null,
         "saveShippingAddress": false,
         "updateSelectedAddress": true,
-        "editingAddress": null,
         "unavailableModal": {
             "visible": false,
             "items": [],
@@ -335,7 +355,7 @@
                                                 "name": "P",
                                                 "if": "{{_local.orderErrorMessage}}",
                                                 "props": {
-                                                    "className": "text-xs text-red-600 dark:text-red-400 mt-1"
+                                                    "className": "text-xs text-red-700 dark:text-red-400 mt-1"
                                                 },
                                                 "text": "{{_local.orderErrorMessage}}"
                                             }
@@ -362,7 +382,7 @@
                         "children": [
                             {
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "responsive": {
                                     "portable": {
                                         "props": {
@@ -373,13 +393,11 @@
                                 "actions": [
                                     {
                                         "type": "click",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "{{_global.shopBase}}/cart"
-                                        }
+                                        "handler": "navigate"
                                     }
                                 ],
                                 "props": {
+                                    "href": "{{_global.shopBase}}/cart",
                                     "className": "inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 text-sm cursor-pointer"
                                 },
                                 "children": [
@@ -495,10 +513,6 @@
         {
             "comment": "결제 도중 이탈했다가 되돌아왔는데 임시 주문이 이미 만료·정리된 경우 — 장바구니로 되돌린다",
             "partial": "partials/shop/_modal_temp_order_not_found.json"
-        },
-        {
-            "comment": "중복 사용 불가 쿠폰을 고를 때 — 먼저 걸린 쿠폰이 해제된다는 것을 알리고 확인을 받는다",
-            "partial": "partials/shop/_modal_exclusive_coupon_confirm.json"
         },
         {
             "comment": "저장된 배송지 목록에서 고르기(마이페이지로 나가지 않고 주문서 안에서 처리한다)",

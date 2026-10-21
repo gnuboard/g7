@@ -131,7 +131,7 @@
               <div class="flex-1 space-y-1">
                 <span class="block text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.info_disclosure</span>
                 <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.info_disclosure_desc</span>
-                <span class="text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-marketing.info_disclosure_warning</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.info_disclosure_warning</span>
               </div>
             </label>
             <button data-if="{{(_local.form?.info_disclosure_terms_slug_set ?? (marketing_settings?.data?.info_disclosure_terms_slug ? true : false)) === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5">
@@ -171,7 +171,7 @@
       </switch-value>
       <div class="flex flex-col">
         <div data-if="{{_global.marketingTermsLoading}}" class="flex items-center justify-center py-12">
-          <icon name="circle-notch" class="text-blue-600 animate-spin text-3xl"/>
+          <icon name="circle-notch" class="text-blue-600 dark:text-blue-500 animate-spin text-3xl"/>
         </div>
         <div data-if="{{_global.marketingTermsPageData?.published_at}}" class="flex items-center flex-shrink-0 gap-2 mb-3">
           <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.terms_published_at: {{_global.marketingTermsPageData?.published_at | date}}</span>

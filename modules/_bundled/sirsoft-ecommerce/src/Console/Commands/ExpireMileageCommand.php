@@ -45,13 +45,13 @@ class ExpireMileageCommand extends Command
     public function handle(): int
     {
         if (! module_setting('sirsoft-ecommerce', 'mileage.enabled', false)) {
-            $this->info('마일리지 기능이 비활성화되어 있습니다.');
+            $this->info(__('sirsoft-ecommerce::messages.console.mileage.disabled'));
 
             return Command::SUCCESS;
         }
 
         if (! module_setting('sirsoft-ecommerce', 'mileage.expiry_enabled', true)) {
-            $this->info('유효기간 기능이 비활성화되어 있습니다.');
+            $this->info(__('sirsoft-ecommerce::messages.console.expire_mileage.expiry_disabled'));
 
             return Command::SUCCESS;
         }
@@ -60,14 +60,14 @@ class ExpireMileageCommand extends Command
         $limit = (int) $this->option('limit');
 
         if ($isDryRun) {
-            $this->info('[DRY-RUN] 소멸 대상만 확인합니다.');
+            $this->info('[DRY-RUN] '.__('sirsoft-ecommerce::messages.console.expire_mileage.dry_run'));
 
             return Command::SUCCESS;
         }
 
         $expired = $this->mileageService->expireLots(now(), $limit);
 
-        $this->info(sprintf('소멸 처리 완료: %d건', $expired));
+        $this->info(__('sirsoft-ecommerce::messages.console.expire_mileage.done', ['count' => $expired]));
 
         return Command::SUCCESS;
     }

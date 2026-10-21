@@ -37,6 +37,7 @@ import {
   type PathTreeNode,
 } from '../shared/treeSearch';
 import { useEditorDialog } from './EditorDialog';
+import { pickLocalized } from '../../../support/localeTag';
 
 /** 열린 파일을 클라이언트에서 훑을 때의 상한 — 서버 검색(`CustomAssetService::search`)과 같은 값. */
 const MAX_LOCAL_MATCHES_PER_FILE = 20;
@@ -256,9 +257,9 @@ function displayNameOf(value: unknown, fallback: string): string {
   if (typeof value === 'string' && value !== '') return value;
 
   if (value && typeof value === 'object') {
-    const map = value as Record<string, unknown>;
-    const locale = (window as any)?.G7Config?.locale ?? 'ko';
-    const picked = map[locale] ?? map.ko ?? map.en ?? Object.values(map)[0];
+    const locale = (window as any)?.G7Config?.locale;
+    // 화면 언어 → 사이트 기본 언어 → en → 첫 값 (engine-v1.81.0)
+    const picked = pickLocalized(value, locale);
 
     if (typeof picked === 'string' && picked !== '') return picked;
   }

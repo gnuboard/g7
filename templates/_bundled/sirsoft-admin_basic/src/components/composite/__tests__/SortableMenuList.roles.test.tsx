@@ -71,7 +71,7 @@ describe('SortableMenuList — 행마다 부여된 역할', () => {
 
   // @scenario entry=menu_bulk_add, actor=super_admin, menu_shape=child_only
   // @effects menu_list_shows_assigned_roles
-  it('이름표 밖 역할(비활성 역할 등)도 개수에는 센다 — 「외 n개」 와 title 이 부여된 역할 수를 줄여 말하지 않는다 (실측 O-D6)', () => {
+  it('이름표 밖 역할(비활성 역할 등)도 개수에는 센다 — 「외 n개」 와 title 이 부여된 역할 수를 줄여 말하지 않는다 (실측)', () => {
     // 비활성 역할도 접근(사이드바·권한)을 그대로 주므로, 이름을 몰라도 「몇 개 더 있다」 는 보여야 한다.
     const withUnknown: MenuItem[] = [{ ...menus[0], role_ids: [1, 2, 3, 98, 99] }];
     render(<SortableMenuList items={withUnknown} roleOptions={ROLES} enableDrag={false} />);

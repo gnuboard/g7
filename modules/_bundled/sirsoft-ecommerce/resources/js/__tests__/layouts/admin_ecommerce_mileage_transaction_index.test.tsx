@@ -169,11 +169,12 @@ describe('마일리지 내역 메인 레이아웃', () => {
    *
    * @effects sort_and_per_page_navigate_immediately
    */
-  it('정렬 Select(최신순/금액↑↓) 이 query.sort 즉시 navigate 한다 (§14.2)', () => {
+  it('정렬 Select(최신순/오래된순/금액↑↓) 이 query.sort 즉시 navigate 한다 (§14.2)', () => {
     const sortSelect = findFirst(mainLayout.slots.content[0], (n) => n.id === 'sort_select');
     expect(sortSelect).toBeTruthy();
     const values = sortSelect.props.options.map((o: any) => o.value);
-    expect(values).toEqual(['created_at_desc', 'amount_desc', 'amount_asc']);
+    // 표 머리로 고를 수 있는 4값(서버 허용값)이 모두 있다 — 「일시」 머리 오름차순(created_at_asc)도 선택칸에 나타난다(7.1.1)
+    expect(values).toEqual(['created_at_desc', 'created_at_asc', 'amount_desc', 'amount_asc']);
     const nav = asArray(sortSelect?.actions).find((a: any) => a.handler === 'navigate');
     expect(nav.params.query.sort).toContain('$event.target.value');
     expect(nav.params.query.page).toBe(1);
@@ -552,16 +553,20 @@ describe('DataGrid (_transactions_table.json)', () => {
    *
    * @effects order_cell_opens_order_detail_in_new_window
    */
-  it('주문번호 셀이 주문 상세를 새 창(openWindow)으로 열고 주문 없으면 "-" 노출', () => {
+  it('주문번호 셀이 주문 상세를 새 창 링크로 열고 주문 없으면 "-" 노출', () => {
     const orderCol = grid.props.columns.find((c: any) => c.field === 'order');
     const json = jsonOf(orderCol);
     expect(json).toContain('/admin/ecommerce/orders/');
     expect(json).toContain('mileage_transactions.cell.none');
-    // 새 창 열기: navigate 가 아니라 openWindow
-    const link = findFirst(orderCol, (n) => n.if && String(n.if).includes('row.order_number') && n.actions);
-    const click = asArray(link?.actions).find((a: any) => a.type === 'click');
-    expect(click.handler).toBe('openWindow');
-    expect(click.params.path).toContain('row.order_number');
+    // 새 창 열기는 실제 주소의 새 창 링크다(#757 결정 — 「이미 새 창」도 링크로). 주소가 href 에 있어
+    // 가운데 클릭·새 탭·주소 복사가 모두 같은 곳을 가리킨다. 클릭 액션(openWindow)은 두지 않는다.
+    const link = findFirst(orderCol, (n) => n.name === 'A' && n.if && String(n.if).includes('row.order_number'));
+    expect(link).toBeTruthy();
+    expect(link.props.href).toContain('/admin/ecommerce/orders/');
+    expect(link.props.href).toContain('row.order_number');
+    expect(link.props.target).toBe('_blank');
+    expect(link.props.rel).toBe('noopener noreferrer');
+    expect(asArray(link.actions).some((a: any) => a.handler === 'openWindow')).toBe(false);
   });
 
   /**
@@ -771,21 +776,23 @@ describe('DataGrid (_transactions_table.json)', () => {
    */
   it('연결 거래 항목이 주문번호(클릭 시 주문 상세 새 창)와 부여자/시스템 정보를 노출한다', () => {
     const json = jsonOf(grid.props.expandChildren);
-    // 주문번호 링크 → openWindow 로 주문 상세
+    // 주문번호 링크 → 주문 상세 새 창 링크
     expect(json).toContain('linked.order_number');
     expect(json).toContain('/admin/ecommerce/orders/');
     // 부여자 이름 노출
     expect(json).toContain('linked.granted_by_name');
     // 부여자도 주문도 없으면 "시스템" 표시
     expect(json).toContain('mileage_transactions.cell.system');
-    // 주문번호 항목이 클릭으로 새 창을 연다 (iteration 항목 내부)
+    // 주문번호 항목은 주문 상세로 가는 새 창 링크다 (iteration 항목 내부) — 클릭 액션(openWindow)은 두지 않는다.
     const orderLink = findFirst(grid.props.expandChildren[0], (n) =>
-      n.if && String(n.if).includes('linked.order_number') && n.actions
+      n.name === 'A' && n.if && String(n.if).includes('linked.order_number')
     );
     expect(orderLink).toBeTruthy();
-    const click = asArray(orderLink?.actions).find((a: any) => a.type === 'click');
-    expect(click.handler).toBe('openWindow');
-    expect(click.params.path).toContain('linked.order_number');
+    expect(orderLink.props.href).toContain('/admin/ecommerce/orders/');
+    expect(orderLink.props.href).toContain('linked.order_number');
+    expect(orderLink.props.target).toBe('_blank');
+    expect(orderLink.props.rel).toBe('noopener noreferrer');
+    expect(asArray(orderLink.actions).some((a: any) => a.handler === 'openWindow')).toBe(false);
   });
 });
 
@@ -1042,7 +1049,8 @@ describe('일괄 연장 진입 (메인 레이아웃)', () => {
   it('bulk_extend_button 이 선택한 적립건 묶음만 담고 회원(userId)은 담지 않는다', () => {
     const btn = findFirst(mainLayout.slots.content[0], (n) => n.id === 'bulk_extend_button');
     const seq = asArray(btn?.actions).find((a: any) => a.handler === 'sequence');
-    const setState = callbacksOf(seq, 'actions').find((a: any) => a.handler === 'setState');
+    // 앞의 null 비우기 단계(7.1.1)가 아니라 창 상태를 객체로 쓰는 단계를 본다
+    const setState = callbacksOf(seq, 'actions').find((a: any) => a.handler === 'setState' && a.params?.mileageExtend);
     expect(String(setState.params.mileageExtend.lotIds)).toContain('selectedItems');
     expect(setState.params.mileageExtend.userId).toBeUndefined();
   });

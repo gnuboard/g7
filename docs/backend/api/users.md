@@ -678,7 +678,7 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | nickname | string | `최고관리자` | 닉네임 |
-| email | string | `heuristing@gmail.com` | 이메일 주소 |
+| email | string | `admin@example.com` | 이메일 주소 |
 | avatar | null | `null` | 아바타 이미지 URL (미등록 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
@@ -717,7 +717,7 @@ HTTP/1.1 200
         "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
         "name": "최고관리자",
         "nickname": "최고관리자",
-        "email": "heuristing@gmail.com",
+        "email": "admin@example.com",
         "avatar": null,
         "language": "ko",
         "language_label": "한국어",
@@ -900,8 +900,14 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | keyword | query | string | 아니오 | max 255 | 검색 키워드 (부분 일치) |
 | uuid | query | uuid | 아니오 | — | 특정 사용자 UUID 로 단건 조회 (지정 시 keyword 무시하고 해당 UUID 사용자만 반환) |
+| exclude_withdrawn | query | boolean | 아니오 | `1`·`0`·`true`·`false` | 키워드 검색에서 탈퇴 회원(`withdrawn_at` 있음 또는 상태 `withdrawn`)을 뺀다. 차단·비활성·휴면 회원은 빼지 않는다. uuid 단건 조회에는 적용하지 않는다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.search_validation_rules`).
+
+**`exclude_withdrawn` 을 실어야 하는 자리** — 회원을 「고르는」 창. 관리자 알림 문안 편집 창(코어 환경설정·게시판·이커머스·GDPR·수출입은행 플러그인)의
+「특정 회원」 수신자 검색이 이 값을 싣는다(7.1.1). 탈퇴 회원은 연락처가 익명화되고 바깥 채널 발송이 막혀 수신자로 골라도
+받지 못한다. 반대로 활동 로그·주문·쿠폰·배송지 목록의 「회원」 필터처럼 **기록을 찾는** 자리는 싣지 않는다 — 탈퇴 회원의
+기록도 찾아야 하기 때문이다(기본값은 종전처럼 탈퇴 회원 포함).
 
 **응답 메타 — `meta.keyword`**
 
@@ -918,7 +924,7 @@ HTTP/1.1 200
 응답 도착 시점의 입력칸을 다시 읽어 도장을 찍으면 한 글자가 부른 가장 큰 응답(전체 회원)이
 가장 늦게 와서 현재 키워드의 것으로 둔갑합니다 — 2026-09-22 실측에서 `MEAS599T-S2` 를 친
 관리자 마일리지 수동 지급 모달에 전체 회원 83행이 떴고, 그 목록에서 고르면 **엉뚱한 회원에게
-돈이 지급됩니다**(#599 3차 실측 T2-D1).
+돈이 지급됩니다**(#599 실측).
 
 **요청 예시**
 
@@ -1189,7 +1195,7 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 사용자 이름 |
 | nickname | string | `최고관리자` | 닉네임 |
-| email | string | `heuristing@gmail.com` | 이메일 주소 |
+| email | string | `admin@example.com` | 이메일 주소 |
 | avatar | null | `null` | 프로필 아바타 이미지 URL (미설정 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
@@ -1289,7 +1295,7 @@ HTTP/1.1 200
         "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
         "name": "최고관리자",
         "nickname": "최고관리자",
-        "email": "heuristing@gmail.com",
+        "email": "admin@example.com",
         "avatar": null,
         "language": "ko",
         "language_label": "한국어",
@@ -1620,7 +1626,7 @@ _단건 응답: `data` 객체의 필드._
 | uuid | string | `a26219fc-94a0-4f63-9404-04c2a6ac99e4` | 외부 노출용 UUID (URL/API 식별자, 내부 id 비노출) |
 | name | string | `최고관리자` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | nickname | string | `최고관리자` | 닉네임 |
-| email | string | `heuristing@gmail.com` | 이메일 주소 |
+| email | string | `admin@example.com` | 이메일 주소 |
 | avatar | null | `null` | 아바타 이미지 URL (미등록 시 null) |
 | language | string | `ko` | 사용자 언어 설정 (ko: 한국어, en: 영어) |
 | language_label | string | `한국어` | 언어 코드의 현지화 라벨 (user.language.{code} 번역) |
@@ -1659,7 +1665,7 @@ HTTP/1.1 200
         "uuid": "a26219fc-94a0-4f63-9404-04c2a6ac99e4",
         "name": "최고관리자",
         "nickname": "최고관리자",
-        "email": "heuristing@gmail.com",
+        "email": "admin@example.com",
         "avatar": null,
         "language": "ko",
         "language_label": "한국어",

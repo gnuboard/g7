@@ -294,6 +294,16 @@
         "description": "HTML anchor element wrapper",
         "path": "src/components/basic/A.tsx",
         "props": {
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "description": "비활성 링크 — href 를 빼고 aria-disabled=\"true\"·tabindex=\"-1\", 클릭은 아무 일도 하지 않는다. 꾸밈은 aria-disabled: 변형으로"
+          },
+          "mergeQuery": {
+            "type": "boolean",
+            "required": false,
+            "description": "현재 주소의 쿼리를 href 에 합쳐 그린다(목록 조건 유지) — 보통 클릭과 새 탭이 같은 주소로 간다"
+          },
           "href": {
             "type": "string",
             "required": false,
@@ -302,7 +312,7 @@
           "target": {
             "type": "string",
             "required": false,
-            "description": "링크 타겟 (_blank | _self | _parent | _top)"
+            "description": "링크 타겟 (_blank | _self | _parent | _top). _blank 인데 rel 에 noopener 가 없으면 컴포넌트가 rel 에 noopener noreferrer 를 더한다(기존 rel 값은 지킴 — 새 창이 window.opener 로 이 화면을 조작하지 못하게, #757)"
           },
           "className": {
             "type": "string",
@@ -905,6 +915,7 @@
         "type": "composite",
         "description": "드래그앤드롭 가능한 계층형 메뉴 목록",
         "path": "src/components/composite/SortableMenuList.tsx",
+        "skipBindingKeys": ["itemHref"],
         "props": {
           "items": {
             "type": "array",
@@ -957,6 +968,17 @@
             "type": "array",
             "required": false,
             "description": "역할 이름표 [{id, name}] — 항목의 role_ids 를 이름 배지로 보인다(최대 3개 + 외 n개). 주지 않으면 배지를 그리지 않는다"
+          },
+          "itemHref": {
+            "type": "string",
+            "required": false,
+            "description": "항목 편집 주소(행 식, 예: /admin/menus?id={{row.id}}&mode=edit). 주면 항목 이름이 행 전체를 덮는 링크가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 그 항목 편집 화면을 연다. 보통 클릭은 onSelect 그대로. 끌기 손잡이·펼침 단추·스위치는 링크 밖 위층이고 링크는 끌리지 않는다(draggable=false). 엔진은 원문을 넘기고(skipBindingKeys) 항목마다 푼다. 여러 개 선택 모드에서는 링크를 그리지 않는다 (#757)"
+          },
+          "itemHrefMergeQuery": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "참이면 현재 주소의 쿼리(검색 등)를 항목 주소에 합친다(같은 키는 항목 주소 쪽이 이긴다) (#757)"
           },
           "className": {
             "type": "string",
@@ -1211,8 +1233,23 @@
         "type": "composite",
         "description": "Data grid with sorting, filtering, and pagination",
         "path": "src/components/composite/DataGrid.tsx",
-        "skipBindingKeys": ["cellChildren", "expandChildren", "expandContext", "render", "subRowChildren", "subRowCondition", "footerCells", "footerCardChildren", "rowClassName"],
+        "skipBindingKeys": ["cellChildren", "expandChildren", "expandContext", "render", "subRowChildren", "subRowCondition", "footerCells", "footerCardChildren", "rowClassName", "href"],
         "props": {
+          "pageHref": {
+            "type": "string",
+            "required": false,
+            "description": "내장 페이지 번호의 주소 틀 — {page} 자리에 번호. 주면 페이지 번호가 링크가 된다"
+          },
+          "pageHrefMergeQuery": {
+            "type": "boolean",
+            "required": false,
+            "description": "페이지 주소에 현재 주소의 쿼리를 합친다"
+          },
+          "rowLabelField": {
+            "type": "string",
+            "required": false,
+            "description": "행 이름으로 쓸 필드(점 경로). 셀 문맥 $rowLabel 과 행 선택 체크박스 이름에 쓰인다. 주지 않았을 때만 첫 표시 열의 글자 값(숫자·날짜 모양 제외), 그것도 없으면 「N번째 행」. 주었는데 그 행의 값이 비면 바로 「N번째 행」. 행 선택을 켜면 사람이 읽는 식별자로 지정한다"
+          },
           "columns": {
             "type": "array",
             "required": true,
@@ -1264,8 +1301,18 @@
         "type": "composite",
         "description": "Card grid layout with automatic skeleton loading and pagination support",
         "path": "src/components/composite/CardGrid.tsx",
-        "skipBindingKeys": ["cardColumns"],
+        "skipBindingKeys": ["cardColumns", "cardHref", "cardLinkLabel"],
         "props": {
+          "pageHref": {
+            "type": "string",
+            "required": false,
+            "description": "내장 페이지 번호의 주소 틀 — {page} 자리에 번호(예: /admin/boards?page={page}). 주면 페이지 번호가 링크가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 열린다. 보통 클릭은 onPageChange"
+          },
+          "pageHrefMergeQuery": {
+            "type": "boolean",
+            "required": false,
+            "description": "페이지 주소에 현재 주소의 쿼리(검색·정렬 조건)를 합친다"
+          },
           "data": {
             "type": "array",
             "required": false,
@@ -1298,6 +1345,16 @@
             "required": false,
             "default": "",
             "description": "개별 카드 추가 클래스"
+          },
+          "cardHref": {
+            "type": "string",
+            "required": false,
+            "description": "카드 이동 주소(행 표현식, 예: /admin/boards/{{row.slug}}/edit). 있으면 카드 전체를 덮는 <a href> 를 깔아 가운데 클릭·Ctrl+클릭 새 탭이 된다. 카드는 div 그대로이고 카드 내용(단추·스위치·메뉴)은 링크 밖 위층이라 그 요소만 동작한다. 엔진은 원문을 넘기고(skipBindingKeys) 카드마다 그 행으로 푼다. 보통 클릭은 SPA 이동, 바깥 주소는 새 탭. 카드 안 펼침 요소는 포털로 그린다(카드가 쌓임 맥락) (#757)"
+          },
+          "cardLinkLabel": {
+            "type": "string",
+            "required": false,
+            "description": "카드 덮는 링크의 이름(행 표현식, 예: {{row.name}} 편집). 없으면 카드 글자 전체가 링크 이름이다. skipBindingKeys 로 원문을 받아 카드마다 푼다 (#757)"
           },
           "idField": {
             "type": "string",
@@ -1386,10 +1443,20 @@
         "description": "확장 목록 전용 그리드 — 갤러리(카드)와 목록(행)을 각각 독립 DOM 으로 렌더한다",
         "path": "src/components/composite/ExtensionCardGrid.tsx",
         "props": {
+          "pageHref": {
+            "type": "string",
+            "required": false,
+            "description": "내장 페이지 번호의 주소 틀 — {page} 자리에 번호(예: /admin/modules?page={page}). 주면 페이지 번호가 링크가 된다. 보통 클릭은 onPageChange"
+          },
+          "pageHrefMergeQuery": {
+            "type": "boolean",
+            "required": false,
+            "description": "페이지 주소에 현재 주소의 쿼리를 합친다"
+          },
           "items": {
             "type": "array",
             "required": false,
-            "description": "확장 카드 데이터 배열 (ExtensionCardItem[])"
+            "description": "확장 카드 데이터 배열 (ExtensionCardItem[]). 항목에 href 가 있으면 카드를 <a href> 로 그려 가운데 클릭·Ctrl+클릭 새 탭이 된다 — 보통 클릭은 onItemClick(없으면 SPA 이동), 바깥 주소는 새 탭, 없으면 종전 role=button 카드 (#757). secondaryAction.href 를 주면 보조 단추(레이아웃 편집 등)가 링크(보통 클릭은 onSecondaryAction, 카드 자체가 링크거나 비활성이면 종전 단추), actions[].href 는 메뉴 항목 링크(보통 클릭은 onAction)"
           },
           "viewMode": {
             "type": "string",
@@ -1643,6 +1710,16 @@
         "description": "Pagination component for data lists",
         "path": "src/components/composite/Pagination.tsx",
         "props": {
+          "pageHref": {
+            "type": "string",
+            "required": false,
+            "description": "페이지 주소 틀 — {page} 자리에 번호(예: /admin/users?page={page}). 주면 번호·이전·다음·처음·끝이 링크가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 열린다. 보통 클릭은 onPageChange"
+          },
+          "pageHrefMergeQuery": {
+            "type": "boolean",
+            "required": false,
+            "description": "페이지 주소에 현재 주소의 쿼리(검색·정렬 조건)를 합친다"
+          },
           "currentPage": {
             "type": "number",
             "required": true,
@@ -1739,6 +1816,17 @@
             "required": false,
             "description": "의미 기반 변형 (success | warning | danger | error | info | primary | secondary | text | default) — 백엔드 Enum 의 variant() 출력을 그대로 받는다. color 가 있으면 color 가 이긴다"
           },
+          "customColor": {
+            "type": "string",
+            "required": false,
+            "description": "운영자 데이터 색(hex). 주면 color·variant 대신 이 색으로 그리며, 글자색은 바탕과 4.5 이상이 되도록 계산한다(데이터 색을 글자에 그대로 쓰지 않는다)"
+          },
+          "customColorStyle": {
+            "type": "string",
+            "required": false,
+            "default": "soft",
+            "description": "customColor 칩 모양 (soft: 옅은 바탕 | solid: 데이터 색 바탕, 글자는 검정·흰색 중 대비가 큰 쪽)"
+          },
           "text": {
             "type": "string",
             "required": false,
@@ -1817,7 +1905,7 @@
           "items": {
             "type": "array",
             "required": true,
-            "description": "액션 메뉴 아이템 목록 (ActionMenuItem[])"
+            "description": "액션 메뉴 아이템 목록 (ActionMenuItem[]) 항목에 href 를 주면 <a role=\"menuitem\" href> 로 그려 가운데 클릭·Ctrl+클릭으로 새 탭에서 열린다(보통 클릭은 onItemClick 그대로). mergeQuery: true 를 함께 주면 현재 주소의 쿼리를 href 에 합친다(목록 조건을 새 탭에도 — 같은 키는 href 쪽이 이긴다). target: \"_blank\" 를 주면 새 창 링크(rel=\"noopener noreferrer\")로 그리고 보통 클릭도 브라우저가 새 창으로 연다(항목 동작은 부르지 않음 — 종전 openWindow 항목용)."
           },
           "triggerLabel": {
             "type": "string",
@@ -1865,10 +1953,15 @@
         "description": "Tab navigation component",
         "path": "src/components/composite/TabNavigation.tsx",
         "props": {
+          "aria-label": {
+            "type": "string",
+            "required": false,
+            "description": "좁은 화면에서 탭 대신 그리는 선택 상자의 이름(「{이름} {현재 탭}」). 없으면 「섹션 이동」"
+          },
           "tabs": {
             "type": "array",
             "required": true,
-            "description": "탭 목록 (Tab[])"
+            "description": "탭 목록 (Tab[]) 탭 항목에 href 를 주면 <a role=\"tab\" href> 로 그려 새 탭으로 열 수 있다(보통 클릭은 onTabChange 그대로)."
           },
           "activeTabId": {
             "type": "string|number",
@@ -1905,10 +1998,15 @@
         "description": "Tab navigation with built-in default handler (setState + scrollToSection)",
         "path": "src/components/composite/TabNavigationScroll.tsx",
         "props": {
+          "aria-label": {
+            "type": "string",
+            "required": false,
+            "description": "좁은 화면에서 탭 대신 그리는 선택 상자의 이름(「{이름} {현재 탭}」). 없으면 「섹션 이동」"
+          },
           "tabs": {
             "type": "array",
             "required": true,
-            "description": "탭 목록 (Tab[]): {id, label, disabled?, actions?, if?} — if 키가 있고 값이 거짓이면 탭 목록에서 뺀다"
+            "description": "탭 목록 (Tab[]): {id, label, disabled?, actions?, if?} — if 키가 있고 값이 거짓이면 탭 목록에서 뺀다 탭 항목에 href 를 주면 <a role=\"tab\" href> 로 그린다(보통 클릭은 종전 스크롤 이동)."
           },
           "activeTabId": {
             "type": "string|number",
@@ -2247,7 +2345,7 @@
           "items": {
             "type": "array",
             "required": true,
-            "description": "브레드크럼 아이템 목록 (BreadcrumbItem[])"
+            "description": "브레드크럼 아이템 목록 (BreadcrumbItem[] — { label, href?, onClick? }). href 가 있으면 링크(가운데 클릭·Ctrl+클릭 새 탭, onClick 도 있으면 보통 클릭만 onClick), href 없이 onClick 만 있으면 단추, 둘 다 없거나 마지막 항목이면 글자 (#757)"
           },
           "separator": {
             "type": "ReactNode",
@@ -2493,7 +2591,7 @@
           "breadcrumbItems": {
             "type": "array",
             "required": false,
-            "description": "브레드크럼 아이템 목록 (BreadcrumbItem[])"
+            "description": "브레드크럼 아이템 목록 (BreadcrumbItem[] — { label, href?, onClick? }). href 가 있으면 링크(가운데 클릭·Ctrl+클릭 새 탭, onClick 도 있으면 보통 클릭만 onClick), href 없이 onClick 만 있으면 단추, 둘 다 없거나 마지막 항목이면 글자 (#757)"
           },
           "tabs": {
             "type": "array",
@@ -2508,7 +2606,7 @@
           "actions": {
             "type": "array",
             "required": false,
-            "description": "액션 버튼 목록 (ActionButton[])"
+            "description": "액션 버튼 목록 (ActionButton[]). 항목에 href 가 있으면 <a href> 로 그려 가운데 클릭·Ctrl+클릭 새 탭이 된다 — 보통 클릭은 onClick(없으면 SPA 이동), 바깥 주소는 새 탭, disabled 면 종전처럼 비활성 단추(href 없음) (#757)"
           },
           "className": {
             "type": "string",
@@ -3198,7 +3296,8 @@
         "description": "레이아웃 파일 트리 (폴더 접기·검색 강조·미저장 표시·키보드 내비)",
         "path": "src/components/composite/FileTree.tsx",
         "props": {
-          "nodes": { "type": "array", "required": false, "default": "[]", "description": "평면 파일 목록 (FileTreeNode[]) — 트리 변환은 컴포넌트가 한다" },
+          "nodes": { "type": "array", "required": false, "default": "[]", "description": "평면 파일 목록 (FileTreeNode[]) — 트리 변환은 컴포넌트가 한다. 노드에 href(이 파일을 여는 주소)를 주면 이름이 행을 덮는 링크가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 그 파일을 연다 — 보통 클릭은 onSelect 그대로, 트리 방향키·Enter 그대로(링크는 탭 순서 밖), 이름 바꾸기·삭제는 링크 밖. 주소로 가리킬 수 없는 항목(부분 레이아웃·확장 조각)은 href 를 비운다 (#757)" },
+          "hrefMergeQuery": { "type": "boolean", "required": false, "default": false, "description": "참이면 현재 주소의 쿼리를 파일 주소(nodes[].href)에 합친다 (#757)" },
           "selectedKey": { "type": "string", "required": false, "description": "지금 열려 있는 파일 키" },
           "dirtyKeys": { "type": "array", "required": false, "default": "[]", "description": "미저장 파일 키 — ● 점 + 강조 + 상위 폴더 개수 배지" },
           "expandedPaths": { "type": "array", "required": false, "description": "제어형 펼침 경로 (미지정이면 내부 상태 + localStorage)" },
@@ -3224,7 +3323,8 @@
         "description": "파일 트리를 기기 폭에 맞는 그릇에 담는다 (인라인 / 서랍 / 시트)",
         "path": "src/components/composite/FileTreePicker.tsx",
         "props": {
-          "nodes": { "type": "array", "required": false, "default": "[]", "description": "평면 파일 목록 (FileTreeNode[])" },
+          "nodes": { "type": "array", "required": false, "default": "[]", "description": "평면 파일 목록 (FileTreeNode[]). 노드에 href(이 파일을 여는 주소)를 주면 이름이 행을 덮는 링크가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 그 파일을 연다 — 보통 클릭은 onSelect 그대로, 트리 방향키·Enter 그대로(링크는 탭 순서 밖), 이름 바꾸기·삭제는 링크 밖. 주소로 가리킬 수 없는 항목(부분 레이아웃·확장 조각)은 href 를 비운다 (#757)" },
+          "hrefMergeQuery": { "type": "boolean", "required": false, "default": false, "description": "참이면 현재 주소의 쿼리를 파일 주소(nodes[].href)에 합친다 (#757)" },
           "selectedKey": { "type": "string", "required": false, "description": "지금 열려 있는 파일 키" },
           "dirtyKeys": { "type": "array", "required": false, "default": "[]", "description": "미저장 파일 키" },
           "searchKeyword": { "type": "string", "required": false, "default": "", "description": "검색어" },
@@ -3403,7 +3503,7 @@
           "user": {
             "type": "object",
             "required": true,
-            "description": "사용자 정보 (User)"
+            "description": "사용자 정보 (User). uuid 가 있으면 드롭다운의 사용자 정보(/admin/users/{uuid})·프로필 설정(/admin/users/{uuid}/edit)을 <a href> 로 그려 새 탭 열기가 된다 — 보통 클릭은 종전 동작 (#757)"
           },
           "profileText": {
             "type": "string",
@@ -3445,7 +3545,7 @@
             "type": "array",
             "required": false,
             "default": "[]",
-            "description": "알림 목록 (NotificationItem[])"
+            "description": "알림 목록 (NotificationItem[]). 항목에 url 이 있으면 아이콘·본문을 <a href> 로 그려 새 탭 열기가 된다 — 보통 클릭은 종전 알림 클릭 콜백, 삭제 단추는 링크 밖, 바깥 주소는 새 탭 (#757)"
           },
           "titleText": {
             "type": "string",
@@ -3463,6 +3563,11 @@
             "type": "function",
             "required": false,
             "description": "알림 클릭 핸들러 (id: string | number) => void"
+          },
+          "onNotificationRead": {
+            "type": "function",
+            "required": false,
+            "description": "링크 알림을 브라우저가 새 탭·새 창에서 열었을 때(Ctrl·Meta·Shift·가운데 클릭, 바깥 주소) 읽음 처리만 알리는 콜백 (notification: NotificationItem) => void — 이동 콜백은 부르지 않는다. 안 읽은 알림·canUpdate 일 때만 부른다"
           },
           "className": {
             "type": "string",
@@ -3766,6 +3871,16 @@
         "description": "Tag input component with multi-select and creatable options",
         "path": "src/components/composite/TagInput.tsx",
         "props": {
+          "aria-label": {
+            "type": "string",
+            "required": false,
+            "description": "입력칸 접근 가능한 이름. 있으면 곁 라벨을 잇지 않는다"
+          },
+          "aria-labelledby": {
+            "type": "string",
+            "required": false,
+            "description": "입력칸 이름이 될 요소 id. 있으면 곁 라벨을 잇지 않는다"
+          },
           "value": {
             "type": "array",
             "required": true,
@@ -3905,6 +4020,11 @@
         "description": "탭 방식으로 여러 언어의 텍스트를 입력받는 다국어 입력 컴포넌트",
         "path": "src/components/composite/MultilingualInput.tsx",
         "props": {
+          "ariaLabel": {
+            "type": "string",
+            "required": false,
+            "description": "입력칸 접근성 이름. 켜진 언어가 둘 이상이면 각 언어 칸이 「{이름} ({언어명})」으로 읽힌다. aria-label 로 줘도 같다. 없으면 바깥 상자 곁의 라벨 글자(끝의 필수 표시 * 제외)를 이름으로 삼아 같은 형식으로 읽힌다"
+          },
           "value": {
             "type": "object",
             "required": true,
@@ -3982,6 +4102,16 @@
         "description": "다국어 태그 입력 컴포넌트. 각 태그가 다국어 값을 가지며 모달을 통해 편집합니다.",
         "path": "src/components/composite/MultilingualTagInput.tsx",
         "props": {
+          "aria-label": {
+            "type": "string",
+            "required": false,
+            "description": "입력칸 접근 가능한 이름. 없으면 곁 라벨, 그것도 없으면 placeholder 를 이름으로 쓴다"
+          },
+          "aria-labelledby": {
+            "type": "string",
+            "required": false,
+            "description": "입력칸 이름이 될 요소 id"
+          },
           "value": {
             "type": "array",
             "required": false,
@@ -4106,7 +4236,19 @@
           "onChange": {
             "type": "function",
             "required": false,
-            "description": "선택 변경 콜백 (e: { target: { value: number[] } }) => void"
+            "description": "선택 변경 콜백 (e: { target: { value: { id: number, scope_type: string | null }[] } }) => void"
+          },
+          "scopeOptions": {
+            "type": "array",
+            "required": false,
+            "default": "[]",
+            "description": "범위 드롭다운 선택지 ({ value, label }[] — 권한 API 의 scope_options). 비면 드롭다운을 그리지 않음"
+          },
+          "scopeDisabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "역할 단위로 범위 드롭다운을 숨김 — 범위를 가질 수 없는 역할(비회원, 역할 응답의 supports_permission_scope === false)"
           },
           "disabled": {
             "type": "boolean",
@@ -4695,6 +4837,16 @@
         "description": "Searchable dropdown with single/multi select",
         "path": "src/components/composite/SearchableDropdown.tsx",
         "props": {
+          "aria-label": {
+            "type": "string",
+            "required": false,
+            "description": "트리거 단추 접근성 이름. 단추는 「{이름} {현재 값}」으로 읽힌다. 없으면 곁 라벨을 잇는다"
+          },
+          "aria-labelledby": {
+            "type": "string",
+            "required": false,
+            "description": "트리거 단추 이름이 될 요소 id. 단추는 「{그 요소 글자} {현재 값}」으로 읽힌다"
+          },
           "options": {
             "type": "array",
             "required": false,
@@ -5486,6 +5638,11 @@
             "required": false,
             "default": false,
             "description": "비활성화 여부"
+          },
+          "href": {
+            "type": "string",
+            "required": false,
+            "description": "이동 주소 — 있으면 <a role=\"menuitem\" href> 로 그려 가운데 클릭·Ctrl+클릭 새 탭이 된다. 보통 클릭은 onClick(없으면 SPA 이동), 바깥 주소는 새 탭, disabled 면 href 없이 aria-disabled (#757)"
           },
           "divider": {
             "type": "boolean",

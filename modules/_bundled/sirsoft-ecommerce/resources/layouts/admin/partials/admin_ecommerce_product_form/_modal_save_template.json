@@ -157,9 +157,9 @@
                         {
                             "id": "template_set_default",
                             "type": "basic",
-                            "name": "Div",
+                            "name": "Label",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "flex-center gap-3 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -183,7 +183,7 @@
                                 },
                                 {
                                     "type": "basic",
-                                    "name": "Label",
+                                    "name": "Span",
                                     "props": {
                                         "className": "text-label cursor-pointer"
                                     },
@@ -263,7 +263,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                "className": "text-gray-600 dark:text-gray-300"
                                                             },
                                                             "text": "{{entry[0]}}: "
                                                         },
@@ -284,7 +284,7 @@
                                             "name": "P",
                                             "if": "{{Object.keys(_local.form.product_notice ?? {}).length > 6}}",
                                             "props": {
-                                                "className": "mt-2 text-gray-400 dark:text-gray-500 italic"
+                                                "className": "mt-2 text-gray-500 dark:text-gray-400 italic"
                                             },
                                             "text": "... +{{Object.keys(_local.form.product_notice ?? {}).length - 6}} $t:sirsoft-ecommerce.admin.product.modal.save_template.more_fields"
                                         }
@@ -321,7 +321,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-info-soft"
+                                        "className": "ecommerce-tone-info-soft text-xs"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.modal.save_template.info"
                                 }

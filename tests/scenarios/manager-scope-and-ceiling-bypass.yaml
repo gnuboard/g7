@@ -21,6 +21,7 @@ description: |
 test_files:
   - tests/Feature/Security/UserScopeBypassTest.php
   - tests/Feature/Security/DashboardNotificationScopeTest.php
+  - tests/Feature/Security/MenuReadScopeSidePathTest.php
   - tests/Feature/Console/PlaywrightIssueTokenScopeTest.php
   - tests/Playwright/specs/admin/manager-scope-bypass.spec.ts
 
@@ -41,6 +42,11 @@ axes:
     - dashboard_recent_notifications_super_admin
     - config_scope_integrity
     - db_scope_integrity
+    - config_guest_scope
+    # 메뉴 조회 보조 경로(계층·확장별) — 7.1.1 원장 감사로 발견
+    - hierarchy_self
+    - by_extension_self
+    - super_admin_unscoped
     # E2E — 범위(self)로 부여된 실제 세션으로 실서버 경로를 잠근다
     - e2e_token_scope_suffix
     - e2e_token_scope_suffix_invalid
@@ -68,6 +74,11 @@ effects:
   # 재발 방지 — 강제 수단 없는 스코프 부여를 드러낸다.
   - configured_scopes_are_enforced_somewhere
   - unenforced_scoped_grant_is_reported
+  # 비회원은 범위를 가질 수 없다(7.1.1) — 메타가 있어도 위반
+  - guest_config_scope_reported
+  - menu_hierarchy_follows_list_scope
+  - menus_by_extension_follow_list_scope
+  - super_admin_sees_all_menus
   # E2E — 토큰 발급 도구의 범위 접미사와 실서버 경로
   - e2e_token_grants_requested_scope
   - e2e_token_rejects_unknown_scope

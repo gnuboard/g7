@@ -441,7 +441,7 @@ class ReportTest extends ModuleTestCase
             'reporter_id' => $this->reporter->id,
         ]);
 
-        // 신고 엔드포인트는 그 게시판 글 읽기 권한을 요구한다(7.1.0 abilities 게이트 S7) — 중복 판정까지 가도록 부여한다
+        // 신고 엔드포인트는 그 게시판 글 읽기 권한을 요구한다(7.1.0 abilities 게이트) — 중복 판정까지 가도록 부여한다
         $readRole = Role::create(['identifier' => 'report_reader_'.uniqid(), 'name' => ['ko' => '글 읽기', 'en' => 'Post Reader'], 'is_active' => true]);
         $readPermission = Permission::firstOrCreate(
             ['identifier' => "sirsoft-board.{$this->board->slug}.posts.read"],

@@ -236,7 +236,9 @@
       "days_suffix": "日後に自動キャンセルされます。",
       "pending_minutes_prefix": "決済画面まで進んだものの決済が完了しなかった注文は",
       "pending_minutes_suffix": "分後に自動キャンセルされます。",
-      "pending_minutes_hint": "0 にするとこの区分は自動キャンセルしません。最大 20160 分（14日）。"
+      "pending_minutes_hint": "0 にするとこの区分は自動キャンセルしません。最大 20160 分（14日）。",
+      "days_label": "入金待ち注文の自動キャンセル日数",
+      "pending_minutes_label": "決済未完了注文の自動キャンセル時間（分）"
     },
     "cart_expiry": {
       "title": "カート有効期間",

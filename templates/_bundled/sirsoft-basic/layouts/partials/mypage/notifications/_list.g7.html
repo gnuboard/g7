@@ -10,7 +10,7 @@
         <responsive on="portable" class="flex flex-col gap-2 p-3 border-b border-gray-200 dark:border-gray-700"/>
         <!-- 좌측: 카운트 + 안 읽은 알림만 필터 -->
         <div class="flex items-center gap-4">
-          <span class="text-sm text-red-500 dark:text-red-400 font-medium">$t:mypage.notifications.unread_count|count={{notification_unread_count.data?.unread_count ?? 0}}</span>
+          <span class="text-sm text-red-600 dark:text-red-400 font-medium">$t:mypage.notifications.unread_count|count={{notification_unread_count.data?.unread_count ?? 0}}</span>
           <!-- 안 읽은 알림만 필터 토글 -->
           <label class="flex items-center gap-1.5 cursor-pointer select-none">
             <input type="checkbox" checked="{{_local.userNotificationsUnreadOnly ?? false}}" class="w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer">
@@ -44,7 +44,7 @@
             </on>
             $t:mypage.notifications.mark_all_read
           </button>
-          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{userNotifications?.data?.abilities?.can_delete !== true}}" title="{{userNotifications?.data?.abilities?.can_delete === true ? '' : '$t:mypage.notifications.no_permission'}}">
+          <button data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" class="text-sm text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{userNotifications?.data?.abilities?.can_delete !== true}}" title="{{userNotifications?.data?.abilities?.can_delete === true ? '' : '$t:mypage.notifications.no_permission'}}">
             <on type="click">
               <open-modal target="notification_delete_all_confirm_modal"/>
             </on>
@@ -55,21 +55,27 @@
       <!-- 알림 목록 -->
       <div data-if="{{userNotifications.data.data &amp;&amp; userNotifications.data.data.length > 0}}" data-each="notification in {{userNotifications.data.data ?? []}}" class="divide-y divide-gray-200 dark:divide-gray-700">
         <!-- 알림 아이템 - 반응형 -->
-        <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}">
-          <responsive on="portable" class="p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}"/>
-          <on type="click">
-            <api-call if="{{!notification.read_at &amp;&amp; userNotifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/{{notification.id}}/read" method="PATCH">
-              <success>
-                <refetch-data-source dataSourceId="notification_unread_count"/>
-                <set-state target="global" notificationCount="{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}"/>
-              </success>
-              <fail>
-                <toast type="error" message="{{error.message}}"/>
-              </fail>
-            </api-call>
-            <!-- audit:allow layout-list-context-navigate-merge-query 알림 대상으로 이동 — 목적지는 알림이 지정한 임의 화면이므로 알림 목록 클러스터 밖이다. -->
-            <navigate if="{{notification.url}}" path="{{notification.url}}"/>
-          </on>
+        <div class="relative block p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}">
+          <!-- 카드 전체가 링크다 — 안쪽 조작(작성자 메뉴·삭제 등)을 링크 밖에 두려고 빈 링크가 카드를 덮고, 그 조작은 링크 위(z-20)에 둔다.
+               이동 주소가 이 사이트 주소가 아니면(실행 주소·다른 사이트·//host) href 를 알림 목록으로 바꾼다(fallbackHref) — 바깥 주소가 href 에 남아
+               가운데 클릭·「새 탭에서 열기」로 열리던 것을 막는다. 보통 클릭도 같은 착지점으로 간다(navigate fallbackPath, 7.1.1). -->
+          <a href="{{notification.url || null}}" fallbackHref="/mypage/notifications" aria-label="{{notification.subject ?? notification.body ?? ''}}" class="absolute inset-0 z-10 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400">
+            <on type="click">
+              <api-call if="{{!notification.read_at &amp;&amp; userNotifications?.data?.abilities?.can_update === true}}" :auth_required="true" target="/api/user/notifications/{{notification.id}}/read" method="PATCH">
+                <success>
+                  <refetch-data-source dataSourceId="notification_unread_count"/>
+                  <set-state target="global" notificationCount="{{Math.max(0, (_global.notificationCount ?? 0) - 1)}}"/>
+                </success>
+                <fail>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+              <!-- audit:allow layout-list-context-navigate-merge-query 알림 대상으로 이동 — 목적지는 알림이 지정한 임의 화면이므로 알림 목록 클러스터 밖이다.
+                   주소가 안전하지 않으면(실행 주소·다른 사이트·//host) 머물지 않고 알림 목록으로 간다 — 상단·모바일 알림과 같은 착지점(7.1.1 「정해 둔 화면으로 이동」). -->
+              <navigate if="{{notification.url}}" path="{{notification.url || null}}" fallbackPath="/mypage/notifications"/>
+            </on>
+          </a>
+          <responsive on="portable" class="relative block p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer {{notification.read_at ? '' : 'bg-red-50/30 dark:bg-red-900/10'}}"/>
           <div class="flex items-start gap-3">
             <!-- 읽지 않음 표시 + 아이콘 -->
             <div class="flex items-center gap-2 flex-shrink-0">
@@ -78,8 +84,8 @@
               <!-- 타입 아이콘 -->
               <div class="w-10 h-10 rounded-full flex items-center justify-center {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/30' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/30' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/30' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-gray-100 dark:bg-gray-700'}}">
                 <responsive on="portable" class="w-9 h-9 rounded-full flex items-center justify-center {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/30' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/30' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/30' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-gray-100 dark:bg-gray-700'}}"/>
-                <icon name="{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}" class="text-xl {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}">
-                  <responsive on="portable" name="{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}" class="text-base {{notification.type === 'order' ? 'text-green-600 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-600 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"/>
+                <icon name="{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}" class="text-xl {{notification.type === 'order' ? 'text-green-700 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-700 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}">
+                  <responsive on="portable" name="{{notification.type === 'order' ? 'shopping-cart' : notification.type === 'comment' ? 'message-square' : notification.type === 'shipping' ? 'truck' : notification.type === 'promotion' ? 'gift' : 'bell'}}" class="text-base {{notification.type === 'order' ? 'text-green-700 dark:text-green-400' : notification.type === 'comment' ? 'text-blue-600 dark:text-blue-400' : notification.type === 'shipping' ? 'text-orange-700 dark:text-orange-400' : notification.type === 'promotion' ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-400'}}"/>
                 </icon>
               </div>
             </div>
@@ -90,10 +96,10 @@
                 <div class="flex items-center gap-2 min-w-0">
                   <span class="text-sm text-gray-900 dark:text-white truncate {{notification.read_at ? '' : 'font-semibold'}}">{{notification.subject ?? ''}}</span>
                   <!-- 타입 태그 — type_label은 BE의 NotificationDefinition.name(다국어)에서 해석된 값. 미정의 type은 식별자 fallback -->
-                  <span data-if="{{notification.type_label}}" class="flex-shrink-0 px-2 py-0.5 text-xs rounded {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}}">{{notification.type_label}}</span>
+                  <span data-if="{{notification.type_label}}" class="flex-shrink-0 px-2 py-0.5 text-xs rounded {{notification.type === 'order' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300' : notification.type === 'comment' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' : notification.type === 'shipping' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300' : notification.type === 'promotion' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}}">{{notification.type_label}}</span>
                 </div>
                 <!-- 삭제 버튼 -->
-                <button aria-label="$t:common.delete" title="{{userNotifications?.data?.abilities?.can_delete === true ? '$t:common.delete' : '$t:mypage.notifications.no_permission'}}" class="flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{userNotifications?.data?.abilities?.can_delete !== true}}">
+                <button aria-label="$t:common.delete" title="{{userNotifications?.data?.abilities?.can_delete === true ? '$t:common.delete' : '$t:mypage.notifications.no_permission'}}" class="relative z-20 flex-shrink-0 p-1.5 text-gray-500 dark:text-gray-500 hover:text-red-700 dark:hover:text-red-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" type="button" disabled="{{userNotifications?.data?.abilities?.can_delete !== true}}">
                   <on type="click">
                     <api-call :stopPropagation="true" :auth_required="true" target="/api/user/notifications/{{notification.id}}" method="DELETE">
                       <success>
@@ -110,17 +116,17 @@
                 </button>
               </div>
               <!-- 알림 메시지 -->
-              <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{notification.body ?? ''}}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-1 break-words">{{notification.body ?? ''}}</p>
               <!-- 날짜 -->
-              <span class="text-xs text-gray-400 dark:text-gray-500">{{notification.created_at | datetime}}</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{notification.created_at | datetime}}</span>
             </div>
           </div>
         </div>
       </div>
       <!-- 알림 없음 -->
-      <div data-if="{{!userNotifications.data.data || userNotifications.data.data.length === 0}}" class="p-12 text-center">
+      <div data-if="{{userNotifications !== undefined &amp;&amp; (!userNotifications.data.data || userNotifications.data.data.length === 0)}}" class="p-12 text-center">
         <responsive on="portable" class="p-8 text-center"/>
-        <icon name="bell-off" class="text-5xl mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+        <icon name="bell-off" class="text-5xl mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
         <p class="text-gray-500 dark:text-gray-400">$t:mypage.notifications.empty</p>
       </div>
       <!-- 페이지네이션 -->

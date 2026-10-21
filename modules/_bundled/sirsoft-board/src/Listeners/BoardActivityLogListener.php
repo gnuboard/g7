@@ -6,6 +6,8 @@ use App\ActivityLog\ChangeDetector;
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\Menu;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Models\Attachment;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\BoardType;
@@ -53,6 +55,7 @@ class BoardActivityLogListener implements HookListenerInterface
             'sirsoft-board.board.after_delete' => ['method' => 'handleBoardAfterDelete', 'priority' => 20],
             'sirsoft-board.board.after_add_to_menu' => ['method' => 'handleBoardAfterAddToMenu', 'priority' => 20],
             'sirsoft-board.board.after_remove_from_menu' => ['method' => 'handleBoardAfterRemoveFromMenu', 'priority' => 20],
+            'sirsoft-board.board.after_reorder' => ['method' => 'handleBoardAfterReorder', 'priority' => 20],
             'sirsoft-board.settings.after_bulk_apply' => ['method' => 'handleSettingsAfterBulkApply', 'priority' => 20],
             'sirsoft-board.settings.after_bulk_apply_aborted' => ['method' => 'handleSettingsAfterBulkApplyAborted', 'priority' => 20],
 
@@ -206,6 +209,24 @@ class BoardActivityLogListener implements HookListenerInterface
                 'menu_name' => $menu->name ?? '',
             ],
             'properties' => ['menu_id' => $menu->id, 'board_id' => $board->id],
+        ]);
+    }
+
+    /**
+     * 게시판 표시 순서 변경 후 로그 기록
+     *
+     * 순서는 게시판 전체에 걸친 값이라 게시판마다 남기지 않고 한 건으로 남긴다. 변경 전·후 순서는 속성에 둔다.
+     *
+     * @param  array<int, int>  $boardIds  새 순서의 게시판 id 목록
+     * @param  array<int, int>  $before  변경 전 게시판 id => 표시 순서
+     * @return void 반환값 없음
+     */
+    public function handleBoardAfterReorder(array $boardIds, array $before = []): void
+    {
+        $this->logActivity('board.reorder', [
+            'description_key' => 'sirsoft-board::activity_log.description.board_reorder',
+            'description_params' => ['count' => count($boardIds)],
+            'properties' => ['board_ids' => array_values($boardIds), 'before' => $before],
         ]);
     }
 
@@ -626,7 +647,7 @@ class BoardActivityLogListener implements HookListenerInterface
      * 신고 생성 후 로그 기록
      *
      * 사유는 케이스(`Report`)가 아니라 이번 신고자 로그(`ReportLog`)에 있다 — 케이스 모델에서
-     * `reason`·`reportable_type` 을 읽던 동안 두 값이 늘 빈 문자열로 남았다(7.1.0 실측 O-K2-6).
+     * `reason`·`reportable_type` 을 읽던 동안 두 값이 늘 빈 문자열로 남았다(7.1.0 실측).
      * 대상 유형은 케이스의 `target_type`(post|comment)이다. 속성 키 이름은 기존 행과 맞춰 둔다.
      *
      * @param  Report|null  $report  생성(또는 합류)된 신고 케이스
@@ -686,22 +707,29 @@ class BoardActivityLogListener implements HookListenerInterface
     {
         $reports = $this->reportRepository->findByIdsKeyed($ids);
 
-        foreach ($ids as $reportId) {
-            $report = $reports->get($reportId);
-            if (! $report) {
-                continue;
-            }
+        // 묶음 전체를 한 트랜잭션으로 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을 막는다 (#139)
+        try {
+            DB::transaction(function () use ($data, $ids, $reports, $snapshots) {
+                foreach ($ids as $reportId) {
+                    $report = $reports->get($reportId);
+                    if (! $report) {
+                        continue;
+                    }
 
-            $snapshot = $snapshots[$reportId] ?? null;
-            $changes = $snapshot ? ChangeDetector::detect($report, $snapshot) : null;
+                    $snapshot = $snapshots[$reportId] ?? null;
+                    $changes = $snapshot ? ChangeDetector::detect($report, $snapshot) : null;
 
-            $this->logActivity('report.bulk_update_status', [
-                'loggable' => $report,
-                'description_key' => 'sirsoft-board::activity_log.description.report_bulk_update_status',
-                'description_params' => ['count' => 1],
-                'properties' => ['report_id' => $reportId, 'data' => $data],
-                'changes' => $changes,
-            ]);
+                    $this->logActivity('report.bulk_update_status', [
+                        'loggable' => $report,
+                        'description_key' => 'sirsoft-board::activity_log.description.report_bulk_update_status',
+                        'description_params' => ['count' => 1],
+                        'properties' => ['report_id' => $reportId, 'data' => $data],
+                        'changes' => $changes,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('활동 로그 일괄 기록 실패 — 묶음 전체를 되돌렸습니다', ['handler' => __METHOD__, 'error' => $e->getMessage()]);
         }
     }
 

@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
+use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
@@ -220,8 +221,7 @@ class ClaimAdminListResource extends ClaimResource
     protected function localizeName(mixed $value): ?string
     {
         if (is_array($value)) {
-            $locale = app()->getLocale();
-            $value = $value[$locale] ?? $value[config('app.fallback_locale', 'ko')] ?? (reset($value) ?: null);
+            $value = LocalizedValue::pick($value);
         }
 
         return $value === null ? null : (string) $value;

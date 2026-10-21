@@ -35,8 +35,8 @@
 |---|---|---|---|---|
 | `core.layout_extension.after_apply` | filter | `AdjustEcommercePaymentMethodsLayoutListener` | `adjustPaymentMethodsLayout` | 30 |
 | `core.layout_extension.after_apply` | filter | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | `ensurePaymentQueryLayout` | 66 |
+| `core.permission.scope_enforcement_ledger` | filter | `OrderScopeLedgerListener` | `addLedgerEntries` | 20 |
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateRedirectUrlSettingsListener` | `rules` | 10 |
-| `core.plugins.after_update` | action | `RestoreLayoutExtensionsAfterUpdateListener` | `restoreCurrentExtensionsAfterUpdate` | 20 |
 | `sirsoft-ecommerce.claim_payment.approve` | filter | `ClaimPaymentApproveListener` | `processApprove` | 10 |
 | `sirsoft-ecommerce.claim_payment.refund` | filter | `ClaimPaymentRefundListener` | `processRefund` | 10 |
 | `sirsoft-ecommerce.claim_payment.void_approval` | filter | `ClaimPaymentApproveListener` | `voidApproval` | 10 |
@@ -125,23 +125,21 @@ PG 를 모르므로 간편결제(PAYCO·네이버페이 등)로 결제한 주문
 | `ClaimPaymentApproveListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentApproveListener.php` |
 | `ClaimPaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentRefundListener.php` |
 | `EnsureAdminOrderDetailPaymentQueryLayoutListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EnsureAdminOrderDetailPaymentQueryLayoutListener.php` |
+| `OrderScopeLedgerListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/OrderScopeLedgerListener.php` |
 | `PaymentRefundListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/PaymentRefundListener.php` |
 | `ProvideNecessaryStorageKeysListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvideNecessaryStorageKeysListener.php` |
 | `ProvidePaymentMethodDisplayLabelListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvidePaymentMethodDisplayLabelListener.php` |
 | `RegisterEasyPayMethodsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RegisterEasyPayMethodsListener.php` |
 | `RegisterPgProviderListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/RegisterPgProviderListener.php` |
-| `RestoreLayoutExtensionsAfterUpdateListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/RestoreLayoutExtensionsAfterUpdateListener.php` |
 | `ValidateRedirectUrlSettingsListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ValidateRedirectUrlSettingsListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-`RestoreLayoutExtensionsAfterUpdateListener`가 존재하는 이유는 `plugin:update`가 레이아웃
-확장 조각(§레이아웃 확장)의 활성/비활성 상태를 초기화할 수 있어서입니다 — 운영자가 특정
-화면(예: 주문 목록 테스트 결제 배지)을 꺼둔 상태로 플러그인을 업데이트해도 그 선택이 사라지지 않도록
-업데이트 직후 복원합니다. 대상 화면에 덧붙이는 조각(overlay)뿐 아니라 확장점에 붙는 조각도 되살리며,
-확장점 조각은 그 확장점을 가진 레이아웃이 있는 템플릿에만 등록합니다. 리스너 전부가
-`HookListenerInterface`를 구현하는 것은 auto-discovery 대상이라는 뜻이 아니라 이 저장소의 전 리스너
-공통 계약입니다.
+업데이트 뒤 레이아웃 확장 조각(§레이아웃 확장) 재등록은 코어 업데이트 절차가 맡습니다 — 대상 화면에
+덧붙이는 조각(overlay)과 확장점에 붙는 조각(주문 목록 테스트 결제 배지) 모두 켜진 템플릿 가운데 붙을
+자리가 있는 곳에만 다시 등록하고, 플러그인이 꺼진 채 업데이트되면 켤 때 등록합니다. 그래서 이 플러그인은
+업데이트 완료 훅을 구독하지 않습니다. 리스너 전부가 `HookListenerInterface`를 구현하는 것은
+auto-discovery 대상이라는 뜻이 아니라 이 저장소의 전 리스너 공통 계약입니다.
 <!-- @intent END -->
 
 ## 레이아웃 확장
@@ -163,11 +161,10 @@ PG 를 모르므로 간편결제(PAYCO·네이버페이 등)로 결제한 주문
 필요로 하는 화면이 이 5개 중 하나에 해당하면 새 조각을 만들지 말고 기존 조각을 확장합니다.
 
 조각의 **고유 키는 파일 이름**입니다(`fragment_key` — 확장자를 뗀 기본 이름). 같은 확장이 같은 대상
-화면에 조각을 둘 보낼 수 있어 DB 행이 대상만으로 갈리지 않기 때문입니다. 설치 경로와
-`RestoreLayoutExtensionsAfterUpdateListener` 가 **같은 키**를 써야 하므로, 리스너는
-`LayoutFragmentSourceHelper::readDirectoryKeyed()` 로 파일에서 키를 얻어 그대로 넘깁니다. 키 없이
-등록하면 대상 화면 이름이 키가 되어 두 경로가 갈리고, 그 뒤로는 같은 대상에 행이 둘 생겨 복원이
-어느 행인지 가리지 못한 채 조용히 멈춥니다.
+화면에 조각을 둘 보낼 수 있어 DB 행이 대상만으로 갈리지 않기 때문입니다. 설치·활성화·업데이트 뒤
+재등록은 모두 코어가 같은 키로 하므로 이 플러그인은 조각을 따로 등록하지 않습니다 — 업데이트 뒤
+조각 재등록을 맡던 플러그인 자체 리스너는 꺼진 템플릿에까지 행을 만들어 지웠고, 코어 업데이트 절차가
+켜진 템플릿 가운데 붙을 자리가 있는 곳에만 다시 등록합니다.
 `user_order_show.g7.html` 은 대상 레이아웃 이름이 아니라 **공용 확장 슬롯**
 (`mypage_order_payment_provider_slot`)을 겨냥합니다. 이 슬롯이 사는 결제 정보 카드
 (`partials/mypage/orders/_payment`)는 주문 상세 말고도 클레임 신청서 상세가 그대로 재사용하기

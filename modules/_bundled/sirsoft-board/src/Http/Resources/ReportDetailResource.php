@@ -216,14 +216,19 @@ class ReportDetailResource extends BaseApiResource
     private function buildAuthorInfo(?array $reportable, string $snapshotName): array
     {
         $authorId = $reportable['author_id'] ?? null;
+        $name = ($reportable['author_name'] ?? '') ?: ($snapshotName ?: null);
+
+        // 계정이 남지 않은 회원(하드 삭제)은 케이스 author_id 가 비워져도 비회원이 아니다 —
+        // 비회원 배지·「비회원」 이름 대신 이름(없으면 null → 화면이 「알 수 없음」)만 싣는다
+        $isMember = $authorId !== null || ! empty($reportable['author_is_member']);
 
         return [
             'uuid' => $reportable['author_uuid'] ?? null,
-            'name' => $reportable['author_name'] ?? $snapshotName ?: __('sirsoft-board::messages.common.guest'),
+            'name' => $isMember ? $name : ($name ?? __('sirsoft-board::messages.common.guest')),
             'email' => $this->canExposeMemberEmail(null, $authorId !== null ? (int) $authorId : null)
                 ? ($reportable['author_email'] ?? null)
                 : null,
-            'is_guest' => $authorId === null,
+            'is_guest' => ! $isMember,
         ];
     }
 

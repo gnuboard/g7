@@ -5,13 +5,14 @@
   알림 줄만 남는데, 그 줄을 감추면 정리할 대상을 찾지 못하므로 「삭제된 회원」으로 그려 둔다.
   줄을 펼치면 본문 발췌와 연결 주소가 나온다(전문은 목록에 싣지 않는다 — 알림 수만큼 무거워진다). -->
 <partial description="Member Notification List DataGrid">
-  <data-grid data-type="composite" data-ref="member_notification_datagrid" data="{{memberNotifications?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{memberNotifications?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{memberNotifications?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{memberNotifications?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{memberNotifications?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_member_notifications || []}}" selectedCountText="" loading="{{memberNotifications?.loading}}" :expandable="true" emptyMessage="$t:admin.member_notification.empty_message" actionsColumnHeader="$t:common.actions">
+  <data-grid data-type="composite" data-ref="member_notification_datagrid" rowLabelField="subject" data="{{memberNotifications?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/member-notifications?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{memberNotifications?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{memberNotifications?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{memberNotifications?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{memberNotifications?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_member_notifications || []}}" selectedCountText="" :expandable="true" emptyMessage="{{memberNotifications === undefined ? '' : $t('admin.member_notification.empty_message')}}" actionsColumnHeader="$t:common.actions">
+    <blur-until-loaded sources="memberNotifications"/>
     <expand>
       <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-3">
         <div>
           <span class="form-label">$t:admin.member_notification.detail.body_label</span>
           <p data-if="{{row.body_excerpt}}" class="text-body whitespace-pre-line">{{row.body_excerpt}}</p>
-          <span data-if="{{!row.body_excerpt}}" class="text-sm text-gray-400 dark:text-gray-500 italic">$t:admin.member_notification.detail.no_body</span>
+          <span data-if="{{!row.body_excerpt}}" class="text-sm text-gray-500 dark:text-gray-400 italic">$t:admin.member_notification.detail.no_body</span>
         </div>
         <div class="flex-center gap-2">
           <span class="text-body font-medium shrink-0">$t:admin.member_notification.detail.type_label</span>
@@ -36,15 +37,12 @@
         <span data-if="{{!row.member}}" class="text-label-subtle italic">$t:admin.member_notification.deleted_member</span>
         <action-menu data-type="composite" data-if="{{!!row.member}}" position="right">
           <prop name="items">
-            <item id="view_member" label="$t:admin.member_notification.action.view_member" iconName="user"/>
+            <item id="view_member" label="$t:admin.member_notification.action.view_member" iconName="user" href="/admin/users/{{row.member.uuid}}" target="_blank"/>
             <item id="filter_by_member" label="$t:admin.member_notification.action.filter_by_member" iconName="search"/>
           </prop>
           <on event="onItemClick">
             <!-- 회원 상세는 새 창이라 보던 목록을 잃지 않는다. 「이 회원만」은 이름이 아니라 uuid 로 좁힌다 — 개명·동명이인에 흔들리지 않는다. -->
             <switch>
-              <case when="view_member">
-                <open-window path="/admin/users/{{row.member.uuid}}"/>
-              </case>
               <case when="filter_by_member">
                 <navigate path="/admin/member-notifications" :mergeQuery="true" :replace="true" transition_overlay_target="member_notification_datagrid__body">
                   <query user_uuid="{{row.member.uuid}}" :page="1"/>
@@ -53,7 +51,7 @@
             </switch>
           </on>
           <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
-            <icon name="fa-regular fa-user" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+            <icon name="fa-regular fa-user" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
             <div class="min-w-0 flex-1">
               <span class="font-medium text-gray-900 dark:text-gray-100 truncate block text-sm">{{row.member.name}}</span>
               <span data-if="{{!!row.member.email}}" class="text-tertiary truncate block">({{row.member.email}})</span>

@@ -39,7 +39,7 @@ class GuestRoleResolver
             return $request->attributes->get(self::CACHE_KEY);
         }
 
-        $role = Role::where('identifier', 'guest')
+        $role = Role::where('identifier', Role::GUEST_IDENTIFIER)
             ->with('permissions')
             ->first();
 
@@ -50,6 +50,10 @@ class GuestRoleResolver
 
     /**
      * guest 역할이 특정 권한을 보유하는지 판정합니다.
+     *
+     * 비회원은 권한 범위(본인·소유역할)를 가질 수 없다(7.1.1) — 보유 여부만 판정하고 범위는 보지 않는다.
+     * 비회원 역할에 범위를 저장하는 경로는 역할 수정 요청(422)·RoleService·확장 동기화가 막고,
+     * 업그레이드가 남아 있던 부여를 회수한다.
      *
      * 적재해 둔 권한 컬렉션에서 판정하므로 판정마다 쿼리가 나가지 않습니다.
      *

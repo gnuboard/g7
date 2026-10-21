@@ -10,6 +10,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\AdminCartBulkDeleteRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\AdminCartListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Resources\AdminCartCollection;
 use Modules\Sirsoft\Ecommerce\Services\CartService;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 관리자 장바구니 관리 컨트롤러
@@ -60,7 +61,13 @@ class AdminCartController extends AdminBaseController
      */
     public function destroy(int $id): JsonResponse
     {
-        if (! $this->cartService->deleteByAdmin($id)) {
+        try {
+            $deleted = $this->cartService->deleteByAdmin($id);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        }
+
+        if (! $deleted) {
             return ResponseHelper::notFound('common.not_found');
         }
 
@@ -76,7 +83,11 @@ class AdminCartController extends AdminBaseController
     public function bulkDestroy(AdminCartBulkDeleteRequest $request): JsonResponse
     {
         $ids = array_map('intval', $request->validated()['ids']);
-        $count = $this->cartService->bulkDeleteByAdmin($ids);
+        try {
+            $count = $this->cartService->bulkDeleteByAdmin($ids);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        }
 
         return ResponseHelper::moduleSuccess(
             'sirsoft-ecommerce',

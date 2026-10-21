@@ -208,7 +208,7 @@ describe('mypage/mileage _list partial', () => {
     // 다른 필터 버튼(earn/use/expire/adjust)처럼 non-empty key 로 맞춰야 active 스타일이 적용된다.
     const allButton = collectNodes(
       listPartial,
-      (n) => n.name === 'Button' && n.text === '$t:mypage.mileage.filter.all'
+      (n) => n.name === 'A' && n.text === '$t:mypage.mileage.filter.all'
     )[0];
     expect(allButton, '"전체" 버튼이 존재해야 함').toBeDefined();
     // key 는 카테고리 미선택 시 'all' 로 평가되어야 한다 (빈 문자열 falsy 회피).
@@ -227,7 +227,7 @@ describe('mypage/mileage _list partial', () => {
   it('각 필터 버튼이 navigate 로 query.category 를 전달한다', () => {
     const buttons = collectNodes(
       listPartial,
-      (n) => n.name === 'Button' && Array.isArray(n.actions)
+      (n) => n.name === 'A' && Array.isArray(n.actions)
     );
     const navTargets = buttons
       .flatMap((b: any) => b.actions)
@@ -239,6 +239,10 @@ describe('mypage/mileage _list partial', () => {
     for (const nav of navTargets) {
       expect(nav.params.path).toBe('/mypage/mileage');
       expect(nav.params.query).toHaveProperty('category');
+    }
+    // 필터 칩은 새 탭으로도 같은 분류를 열 수 있는 링크다
+    for (const b of buttons as any[]) {
+      expect(String(b.props?.href ?? '')).toMatch(/^\/mypage\/mileage\?category=/);
     }
   });
 
@@ -326,7 +330,8 @@ describe('mypage/mileage _list partial', () => {
   it('비활성화 안내 블록이 enabled=false 조건으로 노출된다', () => {
     const notice = collectNodes(
       listPartial,
-      (n) => n.if === '{{!mileage_balance?.data?.mileage?.enabled}}'
+      // 받는 동안(값 undefined)에는 꺼짐 안내를 보이지 않는다 — list-loading-empty-state.test.tsx
+      (n) => n.if === '{{mileage_balance !== undefined && !mileage_balance?.data?.mileage?.enabled}}'
     );
     expect(notice.length).toBeGreaterThanOrEqual(1);
     expect(serialize(notice)).toContain('$t:mypage.mileage.disabled_notice');

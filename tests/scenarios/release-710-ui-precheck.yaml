@@ -18,7 +18,7 @@ description: |
       떴다 → 배지 둘을 한 묶음으로
     - count_badge_triple_digit_overflow: 20px 원에 12px `99+`(실제 폭 23.28px)가 넘쳤다 → 관리자 알림 배지는
       100 이상일 때 9px. 사용자 머리글(sirsoft-basic 알림·장바구니)은 최소 폭 + 좌우 여백으로 늘어나는
-      방식이며 count-badge-and-board-card-i18n.yaml 이 잠근다(develop-7.1.0 리베이스 PO 결정 2026-10-09)
+      방식이며 count-badge-and-board-card-i18n.yaml 이 잠근다(develop-7.1.0 리베이스 때 2026-10-09 결정)
 
 axes:
   defect:

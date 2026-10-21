@@ -17,7 +17,7 @@ class CoreAdminMenuSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('코어 관리자 메뉴 생성을 시작합니다.');
+        $this->command->info(__('common.console.seeders.core_admin_menu.start'));
 
         // 기존 데이터 삭제
         $this->deleteExistingCoreMenus();
@@ -28,7 +28,7 @@ class CoreAdminMenuSeeder extends Seeder
         // 새 데이터 생성
         $this->createCoreMenus($admin);
 
-        $this->command->info('코어 관리자 메뉴가 성공적으로 생성되었습니다.');
+        $this->command->info(__('common.console.seeders.core_admin_menu.done'));
     }
 
     /**
@@ -39,7 +39,7 @@ class CoreAdminMenuSeeder extends Seeder
         $deletedCount = Menu::where('extension_type', ExtensionOwnerType::Core)->delete();
 
         if ($deletedCount > 0) {
-            $this->command->info("기존 코어 메뉴 {$deletedCount}개가 삭제되었습니다.");
+            $this->command->info(__('common.console.seeders.core_admin_menu.deleted', ['count' => $deletedCount]));
         }
     }
 
@@ -109,7 +109,7 @@ class CoreAdminMenuSeeder extends Seeder
         $adminRole = Role::where('identifier', 'admin')->first();
 
         if (! $adminRole) {
-            $this->command->warn('관리자 역할(admin)을 찾을 수 없어 메뉴 권한 부여를 건너뜁니다.');
+            $this->command->warn(__('common.console.seeders.core_admin_menu.admin_role_missing'));
 
             return;
         }
@@ -120,7 +120,7 @@ class CoreAdminMenuSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('관리자 역할에 '.count($menus).'개의 코어 메뉴 권한을 부여했습니다.');
+        $this->command->info(__('common.console.seeders.core_admin_menu.admin_menus_granted', ['count' => count($menus)]));
     }
 
     /**
@@ -133,7 +133,7 @@ class CoreAdminMenuSeeder extends Seeder
         $managerRole = Role::where('identifier', 'manager')->first();
 
         if (! $managerRole) {
-            $this->command->warn('매니저 역할(manager)을 찾을 수 없어 대시보드 메뉴 권한 부여를 건너뜁니다.');
+            $this->command->warn(__('common.console.seeders.core_admin_menu.manager_role_missing'));
 
             return;
         }
@@ -141,7 +141,7 @@ class CoreAdminMenuSeeder extends Seeder
         $dashboardMenu = collect($menus)->first(fn (Menu $menu) => $menu->slug === 'admin-dashboard');
 
         if (! $dashboardMenu) {
-            $this->command->warn('대시보드 메뉴(admin-dashboard)를 찾을 수 없어 매니저 메뉴 권한 부여를 건너뜁니다.');
+            $this->command->warn(__('common.console.seeders.core_admin_menu.dashboard_menu_missing'));
 
             return;
         }
@@ -150,6 +150,6 @@ class CoreAdminMenuSeeder extends Seeder
             'permission_type' => MenuPermissionType::Read->value,
         ]);
 
-        $this->command->info('매니저 역할에 대시보드 메뉴 권한을 부여했습니다.');
+        $this->command->info(__('common.console.seeders.core_admin_menu.manager_dashboard_granted'));
     }
 }

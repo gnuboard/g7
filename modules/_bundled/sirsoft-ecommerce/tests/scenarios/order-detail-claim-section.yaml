@@ -56,7 +56,7 @@ effects:
   - claim_page_keeps_scroll_and_focus_without_order_refetch
   - claim_buttons_follow_paid_order_policy_and_use_action_colors
   - claim_async_buttons_show_spinner_and_block_duplicate_requests
-  # 같은 화면에 같은 잠금을 쓰는 버튼이 여럿이면 스피너는 누른 버튼에만 — 운송장 묶음마다 선 [도착 처리], 선택 바 [송장만 저장]/[일괄 적용] (2026-09-26 PO 지적).
+  # 같은 화면에 같은 잠금을 쓰는 버튼이 여럿이면 스피너는 누른 버튼에만 — 운송장 묶음마다 선 [도착 처리], 선택 바 [송장만 저장]/[일괄 적용] (2026-09-26 지적).
   - claim_deliver_spinner_only_on_pressed_waybill
   - claim_item_bar_spinner_only_on_pressed_button
   # 기본 서브탭 (⑥) — 주소에 유형이 없으면 서버가 접수 건이 있는 첫 유형(교환 → 반품 → 취소 → 환불)을 고르고

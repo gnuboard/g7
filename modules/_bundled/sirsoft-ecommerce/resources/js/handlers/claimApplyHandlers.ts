@@ -227,6 +227,65 @@ export function isClaimEditRoute(): boolean {
 }
 
 /**
+ * 지금 화면의 경로 세대 표식입니다 — 비동기 응답이 왔을 때 아직 같은 화면인지 가르는 데 씁니다.
+ */
+export interface RouteGenerationToken {
+    /** 경로+쿼리 — SPA 이동이면 바뀐다 */
+    href: string;
+    /** 엔진 경로 세대(`G7Core.navigation.getRouteGeneration()`) — 그 API 를 내지 않는 엔진이면 null */
+    generation: number | null;
+}
+
+/**
+ * 엔진이 공개하는 경로 세대를 읽습니다 — API 가 없거나 수가 아니면 null.
+ *
+ * @returns 경로 세대 또는 null
+ */
+function readEngineRouteGeneration(): number | null {
+    const fn = typeof window !== 'undefined' ? (window as any).G7Core?.navigation?.getRouteGeneration : undefined;
+    if (typeof fn !== 'function') return null;
+    const generation = fn();
+
+    return typeof generation === 'number' && Number.isFinite(generation) ? generation : null;
+}
+
+/**
+ * 지금 화면의 경로 세대를 잡습니다. (7.1.1 출시 전 확장 보완)
+ *
+ * 엔진 showErrorPage 는 부른 시점의 경로 세대를 출처로 삼는다. 자기 API 를 기다린 **뒤** 오류 화면을 부르는 핸들러는
+ * 그사이 사용자가 SPA 로 옮긴 「다음 화면」의 세대로 부르게 되어, 엔진이 막지 못하고 새 화면을 404 로 덮는다.
+ * 그래서 핸들러가 시작할 때 세대를 잡아 두고 응답 뒤에 {@link isSameRouteGeneration} 으로 확인한다.
+ * 확장은 `window.__templateApp` 같은 코어 내부를 읽지 않는다 — 엔진 공개 API `G7Core.navigation.getRouteGeneration()`
+ * 이 있으면 그 세대를, 없는 엔진에서는 경로+쿼리만 쓴다. 부른 **뒤**의 이동은 엔진 showErrorPage 가 자기 세대 확인으로 막는다.
+ *
+ * @returns 경로 세대 표식
+ */
+export function captureRouteGeneration(): RouteGenerationToken {
+    const href = typeof window !== 'undefined' && window.location
+        ? String(window.location.pathname ?? '') + String(window.location.search ?? '')
+        : '';
+
+    return { href, generation: readEngineRouteGeneration() };
+}
+
+/**
+ * 잡아 둔 경로 세대가 아직 지금 화면인지 봅니다.
+ *
+ * 경로+쿼리가 같아야 하고, 엔진 세대를 양쪽 다 읽었으면 세대도 같아야 한다 — 나갔다가 같은 주소로 돌아온 경우
+ * (경로+쿼리만으로는 같은 화면으로 보인다)도 다른 화면으로 가른다.
+ *
+ * @param token {@link captureRouteGeneration} 이 돌려준 표식
+ * @returns 같은 화면이면 true
+ */
+export function isSameRouteGeneration(token: RouteGenerationToken): boolean {
+    const now = captureRouteGeneration();
+    if (token.href !== now.href) return false;
+    if (token.generation === null || now.generation === null) return true;
+
+    return token.generation === now.generation;
+}
+
+/**
  * 수정 대상 클레임 번호를 주소에서 읽습니다.
  *
  * 유형별 접두사(EX/RT/RF/CN)로 판정하지 않는다 — 운영자가 채번 설정에서 접두사를 바꿀 수
@@ -250,13 +309,16 @@ export function resolveClaimEditNumber(): string {
 /**
  * 작성 셸의 주문 데이터소스가 404 로 끝났을 때의 처분을 정합니다.
  *
+ * @deprecated sirsoft-ecommerce 1.3.1 — 번들 레이아웃은 errorHandling 안 <conditions>(route.claim_number) 로 대체.
+ * 운영자가 저장한 레이아웃 호환을 위해 등록만 유지
+ *
  * 작성 진입은 주소가 주문번호를 품으므로 404 는 곧 "열 수 없는 주문" 이고 오류 화면을
  * 세워야 한다. 수정 진입은 주소에 주문번호가 없어 **첫 호출이 반드시 404** 다 — 주문번호는
  * 신청서 응답이 알려 주고 그 뒤 체인이 올바른 번호로 다시 부른다. 그 정상 경로에서 오류
  * 화면을 세우면 수정 화면이 열리지 않는다.
  *
- * 두 경우를 데이터소스의 `errorHandling` 만으로는 가를 수 없다 — 그 자리는 조건 분기를
- * 받지 않는다(핸들러의 `conditions` 배열이 전달되지 않는다). 그래서 판정을 여기서 한다.
+ * 코어 engine-v1.80.0 부터 데이터소스 오류 처리 안의 conditions 가 실행되고 그 문맥에서 route 를 읽을 수
+ * 있어, 같은 판정을 레이아웃이 `<when if="{{!!route.claim_number}}">` 로 직접 한다.
  *
  * @example
  * { "handler": "sirsoft-ecommerce.claimApplyOrderMissing" }
@@ -273,10 +335,16 @@ export async function claimApplyOrderMissingHandler(
 
     if (isClaimEditRoute()) return;
 
-    await G7Core.dispatch({
-        handler: 'showErrorPage',
-        params: { errorCode: 404, target: 'content' },
-    });
+
+    // 데이터소스 오류 처리 문맥은 그 fetch 를 시작한 경로 세대(`data.__routeGeneration`)를 싣는다(engine). 새로 dispatch 하면
+    // 그 출처가 떨어져 호출 시점 세대로 판정되므로, 받은 문맥을 그대로 넘겨 엔진이 「이동 뒤 늦게 끝난 fetch」를 거르게 한다.
+    const errorPage = { handler: 'showErrorPage', params: { errorCode: 404, target: 'content' } };
+
+    if ((_context as any)?.data) {
+        await G7Core.dispatch(errorPage, { componentContext: _context });
+    } else {
+        await G7Core.dispatch(errorPage);
+    }
 }
 
 /**
@@ -353,11 +421,18 @@ export async function initClaimEditHandler(
         claimIsGuest: isGuest,
     });
 
+    // 응답을 기다리는 사이 사용자가 다른 화면으로 옮길 수 있다 — 그때는 이 응답으로 아무것도 하지 않는다(확장 보완).
+    // 엔진 showErrorPage 는 부른 시점의 세대를 출처로 보므로 여기서 늦게 부르면 새 화면을 404 로 덮는다. 상태 쓰기·주문
+    // 재조회·안내 토스트·이동도 지난 화면의 것이라 새 화면에 닿으면 안 된다.
+    const routeToken = captureRouteGeneration();
+
     try {
         const response = await G7Core.api.get(
             base + '/' + encodeURIComponent(claimNumber),
             claimRequestConfig(isGuest)
         );
+
+        if (!isSameRouteGeneration(routeToken)) return;
 
         const claim = response?.data?.claim ?? null;
 
@@ -389,7 +464,7 @@ export async function initClaimEditHandler(
             claimEditSnapshot: claim,
             claimEditLoading: false,
             // 주문번호는 order 데이터소스의 주소 재료다. 이 값이 서기 전의 첫 호출은
-            // 404 로 끝나고(claimApplyOrderMissing 이 그 404 를 정상 경로로 판정한다),
+            // 404 로 끝나고(셸의 errorHandling 이 route.claim_number 로 그 404 를 정상 경로로 판정한다),
             // 여기서 값을 세운 뒤의 refetch 가 실제 주문을 읽는다.
             claimEditOrderNumber: claim.order_number ?? null,
             // 접수 때 고른 환불 우선순위를 되살린다 (S1-D13).
@@ -409,13 +484,24 @@ export async function initClaimEditHandler(
     } catch (error: any) {
         logger.error('[initClaimEdit] 실패:', error);
 
+        if (!isSameRouteGeneration(routeToken)) return;
+
         G7Core.state.setLocal({ claimEditLoading: false });
 
         // 열 수 없는 신청서(없음·남의 것·토큰 만료)는 오류 화면으로 끝낸다 — 빈 수정
         // 폼을 세우면 구매자가 채워 넣은 뒤 저장에서야 거절된다.
-        await G7Core.dispatch?.({
+        //
+        // 오류 화면 요청은 **기다리지 않는다**. 이 핸들러는 init_actions 에서 돌고, 엔진은 init_actions 가
+        // 끝나야 렌더한다. showErrorPage 는 오류 화면을 꽂을 본문 칸(#main_content)이 생길 때까지 기다리는데
+        // 그 칸은 렌더가 끝나야 생기므로, 여기서 기다리면 서로를 기다려 회원 화면은 「로딩 중...」, 비회원
+        // 화면은 빈 화면으로 멈춘다(7.1.1 출시 전 실측). blocking 데이터소스 오류 처리와 같은 방식이다.
+        const pending = G7Core.dispatch?.({
             handler: 'showErrorPage',
             params: { errorCode: Number(error?.response?.status ?? error?.status ?? 404), target: 'content' },
+        });
+
+        Promise.resolve(pending).catch((dispatchError: unknown) => {
+            logger.error('[initClaimEdit] 오류 화면 표시 실패:', dispatchError);
         });
     }
 }
@@ -1705,8 +1791,12 @@ export function applyClaimChangeProductHandler(
         return;
     }
 
-    const additionalSelections = local.changeProductAdditionalSelections ?? {};
-    const additionalTexts = local.changeProductAdditionalTexts ?? {};
+    // 창은 비운 그룹을 키째 빼지 않고 null 로 쓴다 — 기본(deep) 병합은 뺀 키를 남기기 때문이다(7.1.1).
+    // 그래서 여기서 null·빈 값을 걸러, 비운 선택이 custom_options·이름 줄에 실리지 않게 한다.
+    const dropEmpty = (o: Record<string, any> | null | undefined): Record<string, any> =>
+        Object.fromEntries(Object.entries(o ?? {}).filter(([, v]) => v !== null && v !== undefined && v !== ''));
+    const additionalSelections = dropEmpty(local.changeProductAdditionalSelections);
+    const additionalTexts = dropEmpty(local.changeProductAdditionalTexts);
     const customOptions = Object.keys(additionalSelections).length > 0 || Object.keys(additionalTexts).length > 0
         ? { selections: additionalSelections, custom_texts: additionalTexts }
         : null;

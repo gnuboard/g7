@@ -6,7 +6,7 @@
   <div data-ref="filter_section" class="admin-card">
     <div data-ref="search_row" class="mb-4">
       <div class="flex-center gap-2">
-        <select name="searchType" class="w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500" value="{{_local.filter.searchType || 'all'}}">
+        <select name="searchType" aria-label="$t:common.search_field" class="w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500" value="{{_local.filter.searchType || 'all'}}">
           <options>
             <option value="all">$t:admin.activity_log.filter.search_type_all</option>
             <option value="action">$t:admin.activity_log.filter.search_type_action</option>
@@ -19,7 +19,7 @@
           </on>
         </select>
         <div class="relative flex-1">
-          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"/>
+          <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"/>
           <input name="search" type="text" placeholder="$t:admin.activity_log.filter.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
             <on type="change">
               <!-- 타이핑은 담아만 둔다. 실제 조회는 Enter 또는 아래 검색 버튼이 한다. -->
@@ -79,7 +79,7 @@
       <div data-ref="actor_filter" class="filter-row">
         <span class="filter-label w-32">$t:admin.activity_log.filter.actor_label</span>
         <div class="flex-center gap-2">
-          <searchable-dropdown data-type="composite" options="{{_local.actorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:admin.activity_log.filter.actor_select" searchPlaceholder="$t:admin.activity_log.filter.actor_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:admin.activity_log.filter.actor_search_initial" class="w-64">
+          <searchable-dropdown data-type="composite" aria-label="$t:admin.activity_log.filter.actor_label" options="{{_local.actorSearchResults ?? []}}" value="{{_local.filter.createdBy || ''}}" triggerLabel="$t:admin.activity_log.filter.actor_select" searchPlaceholder="$t:admin.activity_log.filter.actor_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:admin.activity_log.filter.actor_search_initial" class="w-64">
             <on event="onSearch">
               <!-- 행위자는 목록이 아니라 **검색해서 고른다** — 회원 수가 많아 전건을 미리 받아 둘 수 없다.
                 타이핑이 멎기를 잠깐 기다렸다 찾고, 받은 회원을 드롭다운이 읽는 모양(값·이름·부가설명)으로
@@ -99,7 +99,7 @@
               <set-state target="local" filter.createdBy="{{$args[0]}}"/>
             </on>
           </searchable-dropdown>
-          <button data-if="{{!!_local.filter.createdBy}}" type="button" aria-label="$t:common.clear_selection" title="$t:common.clear_selection" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          <button data-if="{{!!_local.filter.createdBy}}" type="button" aria-label="$t:common.clear_selection" title="$t:common.clear_selection" class="text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
             <on type="click">
               <!-- 고른 사람을 물릴 때 검색 결과까지 비운다 — 남겨 두면 지운 이름이 드롭다운에 계속 떠 있다. -->
               <set-state target="local" filter.createdBy="" :actorSearchResults="[]"/>
@@ -117,7 +117,7 @@
               <set-state target="local" filter.dateFrom="{{$event.target.value}}" filter.dateQuick=""/>
             </on>
           </input>
-          <span class="text-gray-400 dark:text-gray-500">~</span>
+          <span class="text-gray-500 dark:text-gray-400">~</span>
           <input name="dateTo" type="datetime-local" aria-label="$t:common.range_end|label={{$t('admin.activity_log.filter.date_range_label')}}" step="1" class="input w-56" value="{{_local.filter.dateTo || ''}}">
             <on type="change">
               <!-- 끝 시각도 마찬가지다. 초 단위까지 받으므로 같은 날 안에서 시간대를 좁혀 볼 수 있다. -->

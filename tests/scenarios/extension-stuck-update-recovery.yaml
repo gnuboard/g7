@@ -1,0 +1,53 @@
+feature: 업데이트 도중 멈춘 확장(updating 고착)의 정리와 목록 중복 방지 (7.1.1 출시 전)
+
+description: |
+  번들 업데이트 자식 프로세스가 도중에 죽으면 확장 행이 `updating` 으로 남는다. 상태 가드(`ExtensionStatusGuard`)가 시간 조건 없이
+  막아 `module:update --force`·`module:activate` 가 모두 「진행 중인 작업(updating)」 으로 거절됐고(사이트 503, DB 직접 수정 필요),
+  「설치됨」 캐시 목록은 active·inactive 만 세어 관리자 목록에 「업데이트 중」 카드와 「미설치 · 설치」 카드가 함께 보였다.
+
+  - 목록: 세 Manager 의 `getUninstalled*` 가 상태와 무관하게 행이 있는 확장을 미설치에서 뺀다(`CachesModuleStatus` 등의 `getRecorded*Identifiers`).
+  - 정리 판정(`App\Extension\Helpers\StuckUpdateRecovery::recover`): `updating` 이고 `updated_at` 이 업데이트 잠금 유지 시간(600초)보다
+    오래됐고 업데이트 잠금이 비어 있으면(또는 호출자가 이미 잡았으면) `inactive` 로 되돌리고 경고 로그·명령 출력용 기록을 남긴다.
+    직전 상태를 남기는 기록이 업데이트 흐름에 없어 `inactive` 로 되돌린다(결정: 새 컬럼 없이).
+  - 진입점: 모듈·플러그인·템플릿 업데이트는 `--force` 일 때만(이미 잡은 잠금으로), 활성화는 항상(잠금을 잠깐 잡아) 판정한다.
+    정리하지 않을 때 상태 가드 문구는 멈춘 업데이트에만 해결 방법(`--force`·활성화)을 덧붙인다.
+
+  축 entry_point 는 고착 행을 만나는 자리다 — 관리자·CLI 목록, 정리 판정 도우미, 상태 가드 문구, 업데이트 진입점, 활성화 진입점.
+  행의 나이(600초 초과·이내)·잠금 보유자·상태 값은 같은 테스트 안에서 함께 대조하므로 effects 로 잰다.
+
+axes:
+  entry_point: [listing, recovery_judgement, status_guard, update, activate]
+
+effects:
+  # 목록
+  - in_progress_extension_not_listed_as_uninstalled
+  - in_progress_extension_listed_once_with_its_status
+  # 정리 판정
+  - stale_updating_with_free_lock_reset_to_inactive
+  - recovery_logs_warning
+  - recovery_recorded_for_command_output
+  - lock_released_after_recovery_judgement
+  - recent_updating_left_alone
+  - updating_with_lock_held_by_other_process_left_alone
+  - non_updating_status_left_alone
+  - caller_holding_lock_can_recover
+  # 상태 가드 문구
+  - stale_updating_guard_message_points_to_force
+  - running_update_guard_message_has_no_force_hint
+  # 진입점
+  - update_without_force_rejects_and_points_to_force
+  - force_update_resets_stale_updating_to_inactive
+  - activate_resets_stale_updating_and_proceeds
+  # 명령 출력 (7.1.1 출시 전)
+  - update_command_reports_stuck_before_no_update
+  - force_update_recovery_output_tells_how_to_reactivate
+
+test_files:
+  - tests/Feature/Extension/InProgressExtensionListingTest.php
+  - tests/Unit/Extension/StuckUpdateRecoveryTest.php
+  - tests/Feature/Extension/StuckUpdateRecoveryFlowTest.php
+
+notes: |
+  업데이트 진입점 테스트는 모듈·플러그인·템플릿 셋을, 활성화 진입점 테스트는 플러그인(`sirsoft-daum_postcode`)만 쓴다 — 세 Manager 의
+  활성화가 같은 판정 함수를 부른다. 600초 이내 `updating` 을 활성화가 건드리지 않는지는 정리 판정 테스트(recent_updating_left_alone)가 잰다.
+  업데이트·활성화 명령 6개의 「⚠️ 멈춘 업데이트를 정리했습니다」 출력 문구 자체를 직접 단언하는 테스트는 없다(정리 기록 버퍼까지만 잰다).

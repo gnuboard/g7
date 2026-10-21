@@ -5,17 +5,22 @@
     <div data-each="post, idx in {{searchResults?.data?.posts?.items ?? []}}">
       <!-- 구분선 (첫 번째 아이템 제외) -->
       <div data-if="{{idx > 0}}" class="border-t border-gray-200 dark:border-gray-700"/>
-      <button class="block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
-        <on type="click">
-          <!-- audit:allow layout-list-context-navigate-merge-query 검색 결과 → 원문(게시글) 이동 — 검색 목록과 다른 클러스터로 나가는 이동이다. -->
-          <navigate path="{{post?.url}}"/>
-        </on>
+      <!-- 카드 전체가 링크다 — 하이라이트 HTML 을 링크 밖에 두려고 빈 링크가 카드를 덮는다(이름은 일반 글자 제목). 초점 테두리는 안쪽(ring-inset) — 바깥 목록 상자가 overflow:hidden 이라 바깥 테두리는 잘린다 -->
+      <div class="relative block w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+        <a href="{{post?.url}}" aria-label="{{post?.title ?? ''}}" class="absolute inset-0 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400">
+          <on type="click">
+            <!-- audit:allow layout-list-context-navigate-merge-query 검색 결과 → 원문(게시글) 이동 — 검색 목록과 다른 클러스터로 나가는 이동이다. -->
+            <navigate/>
+          </on>
+        </a>
         <!-- 제목 라인 (게시판명 + 제목) -->
         <div class="flex items-start gap-2 mb-1">
           <!-- 게시판명 배지 -->
-          <span data-if="{{post?.board_name}}" class="flex-shrink-0 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">{{post?.board_name}}</span>
+          <span data-if="{{post?.board_name}}" class="flex-shrink-0 truncate max-w-32 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">{{post?.board_name}}</span>
           <!-- 제목 (HTML 하이라이트 지원) -->
-          <html-content data-type="composite" content="{{post?.title_highlighted ?? post?.title}}" class="font-medium text-gray-900 dark:text-white [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
+          <html-content data-type="composite" content="{{post?.title_highlighted ?? post?.title}}" class="min-w-0 wrap-anywhere font-medium text-gray-900 dark:text-white [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
+          <!-- 확장 자리 — 확장이 글마다 배지를 붙인다(#149). 조각은 extensionPointProps.postId 등으로 이 결과의 글을 읽는다 -->
+          <extension-point name="board_post_row_badges" class="contents" data-extension-point="board_post_row_badges" post="{{post}}" postId="{{post?.id}}" boardSlug="{{post?.board_slug}}" context="search_posts"/>
         </div>
         <!-- 발췌 내용 (HTML 하이라이트 지원, 텍스트 모드 분기) -->
         <html-content data-type="composite" data-if="{{post?.content_preview}}" content="{{post?.content_preview_highlighted ?? post?.content_preview}}" isHtml="{{post?.content_preview_highlighted ? true : (post?.content_mode ?? 'text') === 'html'}}" class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2 [&amp;_mark]:bg-yellow-200 [&amp;_mark]:dark:bg-yellow-500/40 [&amp;_mark]:px-0.5 [&amp;_mark]:rounded"/>
@@ -32,7 +37,7 @@
             <span>{{post?.comment_count}}</span>
           </span>
         </div>
-      </button>
+      </div>
     </div>
   </div>
 </partial>

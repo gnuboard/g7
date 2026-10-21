@@ -70,7 +70,7 @@ export const test = base.extend<BoardAuthFixtures>({
         'sirsoft-board.settings.read',
         'sirsoft-board.settings.update',
         // 게시판별 권한(sirsoft-board.{slug}.admin.*)은 spec 이 게시판을 만들 때 생기고 admin 역할(함께 부여)에 붙는다.
-        // 게시판이 생기기 전에 그 식별자로 발급하면 발급 커맨드가 거절한다(없는 권한 — 7.1.0 O-D2).
+        // 게시판이 생기기 전에 그 식별자로 발급하면 발급 커맨드가 거절한다(없는 권한 — 7.1.0).
       ),
     );
   },
@@ -106,7 +106,7 @@ export const test = base.extend<BoardAuthFixtures>({
         'sirsoft-board.boards.update',
         'sirsoft-board.boards.delete',
         // 게시판별 권한(sirsoft-board.{slug}.admin.*)은 spec 이 게시판을 만들 때 생기고 admin 역할(함께 부여)에 붙는다.
-        // 게시판이 생기기 전에 그 식별자로 발급하면 발급 커맨드가 거절한다(없는 권한 — 7.1.0 O-D2).
+        // 게시판이 생기기 전에 그 식별자로 발급하면 발급 커맨드가 거절한다(없는 권한 — 7.1.0).
       ),
     );
   },
@@ -119,7 +119,7 @@ export const test = base.extend<BoardAuthFixtures>({
         'sirsoft-board.boards.create',
         'sirsoft-board.boards.delete',
         // 게시판별 권한(sirsoft-board.{slug}.admin.*)은 spec 이 게시판을 만들 때 생기고 admin 역할(함께 부여)에 붙는다.
-        // 게시판이 생기기 전에 그 식별자로 발급하면 발급 커맨드가 거절한다(없는 권한 — 7.1.0 O-D2).
+        // 게시판이 생기기 전에 그 식별자로 발급하면 발급 커맨드가 거절한다(없는 권한 — 7.1.0).
       ),
     );
   },

@@ -1,7 +1,7 @@
 <!-- 쿠폰 등록·수정 (운영자) — `route.id` 유무 하나로 등록/수정을 겸한다. 기본정보·혜택·발급·사용조건
   네 구획이 `_local.form` 하나를 나눠 쓰고, 적용 대상 상품·분류는 별도 검색 창에서 골라 담는다. -->
 <layout name="admin_ecommerce_promotion_coupon_form" version="1.0.0" extends="_admin_base">
-  <meta title="{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}"/>
+  <meta leave_guard="{{_local.hasChanges === true}}" title="{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}"/>
   <!-- 수정 진입일 때만 원본을 받아 폼에 심는다. 그대로 옮기지 못하는 것이 둘 있다 — 포함/제외 대상은
     서버가 두 배열로 주지만 화면은 한 목록에서 구분값으로 다루고, 수량·기간·재발급의 「무제한」은
     저장 형태에 없는 화면 개념이라 값의 유무를 보고 되살린다. -->
@@ -21,6 +21,17 @@
       <on-code code="404">
         <show-error-page target="content"/>
       </on-code>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
     </error-handling>
     <field name="errorCondition">
       <field name="if" value="{{response?.data?.abilities?.can_update === false}}"/>
@@ -37,7 +48,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
     <field name="errorCondition">
@@ -107,20 +126,24 @@
   <transition-overlay>
     <wait-for>categories</wait-for>
   </transition-overlay>
+  <init>
+    <!-- 들어올 때마다 「고친 것 있음」 을 끈다 — 이탈 확인(meta.leave_guard)이 읽는 값이라, 같은 레이아웃의 다른 쿠폰으로 넘어와도 직전 표시가 남지 않게 한다 -->
+    <set-state target="local" :hasChanges="false"/>
+  </init>
   <slot name="content">
     <div data-ref="coupon_form_container" class="admin-page-content">
       <div data-ref="page_header_section" class="mb-6">
         <div data-ref="page_header" class="page-header-padded">
           <div class="flex-center gap-3">
-            <button data-ref="back_button" type="button" class="p-1.5 rounded-lg hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-700 transition-colors" aria-label="$t:common.back">
+            <a href="/admin/ecommerce/promotion-coupons" :mergeQuery="true" data-ref="back_button" class="button p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" aria-label="$t:common.back">
               <on type="click">
                 <!-- 목록으로. 보던 검색·필터·페이지를 이고 가므로 폼을 열었다 닫아도 목록이 되감기지 않는다 -->
-                <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true">
+                <navigate :mergeQuery="true">
                   <query/>
                 </navigate>
               </on>
               <icon name="arrow-left" size="sm"/>
-            </button>
+            </a>
             <div>
               <h1 class="page-title">{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_edit' : '$t:sirsoft-ecommerce.admin.promotion_coupon.form.title_create'}}</h1>
               <p data-if="{{!!route.id}}" class="page-description">$t:sirsoft-ecommerce.admin.promotion_coupon.form.description_edit|id={{route.id}}</p>
@@ -129,14 +152,14 @@
           </div>
           <div class="page-actions">
             <!-- 취소하고 목록으로. 위 뒤로가기 버튼과 같은 이동이며 화면 위아래 어디서든 빠져나갈 수 있게 둘 다 둔다 -->
-            <button data-ref="cancel_button_top" type="button" class="btn btn-outline">
+            <a href="/admin/ecommerce/promotion-coupons" :mergeQuery="true" data-ref="cancel_button_top" class="button btn btn-outline">
               <on type="click">
-                <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true">
+                <navigate :bypassLeaveGuard="true" :mergeQuery="true">
                   <query/>
                 </navigate>
               </on>
               $t:sirsoft-ecommerce.admin.promotion_coupon.form.button.cancel
-            </button>
+            </a>
             <button data-ref="save_button_top" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 저장 — 등록/수정 구분은 `route.id` 하나로 엔드포인트와 메서드를 함께 가른다. 성공하면 목록으로 돌아가므로 폼을 되받지 않고, 실패하면 서버 오류를 폼 위 배너로 넘긴다 -->
@@ -146,7 +169,7 @@
                     <success>
                       <set-state target="_local" :isSaving="false"/>
                       <toast type="success" message="{{route.id ? '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.updated' : '$t:sirsoft-ecommerce.admin.promotion_coupon.messages.created'}}"/>
-                      <navigate path="/admin/ecommerce/promotion-coupons" :mergeQuery="true">
+                      <navigate :bypassLeaveGuard="true" path="/admin/ecommerce/promotion-coupons" :mergeQuery="true">
                         <query/>
                       </navigate>
                     </success>
@@ -166,13 +189,13 @@
       <div data-ref="validation_error_banner" data-if="{{_local.errors}}" class="alert-danger">
         <icon name="triangle-exclamation" size="sm" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
         <div>
-          <h3 class="text-error-strong">$t:common.validation_error</h3>
+          <h3 class="ecommerce-tone-error-strong text-sm font-medium">$t:common.validation_error</h3>
           <ul data-if="{{typeof _local.errors === 'object'}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-            <li class="text-error-soft">{{message}}</li>
+            <li class="ecommerce-tone-error-soft text-sm">{{message}}</li>
           </ul>
         </div>
       </div>
-      <div data-ref="form_sections" data-key="form" data-debounce="300" class="space-y-6">
+      <div data-ref="form_sections" data-key="form" data-track-changes data-debounce="300" class="space-y-6">
         <include src="partials/admin_ecommerce_promotion_coupon_form/_partial_basic_info.g7.html"/>
         <include src="partials/admin_ecommerce_promotion_coupon_form/_partial_benefit_settings.g7.html"/>
         <include src="partials/admin_ecommerce_promotion_coupon_form/_partial_issue_settings.g7.html"/>

@@ -15,7 +15,9 @@ use Tests\TestCase;
 class ConsoleConfirmTest extends TestCase
 {
     /**
-     * @return array<string, array{string, bool, bool|null}>
+     * parse() 입력 정규화 사례(원문 입력, 기본값, 기대 결과)를 제공한다.
+     *
+     * @return array<string, array{string, bool, bool|null}> 사례 이름별 [원문 입력, 기본값, 기대 결과(무효면 null)]
      */
     public static function parseCases(): array
     {
@@ -45,12 +47,31 @@ class ConsoleConfirmTest extends TestCase
         ];
     }
 
+    /**
+     * parse() 가 대소문자·공백·빈 입력을 정규화하고 yes·y·no·n 외 값은 무효(null)로 돌려주는지 검증한다.
+     *
+     * @effects confirm_answer_parse_normalizes_case_and_whitespace
+     *
+     * @param  string  $raw  사용자가 입력한 원문
+     * @param  bool  $default  빈 입력일 때 쓸 기본값
+     * @param  bool|null  $expected  기대 결과, 무효 입력이면 null
+     * @return void 반환값 없음
+     */
     #[DataProvider('parseCases')]
     public function test_parse_normalizes_input(string $raw, bool $default, ?bool $expected): void
     {
         $this->assertSame($expected, ConsoleConfirm::parse($raw, $default));
     }
 
+    /**
+     * 첫 답이 유효하면 재질문 없이 바로 결정하고 무효 안내를 보이지 않는지 검증한다.
+     *
+     * @scenario answer=valid
+     *
+     * @effects confirm_valid_answer_resolves_immediately
+     *
+     * @return void 반환값 없음
+     */
     public function test_ask_returns_immediately_on_first_valid_input(): void
     {
         $stdin = $this->makeStdin(["yes\n"]);
@@ -70,6 +91,15 @@ class ConsoleConfirmTest extends TestCase
         $this->assertStringNotContainsString('yes, y, no, n', $output);
     }
 
+    /**
+     * 무효 답이면 안내 후 질문을 다시 출력하고 유효한 답에서 결정되는지 검증한다.
+     *
+     * @scenario answer=invalid_then_valid
+     *
+     * @effects confirm_invalid_answer_shows_notice_and_reasks
+     *
+     * @return void 반환값 없음
+     */
     public function test_ask_loops_on_invalid_input_then_resolves(): void
     {
         $stdin = $this->makeStdin(["abc\n", "y\n"]);
@@ -85,11 +115,20 @@ class ConsoleConfirmTest extends TestCase
         );
 
         $this->assertTrue($result);
-        $this->assertStringContainsString('yes, y, no, n 중 하나로 입력해 주세요.', $output);
+        $this->assertStringContainsString(__('common.console.console_confirm.invalid_answer'), $output);
         // 질문이 정확히 2회 출력되어야 함
         $this->assertSame(2, substr_count($output, '진행할까요? (yes/no) [no]: '));
     }
 
+    /**
+     * 무효 답이 여러 번 이어지면 그 횟수만큼 안내와 재질문을 반복하는지 검증한다.
+     *
+     * @scenario answer=invalid_then_valid
+     *
+     * @effects confirm_invalid_answer_shows_notice_and_reasks
+     *
+     * @return void 반환값 없음
+     */
     public function test_ask_loops_multiple_times_on_invalid_input(): void
     {
         $stdin = $this->makeStdin(["a\n", "b\n", "no\n"]);
@@ -105,10 +144,19 @@ class ConsoleConfirmTest extends TestCase
         );
 
         $this->assertFalse($result);
-        $this->assertSame(2, substr_count($output, 'yes, y, no, n 중 하나로 입력해 주세요.'));
+        $this->assertSame(2, substr_count($output, __('common.console.console_confirm.invalid_answer')));
         $this->assertSame(3, substr_count($output, '진행할까요? (yes/no) [yes]: '));
     }
 
+    /**
+     * 입력 스트림이 끝나(EOF) 답을 받을 수 없으면 기본값을 돌려주는지 검증한다.
+     *
+     * @scenario answer=unanswerable
+     *
+     * @effects confirm_returns_default_without_prompt_when_answer_unavailable
+     *
+     * @return void 반환값 없음
+     */
     public function test_ask_returns_default_on_eof(): void
     {
         $stdin = $this->makeStdin([]);
@@ -121,6 +169,15 @@ class ConsoleConfirmTest extends TestCase
         $this->assertFalse($resultDefaultFalse);
     }
 
+    /**
+     * 빈 줄 입력이면 기본값을 돌려주는지 검증한다.
+     *
+     * @scenario answer=empty
+     *
+     * @effects confirm_empty_answer_uses_default
+     *
+     * @return void 반환값 없음
+     */
     public function test_ask_returns_default_on_empty_input(): void
     {
         $stdin = $this->makeStdin(["\n"]);
@@ -130,6 +187,15 @@ class ConsoleConfirmTest extends TestCase
         $this->assertTrue($result);
     }
 
+    /**
+     * 기본값이 true 이면 질문 끝에 [yes] 힌트를 붙이는지 검증한다.
+     *
+     * @scenario answer=valid
+     *
+     * @effects confirm_prompt_marks_default_in_hint
+     *
+     * @return void 반환값 없음
+     */
     public function test_ask_uses_yes_hint_when_default_true(): void
     {
         $stdin = $this->makeStdin(["yes\n"]);
@@ -142,6 +208,15 @@ class ConsoleConfirmTest extends TestCase
         $this->assertStringContainsString('Q? (yes/no) [yes]: ', $output);
     }
 
+    /**
+     * 기본값이 false 이면 질문 끝에 [no] 힌트를 붙이는지 검증한다.
+     *
+     * @scenario answer=valid
+     *
+     * @effects confirm_prompt_marks_default_in_hint
+     *
+     * @return void 반환값 없음
+     */
     public function test_ask_uses_no_hint_when_default_false(): void
     {
         $stdin = $this->makeStdin(["no\n"]);
@@ -158,7 +233,7 @@ class ConsoleConfirmTest extends TestCase
      * 메모리 기반 STDIN 리소스 생성.
      *
      * @param  array<string>  $lines  fgets() 가 차례로 반환할 줄 (개행 포함 권장)
-     * @return resource
+     * @return resource 읽기 위치를 처음으로 되돌린 메모리 스트림
      */
     private function makeStdin(array $lines)
     {

@@ -6,6 +6,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { localizedText } from '../utils/localizedText';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Ecom:Category')) ?? {
@@ -52,7 +53,7 @@ function buildBreadcrumbFromTree(
     path: string[] = []
 ): string | null {
     for (const cat of categories) {
-        const catName = cat.name?.[locale] || cat.name?.ko || '';
+        const catName = localizedText(cat.name, locale) || '';
 
         if (cat.id === targetId) {
             return [...path, catName].join(' > ');
@@ -95,7 +96,7 @@ function initCategoryInfosFromFormCategories(
         }
 
         // 3. 트리에서도 못 찾으면 이름만 사용
-        const catName = cat.name?.[locale] || cat.name?.ko || cat.name_localized || '';
+        const catName = localizedText(cat.name, locale) || cat.name_localized || '';
         return { id: cat.id, breadcrumb: catName };
     });
 }
@@ -335,7 +336,7 @@ export function addCategoryToSelectionHandler(
     // 브레드크럼 생성: 선택된 카테고리 경로를 ' > '로 연결
     const breadcrumb = selectedCats
         .filter(Boolean)
-        .map((cat: Category) => cat.name?.[locale] || cat.name?.ko || '')
+        .map((cat: Category) => localizedText(cat.name, locale) || '')
         .join(' > ');
 
     const newCategoryIds = [...currentIds, lastSelected.id];
@@ -474,7 +475,7 @@ export function getCategoryBreadcrumbHandler(
         path: string[] = []
     ): string[] | null => {
         for (const cat of cats) {
-            const catName = cat.name?.[locale] || cat.name?.ko || '';
+            const catName = localizedText(cat.name, locale) || '';
 
             if (cat.id === targetId) {
                 return [...path, catName];

@@ -19,13 +19,19 @@ class ModuleVendorVerifyCommand extends Command
 
     protected $description = '모듈 vendor-bundle.zip 의 SHA256 무결성을 검증합니다';
 
+    /**
+     * 지정 모듈 또는 모든 _bundled 모듈의 vendor-bundle.zip 무결성을 검증합니다.
+     *
+     * @param  VendorIntegrityChecker  $checker  vendor 번들 무결성 검사기
+     * @return int 종료 코드
+     */
     public function handle(VendorIntegrityChecker $checker): int
     {
         $identifier = $this->argument('identifier');
         $all = (bool) $this->option('all');
 
         if (! $identifier && ! $all) {
-            $this->error('식별자 또는 --all 옵션을 지정해야 합니다.');
+            $this->error(__('modules.commands.vendor_verify.missing_identifier'));
 
             return self::FAILURE;
         }

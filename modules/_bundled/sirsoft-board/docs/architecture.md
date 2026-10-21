@@ -44,7 +44,9 @@ Models (SoftDeletes 적용 — Post/Comment/Attachment/Report)
 Listeners(`src/Listeners/`)는 이 흐름과 별도 레인입니다 — Service 가 발행한 훅을 받아 카운트
 동기화(`*CountSyncListener`)·활동 로그·SEO 캐시·검색 색인·알림 데이터 추출을 수행하며, Service
 자신은 이 부가효과를 알지 못합니다. 이 분리 덕분에 새 부가효과(예: 신규 카운트 컬럼 동기화)는
-Service 를 건드리지 않고 리스너 추가만으로 끝납니다.
+Service 를 건드리지 않고 리스너 추가만으로 끝납니다. 큐로 도는 **일괄** 활동 로그 핸들러(신고 일괄 처리)는
+항목별 기록 루프를 `DB::transaction` 으로 감쌉니다 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을
+막는다(코어 `docs/backend/activity-log.md` 「일괄 핸들러 트랜잭션 패턴」).
 <!-- @intent END -->
 
 ## 디렉토리
@@ -76,6 +78,7 @@ Service 를 건드리지 않고 리스너 추가만으로 끝납니다.
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan module:update sirsoft-board --force` |
 | `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan module:update sirsoft-board --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 <!-- @generated:directory-map END -->

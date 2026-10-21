@@ -36,6 +36,8 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 테스트 게시판 slug
+     *
+     * @return string 게시판 슬러그
      */
     protected function getTestBoardSlug(): string
     {
@@ -44,6 +46,9 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 기본 게시판 속성 (비밀글 기능 활성화)
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return array<string, mixed> 게시판 속성
      */
     protected function getDefaultBoardAttributes(string $slug): array
     {
@@ -57,6 +62,11 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
         ];
     }
 
+    /**
+     * 시험 사용자와 권한을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -67,6 +77,8 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 테스트용 사용자 생성
+     *
+     * @return void 반환값 없음
      */
     private function createTestUsers(): void
     {
@@ -153,6 +165,9 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 사용자에게 posts.read 권한을 부여합니다.
+     *
+     * @param  User  $user  대상 회원
+     * @return void 반환값 없음
      */
     private function grantPostsReadPermission(User $user): void
     {
@@ -166,6 +181,9 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 비회원 비밀글을 생성합니다.
+     *
+     * @param  string  $password  평문 비밀번호
+     * @return int 게시글 ID
      */
     private function createGuestSecretPost(string $password = 'test1234'): int
     {
@@ -189,6 +207,10 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 회원 비밀글을 생성합니다.
+     *
+     * @param  User  $user  작성 회원
+     * @param  string|null  $password  평문 비밀번호 (없으면 null)
+     * @return int 게시글 ID
      */
     private function createMemberSecretPost(User $user, ?string $password = null): int
     {
@@ -215,6 +237,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 비회원 비밀글: 올바른 비밀번호로 조회 검증 성공
+     *
+     * @scenario viewer=guest_author
+     *
+     * @effects guest_author_verify_password_opens_secret_post
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_secret_post_verify_password_success(): void
     {
@@ -245,6 +273,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 비회원 비밀글: 잘못된 비밀번호로 조회 검증 실패
+     *
+     * @scenario viewer=guest
+     *
+     * @effects wrong_password_keeps_secret_post_closed
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_secret_post_verify_password_wrong_password(): void
     {
@@ -264,6 +298,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 비밀글 조회 검증: 비밀번호 미입력 시 422 에러
+     *
+     * @scenario viewer=guest
+     *
+     * @effects verify_password_requires_password_field
+     *
+     * @return void 반환값 없음
      */
     public function test_verify_password_requires_password_field(): void
     {
@@ -287,6 +327,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 비회원 비밀글: 올바른 비밀번호로 수정 검증 성공
+     *
+     * @scenario viewer=guest_author
+     *
+     * @effects verify_password_for_modify_issues_token
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_secret_post_verify_password_for_modify_success(): void
     {
@@ -319,6 +365,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 비회원 비밀글: 잘못된 비밀번호로 수정 검증 실패
+     *
+     * @scenario viewer=guest
+     *
+     * @effects verify_password_for_modify_rejects_wrong_password
+     *
+     * @return void 반환값 없음
      */
     public function test_guest_secret_post_verify_password_for_modify_wrong_password(): void
     {
@@ -342,6 +394,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 회원 비밀글: 작성자 본인은 비밀번호 없이 조회 가능 (API show 호출)
+     *
+     * @scenario viewer=post_author
+     *
+     * @effects member_author_views_own_secret_post
+     *
+     * @return void 반환값 없음
      */
     public function test_member_author_can_view_own_secret_post_without_password(): void
     {
@@ -362,6 +420,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 회원 비밀글: 타인은 content가 null로 반환
+     *
+     * @scenario viewer=outsider
+     *
+     * @effects member_secret_post_masked_for_others
+     *
+     * @return void 반환값 없음
      */
     public function test_member_secret_post_content_hidden_for_others(): void
     {
@@ -385,6 +449,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
      *
      * 회원 비밀글은 로그인 후 본인/권한자만 열람 가능하므로
      * 비밀번호 검증 엔드포인트 사용 불가
+     *
+     * @scenario viewer=outsider
+     *
+     * @effects member_secret_post_password_verify_not_allowed
+     *
+     * @return void 반환값 없음
      */
     public function test_member_secret_post_verify_password_not_allowed(): void
     {
@@ -411,6 +481,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 관리자(admin.manage 권한)는 관리자 라우트에서 비밀번호 없이 비밀글 조회 가능
+     *
+     * @scenario viewer=admin
+     *
+     * @effects admin_views_secret_post_without_password
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_view_secret_post_without_password(): void
     {
@@ -431,6 +507,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 비밀글 읽기 권한(posts.read-secret) 사용자는 비밀번호 없이 조회 가능
+     *
+     * @scenario viewer=read_secret
+     *
+     * @effects read_secret_holder_views_without_password
+     *
+     * @return void 반환값 없음
      */
     public function test_read_secret_permission_user_can_view_without_password(): void
     {
@@ -455,6 +537,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 존재하지 않는 게시글 비밀번호 검증 시 404 에러
+     *
+     * @scenario viewer=guest
+     *
+     * @effects verify_password_unknown_post_404
+     *
+     * @return void 반환값 없음
      */
     public function test_verify_password_for_nonexistent_post_returns_404(): void
     {
@@ -470,6 +558,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 존재하지 않는 게시글 수정 검증 시 404 에러
+     *
+     * @scenario viewer=guest
+     *
+     * @effects verify_password_unknown_post_404
+     *
+     * @return void 반환값 없음
      */
     public function test_verify_password_for_modify_nonexistent_post_returns_404(): void
     {
@@ -489,6 +583,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
 
     /**
      * 비활성 게시판의 비밀글 검증 시 404 에러
+     *
+     * @scenario viewer=guest
+     *
+     * @effects verify_password_inactive_board_404
+     *
+     * @return void 반환값 없음
      */
     public function test_verify_password_for_inactive_board_returns_404(): void
     {
@@ -513,10 +613,17 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
      * 없으면 목록이 비어 보이는데, 댓글 수(`comment_count`)는 집계 컬럼이라 그대로 남아
      * "댓글 2" 헤더 밑에 아무것도 없는 화면이 된다. 오류도 콘솔 경고도 남지 않고, 댓글을
      * 하나 쓰면 그때 상세를 다시 불러 목록이 나타나므로 원인을 짚기 어렵다.
+     *
+     * @scenario viewer=guest_author
+     *
+     * @effects verify_password_response_includes_comments
+     *
+     * @return void 반환값 없음
      */
     public function test_verify_password_response_includes_comments(): void
     {
-        // Given: 댓글 2개가 달린 비회원 비밀글
+        // Given: 댓글 2개가 달린 비회원 비밀글 (댓글은 comments.read 보유자에게만 실린다 — #764 이후 게이트)
+        $this->setGuestPermissions(['posts.read', 'posts.write', 'comments.read']);
         $postId = $this->createGuestSecretPost('test1234');
         $this->createTestComment($postId, ['content' => '첫 번째 댓글']);
         $this->createTestComment($postId, ['content' => '두 번째 댓글']);
@@ -550,6 +657,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
      * 폼 조회가 토큰을 소비해 버리면 저장 시점에는 남아 있지 않아, 사용자는 비밀번호를
      * 정확히 넣고 본문까지 본 상태에서 「게시글 수정 권한이 없습니다」로 거부된다.
      * 토큰을 새로 받을 방법도 화면에 없어 그 글은 수정 자체가 불가능해진다.
+     *
+     * @scenario viewer=guest_author
+     *
+     * @effects modify_token_survives_form_load
+     *
+     * @return void 반환값 없음
      */
     public function test_modify_token_survives_form_load_and_authorizes_update(): void
     {
@@ -594,9 +707,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
      * 그대로 남는다. 헤더로 옮기되 기존 본문/쿼리 경로도 계속 받아야 하므로, 헤더 단독으로도
      * 「폼 메타 → 폼 데이터 → 저장」 전 구간이 성립하는지를 이 테스트가 잠근다.
      *
-     * @scenario actor=guest_author, transport=header
+     *
+     * @scenario viewer=guest_author
      *
      * @effects modify_token_accepted_via_header
+     *
+     * @return void 반환값 없음
      */
     public function test_modify_token_is_accepted_via_header_without_query_param(): void
     {
@@ -642,6 +758,12 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
      * 상세 조회(show)는 삭제된 글에 manager 권한을 요구한다. 검증 경로가 그 판정을 하지
      * 않으면 같은 원문이 형제 엔드포인트로 새어나간다 — 화면에서는 목록에 안 보이니
      * 드러나지 않고, 주소를 아는 쪽만 열 수 있다.
+     *
+     * @scenario viewer=guest_author
+     *
+     * @effects verify_password_does_not_open_deleted_post
+     *
+     * @return void 반환값 없음
      */
     public function test_verify_password_does_not_open_deleted_post(): void
     {
@@ -658,5 +780,87 @@ class PostSecretVerifyPasswordTest extends BoardTestCase
             [403, 404],
             '삭제된 비밀글이 비밀번호만으로 열렸습니다 — 상세 조회는 manager 권한을 요구합니다.'
         );
+    }
+
+    /**
+     * 비회원 원글 비밀번호를 맞히면 같은 응답의 답변 트리에 관리자 비밀 답변 본문이 실린다 (#789 제보 A).
+     *
+     * 수정 전에는 원글만 password_verified 로 열리고, replies[] 의 비밀 답변은 「로그인 후 확인」이었다.
+     * grant 를 댓글·답변 직렬화보다 먼저 걸어 같은 응답에서 하위가 열린다.
+     *
+     * @scenario viewer=view_token_holder
+     *
+     * @effects verify_password_response_opens_descendant_reply
+     *
+     * @return void 반환값 없음
+     */
+    public function test_verify_password_opens_descendant_secret_reply_in_same_response(): void
+    {
+        $rootId = $this->createGuestSecretPost('test1234');
+        DB::table('board_posts')->insert([
+            'board_id' => $this->board->id,
+            'parent_id' => $rootId,
+            'depth' => 1,
+            'title' => 'Re: 비회원 비밀글',
+            'content' => '관리자 비밀 답변 본문',
+            'content_mode' => 'text',
+            'author_name' => 'admin',
+            'user_id' => $this->boardAdminUser->id,
+            'is_secret' => true,
+            'is_notice' => false,
+            'view_count' => 0,
+            'status' => 'published',
+            'ip_address' => '127.0.0.1',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->updateBoardSettings(['use_reply' => true]);
+
+        $response = $this->postJson(
+            "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$rootId}/verify-password",
+            ['password' => 'test1234']
+        )->assertOk();
+
+        $this->assertSame('관리자 비밀 답변 본문', $response->json('data.replies.0.content'));
+    }
+
+    /**
+     * 비회원 답변의 비밀번호를 맞히면 같은 응답의 원글 상자(parent)에 원글 본문이 실린다 (경로 규칙 — 조상 경로).
+     *
+     * @scenario viewer=view_token_holder
+     *
+     * @effects verify_password_response_opens_ancestor_parent
+     *
+     * @return void 반환값 없음
+     */
+    public function test_verify_password_on_guest_reply_opens_parent_in_same_response(): void
+    {
+        $rootId = $this->createMemberSecretPost($this->regularUser);
+        $replyId = DB::table('board_posts')->insertGetId([
+            'board_id' => $this->board->id,
+            'parent_id' => $rootId,
+            'depth' => 1,
+            'title' => 'Re: 회원 비밀글',
+            'content' => '비회원 답변 본문',
+            'content_mode' => 'text',
+            'author_name' => '비회원답변자',
+            'password' => Hash::make('reply-pass'),
+            'user_id' => null,
+            'is_secret' => true,
+            'is_notice' => false,
+            'view_count' => 0,
+            'status' => 'published',
+            'ip_address' => '127.0.0.1',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->postJson(
+            "/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$replyId}/verify-password",
+            ['password' => 'reply-pass']
+        )->assertOk();
+
+        $this->assertSame('비회원 답변 본문', $response->json('data.content'));
+        $this->assertNotNull($response->json('data.parent.content'), '답변 작성자(비밀번호 인증)는 자기 답변의 원글을 본다');
     }
 }

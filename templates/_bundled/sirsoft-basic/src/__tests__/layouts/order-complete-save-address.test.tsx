@@ -153,13 +153,17 @@ describe('주문완료 [이 배송지를 저장하기] (B6)', () => {
    * @scenario case=duplicate_name_409
    * @effects save_address_409_shows_notice_not_question
    */
-  it('409 는 상태 코드별 error-handling 으로 안내하고, onError 에 conditions 를 두지 않는다', () => {
+  it('409 는 실패 처리 하나의 conditions 로 가른다 — 상태 코드별 error-handling 은 두지 않는다', () => {
     const call = find(saveButton, (n) => n.handler === 'apiCall') as Node;
 
-    // onError 안의 conditions 는 엔진이 오류 처리기로 옮길 때 조건 목록을 버려 아무 토스트도 뜨지 않는다(실측 B6)
-    expect(JSON.stringify(call?.onError ?? [])).not.toContain('"conditions"');
-    expect(call?.errorHandling?.['409']?.handler).toBe('toast');
-    expect(call?.errorHandling?.['409']?.params).toEqual({ type: 'info', message: '$t:shop.order_complete.address_name_exists' });
+    // engine-v1.80.0 부터 단일 <fail> 안의 conditions 가 그대로 실행된다(#753) — 처음 설계대로 409 / 그 밖 을 한 곳에서 가른다
+    expect(call?.errorHandling).toBeUndefined();
+    expect(call?.onError?.handler).toBe('conditions');
+    const [when409, otherwise] = call?.onError?.conditions ?? [];
+    expect(when409?.if).toBe('{{error.status === 409}}');
+    expect(when409?.then).toEqual({ handler: 'toast', params: { type: 'info', message: '$t:shop.order_complete.address_name_exists' } });
+    expect(otherwise?.if).toBeUndefined();
+    expect(otherwise?.then?.params?.type).toBe('error');
   });
 
   /**

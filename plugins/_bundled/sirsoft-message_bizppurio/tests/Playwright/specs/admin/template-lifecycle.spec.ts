@@ -2,7 +2,7 @@
  * E2E: 비즈뿌리오 알림 템플릿 라이프사이클 화면 (#597)
  *
  * @scenario bizppurio_tab_integration_e2e, bizppurio_compose_modal_e2e, bizppurio_manage_round_trip_e2e
- * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_badge_and_lifecycle_actions,
+ * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_summary_only,
  *          compose_modal_switches_conditional_fields_by_type, manage_screen_lists_db_rows_with_merge_query_round_trip,
  *          manage_list_mobile_card_view_and_unified_toolbar
  *
@@ -57,7 +57,8 @@ test.describe('비즈뿌리오 통합 탭 (코어 알림 설정)', () => {
       await page.waitForLoadState('networkidle', { timeout: 30_000 });
     }
 
-    const tabTexts = await tabBar.locator('button').allInnerTexts();
+    // 채널 탭은 링크(#757) — 단추만 보면 빈 목록이 된다
+    const tabTexts = await tabBar.locator(':is(a, button)').allInnerTexts();
     const joined = tabTexts.join('|');
 
     // 통합 탭 라벨(tab_label_key) 노출 + 채널 개별 라벨 부재

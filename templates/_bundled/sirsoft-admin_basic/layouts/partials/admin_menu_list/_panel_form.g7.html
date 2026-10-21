@@ -74,20 +74,20 @@
           <div>
             <label data-ref="form_name_label" class="form-label">
               <span>$t:admin.menus.form.name</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
             </label>
             <multilingual-input data-type="composite" data-ref="form_name_input" name="name" placeholder="$t:admin.menus.form.name_placeholder" :maxLength="100" :required="true" layout="tabs"/>
-            <span data-if="{{_global.formErrors?.name}}" class="text-red-500 text-xs">{{_global.formErrors?.name?.[0] ?? ''}}</span>
+            <span data-if="{{_global.formErrors?.name}}" class="text-red-600 dark:text-red-400 text-xs">{{_global.formErrors?.name?.[0] ?? ''}}</span>
           </div>
         </div>
         <div data-ref="form_slug_field">
           <div>
             <label data-ref="form_slug_label" class="form-label">
               <span>$t:admin.menus.form.slug</span>
-              <span class="text-red-500 ml-1">*</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
             </label>
             <input data-ref="form_slug_input" type="text" name="slug" class="input font-mono"/>
-            <span data-if="{{_global.formErrors?.slug}}" class="text-red-500 text-xs">{{_global.formErrors?.slug?.[0] ?? ''}}</span>
+            <span data-if="{{_global.formErrors?.slug}}" class="text-red-600 dark:text-red-400 text-xs">{{_global.formErrors?.slug?.[0] ?? ''}}</span>
             <span data-ref="form_slug_hint" data-if="{{!_global.formErrors?.slug}}" class="text-tertiary">$t:admin.menus.form.slug_hint</span>
           </div>
         </div>
@@ -97,7 +97,7 @@
               <span>$t:admin.menus.form.url</span>
             </label>
             <input data-ref="form_url_input" type="text" name="url" placeholder="$t:admin.menus.form.url_placeholder" class="input font-mono"/>
-            <span data-if="{{_global.formErrors?.url}}" class="text-red-500 text-xs">{{_global.formErrors?.url?.[0] ?? ''}}</span>
+            <span data-if="{{_global.formErrors?.url}}" class="text-red-600 dark:text-red-400 text-xs">{{_global.formErrors?.url?.[0] ?? ''}}</span>
             <span data-ref="form_url_hint" data-if="{{!_global.formErrors?.url}}" class="text-tertiary">$t:admin.menus.form.url_hint</span>
           </div>
         </div>
@@ -118,7 +118,7 @@
                 <option data-ref="form_parent_option_top" value="">$t:admin.menus.form.parent_top_level</option>
                 <option data-each="parentMenu in (menus?.data?.data ?? []).filter(m => _global.panelMode === 'create' || m.id !== _global.selectedMenuId)" value="{{parentMenu.id}}">{{$localized(parentMenu.name)}}</option>
               </select>
-              <span data-if="{{_global.formErrors?.parent_id}}" class="text-red-500 text-xs">{{_global.formErrors?.parent_id?.[0] ?? ''}}</span>
+              <span data-if="{{_global.formErrors?.parent_id}}" class="text-red-600 dark:text-red-400 text-xs">{{_global.formErrors?.parent_id?.[0] ?? ''}}</span>
             </div>
           </div>
         </div>
@@ -184,14 +184,14 @@
             <div class="flex-center gap-3">
               <span class="text-gray-500 dark:text-gray-400 w-20">$t:admin.menus.info.created_at</span>
               <div class="flex-center text-primary gap-1.5">
-                <icon name="calendar" size="sm" class="text-gray-400 dark:text-gray-500"/>
+                <icon name="calendar" size="sm" class="text-gray-500 dark:text-gray-500"/>
                 <span>{{_global.selectedMenu?.created_at}}</span>
               </div>
             </div>
             <div class="flex-center gap-3">
               <span class="text-gray-500 dark:text-gray-400 w-20">$t:admin.menus.info.updated_at</span>
               <div class="flex-center text-primary gap-1.5">
-                <icon name="clock" size="sm" class="text-gray-400 dark:text-gray-500"/>
+                <icon name="clock" size="sm" class="text-gray-500 dark:text-gray-500"/>
                 <span>{{_global.selectedMenu?.updated_at}}</span>
               </div>
             </div>

@@ -1,5 +1,5 @@
 // e2e:allow편집기 선택 결함#8 수정(빈 데이터 분기에 가시 placeholder + id/editorAttrs 부착). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 PermissionTree.editorAttrs.test.tsx.
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef, useId } from 'react';
 import { Div } from '../basic/Div';
 import { Input } from '../basic/Input';
 import { Span } from '../basic/Span';
@@ -43,6 +43,15 @@ export interface ScopeOption {
 const t = (key: string, params?: Record<string, string | number>) =>
   (window as any).G7Core?.t?.(key, params) ?? key;
 
+// G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
+const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
+  const translated = (window as any).G7Core?.t?.(key, params);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
+/** React useId 값을 id 속성에 쓸 수 있는 글자로 줄인다 */
+const useDomId = (): string => useId().replace(/[^a-zA-Z0-9_-]/g, '');
+
 /**
  * 스코프 옵션별 설명 다국어 키 매핑
  */
@@ -63,8 +72,13 @@ const ScopeDropdown: React.FC<{
   value: string | null;
   onChange: (value: string | null) => void;
   disabled?: boolean;
-}> = ({ options, value, onChange, disabled = false }) => {
+  /** 권한 이름 — 단추가 「{권한명} 적용 범위 {현재 값}」으로 읽힌다 */
+  permissionName: string;
+}> = ({ options, value, onChange, disabled = false, permissionName }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const domId = useDomId();
+  const nameId = `${domId}-scope-name`;
+  const valueId = `${domId}-scope-value`;
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLDivElement>(null);
 
@@ -114,9 +128,16 @@ const ScopeDropdown: React.FC<{
 
   return (
     <Div ref={triggerRef} className="relative flex-shrink-0">
+      {/* 이름 — 종전에는 현재 값(「전체」)만 읽혀 어느 권한의 범위인지 알 수 없었다(#757) */}
+      <Span id={nameId} className="sr-only">
+        {tOr('common.scope_of', `${permissionName} scope`, { name: permissionName })}
+      </Span>
       <Div
         role="button"
         tabIndex={0}
+        aria-labelledby={`${nameId} ${valueId}`}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
         onClick={(e: React.MouseEvent) => {
           e.stopPropagation();
           e.preventDefault();
@@ -135,8 +156,8 @@ const ScopeDropdown: React.FC<{
           disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-400 dark:hover:border-blue-500'
         }`}
       >
-        <Span>{currentOption?.label ?? ''}</Span>
-        <Icon name={IconName.ChevronDown} className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+        <Span id={valueId}>{currentOption?.label ?? ''}</Span>
+        <Icon name={IconName.ChevronDown} className="w-3 h-3 text-gray-500 dark:text-gray-400" />
       </Div>
 
       {isOpen && (
@@ -179,7 +200,7 @@ const ScopeDropdown: React.FC<{
                   )}
                 </Div>
                 {description && (
-                  <Span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  <Span className="block text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                     {description}
                   </Span>
                 )}
@@ -215,6 +236,11 @@ export interface PermissionNode {
   leaf_count: number;
   resource_route_key?: string | null;
   owner_key?: string | null;
+  /**
+   * 범위(스코프)를 적용할 수 있는 권한인지 — 서버가 `resource_route_key && owner_key` 로 판정해 싣는다.
+   * 없으면(구버전 서버) 두 키로 같은 판정을 폴백한다.
+   */
+  scope_supported?: boolean;
   children: PermissionNode[];
 }
 
@@ -227,6 +253,11 @@ export interface PermissionTreeProps {
   onChange?: (e: { target: { value: PermissionValue[] } }) => void;
   /** 스코프 옵션 (드롭다운 선택지) */
   scopeOptions?: ScopeOption[];
+  /**
+   * 역할 단위로 범위 선택을 끈다 — 비회원 역할처럼 소유자를 가릴 수 없어 범위가 적용되지 않는 역할.
+   * 켜면 체크한 권한에도 범위 드롭다운을 그리지 않는다(저장 값 정규화는 레이아웃 몫).
+   */
+  scopeDisabled?: boolean;
   /** 추가 클래스명 */
   className?: string;
   /** 비활성화 여부 */
@@ -259,7 +290,8 @@ export interface PermissionTreeProps {
  *   "props": {
  *     "data": "{{permissions?.data?.data?.permissions?.[permType]?.permissions ?? []}}",
  *     "value": "{{_local.form.permission_values ?? []}}",
- *     "scopeOptions": "{{permissions?.data?.data?.scope_options ?? []}}"
+ *     "scopeOptions": "{{permissions?.data?.data?.scope_options ?? []}}",
+ *     "scopeDisabled": "{{!!route?.id && _local.form?.supports_permission_scope === false}}"
  *   },
  *   "actions": [
  *     {
@@ -280,6 +312,7 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
   value = [],
   onChange,
   scopeOptions = [],
+  scopeDisabled = false,
   className = '',
   disabled = false,
   desktopColumns = 2,
@@ -288,6 +321,8 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
   id,
   editorAttrs,
 }) => {
+  const domId = useDomId();
+
   // onChange를 이벤트 객체 형식으로 변환하는 핸들러
   const handleChange = useCallback((newValue: PermissionValue[]) => {
     if (onChange) {
@@ -448,9 +483,11 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
    */
   const renderLeafPermission = (permission: PermissionNode) => {
     const isChecked = selectedIdSet.has(permission.id);
-    const hasResourceRouteKey = !!permission.resource_route_key;
-    const showScopeDropdown = isChecked && hasResourceRouteKey && scopeOptions.length > 0;
+    // 소유자 컬럼(owner_key)이 없는 권한은 범위를 골라도 적용되지 않으므로 드롭다운을 그리지 않는다.
+    const scopeSupported = permission.scope_supported ?? (!!permission.resource_route_key && !!permission.owner_key);
+    const showScopeDropdown = isChecked && !scopeDisabled && scopeSupported && scopeOptions.length > 0;
     const currentScopeType = selectedValues.find((v) => v.id === permission.id)?.scope_type ?? null;
+    const descriptionId = permission.description ? `${domId}-perm-${permission.id}-desc` : undefined;
 
     return (
       <Label
@@ -469,6 +506,9 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
             handleLeafChange(permission.id, e.target.checked);
           }}
           disabled={disabled}
+          // 이름은 권한 이름만 — 감싼 Label 이 설명·범위 값까지 품어 이름이 길게 섞였다(#757). 설명은 부가 설명으로 잇는다
+          aria-label={permission.name}
+          aria-describedby={descriptionId}
           className="w-4 h-4 mt-0.5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
         />
         <Div className="flex-1 min-w-0">
@@ -482,11 +522,12 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
                 value={currentScopeType}
                 onChange={(val) => handleScopeTypeChange(permission.id, val)}
                 disabled={disabled}
+                permissionName={permission.name}
               />
             )}
           </Div>
           {permission.description && (
-            <Span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            <Span id={descriptionId} className="block text-xs text-gray-600 dark:text-gray-400 mt-0.5">
               {permission.description}
             </Span>
           )}
@@ -536,16 +577,17 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
             onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
             disabled={disabled}
+            aria-label={tOr('common.select_all_in', `Select all in ${category.name}`, { name: category.name })}
             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
           />
-          <Icon name={IconName.Folder} className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+          <Icon name={IconName.Folder} className="w-4 h-4 text-gray-500 dark:text-gray-500" />
           <Span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {category.name}
           </Span>
           <Span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 ml-1">
             {selectedCount}/{category.leaf_count}
           </Span>
-          <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-400 dark:text-gray-500 ml-auto" />
+          <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-500 dark:text-gray-500 ml-auto" />
         </Div>
 
         {/* Content */}
@@ -611,11 +653,13 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
             onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
             disabled={disabled}
+            // 이름 — 원시 체크박스라 「체크박스」만 읽혔다(역할 추가 61칸, #757). 아코디언 단추 안 배치는 별도 이슈
+            aria-label={tOr('common.select_all_in', `Select all in ${moduleNode.name}`, { name: moduleNode.name })}
             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
           />
           <Icon
             name={extensionType === 'core' ? IconName.Cog : IconName.Cube}
-            className="w-5 h-5 text-gray-400 dark:text-gray-500"
+            className="w-5 h-5 text-gray-500 dark:text-gray-500"
           />
           <Span className="font-medium text-gray-900 dark:text-white">{moduleNode.name}</Span>
           {extensionType !== 'core' && (
@@ -629,7 +673,7 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
           <Span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 ml-2">
             {selectedCount}/{moduleNode.leaf_count}
           </Span>
-          <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-400 dark:text-gray-500 ml-auto" />
+          <Icon name={IconName.ChevronDown} className="w-4 h-4 text-gray-500 dark:text-gray-500 ml-auto" />
         </Div>
 
         {/* Content */}
@@ -649,7 +693,7 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
   if (data.length === 0) {
     return (
       <Div
-        className={`text-sm text-gray-400 dark:text-gray-500 py-4 text-center ${className}`}
+        className={`text-sm text-gray-500 dark:text-gray-400 py-4 text-center ${className}`}
         id={id}
         {...editorAttrs}
       >

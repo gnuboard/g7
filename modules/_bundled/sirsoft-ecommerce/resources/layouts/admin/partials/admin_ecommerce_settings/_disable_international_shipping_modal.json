@@ -29,14 +29,14 @@
                             "name": "Icon",
                             "props": {
                                 "name": "triangle-exclamation",
-                                "className": "text-amber-500 dark:text-amber-400 text-lg mt-0.5 shrink-0"
+                                "className": "text-amber-600 dark:text-amber-400 text-lg mt-0.5 shrink-0"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-warning-soft"
+                                "className": "ecommerce-tone-warning-soft text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.message"
                         }
@@ -118,10 +118,7 @@
                                             }
                                         },
                                         {
-                                            "handler": "closeModal",
-                                            "params": {
-                                                "id": "disable_international_shipping_modal"
-                                            }
+                                            "handler": "closeModal"
                                         }
                                     ]
                                 }

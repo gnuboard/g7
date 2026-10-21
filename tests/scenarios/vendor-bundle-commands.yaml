@@ -1,0 +1,26 @@
+feature: 확장 vendor 번들 빌드·검증 커맨드
+
+description: |
+  module:vendor-bundle · plugin:vendor-bundle(빌드·--check·--force), module:vendor-verify ·
+  plugin:vendor-verify(무결성 검증), vendor-bundle:build-all · verify-all(일괄 별칭)을 잠근다.
+  소스는 활성 디렉토리, 출력은 _bundled 디렉토리로 나뉘며 빌드 결과는 _bundled 에만 남아야 한다.
+  미설치 확장의 --check 는 _bundled 의 composer.json 으로 판정하고, 외부 의존성이 없으면 스킵한다.
+
+axes:
+  command: [module_bundle, module_verify, plugin_bundle, plugin_verify, bulk_alias]   # 실행한 커맨드
+
+effects:
+  - vendor_bundle_writes_output_to_bundled_only                     # zip·json 은 _bundled 에만, 활성 디렉토리 무변경
+  - vendor_command_requires_identifier_or_all_flag                  # 식별자·--all 없으면 안내 + 실패 종료
+  - vendor_bundle_check_reports_stale_until_built                   # 빌드 전 --check 실패, 빌드 후 통과
+  - vendor_bundle_check_judges_bundled_composer_when_not_installed  # 미설치 확장도 _bundled composer.json 기준 STALE 판정
+  - vendor_bundle_check_skips_extension_without_external_dependencies # 외부 의존성 없으면 SKIPPED
+  - vendor_bundle_skips_rebuild_when_up_to_date                     # 최신이면 다시 빌드하지 않고 스킵 안내
+  - vendor_bundle_force_option_rebuilds_successfully                # --force 는 최신이어도 다시 빌드
+  - vendor_verify_passes_after_build                                # 정상 빌드 직후 무결성 통과
+  - vendor_verify_skips_when_bundle_missing                         # 번들 파일이 없으면 스킵
+  - vendor_verify_fails_on_tampered_zip                             # zip 변조 시 실패
+  - vendor_bulk_alias_builds_and_verifies_all_extensions            # build-all 이 모듈·플러그인 모두 빌드, verify-all 이 끝까지 실행
+
+test_files:
+  - tests/Feature/Console/Vendor/BuildVendorBundleCommandTest.php

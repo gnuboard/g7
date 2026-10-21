@@ -35,6 +35,8 @@
   "secret_post_password_title": "Secret Post Password",
   "secret_post_password_desc": "Please enter the password to view this post.",
   "password_verified": "Password verified successfully",
+  "secret_thread_password_hint": "If you wrote the original post as a guest, you can open this reply with the original post's password.",
+  "secret_thread_password_placeholder": "Original post password",
   "blinded_post": "This post has been blinded",
   "view_original": "View Original",
   "hide_original": "Hide Original",

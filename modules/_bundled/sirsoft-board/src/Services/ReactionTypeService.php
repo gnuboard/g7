@@ -20,11 +20,11 @@ use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface
  * 반응 유형 관리 서비스
  *
  * 반응 유형은 전용 CRUD 화면 없이 **게시판 환경설정 › 기본 설정 안 인라인 편집기**로
- * 관리한다 (PO 결정 R2). 설정 저장 버튼 하나로 행 추가·수정·순서 변경·삭제가 함께 반영되며,
+ * 관리한다. 설정 저장 버튼 하나로 행 추가·수정·순서 변경·삭제가 함께 반영되며,
  * 이 서비스의 syncTypes() 가 그 페이로드와 DB 를 맞춘다
  * (sirsoft-ecommerce 의 ShippingTypeService::syncShippingTypes() 와 같은 방식).
  *
- * 아이콘은 이미지 업로드만 지원한다 (PO 결정 R4) — 시드 기본값의 Font Awesome 클래스는
+ * 아이콘은 이미지 업로드만 지원한다 — 시드 기본값의 Font Awesome 클래스는
  * 관리자가 편집할 수 없고, 이미지가 없으면 그 FA 클래스로, 그것도 없으면 레이아웃 기본
  * 아이콘으로 폴백한다.
  */
@@ -83,8 +83,8 @@ class ReactionTypeService
      * 편집기 행 배열과 DB 를 동기화합니다.
      *
      * 페이로드에 없는 기존 유형은 삭제 대상이며, 반응이 1건이라도 남아 있으면
-     * ReactionTypeInUseException 으로 거부한다 (PO 결정 R5 — 비활성화만 가능).
-     * code 는 추가 후 불변이므로 기존 행의 code 변경은 무시한다 (PO 결정 R12).
+     * ReactionTypeInUseException 으로 거부한다 (비활성화만 가능).
+     * code 는 추가 후 불변이므로 기존 행의 code 변경은 무시한다.
      *
      * @param  array<int, array<string, mixed>>  $rows  편집기 행 배열 (표시 순서대로)
      * @return array{types: Collection<int, ReactionType>, removed_codes: array<int, string>}
@@ -154,7 +154,7 @@ class ReactionTypeService
                         $orphanAttachmentIds[] = (int) $type->icon_attachment_id;
                     }
 
-                    // code 는 불변 — 페이로드의 code 는 무시한다 (PO 결정 R12).
+                    // code 는 불변 — 페이로드의 code 는 무시한다.
                     $this->reactionTypeRepository->update($type, [
                         'name' => $row['name'],
                         'icon_attachment_id' => $iconAttachmentId,
@@ -163,7 +163,7 @@ class ReactionTypeService
                     ]);
                 } else {
                     // 새 유형의 FA 클래스(icon)는 페이로드에서 받지 않는다 — 관리자는
-                    // 이미지만 지정할 수 있다 (PO 결정 R4).
+                    // 이미지만 지정할 수 있다.
                     $type = $this->reactionTypeRepository->create([
                         'code' => $row['code'],
                         'name' => $row['name'],

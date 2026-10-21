@@ -17,6 +17,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\UpdateMileageTransactionReques
 use Modules\Sirsoft\Ecommerce\Http\Resources\MileageTransactionCollection;
 use Modules\Sirsoft\Ecommerce\Http\Resources\MileageTransactionResource;
 use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 관리자 마일리지 내역 관리 컨트롤러
@@ -90,6 +91,8 @@ class MileageTransactionController extends AdminBaseController
                 422,
                 ['general' => [$e->getMessage()]]
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         }
 
         return ResponseHelper::moduleSuccess(
@@ -132,6 +135,8 @@ class MileageTransactionController extends AdminBaseController
                 422,
                 ['general' => [$e->getMessage()]]
             );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
         }
 
         return ResponseHelper::moduleSuccess(
@@ -155,11 +160,23 @@ class MileageTransactionController extends AdminBaseController
             ? (int) $this->mileageService->resolveUserIdByUuid($data['user_id'])
             : null;
 
-        $count = $this->mileageService->extendLotExpiry(
-            $userId,
-            array_map('intval', $data['lot_ids']),
-            (int) $data['days'],
-        );
+        try {
+            $count = $this->mileageService->extendLotExpiry(
+                $userId,
+                array_map('intval', $data['lot_ids']),
+                (int) $data['days'],
+            );
+        } catch (MileageValidationException $e) {
+            // 탈퇴 회원 적립건 연장 거절 등 도메인 규칙 위반(7.1.1)
+            return ResponseHelper::moduleError(
+                'sirsoft-ecommerce',
+                'messages.mileage.validation_failed',
+                422,
+                ['general' => [$e->getMessage()]]
+            );
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        }
 
         return ResponseHelper::moduleSuccess(
             'sirsoft-ecommerce',
@@ -176,7 +193,11 @@ class MileageTransactionController extends AdminBaseController
      */
     public function linked(int $id): JsonResponse
     {
-        $linked = $this->mileageService->getLinkedTransactions($id);
+        try {
+            $linked = $this->mileageService->getLinkedTransactions($id);
+        } catch (AccessDeniedHttpException $e) {
+            return ResponseHelper::forbidden('auth.scope_denied');
+        }
         if ($linked === null) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'messages.mileage.not_found', 404);
         }

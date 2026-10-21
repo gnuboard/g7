@@ -400,12 +400,12 @@
                             ]
                         },
                         {
-                            "comment": "보조 버튼은 둘 중 하나로만 생긴다 — 올릴 판이 있으면 업데이트, 아니면 원문 편집.\n               원문 편집은 같은 창에서 연다(지금 보는 관리자 화면과 겹치지 않는다).\n               업데이트는 손으로 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.",
+                            "comment": "보조 버튼은 둘 중 하나로만 생긴다 — 올릴 판이 있으면 업데이트, 아니면 원문 편집.\n               업데이트가 도중에 멈췄으면(`stuck_update`) 「정리 후 다시 업데이트」가 같은 업데이트 창을 강제 업데이트로 연다 — 서버는\n               `force` 일 때만 멈춘 업데이트를 정리한다. 스위치(활성화 창)도 열어 둔다 — 활성화는 정리한 뒤 켠다.\n               원문 편집은 같은 창에서 연다(지금 보는 관리자 화면과 겹치지 않는다).\n               업데이트는 손으로 고친 레이아웃 여부와 변경 이력을 미리 물어 둔다.",
                             "type": "action",
                             "event": "onSecondaryAction",
                             "handler": "switch",
                             "params": {
-                                "value": "{{$args[0].update_available && $args[0].status !== 'uninstalled' ? 'update' : 'edit_code'}}"
+                                "value": "{{$args[0].stuck_update === true || ($args[0].update_available && $args[0].status !== 'uninstalled') ? 'update' : 'edit_code'}}"
                             },
                             "cases": {
                                 "edit_code": {
@@ -425,7 +425,9 @@
                                                 "target": "global",
                                                 "selectedTemplate": "{{$args[0]}}",
                                                 "templateLayoutStrategy": "overwrite",
-                                                "templateForceUpdate": false,
+                                                "templateLayoutSource": "auto",
+                                                "templateLayoutSourceOpen": false,
+                                                "templateForceUpdate": "{{$args[0].stuck_update === true}}",
                                                 "hasModifiedTemplateLayouts": false,
                                                 "modifiedTemplateLayoutsCount": 0,
                                                 "modifiedTemplateLayouts": [],
@@ -498,7 +500,7 @@
                             }
                         },
                         {
-                            "comment": "미설치면 설치 창, 활성이면 시각 편집기다(버튼 자체가 그 둘로만 생긴다).\n               시각 편집기는 새 창으로 연다 — 편집하며 결과를 보려면 원래 화면이 남아 있어야 한다.",
+                            "comment": "미설치면 설치 창이다. 활성 템플릿의 시각 편집기는 주 단추가 새 창 링크(primaryAction.href + target _blank)라\n               이 갈래에 오지 않는다 — 편집하며 결과를 보려면 원래 화면이 남아 있어야 하고, 링크라 주소 복사·새 탭도 된다(#757).",
                             "type": "action",
                             "event": "onPrimaryAction",
                             "handler": "switch",
@@ -513,7 +515,9 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "selectedTemplate": "{{$args[0]}}"
+                                                "selectedTemplate": "{{$args[0]}}",
+                                                "templateLayoutSource": "auto",
+                                                "templateLayoutSourceOpen": false
                                             }
                                         },
                                         {
@@ -521,13 +525,6 @@
                                             "target": "template_install_modal"
                                         }
                                     ]
-                                },
-                                "edit": {
-                                    "handler": "openWindow",
-                                    "params": {
-                                        "path": "/admin/layout-editor/{{$args[0].identifier}}",
-                                        "target": "_blank"
-                                    }
                                 }
                             }
                         },
@@ -592,6 +589,8 @@
                                                 "target": "global",
                                                 "selectedTemplate": "{{$args[1]}}",
                                                 "templateLayoutStrategy": "overwrite",
+                                                "templateLayoutSource": "auto",
+                                                "templateLayoutSourceOpen": false,
                                                 "templateForceUpdate": false,
                                                 "hasModifiedTemplateLayouts": false,
                                                 "modifiedTemplateLayoutsCount": 0,
@@ -669,7 +668,9 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
-                                                "selectedTemplate": "{{$args[1]}}"
+                                                "selectedTemplate": "{{$args[1]}}",
+                                                "templateLayoutSource": "auto",
+                                                "templateLayoutSourceOpen": false
                                             }
                                         },
                                         {
@@ -736,17 +737,19 @@
                         }
                     ],
                     "props": {
+                        "pageHref": "/admin/templates/user?page={page}",
+                        "pageHrefMergeQuery": true,
                         "viewMode": "{{(_global.extensionViewMode ?? 'gallery') === 'list' ? 'list' : 'gallery'}}",
                         "minCardWidth": 250,
                         "maxColumns": 5,
                         "resyncKey": "{{_global.extensionToggleResync ?? 0}}",
-                        "loading": "{{templates?.loading ?? false}}",
+                        "loading": "{{templates === undefined}}",
                         "pagination": true,
                         "alwaysShowPagination": true,
                         "currentPage": "{{templates?.data?.pagination?.current_page ?? 1}}",
                         "totalPages": "{{templates?.data?.pagination?.last_page ?? null}}",
                         "hasMorePages": "{{templates?.data?.pagination?.has_more_pages ?? false}}",
-                        "items": "{{(templates?.data?.data ?? []).map(p => ({\n        id: p.identifier,\n        row: p,\n        name: p.name ?? p.identifier,\n        version: p.version,\n        description: p.description ?? '',\n        vendor: p.vendor,\n        iconUrl: p.icon_url,\n        fallbackIcon: 'palette',\n        dependencies: [\n          ...((p.dependencies?.modules ?? []).map(d => ({ type: 'module', name: d.name || d.identifier || d }))),\n          ...((p.dependencies?.plugins ?? []).map(d => ({ type: 'plugin', name: d.name || d.identifier || d })))\n        ],\n        badges: [\n          ...(p.status === 'active' ? [{ label: '$t:admin.templates.status.active', tone: 'success' }] : []),\n          ...(p.status === 'inactive' ? [{ label: '$t:admin.templates.status.inactive', tone: 'neutral' }] : []),\n          ...(p.status === 'uninstalled' ? [{ label: '$t:admin.templates.status.not_installed', tone: 'info' }] : []),\n          ...(p.update_available && p.status !== 'uninstalled' ? [{ label: '$t:admin.templates.update_available', tone: 'danger' }] : []),\n          ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : [])\n        ],\n        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.status === 'active' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_activate !== true || p.core_compatible === false, label: p.name ?? p.identifier } : null,\n        secondaryAction: p.update_available && p.status !== 'uninstalled'\n          ? { label: '$t:admin.templates.actions.update', icon: 'refresh', disabled: ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true }\n          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_code', icon: 'code', disabled: p.abilities?.can_edit_layouts !== true } : null),\n        primaryAction: p.status === 'uninstalled'\n          ? { label: '$t:admin.templates.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true || p.core_compatible === false }\n          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_layout_visual', icon: 'edit', variant: 'solid', disabled: p.abilities?.can_edit_layouts !== true } : null),\n        actions: [\n          { id: 'view_detail', label: '$t:admin.templates.actions.view_detail', iconName: 'info-circle' },\n          { id: 'update', label: '$t:admin.templates.actions.update', iconName: 'refresh', disabled: !p.update_available || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true },\n          { id: 'refresh_layouts', label: '$t:admin.templates.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },\n          { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', disabled: p.status !== 'active' || templates?.data?.abilities?.can_view_language_packs !== true },\n          { id: 'uninstall', label: '$t:admin.templates.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.status === 'active' || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }\n        ]\n      }))}}"
+                        "items": "{{(templates?.data?.data ?? []).map(p => ({\n        id: p.identifier,\n        row: p,\n        name: p.name ?? p.identifier,\n        version: p.version,\n        description: p.description ?? '',\n        vendor: p.vendor,\n        iconUrl: p.icon_url,\n        fallbackIcon: 'palette',\n        dependencies: [\n          ...((p.dependencies?.modules ?? []).map(d => ({ type: 'module', name: d.name || d.identifier || d }))),\n          ...((p.dependencies?.plugins ?? []).map(d => ({ type: 'plugin', name: d.name || d.identifier || d })))\n        ],\n        badges: [\n          ...(p.status === 'active' ? [{ label: '$t:admin.templates.status.active', tone: 'success' }] : []),\n          ...(p.status === 'inactive' ? [{ label: '$t:admin.templates.status.inactive', tone: 'neutral' }] : []),\n          ...(p.status === 'uninstalled' ? [{ label: '$t:admin.templates.status.not_installed', tone: 'info' }] : []),\n          ...(p.status === 'installing' ? [{ label: '$t:admin.templates.status.installing', tone: 'warning' }] : []),\n          ...(p.status === 'uninstalling' ? [{ label: '$t:admin.templates.status.uninstalling', tone: 'warning' }] : []),\n          ...(p.status === 'updating' && p.stuck_update !== true ? [{ label: '$t:admin.templates.status.updating', tone: 'accent' }] : []),\n          ...(p.stuck_update === true ? [{ label: '$t:admin.templates.status.stuck_update', tone: 'warning', icon: 'exclamation-triangle', title: '$t:admin.templates.stuck_update_hint' }] : []),\n          ...(p.update_available && p.status !== 'uninstalled' && p.status !== 'updating' ? [{ label: '$t:admin.templates.update_available', tone: 'danger' }] : []),\n          ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : [])\n        ],\n        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.status === 'active' || (['installing', 'uninstalling', 'updating'].includes(p.status) && p.stuck_update !== true) || p.abilities?.can_activate !== true || p.core_compatible === false, label: p.name ?? p.identifier } : null,\n        secondaryAction: p.stuck_update === true\n          ? { label: '$t:admin.templates.actions.recover_update', icon: 'refresh', title: '$t:admin.templates.stuck_update_hint', disabled: p.abilities?.can_install !== true }\n          : p.update_available && p.status !== 'uninstalled'\n          ? { label: '$t:admin.templates.actions.update', icon: 'refresh', disabled: ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true }\n          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_code', icon: 'code', href: '/admin/templates/' + p.identifier + '/edit', disabled: p.abilities?.can_edit_layouts !== true } : null),\n        primaryAction: p.status === 'uninstalled'\n          ? { label: '$t:admin.templates.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true || p.core_compatible === false }\n          : (p.status === 'active' ? { label: '$t:admin.templates.actions.edit_layout_visual', icon: 'edit', variant: 'solid', disabled: p.abilities?.can_edit_layouts !== true, href: '/admin/layout-editor/' + p.identifier, target: '_blank' } : null),\n        actions: [\n          { id: 'view_detail', label: '$t:admin.templates.actions.view_detail', iconName: 'info-circle' },\n          { id: 'update', label: '$t:admin.templates.actions.update', iconName: 'refresh', disabled: !p.update_available || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_install !== true },\n          { id: 'refresh_layouts', label: '$t:admin.templates.actions.refresh_layouts', iconName: 'refresh', disabled: p.status !== 'active' || p.abilities?.can_activate !== true },\n          { id: 'manage_language_packs', label: '$t:admin.language_packs.actions.manage', iconName: 'language', href: '/admin/templates/' + p.identifier + '/language-packs', mergeQuery: true, disabled: p.status !== 'active' || templates?.data?.abilities?.can_view_language_packs !== true },\n          { id: 'uninstall', label: '$t:admin.templates.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.status === 'active' || p.status === 'uninstalled' || ['installing', 'uninstalling', 'updating'].includes(p.status) || p.abilities?.can_uninstall !== true }\n        ]\n      }))}}"
                     }
                 },
                 {

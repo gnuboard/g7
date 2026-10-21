@@ -357,7 +357,7 @@ describe('_apply_reason.json — 사유', () => {
   });
 
   /**
-   * 용량 상한도 컴포지트에 넘긴다. (T2-D2 · #599 3차 실측)
+   * 용량 상한도 컴포지트에 넘긴다. (#599 실측)
    *
    * 넘기지 않던 동안에는 용량을 넘은 파일이 컴포지트 목록에 `big.jpg 8.52 MB` ·
    * `1/5개 첨부됨` 으로 **첨부된 것처럼 남았다** — 핸들러가 걸러 실제로 올라가지는 않지만,
@@ -686,7 +686,7 @@ describe('_modal_change_product.json — 교환상품 변경 모달 (D29)', () =
   });
 
   /**
-   * 고른 조합을 지금 살 수 없으면 **그 이유를 말한다**. (T2-D10 · #599 3차 실측 L-4)
+   * 고른 조합을 지금 살 수 없으면 **그 이유를 말한다**. (#599 실측)
    *
    * 옵션 찾기(`findMatchingOption`)는 판매중지 옵션을 건너뛴다. 그래서 블랙/M 이 판매중지면
    * 두 그룹을 다 골라도 찾은 옵션이 없고, 종전에는 가격 줄도 안내도 없이 [적용]만 잠겼다 —
@@ -734,12 +734,13 @@ describe('mypage/orders/show.json — 클레임 신청 진입', () => {
   /** @effects order_detail_claim_entry_buttons_gated_by_claimable_types */
   it('클레임 신청 버튼 3종이 있고 각각 유형이 열린 상품에서만 활성이다', () => {
     const buttons = flatten(orderShow).filter(
-      (n) => n.name === 'Button' && String(n.props?.disabled ?? '').includes('claimable_types')
+      (n) => n.name === 'A' && String(n.props?.disabled ?? '').includes('claimable_types')
     );
     expect(buttons).toHaveLength(3);
 
+    // 신청 진입은 작성 화면 주소를 가진 링크다 — 주소는 href, click 은 경로 없는 navigate
     const types = buttons.map((b) =>
-      String(b.actions[0].params.path).replace(/^.*\/claims\/apply\//, '')
+      String(b.props.href).replace(/^.*\/claims\/apply\//, '').replace(/\?.*$/, '')
     );
     expect(types.sort()).toEqual(['exchange', 'refund', 'return']);
 
@@ -748,8 +749,10 @@ describe('mypage/orders/show.json — 클레임 신청 진입', () => {
       expect(String(button.props.disabled)).toContain('_local.selectedItemIds');
       // 목록 클러스터 안의 이동이므로 목록 상태를 물려준다.
       expect(button.actions[0].params.mergeQuery).toBe(true);
-      // 체크한 상품을 작성 화면으로 넘긴다.
+      expect(button.props.mergeQuery).toBe(true);
+      // 체크한 상품을 작성 화면으로 넘긴다(새 탭 주소에도 같은 값).
       expect(button.actions[0].params.query.options).toBe("{{(_local.selectedItemIds ?? []).join(',')}}");
+      expect(String(button.props.href)).toContain("options={{(_local.selectedItemIds ?? []).join(',')}}");
     }
   });
 

@@ -69,10 +69,10 @@ return [
         'image_unreadable' => 'アップロードした画像ファイルを読み込めません。',
     ],
     'send_skipped' => [
-        'alimtalk_template_not_approved' => '承認されたアラートトークテンプレートがないか、アラートトーク送信がオフになっているため送信をスキップしました。(通知タイプ: :type)',
-        'sms_template_missing' => 'SMS本文が設定されていないため送信をスキップしました。(通知タイプ: :type)',
-        'recipient_phone_missing' => '受信者の電話番号がないため送信をスキップしました。(通知タイプ: :type)',
-        'message_body_empty' => '送信本文が空いているため送信をスキップしました。(通知タイプ: :type)',
+        'alimtalk_template_not_approved' => '承認されたアラートトークテンプレートがないか、アラートトーク送信がオフになっているため送信できませんでした。(通知タイプ: :type)',
+        'sms_template_missing' => 'SMS本文が設定されていないため送信できませんでした。(通知タイプ: :type)',
+        'recipient_phone_missing' => '受信者の電話番号がないため送信できませんでした。(通知タイプ: :type)',
+        'message_body_empty' => '送信本文が空のため送信できませんでした。(通知タイプ: :type)',
     ],
     'template' => [
         'created' => '通知テンプレートを保存しました。',
@@ -176,6 +176,13 @@ return [
             'channel_label' => '送信チャネル（SMS/アリムトーク）',
             'settings_url' => 'メッセージング設定URL',
             'site_url' => 'サイトURL',
+        ],
+    ],
+    // コンソールコマンド出力
+    'console' => [
+        'sync_template_status' => [
+            'no_requested' => '審査中(requested)のテンプレートがないため、カカオへの照会をスキップします。',
+            'done' => '審査中テンプレート:checked件を点検し、:transitioned件のステータスが遷移しました。',
         ],
     ],
 ];

@@ -1,4 +1,4 @@
-// e2e:allow 7.1.0 출시 점검 D3-1 — 지원 언어 읽기를 코어 공개 API(locale.supported)로 교체. 단위 시험이 코어 API 모양 그대로 덮고, ja 기본 언어 화면 실측은 출시 리허설(W3) 브라우저 매트릭스에서 한다
+// e2e:allow 7.1.0 출시 점검 — 지원 언어 읽기를 코어 공개 API(locale.supported)로 교체. 단위 시험이 코어 API 모양 그대로 덮고, ja 기본 언어 화면 실측은 출시 리허설(W3) 브라우저 매트릭스에서 한다
 /**
  * 옵션 관련 핸들러
  *
@@ -6,6 +6,7 @@
  */
 
 import type { ActionContext } from '../types';
+import { localizedText } from '../utils/localizedText';
 import { convertCurrencyPrice, sumActiveOptionStock } from './productOptionHandlers';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
@@ -169,7 +170,7 @@ interface ActionWithParams {
  */
 function getValueForLocale(value: string | OptionValueMultilingual, locale: string): string {
     if (typeof value === 'string') return value;
-    return value[locale] ?? value['ko'] ?? Object.values(value)[0] ?? '';
+    return localizedText(value, locale) ?? '';
 }
 
 /**

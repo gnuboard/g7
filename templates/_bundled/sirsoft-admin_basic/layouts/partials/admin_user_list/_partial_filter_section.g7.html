@@ -83,14 +83,14 @@
         <span class="filter-label w-32">$t:admin.users.filter.created_at</span>
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
-            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
             <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.created_at')}}" name="createdStartDate" value="{{_local.filter.createdStartDate || ''}}" class="input w-36">
               <on type="change">
                 <!-- 가입일 시작. 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다 — 남겨 두면 버튼과 실제 범위가 갈린다. -->
                 <set-state target="_local" filter.createdStartDate="{{$event.target.value}}" filter.createdDateQuick=""/>
               </on>
             </input>
-            <span class="text-gray-400 dark:text-gray-500">~</span>
+            <span class="text-gray-500 dark:text-gray-400">~</span>
             <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.created_at')}}" name="createdEndDate" value="{{_local.filter.createdEndDate || ''}}" class="input w-36">
               <on type="change">
                 <!-- 가입일 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다. -->
@@ -173,14 +173,14 @@
         <span class="filter-label w-32">$t:admin.users.filter.last_login</span>
         <div class="flex-center flex-wrap gap-2">
           <div class="flex-center gap-2">
-            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
             <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.last_login')}}" name="lastLoginStartDate" value="{{_local.filter.lastLoginStartDate || ''}}" disabled="{{!!_local.filter.neverLoggedIn}}" class="input w-36">
               <on type="change">
                 <!-- 최근 로그인 시작. 「로그인 이력 없음」 을 켜면 이 칸은 잠긴다 — 둘은 동시에 참일 수 없다. -->
                 <set-state target="_local" filter.lastLoginStartDate="{{$event.target.value}}" filter.lastLoginDateQuick=""/>
               </on>
             </input>
-            <span class="text-gray-400 dark:text-gray-500">~</span>
+            <span class="text-gray-500 dark:text-gray-400">~</span>
             <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.last_login')}}" name="lastLoginEndDate" value="{{_local.filter.lastLoginEndDate || ''}}" disabled="{{!!_local.filter.neverLoggedIn}}" class="input w-36">
               <on type="change">
                 <!-- 최근 로그인 종료. -->
@@ -349,14 +349,14 @@
         </input>
         <span class="filter-label w-32">$t:admin.users.filter.dormant_at</span>
         <div class="flex-center gap-2">
-          <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+          <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
           <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.dormant_at')}}" name="dormantStartDate" value="{{_local.filter.dormantStartDate || ''}}" class="input w-36">
             <on type="change">
               <!-- 휴면 전환일 시작. 휴면이 풀린 회원은 전환일이 지워지므로 지금 휴면인 회원만 걸린다. -->
               <set-state target="_local" filter.dormantStartDate="{{$event.target.value}}"/>
             </on>
           </input>
-          <span class="text-gray-400 dark:text-gray-500">~</span>
+          <span class="text-gray-500 dark:text-gray-400">~</span>
           <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.dormant_at')}}" name="dormantEndDate" value="{{_local.filter.dormantEndDate || ''}}" class="input w-36">
             <on type="change">
               <!-- 휴면 전환일 종료. -->
@@ -387,14 +387,14 @@
             </on>
           </select>
           <div class="flex-center gap-2">
-            <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+            <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
             <input type="date" aria-label="$t:common.range_start|label={{$t('admin.users.filter.status_changed')}}" name="statusChangedStart" value="{{_local.filter.statusChangedStart || ''}}" disabled="{{!_local.filter.statusChangedType}}" class="input w-36">
               <on type="change">
                 <!-- 상태 변경일 시작. 종류를 고르기 전에는 잠겨 있다 — 무엇의 날짜인지 모르면 서버가 무시한다. -->
                 <set-state target="_local" filter.statusChangedStart="{{$event.target.value}}"/>
               </on>
             </input>
-            <span class="text-gray-400 dark:text-gray-500">~</span>
+            <span class="text-gray-500 dark:text-gray-400">~</span>
             <input type="date" aria-label="$t:common.range_end|label={{$t('admin.users.filter.status_changed')}}" name="statusChangedEnd" value="{{_local.filter.statusChangedEnd || ''}}" disabled="{{!_local.filter.statusChangedType}}" class="input w-36">
               <on type="change">
                 <!-- 상태 변경일 종료. -->
@@ -432,13 +432,13 @@
         </input>
         <span class="filter-label w-32">$t:admin.users.filter.country</span>
         <div class="flex-center gap-2 flex-1">
-          <searchable-dropdown data-type="composite" options="{{_computed.countryOptions ?? []}}" value="{{_local.filter.country || ''}}" triggerLabel="$t:admin.users.filter.country_select" searchPlaceholder="$t:admin.users.filter.country_search" noResultsText="$t:common.no_results" class="w-64">
+          <searchable-dropdown data-type="composite" aria-label="$t:admin.users.filter.country" options="{{_computed.countryOptions ?? []}}" value="{{_local.filter.country || ''}}" triggerLabel="$t:admin.users.filter.country_select" searchPlaceholder="$t:admin.users.filter.country_search" noResultsText="$t:common.no_results" class="w-64">
             <on type="change" event="onChange">
               <!-- 국가 선택. 선택지는 회원 등록·수정 폼과 같은 국가 목록(본체 `countryList`)이다 — 목록이 갈리면 폼에서 넣은 나라를 필터로 못 찾는다. -->
               <set-state target="_local" filter.country="{{$args[0]}}"/>
             </on>
           </searchable-dropdown>
-          <button data-if="{{!!_local.filter.country}}" type="button" aria-label="$t:common.clear_selection" title="$t:common.clear_selection" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
+          <button data-if="{{!!_local.filter.country}}" type="button" aria-label="$t:common.clear_selection" title="$t:common.clear_selection" class="text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
             <on type="click">
               <!-- 고른 국가 지우기. -->
               <set-state target="_local" filter.country=""/>
@@ -530,7 +530,7 @@
       <responsive on="portable" class="row-stack mb-4"/>
       <div data-ref="search_row_line1" class="flex-center flex-wrap gap-2 flex-1">
         <responsive on="portable" class="flex gap-2 w-full"/>
-        <select data-ref="search_field_select" name="searchField" class="w-32" value="{{_local.filter.searchField || 'all'}}">
+        <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="w-32" value="{{_local.filter.searchField || 'all'}}">
           <responsive on="portable" class="w-24"/>
           <options>
             <option value="all">$t:admin.users.search_fields.all</option>

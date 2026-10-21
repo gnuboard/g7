@@ -1,4 +1,4 @@
-feature: 플러그인 설정 화면 읽기 전용 — 코어 설정 응답 abilities.can_update (7.1.0 abilities 게이트 G19)
+feature: 플러그인 설정 화면 읽기 전용 — 코어 설정 응답 abilities.can_update (7.1.0 abilities 게이트)
 
 description: |
   코어 플러그인 설정 응답 `data.abilities.can_update`(= core.plugins.update)가 true 가 아니면(응답 전·키 없음 포함, fail-closed)

@@ -47,8 +47,8 @@
         </div>
       </div>
       <!-- 게시판이 없을 때 -->
-      <div data-if="{{!boardList.data || boardList.data.length === 0}}" class="text-center py-12">
-        <icon name="inbox" size="3x" class="text-gray-400 dark:text-gray-500 mx-auto mb-4"/>
+      <div data-if="{{boardList !== undefined &amp;&amp; (!boardList.data || boardList.data.length === 0)}}" class="text-center py-12">
+        <icon name="inbox" size="3x" class="text-gray-500 dark:text-gray-500 mx-auto mb-4"/>
         <p class="text-gray-500 dark:text-gray-400">$t:board.all_boards.empty</p>
       </div>
     </container>

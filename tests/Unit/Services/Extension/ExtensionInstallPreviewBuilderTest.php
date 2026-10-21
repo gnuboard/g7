@@ -2,9 +2,13 @@
 
 namespace Tests\Unit\Services\Extension;
 
+use App\Enums\ExtensionOwnerType;
 use App\Enums\LanguagePackScope;
 use App\Extension\TemplateManager;
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\Template;
+use App\Models\User;
 use App\Services\Extension\ExtensionInstallPreviewBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
@@ -85,6 +89,55 @@ class ExtensionInstallPreviewBuilderTest extends TestCase
     }
 
     /**
+     * 주어진 관리자 권한만 가진 사용자를 만듭니다 — 동반 설치 기본 선택은 권한이 있어야 켜진다(#764).
+     *
+     * @param  array<int, string>  $permissions  부여할 권한 식별자 목록
+     * @return User 생성된 사용자
+     */
+    private function createAdminWith(array $permissions): User
+    {
+        $user = User::factory()->create();
+
+        $permissionIds = [];
+        foreach ($permissions as $identifier) {
+            $permissionIds[] = Permission::firstOrCreate(
+                ['identifier' => $identifier],
+                [
+                    'name' => ['ko' => $identifier, 'en' => $identifier],
+                    'description' => ['ko' => $identifier, 'en' => $identifier],
+                    'extension_type' => ExtensionOwnerType::Core,
+                    'extension_identifier' => 'core',
+                    'type' => 'admin',
+                ]
+            )->id;
+        }
+
+        $role = Role::create([
+            'identifier' => 'preview_test_'.uniqid(),
+            'name' => ['ko' => '테스트', 'en' => 'Test'],
+            'description' => ['ko' => '테스트', 'en' => 'Test'],
+            'is_active' => true,
+        ]);
+        $role->permissions()->sync($permissionIds);
+
+        $adminRole = Role::firstOrCreate(
+            ['identifier' => 'admin'],
+            [
+                'name' => ['ko' => '관리자', 'en' => 'Administrator'],
+                'description' => ['ko' => '관리자', 'en' => 'Administrator'],
+                'extension_type' => ExtensionOwnerType::Core,
+                'extension_identifier' => 'core',
+                'is_active' => true,
+            ]
+        );
+
+        $user->roles()->attach($adminRole->id, ['assigned_at' => now(), 'assigned_by' => null]);
+        $user->roles()->attach($role->id, ['assigned_at' => now(), 'assigned_by' => null]);
+
+        return $user->fresh();
+    }
+
+    /**
      * 템플릿 의존성이 enriched 평면 배열로 나옵니다.
      *
      * @return void 반환값 없음
@@ -99,6 +152,9 @@ class ExtensionInstallPreviewBuilderTest extends TestCase
             'modules' => ['missing-foo' => '>=1.0.0'],
             'plugins' => ['missing-bar' => '>=2.0.0'],
         ]);
+
+        // 미설치 의존 확장을 함께 설치·활성화할 권한이 있는 관리자 — 권한이 없으면 기본 선택이 꺼진다(#764, 아래 별도 시험)
+        $this->actingAs($this->createAdminWith(['core.modules.install', 'core.modules.activate', 'core.plugins.install', 'core.plugins.activate']));
 
         $preview = $this->builder->build(LanguagePackScope::Template, 'test-preview');
 
@@ -124,9 +180,41 @@ class ExtensionInstallPreviewBuilderTest extends TestCase
         $this->assertFalse($byId['missing-foo']['is_met']);
         $this->assertTrue($byId['missing-foo']['default_selected']);
 
+        $this->assertTrue($byId['missing-foo']['can_select']);
+
         $this->assertArrayHasKey('missing-bar', $byId);
         $this->assertSame('plugin', $byId['missing-bar']['type']);
         $this->assertSame('>=2.0.0', $byId['missing-bar']['required_version']);
+        $this->assertTrue($byId['missing-bar']['default_selected']);
+    }
+
+    /**
+     * 동반 설치 권한이 없으면 미충족·미설치 의존 확장도 기본 선택하지 않고 선택을 잠근다 — 설치 API 도 같은 판정으로 403 을 낸다(#764).
+     *
+     * 이 계약이 들어오며(#764) 위 시험은 인증 사용자 없이 `default_selected === true` 를 기대한 채 남아 실패했다(7.1.1 출시 전 확인).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario extension_type=template, surface=install_preview, permission=missing
+     *
+     * @effects cascade_dependency_unselected_without_permission
+     */
+    public function test_dependencies_are_not_preselected_without_cascade_permissions(): void
+    {
+        $this->createTestTemplate([
+            'modules' => ['missing-foo' => '>=1.0.0'],
+            'plugins' => ['missing-bar' => '>=2.0.0'],
+        ]);
+
+        // 모듈 권한만 — 플러그인은 함께 설치할 수 없다
+        $this->actingAs($this->createAdminWith(['core.modules.install', 'core.modules.activate']));
+
+        $byId = collect($this->builder->build(LanguagePackScope::Template, 'test-preview')['dependencies'])->keyBy('identifier');
+
+        $this->assertTrue($byId['missing-foo']['default_selected']);
+        $this->assertFalse($byId['missing-bar']['default_selected']);
+        $this->assertFalse($byId['missing-bar']['can_select']);
+        $this->assertTrue($byId['missing-bar']['available'], '미충족이라 후보이긴 하다 — 권한만 없다');
     }
 
     /**

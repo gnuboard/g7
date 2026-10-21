@@ -1,0 +1,37 @@
+feature: 레이아웃 문자열 번역 `$t:키|이름={{값}}` 의 값 자리 보호 (engine-v1.80.1, 7.1.1 출시 전 실측)
+
+description: |
+  렌더러는 문자열의 `{{…}}` 를 먼저 값으로 바꾼 뒤 `$t:` 를 번역해, 값에 든 `&`·`|`·`=`·끝 ` /` 가 인자 구분자·문장 꼬리로
+  읽혔다(장바구니 선택 체크박스 「Tom & Jerry 머그컵 선택」 → 「Tom 선택」). 바인딩 해석이 `$t:` 인자 자리 값을 보호 표식
+  (U+FDD3·U+FDD4)으로 감싸고 번역 엔진이 인자를 나눈 뒤 글자 그대로 치환한다. 보호는 결과를 곧바로 번역하는 경로만 켠다.
+
+  축 render_path 는 보간이 일어나는 자리다 — 렌더러 prop·text, 반복 렌더의 문자열 중간 `$t:`(보간 분기)·`$t:` 로 시작하는 값,
+  액션 확인 창·toast message, 엔진 직접 호출, 엘리먼트 직전 안전망. 축 value_chars 는 바인딩 값의 모양이다.
+
+axes:
+  render_path: [prop, text, iteration_interpolation, iteration_leading, action_confirm, action_toast, engine_direct, element_props]
+  value_chars: [plain, separators, translation_token, empty, marker]
+
+exclusions:
+  - { render_path: prop, value_chars: marker, reason: "표식은 바인딩이 만드는 내부 값이다 — 남는지는 element_props·engine_direct 가 본다" }
+  - { render_path: prop, value_chars: empty, reason: "빈 값 규칙은 resolveBindings 한 분기(빈 결과는 감싸지 않음)라 경로와 무관하다 — prop 혼합 문자열은 같은 protectTranslationParams 옵션의 resolveBindings 와 resolveTranslations 를 그대로 타고, 빈 인자에는 {{…}} 가 남지 않아 렌더러가 넘기는 데이터 컨텍스트도 쓰이지 않는다. 그 두 함수를 같은 옵션으로 부르는 engine_direct 행이 잰다" }
+  - { render_path: [text, iteration_interpolation, iteration_leading, action_confirm, action_toast], value_chars: [plain, translation_token, empty, marker], reason: "같은 resolveBindings 옵션·같은 resolveTranslations 를 탄다 — 값 모양별 규칙은 prop 행이 덮고, 이 자리들은 결함 모양(separators)으로 경로 연결만 본다" }
+  - { render_path: engine_direct, value_chars: [plain, translation_token, marker], reason: "엔진 직접 호출 행은 키 없음·보호 미요청·빈 값 대조만 본다 — 값 모양별 규칙은 prop 행이 덮는다" }
+  - { render_path: element_props, value_chars: [plain, separators, translation_token, empty], reason: "안전망은 표식 글자만 걷는다 — 값 모양과 무관" }
+
+effects:
+  - separator_chars_in_bound_value_kept
+  - multi_param_and_outside_bindings_unchanged
+  - bound_translation_token_value_translated
+  - empty_bound_value_unchanged
+  - protection_marker_never_leaks
+  - literal_only_binding_evaluates_to_its_value   # {{1}}·{{'abc'}}·{{true}} 는 경로가 아니라 값(봇 평가기와 같음)
+  - non_literal_paths_unchanged
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.translationParamValues.test.tsx
+  - resources/js/core/template-engine/__tests__/DataBindingEngine.literalBindings.test.tsx
+
+notes: |
+  봇(SEO) 화면 평가기의 같은 인자 분리는 seo-expression-evaluator 매니페스트(`ExpressionEvaluatorTranslationParamTest`)가 잠근다.
+  컴포넌트 번역 함수(`G7Core.t(키, 인자)`) 경로는 translation-expression-params 매니페스트가 맡는다.

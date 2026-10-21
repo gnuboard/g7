@@ -20,7 +20,7 @@
           <!-- 무통장 입금확인 버튼 — 무통장(dbank) + 결제정보 자체가 미입금(payment_status=ready/waiting_deposit)인 결제건만 노출. order_status 가 아닌 payment 단위 상태로 판정해야 함(버튼이 payments 반복 내 결제카드 단위로 그려지고, order_status 가 다른 경로로 먼저 결제완료로 전이돼도 미입금 결제는 입금확인이 필요하므로). -->
           <div data-if="{{payment.payment_method === 'dbank' &amp;&amp; (payment.payment_status === 'ready' || payment.payment_status === 'waiting_deposit')}}" class="mb-4">
             <!-- 결제완료로 바꾸는 쓰기라 주문 수정 권한(can_update)으로 잠근다 — 서버도 같은 권한으로 403 을 낸다. -->
-            <button data-ref="payment_confirm_deposit_button_{{payIdx}}" type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true}}">
+            <button data-ref="payment_confirm_deposit_button_{{payIdx}}" type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true}}">
               <on type="click">
                 <action handler="sirsoft-ecommerce.openConfirmDepositModal"/>
               </on>
@@ -92,8 +92,8 @@
               <span class="text-purple-600 dark:text-purple-400">-{{order.data?.total_points_used_amount_formatted}}</span>
             </div>
             <div data-if="{{order.data?.total_deposit_used_amount > 0}}" class="flex justify-between text-sm">
-              <span class="text-green-600 dark:text-green-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.deposit_used</span>
-              <span class="text-green-600 dark:text-green-400">-{{order.data?.total_deposit_used_amount_formatted}}</span>
+              <span class="text-green-700 dark:text-green-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.deposit_used</span>
+              <span class="text-green-700 dark:text-green-400">-{{order.data?.total_deposit_used_amount_formatted}}</span>
             </div>
             <div class="flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700">
               <span class="text-gray-900 dark:text-gray-100">$t:sirsoft-ecommerce.admin.order.detail.payment_info.final_amount</span>
@@ -125,8 +125,8 @@
                 <span class="text-red-600 dark:text-red-400 font-medium">-{{order.data?.total_cancelled_amount_formatted}}</span>
               </div>
               <div data-if="{{(order.data?.total_refunded_amount ?? 0) > 0}}" class="flex justify-between text-sm">
-                <span class="text-orange-600 dark:text-orange-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.refunded_amount</span>
-                <span class="text-orange-600 dark:text-orange-400">-{{order.data?.total_refunded_amount_formatted}}</span>
+                <span class="text-orange-700 dark:text-orange-400">$t:sirsoft-ecommerce.admin.order.detail.payment_info.refunded_amount</span>
+                <span class="text-orange-700 dark:text-orange-400">-{{order.data?.total_refunded_amount_formatted}}</span>
               </div>
               <!-- 환불금액 중 「마일리지로 환불」로 지급한 몫(Q3) — 그중 내역이라 부호 없이 들여 쓴다. 결제행은 결제완료로 남으므로(Q16) 이 줄이 없으면 그 돈이 카드·계좌로 나가지 않았다는 사실이 보이지 않는다. -->
               <div data-ref="payment_refunded_mileage_credit_{{payIdx}}" data-if="{{(order.data?.total_refunded_mileage_credit_amount ?? 0) > 0}}" class="flex justify-between text-sm pl-3">
@@ -215,8 +215,8 @@
               $t:sirsoft-ecommerce.admin.order.detail.cash_receipt.view_receipt
             </a>
             <!-- 입금완료 + 미발급 + 재발급 실패 이력 없음 → 신규 발급. 실패 이력이 있으면 복구 경로는 수동 재발급이므로 두 버튼을 함께 띄우지 않는다. -->
-            <button data-ref="payment_cash_receipt_issue_button_{{payIdx}}" data-if="{{payment?.payment_status === 'paid' &amp;&amp; !order.data?.cash_receipt &amp;&amp; String((order.data?.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() !== 'failed'}}" type="button" class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true}}">
-              <responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"/>
+            <button data-ref="payment_cash_receipt_issue_button_{{payIdx}}" data-if="{{payment?.payment_status === 'paid' &amp;&amp; !order.data?.cash_receipt &amp;&amp; String((order.data?.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() !== 'failed'}}" type="button" class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{order?.data?.abilities?.can_update !== true}}">
+              <responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"/>
               <on type="click">
                 <sequence>
                   <set-state target="global" adminCashReceiptForm="{{ { receipt_type: (payment?.cash_receipt_type ?? 'income'), identifier_type: (payment?.cash_receipt_identifier_type ?? 'phone'), identifier: '', error: null } }}"/>
@@ -226,8 +226,8 @@
               $t:sirsoft-ecommerce.admin.order.detail.cash_receipt.issue
             </button>
             <!-- 수동 재발급 — 관리자 전용. 취소 성공 + 재발급 실패 중간 상태 복구 (recoverFailedIssue) -->
-            <button data-ref="payment_cash_receipt_reissue_button_{{payIdx}}" data-if="{{!order.data?.cash_receipt &amp;&amp; (order.data?.cash_receipts ?? []).length > 0 &amp;&amp; String((order.data?.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() === 'failed'}}" type="button" class="px-3 py-1.5 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCashReceiptBusy === true || order?.data?.abilities?.can_update !== true}}">
-              <responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 text-white"/>
+            <button data-ref="payment_cash_receipt_reissue_button_{{payIdx}}" data-if="{{!order.data?.cash_receipt &amp;&amp; (order.data?.cash_receipts ?? []).length > 0 &amp;&amp; String((order.data?.cash_receipts ?? [])[0]?.issue_status ?? '').toLowerCase() === 'failed'}}" type="button" class="px-3 py-1.5 text-sm rounded-lg bg-amber-700 hover:bg-amber-800 dark:bg-amber-700 dark:hover:bg-amber-800 text-white disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isCashReceiptBusy === true || order?.data?.abilities?.can_update !== true}}">
+              <responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg bg-amber-700 hover:bg-amber-800 dark:bg-amber-700 dark:hover:bg-amber-800 text-white"/>
               <on type="click">
                 <!-- 요청 중에는 잠근다 — 두 번 누르면 결제사 재발급이 두 번 나간다(S3-D22). -->
                 <sequence>
@@ -249,8 +249,8 @@
               $t:sirsoft-ecommerce.admin.order.detail.cash_receipt.reissue
             </button>
             <!-- 발급취소 — 관리자 전용 (유저 화면에는 이 버튼이 없다) -->
-            <button data-ref="payment_cash_receipt_cancel_button_{{payIdx}}" data-if="{{!!order.data?.cash_receipt}}" disabled="{{_global.isCashReceiptBusy === true || order?.data?.abilities?.can_update !== true}}" type="button" class="px-3 py-1.5 text-sm rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed">
-              <responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"/>
+            <button data-ref="payment_cash_receipt_cancel_button_{{payIdx}}" data-if="{{!!order.data?.cash_receipt}}" disabled="{{_global.isCashReceiptBusy === true || order?.data?.abilities?.can_update !== true}}" type="button" class="px-3 py-1.5 text-sm rounded-lg border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed">
+              <responsive on="portable" type="button" class="w-full px-3 py-2 text-sm rounded-lg border border-red-300 dark:border-red-700 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"/>
               <on type="click">
                 <!-- 결제사 취소는 되돌릴 수 없다 — 확인을 받고, 요청 중에는 잠근다(S3-D22). 확인을 취소하면 순차 동작 전체가 서지 않는다. -->
                 <sequence confirm="$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.cancel_confirm">
@@ -275,7 +275,7 @@
           <!-- 발급 이력 — 발급/취소 전 이력을 최신순으로 보여준다 (국세청 신고 대사용) -->
           <div data-ref="payment_cash_receipt_history_{{payIdx}}" data-if="{{(order.data?.cash_receipts ?? []).length > 0}}" class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
             <!-- 이력은 기본 접힘 — 결제 건별로 독립 토글해야 하므로 _local.expandedCashReceiptHistory 배열에 payIdx 를 넣고 뺀다 (setState params 키는 정적이어야 하므로 값 표현식으로 배열을 조작한다) -->
-            <button data-ref="payment_cash_receipt_history_toggle_{{payIdx}}" type="button" class="flex items-center gap-1 w-full text-left text-xs font-semibold text-secondary mb-1.5 hover:text-gray-900 dark:hover:text-gray-100" aria-expanded="{{(_local.expandedCashReceiptHistory ?? []).includes(payIdx)}}" aria-controls="payment_cash_receipt_history_body_{{payIdx}}">
+            <button data-ref="payment_cash_receipt_history_toggle_{{payIdx}}" type="button" class="justify-start flex items-center gap-1 w-full text-left text-xs font-semibold text-secondary mb-1.5 hover:text-gray-900 dark:hover:text-gray-100" aria-expanded="{{(_local.expandedCashReceiptHistory ?? []).includes(payIdx)}}" aria-controls="payment_cash_receipt_history_body_{{payIdx}}">
               <icon name="{{(_local.expandedCashReceiptHistory ?? []).includes(payIdx) ? 'chevron-down' : 'chevron-right'}}" size="xs"/>
               <span>$t:sirsoft-ecommerce.admin.order.detail.cash_receipt.history|count={{(order.data?.cash_receipts ?? []).length}}</span>
               <on type="click">
@@ -288,7 +288,7 @@
                 <span>{{receipt.occurred_at_formatted ?? '-'}}</span>
                 <span>{{receipt.transaction_type_label ?? ''}}</span>
                 <span>{{receipt.amount_formatted ?? ''}}</span>
-                <span class="{{String(receipt.issue_status ?? '').toLowerCase() === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}}">{{receipt.result_label ?? ''}}</span>
+                <span class="{{String(receipt.issue_status ?? '').toLowerCase() === 'failed' ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400'}}">{{receipt.result_label ?? ''}}</span>
               </div>
             </div>
           </div>

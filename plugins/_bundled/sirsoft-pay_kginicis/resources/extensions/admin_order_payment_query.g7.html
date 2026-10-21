@@ -117,7 +117,7 @@
           <span data-if="{{_local._kginicisCvsRechecking}}">$t:sirsoft-pay_kginicis.admin.cbt_cvs_rechecking</span>
           <span data-if="{{!_local._kginicisCvsRechecking}}">$t:sirsoft-pay_kginicis.admin.cbt_cvs_recheck_button</span>
         </button>
-        <button data-ref="kginicis_cbt_cvs_simulate_button" data-if="{{kginicis_cbt_cvs.data?.can_simulate_notify === true}}" type="button" disabled="{{order?.data?.abilities?.can_update !== true || (_local._kginicisCvsSimulating)}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button data-ref="kginicis_cbt_cvs_simulate_button" data-if="{{kginicis_cbt_cvs.data?.can_simulate_notify === true}}" type="button" disabled="{{order?.data?.abilities?.can_update !== true || (_local._kginicisCvsSimulating)}}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-700 hover:bg-green-800 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 입금통보 모의 발송. 테스트 환경에서 실제 입금 없이 통보 흐름을 재현한다. 성공 시 주문과 결제 상태까지 다시 받는 것은 통보가 그 둘을 함께 바꾸기 때문이다 -->
             <sequence>
@@ -176,7 +176,7 @@
       <div data-ref="kginicis_verify_header" class="flex items-center gap-2 mb-4">
         <div class="w-1.5 h-4 bg-blue-500 rounded-full flex-shrink-0"/>
         <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_kginicis.admin.order_verify_title</h3>
-        <span class="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">$t:sirsoft-pay_kginicis.admin.order_verify_description</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">$t:sirsoft-pay_kginicis.admin.order_verify_description</span>
       </div>
       <div data-ref="kginicis_payments_list_{{pIdx}}" data-each="payment, pIdx in {{order.data?.payments?.filter(p => p.transaction_id &amp;&amp; p.pg_provider === 'kginicis') ?? []}}" class="space-y-3">
         <div class="rounded-lg border border-gray-100 dark:border-gray-700 p-3 bg-gray-50 dark:bg-gray-800/50">
@@ -185,7 +185,7 @@
               <span class="text-xs text-gray-500 dark:text-gray-400 block mb-0.5">TID</span>
               <span class="font-mono text-xs text-gray-900 dark:text-gray-100 break-all block">{{payment.transaction_id}}</span>
             </div>
-            <button disabled="{{_local._kginicisQuerying &amp;&amp; _local._kginicisActiveTid === payment.transaction_id}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0">
+            <button type="button" disabled="{{_local._kginicisQuerying &amp;&amp; _local._kginicisActiveTid === payment.transaction_id}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0">
               <on type="click">
                 <!-- 거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다 -->
                 <sequence>
@@ -205,7 +205,7 @@
               <span>$t:sirsoft-pay_kginicis.admin.order_verify_button</span>
             </button>
           </div>
-          <div data-if="{{_local._kginicisActiveTid === payment.transaction_id &amp;&amp; _local._kginicisError}}" class="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">{{_local._kginicisError}}</div>
+          <div data-if="{{_local._kginicisActiveTid === payment.transaction_id &amp;&amp; _local._kginicisError}}" class="mt-2 text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">{{_local._kginicisError}}</div>
           <div data-ref="kginicis_verify_result_{{pIdx}}" data-if="{{(_local._kginicisActiveTid === payment.transaction_id &amp;&amp; _local._kginicisResult) || kginicis_status.data}}" class="mt-3 pt-3">
             <div class="flex items-center flex-wrap gap-2 mb-3">
               <span data-if="{{((_local._kginicisResult ?? kginicis_status.data)?.resultCode === '00') || ((_local._kginicisResult ?? kginicis_status.data)?.resultCode === 'SUCCESS')}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">$t:sirsoft-pay_kginicis.admin.pay_status_approved</span>
@@ -327,7 +327,7 @@
               </div>
             </div>
             <div class="mt-3 pt-3 border-t border-dashed border-gray-200 dark:border-gray-700">
-              <button class="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">
+              <button type="button" class="flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">
                 <on type="click">
                   <!-- 거래 조회 — 결제 건이 여러 개일 수 있어 조회 중인 거래번호를 따로 들고 그 버튼만 잠근다 -->
                   <set-state target="local" _kginicisShowRaw="{{!_local._kginicisShowRaw}}"/>
@@ -346,7 +346,7 @@
       <div class="flex items-center gap-2 mb-4">
         <div class="w-1.5 h-4 bg-purple-500 rounded-full flex-shrink-0"/>
         <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_kginicis.admin.escrow_delivery_title</h3>
-        <span class="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">$t:sirsoft-pay_kginicis.admin.escrow_delivery_description</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">$t:sirsoft-pay_kginicis.admin.escrow_delivery_description</span>
       </div>
       <div data-if="{{kginicis_escrow_delivery.data?.registered_delivery}}" class="mb-4 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-700/50">
         <div class="flex items-center gap-2 mb-2">
@@ -382,24 +382,24 @@
               <set-state target="local" _ed_ex_code="{{$event.target.value}}"/>
             </on>
             <option value="">$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_placeholder</option>
-            <option value="hanjin">한진택배</option>
-            <option value="cjgls">CJ대한통운</option>
-            <option value="loge">롯데택배</option>
-            <option value="epost">우체국택배</option>
-            <option value="lotte">롯데글로벌로지스</option>
-            <option value="kdexp">경동택배</option>
-            <option value="cvs">편의점택배</option>
-            <option value="ilyang">일양로지스</option>
-            <option value="chunil">천일택배</option>
-            <option value="cvsnet">CVSnet편의점</option>
-            <option value="daesin">대신택배</option>
-            <option value="kunyoung">건영택배</option>
+            <option value="hanjin">$t:sirsoft-pay_kginicis.admin.escrow_couriers.hanjin</option>
+            <option value="cjgls">$t:sirsoft-pay_kginicis.admin.escrow_couriers.cj</option>
+            <option value="loge">$t:sirsoft-pay_kginicis.admin.escrow_couriers.lotte_parcel</option>
+            <option value="epost">$t:sirsoft-pay_kginicis.admin.escrow_couriers.epost</option>
+            <option value="lotte">$t:sirsoft-pay_kginicis.admin.escrow_couriers.lotte_global</option>
+            <option value="kdexp">$t:sirsoft-pay_kginicis.admin.escrow_couriers.kyungdong</option>
+            <option value="cvs">$t:sirsoft-pay_kginicis.admin.escrow_couriers.cvs</option>
+            <option value="ilyang">$t:sirsoft-pay_kginicis.admin.escrow_couriers.ilyang</option>
+            <option value="chunil">$t:sirsoft-pay_kginicis.admin.escrow_couriers.chunil</option>
+            <option value="cvsnet">$t:sirsoft-pay_kginicis.admin.escrow_couriers.cvsnet</option>
+            <option value="daesin">$t:sirsoft-pay_kginicis.admin.escrow_couriers.daesin</option>
+            <option value="kunyoung">$t:sirsoft-pay_kginicis.admin.escrow_couriers.kunyoung</option>
             <option value="gsilogis">GSI Express</option>
             <option value="etc">$t:sirsoft-pay_kginicis.admin.escrow_delivery_courier_etc</option>
           </select>
         </div>
         <div class="flex justify-end">
-          <button disabled="{{order?.data?.abilities?.can_update !== true || (_local._ed_registering || String(_local._ed_invoice ?? '').trim() === '' || String(_local._ed_ex_code ?? '').trim() === '')}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="button" disabled="{{order?.data?.abilities?.can_update !== true || (_local._ed_registering || String(_local._ed_invoice ?? '').trim() === '' || String(_local._ed_ex_code ?? '').trim() === '')}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <on type="click">
               <!-- 에스크로 배송 등록 — 위에서 입력한 송장번호·택배사를 보내고, 끝나면 등록 상태를 다시 받는다. 둘 다 서버 필수값이라 비어 있으면 버튼이 잠긴다. 실패 문맥의 변수는 error 다(response 가 아니다) — 서버가 준 검증·PG 문구를 그대로 보인다 -->
               <sequence>
@@ -423,14 +423,14 @@
             <span data-if="{{!_local._ed_registering &amp;&amp; kginicis_escrow_delivery.data?.registered_delivery}}">$t:sirsoft-pay_kginicis.admin.escrow_delivery_change_button</span>
           </button>
         </div>
-        <div data-if="{{_local._ed_error}}" class="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">{{_local._ed_error}}</div>
+        <div data-if="{{_local._ed_error}}" class="text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">{{_local._ed_error}}</div>
       </div>
     </div>
     <div data-ref="kginicis_escrow_deny_confirm_panel" data-if="{{kginicis_escrow_delivery.data?.has_escrow_payment === true &amp;&amp; kginicis_escrow_delivery.data?.escrow_confirm?.type === 'deny'}}" class="admin-card mt-4">
       <div class="flex items-center gap-2 mb-4">
         <div class="w-1.5 h-4 bg-red-500 rounded-full flex-shrink-0"/>
         <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_title</h3>
-        <span class="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_description</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_description</span>
       </div>
       <div class="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-700/50 text-xs">
         <div class="flex items-center gap-2 mb-2">
@@ -438,7 +438,7 @@
           <span class="text-xs font-semibold text-red-700 dark:text-red-400">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_buyer_denied</span>
         </div>
         <div class="grid grid-cols-2 gap-x-4 gap-y-1">
-          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_buyer_denied_at</span>
+          <span class="text-gray-600 dark:text-gray-400">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_buyer_denied_at</span>
           <span class="text-gray-900 dark:text-gray-100 font-mono">{{kginicis_escrow_delivery.data.escrow_confirm.confirmed_at ?? '-'}}</span>
         </div>
       </div>
@@ -447,7 +447,7 @@
         <span class="text-gray-600 dark:text-gray-300">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_done</span>
       </div>
       <div data-if="{{kginicis_escrow_delivery.data?.deny_confirmed !== true}}" class="flex justify-end gap-2">
-        <button disabled="{{order?.data?.abilities?.can_update !== true || (_local._dncf_processing)}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" disabled="{{order?.data?.abilities?.can_update !== true || (_local._dncf_processing)}}" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
           <on type="click">
             <!-- 수취거부 확정 — 되돌릴 수 없는 처리라 버튼을 잠근 뒤 보내고 결과를 다시 받는다 -->
             <sequence>
@@ -470,7 +470,7 @@
           <span data-if="{{!_local._dncf_processing}}">$t:sirsoft-pay_kginicis.admin.escrow_deny_confirm_button</span>
         </button>
       </div>
-      <div data-if="{{_local._dncf_error}}" class="mt-2 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">{{_local._dncf_error}}</div>
+      <div data-if="{{_local._dncf_error}}" class="mt-2 text-xs text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded px-2 py-1.5">{{_local._dncf_error}}</div>
     </div>
   </inject>
   <inject target-id="payment_method_block_{{payIdx}}" position="append_child">

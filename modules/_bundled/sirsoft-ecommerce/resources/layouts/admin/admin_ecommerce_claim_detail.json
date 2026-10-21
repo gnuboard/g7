@@ -31,10 +31,29 @@
                     }
                 },
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "initLocal": {
@@ -207,7 +226,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                            "className": "text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "|"
                                                     },
@@ -232,7 +251,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                            "className": "text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "|"
                                                     },
@@ -281,7 +300,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                            "className": "text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "|"
                                                     },
@@ -306,7 +325,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-300 dark:text-gray-600"
+                                                            "className": "text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "|"
                                                     },
@@ -327,14 +346,11 @@
                                                         "actions": [
                                                             {
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/admin/users/{{claim?.data?.claim?.requester_user_uuid}}"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "href": "#",
+                                                            "href": "/admin/users/{{claim?.data?.claim?.requester_user_uuid}}",
                                                             "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                         },
                                                         "text": "{{claim?.data?.claim?.requester_name ?? '-'}}"
@@ -350,7 +366,7 @@
                                                         "text": "{{claim?.data?.claim?.requester_name ?? '-'}}"
                                                     },
                                                     {
-                                                        "comment": "e2e:allow 출처 뱃지는 서버 필드(`request_source`) 하나를 그대로 그리는 표시 전용 노드다 — 판정 로직이 화면에 없다. 그 필드의 3분류(고객·비회원·운영자 접수)는 PHPUnit 이 조합 전건을 덮고(ClaimResourceRequestSourceTest), 렌더는 Vitest 3건이 잠근다(adminClaimDetailRender.test.tsx 「신청자 출처 뱃지·요청자 링크」 — 4차 라운드 D2 해소). 2026-09-16 브라우저로 3종 전건도 확인했다(RF20260915-1707536717 운영자 접수 · RT20260916-0302483148 고객 신청 · RT20260915-1425436901 비회원 신청). 출처 뱃지(계획 676) — 고객 신청·비회원 신청·운영자 접수. 운영자는 셋을 다르게 대한다: 고객 건은 연락처가 계정에 있고, 비회원 건은 주문서 연락처뿐이며, 대리 접수 건은 고객이 철회·수정할 수 없다. 라벨은 서버가 로케일로 풀어 내려준다(`request_source_label`) — 화면이 코드를 매핑하면 3로케일 사본이 하나 더 생긴다.",
+                                                        "comment": "e2e:allow 출처 뱃지는 서버 필드(`request_source`) 하나를 그대로 그리는 표시 전용 노드다 — 판정 로직이 화면에 없다. 그 필드의 3분류(고객·비회원·운영자 접수)는 PHPUnit 이 조합 전건을 덮고(ClaimResourceRequestSourceTest), 렌더는 Vitest 3건이 잠근다(adminClaimDetailRender.test.tsx 「신청자 출처 뱃지·요청자 링크」 — 재검토에서 해소). 2026-09-16 브라우저로 3종 전건도 확인했다(RF20260915-1707536717 운영자 접수 · RT20260916-0302483148 고객 신청 · RT20260915-1425436901 비회원 신청). 출처 뱃지(계획 676) — 고객 신청·비회원 신청·운영자 접수. 운영자는 셋을 다르게 대한다: 고객 건은 연락처가 계정에 있고, 비회원 건은 주문서 연락처뿐이며, 대리 접수 건은 고객이 철회·수정할 수 없다. 라벨은 서버가 로케일로 풀어 내려준다(`request_source_label`) — 화면이 코드를 매핑하면 3로케일 사본이 하나 더 생긴다.",
                                                         "id": "cd_008b_request_source",
                                                         "type": "composite",
                                                         "name": "Badge",
@@ -415,22 +431,15 @@
                                                 "text": "$t:sirsoft-ecommerce.admin.claim.detail.withdraw_on_behalf.button"
                                             },
                                             {
+                                                "comment": "원 주문은 이 목록 클러스터 밖이다 — 새 창 링크로 열어 지금 보던 신청서를 잃지 않게 한다(주소가 href 에 있어 가운데 클릭·새 탭도 같다).",
                                                 "id": "cd_009_order_link_button",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "if": "{{!!claim?.data?.claim?.order_number}}",
-                                                "actions": [
-                                                    {
-                                                        "comment": "원 주문은 이 목록 클러스터 밖이다 — 새 창으로 열어 지금 보던 신청서를 잃지 않게 한다.",
-                                                        "type": "click",
-                                                        "handler": "openWindow",
-                                                        "params": {
-                                                            "path": "/admin/ecommerce/orders/{{claim.data.claim.order_number}}"
-                                                        }
-                                                    }
-                                                ],
                                                 "props": {
-                                                    "type": "button",
+                                                    "href": "/admin/ecommerce/orders/{{claim.data.claim.order_number}}",
+                                                    "target": "_blank",
+                                                    "rel": "noopener noreferrer",
                                                     "className": "btn btn-outline"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.claim.detail.view_order"
@@ -438,21 +447,21 @@
                                             {
                                                 "id": "cd_010_list_button",
                                                 "type": "basic",
-                                                "name": "Button",
+                                                "name": "A",
                                                 "actions": [
                                                     {
                                                         "comment": "목록 복귀는 보던 조건 그대로다 — 검색어·필터·페이지·유형 서브탭을 URL 에서 승계한다.",
                                                         "type": "click",
                                                         "handler": "navigate",
                                                         "params": {
-                                                            "path": "/admin/ecommerce/claims",
                                                             "mergeQuery": true,
                                                             "query": {}
                                                         }
                                                     }
                                                 ],
                                                 "props": {
-                                                    "type": "button",
+                                                    "href": "/admin/ecommerce/claims",
+                                                    "mergeQuery": true,
                                                     "className": "btn btn-outline"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.common.list"
@@ -628,18 +637,10 @@
                                         "type": "basic",
                                         "name": "A",
                                         "if": "{{!!claim?.data?.linked_claims?.source}}",
-                                        "actions": [
-                                            {
-                                                "comment": "원 신청서를 새 창으로 연다 — 지금 보던 신청서의 입력 상태를 잃지 않게 한다",
-                                                "type": "click",
-                                                "handler": "openWindow",
-                                                "params": {
-                                                    "path": "{{claim.data.linked_claims.source.detail_url}}"
-                                                }
-                                            }
-                                        ],
                                         "props": {
-                                            "href": "#",
+                                            "href": "{{claim.data.linked_claims.source.detail_url}}",
+                                            "target": "_blank",
+                                            "rel": "noopener noreferrer",
                                             "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                         },
                                         "text": "{{(claim?.data?.linked_claims?.source?.claim_type_label ?? '') + ' ' + (claim?.data?.linked_claims?.source?.claim_number ?? '')}}"
@@ -680,18 +681,10 @@
                                             {
                                                 "type": "basic",
                                                 "name": "A",
-                                                "actions": [
-                                                    {
-                                                        "comment": "후속 환불신청서를 새 창으로 연다",
-                                                        "type": "click",
-                                                        "handler": "openWindow",
-                                                        "params": {
-                                                            "path": "{{linkedRefund.detail_url}}"
-                                                        }
-                                                    }
-                                                ],
                                                 "props": {
-                                                    "href": "#",
+                                                    "href": "{{linkedRefund.detail_url}}",
+                                                    "target": "_blank",
+                                                    "rel": "noopener noreferrer",
                                                     "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                 },
                                                 "text": "{{linkedRefund.claim_number}}"
@@ -721,18 +714,10 @@
                                         "type": "basic",
                                         "name": "A",
                                         "if": "{{!!claim?.data?.linked_claims?.result_cancel}}",
-                                        "actions": [
-                                            {
-                                                "comment": "환불이 실행돼 생긴 취소 내역을 새 창으로 연다",
-                                                "type": "click",
-                                                "handler": "openWindow",
-                                                "params": {
-                                                    "path": "{{claim.data.linked_claims.result_cancel.detail_url}}"
-                                                }
-                                            }
-                                        ],
                                         "props": {
-                                            "href": "#",
+                                            "href": "{{claim.data.linked_claims.result_cancel.detail_url}}",
+                                            "target": "_blank",
+                                            "rel": "noopener noreferrer",
                                             "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                         },
                                         "text": "{{claim?.data?.linked_claims?.result_cancel?.claim_number ?? ''}}"

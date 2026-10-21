@@ -342,18 +342,23 @@ class ReportController extends AdminBaseController
             return $response;
         }
 
-        $payload = $response->getData(true);
+        // 객체로 푼다 — 연관 배열로 풀었다 다시 싸면 봇 행의 빈 맵 `extra: {}` 가 `[]` 로 바뀐다(#758, 7.1.1 출시 전).
+        $payload = $response->getData();
+
+        if (! ($payload->data ?? null) instanceof \stdClass) {
+            return $response;
+        }
 
         [$from, $to] = $request->resolvedRange();
 
         // 「어느 봇이 얼마나」 옆에 「무엇을 언제」를 붙인다 — 집계만으로는 어떤 주소를
         // 긁어 갔는지 알 수 없어 운영자가 차단 여부를 판단할 근거가 없다. 같은 화면의 다른
-        // 숫자처럼 고른 기간 안에서 고른다(7.1.0 실측 O-E10).
-        $payload['data']['recent_hits'] = $this->reports->recentBotHits($from, $to);
+        // 숫자처럼 고른 기간 안에서 고른다(7.1.0 실측).
+        $payload->data->recent_hits = $this->reports->recentBotHits($from, $to);
 
         // 「봇 요청」·「봇 종류」 KPI 는 기간 전체를 말해야 한다 — 쪽으로 잘린 목록을 더하면
         // 봇 종류가 한 쪽보다 많은 기간에 첫 쪽의 합만 보인다(#682 S3 라운드 14).
-        $payload['data']['totals'] = $this->reports->totals(StatsDimension::BotName->value, $from, $to);
+        $payload->data->totals = $this->reports->totals(StatsDimension::BotName->value, $from, $to);
 
         return $response->setData($payload);
     }
@@ -407,7 +412,8 @@ class ReportController extends AdminBaseController
                     ];
 
                     foreach ($extraColumns as $header => $extraKey) {
-                        $value = (int) ($row['extra'][$extraKey] ?? 0);
+                        // 부가 값이 없는 행의 `extra` 는 빈 맵(stdClass)이다 (#758)
+                        $value = (int) (((array) $row['extra'])[$extraKey] ?? 0);
 
                         $line[] = in_array($header, self::CENT_CSV_COLUMNS, true)
                             ? number_format($value / 100, 2, '.', '')
@@ -416,7 +422,9 @@ class ReportController extends AdminBaseController
 
                     // 확장이 값을 사람이 읽는 단위로 바꿀 수 있게 한 번 더 건넨다. 열 수가
                     // 바뀌면 헤더와 어긋나므로 같은 길이일 때만 받는다.
-                    $filtered = HookManager::applyFilters('core.analytics.csv_row', $line, $row, $dimension);
+                    // 공개 훅 인자 모양은 그대로 둔다 — `extra` 는 응답(JSON)에서만 빈 맵(stdClass)이고 리스너에는 배열로 건넨다 (#758)
+                    $hookRow = ['extra' => (array) $row['extra']] + $row;
+                    $filtered = HookManager::applyFilters('core.analytics.csv_row', $line, $hookRow, $dimension);
                     if (is_array($filtered) && count($filtered) === count($line)) {
                         $line = array_values($filtered);
                     }

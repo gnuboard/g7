@@ -30,3 +30,36 @@
 .bizppurio-scroll-panel {
     max-height: 65vh;
 }
+
+/* 경고 글자색 — 관리자 템플릿 의미 클래스(text-warning-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+.bizppurio-tone-warning {
+    color: var(--color-yellow-700, oklch(55.4% 0.135 66.442)); /* yellow-700 */
+}
+
+.dark .bizppurio-tone-warning {
+    color: var(--color-yellow-300, oklch(90.5% 0.182 98.111)); /* yellow-300 */
+}
+
+/* 진한 청록·호박색 단추(흰 글자) — 호버 바탕을 한 단계 더 짙게. 관리자 템플릿 CSS 에 hover:bg-*-800 규칙이 없어 이 확장이 제공한다 */
+@media (hover: hover) {
+    .bizppurio-btn-teal-solid:hover,
+    .dark .bizppurio-btn-teal-solid:hover {
+        background-color: oklch(43.7% 0.078 188.216); /* teal-800 */
+    }
+
+    .bizppurio-btn-amber-solid:hover,
+    .dark .bizppurio-btn-amber-solid:hover {
+        background-color: oklch(47.3% 0.137 46.201); /* amber-800 */
+    }
+}
+
+/* 변수 끼워 넣기 칩 — 호버 테두리(다크 짝 포함). 관리자 템플릿 CSS 에 hover:border-teal-* 규칙이 없어 이 확장이 제공한다 */
+@media (hover: hover) {
+    .bizppurio-chip-teal:hover {
+        border-color: oklch(77.7% 0.152 181.912); /* teal-400 */
+    }
+
+    .dark .bizppurio-chip-teal:hover {
+        border-color: oklch(60% 0.118 184.704); /* teal-600 */
+    }
+}

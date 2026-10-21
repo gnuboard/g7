@@ -3,10 +3,14 @@
 namespace Modules\Sirsoft\Board\Traits;
 
 use App\Enums\PermissionType;
+use App\Helpers\PermissionHelper;
 use App\Http\Middleware\PermissionMiddleware;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Support\BoardPermissionCacheKeys;
 
 /**
@@ -14,6 +18,13 @@ use Modules\Sirsoft\Board\Support\BoardPermissionCacheKeys;
  *
  * PermissionMiddleware를 내부적으로 호출하여 권한을 체크합니다.
  * 미들웨어 로직 변경 시 자동으로 동일하게 동작합니다.
+ *
+ * 게시판 단위 스코프: 게시판 관리 권한(`manager`·`admin.manage`)은 스코프 메타가
+ * `resource_route_key = board`, `owner_key = created_by` 다. 게시판 라우트는 `{slug}` 를 쓰므로
+ * 미들웨어의 스코프 검사(라우트 Model 바인딩 때만 동작)가 돌지 않는다. 그래서 이 트레이트의
+ * 판정(`checkBoardPermission`·`checkBoardPermissions`·`checkPermissionByIdentifier`)이 보유
+ * 확인 뒤 게시판 모델로 스코프를 곱한다 — 「본인이 만든 게시판만」으로 위임받은 관리자가
+ * 남의 게시판에서 관리 권한자로 판정되지 않는다.
  */
 trait ChecksBoardPermission
 {
@@ -47,7 +58,41 @@ trait ChecksBoardPermission
      */
     protected function checkBoardPermission(string $slug, string $action, PermissionType $type = PermissionType::Admin): bool
     {
-        return $this->checkPermissionViaMiddleware("sirsoft-board.{$slug}.{$action}", $type);
+        $identifier = "sirsoft-board.{$slug}.{$action}";
+
+        return $this->checkPermissionViaMiddleware($identifier, $type)
+            && $this->passesBoardScope($slug, $identifier);
+    }
+
+    /**
+     * 특정 자원에 대한 게시판 권한을 스코프까지 확인합니다.
+     *
+     * 게시판 라우트는 `{slug}`·`{id}` 를 쓰므로 미들웨어의 스코프 검사(라우트에 Model 이
+     * 바인딩될 때만 동작)가 돌지 않는다. 코드 안에서 자원(게시글·댓글 등)을 손에 쥔 판정은
+     * 이 메서드로 스코프(self=본인 자원, role=역할을 공유하는 회원의 자원)를 재적용한다.
+     *
+     * 순서가 계약이다 — 보유 확인을 **먼저** 하고 그다음 스코프를 본다.
+     * `PermissionHelper::checkScopeAccess()` 는 권한이 없는 사용자에게도 true 를 주므로
+     * (스코프 메타·유효 스코프가 없으면 통과) 순서가 바뀌면 무권한자가 통과한다.
+     * 비회원은 스코프를 가질 수 없으므로(코어 7.1.1) 보유 확인만 한다.
+     *
+     * @param  Model  $resource  판정 대상 자원 (owner_key 컬럼을 가진 모델)
+     * @param  string  $slug  게시판 슬러그
+     * @param  string  $action  권한 액션 (예: 'posts.read-secret', 'admin.posts.read-secret')
+     * @param  PermissionType  $type  권한 타입
+     * @return bool 보유하고 그 자원이 스코프 안이면 true
+     */
+    protected function checkBoardPermissionFor(Model $resource, string $slug, string $action, PermissionType $type = PermissionType::Admin): bool
+    {
+        if (! $this->checkBoardPermission($slug, $action, $type)) {
+            return false;
+        }
+
+        if (! Auth::check()) {
+            return true;
+        }
+
+        return PermissionHelper::checkScopeAccess($resource, "sirsoft-board.{$slug}.{$action}");
     }
 
     /**
@@ -61,9 +106,13 @@ trait ChecksBoardPermission
      */
     protected function checkBoardPermissions(string $slug, array $actions, PermissionType $type = PermissionType::Admin, bool $requireAll = false): bool
     {
-        $permissions = implode('|', array_map(fn ($action) => "sirsoft-board.{$slug}.{$action}", $actions));
+        // 식별자마다 보유 + 게시판 스코프를 함께 본다 — 묶어서 미들웨어에 넘기면 보유만 OR/AND 로 합쳐져
+        // 스코프 밖 게시판의 관리 권한이 OR 의 한 축으로 통과한다.
+        $check = fn (string $action): bool => $this->checkBoardPermission($slug, $action, $type);
 
-        return $this->checkPermissionViaMiddleware($permissions, $type, $requireAll);
+        return $requireAll
+            ? collect($actions)->every($check)
+            : collect($actions)->contains($check);
     }
 
     /**
@@ -185,7 +234,94 @@ trait ChecksBoardPermission
         // 권한 타입 자동 결정: admin. 포함 시 Admin, 아니면 User
         $type = str_contains($identifier, '.admin.') ? PermissionType::Admin : PermissionType::User;
 
-        return $this->checkPermissionViaMiddleware($identifier, $type);
+        if (! $this->checkPermissionViaMiddleware($identifier, $type)) {
+            return false;
+        }
+
+        // 게시판별 식별자(sirsoft-board.{slug}.{정의된 액션})면 게시판 스코프를 곱한다.
+        // 모듈 단위 식별자(sirsoft-board.boards.*·reports.* 등)는 게시판 슬러그가 아니므로 대상이 아니다.
+        $slug = $this->parseBoardSlugFromIdentifier($identifier);
+
+        return $slug === null || $this->passesBoardScope($slug, $identifier);
+    }
+
+    /**
+     * 게시판별 권한 식별자에서 게시판 슬러그를 뽑습니다.
+     *
+     * `sirsoft-board.{slug}.{action}` 의 action 이 게시판별 권한 정의
+     * (`config('sirsoft-board.board_permission_definitions')`)의 키일 때만 게시판 식별자로 본다.
+     *
+     * @param  string  $identifier  권한 식별자
+     * @return string|null 게시판 슬러그 (게시판별 식별자가 아니면 null)
+     */
+    protected function parseBoardSlugFromIdentifier(string $identifier): ?string
+    {
+        if (! preg_match('/^sirsoft-board\.([^.]+)\.(.+)$/', $identifier, $m)) {
+            return null;
+        }
+
+        $definitions = config('sirsoft-board.board_permission_definitions', []);
+
+        return array_key_exists($m[2], $definitions) ? $m[1] : null;
+    }
+
+    /**
+     * 게시판 단위 스코프를 통과하는지 확인합니다 (보유 확인을 통과한 뒤에만 부른다).
+     *
+     * 권한의 `resource_route_key` 가 `board` 일 때만 게시판 모델로 `checkScopeAccess` 를 본다
+     * (`manager`·`admin.manage`). 그 밖의 권한(게시글·댓글·첨부 단위)은 자원을 손에 쥔 쪽이
+     * `checkBoardPermissionFor()` 로 판정한다. 비회원은 스코프를 가질 수 없으므로 통과한다.
+     * 게시판을 찾지 못하면 거부한다(fail-closed).
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @param  string  $identifier  권한 식별자
+     * @return bool 스코프 안이면 true
+     */
+    protected function passesBoardScope(string $slug, string $identifier): bool
+    {
+        if (! Auth::check()) {
+            return true;
+        }
+
+        if (PermissionHelper::getResourceRouteKey($identifier) !== 'board') {
+            return true;
+        }
+
+        $request = request();
+        $cacheKey = Auth::id().'|scope|'.$identifier;
+        $cache = $request->attributes->get(BoardPermissionCacheKeys::PERMISSION, []);
+
+        if (isset($cache[$cacheKey])) {
+            return $cache[$cacheKey];
+        }
+
+        $board = $this->resolveBoardForScope($slug);
+        $passed = $board !== null && PermissionHelper::checkScopeAccess($board, $identifier);
+
+        $cache = $request->attributes->get(BoardPermissionCacheKeys::PERMISSION, []);
+        $cache[$cacheKey] = $passed;
+        $request->attributes->set(BoardPermissionCacheKeys::PERMISSION, $cache);
+
+        return $passed;
+    }
+
+    /**
+     * 게시판 스코프 판정용 게시판 모델을 요청 단위 캐시로 조회합니다.
+     *
+     * @param  string  $slug  게시판 슬러그
+     * @return Board|null 게시판 모델 (없으면 null)
+     */
+    protected function resolveBoardForScope(string $slug): ?Board
+    {
+        $request = request();
+        $boards = $request->attributes->get(BoardPermissionCacheKeys::BOARD_MODEL, []);
+
+        if (! array_key_exists($slug, $boards)) {
+            $boards[$slug] = app(BoardRepositoryInterface::class)->findBySlug($slug) ?? false;
+            $request->attributes->set(BoardPermissionCacheKeys::BOARD_MODEL, $boards);
+        }
+
+        return $boards[$slug] ?: null;
     }
 
     /**
@@ -199,6 +335,7 @@ trait ChecksBoardPermission
     {
         request()->attributes->remove(BoardPermissionCacheKeys::PERMISSION);
         request()->attributes->remove(BoardPermissionCacheKeys::ABILITIES);
+        request()->attributes->remove(BoardPermissionCacheKeys::BOARD_MODEL);
     }
 
     /**

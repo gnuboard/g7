@@ -11,7 +11,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -237,16 +245,16 @@
             </on>
             <icon name="arrows-rotate" class="text-xl"/>
           </button>
-          <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_create !== true}}">
+          <a href="/admin/ecommerce/products/create" :mergeQuery="true" class="button btn btn-primary aria-disabled:opacity-50 aria-disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_create !== true}}">
             <on type="click">
               <!-- 새 상품 등록. 등록을 취소하고 돌아왔을 때 보던 목록이 그대로 서도록 목록 상태를 넘긴다 -->
-              <navigate path="/admin/ecommerce/products/create" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
             <icon name="plus" class="text-base"/>
             <span>$t:sirsoft-ecommerce.admin.product.add</span>
-          </button>
+          </a>
         </div>
       </div>
       <include src="partials/admin_ecommerce_product_list/_partial_filter_section.g7.html"/>
@@ -254,7 +262,7 @@
         <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
           <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.product.selected_count|count={{(_local.selectedItems || []).length}}</span>
           <div class="flex-center flex-wrap gap-2">
-            <select name="bulkSalesStatus" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkSalesStatus || ''}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
+            <select name="bulkSalesStatus" aria-label="$t:sirsoft-ecommerce.admin.product.filter.sales_status" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkSalesStatus || ''}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
               <options>
                 <option value="" disabled>$t:sirsoft-ecommerce.admin.product.modal.bulk_placeholder.sales_status</option>
                 <option value="on_sale">$t:sirsoft-ecommerce.enums.sales_status.on_sale</option>
@@ -266,7 +274,7 @@
                 <set-state target="_local" bulkSalesStatus="{{$event.target.value}}"/>
               </on>
             </select>
-            <select name="bulkDisplayStatus" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkDisplayStatus || ''}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
+            <select name="bulkDisplayStatus" aria-label="$t:sirsoft-ecommerce.admin.product.filter.display_status" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" value="{{_local.bulkDisplayStatus || ''}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
               <options>
                 <option value="" disabled>$t:sirsoft-ecommerce.admin.product.modal.bulk_placeholder.display_status</option>
                 <option value="visible">$t:sirsoft-ecommerce.enums.display_status.visible</option>
@@ -279,14 +287,14 @@
             </select>
           </div>
           <div class="flex-center gap-2">
-            <button type="button" class="{{_global.bulkPriceCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
+            <button type="button" class="{{_global.bulkPriceCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 ecommerce-tone-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
               <on type="click">
                 <open-modal target="modal_bulk_price"/>
               </on>
               <span>$t:sirsoft-ecommerce.admin.product.table.bulk_action.price</span>
               <span data-ref="bulk_price_condition_label" data-if="{{_global.bulkPriceCondition}}" class="ml-1 font-medium">({{_global.bulkPriceCondition}})</span>
             </button>
-            <button type="button" data-testid="product-bulk-stock-open" class="{{_global.bulkStockCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 text-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
+            <button type="button" data-testid="product-bulk-stock-open" class="{{_global.bulkStockCondition ? 'px-3 py-1.5 text-sm border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 ecommerce-tone-info-soft rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed' : 'px-3 py-1.5 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed'}}" disabled="{{products?.data?.abilities?.can_update !== true}}">
               <on type="click">
                 <open-modal target="modal_bulk_stock"/>
               </on>
@@ -296,7 +304,7 @@
           </div>
           <div class="flex-1"/>
           <!-- 일괄 적용. 고른 값과 대상(상품·옵션 양쪽)을 전역으로 옮긴 뒤 확인 데이터를 만들고 창을 연다 — 창은 별도 컨텍스트라 이 화면의 폼 상태를 읽지 못한다 -->
-          <button type="button" data-testid="product-bulk-apply" class="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((!_local.selectedItems || _local.selectedItems.length === 0) &amp;&amp; (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}">
+          <button type="button" data-testid="product-bulk-apply" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{((!_local.selectedItems || _local.selectedItems.length === 0) &amp;&amp; (!_local.selectedOptionIds || _local.selectedOptionIds.length === 0)) || products?.data?.abilities?.can_update !== true}}">
             <on type="click">
               <set-state target="global" bulkSalesStatus="{{_local.bulkSalesStatus}}" bulkDisplayStatus="{{_local.bulkDisplayStatus}}" bulkSelectedItems="{{_local.selectedItems}}" bulkSelectedOptionIds="{{_local.selectedOptionIds}}"/>
               <action handler="sirsoft-ecommerce.buildConfirmData"/>
@@ -309,7 +317,7 @@
           <span class="text-label">$t:sirsoft-ecommerce.admin.product.total_count|count={{products?.data?.pagination?.total || 0}}</span>
           <div class="flex-center gap-3">
             <!-- 정렬 선택. 값 하나에 필드와 방향이 함께 담겨 있고, 바꿀 때 펼침 상태를 비운 뒤 주소를 바꾼다 — 두 일을 함께 해야 해서 아래 블록이 두 액션으로 나뉜다 -->
-            <select name="sortBy" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
+            <select name="sortBy" aria-label="$t:common.sort_order" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
               <options>
                 <option value="created_at_desc">$t:sirsoft-ecommerce.admin.product.sort.latest</option>
                 <option value="created_at_asc">$t:sirsoft-ecommerce.admin.product.sort.oldest</option>
@@ -329,7 +337,7 @@
                 </navigate>
               </on>
             </select>
-            <select name="perPage" class="w-24 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.per_page || '20'}}">
+            <select name="perPage" aria-label="$t:common.per_page" class="w-24 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.per_page || '20'}}">
               <options>
                 <option value="10">10</option>
                 <option value="20">20</option>
@@ -344,7 +352,7 @@
               </on>
             </select>
             <!-- 엑셀 다운로드 미제공 - 숨김 처리 -->
-            <button :data-if="false" type="button" class="flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700">
+            <button :data-if="false" type="button" class="flex-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-body hover:bg-gray-50 dark:hover:bg-gray-700">
               <on type="click">
                 <open-modal target="modal_excel_download"/>
               </on>

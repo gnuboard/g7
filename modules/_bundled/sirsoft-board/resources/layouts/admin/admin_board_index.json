@@ -78,6 +78,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "className": "btn-icon",
                                     "aria-label": "$t:common.refresh"
                                 },
@@ -94,24 +95,124 @@
                                 ]
                             },
                             {
-                                "id": "add_board_button",
+                                "id": "reorder_button",
                                 "type": "basic",
                                 "name": "Button",
+                                "if": "{{boards?.data?.abilities?.can_reorder && (boards?.data?.pagination?.total ?? 0) > 1}}",
+                                "actions": [
+                                    {
+                                        "comment": "순서 변경 창을 연다. 보고 있는 페이지·검색과 무관하게 **전체 게시판**(활성·비활성)을 지금 표시 순서로 새로 받아 창에\n              싣는다 — 서버는 전체 목록이 아니면 저장을 거부한다(그 사이 다른 관리자가 게시판을 만들거나 지우면 422).\n              창은 별도 컨텍스트라 페이지 `_local` 을 볼 수 없으므로 복사·삭제 창처럼 전역에 싣는다. 받은 순서를 원본으로도 남겨\n              바뀐 것이 없으면 저장을 잠근다",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "reorderLoading": true
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "target": "/api/modules/sirsoft-board/admin/boards",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "GET",
+                                                    "body": {
+                                                        "per_page": 999,
+                                                        "sort_by": "display_order",
+                                                        "sort_order": "asc"
+                                                    }
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "reorderLoading": false,
+                                                            "reorderSaving": false,
+                                                            "reorderError": null,
+                                                            "reorderItems": "{{(response?.data?.data ?? []).map(b => ({id: b.id, slug: b.slug, name: b.name, is_active: b.is_active}))}}",
+                                                            "reorderOriginal": "{{(response?.data?.data ?? []).map(b => ({id: b.id, slug: b.slug, name: b.name, is_active: b.is_active}))}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "openModal",
+                                                        "target": "board_reorder_modal"
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "reorderLoading": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "data-testid": "board-reorder-button",
+                                    "type": "button",
+                                    "className": "flex-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "disabled": "{{_global.reorderLoading}}"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{_global.reorderLoading}}",
+                                        "props": {
+                                            "name": "spinner",
+                                            "className": "spinner-sm"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "if": "{{!_global.reorderLoading}}",
+                                        "props": {
+                                            "name": "fa-solid fa-arrow-down-short-wide",
+                                            "className": "text-base"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:sirsoft-board.admin.board.index.reorder.button"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "add_board_button",
+                                "type": "basic",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "새 게시판 만들기. 만들기를 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/boards/create",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
+                                    "href": "/admin/boards/create",
+                                    "mergeQuery": true,
                                     "disabled": "{{boards?.data?.abilities?.can_create !== true}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "button flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                 },
                                 "children": [
                                     {
@@ -196,6 +297,8 @@
                                     }
                                 ],
                                 "props": {
+                                    "pageHref": "/admin/boards?page={page}",
+                                    "pageHrefMergeQuery": true,
                                     "data": "{{boards.data.data}}",
                                     "gridColumns": 1,
                                     "gap": 4,
@@ -315,6 +418,7 @@
                                                                     "props": {
                                                                         "checked": "{{row.is_active}}",
                                                                         "name": "is_active",
+                                                                        "ariaLabel": "$t:defer:common.item_enabled|name={{row.name}}",
                                                                         "size": "sm",
                                                                         "disabled": "{{row.abilities?.can_update !== true}}"
                                                                     }
@@ -374,12 +478,15 @@
                                                                         "position": "right",
                                                                         "items": [
                                                                             {
+                                                                                "href": "/admin/boards/{{row.slug}}/edit",
+                                                                                "mergeQuery": true,
                                                                                 "id": "edit",
                                                                                 "label": "$t:sirsoft-board.admin.board.actions.edit",
                                                                                 "iconName": "pencil",
                                                                                 "disabled": "{{row.abilities?.can_update !== true}}"
                                                                             },
                                                                             {
+                                                                                "href": "/admin/board/{{row.slug}}",
                                                                                 "id": "manage_posts",
                                                                                 "label": "$t:sirsoft-board.admin.board.actions.manage_posts",
                                                                                 "iconName": "list"
@@ -626,6 +733,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "type": "button",
                                         "className": "px-4 py-2 text-body font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:focus:ring-gray-400"
                                     },
                                     "text": "$t:common.cancel"
@@ -654,7 +762,8 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                        "type": "button",
+                                        "className": "px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-600 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                                     },
                                     "text": "$t:sirsoft-board.admin.board.actions.copy"
                                 }
@@ -738,6 +847,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeleting}}"
                             },
@@ -834,6 +944,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeleting}}"
                             },
@@ -851,6 +962,432 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "text": "{{_global.isDeleting ? '$t:sirsoft-board.common.deleting' : '$t:sirsoft-board.common.delete'}}"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "게시판 순서 변경 — 사용자 메뉴·게시판 목록 화면·관리자 목록·통합검색 게시판 선택칸이 이 순서를 따른다.\n      넓은 화면은 손잡이를 끌거나 ▲▼ 로, 좁은 화면은 ▲▼ 로만 옮긴다(끌기가 스크롤과 다투므로 손잡이를 숨긴다 — 반응 유형 카드와 같은 이유).\n      손잡이는 키보드 포커스를 받지 못해(끌기 엔진 한계) 낭독기에서 숨기고, 키보드 사용자는 ▲▼ 단추로 옮긴다.\n      비활성 게시판도 자리를 가진다 — 다시 켜면 정한 자리에 나온다. 그래서 흐린 글자와 「비활성」 배지로 함께 보인다",
+            "id": "board_reorder_modal",
+            "type": "composite",
+            "name": "Modal",
+            "actions": [
+                {
+                    "comment": "✕·Esc·바깥 클릭으로 닫아도 취소와 같다 — 저장하지 않고 작업본을 버린다",
+                    "type": "click",
+                    "event": "onClose",
+                    "handler": "sequence",
+                    "actions": [
+                        {
+                            "handler": "closeModal",
+                            "target": "board_reorder_modal"
+                        },
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "global",
+                                "reorderItems": null,
+                                "reorderOriginal": null,
+                                "reorderError": null
+                            }
+                        }
+                    ]
+                }
+            ],
+            "props": {
+                "title": "$t:sirsoft-board.admin.board.index.reorder.title",
+                "size": "md"
+            },
+            "children": [
+                {
+                    "id": "reorder_modal_content",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-col gap-3"
+                    },
+                    "children": [
+                        {
+                            "id": "reorder_description",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-label"
+                            },
+                            "text": "$t:sirsoft-board.admin.board.index.reorder.description"
+                        },
+                        {
+                            "comment": "정렬 노드는 엔진이 자기 컨테이너로 그려 그 노드의 class·testid 가 빠진다 — 테두리·스크롤 영역은 바깥 래퍼가 맡는다. 높이 상한은 관리자 템플릿 safelist 에 있는 max-h-[70vh] (모듈 레이아웃의 임의값 클래스는 safelist 에 있어야 빌드된다)",
+                            "id": "reorder_list_frame",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "data-testid": "board-reorder-list",
+                                "className": "max-h-[70vh] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "id": "reorder_list",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "sortable": {
+                                        "source": "{{(_global.reorderItems ?? []).map((r, i) => ({...r, _idx: i}))}}",
+                                        "itemVar": "row",
+                                        "itemKey": "id",
+                                        "indexVar": "rIdx",
+                                        "strategy": "verticalList",
+                                        "handle": "[data-drag-handle]"
+                                    },
+                                    "itemTemplate": {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "data-testid": "board-reorder-row-{{row.slug}}",
+                                            "className": "flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800 {{row.is_active ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "data-testid": "board-reorder-drag-{{row.slug}}",
+                                                    "data-drag-handle": true,
+                                                    "aria-hidden": "true",
+                                                    "title": "{{$t('sirsoft-board.admin.board.index.reorder.drag_handle', { name: row.name })}}",
+                                                    "className": "hidden md:flex cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "fa-solid fa-grip-vertical",
+                                                            "className": "text-sm"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "props": {
+                                                    "data-testid": "board-reorder-index-{{row.slug}}",
+                                                    "className": "w-6 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400"
+                                                },
+                                                "text": "{{row._idx + 1}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "flex flex-col md:flex-row md:items-center gap-0.5 md:gap-2 min-w-0 flex-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "props": {
+                                                            "className": "truncate font-medium"
+                                                        },
+                                                        "text": "{{row.name}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex items-center gap-2"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "comment": "슬러그 배지 — 목록 카드의 슬러그 배지와 같은 모양",
+                                                                "type": "composite",
+                                                                "name": "StatusBadge",
+                                                                "props": {
+                                                                    "data-testid": "board-reorder-slug-{{row.slug}}",
+                                                                    "status": "info",
+                                                                    "label": "{{row.slug}}",
+                                                                    "showIcon": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{!row.is_active}}",
+                                                                "props": {
+                                                                    "data-testid": "board-reorder-inactive-{{row.slug}}",
+                                                                    "className": "px-1.5 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "$t:sirsoft-board.admin.board.index.reorder.inactive"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "위로 한 칸 — 두 자리를 맞바꾼다",
+                                                        "type": "click",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "reorderItems": "{{(_global.reorderItems ?? []).map((r, i, a) => i === row._idx - 1 ? a[row._idx] : (i === row._idx ? a[row._idx - 1] : r))}}",
+                                                            "reorderError": null
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "data-testid": "board-reorder-up-{{row.slug}}",
+                                                    "type": "button",
+                                                    "aria-label": "{{$t('sirsoft-board.admin.board.index.reorder.move_up', { name: row.name })}}",
+                                                    "className": "flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors board-move-button disabled:cursor-not-allowed",
+                                                    "disabled": "{{_global.reorderSaving || row._idx === 0}}"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "fa-solid fa-chevron-up",
+                                                            "className": "text-xs"
+                                                        }
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "아래로 한 칸",
+                                                        "type": "click",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "reorderItems": "{{(_global.reorderItems ?? []).map((r, i, a) => i === row._idx ? a[row._idx + 1] : (i === row._idx + 1 ? a[row._idx] : r))}}",
+                                                            "reorderError": null
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "data-testid": "board-reorder-down-{{row.slug}}",
+                                                    "type": "button",
+                                                    "aria-label": "{{$t('sirsoft-board.admin.board.index.reorder.move_down', { name: row.name })}}",
+                                                    "className": "flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors board-move-button disabled:cursor-not-allowed",
+                                                    "disabled": "{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Icon",
+                                                        "props": {
+                                                            "name": "fa-solid fa-chevron-down",
+                                                            "className": "text-xs"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "actions": [
+                                        {
+                                            "comment": "끌어 놓은 결과를 그대로 새 순서로 삼는다(화면용 자리 번호 `_idx` 는 빼고 싣는다)",
+                                            "event": "onSortEnd",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "reorderItems": "{{$sortedItems.map(r => ({id: r.id, slug: r.slug, name: r.name, is_active: r.is_active}))}}",
+                                                "reorderError": null
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "divide-y divide-gray-200 dark:divide-gray-700"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "저장이 422(그 사이 게시판 목록이 바뀜)로 거부되면 창을 닫지 않고 안내한다 — 창을 닫았다 다시 열면 새 목록을 받는다",
+                            "id": "reorder_error_box",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!_global.reorderError}}",
+                            "props": {
+                                "data-testid": "board-reorder-error",
+                                "role": "alert",
+                                "className": "rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300"
+                            },
+                            "text": "{{_global.reorderError}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "modal-footer-buttons"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "취소 — 저장하지 않고 창의 작업본을 버린다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "closeModal",
+                                                    "target": "board_reorder_modal"
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "reorderItems": null,
+                                                        "reorderOriginal": null,
+                                                        "reorderError": null
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "data-testid": "board-reorder-cancel",
+                                        "type": "button",
+                                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.reorderSaving}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-board.admin.board.index.reorder.cancel"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "저장 — 지금 창의 순서를 전체 id 목록으로 보낸다. 요청 중에는 잠가 두 번 눌러도 한 번만 간다.\n                성공하면 창을 닫고 목록을 다시 읽는다(관리자 목록 기본 정렬도 이 순서다). 422 는 창 안에 사유를 남기고, 그 밖의 실패는 토스트로 알린다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "reorderSaving": true,
+                                                        "reorderError": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/modules/sirsoft-board/admin/boards/order",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "PUT",
+                                                        "body": {
+                                                            "board_ids": "{{(_global.reorderItems ?? []).map(i => i.id)}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "reorderSaving": false,
+                                                                "reorderItems": null,
+                                                                "reorderOriginal": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "closeModal",
+                                                            "target": "board_reorder_modal"
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "success",
+                                                                "message": "{{response.message}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "boards",
+                                                                "sync": true
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "conditions",
+                                                        "conditions": [
+                                                            {
+                                                                "if": "{{error.status === 422}}",
+                                                                "then": {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "reorderSaving": false,
+                                                                        "reorderError": "{{error.errors?.board_ids?.[0] ?? error.message}}"
+                                                                    }
+                                                                }
+                                                            },
+                                                            {
+                                                                "then": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "reorderSaving": false
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "data-testid": "board-reorder-save",
+                                        "type": "button",
+                                        "lockRepeatClick": true,
+                                        "className": "flex-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.reorderSaving || (_global.reorderItems ?? []).map(i => i.id).join(',') === (_global.reorderOriginal ?? []).map(i => i.id).join(',')}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "if": "{{_global.reorderSaving}}",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "spinner-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "{{_global.reorderSaving ? '$t:sirsoft-board.admin.board.index.reorder.saving' : '$t:sirsoft-board.admin.board.index.reorder.save'}}"
+                                        }
+                                    ]
                                 }
                             ]
                         }

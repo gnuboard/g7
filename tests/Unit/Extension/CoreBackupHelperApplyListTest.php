@@ -388,6 +388,114 @@ class CoreBackupHelperApplyListTest extends TestCase
     }
 
     /**
+     * skipPaths 에 든 번들 경로(정확 일치·하위 접두사)는 base 에 없어도 적용 목록에서 빠집니다 (#146).
+     *
+     * 3-way base 는 업데이트 직전 디스크 스냅샷이라, 운영자가 지운 번들이나 이번 판에 새로 든
+     * 번들이 모두 added 로 판정돼 통째로 배치되던 결함을 막는다.
+     *
+     * @effects skip_paths_exclude_unplaced_bundle_from_apply_list
+     *
+     * @return void 반환값 없음
+     */
+    public function test_skip_paths_exclude_unplaced_bundle_from_apply_list(): void
+    {
+        $this->writeTheirs('plugins/_bundled/sirsoft-gdpr/plugin.json', '{}');
+        $this->writeTheirs('plugins/_bundled/sirsoft-gdpr/src/Plugin.php', '<?php');
+        $this->writeTheirs('plugins/_bundled/sirsoft-board-x/plugin.json', '{}');
+        $this->writeTheirs('lang-packs/_bundled/g7-plugin-sirsoft-gdpr-ja/language-pack.json', '{}');
+
+        $result = CoreBackupHelper::computeApplyList(
+            $this->basePath,
+            $this->theirsPath,
+            ['plugins/_bundled', 'lang-packs/_bundled'],
+            [],
+            [],
+            ['plugins/_bundled/sirsoft-gdpr', 'lang-packs/_bundled/g7-plugin-sirsoft-gdpr-ja'],
+        );
+
+        $this->assertNotContains('plugins/_bundled/sirsoft-gdpr/plugin.json', $result['apply']);
+        $this->assertNotContains('plugins/_bundled/sirsoft-gdpr/src/Plugin.php', $result['apply']);
+        $this->assertNotContains('lang-packs/_bundled/g7-plugin-sirsoft-gdpr-ja/language-pack.json', $result['apply']);
+        // 접두사가 같은 다른 번들(sirsoft-board-x)은 영향 없음
+        $this->assertContains('plugins/_bundled/sirsoft-board-x/plugin.json', $result['apply']);
+        $this->assertSame(1, $result['added_count']);
+    }
+
+    /**
+     * skipPaths 는 경로 단위로만 매치합니다 — 다른 깊이의 같은 이름 폴더는 건너뛰지 않습니다.
+     *
+     * excludes 의 「/ 없는 항목 = 모든 깊이의 이름 매치」 규칙과 다르다는 점을 잠근다.
+     *
+     * @effects skip_paths_do_not_match_same_name_at_other_depth
+     *
+     * @return void 반환값 없음
+     */
+    public function test_skip_paths_do_not_match_same_name_at_other_depth(): void
+    {
+        $this->writeTheirs('plugins/_bundled/sirsoft-gdpr/plugin.json', '{}');
+        $this->writeTheirs('plugins/_bundled/other/sirsoft-gdpr/file.txt', 'x');
+        $this->writeTheirs('plugins/_bundled/sirsoft-gdpr-ext/plugin.json', '{}');
+
+        $result = CoreBackupHelper::computeApplyList(
+            $this->basePath,
+            $this->theirsPath,
+            ['plugins/_bundled'],
+            [],
+            [],
+            ['plugins/_bundled/sirsoft-gdpr'],
+        );
+
+        $this->assertNotContains('plugins/_bundled/sirsoft-gdpr/plugin.json', $result['apply']);
+        $this->assertContains('plugins/_bundled/other/sirsoft-gdpr/file.txt', $result['apply']);
+        $this->assertContains('plugins/_bundled/sirsoft-gdpr-ext/plugin.json', $result['apply']);
+    }
+
+    /**
+     * 롤백 manifest 도 같은 skipPaths 로 건너뛰어 적용 목록과 일치합니다 (#146 S4).
+     *
+     * @effects new_files_manifest_honors_skip_paths
+     *
+     * @return void 반환값 없음
+     */
+    public function test_new_files_manifest_honors_skip_paths(): void
+    {
+        $this->writeTheirs('plugins/_bundled/sirsoft-gdpr/plugin.json', '{}');
+        $this->writeTheirs('plugins/_bundled/sirsoft-totp/plugin.json', '{}');
+
+        $skip = ['plugins/_bundled/sirsoft-gdpr'];
+        CoreBackupHelper::writeNewFilesManifest(
+            $this->basePath,
+            $this->theirsPath,
+            ['plugins/_bundled'],
+            [],
+            [],
+            '7.1.1',
+            '7.1.2',
+            $skip,
+        );
+        $manifest = json_decode(File::get($this->basePath.DIRECTORY_SEPARATOR.'_new_files_manifest.json'), true);
+        $apply = CoreBackupHelper::computeApplyList($this->basePath, $this->theirsPath, ['plugins/_bundled'], [], [], $skip)['apply'];
+
+        $this->assertSame($apply, $manifest['new_files']);
+        $this->assertNotContains('plugins/_bundled/sirsoft-gdpr', $manifest['new_dirs']);
+        $this->assertContains('plugins/_bundled/sirsoft-totp', $manifest['new_dirs']);
+    }
+
+    /**
+     * theirs 쪽에만 파일을 씁니다.
+     *
+     * @param  string  $relative  상대 경로
+     * @param  string  $content  내용
+     * @return void 반환값 없음
+     */
+    private function writeTheirs(string $relative, string $content): void
+    {
+        $file = $this->theirsPath.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relative);
+        File::ensureDirectoryExists(dirname($file));
+        File::put($file, $content);
+    }
+
+    /**
      * base·theirs 양쪽에 동일 파일을 씁니다.
      *
      * @param  string  $relative  상대 경로

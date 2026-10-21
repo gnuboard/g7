@@ -15,7 +15,7 @@ use Tests\TestCase;
 
 /**
  * 7.0.11 → 7.1.0 에서 부모의 코어 역할·권한 재동기화가 실패하고 자식이 재동기화를 건너뛴 사이트를 복구한다
- * (7.1.0 출시 점검 CU-3, W3 리허설 실측으로 확정).
+ * (7.1.0 출시 점검, 리허설 실측으로 확정).
  *
  * 부모(7.0.11 코드)는 옛 `App\Models\Role`(HasUserOverrides 에 planUpgrade 없음)을 이미 메모리에 올린 채 Step 9
  * 재동기화에서 새 파일 `ExtensionRoleSyncHelper` 를 불러 `Call to undefined method Role::planUpgrade()` 로 실패하고

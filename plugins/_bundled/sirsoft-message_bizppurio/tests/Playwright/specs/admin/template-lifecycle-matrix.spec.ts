@@ -37,10 +37,24 @@ function evidence(row: string, value: unknown): void {
     console.log(`MATRIX|${row}|${typeof value === 'string' ? value : JSON.stringify(value)}`);
 }
 
+/**
+ * 카카오 위임 조회(알림톡 카테고리·발신 프로필) — kapi 가 실패하면 서버가 422 로 사유를 돌려주고
+ * 화면은 그 데이터소스를 조용히 넘긴다(suppress). 외부 연동 상태에 따라 나는 의도된 응답이라
+ * 콘솔 오류로 세지 않고 증거로만 남긴다.
+ */
+const KAPI_DELEGATED_LOOKUP = /\/admin\/alimtalk-templates\/(categories|profiles)(\?|$)/;
+
 /** 콘솔 에러를 수집하도록 페이지를 준비한다. */
 function collectConsoleErrors(page: Page): string[] {
     const errors: string[] = [];
-    page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+    page.on('console', (m) => {
+        if (m.type() !== 'error') return;
+        if (/status of 422/.test(m.text()) && KAPI_DELEGATED_LOOKUP.test(m.location().url)) {
+            evidence('kapi 위임 조회 422(허용)', m.location().url);
+            return;
+        }
+        errors.push(m.text());
+    });
     page.on('pageerror', (e) => errors.push(String(e)));
 
     return errors;
@@ -211,11 +225,14 @@ async function clearTemplates(page: Page): Promise<number> {
 
 /** 서브탭 버튼 텍스트 배열 */
 async function tabTexts(page: Page): Promise<string[]> {
-    return (await page.locator('#channel_sub_tabs button').allInnerTexts()).map((t) => t.trim());
+    // 채널 탭은 링크(#757) — 단추만 보면 빈 목록이 된다
+    return (await page.locator('#channel_sub_tabs :is(a, button)').allInnerTexts()).map((t) => t.trim());
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('T1 진입/표시', () => {
+    // @scenario content_variant=ba_none
+    // @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_summary_only
     test('1a·1b 통합 탭 노출 + 행 하단 블록 + i18n 원문 0', async ({ page, messagingManageToken }) => {
         const errors = collectConsoleErrors(page);
         await authenticatePage(page, messagingManageToken);
@@ -248,6 +265,8 @@ test.describe('T1 진입/표시', () => {
         expect(errors).toHaveLength(0);
     });
 
+    // @scenario content_variant=ba_none
+    // @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs
     test('1c readiness 배너가 자격증명 상태를 반영한다', async ({ page, messagingManageToken }) => {
         await authenticatePage(page, messagingManageToken);
         await openBizppurioTab(page);
@@ -260,6 +279,8 @@ test.describe('T1 진입/표시', () => {
         expect(typeof visible).toBe('boolean');
     });
 
+    // @scenario content_variant=ba_none
+    // @effects tab_visible_when_any_of_tab_channels_active
     test('1d·1e tab_channels 규칙 — 알림톡만 활성 / 둘 다 비활성', async ({ page, messagingManageToken }) => {
         await authenticatePage(page, messagingManageToken);
         await openBizppurioTab(page);
@@ -293,6 +314,8 @@ test.describe('T1 진입/표시', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('T2·T3 입력', () => {
+    // @scenario content_variant=ba_none, content_variant=ex_text, content_variant=ad_image, content_variant=mi_item_list
+    // @effects edit_modal_hosts_alimtalk_and_sms_sections, compose_modal_switches_conditional_fields_by_type
     test('2a·2b 모달 오픈 + 프리필 + 강조유형 4종 전환 시 조건부 블록', async ({ page, messagingManageToken }) => {
         const errors = collectConsoleErrors(page);
         await authenticatePage(page, messagingManageToken);
@@ -357,6 +380,8 @@ test.describe('T2·T3 입력', () => {
         expect(others).toHaveLength(0);
     });
 
+    // @scenario content_variant=ba_none
+    // @effects buttons_max_five_with_linktype_conditional_fields
     test('3a 버튼 3회 추가 + 1회 삭제 → 카운트 정합, 5개 도달 시 추가 잠김', async ({ page, messagingManageToken }) => {
         await authenticatePage(page, messagingManageToken);
         await openBizppurioTab(page);
@@ -406,6 +431,8 @@ test.describe('T2·T3 입력', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('T4 제출/응답 + T10 경계', () => {
+    // @scenario content_variant=ba_none
+    // @effects draft_save_accepts_partial_content_and_request_validates_fully
     test('4b·10a 본문 길이 경계(999/1000/1001) 응답 코드', async ({ page, messagingManageToken }) => {
         const errors = collectConsoleErrors(page);
         await authenticatePage(page, messagingManageToken);
@@ -442,6 +469,8 @@ test.describe('T4 제출/응답 + T10 경계', () => {
         expect(others4b).toHaveLength(0);
     });
 
+    // @scenario content_variant=ba_none
+    // @effects unified_save_chain_alimtalk_then_core_recipients
     test('10c [저장] 더블클릭 시 요청이 1회만 나간다', async ({ page, messagingManageToken }) => {
         // 유효 자격증명 환경에서는 kapi 실호출(add·request·cancel_request·delete) 4회 + 고정 대기 7초가
         // 한 테스트에 들어가므로 기본 30초를 넘긴다(실측 31.3초). 판정 축이 시간은 아니다.
@@ -516,6 +545,8 @@ test.describe('T4 제출/응답 + T10 경계', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('T6·T7 영속성·컨텍스트 격리', () => {
+    // @scenario content_variant=ba_none
+    // @effects unified_save_chain_alimtalk_then_core_recipients
     test('6a 저장 → 새로고침 후 본문·유형 복원', async ({ page, messagingManageToken }) => {
         await authenticatePage(page, messagingManageToken);
         await openBizppurioTab(page);
@@ -578,17 +609,21 @@ test.describe('T6·T7 영속성·컨텍스트 격리', () => {
         expect(restored, '새로고침 후 모달이 그 행의 저장값을 그대로 복원해야 한다').toBe(expected);
     });
 
+    // @scenario content_variant=ba_none
+    // @effects tab_visible_when_any_of_tab_channels_active, edit_modal_hosts_alimtalk_and_sms_sections
     test('7a·7b 탭 왕복 시 목록 상태 유지 + 모달 상태 이월 0', async ({ page, messagingManageToken }) => {
         await authenticatePage(page, messagingManageToken);
         await openBizppurioTab(page);
 
         const before = new URL(page.url()).search;
         // 메일 탭 → 비즈뿌리오 복귀
-        const mail = page.locator('#channel_sub_tabs button', { hasText: '메일' }).first();
+        // 채널 탭은 링크(#757) — 단추만 보면 늘 0 개라 왕복을 조용히 건너뛰었다. 「메일」 채널을 꺼 둔 환경만 건너뛴다
+        const mail = page.locator('#channel_sub_tabs :is(a, button)', { hasText: '메일' }).first();
         if (await mail.count() > 0) {
             await mail.click();
             await page.waitForTimeout(800);
-            await page.locator('#channel_sub_tabs button', { hasText: '비즈뿌리오' }).first().click();
+            expect(new URL(page.url()).searchParams.get('channel'), '메일 탭으로 옮겨 가지 않았다').toBe('mail');
+            await page.locator('#channel_sub_tabs :is(a, button)', { hasText: '비즈뿌리오' }).first().click();
             await page.waitForTimeout(800);
         }
         const after = new URL(page.url()).search;
@@ -611,6 +646,8 @@ test.describe('T6·T7 영속성·컨텍스트 격리', () => {
         expect(reopened).not.toContain('이월되면 안 되는 값');
     });
 
+    // @scenario content_variant=ba_none
+    // @effects manage_screen_lists_db_rows_with_merge_query_round_trip
     test('7c 관리 화면 필터+페이지 상태가 URL 에 보존된다 (mergeQuery)', async ({ page, messagingManageToken }) => {
         await authenticatePage(page, messagingManageToken);
         await page.goto(`${MANAGE_URL}&bz_status=draft&bz_search=%EA%B0%80`);
@@ -629,6 +666,8 @@ test.describe('T6·T7 영속성·컨텍스트 격리', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('T8 3면 패리티·다크·로케일', () => {
     for (const [face, url] of [['게시판', BOARD_URL], ['이커머스', ECOMMERCE_URL]] as const) {
+        // @scenario content_variant=ba_none
+        // @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_summary_only, edit_modal_hosts_alimtalk_and_sms_sections
         test(`8a·8b ${face} 알림 설정에서 통합 탭·행 하단이 동일하게 렌더된다`, async ({ page, messagingManageToken }) => {
             const errors = collectConsoleErrors(page);
             await authenticatePage(page, messagingManageToken);
@@ -638,12 +677,14 @@ test.describe('T8 3면 패리티·다크·로케일', () => {
             const barId = url.includes('/boards/') ? '#board_channel_sub_tabs' : '#ecommerce_channel_sub_tabs';
             const bar = page.locator(barId);
             const visible = await bar.isVisible().catch(() => false);
-            const tabs = visible ? (await bar.locator('button').allInnerTexts()).map((t) => t.trim()) : [];
+            // 채널 탭은 링크(#757) — 단추만 보면 tabs 가 비어 아래 단언이 건너뛰어진다
+            const tabs = visible ? (await bar.locator(':is(a, button)').allInnerTexts()).map((t) => t.trim()) : [];
             const rows = await page.locator('[id^="bizppurio_row_lifecycle"]').count();
             evidence(`8 ${face} 탭/행`, { visible, tabs, rows, errors: errors.length });
 
             // 면이 존재하면 통합 탭 어휘가 있어야 하고, 개별 채널 탭은 없어야 한다.
-            if (visible && tabs.length > 0) {
+            if (visible) {
+                expect(tabs.length, `${face} 채널 탭이 보이는데 탭 글자를 하나도 못 읽었다`).toBeGreaterThan(0);
                 expect(tabs.join('|')).not.toContain('알림톡');
             }
 
@@ -670,6 +711,8 @@ test.describe('T8 3면 패리티·다크·로케일', () => {
         });
     }
 
+    // @scenario content_variant=ba_none
+    // @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs
     test('8d·8e 다크 모드 · 영어 로케일에서 원문 키 노출 0', async ({ page, messagingManageToken }) => {
         await authenticatePage(page, messagingManageToken);
         await page.emulateMedia({ colorScheme: 'dark' });
@@ -693,6 +736,8 @@ test.describe('T8 3면 패리티·다크·로케일', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('T9 권한 분기', () => {
+    // @scenario content_variant=ba_none
+    // @effects view_permission_cannot_reach_mutation_routes
     test('9a view 권한만으로는 작성·신청 조작이 불가하다', async ({ page, messagingViewToken }) => {
         await authenticatePage(page, messagingViewToken);
         await page.goto(MANAGE_URL);
@@ -720,6 +765,8 @@ test.describe('T9 권한 분기', () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('라운드5 신규 축 — 업로드 가드·관리 라벨·SMS 언어 탭', () => {
+    // @scenario content_variant=ba_none
+    // @effects upload_in_progress_locks_save_buttons_not_cancel
     test('U1 업로드 진행 중 저장 계열 버튼이 잠기고 취소는 열려 있다', async ({ page, messagingManageToken }) => {
         await authenticatePage(page, messagingManageToken);
         await openBizppurioTab(page);
@@ -752,6 +799,8 @@ test.describe('라운드5 신규 축 — 업로드 가드·관리 라벨·SMS �
         evidence('U1 업로드 완료 후 저장 버튼', { saveDisabled: await save.isDisabled() });
     });
 
+    // @scenario content_variant=ba_none
+    // @effects sms_body_presence_and_preview_resolved_by_server, sms_modal_edits_body_per_locale_tab
     test('R5 관리 화면 라벨이 내용 유무로 갈린다 + SMS 언어 탭이 존재한다', async ({ page, messagingManageToken }) => {
         await authenticatePage(page, messagingManageToken);
         await page.goto(MANAGE_URL);
@@ -804,6 +853,8 @@ test.describe('라운드5 신규 축 — 업로드 가드·관리 라벨·SMS �
 
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('회귀 축', () => {
+    // @scenario content_variant=ba_none
+    // @effects tab_visible_when_any_of_tab_channels_active
     test('R1·R2 메일/데이터베이스 탭과 채널 토글 카드가 정상 렌더된다', async ({ page, messagingManageToken }) => {
         const errors = collectConsoleErrors(page);
         await authenticatePage(page, messagingManageToken);
@@ -814,7 +865,7 @@ test.describe('회귀 축', () => {
         expect(cards).toBeGreaterThanOrEqual(4);
 
         for (const label of ['메일', '데이터베이스']) {
-            const tab = page.locator('#channel_sub_tabs button', { hasText: label }).first();
+            const tab = page.locator('#channel_sub_tabs :is(a, button)', { hasText: label }).first();
             if (await tab.count() === 0) continue;
             await tab.click();
             await page.waitForTimeout(1_000);
@@ -826,18 +877,23 @@ test.describe('회귀 축', () => {
         expect(errors).toHaveLength(0);
     });
 
+    // @scenario content_variant=ba_none
+    // @effects manage_screen_lists_db_rows_with_merge_query_round_trip
     test('R3·R4 플러그인 연동 설정·발송 이력 탭이 정상 렌더된다', async ({ page, messagingManageToken }) => {
         const errors = collectConsoleErrors(page);
         await authenticatePage(page, messagingManageToken);
         await page.goto('/admin/plugins/sirsoft-message_bizppurio/settings');
         await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-        const tabs = (await page.locator('button').allInnerTexts()).map((t) => t.trim());
+        // 플러그인 설정 탭(연결·템플릿)은 링크(#757) — 단추와 함께 모은다
+        const tabs = (await page.locator(':is(a, button)').allInnerTexts()).map((t) => t.trim());
         evidence('R3·R4 플러그인 설정 탭', tabs.filter((t) => t && t.length < 20).slice(0, 12));
         evidence('R3·R4 콘솔 에러 수', errors.length);
         expect(errors).toHaveLength(0);
     });
 
+    // @scenario content_variant=ba_none
+    // @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs
     test('R6 사용자(basic) 화면이 영향을 받지 않는다', async ({ page }) => {
         const errors = collectConsoleErrors(page);
         await page.goto('/');

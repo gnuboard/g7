@@ -6,6 +6,7 @@ description: |
   기존 회귀 테스트의 소유권을 2026-10-04 PHPUnit 12 대비 속성 전환 때 시험 파일을 고치며 사후 등재했다.
   축 operation 은 신고 접수(게시글, 댓글)와 접수된 신고 조회, condition 은 접수 때 대상의 상태 또는 조회 때 거르는 조건이다.
   미인증 요청자, 신고를 끈 게시판, 중복 신고, 잘못된 사유 같은 요청 단위 거절은 reportable_target 칸 안에서 갈라 본다.
+  접수가 케이스의 마지막 신고 시각(last_reported_at — 목록 정렬·기간 거르개 기준)을 그 신고 시각으로 앞당기는 것(추가 신고·재접수·중복 거절·동시 신고)도 같은 칸에서 본다.
 
 axes:
   operation: [submit_post_report, submit_comment_report, query_reports]
@@ -30,6 +31,11 @@ effects:
   - cannot_report_own_comment
   - cannot_report_blinded_comment
   - report_create_activity_log_carries_reason_and_target_type
+  - additional_report_on_open_case_updates_last_reported_at
+  - additional_report_moves_case_to_top_of_admin_list
+  - reactivated_case_updates_last_reported_at
+  - duplicate_report_keeps_last_reported_at
+  - last_reported_at_never_moves_backward
   - scope_by_status_with_enum
   - scope_by_status_with_string
   - scope_by_status_returns_empty_when_no_match
@@ -43,4 +49,5 @@ effects:
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/User/UserReportApiTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/ReportLastReportedAtTest.php
   - modules/_bundled/sirsoft-board/tests/Unit/Models/ReportModelScopeTest.php

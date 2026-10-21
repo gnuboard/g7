@@ -116,15 +116,58 @@
             <div class="text-xs font-medium text-warning-soft mb-2">$t:admin.plugins.modals.modified_layouts_list_title|count={{_global.modifiedPluginLayouts?.length ?? 0}}</div>
             <div class="space-y-1 max-h-40 overflow-y-auto">
               <div data-each="modLayout in _global.modifiedPluginLayouts" class="flex-center gap-3 text-xs px-2 py-1.5 bg-white dark:bg-gray-800 rounded">
-                <icon name="file-alt" class="text-amber-500 dark:text-amber-400 shrink-0"/>
+                <icon name="file-alt" class="text-amber-600 dark:text-amber-400 shrink-0"/>
                 <span class="font-mono flex-1 text-gray-700 dark:text-gray-300">{{modLayout.name}}</span>
-                <span class="text-gray-400 dark:text-gray-500 shrink-0">{{modLayout.updated_at}}</span>
+                <span class="text-gray-500 dark:text-gray-400 shrink-0">{{modLayout.updated_at}}</span>
               </div>
             </div>
-            <div class="flex-center mt-2 text-xs text-amber-600 dark:text-amber-400 gap-1">
+            <div class="flex-center mt-2 text-xs text-amber-700 dark:text-amber-400 gap-1">
               <icon name="info-circle" size="xs"/>
               <span>$t:admin.plugins.modals.modified_layouts_keep_notice</span>
             </div>
+          </div>
+        </div>
+      </div>
+      <!-- 고급 설정 — 레이아웃 설치 소스(#144). 평소에는 자동(.g7.html 우선)이고, 새 형식 처리에 문제가 있을 때만
+           원본 JSON 우선을 고른다. 값은 요청 본문 layout_source 로 보내고 서버는 그 요청 동안만 적용한다.
+           창을 열 때마다 자동·접힘으로 되돌린다(여는 쪽이 전역값을 초기화한다). -->
+      <div data-ref="plugin_update_layout_source_section" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+        <button data-ref="plugin_update_layout_source_toggle" type="button" aria-expanded="{{_global.pluginLayoutSourceOpen === true}}" class="text-label hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1">
+          <on type="click">
+            <!-- 접힘/펼침만 바꾼다 — 고른 값은 그대로 둔다. -->
+            <set-state target="global" pluginLayoutSourceOpen="{{_global.pluginLayoutSourceOpen !== true}}"/>
+          </on>
+          <icon name="{{_global.pluginLayoutSourceOpen === true ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" class="text-xs"/>
+          <span>$t:admin.plugins.modals.layout_source_advanced</span>
+        </button>
+        <div data-ref="plugin_update_layout_source_options" data-if="{{_global.pluginLayoutSourceOpen === true}}" class="mt-2 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:admin.plugins.modals.layout_source_title</div>
+          <p class="text-tertiary mb-2">$t:admin.plugins.modals.layout_source_help</p>
+          <div class="row-stack">
+            <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              <input type="radio" name="plugin_update_layout_source" value="auto" checked="{{(_global.pluginLayoutSource ?? 'auto') === 'auto'}}" class="radio mt-0.5">
+                <on type="change">
+                  <!-- 자동(권장) — .g7.html 을 우선 설치하고 없으면 .json 을 쓴다. 기본값. -->
+                  <set-state target="global" pluginLayoutSource="auto"/>
+                </on>
+              </input>
+              <div>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.plugins.modals.layout_source_auto</span>
+                <p class="text-tertiary">$t:admin.plugins.modals.layout_source_auto_desc</p>
+              </div>
+            </label>
+            <label class="flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+              <input type="radio" name="plugin_update_layout_source" value="json" checked="{{(_global.pluginLayoutSource ?? 'auto') === 'json'}}" class="radio mt-0.5">
+                <on type="change">
+                  <!-- 원본 JSON 우선(문제 해결용) — 짝 .json 이 있는 화면은 .g7.html 대신 원본 JSON 으로 설치한다. -->
+                  <set-state target="global" pluginLayoutSource="json"/>
+                </on>
+              </input>
+              <div>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.plugins.modals.layout_source_json</span>
+                <p class="text-tertiary">$t:admin.plugins.modals.layout_source_json_desc</p>
+              </div>
+            </label>
           </div>
         </div>
       </div>
@@ -152,7 +195,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginUpdating || (_global.selectedPlugin?.is_compatible === false &amp;&amp; _global.pluginForceUpdate !== true)}}" type="button">
+      <button class="flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isPluginUpdating || (_global.selectedPlugin?.is_compatible === false &amp;&amp; _global.pluginForceUpdate !== true)}}" type="button">
         <on type="click">
           <!-- 화면 정의 처리 방식과 강행 여부 둘을 실어 보낸다. 성공하면 고른 플러그인과 화면 정의 관련 값들을 처음으로 되돌린다 — 전역이라 다음에 다른 플러그인을 열 때 지난 선택이 따라붙는다. -->
           <sequence>
@@ -162,9 +205,11 @@
                 <set-state target="global" :isPluginUpdating="false"/>
                 <!-- 서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다 -->
                 <toast type="success" message="{{response?.message ?? '$t:admin.plugins.update_success'}}"/>
+                <!-- 멈춘 업데이트를 정리하고 다시 업데이트했으면 확장은 비활성으로 남는다(정리 규칙) — 다시 켜라고 알린다 -->
+                <toast if="{{_global.selectedPlugin?.stuck_update === true}}" type="info" message="$t:admin.plugins.stuck_update_reactivate_hint"/>
                 <refetch-data-source dataSourceId="plugins"/>
                 <close-modal/>
-                <set-state target="global" :selectedPlugin="null" pluginLayoutStrategy="overwrite" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :pluginRebuildSearchIndex="false"/>
+                <set-state target="global" :selectedPlugin="null" pluginLayoutSource="auto" :pluginLayoutSourceOpen="false" pluginLayoutStrategy="overwrite" :hasModifiedPluginLayouts="false" :modifiedPluginLayoutsCount="0" :modifiedPluginLayouts="[]" :pluginRebuildSearchIndex="false"/>
               </success>
               <fail>
                 <!-- 409 = 같은 플러그인의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고
@@ -174,7 +219,7 @@
                 <set-state if="{{error.status !== 409}}" target="global" :isPluginUpdating="false" pluginUpdateError="{{error.message}}"/>
                 <toast if="{{error.status !== 409}}" type="error" message="{{error.message}}"/>
               </fail>
-              <body layout_strategy="{{_global.pluginLayoutStrategy ?? 'overwrite'}}" force="{{_global.pluginForceUpdate === true}}" rebuild_search_index="{{_global.pluginRebuildSearchIndex === true}}"/>
+              <body layout_strategy="{{_global.pluginLayoutStrategy ?? 'overwrite'}}" force="{{_global.pluginForceUpdate === true}}" rebuild_search_index="{{_global.pluginRebuildSearchIndex === true}}" layout_source="{{_global.pluginLayoutSource ?? 'auto'}}"/>
             </api-call>
           </sequence>
         </on>

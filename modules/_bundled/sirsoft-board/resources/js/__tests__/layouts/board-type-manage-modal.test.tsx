@@ -267,10 +267,9 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
       const nameCell = findByIdPrefix(modal, 'bt_td_name');
       expect(nameCell.text).toContain('btItem.name');
 
-      // 엔진은 현재 로케일을 전역 변수 `$locale` 로만 노출한다. `_global.locale` 은 심는 곳이
-      // 없어 항상 undefined 이고, 그러면 뒤의 `?? 'ko'` 가 걸려 **모든 언어에서 한국어**가
-      // 나간다. 같은 폴더의 `board-locale-fallback.test.ts` 가 이미 요구하던 형태다.
-      expect(nameCell.text).toContain('$locale');
+      // 엔진의 `$localized()` 가 현재 로케일($locale) → 사이트 기본 언어 → 영어 순으로 고른다(#148).
+      // `_global.locale` 은 심는 곳이 없어 항상 undefined 라 쓰면 **모든 언어에서 한국어**가 나간다.
+      expect(nameCell.text).toContain('$localized(btItem.name)');
       expect(nameCell.text).not.toContain('_global.locale');
     });
   });
@@ -420,7 +419,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
      */
     it('slug 필드가 수정 모드에서 비활성화된다', () => {
       const slugInput = findById(modal, 'bt_input_slug');
-      // 유형 쓰기 API 는 게시판 등록 권한이라 부모 화면의 canManageBoardTypes 로 잠근다(7.1.0 abilities 게이트 board-admin-a #4)
+      // 유형 쓰기 API 는 게시판 등록 권한이라 부모 화면의 canManageBoardTypes 로 잠근다(7.1.0 abilities 게이트)
       expect(slugInput.props.disabled).toBe("{{$parent._computed.canManageBoardTypes !== true || _global.btFormMode === 'edit'}}");
     });
   });
@@ -812,7 +811,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
      * @effects server_name_error_shown_under_name_field_once
      */
     it('MultilingualInput에 error prop이 전달된다 (사이트 기본 언어 키 → 필드 전체 키 순)', () => {
-      // 이름 오류 문구는 MultilingualInput 이 칸 아래에 직접 그린다(별도 문단 bt_name_error 는 두지 않는다 — O-E-2)
+      // 이름 오류 문구는 MultilingualInput 이 칸 아래에 직접 그린다(별도 문단 bt_name_error 는 두지 않는다)
       const nameInput = findById(modal, 'bt_input_name');
       expect(nameInput.props.error).toBeDefined();
       expect(nameInput.props.error).toContain("btFormErrors?.['name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]");
@@ -928,7 +927,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
     });
   });
 
-  // O-E-2 — 이름 필수 언어는 서버 규칙(LocaleRequiredTranslatable)과 같은 「사이트 기본 언어」다(2026-10-09 제품 결정).
+  // 이름 필수 언어는 서버 규칙(LocaleRequiredTranslatable)과 같은 「사이트 기본 언어」다(2026-10-09 제품 결정).
   // 화면 언어와 무관하게 사이트 기본 언어 칸이 비면 잠그고, 서버가 `name`(필드 전체) 키나 사이트 기본 언어 키로
   // 돌려준 오류를 칸에 붙인다.
   describe('이름 필수 언어와 오류 키 (사이트 기본 언어 기준)', () => {

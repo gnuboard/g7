@@ -1,0 +1,29 @@
+feature: setState 기본(deep) 병합에서 빈 객체 `{}` 값이 기존 값을 비운다 (engine-v1.81.1, 7.1.1 엔진 대안)
+
+description: |
+  deep 병합은 `{}` 를 「바꿀 키 없음」 으로 병합해 같은 레이아웃의 다른 상품으로 옮긴 뒤 init 의 `reviewOptionFilters: {}` 가 앞 상품
+  필터를 남겼다(7.1.0 의 레이아웃 빈 객체 보존부터 드러남). 엔진이 레이아웃의 `null` → `{}` 2단계를 대신한다 — 빈 객체 자리만
+  `null` 로 둔 선행 쓰기를 같은 target·scope 로 먼저 하고, 본 쓰기 병합은 `{}` 를 그대로 둔다. 빈 객체 값이 없는 setState 는 종전과
+  같다. 축 target 은 쓰기 대상 갈래, shape 는 payload 모양이다(실 TemplateApp + renderTemplate, 저장소 A 는 실제 React 상태).
+
+axes:
+  target: [local_component, local_dispatch_fallback, global, parent_local, parent_global, scope_parent, isolated]
+  shape: [top_level_empty, sequence_next_action, nested_and_dot_key, non_empty_unchanged, merge_modes_unchanged, stale_stack_snapshot]
+
+exclusions:
+  - { target: [local_dispatch_fallback, global, parent_local, parent_global, isolated], shape: [sequence_next_action, nested_and_dot_key, non_empty_unchanged, merge_modes_unchanged, stale_stack_snapshot], reason: "모양별 차이는 병합 함수 하나(deepMergeWithState·선행 쓰기 트리)에서 갈린다 — 갈래별로는 최상위 `{}` 하나로 writer 연결을 잠근다" }
+  - { target: scope_parent, shape: [top_level_empty, sequence_next_action, nested_and_dot_key, non_empty_unchanged, merge_modes_unchanged], reason: "scope:parent 의 최상위 `{}` 는 parent_local 시험과 같은 창에서 함께 밟고, 이 갈래 고유 위험은 낡은 스택 스냅샷이다" }
+  - { target: local_component, shape: stale_stack_snapshot, reason: "스택 스냅샷은 창 갈래에만 있다" }
+
+effects:
+  - empty_object_clears_previous_value
+  - non_empty_object_still_deep_merges
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.setStateEmptyObjectReplace.test.tsx
+
+validation:
+  note: |
+    parent_global(7.1.1, 2026-10-19): 창의 $parent._global 쓰기 시험이 현 엔진 green. 이 갈래는 선행 null 쓰기와 본 쓰기 병합의
+    emptyObjectReplaces 두 겹으로 막혀, 병합 옵션 한 줄만 주석 처리하면 green(선행 쓰기 직후의 live 전역이 base), 선행 쓰기만 꺼도 green,
+    둘 다 끄면 1 failed(prefs 가 a 그대로). 원복 뒤 12 passed.

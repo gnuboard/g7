@@ -14,7 +14,7 @@
     <!-- 필터 영역 -->
     <div class="flex flex-col sm:flex-row gap-3 mb-4">
       <!-- 게시판 필터 -->
-      <select value="{{_global.myReactionsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:mypage.board_activities.reactions.table.board" value="{{_global.myReactionsBoard ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <on type="change">
           <sequence>
             <set-state target="global" myReactionsBoard="{{$event.target.value}}" :myReactionsPage="1"/>
@@ -26,7 +26,7 @@
         <option data-each="board in {{boards?.data ?? []}}" value="{{board.slug}}">{{board.name}}</option>
       </select>
       <!-- 반응 유형 필터 — 선택지는 목록 응답이 실어 준 메타에서 온다(별도 API 없음) -->
-      <select data-testid="my-reactions-type-filter" value="{{_global.myReactionsTypeId ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select data-testid="my-reactions-type-filter" aria-label="$t:mypage.board_activities.reactions.table.type" value="{{_global.myReactionsTypeId ?? ''}}" class="min-w-[120px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <on type="change">
           <sequence>
             <set-state target="global" myReactionsTypeId="{{$event.target.value}}" :myReactionsPage="1"/>
@@ -38,7 +38,7 @@
         <option data-each="rt in {{myReactions?.data?.reaction_types ?? []}}" value="{{rt.id}}">{{rt.name}}</option>
       </select>
       <!-- 대상 필터 — 글에 남긴 것과 댓글에 남긴 것을 갈라 본다 -->
-      <select data-testid="my-reactions-target-filter" value="{{_global.myReactionsTargetType ?? ''}}" class="min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select data-testid="my-reactions-target-filter" aria-label="$t:mypage.board_activities.reactions.table.target" value="{{_global.myReactionsTargetType ?? ''}}" class="min-w-[110px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <options>
           <option value="">$t:mypage.board_activities.reactions.filter.all_targets</option>
           <option value="post">$t:mypage.board_activities.target.post</option>
@@ -53,7 +53,7 @@
         </on>
       </select>
       <!-- 정렬 필터 -->
-      <select value="{{_global.myReactionsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+      <select aria-label="$t:common.sort_order" value="{{_global.myReactionsSort ?? 'latest'}}" class="min-w-[100px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
         <on type="change">
           <sequence>
             <set-state target="global" myReactionsSort="{{$event.target.value}}" :myReactionsPage="1"/>
@@ -66,7 +66,7 @@
       </select>
       <!-- 검색 영역 -->
       <div class="flex-1 flex gap-2">
-        <select data-ref="my_reactions_search_field_select" value="{{_global.myReactionsSearchField ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+        <select data-ref="my_reactions_search_field_select" aria-label="$t:common.search_field" value="{{_global.myReactionsSearchField ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
           <options>
             <option value="title_content">$t:mypage.board_activities.search_fields.title_content</option>
             <option value="title">$t:mypage.board_activities.search_fields.title</option>
@@ -77,7 +77,7 @@
             <set-state target="global" myReactionsSearchField="{{$event.target.value}}"/>
           </on>
         </select>
-        <input type="text" placeholder="$t:mypage.board_activities.search_placeholder" value="{{_global.myReactionsSearch ?? ''}}" class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500">
+        <input type="text" placeholder="$t:mypage.board_activities.search_placeholder" value="{{_global.myReactionsSearch ?? ''}}" class="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400">
           <on type="change">
             <!-- 검색어 — 담아만 둔다 -->
             <set-state target="global" myReactionsSearch="{{$event.target.value}}"/>
@@ -91,7 +91,7 @@
             </sequence>
           </on>
         </input>
-        <button class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
           <on type="click">
             <!-- 검색 — 조건이 URL 이 아니라 전역 상태에 있어 스스로 refetch 를 걸어야 한다. 쪽수를 1 로 되돌리지 않으면 3쪽을 보던 중 검색했을 때 빈 쪽이 뜬다 -->
             <sequence>
@@ -102,7 +102,7 @@
           </on>
           $t:common.search
         </button>
-        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">
             <!-- 초기화 — 게시판·유형·대상·검색어·정렬·쪽수를 한꺼번에 되돌린 뒤 다시 받는다 -->
             <sequence>
@@ -119,7 +119,7 @@
     <div data-if="{{(_global.myReactionsSelectedIds ?? []).length > 0}}" class="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-between gap-3">
       <div class="flex items-center gap-2">
         <label class="flex items-center gap-2 cursor-pointer sm:hidden">
-          <input data-testid="my-reactions-select-all-m" type="checkbox" class="rounded border-gray-300 dark:border-gray-600" checked="{{(myReactions?.data?.data ?? []).length > 0 &amp;&amp; (myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id))}}">
+          <input data-testid="my-reactions-select-all-m" type="checkbox" aria-label="$t:common.select_all" class="rounded border-gray-300 dark:border-gray-600" checked="{{(myReactions?.data?.data ?? []).length > 0 &amp;&amp; (myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id))}}">
             <on type="change">
               <!-- 지금 쪽의 전부를 고르거나 전부 푼다 — 다른 쪽의 선택까지 건드리지는 않는다 -->
               <set-state target="global" myReactionsSelectedIds="{{(myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id)) ? [] : (myReactions?.data?.data ?? []).map(r => r.id)}}"/>
@@ -129,7 +129,7 @@
         </label>
         <span data-testid="my-reactions-selected-count" class="text-sm font-medium text-gray-700 dark:text-gray-200">$t:mypage.board_activities.reactions.selected_count|count={{(_global.myReactionsSelectedIds ?? []).length}}</span>
       </div>
-      <button data-testid="my-reactions-bulk-remove-btn" class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 transition-colors">
+      <button type="button" data-testid="my-reactions-bulk-remove-btn" class="px-3 py-1.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 transition-colors">
         <on type="click">
           <open-modal target="reaction_bulk_delete_modal"/>
         </on>
@@ -144,7 +144,7 @@
         <span data-if="{{myReactions?.data?.query?.search}}" class="font-medium">"{{myReactions?.data?.query?.search}}"</span>
         <span>({{myReactions?.data?.pagination?.total ?? 0}}$t:mypage.board_activities.search_result_unit|count={{myReactions?.data?.pagination?.total ?? 0}}</span><span>)</span>
       </div>
-      <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm">
+      <button type="button" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm">
         <on type="click">
           <!-- 조건 초기화 — 게시판·유형·대상·검색어·정렬·쪽을 기본값으로 되돌리고 선택을 비운 뒤 다시 받는다 -->
           <sequence>
@@ -162,7 +162,7 @@
         <thead class="border-b border-gray-200 dark:border-gray-700">
           <tr>
             <th class="w-10 px-4 py-3 text-center">
-              <input data-testid="my-reactions-select-all" type="checkbox" class="rounded border-gray-300 dark:border-gray-600" checked="{{(myReactions?.data?.data ?? []).length > 0 &amp;&amp; (myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id))}}">
+              <input data-testid="my-reactions-select-all" type="checkbox" aria-label="$t:common.select_all" class="rounded border-gray-300 dark:border-gray-600" checked="{{(myReactions?.data?.data ?? []).length > 0 &amp;&amp; (myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id))}}">
                 <on type="change">
                   <!-- 전체 선택 — 이 쪽의 행이 모두 선택돼 있으면 비우고, 아니면 이 쪽 전부를 선택한다 -->
                   <set-state target="global" myReactionsSelectedIds="{{(myReactions?.data?.data ?? []).every(r => (_global.myReactionsSelectedIds ?? []).includes(r.id)) ? [] : (myReactions?.data?.data ?? []).map(r => r.id)}}"/>
@@ -181,7 +181,7 @@
           <!-- ① 살아 있는 대상 — 제목을 눌러 원글로 간다 -->
           <tr data-testid="my-reaction-row-{{reaction.id}}" data-if="{{reaction.reaction_enabled &amp;&amp; !reaction.target_deleted &amp;&amp; !reaction.board_deleted}}" class="border-b border-gray-100 dark:border-gray-700/50 last:border-b-0">
             <td class="px-4 py-3 text-center">
-              <input data-testid="my-reaction-check-{{reaction.id}}" type="checkbox" class="rounded border-gray-300 dark:border-gray-600" checked="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}">
+              <input data-testid="my-reaction-check-{{reaction.id}}" type="checkbox" aria-label="$t:common.select_item|name={{reaction.title ? reaction.title : (reaction.target_type === 'comment' ? $t('mypage.board_activities.reactions.deleted_comment') : $t('mypage.board_activities.reactions.deleted_post'))}}" class="rounded border-gray-300 dark:border-gray-600" checked="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}">
                 <on type="change">
                   <!-- 행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
                   <set-state target="global" myReactionsSelectedIds="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id) ? (_global.myReactionsSelectedIds ?? []).filter(v => v !== reaction.id) : [...(_global.myReactionsSelectedIds ?? []), reaction.id]}}"/>
@@ -200,14 +200,14 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex flex-col">
-                <button class="text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate">
+                <a href="/board/{{reaction.board_slug}}/{{reaction.post_id}}" class="inline-block justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer truncate">
                   <on type="click">
-                    <navigate path="/board/{{reaction.board_slug}}/{{reaction.post_id}}"/>
+                    <navigate/>
                   </on>
                   {{reaction.excerpt ?? reaction.title}}
-                </button>
+                </a>
                 <!-- 댓글이면 본문 발췌가 제목 자리에 오므로, 어느 글의 댓글인지를 작은 글씨로 덧붙인다 -->
-                <span data-if="{{reaction.target_type === 'comment' &amp;&amp; !!reaction.title}}" class="text-xs text-gray-400 dark:text-gray-500 truncate">{{reaction.title}}</span>
+                <span data-if="{{reaction.target_type === 'comment' &amp;&amp; !!reaction.title}}" class="text-xs text-gray-500 dark:text-gray-400 truncate">{{reaction.title}}</span>
               </div>
             </td>
             <td class="px-4 py-3">
@@ -217,7 +217,7 @@
               <span class="text-sm text-gray-500 dark:text-gray-400">{{reaction.reacted_at ?? ''}}</span>
             </td>
             <td class="px-4 py-3 text-center">
-              <button data-testid="my-reaction-remove-{{reaction.id}}" class="px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+              <button type="button" data-testid="my-reaction-remove-{{reaction.id}}" class="px-2 py-1 text-xs text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <on type="click">
                   <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->
                   <sequence>
@@ -236,9 +236,9 @@
             </td>
           </tr>
           <!-- ② 게시판이 반응을 껐거나 사라진 경우 — 갈 곳이 없으니 이동은 빼고 해제만 남긴다 -->
-          <tr data-testid="my-reaction-row-{{reaction.id}}" data-if="{{(!reaction.reaction_enabled || reaction.board_deleted) &amp;&amp; !reaction.target_deleted}}" class="border-b border-gray-100 dark:border-gray-700/50 last:border-b-0 opacity-50">
+          <tr data-testid="my-reaction-row-{{reaction.id}}" data-if="{{(!reaction.reaction_enabled || reaction.board_deleted) &amp;&amp; !reaction.target_deleted}}" class="border-b border-gray-100 dark:border-gray-700/50 last:border-b-0 opacity-75">
             <td class="px-4 py-3 text-center">
-              <input data-testid="my-reaction-check-{{reaction.id}}" type="checkbox" class="rounded border-gray-300 dark:border-gray-600" checked="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}">
+              <input data-testid="my-reaction-check-{{reaction.id}}" type="checkbox" aria-label="$t:common.select_item|name={{reaction.title ? reaction.title : (reaction.target_type === 'comment' ? $t('mypage.board_activities.reactions.deleted_comment') : $t('mypage.board_activities.reactions.deleted_post'))}}" class="rounded border-gray-300 dark:border-gray-600" checked="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}">
                 <on type="change">
                   <!-- 행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
                   <set-state target="global" myReactionsSelectedIds="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id) ? (_global.myReactionsSelectedIds ?? []).filter(v => v !== reaction.id) : [...(_global.myReactionsSelectedIds ?? []), reaction.id]}}"/>
@@ -253,23 +253,23 @@
               </div>
             </td>
             <td class="px-4 py-3">
-              <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}</span>
+              <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-950 dark:bg-blue-900/40 dark:text-blue-300'}}">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}</span>
             </td>
             <td class="px-4 py-3">
               <div class="flex flex-col gap-1">
-                <span class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{{reaction.excerpt ?? reaction.title}}</span>
-                <span data-if="{{reaction.board_deleted}}" class="inline-flex w-fit items-center px-2 py-0.5 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded">$t:mypage.board_activities.reactions.board_deleted</span>
-                <span data-if="{{!reaction.board_deleted}}" class="inline-flex w-fit items-center px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 rounded">$t:mypage.board_activities.reactions.disabled_flag</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{{reaction.excerpt ?? reaction.title}}</span>
+                <span data-if="{{reaction.board_deleted}}" class="inline-flex w-fit items-center px-2 py-0.5 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded">$t:mypage.board_activities.reactions.board_deleted</span>
+                <span data-if="{{!reaction.board_deleted}}" class="inline-flex w-fit items-center px-2 py-0.5 text-xs bg-yellow-100 text-yellow-950 dark:bg-yellow-900/40 dark:text-yellow-300 rounded">$t:mypage.board_activities.reactions.disabled_flag</span>
               </div>
             </td>
             <td class="px-4 py-3">
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{reaction.board_name ?? ''}}</span>
+              <span class="text-sm text-gray-700 dark:text-gray-300">{{reaction.board_name ?? ''}}</span>
             </td>
             <td class="px-4 py-3">
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{reaction.reacted_at ?? ''}}</span>
+              <span class="text-sm text-gray-700 dark:text-gray-300">{{reaction.reacted_at ?? ''}}</span>
             </td>
             <td class="px-4 py-3 text-center">
-              <button data-testid="my-reaction-remove-{{reaction.id}}" class="px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+              <button type="button" data-testid="my-reaction-remove-{{reaction.id}}" class="px-2 py-1 text-xs text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <on type="click">
                   <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->
                   <sequence>
@@ -288,9 +288,9 @@
             </td>
           </tr>
           <!-- ③ 대상이 지워진 경우 — 제목을 이탤릭으로 낮추고 무엇이 사라졌는지 배지로 말한다 -->
-          <tr data-testid="my-reaction-row-{{reaction.id}}" data-if="{{reaction.target_deleted}}" class="border-b border-gray-100 dark:border-gray-700/50 last:border-b-0 opacity-50">
+          <tr data-testid="my-reaction-row-{{reaction.id}}" data-if="{{reaction.target_deleted}}" class="border-b border-gray-100 dark:border-gray-700/50 last:border-b-0 opacity-75">
             <td class="px-4 py-3 text-center">
-              <input data-testid="my-reaction-check-{{reaction.id}}" type="checkbox" class="rounded border-gray-300 dark:border-gray-600" checked="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}">
+              <input data-testid="my-reaction-check-{{reaction.id}}" type="checkbox" aria-label="$t:common.select_item|name={{reaction.title ? reaction.title : (reaction.target_type === 'comment' ? $t('mypage.board_activities.reactions.deleted_comment') : $t('mypage.board_activities.reactions.deleted_post'))}}" class="rounded border-gray-300 dark:border-gray-600" checked="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}">
                 <on type="change">
                   <!-- 행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
                   <set-state target="global" myReactionsSelectedIds="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id) ? (_global.myReactionsSelectedIds ?? []).filter(v => v !== reaction.id) : [...(_global.myReactionsSelectedIds ?? []), reaction.id]}}"/>
@@ -305,22 +305,22 @@
               </div>
             </td>
             <td class="px-4 py-3">
-              <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}</span>
+              <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-950 dark:bg-blue-900/40 dark:text-blue-300'}}">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}</span>
             </td>
             <td class="px-4 py-3">
               <div class="flex flex-col gap-1">
-                <span class="text-sm italic text-gray-400 dark:text-gray-500 truncate">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.reactions.deleted_comment' : '$t:mypage.board_activities.reactions.deleted_post'}}</span>
-                <span class="inline-flex w-fit items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded">$t:mypage.board_activities.reactions.deleted_flag</span>
+                <span class="text-sm italic text-gray-700 dark:text-gray-300 truncate">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.reactions.deleted_comment' : '$t:mypage.board_activities.reactions.deleted_post'}}</span>
+                <span class="inline-flex w-fit items-center px-2 py-0.5 text-xs bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 rounded">$t:mypage.board_activities.reactions.deleted_flag</span>
               </div>
             </td>
             <td class="px-4 py-3">
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{reaction.board_name ?? ''}}</span>
+              <span class="text-sm text-gray-700 dark:text-gray-300">{{reaction.board_name ?? ''}}</span>
             </td>
             <td class="px-4 py-3">
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{reaction.reacted_at ?? ''}}</span>
+              <span class="text-sm text-gray-700 dark:text-gray-300">{{reaction.reacted_at ?? ''}}</span>
             </td>
             <td class="px-4 py-3 text-center">
-              <button data-testid="my-reaction-remove-{{reaction.id}}" class="px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+              <button type="button" data-testid="my-reaction-remove-{{reaction.id}}" class="px-2 py-1 text-xs text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <on type="click">
                   <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->
                   <sequence>
@@ -343,9 +343,9 @@
     </div>
     <!-- 좁은 화면 — 카드. 표와 같은 배열을 보고 같은 선택 상태를 공유한다 -->
     <div data-if="{{(myReactions?.data?.data ?? []).length > 0}}" class="sm:hidden space-y-3">
-      <div data-testid="my-reaction-row-m-{{reaction.id}}" data-each="reaction in {{myReactions?.data?.data ?? []}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 {{reaction.target_deleted || !reaction.reaction_enabled || reaction.board_deleted ? 'opacity-50' : ''}}">
+      <div data-testid="my-reaction-row-m-{{reaction.id}}" data-each="reaction in {{myReactions?.data?.data ?? []}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 {{reaction.target_deleted || !reaction.reaction_enabled || reaction.board_deleted ? 'opacity-75' : ''}}">
         <div class="flex items-start gap-3">
-          <input data-testid="my-reaction-check-m-{{reaction.id}}" type="checkbox" class="mt-1 rounded border-gray-300 dark:border-gray-600" checked="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}">
+          <input data-testid="my-reaction-check-m-{{reaction.id}}" type="checkbox" aria-label="$t:common.select_item|name={{reaction.title ? reaction.title : (reaction.target_type === 'comment' ? $t('mypage.board_activities.reactions.deleted_comment') : $t('mypage.board_activities.reactions.deleted_post'))}}" class="mt-1 rounded border-gray-300 dark:border-gray-600" checked="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id)}}">
             <on type="change">
               <!-- 행 선택 토글 — 새 배열로 갈아 끼운다(제자리 수정은 변경 감지를 비껴간다) -->
               <set-state target="global" myReactionsSelectedIds="{{(_global.myReactionsSelectedIds ?? []).includes(reaction.id) ? (_global.myReactionsSelectedIds ?? []).filter(v => v !== reaction.id) : [...(_global.myReactionsSelectedIds ?? []), reaction.id]}}"/>
@@ -353,28 +353,28 @@
           </input>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap mb-1">
-              <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'}}">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}</span>
-              <span class="inline-flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
+              <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded {{reaction.target_type === 'comment' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' : 'bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-300'}}">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.target.comment' : '$t:mypage.board_activities.target.post'}}</span>
+              <span class="inline-flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300">
                 <img data-if="{{!!reaction.reaction_type?.icon_url}}" src="{{reaction.reaction_type?.icon_url}}" alt="" class="w-4 h-4 object-contain"/>
                 <icon data-if="{{!reaction.reaction_type?.icon_url}}" name="{{reaction.reaction_type?.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
                 <span>{{reaction.reaction_type?.name ?? ''}}</span>
               </span>
-              <span data-if="{{reaction.board_deleted}}" class="inline-flex items-center px-2 py-0.5 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded">$t:mypage.board_activities.reactions.board_deleted</span>
-              <span data-if="{{!reaction.board_deleted &amp;&amp; !reaction.reaction_enabled &amp;&amp; !reaction.target_deleted}}" class="inline-flex items-center px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 rounded">$t:mypage.board_activities.reactions.disabled_flag</span>
-              <span data-if="{{reaction.target_deleted}}" class="inline-flex items-center px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 rounded">$t:mypage.board_activities.reactions.deleted_flag</span>
+              <span data-if="{{reaction.board_deleted}}" class="inline-flex items-center px-2 py-0.5 text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded">$t:mypage.board_activities.reactions.board_deleted</span>
+              <span data-if="{{!reaction.board_deleted &amp;&amp; !reaction.reaction_enabled &amp;&amp; !reaction.target_deleted}}" class="inline-flex items-center px-2 py-0.5 text-xs bg-yellow-100 text-yellow-950 dark:bg-yellow-900/40 dark:text-yellow-300 rounded">$t:mypage.board_activities.reactions.disabled_flag</span>
+              <span data-if="{{reaction.target_deleted}}" class="inline-flex items-center px-2 py-0.5 text-xs bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 rounded">$t:mypage.board_activities.reactions.deleted_flag</span>
             </div>
             <!-- 살아 있으면 눌러서 이동, 아니면 글자만 -->
-            <button data-if="{{reaction.reaction_enabled &amp;&amp; !reaction.target_deleted &amp;&amp; !reaction.board_deleted}}" class="text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
+            <a href="/board/{{reaction.board_slug}}/{{reaction.post_id}}" data-if="{{reaction.reaction_enabled &amp;&amp; !reaction.target_deleted &amp;&amp; !reaction.board_deleted}}" class="justify-start text-left text-sm font-medium text-gray-900 dark:text-white hover:underline cursor-pointer line-clamp-2">
               <on type="click">
-                <navigate path="/board/{{reaction.board_slug}}/{{reaction.post_id}}"/>
+                <navigate/>
               </on>
               {{reaction.excerpt ?? reaction.title}}
-            </button>
-            <span data-if="{{reaction.target_deleted}}" class="block text-sm italic text-gray-400 dark:text-gray-500">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.reactions.deleted_comment' : '$t:mypage.board_activities.reactions.deleted_post'}}</span>
-            <span data-if="{{!reaction.target_deleted &amp;&amp; (!reaction.reaction_enabled || reaction.board_deleted)}}" class="block text-sm text-gray-500 dark:text-gray-400 line-clamp-2">{{reaction.excerpt ?? reaction.title}}</span>
+            </a>
+            <span data-if="{{reaction.target_deleted}}" class="block text-sm italic text-gray-700 dark:text-gray-300">{{reaction.target_type === 'comment' ? '$t:mypage.board_activities.reactions.deleted_comment' : '$t:mypage.board_activities.reactions.deleted_post'}}</span>
+            <span data-if="{{!reaction.target_deleted &amp;&amp; (!reaction.reaction_enabled || reaction.board_deleted)}}" class="block text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{{reaction.excerpt ?? reaction.title}}</span>
             <div class="mt-2 flex items-center justify-between gap-2">
-              <span class="text-xs text-gray-400 dark:text-gray-500">{{reaction.board_name ?? ''}} · {{reaction.reacted_at ?? ''}}</span>
-              <button data-testid="my-reaction-remove-m-{{reaction.id}}" class="px-2 py-1 text-xs text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+              <span class="min-w-0 wrap-anywhere text-xs text-gray-700 dark:text-gray-300">{{reaction.board_name ?? ''}} · {{reaction.reacted_at ?? ''}}</span>
+              <button type="button" data-testid="my-reaction-remove-m-{{reaction.id}}" class="px-2 py-1 text-xs text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                 <on type="click">
                   <!-- 해제 확인 창 열기 — 대상 ID·제목·삭제 여부를 전역에 두고 연다(여러 행이 창 하나를 돌려 쓴다) -->
                   <sequence>
@@ -396,17 +396,17 @@
       </div>
     </div>
     <!-- 반응 없음 -->
-    <div data-testid="my-reactions-empty" data-if="{{(myReactions?.data?.data ?? []).length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-      <icon name="heart" size="3x" class="mx-auto text-gray-300 dark:text-gray-600 mb-3"/>
+    <div data-testid="my-reactions-empty" data-if="{{myReactions !== undefined &amp;&amp; (myReactions?.data?.data ?? []).length === 0}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+      <icon name="heart" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-3"/>
       <!-- 검색어·조건을 건 채 0건이면 「아직 없음」이 아니라 조건에 맞는 것이 없다는 뜻이다 — 둘을 섞으면 있는 항목이 사라진 것으로 읽힌다 -->
       <p data-if="{{!(!!_global.myReactionsSearchApplied || !!_global.myReactionsBoard || !!_global.myReactionsTypeId || !!_global.myReactionsTargetType)}}" class="text-gray-500 dark:text-gray-400">$t:mypage.board_activities.reactions.empty</p>
       <p data-if="{{!!_global.myReactionsSearchApplied || !!_global.myReactionsBoard || !!_global.myReactionsTypeId || !!_global.myReactionsTargetType}}" class="text-gray-500 dark:text-gray-400">$t:board.no_search_results</p>
-      <button class="inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+      <a href="/boards" class="text-center inline-block mt-4 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium cursor-pointer hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
         <on type="click">
-          <navigate path="/boards"/>
+          <navigate/>
         </on>
         $t:mypage.board_activities.go_boards
-      </button>
+      </a>
     </div>
     <!-- 페이지네이션 — 쪽을 옮기면 화면에 없는 건이 선택에 남지 않도록 먼저 비운다 -->
     <pagination data-type="composite" currentPage="{{myReactions?.data?.pagination?.current_page ?? 1}}" totalPages="{{myReactions?.data?.pagination?.last_page ?? null}}" hasMorePages="{{myReactions?.data?.pagination?.has_more_pages ?? false}}" class="mt-4 flex justify-center">

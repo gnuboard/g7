@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use App\Helpers\PermissionHelper;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -20,6 +21,11 @@ class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
     /** 허용 정렬 컬럼 (ExtraFeeTemplate::scopeOrderByField 와 동일 집합) */
     private const SORTABLE_COLUMNS = ['id', 'zipcode', 'fee', 'region', 'is_active', 'created_at', 'updated_at'];
 
+    /**
+     * 의존성을 주입받습니다.
+     *
+     * @param  ExtraFeeTemplate  $model  추가배송비 템플릿 모델
+     */
     public function __construct(
         protected ExtraFeeTemplate $model
     ) {}
@@ -61,6 +67,10 @@ class ExtraFeeTemplateRepository implements ExtraFeeTemplateRepositoryInterface
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator
     {
         $query = $this->model->newQuery();
+
+        // 권한 스코프 필터링 (`shipping-policies.read` 의 본인·역할 범위) — 배송정책 목록과 같은 범위.
+        // 목록 라우트는 미들웨어 스코프 검사 대상이 아니다.
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.shipping-policies.read');
 
         // 검색어 (우편번호 또는 지역명)
         if (! empty($filters['search'])) {

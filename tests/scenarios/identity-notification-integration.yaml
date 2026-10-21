@@ -26,6 +26,7 @@ axes:
     - resolution
     - admin_api
     - extension_compat
+    - queue_payload
     - seeding
     - ecommerce_order_mail
     - upgrade
@@ -52,6 +53,7 @@ effects:
   - notification_log_sent_row
   - notification_log_skipped_row
   - deprecated_send_hooks_fired
+  - code_absent_from_queue_payload
   - user_or_guest_recipient
   - no_direct_mail_send
   - log_masks_code

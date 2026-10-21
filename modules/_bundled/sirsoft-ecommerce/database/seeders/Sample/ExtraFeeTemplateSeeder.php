@@ -19,7 +19,7 @@ class ExtraFeeTemplateSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('도서산간 추가배송비 템플릿 데이터 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.extra_fee_template.start'));
 
         $this->deleteExistingTemplates();
 
@@ -30,7 +30,7 @@ class ExtraFeeTemplateSeeder extends Seeder
         }
 
         $count = ExtraFeeTemplate::count();
-        $this->command->info("도서산간 추가배송비 템플릿 {$count}건이 성공적으로 생성되었습니다.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.extra_fee_template.done', ['count' => $count]));
     }
 
     /**
@@ -44,7 +44,7 @@ class ExtraFeeTemplateSeeder extends Seeder
 
         if ($deletedCount > 0) {
             ExtraFeeTemplate::query()->delete();
-            $this->command->line("  - 기존 추가배송비 템플릿 {$deletedCount}건 삭제 완료");
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.extra_fee_template.purged', ['count' => $deletedCount]));
         }
     }
 

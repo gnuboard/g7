@@ -43,6 +43,7 @@
                     ],
                     "props": {
                         "name": "bulkIssueStatus",
+                        "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.filter.issue_status",
                         "className": "w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
                         "value": "{{_local.bulkIssueStatus || ''}}",
                         "disabled": "{{coupons?.data?.abilities?.can_update !== true}}",
@@ -96,7 +97,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50",
+                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50",
                         "disabled": "{{!(_local.selectedItems || []).length || !_local.bulkIssueStatus || coupons?.data?.abilities?.can_update !== true}}"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.bulk.apply"
@@ -149,6 +150,7 @@
                             ],
                             "props": {
                                 "name": "sortBy",
+                                "aria-label": "$t:common.sort_order",
                                 "className": "w-40",
                                 "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
                                 "options": [
@@ -201,6 +203,7 @@
                             ],
                             "props": {
                                 "name": "perPage",
+                                "aria-label": "$t:common.per_page",
                                 "className": "w-20",
                                 "value": "{{query.per_page || '10'}}",
                                 "options": [
@@ -283,6 +286,7 @@
                                         "issueHistoryPage": 1,
                                         "issueHistoryPerPage": 10,
                                         "issueHistoryFilterUser": null,
+                                        "issueHistoryLoadFailed": false,
                                         "issueHistoryCoupon": {
                                             "id": "{{$args[1].id}}",
                                             "name": "{{$args[1].localized_name}}",
@@ -349,6 +353,9 @@
                 }
             ],
             "props": {
+                "pageHref": "/admin/ecommerce/promotion-coupons?page={page}",
+                "pageHrefMergeQuery": true,
+                "rowLabelField": "localized_name",
                 "data": "{{coupons?.data?.data || []}}",
                 "pagination": true,
                 "serverSidePagination": true,
@@ -362,11 +369,13 @@
                 "selectedIds": "{{_local.selectedItems || []}}",
                 "visibleColumns": "{{_local.visibleColumns}}",
                 "selectedCountText": "",
-                "emptyMessage": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.empty",
+                "emptyMessage": "{{coupons === undefined ? '' : $t('sirsoft-ecommerce.admin.promotion_coupon.table.empty')}}",
                 "actionsColumnHeader": "$t:sirsoft-ecommerce.admin.promotion_coupon.table.columns.actions",
                 "rowActions": [
                     {
                         "id": "edit",
+                        "href": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit",
+                        "mergeQuery": true,
                         "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.edit",
                         "iconName": "fa-regular fa-pen-to-square",
                         "disabledField": "abilities.can_update"
@@ -443,14 +452,14 @@
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "href": "#",
+                                    "href": "/admin/ecommerce/promotion-coupons/{{row.id}}/edit",
+                                    "mergeQuery": true,
                                     "className": "text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"
                                 },
                                 "text": "{{row.localized_name}}"
@@ -519,6 +528,7 @@
                                                     "issueHistoryPage": 1,
                                                     "issueHistoryPerPage": 10,
                                                     "issueHistoryFilterUser": null,
+                                                    "issueHistoryLoadFailed": false,
                                                     "issueHistoryCoupon": {
                                                         "id": "{{row.id}}",
                                                         "name": "{{row.localized_name}}",
@@ -621,12 +631,6 @@
                                         "event": "onItemClick",
                                         "handler": "switch",
                                         "cases": {
-                                            "view_member": {
-                                                "handler": "openWindow",
-                                                "params": {
-                                                    "path": "/admin/users/{{row.created_by}}"
-                                                }
-                                            },
                                             "search_by_creator": {
                                                 "handler": "sequence",
                                                 "actions": [
@@ -661,6 +665,8 @@
                                     "items": [
                                         {
                                             "id": "view_member",
+                                            "href": "/admin/users/{{row.created_by}}",
+                                            "target": "_blank",
                                             "label": "$t:sirsoft-ecommerce.admin.promotion_coupon.action.view_member",
                                             "iconName": "user",
                                             "if": "{{!!row.created_by}}"
@@ -677,7 +683,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                            "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
                                         },
                                         "children": [
                                             {
@@ -685,7 +691,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "fa-regular fa-user",
-                                                    "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                                    "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
                                                 }
                                             },
                                             {

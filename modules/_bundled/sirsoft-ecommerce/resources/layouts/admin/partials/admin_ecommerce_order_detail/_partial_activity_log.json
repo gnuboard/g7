@@ -78,6 +78,7 @@
                                     ],
                                     "props": {
                                         "value": "{{_local.logsSort}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.activity_log.sort.label",
                                         "className": "w-auto min-w-40",
                                         "options": [
                                             {
@@ -136,6 +137,7 @@
                                     ],
                                     "props": {
                                         "value": "{{String(_local.logsPerPage)}}",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.activity_log.per_page",
                                         "className": "w-auto min-w-20",
                                         "options": [
                                             {
@@ -205,12 +207,25 @@
                     ]
                 },
                 {
+                    "comment": "받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「활동 로그가 없습니다」를 보이면 기록이 없는 줄 안다",
+                    "id": "log_load_failed",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{order_logs === null}}",
+                    "props": {
+                        "role": "alert",
+                        "className": "py-12 text-center text-sm text-red-600 dark:text-red-400"
+                    },
+                    "text": "$t:sirsoft-ecommerce.common.error.list_load_failed"
+                },
+                {
+                    "comment": "빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다",
                     "id": "log_empty",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{(order_logs.data?.data ?? []).length === 0}}",
+                    "if": "{{order_logs !== undefined && order_logs !== null && (order_logs.data?.data ?? []).length === 0}}",
                     "props": {
-                        "className": "py-12 text-center text-gray-400 dark:text-gray-500"
+                        "className": "py-12 text-center text-gray-500 dark:text-gray-400"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.order.detail.activity_log.empty"
                 },
@@ -257,26 +272,13 @@
                                                     "type": "composite",
                                                     "name": "ActionMenu",
                                                     "if": "{{!!log.user?.uuid}}",
-                                                    "actions": [
-                                                        {
-                                                            "comment": "넓은 화면 표의 행위자 이름 메뉴 — 회원 상세를 새 창으로 연다. 좁은 화면 카드에도 같은 메뉴가 한 벌 더 있다(둘은 같은 로그를 다른 배치로 그린 것이라 한쪽만 고치면 화면 폭에 따라 동작이 갈린다).",
-                                                            "event": "onItemClick",
-                                                            "handler": "switch",
-                                                            "cases": {
-                                                                "view_member": {
-                                                                    "handler": "openWindow",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{log.user.uuid}}"
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    ],
                                                     "props": {
                                                         "position": "left",
                                                         "items": [
                                                             {
                                                                 "id": "view_member",
+                                                                "href": "/admin/users/{{log.user.uuid}}",
+                                                                "target": "_blank",
                                                                 "label": "$t:sirsoft-ecommerce.admin.order.detail.activity_log.actor_action.view_member",
                                                                 "iconName": "user"
                                                             }
@@ -287,7 +289,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
+                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
                                                             },
                                                             "children": [
                                                                 {
@@ -301,6 +303,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
+                                                                                "aria-hidden": "true",
                                                                                 "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
                                                                             },
                                                                             "text": "{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}"
@@ -444,7 +447,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "w-28 text-center text-green-600 dark:text-green-400"
+                                                                        "className": "w-28 text-center text-green-700 dark:text-green-400"
                                                                     },
                                                                     "text": "{{change.new_label ?? change.new ?? '-'}}"
                                                                 }
@@ -537,7 +540,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "w-28 text-center text-green-600 dark:text-green-400"
+                                                                                "className": "w-28 text-center text-green-700 dark:text-green-400"
                                                                             },
                                                                             "text": "{{change.new_label ?? change.new ?? '-'}}"
                                                                         }
@@ -578,26 +581,13 @@
                                                     "type": "composite",
                                                     "name": "ActionMenu",
                                                     "if": "{{!!log.user?.uuid}}",
-                                                    "actions": [
-                                                        {
-                                                            "comment": "좁은 화면 카드의 행위자 이름 메뉴 — 위 표 안의 것과 같은 동작이다.",
-                                                            "event": "onItemClick",
-                                                            "handler": "switch",
-                                                            "cases": {
-                                                                "view_member": {
-                                                                    "handler": "openWindow",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{log.user.uuid}}"
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    ],
                                                     "props": {
                                                         "position": "left",
                                                         "items": [
                                                             {
                                                                 "id": "view_member",
+                                                                "href": "/admin/users/{{log.user.uuid}}",
+                                                                "target": "_blank",
                                                                 "label": "$t:sirsoft-ecommerce.admin.order.detail.activity_log.actor_action.view_member",
                                                                 "iconName": "user"
                                                             }
@@ -608,7 +598,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
+                                                                "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
                                                             },
                                                             "children": [
                                                                 {
@@ -622,6 +612,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
+                                                                                "aria-hidden": "true",
                                                                                 "className": "text-xs font-medium text-gray-600 dark:text-gray-300"
                                                                             },
                                                                             "text": "{{(log.user?.name ?? 'S').charAt(0).toUpperCase()}}"
@@ -768,7 +759,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "w-20 text-center text-green-600 dark:text-green-400"
+                                                        "className": "w-20 text-center text-green-700 dark:text-green-400"
                                                     },
                                                     "text": "{{change.new_label ?? change.new ?? '-'}}"
                                                 }
@@ -861,7 +852,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "w-20 text-center text-green-600 dark:text-green-400"
+                                                                "className": "w-20 text-center text-green-700 dark:text-green-400"
                                                             },
                                                             "text": "{{change.new_label ?? change.new ?? '-'}}"
                                                         }

@@ -26,6 +26,7 @@ class SendMessageJobTest extends PluginTestCase
      * sendMessage 응답을 반환하는 ApiClient mock 을 만듭니다.
      *
      * @param  array<string, mixed>  $result  sendMessage 반환값
+     * @return BizppurioApiClient 반환값
      */
     private function makeClient(array $result): BizppurioApiClient
     {
@@ -39,6 +40,8 @@ class SendMessageJobTest extends PluginTestCase
 
     /**
      * 컨테이너에서 실제 리포지토리(Provider 바인딩)를 해석해 반환.
+     *
+     * @return BizppurioDispatchRepositoryInterface 반환값
      */
     private function dispatches(): BizppurioDispatchRepositoryInterface
     {
@@ -47,6 +50,9 @@ class SendMessageJobTest extends PluginTestCase
 
     /**
      * refkey 로 pending 이력을 1건 seed.
+     *
+     * @param  string  $refkey  발송 참조 키
+     * @return BizppurioDispatch 만든 이력
      */
     private function seedPending(string $refkey): BizppurioDispatch
     {
@@ -60,6 +66,15 @@ class SendMessageJobTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * 접수에 성공하면 예외 없이 끝나고 이력을 sent 로 갱신한다.
+     *
+     * @scenario process=queue_worker, dispatch_state=pending
+     *
+     * @effects accepted_marks_sent
+     *
+     * @return void 반환값 없음
+     */
     public function test_성공시_예외없이_종료하고_이력을_sent로_갱신한다(): void
     {
         $dispatch = $this->seedPending('ref1');
@@ -72,6 +87,63 @@ class SendMessageJobTest extends PluginTestCase
         $this->assertSame('mk', $dispatch->messagekey);
     }
 
+    /**
+     * 이미 접수(sent)·확정된 이력은 다시 보내지 않는다 — 재시도·재예약 사본이 같은 문자를 두 번 접수시키지 않는다 (#139).
+     *
+     * @scenario process=queue_worker, dispatch_state=sent
+     *
+     * @effects resend_guarded
+     *
+     * @return void 반환값 없음
+     */
+    public function test_이미_sent인_이력은_재발송하지_않는다(): void
+    {
+        foreach ([DispatchStatus::Sent, DispatchStatus::Success, DispatchStatus::Failed] as $i => $status) {
+            $refkey = 'ref-guard-'.$i;
+            $dispatch = $this->seedPending($refkey);
+            $dispatch->update(['status' => $status->value]);
+
+            $client = Mockery::mock(BizppurioApiClient::class);
+            $client->shouldReceive('sendMessage')->never();
+
+            (new SendMessageJob($this->payload, $refkey))->handle($client, $this->dispatches());
+
+            $this->assertSame($status, $dispatch->fresh()->status, $status->value);
+        }
+    }
+
+    /**
+     * 접수에 성공한 뒤 이력 갱신이 실패해도 예외를 올리지 않는다 — 올리면 큐가 재시도해 같은 문자를 또 보낸다 (#139).
+     *
+     * @scenario process=queue_worker, dispatch_state=pending
+     *
+     * @effects resend_guarded
+     *
+     * @return void 반환값 없음
+     */
+    public function test_접수_후_이력_갱신_실패해도_재시도하지_않는다(): void
+    {
+        $this->seedPending('ref1');
+        $repository = Mockery::mock(BizppurioDispatchRepositoryInterface::class);
+        $repository->shouldReceive('findByRefkey')->with('ref1')->andReturn(
+            $this->dispatches()->findByRefkey('ref1'),
+        );
+        $repository->shouldReceive('update')->andThrow(new \RuntimeException('db down'));
+
+        (new SendMessageJob($this->payload, 'ref1'))->handle($this->makeClient(['code' => 1000, 'messagekey' => 'mk']), $repository);
+
+        $this->addToAssertionCount(1); // 예외 없이 끝났다
+    }
+
+    /**
+     * 일시 오류 결과코드는 예외를 던져 큐가 재시도하게 한다.
+     *
+     * @scenario process=queue_worker, dispatch_state=pending
+     *
+     * @effects retryable_code_rethrown
+     *
+     * @return void 반환값 없음
+     */
     public function test_일시오류_결과코드는_예외를_던져_재시도한다(): void
     {
         $job = new SendMessageJob($this->payload, 'ref1');
@@ -86,6 +158,15 @@ class SendMessageJobTest extends PluginTestCase
         }
     }
 
+    /**
+     * 알림톡 일시 오류 결과코드도 예외를 던져 재시도하게 한다.
+     *
+     * @scenario process=queue_worker, dispatch_state=pending
+     *
+     * @effects retryable_code_rethrown
+     *
+     * @return void 반환값 없음
+     */
     public function test_알림톡_일시오류_결과코드는_예외를_던져_재시도한다(): void
     {
         // 알림톡 일시오류(7306 카카오 시스템오류·7307 처리지연·7421 타임아웃·7437 요청실패)는
@@ -102,6 +183,15 @@ class SendMessageJobTest extends PluginTestCase
         }
     }
 
+    /**
+     * 영구 실패 결과코드는 예외 없이 끝나고 이력을 failed 로 갱신한다.
+     *
+     * @scenario process=queue_worker, dispatch_state=pending
+     *
+     * @effects permanent_failure_marks_failed
+     *
+     * @return void 반환값 없음
+     */
     public function test_영구실패_결과코드는_예외없이_종료하고_이력을_failed로_갱신한다(): void
     {
         $dispatch = $this->seedPending('ref1');
@@ -115,6 +205,15 @@ class SendMessageJobTest extends PluginTestCase
         $this->assertSame('3006', $dispatch->result_code);
     }
 
+    /**
+     * 재시도 횟수·대기 기본값을 확인한다.
+     *
+     * @scenario process=queue_worker, dispatch_state=pending
+     *
+     * @effects job_retry_settings
+     *
+     * @return void 반환값 없음
+     */
     public function test_tries와_backoff_기본값(): void
     {
         $job = new SendMessageJob($this->payload, 'ref1');
@@ -123,6 +222,15 @@ class SendMessageJobTest extends PluginTestCase
         $this->assertSame(2, $job->backoff());
     }
 
+    /**
+     * 트랜잭션 커밋 뒤에만 큐에 오른다.
+     *
+     * @scenario process=queue_worker, dispatch_state=pending
+     *
+     * @effects job_retry_settings
+     *
+     * @return void 반환값 없음
+     */
     public function test_after_commit_활성화(): void
     {
         $job = new SendMessageJob($this->payload, 'ref1');
@@ -130,6 +238,15 @@ class SendMessageJobTest extends PluginTestCase
         $this->assertTrue($job->afterCommit);
     }
 
+    /**
+     * 최종 실패 콜백은 pending 이력을 failed 로 마감하고 사유를 남긴다.
+     *
+     * @scenario process=queue_worker, dispatch_state=pending
+     *
+     * @effects final_failure_closes_pending
+     *
+     * @return void 반환값 없음
+     */
     public function test_최종실패_콜백은_pending이력을_failed로_마감하고_사유를_기록한다(): void
     {
         // 타임아웃·연결실패는 결과코드 없는 ConnectionException 으로 재시도 소진 후 failed() 로 온다.
@@ -144,6 +261,15 @@ class SendMessageJobTest extends PluginTestCase
         $this->assertStringContainsString('timed out', (string) $dispatch->result_message);
     }
 
+    /**
+     * 최종 실패 콜백은 API 예외의 결과코드를 보존한다.
+     *
+     * @scenario process=queue_worker, dispatch_state=pending
+     *
+     * @effects final_failure_closes_pending
+     *
+     * @return void 반환값 없음
+     */
     public function test_최종실패_콜백은_bizppurio_api_exception의_결과코드를_보존한다(): void
     {
         $dispatch = $this->seedPending('ref1');
@@ -156,6 +282,15 @@ class SendMessageJobTest extends PluginTestCase
         $this->assertSame('5003', $dispatch->result_code);
     }
 
+    /**
+     * 이미 확정된 이력은 최종 실패 콜백이 덮어쓰지 않는다.
+     *
+     * @scenario process=queue_worker, dispatch_state=sent
+     *
+     * @effects final_failure_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_이미_확정된_이력은_최종실패_콜백이_덮어쓰지_않는다(): void
     {
         // webhook 이 먼저 success 로 확정한 뒤 failed() 가 늦게 불려도 멱등해야 한다.
@@ -170,6 +305,15 @@ class SendMessageJobTest extends PluginTestCase
         $this->assertSame('4000', $dispatch->result_code);
     }
 
+    /**
+     * 이력이 없으면 최종 실패 콜백은 아무것도 하지 않는다.
+     *
+     * @scenario process=queue_worker, dispatch_state=missing
+     *
+     * @effects final_failure_idempotent
+     *
+     * @return void 반환값 없음
+     */
     public function test_이력이_없으면_최종실패_콜백은_아무것도_하지_않는다(): void
     {
         // 이력 seed 없이 호출 — 예외 없이 조용히 종료해야 한다.
@@ -179,6 +323,11 @@ class SendMessageJobTest extends PluginTestCase
         $this->assertDatabaseMissing('bizppurio_dispatches', ['refkey' => 'missing-ref']);
     }
 
+    /**
+     * 테스트 뒤 정리를 합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Mockery::close();

@@ -606,7 +606,7 @@ class PostScrapApiTest extends BoardTestCase
     }
 
     /**
-     * 허용 목록 밖의 search_field 는 422 가 아니라 기본(제목+내용)으로 처리한다 (7.1.0 실측 O-K3-3).
+     * 허용 목록 밖의 search_field 는 422 가 아니라 기본(제목+내용)으로 처리한다 (7.1.0 실측).
      *
      * @scenario action=mypage_search
      *

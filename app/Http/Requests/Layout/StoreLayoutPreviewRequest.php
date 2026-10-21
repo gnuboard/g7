@@ -7,6 +7,7 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\LayoutSourceType;
 use App\Extension\HookManager;
 use App\Http\Requests\Layout\Concerns\CompilesMarkupContent;
+use App\Http\Requests\Layout\Concerns\DecodesLayoutContentPreserving;
 use App\Rules\LayoutContentGate;
 use App\Services\LayoutMarkupService;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -20,6 +21,7 @@ use Illuminate\Foundation\Http\FormRequest;
 class StoreLayoutPreviewRequest extends FormRequest
 {
     use CompilesMarkupContent;
+    use DecodesLayoutContentPreserving;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -45,14 +47,9 @@ class StoreLayoutPreviewRequest extends FormRequest
         // `format=markup` 이면 마크업을 프로덕션 컴파일해 JSON 배열로 바꾼다 — 그 뒤는 기존 규칙 그대로.
         $this->compileMarkupContentIfRequested();
 
-        $content = $this->input('content');
-
-        if (is_string($content)) {
-            $decoded = json_decode($content, true);
-
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                $this->merge(['content' => $decoded]);
-            }
+        // JSON 문자열·JSON 객체 본문 모두 빈 객체 `{}` 를 보존해 다시 읽는다 (#758). 파싱 실패 시 원본 유지.
+        if ($this->input('format') !== 'markup' && $this->input('content') !== null) {
+            $this->merge(['content' => $this->decodeContentPreserving()]);
         }
     }
 

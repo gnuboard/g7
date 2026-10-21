@@ -23,14 +23,20 @@ class ModuleVendorBundleCommand extends Command
 
     protected $description = '모듈 vendor/ 디렉토리를 vendor-bundle.zip 으로 빌드합니다 (공유 호스팅용)';
 
+    /**
+     * 지정 모듈 또는 모든 _bundled 모듈의 vendor 번들을 빌드하거나 stale 여부를 확인합니다.
+     *
+     * @param  VendorBundler  $bundler  vendor-bundle.zip 빌더
+     * @return int 종료 코드
+     */
     public function handle(VendorBundler $bundler): int
     {
         $identifier = $this->argument('identifier');
         $all = (bool) $this->option('all');
 
         if (! $identifier && ! $all) {
-            $this->error('식별자 또는 --all 옵션을 지정해야 합니다.');
-            $this->line('사용법:');
+            $this->error(__('modules.commands.vendor_bundle.missing_identifier'));
+            $this->line(__('modules.commands.vendor_bundle.usage'));
             $this->line('  php artisan module:vendor-bundle sirsoft-ecommerce');
             $this->line('  php artisan module:vendor-bundle --all');
 

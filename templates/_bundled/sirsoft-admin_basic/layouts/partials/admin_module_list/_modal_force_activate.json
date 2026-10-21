@@ -32,7 +32,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "warning",
-                                "className": "text-xl text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"
+                                "className": "text-xl text-yellow-700 dark:text-yellow-500 flex-shrink-0 mt-0.5"
                             }
                         },
                         {
@@ -103,7 +103,7 @@
                                             "name": "Span",
                                             "if": "{{module.status === 'inactive'}}",
                                             "props": {
-                                                "className": "text-secondary text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded"
+                                                "className": "text-body text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded"
                                             },
                                             "text": "$t:admin.modules.status.inactive"
                                         },
@@ -112,7 +112,7 @@
                                             "name": "Span",
                                             "if": "{{module.status === 'not_installed'}}",
                                             "props": {
-                                                "className": "text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded"
+                                                "className": "text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded"
                                             },
                                             "text": "$t:admin.modules.status.not_installed"
                                         }
@@ -174,7 +174,7 @@
                                             "name": "Span",
                                             "if": "{{plugin.status === 'inactive'}}",
                                             "props": {
-                                                "className": "text-secondary text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded"
+                                                "className": "text-body text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded"
                                             },
                                             "text": "$t:admin.plugins.status.inactive"
                                         },
@@ -183,7 +183,7 @@
                                             "name": "Span",
                                             "if": "{{plugin.status === 'not_installed'}}",
                                             "props": {
-                                                "className": "text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded"
+                                                "className": "text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 rounded"
                                             },
                                             "text": "$t:admin.plugins.status.not_installed"
                                         }
@@ -239,6 +239,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "btn btn-secondary",
                         "disabled": "{{_global.isForceActivating}}"
                     },
@@ -302,6 +303,13 @@
                                                     }
                                                 },
                                                 {
+                                                    "comment": "호환성 배너도 다시 받는다 — 켠 확장이 새로 고치기 전까지 배너에 남지 않게 한다(#145 F8).",
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "auto_deactivated_banner"
+                                                    }
+                                                },
+                                                {
                                                     "handler": "reloadExtensions",
                                                     "params": {
                                                         "moduleInfo": "{{result.data?.module ?? result}}",
@@ -330,7 +338,7 @@
                                             "handler": "closeModal"
                                         },
                                         {
-                                            "comment": "확장을 다시 켜면 서버가 그 확장과 함께 꺼졌던 언어팩 목록(`pending_language_packs`)을 실어 준다 —\n                     서버는 목록을 건넨 뒤 지우므로 여기서 묻지 않으면 되살릴 기회가 사라진다. 일괄 활성은\n                     언어팩 관리 권한이 있어야 서버가 받으므로 그 권한이 없으면 창을 열지 않는다.",
+                                            "comment": "확장을 다시 켜면 서버가 그 확장과 함께 꺼졌던 언어팩 목록(`pending_language_packs`)을 실어 준다 —\n                     서버는 언어팩을 켤 때까지 그 표시를 남기므로(창을 닫으면 다음 활성화 때 다시 묻는다) 지금 묻는다. 일괄 활성은\n                     언어팩 관리 권한이 있어야 서버가 받으므로 그 권한이 없으면 창을 열지 않는다.",
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
@@ -364,7 +372,8 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-center gap-2 px-4 py-2 bg-yellow-600 dark:bg-yellow-500 text-white rounded-lg hover:bg-yellow-700 dark:hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isForceActivating}}"
                     },
                     "children": [

@@ -1,0 +1,29 @@
+feature: sirsoft-basic 비회원 주문 화면 — 진입·조회·상세의 화면 계약
+
+description: |
+  비회원 주문 흐름의 서버 계약·진입 동선은 코어 매니페스트(tests/scenarios/guest-order.yaml)가 소유한다.
+  이 매니페스트는 같은 시험 파일 안에서 사용자 템플릿 화면만의 계약을 함께 소유한다 — 로그인 화면·주문서·주문 조회 폼·
+  비회원 주문 상세의 번역 키, 결제 요청 주소, 주문자 정보 표시, 배송지 변경 모달, 조회 실패 시 토큰 정리 순서.
+
+axes:
+  screen: [login, checkout, guest_order_form, order_complete, guest_order_show]
+
+effects:
+  - guest_checkout_texts_registered_ko_en                         # 로그인·주문서의 비회원 주문 안내 키가 ko/en 에 있다
+  - checkout_posts_member_and_guest_orders_to_single_endpoint     # 결제 요청은 회원·비회원 공통 user/orders 한 주소
+  - checkout_orderer_email_input_is_email_type                    # 주문자 이메일 칸이 있고 email 형식이다
+  - guest_order_form_route_registered_without_auth                # /shop/guest/orders 조회 폼 라우트(로그인 불요)
+  - order_complete_reads_order_data_directly                      # 주문 완료가 계산값 별칭 없이 주문 응답을 읽는다
+  - guest_order_texts_registered_and_synced_ko_en                 # 조회 폼·주문 완료 비회원 안내 키 ko/en 동기
+  - guest_order_texts_avoid_internal_token_term                   # 화면 문구에 「토큰」 같은 내부 용어가 없다
+  - guest_order_show_401_404_clears_token_before_lookup_form      # 조회 실패(401·404)면 토큰을 지우고 알린 뒤 조회 폼으로
+  - change_shipping_address_available_for_member_and_guest        # 배송지 변경 단추·모달이 회원·비회원 모두에게 있다(회원=저장 주소, 비회원=직접 입력)
+  - guest_order_show_displays_orderer_info                        # 비회원 주문 상세가 주문자 이름·연락처·이메일을 보여 준다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-guest-checkout-entry.test.tsx
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/shop-guest-order-flow.test.tsx
+
+notes: |
+  e2e_browser=partial — 레이아웃 JSON·라우트·언어 파일의 정적 계약을 잠근다. 비회원 주문 흐름의 브라우저 동선은
+  코어 guest-order.yaml 의 E2E 가 담당한다.

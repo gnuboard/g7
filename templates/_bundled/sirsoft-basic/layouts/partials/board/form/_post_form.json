@@ -79,6 +79,19 @@
             ]
         },
         {
+            "comment": "확장 자리 — 글쓰기 맨 위(검증 오류 상자 아래)에 확장이 입력칸을 붙인다(#149). 이 폼은 게시판 유형 세 갈래에 include 되므로 data-ref 로 지목하면 basic 에만 닿는다 — 이 확장점은 세 갈래 모두에 들어간다. 조각이 _local.form.<키> 에 쓰면 저장 요청 본문에 함께 실린다",
+            "type": "extension_point",
+            "name": "board_post_form_top",
+            "props": {
+                "className": "contents",
+                "data-extension-point": "board_post_form_top",
+                "mode": "{{route.id ? 'edit' : ((form_data?.data?.parent_id || query?.parent_id) ? 'reply' : 'create')}}",
+                "boardSlug": "{{route.slug}}",
+                "postId": "{{route.id ?? null}}",
+                "board": "{{form_meta?.data?.board}}"
+            }
+        },
+        {
             "comment": "수정 모드일 때 작성자 정보 표시 (Avatar + UserInfo)",
             "type": "basic",
             "name": "Div",
@@ -198,7 +211,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-300"
                                                     },
                                                     "text": "$t:board.form.notice_description"
                                                 }
@@ -270,7 +283,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-gray-500 dark:text-gray-300"
                                                     },
                                                     "text": "$t:board.form.secret_description"
                                                 }
@@ -310,6 +323,7 @@
                                             "name": "Input",
                                             "props": {
                                                 "type": "checkbox",
+                                                "aria-label": "$t:board.form.secret_post",
                                                 "checked": true,
                                                 "disabled": true,
                                                 "className": "mt-0.5 w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 opacity-50 cursor-not-allowed"
@@ -335,7 +349,7 @@
                                                             "props": {
                                                                 "name": "lock",
                                                                 "size": "sm",
-                                                                "className": "text-amber-600 dark:text-amber-400"
+                                                                "className": "text-amber-700 dark:text-amber-400"
                                                             }
                                                         },
                                                         {
@@ -352,7 +366,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "text-xs text-gray-700 dark:text-gray-300"
                                                     },
                                                     "text": "$t:board.form.secret_always_description"
                                                 }
@@ -395,7 +409,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-1"
+                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                     },
                                     "text": "*"
                                 }
@@ -405,6 +419,7 @@
                             "type": "basic",
                             "name": "Input",
                             "props": {
+                                "aria-label": "$t:board.guest_author_name",
                                 "type": "text",
                                 "name": "author_name",
                                 "placeholder": "$t:board.guest_author_name_placeholder",
@@ -442,7 +457,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-red-500 ml-1"
+                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                     },
                                     "text": "*"
                                 }
@@ -452,6 +467,7 @@
                             "type": "basic",
                             "name": "Input",
                             "props": {
+                                "aria-label": "$t:board.guest_password",
                                 "type": "password",
                                 "name": "password",
                                 "placeholder": "$t:board.guest_password_placeholder",
@@ -504,6 +520,7 @@
                     ],
                     "props": {
                         "name": "category",
+                        "aria-label": "$t:board.form.category",
                         "value": "{{_local.form?.category ?? ''}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500",
                         "options": "{{[{value: '', label: $t('board.form.select_category')}, ...(form_meta?.data?.board?.categories ?? []).map(c => ({value: c, label: c}))]}}"
@@ -532,7 +549,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -542,6 +559,7 @@
                     "type": "basic",
                     "name": "Input",
                     "props": {
+                        "aria-label": "$t:board.form.title",
                         "type": "text",
                         "name": "title",
                         "placeholder": "$t:board.form.title_placeholder",
@@ -725,6 +743,19 @@
             ]
         },
         {
+            "comment": "확장 자리 — 글쓰기 맨 아래(취소·저장 단추 바로 위)에 확장이 동의 문구·부가 입력칸을 붙인다(#149). props 는 맨 위 자리와 같다",
+            "type": "extension_point",
+            "name": "board_post_form_bottom",
+            "props": {
+                "className": "contents",
+                "data-extension-point": "board_post_form_bottom",
+                "mode": "{{route.id ? 'edit' : ((form_data?.data?.parent_id || query?.parent_id) ? 'reply' : 'create')}}",
+                "boardSlug": "{{route.slug}}",
+                "postId": "{{route.id ?? null}}",
+                "board": "{{form_meta?.data?.board}}"
+            }
+        },
+        {
             "comment": "버튼 영역",
             "type": "basic",
             "name": "Div",
@@ -734,22 +765,24 @@
             "children": [
                 {
                     "comment": "취소 버튼 (등록: 목록, 수정: 상세)",
+                    "id": "post_form_cancel_button",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}",
+                                "bypassLeaveGuard": true,
                                 "mergeQuery": true,
                                 "query": {}
                             }
                         }
                     ],
                     "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                        "href": "{{route.id ? '/board/' + route.slug + '/' + route.id : '/board/' + route.slug}}",
+                        "mergeQuery": true,
+                        "className": "inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                     },
                     "text": "$t:common.cancel"
                 },
@@ -804,6 +837,7 @@
                                         {
                                             "handler": "navigate",
                                             "params": {
+                                                "bypassLeaveGuard": true,
                                                 "path": "/board/{{route?.slug}}/{{result?.data?.id}}",
                                                 "mergeQuery": true,
                                                 "query": {}

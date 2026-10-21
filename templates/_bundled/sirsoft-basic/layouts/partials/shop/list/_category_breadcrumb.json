@@ -14,19 +14,19 @@
         {
             "comment": "전체 링크",
             "type": "basic",
-            "name": "Button",
+            "name": "A",
             "actions": [
                 {
                     "type": "click",
                     "handler": "navigate",
                     "params": {
-                        "path": "{{_global.shopBase}}/products",
                         "query": {}
                     }
                 }
             ],
             "props": {
-                "className": "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                "href": "{{_global.shopBase}}/products",
+                "className": "inline-flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             },
             "text": "$t:shop.category.all"
         },
@@ -44,19 +44,18 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-right",
-                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                        "className": "text-xs text-gray-500 dark:text-gray-500"
                     }
                 },
                 {
                     "comment": "1단계 카테고리로 되돌아간다. 하위 단계 선택을 버리고 그 단계만 남긴다",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "{{_global.shopBase}}/products",
                                 "query": {
                                     "category": "{{query.d1}}",
                                     "d1": "{{query.d1}}"
@@ -65,7 +64,8 @@
                         }
                     ],
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                        "href": "{{_global.shopBase}}/products?category={{query.d1}}&d1={{query.d1}}",
+                        "className": "inline-flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     },
                     "text": "{{(categories?.data ?? []).find(c => c.id == query.d1)?.name_localized ?? ''}}"
                 }
@@ -85,19 +85,18 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-right",
-                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                        "className": "text-xs text-gray-500 dark:text-gray-500"
                     }
                 },
                 {
                     "comment": "2단계 카테고리로 되돌아간다",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "{{_global.shopBase}}/products",
                                 "query": {
                                     "category": "{{query.d2}}",
                                     "d1": "{{query.d1}}",
@@ -107,7 +106,8 @@
                         }
                     ],
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                        "href": "{{_global.shopBase}}/products?category={{query.d2}}&d1={{query.d1}}&d2={{query.d2}}",
+                        "className": "inline-flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     },
                     "text": "{{((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.name_localized ?? ''}}"
                 }
@@ -127,19 +127,18 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-right",
-                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                        "className": "text-xs text-gray-500 dark:text-gray-500"
                     }
                 },
                 {
                     "comment": "3단계 카테고리로 되돌아간다",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "{{_global.shopBase}}/products",
                                 "query": {
                                     "category": "{{query.d3}}",
                                     "d1": "{{query.d1}}",
@@ -150,7 +149,8 @@
                         }
                     ],
                     "props": {
-                        "className": "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                        "href": "{{_global.shopBase}}/products?category={{query.d3}}&d1={{query.d1}}&d2={{query.d2}}&d3={{query.d3}}",
+                        "className": "inline-flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     },
                     "text": "{{(((categories?.data ?? []).find(c => c.id == query.d1)?.children ?? []).find(c => c.id == query.d2)?.children ?? []).find(c => c.id == query.d3)?.name_localized ?? ''}}"
                 }
@@ -169,7 +169,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-right",
-                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                        "className": "text-xs text-gray-500 dark:text-gray-500"
                     }
                 },
                 {
@@ -191,20 +191,20 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "comment": "1단계에서 × — 위가 없으므로 조건을 전부 떨구고 전체 목록으로",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
-                                        "path": "{{_global.shopBase}}/products",
                                         "query": {}
                                     }
                                 }
                             ],
                             "props": {
-                                "className": "ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                "href": "{{_global.shopBase}}/products",
+                                "className": "inline-flex items-center justify-center ml-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                             },
                             "text": "×"
                         }
@@ -229,14 +229,13 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "comment": "2단계에서 × — 한 칸 위(1단계)로",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
-                                        "path": "{{_global.shopBase}}/products",
                                         "query": {
                                             "category": "{{query.d1}}",
                                             "d1": "{{query.d1}}"
@@ -245,7 +244,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                "href": "{{_global.shopBase}}/products?category={{query.d1}}&d1={{query.d1}}",
+                                "className": "inline-flex items-center justify-center ml-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                             },
                             "text": "×"
                         }
@@ -270,14 +270,13 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "comment": "3단계에서 × — 한 칸 위(2단계)로",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
-                                        "path": "{{_global.shopBase}}/products",
                                         "query": {
                                             "category": "{{query.d2}}",
                                             "d1": "{{query.d1}}",
@@ -287,7 +286,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                "href": "{{_global.shopBase}}/products?category={{query.d2}}&d1={{query.d1}}&d2={{query.d2}}",
+                                "className": "inline-flex items-center justify-center ml-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                             },
                             "text": "×"
                         }
@@ -312,14 +312,13 @@
                         },
                         {
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "actions": [
                                 {
                                     "comment": "4단계에서 × — 한 칸 위(3단계)로",
                                     "type": "click",
                                     "handler": "navigate",
                                     "params": {
-                                        "path": "{{_global.shopBase}}/products",
                                         "query": {
                                             "category": "{{query.d3}}",
                                             "d1": "{{query.d1}}",
@@ -330,7 +329,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "ml-1 text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                "href": "{{_global.shopBase}}/products?category={{query.d3}}&d1={{query.d1}}&d2={{query.d2}}&d3={{query.d3}}",
+                                "className": "inline-flex items-center justify-center ml-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                             },
                             "text": "×"
                         }

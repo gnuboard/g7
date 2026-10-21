@@ -88,6 +88,7 @@ return [
         'delete_directory_failed' => 'Failed to delete template directory: :error',
         'update_failed' => 'Failed to update template ":template": :error',
         'invalid_layout_strategy' => 'Invalid layout strategy. (Only overwrite or keep allowed)',
+        'invalid_layout_source' => 'Invalid layout install source. (Only auto or json allowed)',
     ],
 
     'messages' => [
@@ -233,6 +234,18 @@ return [
     'move_failed' => 'Failed to move template ":template": :error',
 
     'commands' => [
+        // `template:refresh-layout` 명령 출력
+        'refresh_layout' => [
+            'refreshing' => 'Refreshing layouts of template \':template\'...',
+            'success' => 'Template \':template\' layouts refreshed',
+            'failed' => 'Failed to refresh layouts of template \':template\'',
+            'none_active' => 'No active templates.',
+            'refreshing_all' => 'Refreshing layouts of all active templates...',
+            'item_refreshing' => ':identifier refreshing...',
+            'item_done' => ':identifier done',
+            'item_failed' => ':identifier failed',
+            'summary' => 'Total: :success succeeded, :failed failed',
+        ],
         'install' => [
             'success' => 'Template ":template" installed successfully',
             'already_installed' => 'Template ":template" is already installed.',
@@ -245,8 +258,20 @@ return [
         ],
         'activate' => [
             'success' => 'Template ":template" activated successfully',
+            'language_packs_restored' => 'Re-enabled language packs along with it (:count): :list',
+            'language_packs_kept' => 'Language packs left disabled: :list (you can re-enable them in the admin screen)',
+            'language_pack_restore_failed' => 'Could not re-enable language pack ":pack": :error',
+            'option_without_language_packs' => 'Do not re-enable the language packs that were disabled together with this extension (they are re-enabled by default)',
             'not_installed' => 'Template ":template" is not installed.',
             'deactivated_previous' => 'Previous :type template ":previous" deactivated',
+            // `template:activate` unmet dependency notice
+            'required_modules' => 'Required modules:',
+            'required_plugins' => 'Required plugins:',
+            'missing_status' => [
+                'not_installed' => 'not installed',
+                'inactive' => 'inactive',
+            ],
+            'force_hint' => 'Use the --force option to activate anyway.',
         ],
         'deactivate' => [
             'success' => 'Template ":template" deactivated successfully',
@@ -321,6 +346,33 @@ return [
             'aborted' => 'Update cancelled.',
             'backup_restored' => 'Previous version has been restored from backup.',
             'force_mode' => 'Force update mode: Skipping version comparison and reinstalling.',
+        ],
+        // `template:build` command output
+        'build' => [
+            'missing_identifier' => 'Specify a template identifier or use the --all option.',
+            'usage' => 'Usage:',
+            'not_found' => 'Template not found: :identifier',
+            'not_found_detail' => 'Neither the _bundled nor the active directory exists.',
+            'source' => 'Build source: :source (:path)',
+            'source_active' => 'active',
+            'package_json_missing' => 'package.json not found: :path',
+            'package_json_hint' => 'Create the template frontend structure first.',
+            'installing_dependencies' => 'Installing dependencies...',
+            'npm_install_failed' => 'npm install failed',
+            'watch_start' => 'Starting build in watch mode: :identifier',
+            'watch_hint' => 'Press Ctrl+C to stop.',
+            'start' => 'Starting build: :identifier',
+            'start_production' => 'Starting build: :identifier (production)',
+            'pruned' => 'Cleaned up previous output: :files',
+            'done' => 'Build completed: :identifier',
+            'build_results' => 'Build output:',
+            'cache_version_bumped' => 'Cache version updated',
+            'apply_hint' => 'To apply it to the active directory: php artisan template:update :identifier',
+            'no_targets' => 'No templates to build.',
+            'start_all' => 'Starting build of all templates (:source)',
+            'start_all_production' => 'Starting build of all templates (:source) (production)',
+            'targets' => 'Target templates: :list',
+            'summary' => 'Build result: :success succeeded, :failed failed',
         ],
     ],
 

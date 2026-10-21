@@ -72,6 +72,8 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects guard_assertions_do_not_compare_resolver_output_with_itself
+     *
+     * @return void 반환값 없음
      */
     public function test_no_assertion_compares_resolver_output_against_itself(): void
     {
@@ -112,6 +114,8 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects oracle_independence_self_test_detects_round29_shape
+     *
+     * @return void 반환값 없음
      */
     public function test_predicate_detects_the_round29_shape(): void
     {
@@ -221,6 +225,8 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects oracle_independence_guard_reacts_to_population_injected_samples
+     *
+     * @return void 반환값 없음
      */
     public function test_guard_reacts_to_samples_injected_into_the_population(): void
     {
@@ -270,6 +276,8 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects oracle_independence_entry_point_enumeration_is_anchored_to_core
+     *
+     * @return void 반환값 없음
      */
     public function test_resolver_entry_points_still_exist_in_core(): void
     {
@@ -314,7 +322,7 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
      * 34차는 흩어진 목록 둘을 {@see LayoutSourceConvention} 하나로 통합했지만, 폐쇄는
      * **목록 → 코어** 한 방향뿐이었다({@see test_resolver_entry_points_still_exist_in_core()} —
      * "등재분이 코어에 실재하는가"). 그래서 **코어에 있는데 목록에 없는** 진입점은 아무도 묻지
-     * 않았고, 35차 실측에서 여집합 3건이 그대로 살아 있었다. 그중 `resolveFragmentSource()` 는
+     * 않았고, 실측에서 여집합 3건이 그대로 살아 있었다. 그중 `resolveFragmentSource()` 는
      * 공유 오라클이 실제로 부르는 선택 진입점이라, 그것으로 만든 항진명제는 문지기에서 걸러져
      * 검사에 **들어오지도 않았다**.
      *
@@ -330,6 +338,8 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects core_selection_surface_is_fully_classified_in_the_convention
+     *
+     * @return void 반환값 없음
      */
     public function test_core_selection_surface_is_fully_registered(): void
     {
@@ -382,6 +392,8 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects selection_surface_classification_is_mutually_exclusive
+     *
+     * @return void 반환값 없음
      */
     public function test_selection_surface_classification_is_mutually_exclusive(): void
     {
@@ -421,6 +433,8 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects oracle_independence_guard_judges_itself_without_file_exemption
+     *
+     * @return void 반환값 없음
      */
     public function test_this_guard_is_judged_without_exemption(): void
     {

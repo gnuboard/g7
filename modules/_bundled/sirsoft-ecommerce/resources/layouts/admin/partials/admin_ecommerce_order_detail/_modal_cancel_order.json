@@ -104,7 +104,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-red-600 dark:text-red-400 text-xs ml-6"
+                                "className": "text-red-700 dark:text-red-400 text-xs ml-6"
                             },
                             "text": "{{_local.cancelError}}"
                         },
@@ -112,7 +112,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-error-xs ml-6 mt-1"
+                                "className": "form-error-xs text-red-700 ml-6 mt-1"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.pg_error_description"
                         }
@@ -166,7 +166,7 @@
                                         "index_var": "errIdx"
                                     },
                                     "props": {
-                                        "className": "text-xs text-red-600 dark:text-red-400"
+                                        "className": "text-xs text-red-700 dark:text-red-400"
                                     },
                                     "text": "{{errMsg}}"
                                 }
@@ -314,7 +314,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "image",
-                                                        "className": "text-gray-400 dark:text-gray-500"
+                                                        "className": "text-gray-500 dark:text-gray-400"
                                                     }
                                                 }
                                             ]
@@ -416,6 +416,7 @@
                                             "props": {
                                                 "type": "number",
                                                 "className": "input w-20 text-center",
+                                                "aria-label": "$t:common.row_cell|row={{[cancelItem.product_name, cancelItem.product_option_name].filter(Boolean).join(' ')}}|column={{$t('sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_quantity_col')}}",
                                                 "value": "{{cancelItem.cancel_quantity ?? cancelItem.quantity}}",
                                                 "min": "1",
                                                 "max": "{{cancelItem.quantity}}"
@@ -485,6 +486,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.cancel_reason_type_label",
                                 "className": "{{_local.cancelValidationErrors?.reason ? 'select w-full text-sm border-2 border-red-500 dark:border-red-500' : 'select w-full text-sm'}}",
                                 "value": "{{_local.cancelReason ?? ''}}"
                             },
@@ -578,7 +580,7 @@
                             "name": "P",
                             "if": "{{order.data?.payment?.payment_method === 'vbank' && order.data?.payment?.payment_status === 'paid'}}",
                             "props": {
-                                "className": "text-xs text-amber-600 dark:text-amber-400 mb-2"
+                                "className": "text-xs text-amber-700 dark:text-amber-400 mb-2"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_required_hint"
                         },
@@ -613,6 +615,7 @@
                                         }
                                     ],
                                     "props": {
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_name",
                                         "name": "refund_bank_code",
                                         "value": "{{_local.refundBankCode ?? ''}}",
                                         "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_select') }].concat((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))}}",
@@ -693,13 +696,25 @@
                             ]
                         },
                         {
+                            "comment": "결제 설정(은행 목록) 받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「은행이 등록되어 있지 않습니다」를 보이면 운영자가 환경설정에서 은행을 다시 등록하러 간다",
+                            "id": "cancel_refund_bank_load_failed",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{paymentSettings === null}}",
+                            "props": {
+                                "role": "alert",
+                                "className": "text-xs text-red-600 dark:text-red-400 mt-1"
+                            },
+                            "text": "$t:sirsoft-ecommerce.common.error.list_load_failed"
+                        },
+                        {
                             "comment": "은행 목록이 비었을 때의 안내 (브라우저 실측). 사람이 송금해야 하는 수단은 환불계좌가 **필수**인데, 운영자가 은행을 아직 등록하지 않았으면 고를 수 있는 값이 하나도 없다. 그 상태에서는 빈 드롭다운과 '계좌를 입력하세요' 422 만 남아, 무엇을 어디서 고쳐야 하는지가 화면 어디에도 없다 — 설정 자리를 지목해 막다른 길을 1분짜리 설정 작업으로 바꾼다.",
                             "id": "cancel_refund_bank_empty_hint",
                             "type": "basic",
                             "name": "P",
-                            "if": "{{(paymentSettings.data?.order_settings?.banks ?? []).length === 0}}",
+                            "if": "{{paymentSettings !== undefined && paymentSettings !== null && (paymentSettings.data?.order_settings?.banks ?? []).length === 0}}",
                             "props": {
-                                "className": "text-xs text-amber-600 dark:text-amber-400 mt-1"
+                                "className": "text-xs text-amber-700 dark:text-amber-400 mt-1"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.refund_bank_empty_hint"
                         },
@@ -905,7 +920,7 @@
                                             "name": "Span",
                                             "if": "{{order.data?.abilities?.can_execute_refund !== true}}",
                                             "props": {
-                                                "className": "text-xs text-amber-600 dark:text-amber-400 block mt-1"
+                                                "className": "text-xs text-amber-700 dark:text-amber-400 block mt-1"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_no_permission"
                                         },
@@ -915,7 +930,7 @@
                                             "name": "Span",
                                             "if": "{{order.data?.payment?.auto_approves_refund === false}}",
                                             "props": {
-                                                "className": "text-xs text-amber-600 dark:text-amber-400 block mt-1"
+                                                "className": "text-xs text-amber-700 dark:text-amber-400 block mt-1"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.auto_advance_refund_blocked_hint"
                                         }
@@ -1891,7 +1906,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-danger-soft"
+                                                "className": "ecommerce-tone-error-soft text-xs"
                                             },
                                             "text": "{{_local.refundEstimate?.cancel_blocked_reason ?? ''}}"
                                         }
@@ -1967,7 +1982,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-500"
+                                                        "className": "text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.remaining_pg_balance"
                                                 },
@@ -1993,7 +2008,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-500"
+                                                        "className": "text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.remaining_points_balance"
                                                 },
@@ -2100,7 +2115,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_local.isCancelling}}"
                     },
                     "children": [
@@ -2132,7 +2147,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_local.isCancelling || _local.refundLoading || _local.refundEstimate?.cancel_blocked}}"
                     },
                     "children": [

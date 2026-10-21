@@ -17,7 +17,7 @@
             <!-- 별점 아이콘 -->
             <div class="flex-center gap-0.5">
               <span data-each="star in {{[1,2,3,4,5]}}">
-                <icon name="star" size="sm" class="{{star <= (_global.reviewForModal?.rating ?? 0) ? 'text-yellow-400 dark:text-yellow-300' : 'text-gray-300 dark:text-gray-600'}}"/>
+                <icon name="star" size="sm" class="{{star <= (_global.reviewForModal?.rating ?? 0) ? 'text-yellow-700 dark:text-yellow-300' : 'text-gray-500 dark:text-gray-500'}}"/>
               </span>
             </div>
             <span class="text-hint">{{_global.reviewForModal?.createdAt ?? ''}}</span>
@@ -26,7 +26,7 @@
         <!-- 옵션 배지 (있을 때만) -->
         <div data-if="{{(_global.reviewForModal?.optionValues ?? []).length > 0}}" class="flex flex-wrap gap-1">
           <span data-each="opt in {{_global.reviewForModal?.optionValues ?? []}}">
-            <span data-if="{{!(opt.key?.ko === '기본' &amp;&amp; opt.value?.ko === '기본')}}" class="text-secondary inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{opt.key?.ko ?? ''}}: {{opt.value?.ko ?? ''}}</span>
+            <span data-if="{{!(opt.key?.ko === '기본' &amp;&amp; opt.value?.ko === '기본')}}" class="text-secondary dark:text-gray-300 inline-block text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">{{$localized(opt.key)}}: {{$localized(opt.value)}}</span>
           </span>
         </div>
         <div>

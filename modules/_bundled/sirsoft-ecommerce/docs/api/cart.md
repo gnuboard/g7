@@ -73,7 +73,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 장바구니에서 선택한 여러 아이템(`ids`)을 한 번에 삭제합니다. `optional.sanctum`으로 회원은 `Auth::id()`, 비회원은 cart_key(`X-Cart-Key`)로 소유를 식별하며, `CartController@destroyMultiple`이 `CartService::deleteItems()`를 호출해 삭제된 건수(`deleted_count`)를 반환합니다. 장바구니 화면에서 체크박스로 선택한 항목들을 "선택 삭제"할 때 사용합니다.
+**설명** 장바구니에서 선택한 여러 아이템(`ids`)을 한 번에 삭제합니다. `optional.sanctum`으로 회원은 `Auth::id()`, 비회원은 cart_key(`X-Cart-Key`)로 소유를 식별하며, `CartController@destroyMultiple`이 `CartService::deleteItems()`를 호출해 삭제된 건수(`deleted_count`)를 반환합니다. 장바구니 화면에서 체크박스로 선택한 항목들을 "선택 삭제"할 때 사용합니다. 비회원인데 cart_key가 없거나 형식(`ck_`+32자)이 틀리면 400을 반환합니다(조회·담기와 같은 판정 — 키 없는 요청이 주인 없는 행을 고치지 못하게).
 
 
 ### GET /api/modules/sirsoft-ecommerce/cart
@@ -862,7 +862,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 장바구니 아이템(`id`)의 선택 옵션과 수량을 변경합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CartController@changeOption`이 `CartService::changeOption()`으로 `product_option_id`·`quantity`(및 추가 옵션 선택)를 반영한 뒤 수정된 아이템을 반환합니다. 다른 상품의 옵션으로 바꾸려 하거나 옵션이 없는 경우, 재고/판매상태/구매수량 한도 위반은 사유별 422/404/403으로 매핑됩니다. 장바구니에서 옵션(예: 색상/사이즈)을 바꿀 때 사용합니다.
+**설명** 장바구니 아이템(`id`)의 선택 옵션과 수량을 변경합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CartController@changeOption`이 `CartService::changeOption()`으로 `product_option_id`·`quantity`(및 추가 옵션 선택)를 반영한 뒤 수정된 아이템을 반환합니다. 다른 상품의 옵션으로 바꾸려 하거나 옵션이 없는 경우, 재고/판매상태/구매수량 한도 위반은 사유별 422/404/403으로 매핑됩니다. 장바구니에서 옵션(예: 색상/사이즈)을 바꿀 때 사용합니다. 비회원인데 cart_key가 없거나 형식(`ck_`+32자)이 틀리면 400을 반환합니다(조회·담기와 같은 판정 — 키 없는 요청이 주인 없는 행을 고치지 못하게).
 
 
 ### PATCH /api/modules/sirsoft-ecommerce/cart/{id}/quantity
@@ -1005,6 +1005,6 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 장바구니 아이템(`id`)의 수량만 변경합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CartController@updateQuantity`가 `CartService::updateQuantity()`로 수량을 반영한 뒤 프론트가 별도 refetch 없이 화면을 갱신할 수 있도록 `index`와 동일한 전체 목록·계산 결과(`items`·`calculation`)를 함께 반환합니다. 수량 상한은 관리자 환경설정의 장바구니 수량 상한(기본 99)을 따르며, 재고 부족·판매 중지·구매수량 한도 위반은 사유별 422, 항목/권한 문제는 404/403으로 매핑됩니다. 장바구니의 수량 증감(+/-) 컨트롤에 사용합니다.
+**설명** 장바구니 아이템(`id`)의 수량만 변경합니다. `optional.sanctum`으로 회원/비회원 모두 접근하며, `CartController@updateQuantity`가 `CartService::updateQuantity()`로 수량을 반영한 뒤 프론트가 별도 refetch 없이 화면을 갱신할 수 있도록 `index`와 동일한 전체 목록·계산 결과(`items`·`calculation`)를 함께 반환합니다. 수량 상한은 관리자 환경설정의 장바구니 수량 상한(기본 99)을 따르며, 재고 부족·판매 중지·구매수량 한도 위반은 사유별 422, 항목/권한 문제는 404/403으로 매핑됩니다. 장바구니의 수량 증감(+/-) 컨트롤에 사용합니다. 비회원인데 cart_key가 없거나 형식(`ck_`+32자)이 틀리면 400을 반환합니다(조회·담기와 같은 판정 — 키 없는 요청이 주인 없는 행을 고치지 못하게).
 
 

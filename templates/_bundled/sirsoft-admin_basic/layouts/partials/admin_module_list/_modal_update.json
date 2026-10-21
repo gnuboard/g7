@@ -648,7 +648,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "file-alt",
-                                                                "className": "text-amber-500 dark:text-amber-400 shrink-0"
+                                                                "className": "text-amber-600 dark:text-amber-400 shrink-0"
                                                             }
                                                         },
                                                         {
@@ -663,7 +663,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-gray-400 dark:text-gray-500 shrink-0"
+                                                                "className": "text-gray-500 dark:text-gray-400 shrink-0"
                                                             },
                                                             "text": "{{modLayout.updated_at}}"
                                                         }
@@ -675,7 +675,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center mt-2 text-xs text-amber-600 dark:text-amber-400 gap-1"
+                                                "className": "flex-center mt-2 text-xs text-amber-700 dark:text-amber-400 gap-1"
                                             },
                                             "children": [
                                                 {
@@ -690,6 +690,195 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "text": "$t:admin.modules.modals.modified_layouts_keep_notice"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "고급 설정 — 레이아웃 설치 소스(#144). 평소에는 자동(.g7.html 우선)이고, 새 형식 처리에 문제가 있을 때만\n           원본 JSON 우선을 고른다. 값은 요청 본문 layout_source 로 보내고 서버는 그 요청 동안만 적용한다.\n           창을 열 때마다 자동·접힘으로 되돌린다(여는 쪽이 전역값을 초기화한다).",
+                    "id": "module_update_layout_source_section",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "mt-4 border-t border-gray-200 dark:border-gray-700 pt-3"
+                    },
+                    "children": [
+                        {
+                            "id": "module_update_layout_source_toggle",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "접힘/펼침만 바꾼다 — 고른 값은 그대로 둔다.",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "moduleLayoutSourceOpen": "{{_global.moduleLayoutSourceOpen !== true}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "aria-expanded": "{{_global.moduleLayoutSourceOpen === true}}",
+                                "className": "text-label hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "{{_global.moduleLayoutSourceOpen === true ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}",
+                                        "className": "text-xs"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.modules.modals.layout_source_advanced"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "module_update_layout_source_options",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.moduleLayoutSourceOpen === true}}",
+                            "props": {
+                                "className": "mt-2 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    },
+                                    "text": "$t:admin.modules.modals.layout_source_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-tertiary mb-2"
+                                    },
+                                    "text": "$t:admin.modules.modals.layout_source_help"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "row-stack"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "자동(권장) — .g7.html 을 우선 설치하고 없으면 .json 을 쓴다. 기본값.",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "moduleLayoutSource": "auto"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "module_update_layout_source",
+                                                        "value": "auto",
+                                                        "checked": "{{(_global.moduleLayoutSource ?? 'auto') === 'auto'}}",
+                                                        "className": "radio mt-0.5"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.modules.modals.layout_source_auto"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-tertiary"
+                                                            },
+                                                            "text": "$t:admin.modules.modals.layout_source_auto_desc"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "원본 JSON 우선(문제 해결용) — 짝 .json 이 있는 화면은 .g7.html 대신 원본 JSON 으로 설치한다.",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "moduleLayoutSource": "json"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "module_update_layout_source",
+                                                        "value": "json",
+                                                        "checked": "{{(_global.moduleLayoutSource ?? 'auto') === 'json'}}",
+                                                        "className": "radio mt-0.5"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                            },
+                                                            "text": "$t:admin.modules.modals.layout_source_json"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "text-tertiary"
+                                                            },
+                                                            "text": "$t:admin.modules.modals.layout_source_json_desc"
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }
@@ -826,7 +1015,8 @@
                                         "body": {
                                             "layout_strategy": "{{_global.moduleLayoutStrategy ?? 'overwrite'}}",
                                             "force": "{{_global.moduleForceUpdate === true}}",
-                                            "rebuild_search_index": "{{_global.moduleRebuildSearchIndex === true}}"
+                                            "rebuild_search_index": "{{_global.moduleRebuildSearchIndex === true}}",
+                                            "layout_source": "{{_global.moduleLayoutSource ?? 'auto'}}"
                                         }
                                     },
                                     "onSuccess": [
@@ -846,6 +1036,15 @@
                                             }
                                         },
                                         {
+                                            "comment": "멈춘 업데이트를 정리하고 다시 업데이트했으면 확장은 비활성으로 남는다(정리 규칙) — 다시 켜라고 알린다",
+                                            "handler": "toast",
+                                            "if": "{{_global.selectedModule?.stuck_update === true}}",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "$t:admin.modules.stuck_update_reactivate_hint"
+                                            }
+                                        },
+                                        {
                                             "handler": "refetchDataSource",
                                             "params": {
                                                 "dataSourceId": "modules"
@@ -859,6 +1058,8 @@
                                             "params": {
                                                 "target": "global",
                                                 "selectedModule": null,
+                                                "moduleLayoutSource": "auto",
+                                                "moduleLayoutSourceOpen": false,
                                                 "moduleLayoutStrategy": "overwrite",
                                                 "hasModifiedModuleLayouts": false,
                                                 "modifiedModuleLayoutsCount": 0,
@@ -908,7 +1109,7 @@
                         }
                     ],
                     "props": {
-                        "className": "flex-center gap-2 px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{_global.isModuleUpdating || (_global.selectedModule?.is_compatible === false && _global.moduleForceUpdate !== true)}}",
                         "type": "button"
                     },

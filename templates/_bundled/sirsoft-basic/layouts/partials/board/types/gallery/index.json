@@ -8,25 +8,25 @@
     "name": "Div",
     "children": [
         {
-            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)\n         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 J D-J12).",
+            "comment": "헤더 (게시판명 + 설명 + 글쓰기 버튼)\n         좁은 화면(390px)에서 [글쓰기] 가 줄어들며 「글쓰/기」 로 꺾였다 — 제목 칸이 줄고, 버튼 묶음은 줄지 않으며 글자를 한 줄로 둔다(7.1.0 실측).\n         제목 칸은 최소 8rem 을 지키며 남는 폭을 쓰고, 그 폭도 안 나오면 버튼 묶음이 다음 줄 오른쪽 끝(ml-auto)으로 내린다 — 297px 에서 제목 칸이 54px 로 눌려 26줄로 접혔다(#143). 보통 이름은 수정 전처럼 제목 옆 오른쪽에 둔다.",
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex justify-between items-start gap-3 mb-6"
+                "className": "flex flex-wrap justify-between items-start gap-3 mb-6"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "min-w-0"
+                        "className": "min-w-0 flex-1 basis-32"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H1",
                             "props": {
-                                "className": "text-2xl font-bold text-gray-900 dark:text-white"
+                                "className": "text-2xl font-bold text-gray-900 dark:text-white break-words"
                             },
                             "text": "{{posts?.data?.board?.name ?? ''}}"
                         },
@@ -35,7 +35,7 @@
                             "name": "P",
                             "if": "{{posts?.data?.board?.description}}",
                             "props": {
-                                "className": "text-gray-600 dark:text-gray-400 mt-1"
+                                "className": "text-gray-600 dark:text-gray-400 mt-1 break-words"
                             },
                             "text": "{{posts?.data?.board?.description}}"
                         }
@@ -46,7 +46,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center gap-2 shrink-0 whitespace-nowrap"
+                        "className": "flex items-center gap-2 shrink-0 whitespace-nowrap ml-auto"
                     },
                     "children": [
                         {
@@ -89,6 +89,7 @@
                         }
                     ],
                     "props": {
+                        "aria-label": "$t:board.form.category",
                         "value": "{{query.category || 'all'}}",
                         "className": "w-full sm:w-auto sm:min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm",
                         "options": "{{[{value:'all', label:'$t:board.filter.category_all'},{value:'unclassified', label:'$t:board.filter.category_unclassified'}].concat((posts?.data?.board?.categories ?? []).map(function(c){return{value:c,label:c};}))}}"
@@ -97,14 +98,13 @@
                 {
                     "comment": "삭제된 게시글 포함 토글 버튼 (manager 권한 보유 시에만 표시)",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "if": "{{posts?.data?.abilities?.can_view_deleted}}",
                     "actions": [
                         {
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "/board/{{route.slug}}",
                                 "mergeQuery": true,
                                 "query": {
                                     "del": "{{query.del === '1' ? '' : '1'}}",
@@ -114,7 +114,8 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
+                        "href": "/board/{{route.slug}}?del={{query.del === '1' ? '' : '1'}}&page=1",
+                        "mergeQuery": true,
                         "className": "{{query.del === '1' ? 'inline-flex items-center gap-1.5 px-3 py-2 border-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium' : 'inline-flex items-center gap-1.5 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700'}}"
                     },
                     "children": [
@@ -157,6 +158,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:common.search_field",
                                 "value": "{{_local.boardSearchField ?? query.search_field ?? 'title_content'}}",
                                 "className": "px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white",
                                 "options": [
@@ -239,26 +241,36 @@
                 {
                     "comment": "갤러리 클릭 시 현재 목록 상태(category/search/page/del/filters)를 상세 URL 에 부착 (45-1 목록 복귀)",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "Div",
                     "iteration": {
                         "source": "{{posts?.data?.data ?? []}}",
                         "item_var": "post"
                     },
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "path": "/board/{{route.slug}}/{{post.id}}",
-                                "mergeQuery": true,
-                                "query": {}
-                            }
-                        }
-                    ],
                     "props": {
-                        "className": "block w-full text-left rounded-xl shadow-sm relative aspect-[4/3] group cursor-pointer border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200"
+                        "className": "relative block w-full text-left rounded-xl shadow-sm relative aspect-[4/3] group cursor-pointer border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-200"
                     },
                     "children": [
+                        {
+                            "comment": "카드 전체가 링크다 — 안쪽 조작(작성자 메뉴·삭제 등)을 링크 밖에 두려고 빈 링크가 카드를 덮고, 그 조작은 링크 위(z-20)에 둔다",
+                            "type": "basic",
+                            "name": "A",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "mergeQuery": true,
+                                        "query": {}
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "href": "/board/{{route.slug}}/{{post.id}}",
+                                "mergeQuery": true,
+                                "aria-label": "{{post?.title ?? ''}}",
+                                "className": "absolute inset-0 z-10 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 dark:focus-visible:ring-blue-400"
+                            }
+                        },
                         {
                             "comment": "배경 이미지 또는 플레이스홀더 — 카드 전체 채움",
                             "type": "basic",
@@ -351,7 +363,7 @@
                                             "name": "Span",
                                             "if": "{{post?.is_notice}}",
                                             "props": {
-                                                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-sm font-bold bg-blue-600 text-white dark:bg-blue-500 flex-shrink-0"
+                                                "className": "inline-flex items-center gap-1 px-2 py-0.5 rounded text-sm font-bold bg-blue-600 text-white dark:bg-blue-600 flex-shrink-0"
                                             },
                                             "children": [
                                                 {
@@ -376,7 +388,7 @@
                                             "name": "Span",
                                             "if": "{{post?.category}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-sm font-medium bg-black/40 text-white backdrop-blur-sm flex-shrink-0"
+                                                "className": "inline-block truncate max-w-32 px-2 py-0.5 rounded text-sm font-medium bg-black/60 text-white backdrop-blur-sm flex-shrink-0"
                                             },
                                             "text": "{{post?.category}}"
                                         }
@@ -388,18 +400,18 @@
                                     "name": "Span",
                                     "if": "{{post?.is_new}}",
                                     "props": {
-                                        "className": "px-1.5 py-0.5 text-xs font-bold bg-red-500 dark:bg-red-600 text-white rounded flex-shrink-0"
+                                        "className": "px-1.5 py-0.5 text-xs font-bold bg-red-600 dark:bg-red-600 text-white rounded flex-shrink-0"
                                     },
                                     "text": "N"
                                 }
                             ]
                         },
                         {
-                            "comment": "하단 오버레이 — 그라디언트 + 제목 + 메타",
+                            "comment": "하단 오버레이 — 그라디언트 + 제목 + 메타. 글자가 놓이는 아래 70% 는 검정 85% 이상이라 흰 사진 위에서도\n          흰 글자 15·회색 400(블라인드) 5.8·주황 600 아이콘 4.2 이상이다(종전 via-black/60 은 제목 윗부분 4.49·블라인드 제목 3.32).",
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "absolute inset-x-0 bottom-0 z-30 px-3 pt-10 pb-3 rounded-b-xl bg-gradient-to-t from-black/90 via-black/60 to-transparent"
+                                "className": "absolute inset-x-0 bottom-0 z-30 px-3 pt-10 pb-3 rounded-b-xl bg-gradient-to-t from-black/90 via-black/85 via-70% to-transparent"
                             },
                             "children": [
                                 {
@@ -418,7 +430,7 @@
                                             "props": {
                                                 "name": "eye-slash",
                                                 "size": "sm",
-                                                "className": "text-orange-500 dark:text-orange-400 flex-shrink-0"
+                                                "className": "text-orange-600 dark:text-orange-400 flex-shrink-0"
                                             }
                                         },
                                         {
@@ -427,7 +439,7 @@
                                             "name": "Span",
                                             "if": "{{post?.is_reply}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-500/80 dark:bg-purple-500/80 text-white flex-shrink-0"
+                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-700/80 dark:bg-purple-600/80 text-white flex-shrink-0"
                                             },
                                             "text": "RE"
                                         },
@@ -449,6 +461,19 @@
                                                 "className": "text-base font-semibold truncate transition-colors {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-white'}}"
                                             },
                                             "text": "{{post?.title}}"
+                                        },
+                                        {
+                                            "comment": "확장 자리 — 확장이 글마다 배지를 붙인다(#149). 카드 전체 링크(z-10)가 위에 덮이므로 누르는 조각은 relative z-20 으로 올린다",
+                                            "type": "extension_point",
+                                            "name": "board_post_row_badges",
+                                            "props": {
+                                                "className": "contents",
+                                                "data-extension-point": "board_post_row_badges",
+                                                "post": "{{post}}",
+                                                "postId": "{{post?.id}}",
+                                                "boardSlug": "{{route?.slug}}",
+                                                "context": "board_list"
+                                            }
                                         },
                                         {
                                             "comment": "첨부파일 아이콘",
@@ -504,7 +529,7 @@
                                                         "author": "{{post?.author}}",
                                                         "showDropdown": true,
                                                         "stopPropagation": true,
-                                                        "className": "text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-gray-200 dark:text-gray-200'}}"
+                                                        "className": "relative z-20 text-xs font-medium {{(post?.status === 'blinded' || post?.deleted_at) ? 'text-gray-400 dark:text-gray-400' : 'text-gray-200 dark:text-gray-200'}}"
                                                     }
                                                 },
                                                 {
@@ -615,6 +640,8 @@
                 }
             ],
             "props": {
+                "pageHref": "/board/{{route?.slug}}?page={page}",
+                "pageHrefMergeQuery": true,
                 "currentPage": "{{posts?.data?.pagination?.current_page ?? 1}}",
                 "totalPages": "{{posts?.data?.pagination?.last_page ?? null}}",
                 "hasMorePages": "{{posts?.data?.pagination?.has_more_pages ?? false}}",

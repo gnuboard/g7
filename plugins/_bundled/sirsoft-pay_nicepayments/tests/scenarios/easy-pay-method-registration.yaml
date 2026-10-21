@@ -1,0 +1,32 @@
+feature: 나이스페이먼츠 간편결제 수단 등록
+
+description: |
+  나이스페이먼츠는 결제수단 카탈로그 필터 훅으로 간편결제 8종(네이버페이·카카오페이·삼성페이·애플페이·
+  PAYCO·SK페이·SSG페이·L.pay)을 쇼핑몰 결제수단 목록에 끼워 넣는다. 등록 데이터가 틀리면 쇼핑몰
+  관리자 화면과 체크아웃이 그 값을 그대로 믿기 때문에 어긋남이 다른 곳에서 드러난다.
+
+  계약 네 갈래:
+    - 위치: 휴대폰 결제와 다른 PG 의 간편결제 뒤, 포인트·무통장 앞에 놓인다.
+    - 배선: 플러그인이 등록 리스너와 관리자 결제수단 화면 보정 리스너를 함께 훅에 올린다.
+    - 기본값: PG 를 자기 자신으로 고정 선언한다(pg_provider=nicepayments, pg_locked, needs_pg, 환불수단 pg).
+      설치 직후에는 꺼진 상태이며 재고·마일리지 차감 시점은 결제 완료다.
+    - 표시명: 이름·설명이 언어팩 문구와 일치하고, 다른 PG 의 브랜드명 매처에 걸리지 않게 끊어 둔다.
+
+  브랜드 마크와 iOS 전용 노출 플래그는 쇼핑몰의 체크아웃 브랜드 마크 시나리오가 소유한다.
+
+# axis 의미:
+#   contract — 등록 데이터가 지키는 계약 갈래. 간편결제 8종은 같은 등록 코드를 지나므로 수단별로
+#              곱하지 않고, 각 계약을 전체 수단에 대해 단언한다.
+axes:
+  contract: [catalog_position, hook_wiring, method_defaults, display_labels]
+
+effects:
+  - easy_pay_methods_follow_phone_and_other_pg_easy_pay    # 휴대폰·타 PG 간편결제 뒤, 포인트 앞
+  - easy_pay_hook_listeners_registered                     # 등록·화면 보정 리스너가 훅 목록에 있음
+  - easy_pay_methods_locked_to_own_pg                      # pg_provider=nicepayments, pg_locked, needs_pg, 환불수단 pg
+  - easy_pay_methods_installed_inactive_with_payment_complete_timing # 설치 직후 비활성, 차감 시점 결제 완료
+  - easy_pay_labels_match_language_pack                    # 이름·설명이 언어팩 문구와 일치
+  - easy_pay_labels_avoid_other_pg_brand_matchers          # 표시 문구가 다른 PG 브랜드명 매처에 걸리지 않음
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php

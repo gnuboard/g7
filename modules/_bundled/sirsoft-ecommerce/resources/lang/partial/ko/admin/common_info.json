@@ -59,7 +59,7 @@
     "editing": {
       "title": "수정 중입니다",
       "message": "수정 중인 내용이 저장되지 않습니다.",
-      "confirm_message": "정말로 취소하고 다른 상품군을 선택하시겠습니까?",
+      "confirm_message": "정말로 취소하고 다른 공통정보를 선택하시겠습니까?",
       "continue": "계속 수정",
       "discard": "취소하고 이동"
     },

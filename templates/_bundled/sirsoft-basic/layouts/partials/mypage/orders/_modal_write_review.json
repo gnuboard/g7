@@ -59,7 +59,7 @@
                                             "props": {
                                                 "name": "image",
                                                 "size": "lg",
-                                                "className": "text-gray-400 dark:text-gray-500"
+                                                "className": "text-gray-500 dark:text-gray-400"
                                             }
                                         }
                                     ]
@@ -132,7 +132,7 @@
                                         "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=1",
                                         "aria-pressed": "{{(_local.reviewRating ?? 5) === 1}}",
                                         "type": "button",
-                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 1 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 1 ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500 dark:text-gray-500'}}"
                                     },
                                     "children": [
                                         {
@@ -164,7 +164,7 @@
                                         "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=2",
                                         "aria-pressed": "{{(_local.reviewRating ?? 5) === 2}}",
                                         "type": "button",
-                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 2 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 2 ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500 dark:text-gray-500'}}"
                                     },
                                     "children": [
                                         {
@@ -196,7 +196,7 @@
                                         "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=3",
                                         "aria-pressed": "{{(_local.reviewRating ?? 5) === 3}}",
                                         "type": "button",
-                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 3 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 3 ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500 dark:text-gray-500'}}"
                                     },
                                     "children": [
                                         {
@@ -228,7 +228,7 @@
                                         "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=4",
                                         "aria-pressed": "{{(_local.reviewRating ?? 5) === 4}}",
                                         "type": "button",
-                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 4 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 4 ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500 dark:text-gray-500'}}"
                                     },
                                     "children": [
                                         {
@@ -260,7 +260,7 @@
                                         "aria-label": "$t:mypage.order_detail.review_modal.rating_star|count=5",
                                         "aria-pressed": "{{(_local.reviewRating ?? 5) === 5}}",
                                         "type": "button",
-                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 5 ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}}"
+                                        "className": "p-1 cursor-pointer {{(_local.reviewRating ?? 5) >= 5 ? 'text-yellow-700 dark:text-yellow-600' : 'text-gray-500 dark:text-gray-500'}}"
                                     },
                                     "children": [
                                         {
@@ -306,11 +306,12 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:mypage.order_detail.review_modal.content_label",
                                 "value": "{{_local.reviewContent ?? ''}}",
                                 "placeholder": "$t:mypage.order_detail.review_modal.content_placeholder",
                                 "rows": 5,
                                 "maxLength": 2000,
-                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                             }
                         },
                         {
@@ -324,7 +325,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "$t:mypage.order_detail.review_modal.content_min_length"
                                 },
@@ -332,7 +333,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
                                     },
                                     "text": "{{(_local.reviewContent ?? '').length}}/2000"
                                 }
@@ -399,7 +400,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-red-600 dark:text-red-400"
+                                "className": "text-sm text-red-700 dark:text-red-400"
                             },
                             "text": "{{_local.reviewError ?? ''}}"
                         }
@@ -448,7 +449,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
+                                "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer",
                                 "disabled": "{{_local.isSubmittingReview === true}}"
                             },
                             "children": [

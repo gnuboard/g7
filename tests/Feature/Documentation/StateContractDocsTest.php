@@ -6,7 +6,7 @@ use App\Support\ExtensionDoc\ExtensionInventory;
 use Tests\TestCase;
 
 /**
- * 공개 상태 계약의 문서 도달 (#639, 결정 P8)
+ * 공개 상태 계약의 문서 도달 (#639, 결정)
  *
  * manifest `state_contracts` 는 다른 확장이 기대도 되는 전역 상태라는 약속이다. 그 확장 문서에 이름이 없으면
  * 읽는 쪽 개발자가 계약을 알 길이 manifest 를 여는 것뿐이다. 모집단은 번들 manifest 스캔에서 파생한다.

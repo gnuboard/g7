@@ -52,23 +52,23 @@
           </on>
           <icon name="refresh" size="sm"/>
         </button>
-        <button data-ref="add_page_button" class="btn btn-primary" disabled="{{pages?.data?.abilities?.can_create !== true}}">
+        <a href="/admin/pages/create" :mergeQuery="true" data-ref="add_page_button" class="button btn btn-primary" disabled="{{pages?.data?.abilities?.can_create !== true}}">
           <on type="click">
             <!-- 새 페이지 작성. 작성 취소로 목록에 돌아왔을 때 보던 자리가 유지되도록 목록 상태를 넘긴다 -->
-            <navigate path="/admin/pages/create" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <icon name="plus" size="sm"/>
           <span>$t:sirsoft-page.admin.page.add_page</span>
-        </button>
+        </a>
       </page-header>
       <div data-ref="search_filter_area" class="admin-card">
         <div data-ref="search_row" class="flex-center flex-row gap-3">
           <responsive on="portable" class="row-stack">
             <div class="row-stack">
               <div data-ref="mobile_search_row" class="flex flex-row gap-2 items-center">
-                <select data-ref="mobile_search_field_select" value="{{_local.searchField || 'all'}}" class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+                <select data-ref="mobile_search_field_select" aria-label="$t:common.search_field" value="{{_local.searchField || 'all'}}" class="w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
                   <options>
                     <option value="all">$t:sirsoft-page.admin.page.search_fields.all</option>
                     <option value="title">$t:sirsoft-page.admin.page.search_fields.title</option>
@@ -90,7 +90,7 @@
                   </on>
                 </input>
               </div>
-              <button data-ref="mobile_search_button" class="btn btn-primary w-full">
+              <button type="button" data-ref="mobile_search_button" class="btn btn-primary w-full">
                 <on type="click">
                   <!-- 모바일 검색 버튼 — 이쪽은 이미 상태에 쌓인 입력값을 쓴다 -->
                   <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
@@ -101,7 +101,7 @@
               </button>
             </div>
           </responsive>
-          <select data-ref="search_field_select" value="{{_local.searchField || 'all'}}" class="select-composite w-28">
+          <select data-ref="search_field_select" aria-label="$t:common.search_field" value="{{_local.searchField || 'all'}}" class="select-composite w-28">
             <options>
               <option value="all">$t:sirsoft-page.admin.page.search_fields.all</option>
               <option value="title">$t:sirsoft-page.admin.page.search_fields.title</option>
@@ -122,7 +122,7 @@
               </navigate>
             </on>
           </input>
-          <button data-ref="search_button" class="btn btn-primary">
+          <button type="button" data-ref="search_button" class="btn btn-primary">
             <on type="click">
               <!-- 검색 버튼 — 상태에 쌓인 입력값으로 1페이지부터 다시 조회한다 -->
               <navigate path="/admin/pages" :mergeQuery="true" :replace="true" transition_overlay_target="pages_data_grid__body">
@@ -136,7 +136,7 @@
       <div data-ref="list_toolbar" class="flex-between mb-4">
         <span data-ref="total_count" class="text-secondary text-sm">$t:sirsoft-page.admin.page.total_count|count={{pages?.data?.meta?.total ?? 0}}</span>
         <div data-ref="list_options" class="flex-center gap-3">
-          <select data-ref="published_filter_select" value="{{query.published ?? ''}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+          <select data-ref="published_filter_select" aria-label="$t:sirsoft-page.admin.page.columns.published" value="{{query.published ?? ''}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
             <options>
               <option value="">$t:sirsoft-page.admin.page.published_filter.all</option>
               <option value="1">$t:sirsoft-page.admin.page.published_filter.published</option>
@@ -149,7 +149,7 @@
               </navigate>
             </on>
           </select>
-          <select data-ref="sort_select" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+          <select data-ref="sort_select" aria-label="$t:common.sort_order" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
             <options>
               <option value="created_at_desc">$t:sirsoft-page.admin.page.sort.created_at_desc</option>
               <option value="created_at_asc">$t:sirsoft-page.admin.page.sort.created_at_asc</option>
@@ -163,7 +163,7 @@
               </navigate>
             </on>
           </select>
-          <select data-ref="per_page_select" value="{{query.per_page || '20'}}" class="w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
+          <select data-ref="per_page_select" aria-label="$t:common.per_page" value="{{query.per_page || '20'}}" class="w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">
             <options>
               <option value="10">$t:sirsoft-page.admin.page.per_page|count=10</option>
               <option value="20">$t:sirsoft-page.admin.page.per_page|count=20</option>
@@ -197,7 +197,7 @@
           </button>
         </div>
       </div>
-      <data-grid data-type="composite" data-ref="pages_data_grid" :data-blur-until-loaded="true" data="{{pages?.data?.data}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{pages?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{pages?.data?.meta?.last_page ?? null}}" serverHasMorePages="{{pages?.data?.meta?.has_more_pages ?? false}}" selectable="{{pages?.data?.abilities?.can_update === true}}" selectionScope="page" selectedCountText="" selectedIds="{{_global.selectedIds_admin_pages || []}}" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
+      <data-grid :pageHrefMergeQuery="true" pageHref="/admin/pages?page={page}" data-type="composite" data-ref="pages_data_grid" rowLabelField="title" :data-blur-until-loaded="true" data="{{pages?.data?.data}}" emptyMessage="{{pages === undefined ? '' : $t('common.no_data')}}" :sortable="true" sortField="{{query.sort_by}}" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{pages?.data?.meta?.current_page ?? 1}}" serverTotalPages="{{pages?.data?.meta?.last_page ?? null}}" serverHasMorePages="{{pages?.data?.meta?.has_more_pages ?? false}}" selectable="{{pages?.data?.abilities?.can_update === true}}" selectionScope="page" selectedCountText="" selectedIds="{{_global.selectedIds_admin_pages || []}}" idField="id" :responsiveBreakpoint="768" actionsColumnHeader="$t:common.actions">
         <column field="title" header="$t:sirsoft-page.admin.page.columns.title" :sortable="false" :required="true">
           <cell>
             <div class="stack-flush gap-0.5">
@@ -224,8 +224,8 @@
         <column field="created_at" header="$t:sirsoft-page.admin.page.columns.created_at" :sortable="true"/>
         <column field="published_at" header="$t:sirsoft-page.admin.page.columns.published_at" :sortable="true"/>
         <prop name="rowActions">
-          <item id="view" label="$t:sirsoft-page.admin.page.actions.view" iconName="eye"/>
-          <item id="edit" label="$t:sirsoft-page.admin.page.actions.edit" iconName="pencil" disabledField="abilities.can_update"/>
+          <item href="/admin/pages/{{row.id}}" :mergeQuery="true" id="view" label="$t:sirsoft-page.admin.page.actions.view" iconName="eye"/>
+          <item href="/admin/pages/{{row.id}}/edit" :mergeQuery="true" id="edit" label="$t:sirsoft-page.admin.page.actions.edit" iconName="pencil" disabledField="abilities.can_update"/>
           <item id="delete" label="$t:sirsoft-page.admin.page.actions.delete" iconName="trash" variant="danger" disabledField="abilities.can_delete"/>
         </prop>
         <on type="change" event="onSelectionChange">
@@ -358,13 +358,13 @@
         <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-page.admin.page.modals.delete_confirm</p>
       </div>
       <div class="modal-footer-buttons">
-        <button class="btn btn-secondary" disabled="{{_global.isDeletingPage}}">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isDeletingPage}}">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button class="btn btn-danger" disabled="{{_global.isDeletingPage}}">
+        <button type="button" class="btn btn-danger" disabled="{{_global.isDeletingPage}}">
           <on type="click">
             <!-- 페이지 삭제 확정 — 목록만 다시 받고(refetch) 페이지 이동은 하지 않아 현재 필터·페이지가 유지된다 -->
             <sequence>

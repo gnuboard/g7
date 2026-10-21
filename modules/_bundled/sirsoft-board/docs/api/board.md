@@ -1068,7 +1068,7 @@ _단건 응답: `data` 객체의 필드._
 | comments_truncated | boolean | `false` | 댓글 목록이 상한에서 끊겼는지 여부. `true` 면 `comments` 에 실린 것이 전부가 아닙니다 |
 | comments_total | integer\|null | `12` | 댓글 총 건수. 끊기지 않았으면 `comments` 길이와 같고, 끊겼으면 상한값(그 이상)입니다 |
 | comments_total_is_exact | boolean | `true` | 위 총 건수가 정확한지 여부. `false` 면 "N건 이상" 으로 표기합니다 |
-| attachments | array | `[{"id":155,"hash":"apidocsmpl1","original_filename":"apid…` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). 비밀글은 열람 권한이 없으면 빈 배열, 삭제된 게시글은 관리 권한이 없으면 연쇄 삭제된 첨부만 노출됩니다. |
+| attachments | array | `[{"id":155,"hash":"apidocsmpl1","original_filename":"apid…` | 게시글 첨부파일 목록(AttachmentResource 컬렉션). 비밀글은 열람 권한이 없으면 빈 배열, 삭제된 게시글은 관리 권한이 없으면 연쇄 삭제된 첨부만 노출됩니다. 각 항목의 `meta` 는 이미지면 `{"width":…,"height":…}`, 정보가 없으면 `null`, 비어 있으면 `{}` 입니다(코어 첨부 응답과 같은 모양). |
 | replies | array | `[]` | 이 게시글에 달린 답변글 목록(PostResource 컬렉션, 재귀). replies 관계가 로드된 경우에만 채워지며, 아니면 null. |
 | is_already_reported | boolean | `false` | already reported 여부 |
 | reaction_counts | object | `{"1":18,"2":2}` | 게시판이 켠 활성 반응 유형별 개수 맵(JSON 객체). 키는 유형 ID 문자열, 개수 0인 유형도 포함됩니다. board 관계 미로드 시 빈 객체(`{}`). |
@@ -1581,6 +1581,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없는 경우 |
+| 403 | Forbidden | 게시판 관리 권한의 범위(「본인이 만든 게시판만」·「소유역할」) 밖 게시판 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -1747,6 +1748,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없는 경우 |
+| 403 | Forbidden | 게시판 관리 권한의 범위(「본인이 만든 게시판만」·「소유역할」) 밖 게시판 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | 슬러그에 해당하는 게시판 또는 ID 에 해당하는 게시글이 없는 경우 (`존재하지 않는 게시글입니다.`) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`reason` 이 1000자를 초과하는 등) |
 | 500 | Internal Server Error | 복원 처리 실패 (`게시글 복원에 실패했습니다.`) |
@@ -2172,6 +2174,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없는 경우 |
+| 403 | Forbidden | 게시판 관리 권한의 범위(「본인이 만든 게시판만」·「소유역할」) 밖 게시판 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
@@ -2306,6 +2309,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-board.{slug}.admin.manage`)이 없거나, 게시판의 댓글 기능이 꺼진 경우 (`이 게시판은 댓글 기능이 비활성화되어 있습니다.`) |
+| 403 | Forbidden | 게시판 관리 권한의 범위(「본인이 만든 게시판만」·「소유역할」) 밖 게시판 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | ID 에 해당하는 댓글 또는 슬러그에 해당하는 게시판이 없는 경우 (`댓글을 찾을 수 없습니다.`) |
 | 409 | Conflict | 원글이 삭제된 상태에서 댓글만 복구하려 한 경우 (`원글이 삭제된 상태라 댓글만 복구할 수 없습니다. 원글을 먼저 복구해 주세요.`) — 원글을 복구하면 함께 지워진 댓글도 돌아온다(1.2.0+) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
@@ -2415,6 +2419,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | `sirsoft-board.{slug}.admin.manage` 권한이 없는 경우 |
+| 403 | Forbidden | 게시판 관리 권한의 범위 밖 게시판 — 아무 글도 처리하지 않고 전량 거부 (`auth.scope_denied`, 1.2.1+) |
 | 404 | Not Found | 슬러그에 해당하는 게시판이 없는 경우 |
 | 422 | Unprocessable Entity | `ids` 가 비었거나 100개를 넘거나 정수가 아닌 경우 |
 | 428 | Identity Verification Required | 본인인증 정책이 켜져 있고 미충족인 경우 (아무 항목도 처리되지 않음) |

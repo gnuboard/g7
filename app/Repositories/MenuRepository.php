@@ -44,14 +44,23 @@ class MenuRepository implements MenuRepositoryInterface
     /**
      * 최상위 메뉴들을 조회합니다.
      *
+     * 관리자 조회 경로(메뉴 계층)는 목록과 같은 권한으로 범위를 건다 — 빠뜨리면 「본인만」 관리자가 다른 관리자가 만든
+     * 메뉴와 만든 회원(creator)을 받는다(7.1.1). 내부·동기화 호출은 범위 없이 부른다.
+     *
+     * @param  string|null  $scopePermission  조회 범위를 걸 권한 식별자 (null 이면 범위 미적용 — 내부·동기화 경로)
      * @return Collection 최상위 메뉴 컬렉션 (활성화된 것만)
      */
-    public function getTopLevelMenus(): Collection
+    public function getTopLevelMenus(?string $scopePermission = null): Collection
     {
-        return Menu::topLevel()
+        $query = Menu::topLevel()
             ->active()
-            ->with(['creator', 'activeChildren'])
-            ->get();
+            ->with(['creator', 'activeChildren']);
+
+        if ($scopePermission !== null) {
+            PermissionHelper::applyPermissionScope($query, $scopePermission);
+        }
+
+        return $query->get();
     }
 
     /**
@@ -275,15 +284,22 @@ class MenuRepository implements MenuRepositoryInterface
      *
      * @param  ExtensionOwnerType  $type  확장 타입
      * @param  string  $identifier  확장 식별자
+     * @param  string|null  $scopePermission  조회 범위를 걸 권한 식별자 (null 이면 범위 미적용 — 내부·동기화 경로)
      * @return Collection 확장에 속한 메뉴 컬렉션
      */
-    public function getMenusByExtension(ExtensionOwnerType $type, string $identifier): Collection
+    public function getMenusByExtension(ExtensionOwnerType $type, string $identifier, ?string $scopePermission = null): Collection
     {
-        return Menu::where('extension_type', $type)
+        $query = Menu::where('extension_type', $type)
             ->where('extension_identifier', $identifier)
             ->with(['creator', 'parent', 'children'])
-            ->orderBy('order')
-            ->get();
+            ->orderBy('order');
+
+        // 관리자 확장별 메뉴 조회는 목록과 같은 범위 — 확장 동기화·공유 레코드 집계는 범위 없이 부른다(7.1.1)
+        if ($scopePermission !== null) {
+            PermissionHelper::applyPermissionScope($query, $scopePermission);
+        }
+
+        return $query->get();
     }
 
     /**

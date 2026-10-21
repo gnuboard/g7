@@ -260,6 +260,7 @@
                                                 ],
                                                 "props": {
                                                     "name": "searchType",
+                                                    "aria-label": "$t:common.search_field",
                                                     "className": "w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
                                                     "value": "{{_local.filter.searchType || 'email'}}",
                                                     "options": [
@@ -286,7 +287,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "fa-solid fa-search",
-                                                            "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 text-sm pointer-events-none"
+                                                            "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"
                                                         }
                                                     },
                                                     {
@@ -329,7 +330,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "px-4 py-2.5 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-xl"
+                                                    "className": "px-4 py-2.5 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white text-sm font-medium rounded-xl"
                                                 },
                                                 "children": [
                                                     {
@@ -1209,6 +1210,8 @@
                             }
                         ],
                         "props": {
+                            "pageHrefMergeQuery": true,
+                            "pageHref": "/admin/plugins/sirsoft-gdpr/consent-log?page={page}",
                             "data": "{{gdprConsentLog?.data?.data}}",
                             "pagination": true,
                             "serverSidePagination": true,
@@ -1220,7 +1223,7 @@
                             "idField": "id",
                             "selectable": false,
                             "expandable": true,
-                            "emptyMessage": "$t:sirsoft-gdpr.admin.consent_log.empty",
+                            "emptyMessage": "{{gdprConsentLog === undefined ? '' : $t('sirsoft-gdpr.admin.consent_log.empty')}}",
                             "expandChildren": [
                                 {
                                     "type": "basic",
@@ -1335,7 +1338,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{snapshot_item.granted}}",
                                                                             "props": {
-                                                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                                                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300"
                                                                             },
                                                                             "text": "$t:sirsoft-gdpr.admin.consent_log.detail.snapshot_granted"
                                                                         },
@@ -1385,21 +1388,18 @@
                                         {
                                             "comment": "회원 row 의 이름·이메일 클릭 시 회원 상세 페이지로 이동 (검토 #26). DPO 가 이상 패턴 발견 시 즉시 회원 상세 조회 가능. 게스트 row 는 user_id 가 없어 분기가 다름.",
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "if": "{{!!row.user_id}}",
                                             "actions": [
                                                 {
                                                     "type": "click",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/users/{{row.user.uuid}}"
-                                                    }
+                                                    "handler": "navigate"
                                                 }
                                             ],
                                             "props": {
-                                                "type": "button",
+                                                "href": "/admin/users/{{row.user.uuid}}",
                                                 "title": "$t:sirsoft-gdpr.admin.consent_log.view_member_tooltip",
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 hover:underline cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                                "className": "button inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 hover:underline cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                                             },
                                             "children": [
                                                 {

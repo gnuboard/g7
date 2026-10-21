@@ -5,6 +5,14 @@ export interface BadgeProps {
     color?: string;
     /** 의미 기반 변형 (success/warning/danger/info/primary/secondary/text). 백엔드 Enum variant() 출력과 매핑 */
     variant?: string;
+    /**
+     * 운영자 데이터 색(hex — 라벨·태그 색 등). 주면 color·variant 대신 이 색으로 그린다. 글자색은 데이터 색을 그대로
+     * 쓰지 않고 바탕과 4.5 이상이 되도록 계산한다(연한 칩은 같은 계열을 짙게/밝게 섞은 단계, 꽉 찬 칩은 검정·흰색).
+     * 읽을 수 없는 값이면 color·variant 로 그린다.
+     */
+    customColor?: string | null;
+    /** customColor 칩 모양 — soft(옅은 바탕, 기본) | solid(데이터 색 바탕) */
+    customColorStyle?: 'soft' | 'solid';
     text?: string;
     /**
      * 텍스트 앞에 그릴 아이콘 — 서버 상태 Enum 이 내보내는 의미 토큰(`status-*`)도 그대로 받는다

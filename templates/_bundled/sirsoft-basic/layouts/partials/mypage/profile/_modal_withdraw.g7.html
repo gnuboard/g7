@@ -1,4 +1,5 @@
-<!-- 회원 탈퇴 확인 창 — 되돌릴 수 없는 동작이라 «알고 있다» 체크를 받아야 버튼이 열린다.
+<!-- 회원 탈퇴 확인 창 — 되돌릴 수 없는 동작이라 «알고 있다» 체크를 받아야 버튼이 열린다. 상태는 창 고유 전역 이름 공간
+     `_global.profileWithdrawModal`(confirm·isWithdrawing)에 있고 여는 쪽이 매번 비운다(7.1.1).
      성공하면 세션까지 끊어야 하므로 토스트 뒤에 로그아웃이 이어진다. -->
 <partial description="회원탈퇴 확인 모달" editor_label="$t:user.modal_label.mypage_profile.withdrawModal">
   <modal data-type="composite" data-ref="withdrawModal" title="$t:mypage.withdraw.modal_title" size="sm" :closeOnBackdropClick="false">
@@ -25,46 +26,43 @@
         <!-- 확장이 경고 항목을 덧붙이는 자리. 모달 안이라 target-id 오버레이는 닿지 않고, 확장점 주입만 모달 트리까지 순회한다. -->
         <extension-point name="withdraw_warnings" data-ref="withdraw_warnings_slot"/>
       </ul>
-      <div class="flex items-center gap-2 mb-4">
-        <checkbox name="confirmWithdraw" checked="{{_local.form?.confirmWithdraw ?? false}}">
+      <!-- 체크박스와 동의 문장을 한 label 로 감싼다 — 문장을 눌러도 체크되고 낭독기가 문장을 이름으로 읽는다 -->
+      <label class="flex items-center gap-2 mb-4 cursor-pointer">
+        <checkbox name="confirmWithdraw" checked="{{_global.profileWithdrawModal?.confirm === true}}">
           <on type="change">
             <!-- 이 체크가 곧 아래 탈퇴 버튼의 잠금 해제 조건이다 -->
-            <set-state target="local">
-              <field name="form">
-                <field name="confirmWithdraw" value="{{$event.target.checked}}"/>
-              </field>
-            </set-state>
+            <set-state target="global" profileWithdrawModal.confirm="{{$event.target.checked}}"/>
           </on>
         </checkbox>
-        <label class="text-sm text-gray-700 dark:text-gray-300">$t:mypage.withdraw.confirm_checkbox</label>
-      </div>
+        <span class="text-sm text-gray-700 dark:text-gray-300">$t:mypage.withdraw.confirm_checkbox</span>
+      </label>
       <div class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
           <on type="click">
             <close-modal/>
           </on>
           $t:common.cancel
         </button>
-        <button class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.form?.confirmWithdraw || _local.isWithdrawing}}">
+        <button type="button" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.profileWithdrawModal?.confirm !== true || _global.profileWithdrawModal?.isWithdrawing === true}}">
           <on type="click">
             <!-- 탈퇴 실행 — 먼저 버튼을 잠그고, 성공하면 알린 뒤 로그아웃까지 이어 간다 -->
             <sequence>
-              <set-state target="local" :isWithdrawing="true"/>
+              <set-state target="global" :profileWithdrawModal.isWithdrawing="true"/>
               <api-call :auth_required="true" target="/api/me" method="DELETE">
                 <success>
-                  <set-state target="local" :isWithdrawing="false"/>
+                  <set-state target="global" :profileWithdrawModal.isWithdrawing="false"/>
                   <close-modal/>
                   <toast type="success" message="$t:mypage.withdraw.success"/>
                   <logout/>
                 </success>
                 <fail>
-                  <set-state target="local" :isWithdrawing="false"/>
+                  <set-state target="global" :profileWithdrawModal.isWithdrawing="false"/>
                   <toast type="error" message="{{error.message}}"/>
                 </fail>
               </api-call>
             </sequence>
           </on>
-          <icon data-if="{{_local.isWithdrawing}}" name="spinner" size="sm" class="animate-spin"/>
+          <icon data-if="{{_global.profileWithdrawModal?.isWithdrawing === true}}" name="spinner" size="sm" class="animate-spin"/>
           <span>$t:mypage.withdraw.confirm_button</span>
         </button>
       </div>

@@ -33,7 +33,7 @@ class NotificationDefinitionSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command?->info('코어 알림 정의 시딩 시작...');
+        $this->command?->info(__('common.console.seeders.notification_definition.start'));
 
         $helper = app(NotificationSyncHelper::class);
         // config/core.php::notification_definitions + 언어팩 seed/notifications.json 병합
@@ -42,7 +42,7 @@ class NotificationDefinitionSeeder extends Seeder
         $definedTypes = [];
 
         if (empty($definitions)) {
-            $this->command?->warn('config/core.php 에 notification_definitions 선언이 없습니다.');
+            $this->command?->warn(__('common.console.seeders.notification_definition.no_definitions'));
 
             return;
         }
@@ -78,15 +78,15 @@ class NotificationDefinitionSeeder extends Seeder
             // 완전 동기화: config 에서 제거된 channel 의 template 삭제
             $helper->cleanupStaleTemplates($definition->id, $definedChannels);
 
-            $this->command?->info("  - {$type} 알림 정의 등록 완료");
+            $this->command?->info('  - '.__('common.console.seeders.notification_definition.type_registered', ['type' => $type]));
         }
 
         // 완전 동기화: config 에서 제거된 코어 definition 삭제 (cascade 로 template 도 정리)
         $removed = $helper->cleanupStaleDefinitions('core', 'core', $definedTypes);
         if ($removed > 0) {
-            $this->command?->line("  - stale 정의 {$removed}개 정리");
+            $this->command?->line('  - '.__('common.console.seeders.notification_definition.stale_removed', ['count' => $removed]));
         }
 
-        $this->command?->info('코어 알림 정의 시딩 완료 ('.count($definedTypes).'종)');
+        $this->command?->info(__('common.console.seeders.notification_definition.done', ['count' => count($definedTypes)]));
     }
 }

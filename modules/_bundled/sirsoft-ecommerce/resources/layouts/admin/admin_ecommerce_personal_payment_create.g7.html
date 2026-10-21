@@ -66,11 +66,11 @@
             <div class="flex-between">
               <div class="flex-center gap-3">
                 <div class="flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center">
-                  <icon name="user" class="text-xl text-gray-500 dark:text-gray-400"/>
+                  <icon name="user" class="text-xl text-gray-500 dark:text-gray-300"/>
                 </div>
                 <div>
                   <div class="flex-center gap-2">
-                    <span class="font-medium text-heading">정수진</span>
+                    <span class="font-medium text-heading">$t:sirsoft-ecommerce.admin.sample.people.jung_sujin</span>
                     <span class="text-secondary text-sm">user005</span>
                   </div>
                   <div class="text-secondary text-sm">jung@example.com</div>
@@ -131,7 +131,7 @@
               <span class="text-required">*</span>
             </label>
             <div class="relative">
-              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">₩</span>
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-300">₩</span>
               <input type="text" name="amount" class="input pl-8" placeholder="$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.amount_placeholder"/>
             </div>
             <p class="form-hint">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.amount_hint</p>
@@ -155,18 +155,18 @@
             <span>$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.order_link</span>
             <span class="text-gray-500 dark:text-gray-400 ml-1">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.order_link_optional</span>
           </label>
-          <div class="border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 mt-2 cursor-pointer hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-800 transition-colors">
+          <button type="button" class="block w-full text-left border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 mt-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             <on type="click">
               <open-modal target="modal_order_search"/>
             </on>
-            <div class="flex-center gap-3">
-              <icon name="search" class="text-xl text-gray-400 dark:text-gray-500"/>
-              <div>
-                <div class="font-medium text-heading">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.search_order</div>
-                <div class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.search_order_hint</div>
-              </div>
-            </div>
-          </div>
+            <span class="flex-center gap-3">
+              <icon name="search" class="text-xl text-gray-500 dark:text-gray-400"/>
+              <span class="block">
+                <span class="block font-medium text-heading">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.search_order</span>
+                <span class="block text-sm text-secondary">$t:sirsoft-ecommerce.admin.personal_payment_create.payment_detail.search_order_hint</span>
+              </span>
+            </span>
+          </button>
         </div>
         <div data-ref="linked_order_section" class="mb-4">
           <label class="form-label">
@@ -177,15 +177,15 @@
             <div class="flex-between">
               <div class="flex-center gap-3">
                 <div class="flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-lg justify-center">
-                  <icon name="file-text" class="text-xl text-gray-500 dark:text-gray-400"/>
+                  <icon name="file-text" class="text-xl text-gray-500 dark:text-gray-300"/>
                 </div>
                 <div>
                   <div class="flex-center gap-2">
                     <span class="font-medium text-heading">ORD20251028-567E</span>
                     <span class="badge badge-yellow">$t:sirsoft-ecommerce.admin.personal_payment.status.pending</span>
                   </div>
-                  <div class="text-secondary text-sm">· 정수진</div>
-                  <div class="text-secondary text-sm">스탠다드 멤버십 6개월</div>
+                  <div class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.sample.fmt.dot_name|name=$t:sirsoft-ecommerce.admin.sample.people.jung_sujin</div>
+                  <div class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.sample.products.standard_membership_6m</div>
                   <div class="text-secondary text-sm">₩60,000</div>
                 </div>
               </div>
@@ -211,12 +211,12 @@
       <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
         <div class=""/>
         <div class="flex-center gap-3">
-          <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+          <a href="/admin/ecommerce/personal-payment" data-ref="cancel_button" class="btn btn-secondary">
             <on type="click">
-              <navigate path="/admin/ecommerce/personal-payment"/>
+              <navigate/>
             </on>
             <span>$t:sirsoft-ecommerce.common.cancel</span>
-          </button>
+          </a>
           <button data-ref="save_button" type="button" class="flex-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors">
             <span>$t:sirsoft-ecommerce.common.save</span>
           </button>

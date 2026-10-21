@@ -28,7 +28,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "exclamation-circle",
-                        "className": "text-yellow-500 text-4xl mb-4"
+                        "className": "text-yellow-700 dark:text-yellow-600 text-4xl mb-4"
                     }
                 },
                 {
@@ -50,7 +50,7 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "comment": "확인이 곧 유일한 출구다 — 임시 주문이 없으면 주문서에 머물 이유가 없어 장바구니로 되돌린다",
@@ -70,8 +70,8 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
-                        "className": "px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                        "href": "{{_global.shopBase}}/cart",
+                        "className": "inline-flex items-center justify-center px-6 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-700 transition-colors"
                     },
                     "text": "$t:common.confirm"
                 }

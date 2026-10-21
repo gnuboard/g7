@@ -36,8 +36,8 @@
           </div>
           <div class="flex-start">
             <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.status</span>
-            <span data-if="{{_global.selectedMenu?.is_active}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded">$t:admin.menus.info.active</span>
-            <span data-if="{{!_global.selectedMenu?.is_active}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">$t:admin.menus.info.inactive</span>
+            <span data-if="{{_global.selectedMenu?.is_active}}" class="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400 rounded">$t:admin.menus.info.active</span>
+            <span data-if="{{!_global.selectedMenu?.is_active}}" class="text-body px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded">$t:admin.menus.info.inactive</span>
           </div>
         </div>
       </div>
@@ -46,7 +46,7 @@
         <div>
           <div class="flex-start">
             <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.module</span>
-            <span data-if="{{_global.selectedMenu?.extension_type === 'core' || _global.selectedMenu?.extension_type == null}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded">Core</span>
+            <span data-if="{{_global.selectedMenu?.extension_type === 'core' || _global.selectedMenu?.extension_type == null}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">Core</span>
             <span data-if="{{_global.selectedMenu?.extension_type != null &amp;&amp; _global.selectedMenu?.extension_type !== 'core'}}" class="text-primary text-sm">{{_global.selectedMenu?.extension_identifier ?? ''}}</span>
           </div>
           <div class="flex-start">
@@ -76,8 +76,8 @@
         <div>
           <div class="flex-start">
             <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.form.roles</span>
-            <span data-each="role in {{_global.selectedMenu?.roles ?? []}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded mr-1">{{$localized(role.name)}}</span>
-            <span data-if="{{Array.isArray(_global.selectedMenu?.roles) &amp;&amp; _global.selectedMenu.roles.length < 1}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400 rounded">$t:admin.menus.info.no_roles</span>
+            <span data-each="role in {{_global.selectedMenu?.roles ?? []}}" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded mr-1">{{$localized(role.name)}}</span>
+            <span data-if="{{Array.isArray(_global.selectedMenu?.roles) &amp;&amp; _global.selectedMenu.roles.length < 1}}" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded">$t:admin.menus.info.no_roles</span>
           </div>
         </div>
       </div>
@@ -94,14 +94,14 @@
           <div class="flex-start">
             <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.created_at</span>
             <div class="flex-center text-primary gap-1.5 text-sm">
-              <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500"/>
+              <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
               <span>{{_global.selectedMenu?.created_at}}</span>
             </div>
           </div>
           <div class="flex-start">
             <span class="w-24 text-label-subtle shrink-0">$t:admin.menus.info.updated_at</span>
             <div class="flex-center text-primary gap-1.5 text-sm">
-              <icon name="clock" class="text-base text-gray-400 dark:text-gray-500"/>
+              <icon name="clock" class="text-base text-gray-500 dark:text-gray-500"/>
               <span>{{_global.selectedMenu?.updated_at}}</span>
             </div>
           </div>
@@ -111,7 +111,7 @@
     <div data-ref="view_footer" class="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
       <div class="flex-center gap-3">
         <!-- 이 메뉴를 편집 상태로 연다. 트리에서 고른 항목을 오른쪽 패널이 받아 그리는 구조라 선택과 편집 상태를 함께 옮긴다 -->
-        <button disabled="{{menus?.data?.abilities?.can_update !== true}}" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+        <button type="button" disabled="{{menus?.data?.abilities?.can_update !== true}}" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent">
           <on type="click">
             <set-state target="global" panelMode="edit">
               <field name="formData">
@@ -133,13 +133,13 @@
           </on>
           $t:common.edit
         </button>
-        <button data-if="{{_global.selectedMenu?.extension_type !== 'core'}}" disabled="{{menus?.data?.abilities?.can_delete !== true}}" class="flex-1 px-4 py-2 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+        <button type="button" data-if="{{_global.selectedMenu?.extension_type !== 'core'}}" disabled="{{menus?.data?.abilities?.can_delete !== true}}" class="flex-1 px-4 py-2 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent">
           <on type="click">
             <open-modal target="delete_confirm_modal"/>
           </on>
           $t:common.delete
         </button>
-        <button data-if="{{_global.selectedMenu?.extension_type === 'core'}}" class="flex-1 px-4 py-2 text-gray-300 dark:text-gray-600 border border-gray-200 dark:border-gray-700 cursor-not-allowed rounded-lg text-sm" :disabled="true">$t:common.delete</button>
+        <button type="button" data-if="{{_global.selectedMenu?.extension_type === 'core'}}" class="flex-1 px-4 py-2 text-gray-300 dark:text-gray-600 border border-gray-200 dark:border-gray-700 cursor-not-allowed rounded-lg text-sm" :disabled="true">$t:common.delete</button>
       </div>
       <div data-if="{{_global.selectedMenu?.extension_type === 'core'}}" class="mt-3 text-center text-tertiary">$t:admin.menus.modals.delete_core_warning</div>
     </div>

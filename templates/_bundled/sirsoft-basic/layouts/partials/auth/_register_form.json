@@ -118,7 +118,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm font-medium text-red-600 dark:text-red-400"
+                        "className": "text-sm font-medium text-red-700 dark:text-red-400"
                     },
                     "text": "{{_local.registerError}}"
                 },
@@ -139,7 +139,7 @@
                             "type": "basic",
                             "name": "Li",
                             "props": {
-                                "className": "text-sm text-red-600 dark:text-red-400"
+                                "className": "text-sm text-red-700 dark:text-red-400"
                             },
                             "text": "{{message}}"
                         }
@@ -168,7 +168,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -178,6 +178,7 @@
                     "type": "basic",
                     "name": "Input",
                     "props": {
+                        "aria-label": "$t:auth.email",
                         "type": "email",
                         "name": "email",
                         "placeholder": "$t:auth.email_placeholder",
@@ -191,7 +192,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.email}}",
                     "props": {
-                        "className": "text-red-500 text-xs mt-1"
+                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                     },
                     "text": "{{_local.errors?.email?.[0] ?? ''}}"
                 }
@@ -218,7 +219,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -229,6 +230,7 @@
                     "type": "basic",
                     "name": "PasswordInput",
                     "props": {
+                        "aria-label": "$t:auth.password",
                         "name": "password",
                         "placeholder": "$t:auth.register.password_placeholder|count={{_global.settings?.security?.password_min_length ?? 8}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
@@ -297,7 +299,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -307,6 +309,7 @@
                     "type": "basic",
                     "name": "PasswordInput",
                     "props": {
+                        "aria-label": "$t:auth.password_confirm",
                         "name": "password_confirmation",
                         "placeholder": "$t:auth.password_confirm_placeholder",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
@@ -341,7 +344,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-red-500 ml-1"
+                                "className": "text-red-600 dark:text-red-400 ml-1"
                             },
                             "text": "*"
                         }
@@ -351,6 +354,7 @@
                     "type": "basic",
                     "name": "Input",
                     "props": {
+                        "aria-label": "$t:auth.name",
                         "type": "text",
                         "name": "name",
                         "placeholder": "$t:auth.name_placeholder",
@@ -364,7 +368,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.name}}",
                     "props": {
-                        "className": "text-red-500 text-xs mt-1"
+                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                     },
                     "text": "{{_local.errors?.name?.[0] ?? ''}}"
                 }
@@ -387,6 +391,7 @@
                     "type": "basic",
                     "name": "Input",
                     "props": {
+                        "aria-label": "$t:auth.nickname",
                         "type": "text",
                         "name": "nickname",
                         "placeholder": "$t:auth.nickname_placeholder",
@@ -399,7 +404,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.nickname}}",
                     "props": {
-                        "className": "text-red-500 text-xs mt-1"
+                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                     },
                     "text": "{{_local.errors?.nickname?.[0] ?? ''}}"
                 }
@@ -422,6 +427,7 @@
                     "type": "basic",
                     "name": "Input",
                     "props": {
+                        "aria-label": "$t:auth.mobile",
                         "type": "tel",
                         "name": "mobile",
                         "placeholder": "$t:auth.mobile_placeholder",
@@ -434,7 +440,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.mobile}}",
                     "props": {
-                        "className": "text-red-500 text-xs mt-1"
+                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                     },
                     "text": "{{_local.errors?.mobile?.[0] ?? ''}}"
                 }
@@ -457,6 +463,7 @@
                     "type": "basic",
                     "name": "Input",
                     "props": {
+                        "aria-label": "$t:auth.phone",
                         "type": "tel",
                         "name": "phone",
                         "placeholder": "$t:auth.phone_placeholder",
@@ -469,7 +476,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.phone}}",
                     "props": {
-                        "className": "text-red-500 text-xs mt-1"
+                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
                     },
                     "text": "{{_local.errors?.phone?.[0] ?? ''}}"
                 }
@@ -493,6 +500,7 @@
                     "name": "Select",
                     "props": {
                         "name": "language",
+                        "aria-label": "$t:auth.language",
                         "value": "{{_local?.registerForm?.language ?? $locale ?? 'ko'}}",
                         "options": "{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}",
                         "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
@@ -508,7 +516,7 @@
             "name": "Div"
         },
         {
-            "comment": "약관 동의 — 곁 문구는 전문 보기 버튼을 품어 체크박스를 감쌀 수 없으므로 체크박스 이름은 aria-label 로 준다. 곁 문구를 <label> 로 두면\n         연결 없는 label 이 안의 버튼을 대상으로 삼아 버튼 이름이 「(필수)」 로 읽힌다 — 그래서 <div> 다(7.1.0 N O-N6).",
+            "comment": "약관 동의 — 곁 문구는 전문 보기 버튼을 품어 체크박스를 감쌀 수 없으므로 체크박스 이름은 aria-label 로 준다. 곁 문구를 <label> 로 두면\n         연결 없는 label 이 안의 버튼을 대상으로 삼아 버튼 이름이 「(필수)」 로 읽힌다 — 그래서 <div> 다(7.1.0 실측).",
             "type": "basic",
             "name": "Div",
             "props": {
@@ -527,14 +535,26 @@
                             },
                             "children": [
                                 {
+                                    "comment": "동의 값은 체크 상태(true/false)로 직접 잇는다 — 폼 값이 빈 객체로 시작해 자동바인딩이 값 바인딩을 고르면\n               체크를 풀어도 \"1\"(동의)이 남는다(#757 후속).",
                                     "type": "basic",
                                     "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "registerForm.agree_terms": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
                                     "props": {
                                         "name": "agree_terms",
-                                        "value": "1",
                                         "aria-label": "$t:auth.agree_terms_label",
                                         "required": true,
-                                        "disabled": "{{_local?.isRegistering}}"
+                                        "disabled": "{{_local?.isRegistering}}",
+                                        "autoBinding": false,
+                                        "checked": "{{!!_local.registerForm?.agree_terms}}"
                                     }
                                 },
                                 {
@@ -586,7 +606,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.agree_terms}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1 ml-6"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 ml-6"
                             },
                             "text": "{{_local.errors?.agree_terms?.[0] ?? ''}}"
                         }
@@ -605,14 +625,26 @@
                             },
                             "children": [
                                 {
+                                    "comment": "약관 동의와 같은 방식 — 체크 상태(true/false)를 그대로 동의 값으로 잇는다(풀면 false).",
                                     "type": "basic",
                                     "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "registerForm.agree_privacy": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
                                     "props": {
                                         "name": "agree_privacy",
-                                        "value": "1",
                                         "aria-label": "$t:auth.agree_privacy_label",
                                         "required": true,
-                                        "disabled": "{{_local?.isRegistering}}"
+                                        "disabled": "{{_local?.isRegistering}}",
+                                        "autoBinding": false,
+                                        "checked": "{{!!_local.registerForm?.agree_privacy}}"
                                     }
                                 },
                                 {
@@ -664,7 +696,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.agree_privacy}}",
                             "props": {
-                                "className": "text-red-500 text-xs mt-1 ml-6"
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1 ml-6"
                             },
                             "text": "{{_local.errors?.agree_privacy?.[0] ?? ''}}"
                         }

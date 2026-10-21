@@ -79,7 +79,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 제공 컴포넌트 | 134개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 184개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 레이아웃 | 185개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
 | 전용 핸들러 | 23개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 0개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
@@ -103,6 +103,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] 아이콘 컨테이너(`w-N h-N` 상자) 안의 `<icon>` 은 컨테이너와 **다른 줄**에 둔다 — `AuthoringDebtLedgerTest` 가 줄 단위로 `<icon` 과 박스 크기 표기를 함께 재므로 한 줄에 있으면 글리프가 박스 크기를 쓴 것으로 읽힌다(3차 병합 후속, 확장 관리 모달 9파일 선례). 새 `<on>`(자식 있는 액션)·`<data-source>`·`<modal>` 은 S21 주석 자리를 비워 두지 않는다 — `CommentAnchorStageLedgerTest` 가 완료 단락(S21.4·S21.5)의 잔여 앵커 0 을 잠근다
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
 - [ ] 컴포넌트가 `localStorage` 에 적는 키는 `g7le.` 접두를 쓴다 — GDPR 동의 플러그인의 strictly-necessary 허용 목록(`plugins/_bundled/sirsoft-gdpr/plugin.php`)이 이 접두만 통과시키고, 밖의 키는 동의 전 쓰기가 조용히 버려지며 부팅 때 정리된다. 쓴 직후 되읽어 성공을 확인한다
 - [ ] 필수 컴포넌트(35개) 의 Props 시그니처를 깨는 변경은 전체 번들 확장 관리자 화면에 영향 — 변경 전 `src/components/{basic,composite}/` 의 실사용처를 넓게 확인
 - [ ] `_admin_base.g7.html` 슬롯 구조(`content` 슬롯 등) 변경 시 그 슬롯에 의존하는 모든 화면(145개 레이아웃 대다수) 영향 검토
@@ -110,6 +111,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 의 동반 의무 표를 따라 `editor-spec/` 블록을 함께 갱신 — 컴포넌트는 팔레트·역량·중첩 **넷 다** 손대야 편집기에서 온전히 동작하고, 하나만 빠지면 절반만 동작한다. 반영은 `php artisan template:update sirsoft-admin_basic --force` (편집기는 활성 디렉토리만 읽는다)
 - [ ] 로그인 화면의 2단계 인증·비밀번호 변경 단계를 고쳤다면 세 단계 `if` 의 상보성과 `login`/`loginTwoFactor`/`loginPasswordChange` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호·변경 단계에서 Enter 가 새 challenge 를 발급한다
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_role_form`·`admin_user_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고 `state.form` 기본값을 다시 쓴다 — 엔진은 `layout_name` 이 바뀔 때만 `_local` 을 비우므로 수정 → 등록 SPA 이동에서 직전 값이 등록 폼에 남는다. 새 폼 레이아웃을 같은 구조로 만들면 같은 액션을 둔다(트러블슈팅 state-global 사례 7)
+- [ ] 사이트·회원·게시판 이름처럼 입력값을 그리는 글은 넘침을 막는다 — 모바일 상단 좌측 칸은 `min-w-0 flex-1`(이름 `truncate`, 우측 `flex-shrink-0`), 블록 제목·설명은 `break-words`, 이름·이메일 같은 좁은 칸은 `truncate` + 폭 상한. `.admin_layout_root` 가 `overflow-hidden` 이라 문서 넘침은 늘 0 이므로 우측 묶음 clip 이나 `#right_content_area` 초과분으로 잰다 (#143)
 - [ ] `_admin_base` 자식 레이아웃에 progressive 데이터소스를 추가하면 `transition_overlay.wait_for` 에도 같은 ID 를 넣는다 — 레이아웃 테스트(`admin-base-transition-overlay`)가 누락을 잡는다
 
 ## 6. 금지 패턴
@@ -127,6 +129,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | `CodeEditor` 에서 심기(prime)보다 먼저 `<Editor>` 를 렌더하거나 `loader.init()` 호출 | 심기가 끝난 뒤에 렌더·init 한다(`primed` 게이트) | `<Editor>` 는 렌더되자마자 자기 effect 에서 `init()` 을 부른다. 먼저 불리면 라이브러리가 **자기 AMD 로더 스크립트를 따로 주입**해 `_amdLoaderGlobal` 이 두 번 선언되고 그 판의 `require` 가 통째로 죽는다 (S3-D12) |
 | `CodeEditor` 의 중복 심기 가드를 모듈 수준 변수로 선언 | `window.__g7MonacoPriming` 에 둔다 | 이 번들은 화면마다 따로 평가될 수 있어 모듈 변수로는 같은 판에서 두 번 도는 것을 못 막는다 (실측: 로더 스크립트 태그가 3개까지 늘었다) |
 | 컴포넌트·핸들러가 `fetch` 로 직접 요청하며 대상 출처를 보지 않고 토큰(Bearer·XSRF)을 싣거나, prop 으로 받은 주소로 곧장 `location.href` 이동 | `src/support/sameOriginRequest.ts` 의 `isSameOriginRequest(url)` 이 true 일 때만 토큰을 싣고 이동한다 | 주소가 레이아웃 prop·응답 본문이면 레이아웃 편집 권한만으로 관리자 토큰을 외부로 보내거나 `javascript:` 를 실행시킬 수 있다(KVE-2026-2350) |
+| 메뉴·목록 단추에 `w-full`·`flex-1` 로 폭을 주면서 가로 정렬을 지정하지 않기 | 왼쪽에 둘 단추는 `justify-start` 를 함께 둔다(`text-left` 만으로는 부족) | 기본 `Button` 의 `.button` 클래스가 `inline-flex items-center justify-center` 라, 넓어진 단추의 글·아이콘이 가운데로 간다 — 언어 선택·다국어 입력 목록이 이렇게 가운데로 갔다 |
 <!-- @intent END -->
 
 ### Monaco 편집기 확보 계약 (S3-D12)
@@ -181,9 +184,9 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 394개 | `vitest.config.ts` |
-| Playwright | 21개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 83개 | `tests/scenarios` |
+| Vitest | 438개 | `vitest.config.ts` |
+| Playwright | 27개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 114개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

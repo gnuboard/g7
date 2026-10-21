@@ -89,6 +89,7 @@
 | `confirm` | string | ❌ | 실행 전 확인 대화상자 메시지 |
 | `key` | string | ❌ | 키보드 이벤트 필터 (Enter, Escape 등) |
 | `stopPropagation` | boolean | ❌ | 진입점 액션 한정 이벤트 전파 차단 (engine-v1.68.0+). 핸들러가 아니라 **액션 키** — 상세: [이벤트 전파 제어](#이벤트-전파-제어--액션-키-stoppropagation-engine-v1550) |
+| `preventDefault` | boolean | ❌ | 진입점 액션 한정 기본 동작 차단 방식 (engine-v1.80.1+). 생략 = 자동(실제 주소 링크를 수정키·새 창으로 누르면 막지도 실행하지도 않음) · `true` = 언제나 막고 실행 · `false` = 막지 않고 실행 — 상세: [기본 동작 제어](#기본-동작-제어--액션-키-preventdefault-engine-v1801) |
 | `cases` | object | ❌ | switch 핸들러용 케이스별 액션 정의 |
 | `if` | string | ❌ | 조건부 실행 (`{{expression}}` 형식, truthy일 때만 실행) |
 | `debounce` | number \| object | ❌ | 연속 호출 제어 (300 또는 { delay, leading, trailing }) |
@@ -481,7 +482,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 
 ## 이벤트 전파 제어 — 액션 키 `stopPropagation` (engine-v1.68.0)
 
-`stopPropagation`·`preventDefault` 는 **핸들러가 아니다**. `registerHandler` 등록도 `ActionType` 유니온 항목도 없어 엔진 소비처가 0이다 — `handler: "stopPropagation"` / `handler: "preventDefault"` 로 적으면 미등록 핸들러라 무동작한다.
+`stopPropagation`·`preventDefault` 는 **핸들러가 아니라 액션 키**다. 핸들러로 등록된 적이 없어 `handler: "stopPropagation"` / `handler: "preventDefault"` 로 적으면 미등록 핸들러라 무동작한다. `preventDefault` 키는 아래 「기본 동작 제어」 참조.
 
 상위로의 이벤트 전파를 막으려면 **진입점 액션의 최상위 키 `stopPropagation: true`** 를 쓴다(opt-in). 클릭 가능한 행 안에 토글·버튼을 두는 구조에서 안쪽 컨트롤만 반응시키고 바깥 행 클릭을 막을 때 사용한다. 이벤트 객체를 쥔 진입점 액션에서만 의미가 있다(`sequence`/`parallel` 안쪽 액션에는 이벤트 객체가 없어 무효).
 
@@ -511,9 +512,49 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 </on>
 ```
 
-> `preventDefault` 는 대응 액션 키가 없다. `<a href>` 의 기본 네비게이션 차단 등은 엔진이 액션 존재 시 자동 처리하므로 마크업에서 별도 지정하지 않는다.
+### 기본 동작 제어 — 액션 키 `preventDefault` (engine-v1.80.1)
+
+엔진은 진입점 액션을 실행하기 전에 기본 동작을 막는다(폼 제출 새로고침·링크 이동 등, `change` 이벤트는 제외). 단 **실제 주소 `<a href>` 를 보통 클릭이 아니게 누르면** — Ctrl·Cmd·Shift·Alt+클릭, `target="_blank"`·`download` 링크 — 막지도 실행하지도 않는다. 브라우저가 새 탭·새 창으로 연다. 클릭이 그 링크 **안쪽에서 시작된** 부모 요소의 click 액션(링크를 감싼 카드 등)도 같은 판정으로 비킨다 — 부모가 막으면 새 탭이 취소되기 때문이다. 가운데 버튼(`auxclick`)·우클릭 「새 탭에서 열기」(`contextmenu`)에는 엔진이 리스너를 달지 않으므로 그대로 동작한다.
+
+이 자동 판정을 바꾸려면 진입점 액션의 최상위 키 `preventDefault` 를 쓴다(`stopPropagation` 과 같은 자리·형식).
+
+| 값 | 동작 |
+| --- | --- |
+| 생략 | 자동 — 위 규칙 |
+| `:preventDefault="true"` | 언제나 막고 실행(새 탭으로 열리면 안 되는 링크) |
+| `:preventDefault="false"` | 막지 않고 실행(브라우저 기본 동작 + 액션) |
+
+```html
+<a href="/admin/settings"><on type="click"><navigate :preventDefault="true" path="/admin/settings"/></on>설정</a>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "type": "click",
+  "handler": "navigate",
+  "preventDefault": true,
+  "params": { "path": "/admin/settings" }
+}
+```
+
+화면 이동을 링크로 쓰는 법(주소는 href 한 곳, path 없는 `navigate`)은 [actions-handlers-navigation.md 「화면 이동을 링크로 쓰는 법」](actions-handlers-navigation.md#화면-이동을-링크로-쓰는-법-engine-v1801) 참조. 합성 컴포넌트가 직접 `<a>` 를 그릴 때는 `G7Core.navigation.isPlainLeftClick(event)` 가 참일 때만 기본 동작을 막고 SPA 로 옮긴다(엔진과 같은 판정).
 
 > **동명이의 주의 — 컴포넌트 prop `stopPropagation` 은 이 액션 키가 아니다.** `sirsoft-basic` 의 `UserInfo` 는 자체 prop `stopPropagation?: boolean` 을 갖고 자기 클릭 핸들러 안에서 `e.stopPropagation()` 을 호출한다([UserInfo.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/UserInfo.tsx) `:172`·`:355`). 소스 코퍼스에서 이 이름의 **다수파는 prop 쪽**(게시판 목록 4파일)이므로, `<user-info :stopPropagation="true"/>` 처럼 **노드 속성 자리**에 있으면 컴포넌트 prop 이고, `<on>` 아래 핸들러 태그 속성 자리에 있으면 액션 키다. 배치 자리가 둘을 가른다.
+
+---
+
+## 진입점 전용 키
+
+`debounce`·`key`·`stopPropagation`·`confirm` 네 키는 **사용자가 직접 누르는 진입점 액션**(DOM 이벤트·컴포넌트 콜백에 바로 묶인 액션)에서만 효과가 있다. 엔진이 이벤트를 받는 순간에만 읽기 때문이다(`key` 는 키 필터, `debounce` 는 진입점 대기, `stopPropagation` 은 DOM 전파 차단, `confirm` 은 확인 창).
+
+```text
+✅ 진입점: <on type="…">·<on event="…"> 바로 아래 액션
+❌ 효과 없음: 이벤트 받기(<on listen>) · 실패 처리(<fail>·<on-code>) · 데이터소스 결과·오류 처리 · 첫 진입 동작(<init>) · 다른 액션 안쪽(<sequence>·<when>·<case>·<success> 안)
+```
+
+엔진은 위 자리들의 액션도 통째로 실행하지만(engine-v1.80.0) 그 자리에는 「누르는 순간」이 없어 이 키들만은 의미가 없다. 대신 감싸는 진입점에 단다(예: `<sequence :debounce="300">`). 마크업 굽기가 알린다 — `debounce` 는 lint `nested_action_debounce_ignored`, `key`·`stopPropagation` 은 lint `entry_only_key_ignored`, `confirm` 은 굽기 오류 `confirm_not_at_root`, `<init>` 의 네 키는 굽기 오류 `init_action_key_forbidden`. 마크업에서 키 필터는 `<on type="keydown" key="Enter">` 처럼 `<on>` 에 단다 — 안쪽 액션 태그에 `key="…"` 를 쓰면 그 핸들러의 `params.key` 로 들어가 키 필터가 되지 않으며 lint 도 잡지 못한다(`<on listen>` 의 `key` 속성은 굽기가 버린다). JSON 으로 직접 작성한 레이아웃은 검사하지 않는다 — 그 경우 이벤트 받기(onComponentEvent) 항목과 init 항목 루트의 `confirm` 은 엔진이 실제로 확인 창을 띄운다(두 자리는 진입점과 같은 실행 경로를 탄다). 의도한 것이 아니면 적지 않는다.
 
 ---
 

@@ -102,11 +102,11 @@
               <tr data-ref="range_tier_row_{{tierIdx}}" data-each="tier, tierIdx in {{_computed.activeCountrySetting?.ranges?.tiers ?? []}}">
                 <td>
                   <!-- 구간 시작값 — 나라 번호와 줄 번호를 **둘 다** 넘긴다(배열 안 배열이다). 빈 칸은 0 으로 굳힌다. -->
-                  <input type="number" class="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'input input-error bg-gray-100 dark:bg-gray-700' : 'input bg-gray-100 dark:bg-gray-700'}}" value="{{tier.min ?? ''}}" :readOnly="true" :tabIndex="-1" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.range_min_auto" disabled="{{_computed.isReadOnly}}"/>
+                  <input type="number" aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: tierIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_min')}}" class="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'input input-error bg-gray-100 dark:bg-gray-700' : 'input bg-gray-100 dark:bg-gray-700'}}" value="{{tier.min ?? ''}}" :readOnly="true" :tabIndex="-1" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.range_min_auto" disabled="{{_computed.isReadOnly}}"/>
                   <span data-if="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min}}" class="form-error-xs">{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ?? ''}}</span>
                 </td>
                 <td>
-                  <input type="number" class="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max ? 'input input-error' : 'input'}}" value="{{tier.max ?? ''}}" :min="0" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.range_unlimited" disabled="{{_computed.isReadOnly}}">
+                  <input type="number" aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: tierIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_max')}}" class="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max ? 'input input-error' : 'input'}}" value="{{tier.max ?? ''}}" :min="0" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.range_unlimited" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
                       <!-- 구간 끝값 — 시작값과 달리 빈 칸을 **`null`** 로 둔다. 마지막 구간의 '이상' (상한 없음)을 그렇게 적기 때문이고, 0 으로 굳히면 그 구간이 아무것도 담지 못한다. -->
                       <action handler="sirsoft-ecommerce.updateRangeTierField" :debounce="300" countryIndex="{{_local.activeCountryTab ?? 0}}" tierIndex="{{tierIdx}}" field="max" value="{{$event.target.value}}"/>
@@ -115,7 +115,7 @@
                   <span data-if="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max}}" class="form-error-xs">{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max ?? ''}}</span>
                 </td>
                 <td>
-                  <input type="number" class="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ? 'input input-error' : 'input'}}" value="{{tier.fee ?? ''}}" :min="0" :step="100" disabled="{{_computed.isReadOnly}}">
+                  <input type="number" aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: tierIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_fee')}}" class="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ? 'input input-error' : 'input'}}" value="{{tier.fee ?? ''}}" :min="0" :step="100" disabled="{{_computed.isReadOnly}}">
                     <on type="change">
                       <!-- 그 구간의 배송비 — 빈 칸은 0(무료)으로 굳힌다. -->
                       <action handler="sirsoft-ecommerce.updateRangeTierField" :debounce="300" countryIndex="{{_local.activeCountryTab ?? 0}}" tierIndex="{{tierIdx}}" field="fee" value="{{$event.target.value}}"/>
@@ -124,7 +124,7 @@
                   <span data-if="{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee}}" class="form-error-xs">{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ?? ''}}</span>
                 </td>
                 <td>
-                  <button data-if="{{!_computed.isReadOnly}}" type="button" class="btn-icon text-error" aria-label="$t:common.delete">
+                  <button data-if="{{!_computed.isReadOnly}}" type="button" class="btn-icon ecommerce-tone-error" aria-label="$t:common.delete">
                     <on type="click">
                       <!-- 구간 줄 삭제 — 지운 뒤 남은 줄들의 번호가 밀리므로 화면이 아니라 핸들러가 배열을 다시 만든다. -->
                       <action handler="sirsoft-ecommerce.removeRangeTier" countryIndex="{{_local.activeCountryTab ?? 0}}" tierIndex="{{tierIdx}}"/>
@@ -136,7 +136,7 @@
             </tbody>
           </table>
         </div>
-        <div data-if="{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length === 0}}" class="text-center text-sm text-gray-400 dark:text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+        <div data-if="{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length === 0}}" class="text-center text-sm text-gray-500 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
           <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.no_ranges</span>
           <span data-if="{{!!_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max}}" class="form-error-xs block">{{_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max ?? ''}}</span>
         </div>
@@ -213,7 +213,7 @@
             <span class="text-tertiary block">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_field_map_hint</span>
             <div data-each="mapOption, mapOptionIdx in {{(_computed.apiRequestFieldOptions ?? []).filter(o => (_computed.activeCountrySetting?.api_request_fields ?? []).includes(o.value))}}" class="grid grid-cols-2 gap-2 items-center">
               <span class="text-sm text-secondary">{{mapOption.label}}</span>
-              <input type="text" class="input text-sm font-mono" value="{{_computed.activeCountrySetting?.api_config?.field_map?.[mapOption.value] ?? ''}}" placeholder="{{mapOption.value}}" disabled="{{_computed.isReadOnly}}">
+              <input type="text" aria-label="{{mapOption.label}}" class="input text-sm font-mono" value="{{_computed.activeCountrySetting?.api_config?.field_map?.[mapOption.value] ?? ''}}" placeholder="{{mapOption.value}}" disabled="{{_computed.isReadOnly}}">
                 <on type="change">
                   <!-- 항목별 이름 바꾸기 — 우리 쪽 이름을 상대 API 가 기대하는 이름으로 옮기는 표다. 상대 API 를 우리 규약에 맞추라고 요구할 수 없어 이 표가 필요하다. -->
                   <action handler="sirsoft-ecommerce.updateApiFieldMap" :debounce="300" field="{{mapOption.value}}" value="{{$event.target.value}}"/>
@@ -270,9 +270,9 @@
           <!-- 테스트 호출 결과 미리보기 (성공/실패 무관하게 요청·응답 전체 노출) -->
           <div data-if="{{!!_global.apiTestResult}}" class="text-xs space-y-2 p-3 rounded-md bg-gray-100 dark:bg-gray-900 font-mono overflow-auto">
             <!-- 결과 요약 라인 — 추출 성공 / HTTP 응답 도달 / 호출 실패 -->
-            <div data-if="{{_global.apiTestResult?.extracted_fee !== null &amp;&amp; _global.apiTestResult?.extracted_fee !== undefined}}" class="text-green-600 dark:text-green-400 font-semibold">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_extracted|fee={{_global.apiTestResult?.extracted_fee_formatted ?? _global.apiTestResult?.extracted_fee ?? '-'}}</div>
-            <div data-if="{{(_global.apiTestResult?.extracted_fee === null || _global.apiTestResult?.extracted_fee === undefined) &amp;&amp; !!_global.apiTestResult?.response}}" class="text-amber-600 dark:text-amber-400 font-semibold">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_no_fee</div>
-            <div data-if="{{!_global.apiTestResult?.response}}" class="text-red-600 dark:text-red-400 font-semibold">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_failed</div>
+            <div data-if="{{_global.apiTestResult?.extracted_fee !== null &amp;&amp; _global.apiTestResult?.extracted_fee !== undefined}}" class="text-green-800 dark:text-green-400 font-semibold">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_extracted|fee={{_global.apiTestResult?.extracted_fee_formatted ?? _global.apiTestResult?.extracted_fee ?? '-'}}</div>
+            <div data-if="{{(_global.apiTestResult?.extracted_fee === null || _global.apiTestResult?.extracted_fee === undefined) &amp;&amp; !!_global.apiTestResult?.response}}" class="text-amber-700 dark:text-amber-400 font-semibold">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_no_fee</div>
+            <div data-if="{{!_global.apiTestResult?.response}}" class="text-red-700 dark:text-red-400 font-semibold">$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_failed</div>
             <!-- 요청 라인 — 메서드 + 엔드포인트 (항상) -->
             <div class="text-secondary break-all">{{_global.apiTestResult?.request?.method ?? ''}} {{_global.apiTestResult?.request?.endpoint ?? ''}}</div>
             <!-- 요청 본문 (전송 데이터) -->
@@ -286,7 +286,7 @@
               <pre class="whitespace-pre-wrap break-all text-secondary mt-1">{{_global.apiTestResult?.response?.body ?? ''}}</pre>
             </div>
             <!-- 호출 자체 실패 시 에러 메시지 -->
-            <div data-if="{{!!_global.apiTestResult?.error}}" class="text-red-600 dark:text-red-400 break-all">{{_global.apiTestResult?.error ?? ''}}</div>
+            <div data-if="{{!!_global.apiTestResult?.error}}" class="text-red-700 dark:text-red-400 break-all">{{_global.apiTestResult?.error ?? ''}}</div>
           </div>
         </div>
       </div>

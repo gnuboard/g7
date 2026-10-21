@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.1] - 2026-10-21
+
+### Added
+
+- KG이니시스 1.2.1 의 관리자 주문 상세 에스크로 배송 등록 택배사 이름 12개(`admin.escrow_couriers.*` — 「韓進宅配」「CJ大韓通運」 등)의 일본어 번역을 추가했습니다. 종전에는 일본어 화면에서도 택배사 이름이 한국어로 보였습니다.
+
 ## [1.2.0] - 2026-10-10
 
 ### Added

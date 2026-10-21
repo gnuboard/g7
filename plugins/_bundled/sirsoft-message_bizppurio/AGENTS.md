@@ -115,7 +115,9 @@ trait 의 전체 규칙과 조건부 검증(`validateContentConditionals`)을 �
 **알림 이력 연결**: 코어가 알림 발송 성공·실패를 기록하면
 (`core.notification_log.after_log_sent` / `after_log_failed`) `LinkNotificationLogListener`
 가 그 로그와 이 플러그인의 발송 기록을 연결합니다. 관리자 "알림 발송 이력" 화면에서 문자·
-알림톡 결과가 함께 보이는 것이 이 연결 덕분입니다.
+알림톡 결과가 함께 보이는 것이 이 연결 덕분입니다. 이 리스너는 **동기**(`'sync' => true`)로 둡니다 —
+드라이버가 같은 프로세스에 남긴 refkey 를 꺼내 쓰므로 큐로 보내면 연결이 항상 실패합니다(코어 7.1.1 부터
+코어 발송 로그도 동기 기록). `SendMessageJob` 은 이미 접수·확정된 refkey 를 다시 보내지 않습니다(재시도 중복 방지).
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -181,6 +183,7 @@ HookManager::addAction(
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] webhook 라우트를 추가·변경했다면 `getMiddleware()` 의 `targets` 에 그 라우트 이름을 함께 추가 (누락 시 인증 없는 공개 경로가 된다)
 - [ ] 결과 코드 분류(성공/재시도/잔액부족/영구실패)를 바꿨다면 `lang/{ko,en}/result_codes.php` 의 사유 문구도 함께 갱신
 - [ ] 코어 알림 시스템(채널 등록·발송 로그 훅)이 바뀌면 이 플러그인의 구독 4종이 조용히 끊기므로 함께 확인
@@ -211,10 +214,10 @@ HookManager::addAction(
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 43개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
-| Vitest | 19개 | `vitest.config.ts` |
+| PHPUnit | 46개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
+| Vitest | 24개 | `vitest.config.ts` |
 | Playwright | 3개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 19개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 26개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

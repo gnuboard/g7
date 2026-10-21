@@ -2,7 +2,7 @@
  * @file MemoCardOverride.test.tsx
  * @description Hello 모듈 MemoCard 대체본의 레이아웃 편집기 표식·요소 ID 패스스루 테스트
  *
- * 7.1.0 전수 실측 G3: 모듈 MemoCard 가 편집기 표식(`editorAttrs`)을 루트에 펼치지 않아 편집기 팔레트에서
+ * 7.1.0 전수 실측: 모듈 MemoCard 가 편집기 표식(`editorAttrs`)을 루트에 펼치지 않아 편집기 팔레트에서
  * 꺼낸 카드를 편집기가 찾지 못했다. 이 템플릿의 대체본도 같은 마크업 표면을 받으므로 같은 계약을 지킨다.
  *
  * @scenario-manifest tests/scenarios/memo-card-override-editor-attrs.yaml

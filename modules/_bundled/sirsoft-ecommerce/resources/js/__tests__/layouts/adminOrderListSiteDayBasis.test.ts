@@ -73,8 +73,9 @@ describe('대시보드 배지로 연 주문 목록 — 사이트 하루 기준 �
   it('배지 링크 7개가 모두 date_basis=site 를 싣는다', () => {
     const paths: string[] = collect(
       extension,
-      (n) => n.handler === 'navigate' && typeof n.params?.path === 'string' && n.params.path.includes('start_date='),
-    ).map((n) => n.params.path);
+      // 배지는 링크다(#757 WP-L) — 주소는 A 의 href 한 곳에 있고 클릭 navigate 는 path 없이 그 href 로 간다
+      (n) => n.name === 'A' && typeof n.props?.href === 'string' && n.props.href.includes('start_date='),
+    ).map((n) => n.props.href);
 
     expect(paths.length).toBe(7);
     for (const p of paths) {

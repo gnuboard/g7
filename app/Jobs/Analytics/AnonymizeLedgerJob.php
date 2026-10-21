@@ -1,17 +1,25 @@
 <?php
 
+// audit:allow job-generator-needs-scale-test 큐 배치·단일 실행 가드만 추가 — 처리 규모 경로 무변경
+
 namespace App\Jobs\Analytics;
 
 use App\Analytics\AnalyticsClock;
 use App\Enums\Analytics\ArchiveRunType;
 use App\Services\Analytics\AnonymizeService;
 use App\Services\Analytics\StaleRunService;
+use App\Services\Queue\QueueWorkerRegistry;
+use App\Support\Queue\JobSingleFlight;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\MaxAttemptsExceededException;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\TimeoutExceededException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -32,9 +40,28 @@ class AnonymizeLedgerJob implements ShouldQueue
     /**
      * 재시도 횟수
      *
-     * 익명화는 되돌릴 수 없는 변경이라 자동 재시도로 같은 구간을 두 번 훑지 않는다.
+     * 익명화는 되돌릴 수 없는 변경이라 자동 재시도로 같은 구간을 두 번 훑지 않는다 — 진짜 예외는
+     * maxExceptions = 1 로 한 번에 실패한다. 1 이 아니라 3 인 이유는 ArchiveRangeJob 과 같다(#139): 다른 워커가
+     * 다시 집은 사본이 handle 에 들어와 단일 실행 잠금에 막혀 조용히 끝나게 하려는 것이다.
      */
-    public int $tries = 1;
+    public int $tries = 3;
+
+    /**
+     * 실패로 처리할 예외 횟수 — 재예약 사본은 예외가 아니라 세지 않는다
+     */
+    public int $maxExceptions = 1;
+
+    /**
+     * 제한 시간 초과는 재시도 없이 실패로 — 같은 프로세스의 failed() 가 이력을 닫는다
+     */
+    public bool $failOnTimeout = true;
+
+    /**
+     * 디스패치 때 만든 단일 실행 ID
+     *
+     * 옛 payload(이 프로퍼티가 없던 판)는 '' 로 읽혀 가드 없이 종전처럼 돈다.
+     */
+    public string $dispatchId = '';
 
     /**
      * 잡을 큐에 올린 시각 (UTC, Y-m-d H:i:s)
@@ -61,15 +88,51 @@ class AnonymizeLedgerJob implements ShouldQueue
         private readonly ?int $triggeredBy = null,
     ) {
         $this->queuedAt = AnalyticsClock::now()->toDateTimeString();
+        $this->dispatchId = (string) Str::uuid();
+
+        // 긴 작업 연결·큐가 등록돼 있으면 그쪽으로 (#139)
+        if (($placement = app(QueueWorkerRegistry::class)->longPlacement()) !== null) {
+            $this->onConnection($placement['connection']);
+            $this->onQueue($placement['queue']);
+        }
     }
 
     /**
      * 잡을 실행합니다.
      *
+     * 다른 워커가 같은 잡을 다시 집었으면(재예약 사본) 단일 실행 잠금에 막혀 아무 일도 하지 않고 끝난다.
+     *
      * @param  AnonymizeService  $service  익명화 서비스
      * @return void 없음
      */
     public function handle(AnonymizeService $service): void
+    {
+        if ($this->dispatchId === '') {
+            $this->process($service);
+
+            return;
+        }
+
+        $ran = JobSingleFlight::run(
+            JobSingleFlight::key(self::class, $this->dispatchId),
+            $this->timeout + 120,
+            fn () => $this->process($service),
+        );
+
+        if (! $ran) {
+            Log::info('소급 익명화 잡: 다른 워커가 아직 실행 중인 사본이라 조용히 끝냅니다', [
+                'dispatch_id' => $this->dispatchId,
+            ]);
+        }
+    }
+
+    /**
+     * 소급 익명화를 수행합니다.
+     *
+     * @param  AnonymizeService  $service  익명화 서비스
+     * @return void 없음
+     */
+    private function process(AnonymizeService $service): void
     {
         $service->anonymize([
             'mask_octets' => $this->maskOctets,
@@ -92,6 +155,18 @@ class AnonymizeLedgerJob implements ShouldQueue
      */
     public function failed(Throwable $exception): void
     {
+        // 재예약이 거듭돼 시도 횟수가 다 찬 사본은 원본이 아직 도는 중이다 — 이력을 닫지 않는다(#139).
+        if ($exception instanceof MaxAttemptsExceededException
+            && ! $exception instanceof TimeoutExceededException
+            && $this->dispatchId !== ''
+            && JobSingleFlight::isHeld(JobSingleFlight::key(self::class, $this->dispatchId))) {
+            Log::info('소급 익명화 잡: 다른 워커가 아직 실행 중인 사본의 시도 초과라 실행 이력을 닫지 않습니다', [
+                'dispatch_id' => $this->dispatchId,
+            ]);
+
+            return;
+        }
+
         app(StaleRunService::class)->failOrphansOf(
             ArchiveRunType::Anonymize->value,
             Carbon::parse($this->queuedAt, 'UTC'),

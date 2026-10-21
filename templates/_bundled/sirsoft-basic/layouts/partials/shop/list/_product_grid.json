@@ -40,7 +40,7 @@
             "comment": "빈 상태",
             "type": "basic",
             "name": "Div",
-            "if": "{{(products?.data?.data ?? []).length === 0}}",
+            "if": "{{products !== undefined && (products?.data?.data ?? []).length === 0}}",
             "props": {
                 "className": "flex flex-col items-center justify-center py-20 px-4 my-16"
             },
@@ -58,7 +58,7 @@
                             "props": {
                                 "name": "search",
                                 "size": "2x",
-                                "className": "text-gray-400 dark:text-gray-500"
+                                "className": "text-gray-500 dark:text-gray-400"
                             }
                         }
                     ]
@@ -75,7 +75,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-gray-400 dark:text-gray-500"
+                        "className": "text-sm text-gray-500 dark:text-gray-400"
                     },
                     "text": "$t:shop.no_search_results"
                 }
@@ -93,13 +93,12 @@
                 {
                     "comment": "이전 페이지 버튼",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "{{route.path}}",
                                 "mergeQuery": true,
                                 "query": {
                                     "page": "{{(products?.data?.pagination?.current_page ?? 1) - 1}}"
@@ -108,9 +107,10 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
+                        "href": "{{route.path}}?page={{(products?.data?.pagination?.current_page ?? 1) - 1}}",
+                        "mergeQuery": true,
                         "aria-label": "$t:common.prev",
-                        "className": "p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.current_page ?? 1) <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer'}}",
+                        "className": "inline-flex items-center justify-center p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.current_page ?? 1) <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer'}}",
                         "disabled": "{{(products?.data?.pagination?.current_page ?? 1) <= 1}}"
                     },
                     "children": [
@@ -136,13 +136,12 @@
                 {
                     "comment": "다음 페이지 버튼 — 이동 가능 여부는 총 건수와 무관하게 has_more_pages 가 정확히 말해 준다. last_page 로 판정하면 그 값이 null 인 목록에서 첫 페이지부터 비활성이 된다",
                     "type": "basic",
-                    "name": "Button",
+                    "name": "A",
                     "actions": [
                         {
                             "type": "click",
                             "handler": "navigate",
                             "params": {
-                                "path": "{{route.path}}",
                                 "mergeQuery": true,
                                 "query": {
                                     "page": "{{(products?.data?.pagination?.current_page ?? 1) + 1}}"
@@ -151,9 +150,10 @@
                         }
                     ],
                     "props": {
-                        "type": "button",
+                        "href": "{{route.path}}?page={{(products?.data?.pagination?.current_page ?? 1) + 1}}",
+                        "mergeQuery": true,
                         "aria-label": "$t:common.next",
-                        "className": "p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.has_more_pages ?? false) ? 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer' : 'opacity-50 cursor-not-allowed'}}",
+                        "className": "inline-flex items-center justify-center p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.has_more_pages ?? false) ? 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer' : 'opacity-50 cursor-not-allowed'}}",
                         "disabled": "{{!(products?.data?.pagination?.has_more_pages ?? false)}}"
                     },
                     "children": [

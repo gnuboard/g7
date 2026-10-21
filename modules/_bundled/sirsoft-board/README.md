@@ -5,9 +5,9 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.0-0066FF?style=flat-square" alt="version 1.2.0">
+  <img src="https://img.shields.io/badge/version-1.2.1-0066FF?style=flat-square" alt="version 1.2.1">
   <img src="https://img.shields.io/badge/type-%EB%AA%A8%EB%93%88-555555?style=flat-square" alt="type 모듈">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.0">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.1-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.1">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -69,7 +69,7 @@ flowchart LR
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.1.0` |
+| 그누보드7 코어 | `>=7.1.1` |
 | PHP | `^8.2` |
 <!-- @generated:requirements END -->
 
@@ -120,6 +120,24 @@ _별도의 관리자 설정 항목이 없습니다._
 **여러 게시판 설정 일괄 변경**: 예를 들어 전체 게시판의 첨부 용량 상한을 한 번에 올리고 싶으면,
 게시판 목록에서 대상 게시판을 체크한 뒤 "설정 일괄 적용" 모달에서 첨부 탭 값만 바꿔 적용합니다.
 다른 탭 값은 그대로 유지되고, 체크한 게시판에만 반영됩니다.
+
+**비밀글 답변 열람 범위**: 비밀글은 제목은 공개하고 본문만 가립니다. 본문을 여는 사람은 작성자,
+비밀번호를 확인한 사람(비회원 글), 「비밀글 조회」 권한자(역할의 범위 — 전체·소유역할·본인만 — 까지
+적용), 게시판 관리자입니다. 답변형 게시판에서는 게시글 설정의 「비밀 답변 열람 범위」에 따라 스레드
+안에서 더 열립니다. 원글 A 아래 답변 B·C, B 아래 D, C 아래 E 가 있을 때:
+
+| 열람자 | 경로 규칙(기본) | 하위만 | 답변마다 따로 |
+| --- | --- | --- | --- |
+| A 작성자 또는 A 비밀번호 확인자 | A·B·C·D·E | A·B·C·D·E | A |
+| B 작성자 | A·B·D | B·D | B |
+| E 비밀번호 확인자(비회원 E) | A·C·E | E | E |
+| 아무 글도 쓰지 않은 회원 | 없음 | 없음 | 없음 |
+| 비밀글 조회(전체)·게시판 관리자 | 전부 | 전부 | 전부 |
+
+형제 가지(B 와 C)는 서로 열리지 않습니다. 삭제한 답변은 더는 열람 근거가 되지 않고, 공개로 쓴 원글을
+나중에 비밀글로 바꿔도 기존 답변 작성자는 계속 봅니다. 답변 주소로 바로 들어온 비회원은 원글 비밀번호로
+답변을 열 수 있고, 비밀번호 확인은 브라우저 탭을 닫을 때까지 유지됩니다. 비밀글 아래 답변은 그 위의
+비밀글을 지금 볼 수 있는 사람만 달 수 있습니다.
 <!-- @intent END -->
 
 ## 다른 확장과의 연동
@@ -133,7 +151,7 @@ _별도의 관리자 설정 항목이 없습니다._
 
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
-| `sirsoft-basic` | 템플릿 | `>=1.2.0` |
+| `sirsoft-basic` | 템플릿 | `>=1.2.1` |
 
 **이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)
 

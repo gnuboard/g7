@@ -46,7 +46,7 @@ effects:
   - absent_cache_falls_back_to_scan_registration
   - corrupted_cache_returns_null_and_falls_back_to_scan
   - testing_env_always_scans_ignoring_cache_file
-  # 형식 표지 (7.1.0 출시 점검 U1-1 — 7.0.x 가 옛 리스너로 구운 캐시 자동 무효화)
+  # 형식 표지 (7.1.0 출시 점검 — 7.0.x 가 옛 리스너로 구운 캐시 자동 무효화)
   - unmarked_legacy_cache_falls_back_to_scan
   - cache_from_other_core_version_falls_back_to_scan
   - generate_records_format_and_core_version_markers
@@ -58,6 +58,8 @@ effects:
   - generate_produces_three_bucket_cache_core_modules_plugins
   - each_cache_entry_has_listener_hooks_and_dynamic_keys
   - listener_class_not_autoloaded_at_boot_when_registered_from_cache
+  # #725 — 업데이트가 리스너 클래스를 지운 프로세스에서 옛 구독이 발화해도 그 리스너만 건너뛴다
+  - listener_removed_by_update_is_skipped_without_failing_the_hook
   # 재생성 (무효화=재생성)
   - extension_update_regenerates_hook_cache_via_updateComposerAutoload
   - core_update_regenerates_hook_cache_via_clearAllCaches_extension_update_autoload
@@ -65,6 +67,8 @@ effects:
   - hooks_clear_command_removes_cache_file
   - hooks_clear_is_safe_when_cache_absent
   - removed_core_listener_dropped_from_cache_after_regeneration
+  # #139 — 리스너 큐 옵션(queue 키)이 캐시 경로에서도 그대로 살아남는다
+  - queue_options_survive_cache_round_trip
   # 별도 프로세스 복구 수단 (extension:update-autoload)
   - update_autoload_command_regenerates_hook_cache_after_reregistering_autoload
   - update_autoload_command_runs_without_required_arguments
@@ -72,6 +76,7 @@ effects:
 test_files:
   - tests/Unit/Extension/HookCacheManagerTest.php
   - tests/Unit/Extension/HookListenerRegistrarTest.php
+  - tests/Unit/Extension/HookListenerMissingClassTest.php
   - tests/Feature/Console/HooksCacheCommandTest.php
   - tests/Unit/Services/NotificationDefinitionServiceTest.php
   - tests/Feature/Extension/ExtensionUpdateAutoloadHookCacheTest.php

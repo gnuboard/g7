@@ -207,6 +207,7 @@
                                             ],
                                             "props": {
                                                 "name": "bulkTrackingCarrier",
+                                                "aria-label": "$t:common.row_cell|row={{trackRow.claim_number ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder')}}",
                                                 "className": "w-32 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
                                                 "value": "{{trackRow.carrier_id ?? ''}}",
                                                 "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.shipping.carrier_placeholder'), disabled: true }].concat(_global.claimBulkConfirmData?.carriers ?? [])}}"
@@ -230,6 +231,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "name": "bulkTrackingNumber",
+                                                "aria-label": "$t:common.row_cell|row={{trackRow.claim_number ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder')}}",
                                                 "maxLength": 50,
                                                 "className": "w-40 px-2 py-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.shipping.tracking_placeholder",
@@ -319,7 +321,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
                         "disabled": "{{!_global.claimBulkConfirmData?.status || (_global.claimBulkConfirmData?.ids ?? []).length === 0 || _global.isProcessing || (_global.claimBulkConfirmData?.trackings ?? []).some(r => !r.carrier_id || !(r.tracking_number ?? '').trim())}}"
                     },
                     "children": [

@@ -11,13 +11,13 @@ use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
 /**
- * 게시판 관리자 게시글·댓글 화면의 서버 판정 회귀 테스트 (7.1.0 abilities 게이트 최종 점검 board-admin-b)
+ * 게시판 관리자 게시글·댓글 화면의 서버 판정 회귀 테스트 (7.1.0 abilities 게이트 최종 점검)
  *
- * - 댓글 본인 판정 권한명이 config 에 없는 'admin.write' 라 댓글 쓰기 권한만 가진 작성자도 자기 댓글을 못 고쳤다(#1)
- * - 관리자 글 저장·수정 API 가 공지 지정 권한을 보지 않아 본문에 is_notice 를 넣으면 공지가 등록됐다(S1·G30)
+ * - 댓글 본인 판정 권한명이 config 에 없는 'admin.write' 라 댓글 쓰기 권한만 가진 작성자도 자기 댓글을 못 고쳤다
+ * - 관리자 글 저장·수정 API 가 공지 지정 권한을 보지 않아 본문에 is_notice 를 넣으면 공지가 등록됐다
  * - 그 판정이 관리 권한(admin.manage)만 인정해 공지 등록 권한(posts.write-notice)자는 사용자 경로에선 되는 공지를
- *   관리자 경로에선 지정하지 못했다 — 사용자 경로와 같은 판정(canSetNotice)으로 맞추고 form-meta 가 can_write_notice 를 싣는다(B7-2)
- * - 남의 글 수정 폼이 열린 채 편집되고 저장할 때만 403 이었다 — form-meta 가 저장과 같은 판정(can_modify)을 싣는다(#4)
+ *   관리자 경로에선 지정하지 못했다 — 사용자 경로와 같은 판정(canSetNotice)으로 맞추고 form-meta 가 can_write_notice 를 싣는다
+ * - 남의 글 수정 폼이 열린 채 편집되고 저장할 때만 403 이었다 — form-meta 가 저장과 같은 판정(can_modify)을 싣는다
  *
  * 시나리오 축·효과는 매니페스트 tests/scenarios/board-admin-post-comment-gate.yaml 참조.
  */
@@ -257,7 +257,7 @@ class AdminPostCommentAbilityGateTest extends BoardTestCase
 
     /**
      * 공지 등록 권한만 있고 관리 권한이 없어도 관리자 글 등록·수정으로 공지를 지정·해제할 수 있다 — 사용자 경로
-     * (canSetNotice)와 같은 판정이다(B7-2 회귀 잠금).
+     * (canSetNotice)와 같은 판정이다(회귀 잠금).
      *
      * @scenario case=notice_with_write_notice_only
      *

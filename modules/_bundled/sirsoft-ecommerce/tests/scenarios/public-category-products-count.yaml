@@ -1,0 +1,37 @@
+feature: 공개 카테고리 API — 활성 트리·slug 상세와 전시 상품 기준 상품 수
+
+description: |
+  공개 카테고리 트리(GET /categories)·slug 상세(GET /categories/{slug})는 활성 카테고리만 내보내고,
+  products_count 는 공개 상품 목록(getPublicList)과 같은 기준인 전시 상품(display_status=visible)만 센다.
+  숨김 상품까지 세면 메뉴 숫자와 목록 건수가 어긋난다(2026-10-18 실측). 관리자 트리(Category::getTree 기존 호출)는
+  연결된 상품 전부를 계속 센다 — 기준마다 트리 캐시 키가 갈리고, 상품 일괄 변경 뒤 두 캐시가 함께 비워진다.
+  축은 의미 있는 경우만 나열한다(비활성 카테고리의 상품 수·관리자 slug 상세처럼 존재하지 않는 조합을 곱으로 만들지 않는다).
+
+axes:
+  case:
+    - index_inactive_excluded     # 트리 — 비활성 카테고리 제외
+    - index_empty                 # 트리 — 활성 카테고리 없음
+    - index_hierarchy             # 트리 — 부모에 자식 중첩
+    - index_without_auth          # 트리 — 인증 없이 200
+    - show_by_slug                # 상세 — slug 조회·설명·부모 ID
+    - show_missing_404            # 상세 — 없는 slug 404
+    - show_inactive_404           # 상세 — 비활성 카테고리 404
+    - show_active_children        # 상세 — 활성 자식만
+    - show_children_count         # 상세 — 자식 수는 연결된 자식 전부(7.1.0 과 같음)
+    - show_breadcrumb             # 상세 — 3단 브레드크럼
+    - index_hidden_excluded       # 트리 상품 수 — 숨김 상품 제외(부모·자식)
+    - show_hidden_excluded        # 상세 상품 수 — 숨김 상품 제외(자신·자식)
+    - index_hide_then_recount     # 일괄 숨김 직후 캐시된 공개 트리 감소
+    - admin_tree_includes_hidden  # 관리자 트리 상품 수는 숨김 포함
+
+effects:
+  - public_tree_returns_active_only              # 비활성 카테고리 제외·계층 중첩
+  - public_show_returns_active_category          # slug 상세·활성 자식·브레드크럼·404
+  - public_show_children_count_counts_all_children # slug 상세 children_count = 연결된 자식 전부
+  - public_api_without_auth                      # 인증 없이 200
+  - public_products_count_excludes_hidden        # 공개 트리·상세 상품 수 = 전시 상품만
+  - public_products_count_drops_after_hiding     # 일괄 숨김 직후 캐시된 공개 트리 감소
+  - admin_products_count_includes_hidden         # 관리자 트리 상품 수는 숨김 포함
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Public/PublicCategoryControllerTest.php

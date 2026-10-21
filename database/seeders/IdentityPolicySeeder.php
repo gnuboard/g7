@@ -17,14 +17,14 @@ class IdentityPolicySeeder extends Seeder
 {
     public function run(): void
     {
-        $this->command?->info('코어 본인인증 정책 시딩 시작...');
+        $this->command?->info(__('common.console.seeders.identity_policy.start'));
 
         $helper = app(IdentityPolicySyncHelper::class);
         $policies = config('core.identity_policies', []);
         $definedKeys = [];
 
         if (empty($policies)) {
-            $this->command?->warn('config/core.php 에 identity_policies 선언이 없습니다.');
+            $this->command?->warn(__('common.console.seeders.identity_policy.no_definitions'));
 
             return;
         }
@@ -44,9 +44,9 @@ class IdentityPolicySeeder extends Seeder
 
         $removed = $helper->cleanupStalePolicies('core', 'core', $definedKeys);
         if ($removed > 0) {
-            $this->command?->line("  - stale 정책 {$removed}개 정리");
+            $this->command?->line('  - '.__('common.console.seeders.identity_policy.stale_removed', ['count' => $removed]));
         }
 
-        $this->command?->info('코어 본인인증 정책 시딩 완료: '.count($definedKeys).'개');
+        $this->command?->info(__('common.console.seeders.identity_policy.done', ['count' => count($definedKeys)]));
     }
 }

@@ -75,7 +75,14 @@ describe('편집기 쇼핑 사용자 창 표본', () => {
      * @effects user_modal_samples_render
      */
     it('첨부 사진 보기 창 표본이 그림 주소를 채운다', () => {
-        expect(isImageUrl(sampleFor('modal_claim_image_viewer')?.local?.claimImageViewerUrl)).toBe(true);
+        // 창은 창 고유 전역 이름 공간(_global.claimImageViewer)만 읽는다 — 표본이 옛 지역 키에 남으면 빈 창이 된다(7.1.1 전환).
+        const viewer = readFileSync(join(TEMPLATE_ROOT, 'layouts/partials/mypage/claims/_modal_image_viewer.g7.html'), 'utf8');
+        expect(viewer).toContain('_global.claimImageViewer?.url');
+        expect(viewer).toContain('_global.claimImageViewer?.name');
+        const sample = sampleFor('modal_claim_image_viewer');
+        expect(isImageUrl(sample?.global?.claimImageViewer?.url)).toBe(true);
+        expect(String(sample?.global?.claimImageViewer?.name ?? '').trim()).not.toBe('');
+        expect(sample?.local?.claimImageViewerUrl).toBeUndefined();
     });
 
     /**

@@ -1,0 +1,26 @@
+feature: 디바운스 창 안에서 누른 액션이 flush 뒤의 _computed 와 2단 디바운스 사슬의 결과를 읽는다 (engine-v1.81.2, 7.1.1)
+
+description: |
+  비디바운스 액션 직전 flush 는 대기 중 디바운스를 실행하고 액션의 `_local` 을 최신으로 바꾼다(사례 51). 그런데 `_computed` 는 렌더 시점
+  값이었고(식 평가가 액션 문맥의 computedRef 로 다시 덮음), flush 는 레지스트리 복사본을 한 번만 돌아 실행한 대기 쓰기가 새로 건
+  디바운스(그 칸의 debounce change 동작)는 이 액션 뒤에 실행됐다(7.1.0 에도 있음). 축 case 는 단일 동작·sequence 첫 단계·2단 사슬·
+  자기 재예약(회차 제한), 대조군은 디바운스가 끝난 뒤 누른 동작이다.
+
+axes:
+  case: [single_action_computed, sequence_first_step_computed, await_step_reads_live_computed, no_flush_control, two_stage_chain, self_rescheduling_bounded]
+
+effects:
+  - action_reads_flushed_computed  # flush 뒤 `_local` 로 다시 계산한 `_computed` 를 읽는다
+  - no_flush_unchanged             # flush 가 없으면 종전처럼 렌더된 `_computed`
+  - action_reads_second_stage      # 2단 사슬의 뒤 단계까지 같은 flush 에서 실행된다
+  - flush_terminates               # 같은 디바운스를 되풀이해 거는 동작도 flush 가 끝난다(5회차)
+  - later_step_reads_live_computed # flush 시점 값은 렌더 전까지만 — await 뒤 단계는 다시 그려진 최신 `_computed` 를 읽는다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.flushComputedChain.test.tsx
+
+validation:
+  browser_check: 재실측 — 디바운스 폼(관리자 상품 수정) 입력 직후 0.1초 안 저장의 본문(번들 저장은 setState 로 시작해 영향 없음 — 회귀 확인)
+  note: |
+    fail-first: withFlushedComputed 를 끄면 single_action_computed·sequence_first_step_computed 가 red(옛 값 P100),
+    flush 회차 반복을 1회로 되돌리면 two_stage_chain 이 red(D100), 회차 제한을 없애면 self_rescheduling_bounded 가 끝나지 않는다.

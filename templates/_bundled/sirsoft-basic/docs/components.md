@@ -113,7 +113,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
-| `A` | 앵커/링크 | href | - |
+| `A` | 앵커/링크 — 레이아웃 클릭 액션이 없으면 같은 출처 주소의 보통 클릭만 SPA 로 옮기고, 수정키·가운데 단추는 브라우저 기본(새 탭). `disabled` 면 href 를 빼고 `aria-disabled`, `mergeQuery` 면 현재 쿼리를 href 에 합친다. `fallbackHref` 를 주면 이 사이트 주소가 아닌 href(실행 주소·다른 사이트·`//host`)를 그 대체 주소로 바꾼다(알림 이동 주소처럼 바깥에서 정해지는 href). `target="_blank"` 면 rel 에 `noopener noreferrer` 를 합친다 | href, disabled, mergeQuery, fallbackHref, target, rel | - |
 | `H1` | 제목 (h1) | - | - |
 | `H2` | 제목 (h2) | - | - |
 | `H3` | 제목 (h3) | - | - |
@@ -138,7 +138,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | 컴포넌트 | 설명 | 주요 Props | 바인딩 |
 |----------|------|-----------|--------|
 | `Input` | 텍스트 입력 | label, error | checkable |
-| `Select` | 선택 박스. `searchable` 이면 펼침 목록 위에 검색칸이 생기고, 검색칸 안내·화면 읽기 이름·「결과 없음」 문구는 `searchPlaceholder` 가 없으면 화면 언어(`common.search_placeholder`·`common.search`·`common.no_results`)를 따른다 | label, error, options, searchable, searchPlaceholder | - |
+| `Select` | 선택 박스. `searchable` 이면 펼침 목록 위에 검색칸이 생기고, 검색칸 안내·화면 읽기 이름·「결과 없음」 문구는 `searchPlaceholder` 가 없으면 화면 언어(`common.search_placeholder`·`common.search`·`common.no_results`)를 따른다. `options` 로 그리는 목록형은 `aria-label`(또는 `aria-labelledby`)을 단추에 이어 「{이름} {현재 값}」으로 읽힌다 — `placeholder`·`title` 은 단추 이름이 되지 않는다 | label, error, options, searchable, searchPlaceholder, aria-label, aria-labelledby | - |
 | `Option` | Select 내부 옵션 | value, disabled | - |
 | `Textarea` | 텍스트 영역 | label, error | - |
 | `Checkbox` | 체크박스 | label | checked |
@@ -191,7 +191,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `ProductCard` | 상품 카드 (이미지, 제목, 가격) | product, showDiscount |
+| `ProductCard` | 상품 카드 (이미지, 제목, 가격) — `onClick` 이 없으면 카드 전체가 상세 주소 링크(`preserveListQuery` 면 현재 쿼리도 href 에) | product, showDiscount |
 | `ProductImageViewer` | 상품 이미지 뷰어 (메인 + 썸네일 + 라이트박스) | images |
 | `QuantitySelector` | 수량 선택기 (+/- 버튼). 범위 밖 직접 입력은 min~max 로 고쳐 올리고, 칸에는 늘 고친 값을 보인다(고친 값이 지금 값과 같아도) | value, min, max |
 
@@ -239,8 +239,8 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `TabNavigation` | 탭 네비게이션 (underline/pills/enclosed) | tabs, activeTabId, variant, onTabChange, hiddenTabIds |
-| `Pagination` | 페이지네이션 | currentPage, totalPages, maxVisiblePages, showFirstLast, prevText, nextText |
+| `TabNavigation` | 탭 네비게이션 (underline/pills/enclosed) — 탭 항목에 `href` 를 주면 `<a role="tab">` 로 그려 새 탭으로 열 수 있다(보통 클릭은 onTabChange) | tabs, activeTabId, variant, onTabChange, hiddenTabIds, tabHrefMergeQuery(탭 주소에 현재 쿼리를 합침) |
+| `Pagination` | 페이지네이션 — `pageHref`(`{page}` 자리표시자)를 주면 번호·이전·다음이 링크(현재 쪽 `aria-current`), `pageHrefMergeQuery` 면 현재 쿼리 합침 | currentPage, totalPages, maxVisiblePages, showFirstLast, prevText, nextText, pageHref, pageHrefMergeQuery |
 
 > **TabNavigation `hiddenTabIds`**: 특정 조건에서 탭을 동적으로 숨길 때 사용합니다. 탭 아이템의 `id` 배열을 전달하면 해당 탭이 렌더링에서 제외됩니다.
 > ```json
@@ -260,6 +260,8 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 
 - `Modal` 의 Esc 는 **창 안에 펼친 팝업이 있으면 팝업만 닫는다**(관리자 템플릿과 같은 규칙). 펼친 팝업은 `aria-haspopup` 과 `aria-expanded="true"` 를 함께 단 요소로 판정하므로, 창 안 드롭다운·메뉴는 이 두 속성을 트리거에 달고 자기 Esc 처리로 닫아야 한다. 키를 누른 순간(캡처 단계)의 펼침 여부로 판정하고, `aria-haspopup` 없는 펼침과 창 밖 팝업은 창 닫기를 막지 않는다. 회귀 테스트: `src/components/composite/__tests__/Modal.popupEscape.test.tsx`.
 - **아이콘 단추와 상태 영역의 접근 이름**: `ThemeToggle` 단추는 `common.theme_select`(펼침 여부는 `aria-expanded`), `NotificationCenter` 항목 삭제 단추는 `common.delete_notification`, `PageSkeleton` 상태 영역은 `common.loading` 을 이름으로 단다. 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다. 이 이름을 영문 문자열로 되돌려 박지 않는다(한국어, 일본어 화면에서 영어로 읽힌다). 회귀 테스트: `src/components/composite/__tests__/AccessibleNameI18n.test.tsx`.
+- **화면 이동은 링크로 그린다**: 머리글 메뉴·로고·장바구니·회원 메뉴, 모바일 서랍, 꼬리말 링크, 프로필로 가는 회원 이름, 상품 카드, 페이지 번호(`pageHref`), 탭(`href`)은 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 된다. 보통 클릭(왼쪽 단추·수정키 없음)만 지금처럼 SPA 로 옮기고 나머지는 브라우저 기본 동작이다. 판정은 엔진 `G7Core.navigation.isPlainLeftClick`·`mergeQueryIntoHref` 에 맡긴다(`src/support/navigationLink.ts`). 레이아웃에서 직접 옮기는 자리는 `<a href="…">` + 경로 없는 `<navigate/>` 로 쓴다. 회귀 테스트: `src/components/composite/__tests__/NavigationLinks.test.tsx`.
+- **입력칸 이름은 레이아웃이 단다**: 이 템플릿에는 칸 옆 제목을 이름으로 잇는 자동 연결이 없다. 입력칸·선택칸·체크박스는 보이는 제목의 문구 키를 `aria-label` 로 직접 달고(예: `aria-label="$t:mypage.profile.country"`), 체크박스와 옆 글자는 `<label>` 하나로 감싼다(글자를 눌러도 체크). 목록 줄 체크박스는 `common.select_item`(`{{name}}`), 줄 안 칸은 `common.row_cell`(`{{row}}`·`{{column}}`), 제목 없는 정렬·검색 대상 선택칸은 `common.sort_order`·`common.search_field`. 회귀 테스트: `__tests__/layouts/control-accessible-names.test.ts`(레이아웃 전수 이름 없는 칸 0), `src/components/basic/__tests__/Select.accessibleName.test.tsx`.
 - **꾸밈 아이콘과 아이콘만 있는 단추**: `Icon` 은 `ariaLabel` 을 받으면 `role="img"` 와 그 이름으로 읽히고, 받지 않으면 꾸밈이라 `aria-hidden="true"` 로 숨는다(글리프 이름을 이름으로 만들지 않는다). 아이콘만 담은 단추와 링크는 단추 자신에 이름(`aria-label`)을 문구 키로 단다. 레이아웃 예: 삭제 `common.delete`, 뒤로가기 `common.back`, 더보기 `common.more`, 이전과 다음 `common.prev`/`common.next`, 펼치기와 접기 `common.expand`/`common.collapse`(펼침 여부는 `aria-expanded`), 찜 `shop.product.add_to_wishlist`/`remove_from_wishlist`, 리뷰 별점 `mypage.order_detail.review_modal.rating_star`(`{{count}}`). 기본 문구도 키를 따른다: `FileInput`(`common.file_input.*`), `ThemeToggle` 메뉴(`common.theme.auto`/`light`/`dark`), `Select` 검색칸(`common.search_placeholder`, `common.search`, `common.no_results`), `AvatarUploader` 미리보기 대체 글 `mypage.profile.avatar_preview`. 번역이 없거나 엔진 밖이면 종전 영문을 쓴다. 회귀 테스트: `src/components/basic/__tests__/Icon.a11y.test.tsx`, `src/components/composite/__tests__/IconOnlyControlNames.test.tsx`(번들 레이아웃 정적 대조 포함).
 
 #### 페이지 전환

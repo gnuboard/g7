@@ -1,0 +1,27 @@
+# 시나리오 매니페스트 — CKEditor5 환경설정 화면의 의미 클래스가 제자리에 붙어 있다 (#408 회귀, 7.1.1 미리보기 머리 단추화 후속)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: ckeditor5_plugin_settings_semantic_classes
+
+description: >-
+  관리자 템플릿 의미 클래스 도입(#408) 때 치환이 한 칸씩 밀려 입력 칸 줄에 섹션 제목 클래스가, 섹션 제목에 오류 강조 클래스가,
+  오류 목록 줄에 3열 그리드 클래스가 붙었다(라벨·입력이 위아래로 쌓이고 섹션 제목이 붉게 보였다). 레이아웃 JSON 에서 세 자리의
+  클래스를 잠근다. 7.1.1 에서 「미리보기」 구역 제목이 h3 안의 펼침 단추 글자(span)로 바뀌어 그 글자도 같은 섹션 제목 계약을 진다.
+
+test_files:
+  - plugins/_bundled/sirsoft-ckeditor5/resources/js/__tests__/layouts/pluginSettingsSemanticClasses.test.ts
+
+axes:
+  region:
+    - field_row         # 입력 칸 줄(field_*)
+    - section_heading   # 섹션 제목(h3 글자 또는 h3 안 펼침 단추의 span 글자)
+    - error_box         # 저장 오류 상자(제목·목록 줄)
+
+effects:
+  - settings_field_rows_use_3col_grid   # 입력 칸 줄은 grid-3col-responsive 를 쓰고, 그 클래스는 입력 칸 줄에만 쓴다
+  - settings_section_heading_class_without_error_color   # 섹션 제목은 section-heading-md 를 쓰고 오류 강조색을 쓰지 않는다
+  - settings_error_box_strong_title_soft_items   # 오류 상자 제목은 text-error-strong, 목록 줄은 text-error-soft
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: Playwright 브라우저로 칸 배치·글자색 재실측

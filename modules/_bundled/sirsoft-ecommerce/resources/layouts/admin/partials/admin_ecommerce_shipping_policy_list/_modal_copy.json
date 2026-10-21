@@ -124,7 +124,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-info-soft px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded"
+                                                        "className": "ecommerce-tone-info-soft px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded text-xs"
                                                     },
                                                     "text": "{{cs.shipping_method_label ?? ''}}"
                                                 },
@@ -132,7 +132,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-400 dark:text-gray-500"
+                                                        "className": "text-gray-500 dark:text-gray-400"
                                                     },
                                                     "text": "|"
                                                 },
@@ -158,7 +158,7 @@
                                                     "name": "Span",
                                                     "if": "{{cs.extra_fee_enabled && cs.country_code === 'KR'}}",
                                                     "props": {
-                                                        "className": "text-warning-soft px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 rounded"
+                                                        "className": "ecommerce-tone-warning-soft px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 rounded text-xs"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.table.extra_fee_badge"
                                                 },
@@ -167,7 +167,7 @@
                                                     "name": "Span",
                                                     "if": "{{!cs.is_active}}",
                                                     "props": {
-                                                        "className": "px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded text-xs"
+                                                        "className": "px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-xs"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.table.inactive"
                                                 }
@@ -238,7 +238,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600"
+                        "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700"
                     },
                     "children": [
                         {

@@ -744,14 +744,18 @@
       "installing": "インストール中",
       "uninstalling": "削除中",
       "updating": "アップデート中",
+      "stuck_update": "更新停止",
       "active_label": "有効化"
     },
+    "stuck_update_hint": "更新が途中で止まりました。「整理して再更新」を押すと整理してから更新を最後まで完了し、スイッチを入れると整理してから有効化します。",
+    "stuck_update_reactivate_hint": "止まっていた更新を整理しました。整理したモジュールは無効状態のため、スイッチで再度有効にしてください。",
     "actions": {
       "install": "インストール",
       "uninstall": "削除",
       "activate": "有効化",
       "deactivate": "無効化",
       "update": "アップデート",
+      "recover_update": "整理して再更新",
       "check_updates": "アップデート確認",
       "view_detail": "詳細情報",
       "refresh_layouts": "レイアウト更新",
@@ -876,6 +880,13 @@
       "layout_strategy_overwrite_desc": "すべてのレイアウトを新しいバージョンに置き換えます。",
       "layout_strategy_keep": "修正を保持",
       "layout_strategy_keep_desc": "修正した部分は維持し、手を加えていない部分は新バージョンに置き換えます。同じ箇所を双方が修正した場合は修正した内容を残します。",
+      "layout_source_advanced": "詳細設定",
+      "layout_source_title": "レイアウトのインストールソース",
+      "layout_source_help": "通常は自動を使用してください。新形式(.g7.html)レイアウトの処理に問題がある場合に、元の JSON でインストールします。対になる JSON がない画面は自動的に新形式を使用します。",
+      "layout_source_auto": "自動(推奨)",
+      "layout_source_auto_desc": "新形式(.g7.html)レイアウトを優先してインストールし、ない場合は JSON を使用します。",
+      "layout_source_json": "元の JSON を優先(トラブルシューティング用)",
+      "layout_source_json_desc": "対になる JSON ファイルがある画面は、新形式の代わりに元の JSON でインストールします。",
       "modified_layouts_warning": "修正されたレイアウトが {{count}} 個あります。「すべて置き換え」を選択すると、修正内容が削除されます。",
       "no_modified_layouts": "修正されたレイアウトがありません。",
       "modified_layouts_list_title": "修正したレイアウト ({{count}}個)",
@@ -950,14 +961,18 @@
       "not_installed": "未インストール",
       "installing": "インストール中",
       "uninstalling": "削除中",
-      "updating": "アップデート中"
+      "updating": "アップデート中",
+      "stuck_update": "更新停止"
     },
+    "stuck_update_hint": "更新が途中で止まりました。「整理して再更新」を押すと整理してから更新を最後まで完了し、スイッチを入れると整理してから有効化します。",
+    "stuck_update_reactivate_hint": "止まっていた更新を整理しました。整理したプラグインは無効状態のため、スイッチで再度有効にしてください。",
     "actions": {
       "install": "インストール",
       "uninstall": "削除",
       "activate": "有効化",
       "deactivate": "無効化",
       "update": "アップデート",
+      "recover_update": "整理して再更新",
       "check_updates": "アップデート確認",
       "view_detail": "詳細情報",
       "settings": "設定",
@@ -1090,6 +1105,13 @@
       "layout_strategy_overwrite_desc": "すべてのレイアウトを新しいバージョンに置換します。",
       "layout_strategy_keep": "編集を維持",
       "layout_strategy_keep_desc": "修正した部分は維持し、手を加えていない部分は新バージョンに置き換えます。同じ箇所を双方が修正した場合は修正した内容を残します。",
+      "layout_source_advanced": "詳細設定",
+      "layout_source_title": "レイアウトのインストールソース",
+      "layout_source_help": "通常は自動を使用してください。新形式(.g7.html)レイアウトの処理に問題がある場合に、元の JSON でインストールします。対になる JSON がない画面は自動的に新形式を使用します。",
+      "layout_source_auto": "自動(推奨)",
+      "layout_source_auto_desc": "新形式(.g7.html)レイアウトを優先してインストールし、ない場合は JSON を使用します。",
+      "layout_source_json": "元の JSON を優先(トラブルシューティング用)",
+      "layout_source_json_desc": "対になる JSON ファイルがある画面は、新形式の代わりに元の JSON でインストールします。",
       "modified_layouts_warning": "編集されたレイアウトが{{count}}個あります。「すべて置換」を選択すると、編集内容が削除されます。",
       "no_modified_layouts": "編集されたレイアウトがありません。",
       "modified_layouts_list_title": "修正したレイアウト ({{count}}個)",
@@ -1198,7 +1220,12 @@
       "delete_title": "メニュー削除",
       "delete_confirm": "このメニューを削除しますか?",
       "delete_core_warning": "コアメニューは削除できません。",
-      "module_menu_notice": "モジュールのデフォルトメニューのモジュールは変更できません。"
+      "module_menu_notice": "モジュールのデフォルトメニューのモジュールは変更できません。",
+      "editing_title": "編集中の内容があります",
+      "editing_message": "保存していない変更があります。",
+      "editing_confirm_message": "変更を保存せずに別のメニューへ移動しますか？",
+      "editing_discard": "変更を破棄",
+      "editing_continue": "編集を続ける"
     },
     "messages": {
       "order_updated": "メニューの順序が変更されました。",
@@ -1259,6 +1286,14 @@
       "module": "モジュール",
       "plugin": "プラグイン"
     },
+    "filters": {
+      "extension_type": "区分",
+      "extension_type_all": "すべての区分",
+      "extension_type_core": "システム",
+      "extension_type_module": "モジュール",
+      "extension_type_plugin": "プラグイン",
+      "extension_type_custom": "直接追加"
+    },
     "actions": {
       "clone": "複製"
     },
@@ -1284,6 +1319,7 @@
       "permissions_section": "権限設定",
       "permissions_selected_suffix": "個選択されました",
       "permissions_hint": "このロールに付与する権限を選択してください。グループをクリックして展開または折りたたむことができます。",
+      "guest_scope_unsupported_hint": "非会員ロールには範囲を指定できません。非会員本人の投稿はパスワードで確認します。",
       "no_permissions_in_type": "登録された権限がありません。",
       "menus_section": "アクセス可能なメニュー",
       "menus_hint": "チェックしたメニューがこのロールの管理メニューに表示されます。下位メニューを選ぶと上位メニューも併せて選択され、上位メニューを外すと下位メニューも併せて外れます。",
@@ -1714,7 +1750,9 @@
       "sitemap_progress_phase": "現在処理中: {{phase}}",
       "sitemap_progress_urls": "累積URL: {{count}}個",
       "sitemap_realtime_connected": "リアルタイムで接続されています。",
-      "sitemap_polling": "進行状況を定期的に確認しています。"
+      "sitemap_polling": "進行状況を定期的に確認しています。",
+      "meta_title_suffix_placeholder": " | グヌボード7",
+      "meta_keywords_placeholder": "CMS, グヌボード7, オープンソース"
     },
     "security": {
       "title": "セキュリティ 設定",
@@ -1996,7 +2034,65 @@
           "redis": "Redis"
         },
         "worker_notice": "databaseまたはredis使用時、キューワーカーを実行する必要があります。",
-        "redis_shared_notice": "Redis選択時、キャッシュのRedis設定を共有します。"
+        "redis_shared_notice": "Redis選択時、キャッシュのRedis設定を共有します。",
+        "worker": {
+          "title": "キューワーカー",
+          "not_required": "同期(sync)ドライバーはリクエスト内ですぐに処理するため、キューワーカーは不要です。",
+          "connections": {
+            "label": "ワーカーを動かすキュー接続",
+            "desc": "このサーバーで実際にキューワーカーを起動している接続だけを登録してください。登録されていない接続を指すジョブはデフォルト接続に送られます。",
+            "placeholder": "接続を選択",
+            "no_options": "登録できる接続がありません",
+            "default_missing": "現在のキュードライバー({{driver}})の接続がリストにありません。保存するとエラーになります。"
+          },
+          "queues": {
+            "label": "接続ごとのキュー",
+            "desc": "各接続でワーカーが処理するキュー名です。登録されていないキューを指すジョブはその接続のデフォルトキューに送られます。",
+            "placeholder": "キュー名を入力してEnter"
+          },
+          "status": {
+            "title": "キューごとの状態",
+            "measured_at": "測定 {{at}}",
+            "refresh": "再読み込み",
+            "col": {
+              "connection": "接続",
+              "queue": "キュー",
+              "pending": "待機",
+              "last_heartbeat": "最後のワーカー信号",
+              "warnings": "警告"
+            },
+            "not_measurable": "測定不可",
+            "no_heartbeat_yet": "信号なし",
+            "empty": "登録されたキューがありません。",
+            "load_failed": "キューワーカーの状態を読み込めませんでした。しばらくしてから再読み込みを押してください。",
+            "saved_driver_differs": "キュードライバーを変更しました。下の状態は保存済みの設定に基づき、保存後に反映されます。"
+          },
+          "warnings": {
+            "no_heartbeat": "{{minutes}}分間信号なし",
+            "pending_without_worker": "待機中なのにワーカーなし",
+            "clamped_timeout": "タイムアウト調整 {{count}}件",
+            "long_queue_hint": "長時間ジョブ接続で起動してください"
+          },
+          "fallback": {
+            "title": "未登録の接続・キューに送ろうとした作業 {{count}}件を既定に送りました",
+            "last": "直近: {{listener}} が接続 {{connection}} · キュー {{queue}} を指定しました",
+            "hint": "この接続・キューを上で登録してワーカーを起動すると、リスナーが指定した場所で実行されます。件数は最後の発生から24時間保持されます。",
+            "default": "(既定)"
+          },
+          "long": {
+            "title": "長時間ジョブ専用ワーカー",
+            "registered": "登録済み",
+            "partial": "一部のみ",
+            "not_registered": "未登録",
+            "desc_registered": "統計の再集計・匿名化・個人情報の職権実行のような長時間ジョブを{{connection}}接続の{{queue}}キューに送ります。",
+            "desc_partial": "{{connection}}接続は登録されていますが{{queue}}キューがありません。長時間ジョブはデフォルトキューに送られます。",
+            "desc_not_registered": "長時間ジョブがデフォルトキューで動きます。デフォルトキューのワーカーが複数あると同じジョブを再取得することがあるため(実行は一度だけです)、{{connection}}接続と{{queue}}キューを登録して別のワーカーを起動することをお勧めします。"
+          },
+          "supervisor": {
+            "title": "Supervisor実行コマンド",
+            "desc": "登録した接続ごとに以下のコマンドでワーカーを起動してください。長時間ジョブ接続は必ずその接続名で起動する必要があります。"
+          }
+        }
       },
       "log": {
         "title": "ログ",
@@ -2544,14 +2640,18 @@
       "installing": "インストール中",
       "uninstalling": "削除中",
       "updating": "アップデート中",
+      "stuck_update": "更新停止",
       "update_available": "アップデート必要"
     },
+    "stuck_update_hint": "更新が途中で止まりました。「整理して再更新」を押すと整理してから更新を最後まで完了し、スイッチを入れると整理してから有効化します。",
+    "stuck_update_reactivate_hint": "止まっていた更新を整理しました。整理したテンプレートは無効状態のため、スイッチで再度有効にしてください。",
     "actions": {
       "install": "インストール",
       "uninstall": "削除",
       "activate": "有効化",
       "deactivate": "無効化",
       "update": "アップデート",
+      "recover_update": "整理して再更新",
       "check_updates": "アップデート確認",
       "view_detail": "詳細情報",
       "refresh_layouts": "レイアウト更新",
@@ -2633,6 +2733,13 @@
       "layout_strategy_overwrite_desc": "すべてのレイアウトを新しいバージョンに置き換えます。",
       "layout_strategy_keep": "修正を維持",
       "layout_strategy_keep_desc": "修正した部分は維持し、手を加えていない部分は新バージョンに置き換えます。同じ箇所を双方が修正した場合は修正した内容を残します。",
+      "layout_source_advanced": "詳細設定",
+      "layout_source_title": "レイアウトのインストールソース",
+      "layout_source_help": "通常は自動を使用してください。新形式(.g7.html)レイアウトの処理に問題がある場合に、元の JSON でインストールします。対になる JSON がない画面は自動的に新形式を使用します。",
+      "layout_source_auto": "自動(推奨)",
+      "layout_source_auto_desc": "新形式(.g7.html)レイアウトを優先してインストールし、ない場合は JSON を使用します。",
+      "layout_source_json": "元の JSON を優先(トラブルシューティング用)",
+      "layout_source_json_desc": "対になる JSON ファイルがある画面は、新形式の代わりに元の JSON でインストールします。",
       "modified_layouts_warning": "修正されたレイアウトが{{count}}個あります。「すべて置換」を選択すると、修正内容が削除されます。",
       "no_modified_layouts": "修正されたレイアウトがありません。",
       "modified_layouts_list_title": "修正したレイアウト ({{count}}個)",
@@ -4212,5 +4319,28 @@
       "empty": "この期間の記録はありません。",
       "error": "推移を読み込めませんでした。しばらく経ってからもう一度開いてください。"
     }
+  },
+  "brand_name": "グヌボード7",
+  "default_user_name": "管理者",
+  "template_partial_test": {
+    "title": "テンプレート Partial システムテスト",
+    "meta_description": "sirsoft-admin_basic テンプレートの Partial システムの動作確認",
+    "description": "sirsoft-admin_basic テンプレートのレイアウト Partial 機能をテストします",
+    "checklist_title": "テスト項目",
+    "check_level1": "✅ Level 1 Partial: partials/template_partial_test/_content_section.g7.html",
+    "check_level2_header": "✅ Level 2 Partial: partials/template_partial_test/_header_section.g7.html",
+    "check_level2_card": "✅ Level 2 Partial: partials/template_partial_test/_info_card.g7.html (Composite コンポーネント)",
+    "check_basic": "✅ Basic コンポーネントのレンダリング",
+    "check_dark": "✅ ダークモード対応",
+    "success_title": "🎉 Partial システム正常動作",
+    "success_description": "上のすべてのセクションが正しく表示されれば、テンプレート Partial システムは正常に動作しています。",
+    "level1_title": "Level 1 Partial: コンテンツセクション",
+    "level1_description": "このファイルは下の Level 2 partial ファイルを含みます",
+    "after_title": "Partial の後の追加コンテンツ",
+    "after_description": "Partial ファイルの後にも好きなだけコンテンツを追加できます。",
+    "header_title": "Level 2 Include: ヘッダーセクション読み込み完了",
+    "header_description": "このファイルは templates/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html です",
+    "card_title": "✨ Composite コンポーネント Include テスト",
+    "card_content": "この Card は partials/template_partial_test/_info_card.g7.html から include されました。\n\n📌 Include システムの特徴:\n• モジュールとテンプレートの両方に対応\n• 無制限のネスト深さ(depth 上限 10)\n• 循環参照の自動検出\n• Basic と Composite コンポーネントの両方を使用可能"
   }
 }

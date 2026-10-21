@@ -28,12 +28,33 @@ class DataSourceResolver
             'query' => $queryParams,
         ]);
 
+        $conditionMapper = null;
+
         foreach ($dataSources as $ds) {
             $dsId = $ds['id'] ?? '';
 
             // seo.data_sources에 명시된 ID만 호출
             if (! in_array($dsId, $seoDataSourceIds)) {
                 continue;
+            }
+
+            // 같은 id 의 조건부 판은 조건을 만족하는 첫 판만 쓴다 — 엔진 `DataSourceManager.filterByCondition` 과 같은 규칙.
+            // 종전에는 조건을 보지 않아 두 판을 다 부르고 뒤 판 결과가 앞 판을 덮었다(7.1.1). 조건 평가는 봇 화면의
+            // 렌더 조건 평가(ComponentHtmlMapper — 엔진 evaluateRenderCondition 동형)를 그대로 쓴다.
+            if (array_key_exists($dsId, $context)) {
+                continue;
+            }
+
+            $condition = array_filter(
+                ['if' => $ds['if'] ?? null, 'conditions' => $ds['conditions'] ?? null],
+                fn ($value) => $value !== null,
+            );
+
+            if ($condition !== []) {
+                $conditionMapper ??= new ComponentHtmlMapper;
+                if (! $conditionMapper->isRenderable($condition, $evalContext, app(ExpressionEvaluator::class))) {
+                    continue;
+                }
             }
 
             $endpoint = $ds['endpoint'] ?? '';

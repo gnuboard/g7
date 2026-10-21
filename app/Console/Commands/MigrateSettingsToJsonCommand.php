@@ -127,19 +127,21 @@ class MigrateSettingsToJsonCommand extends Command
      * 커맨드를 실행합니다.
      *
      * DI 컨테이너 바인딩 시점 문제로 직접 인스턴스화합니다.
+     *
+     * @return int 종료 코드
      */
     public function handle(): int
     {
-        $this->info('설정 마이그레이션을 시작합니다...');
+        $this->info(__('settings.console.migrate_to_json.start'));
 
         // system_configs 테이블 존재 확인
         if (! Schema::hasTable('system_configs')) {
-            $this->warn('system_configs 테이블이 존재하지 않습니다. 기본값으로 초기화합니다.');
+            $this->warn(__('settings.console.migrate_to_json.table_missing', ['table' => 'system_configs']));
 
             $configRepository = new JsonConfigRepository;
             $configRepository->initialize();
 
-            $this->info('기본 설정 파일이 생성되었습니다.');
+            $this->info(__('settings.console.migrate_to_json.defaults_created'));
 
             return Command::SUCCESS;
         }
@@ -149,8 +151,8 @@ class MigrateSettingsToJsonCommand extends Command
 
         // 기존 JSON 파일 존재 확인
         if (file_exists(storage_path('app/settings/general.json')) && ! $this->option('force')) {
-            if (! $this->unifiedConfirm('기존 JSON 설정 파일이 존재합니다. 덮어쓰시겠습니까?', false)) {
-                $this->info('마이그레이션이 취소되었습니다.');
+            if (! $this->unifiedConfirm(__('settings.console.migrate_to_json.confirm_overwrite'), false)) {
+                $this->info(__('settings.console.migrate_to_json.cancelled'));
 
                 return Command::SUCCESS;
             }
@@ -160,14 +162,14 @@ class MigrateSettingsToJsonCommand extends Command
         $configs = SystemConfig::all();
 
         if ($configs->isEmpty()) {
-            $this->warn('마이그레이션할 설정이 없습니다. 기본값으로 초기화합니다.');
+            $this->warn(__('settings.console.migrate_to_json.nothing_to_migrate'));
             $configRepository->initialize();
-            $this->info('기본 설정 파일이 생성되었습니다.');
+            $this->info(__('settings.console.migrate_to_json.defaults_created'));
 
             return Command::SUCCESS;
         }
 
-        $this->info("총 {$configs->count()}개의 설정을 발견했습니다.");
+        $this->info(__('settings.console.migrate_to_json.found', ['count' => $configs->count()]));
 
         // 카테고리별로 그룹화
         $grouped = [];
@@ -187,18 +189,22 @@ class MigrateSettingsToJsonCommand extends Command
             );
 
             $configRepository->saveCategory($category, $categorySettings);
-            $this->info("  ✓ {$category} 카테고리 저장 완료");
+            $this->info('  ✓ '.__('settings.console.migrate_to_json.category_saved', ['category' => $category]));
         }
 
         $this->newLine();
-        $this->info('마이그레이션이 완료되었습니다!');
-        $this->info('설정 파일 위치: storage/app/settings/');
+        $this->info(__('settings.console.migrate_to_json.done'));
+        $this->info(__('settings.console.migrate_to_json.location', ['path' => 'storage/app/settings/']));
 
         return Command::SUCCESS;
     }
 
     /**
      * 문자열 값을 원래 타입으로 파싱합니다.
+     *
+     * @param  string  $value  system_configs 에 저장된 문자열 값
+     * @param  string  $type  저장된 값 타입 (boolean|integer|float|json|array, 그 외는 문자열 유지)
+     * @return mixed 타입에 맞게 변환한 값
      */
     private function parseValue(string $value, string $type): mixed
     {

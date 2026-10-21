@@ -74,7 +74,8 @@
         "pending": {
             "title": "No identity verification record.",
             "hint": "You will be guided to verify when identity verification is required (password reset, profile change, etc.)."
-        }
+        },
+        "load_failed": "Could not load your identity verification details. Please try again in a moment."
     },
     "errors": {
         "invalid_auth_url": "Forged verification response. Not a valid Inicis domain.",

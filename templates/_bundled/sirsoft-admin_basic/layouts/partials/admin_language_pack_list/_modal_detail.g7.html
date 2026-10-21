@@ -23,7 +23,7 @@
             </div>
             <div class="grid-2col">
             <div data-ref="lp_detail_icon" class="col-span-2 flex items-center gap-3 mb-4">
-              <div class="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
+              <div class="flex-shrink-0 w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center relative">
                 <!-- 글리프를 늘 깔아 두고 이미지가 그 위를 덮는다 — 로드 전에도 자리가 유지된다.
                      깨짐을 불리언 하나로 들면 창이 재사용되면서 그 뒤에 여는 언어팩까지 전부
                      아이콘을 잃으므로(다른 상세 창과 같은 결함) 식별자 목록으로 든다. -->
@@ -35,7 +35,7 @@
                     <set-state target="local" detailIconBroken="{{[...(_local.detailIconBroken ?? []), language_pack_detail?.data?.identifier]}}"/>
                   </on>
                 </img>
-                <span data-if="{{language_pack_detail?.data?.icon_source !== 'manifest'}}" class="absolute -bottom-1 -right-1 px-1 rounded text-xs font-semibold uppercase bg-blue-600 dark:bg-blue-500 text-white dark:text-white ring-2 ring-white dark:ring-gray-800" aria-label="$t:extensions.icon.locale_badge_sr|locale={{language_pack_detail?.data?.locale ?? ''}}">{{language_pack_detail?.data?.locale}}</span>
+                <span data-if="{{language_pack_detail?.data?.icon_source !== 'manifest'}}" class="absolute -bottom-1 -right-1 px-1 rounded text-xs font-semibold uppercase whitespace-nowrap bg-blue-600 dark:bg-blue-600 text-white dark:text-white ring-2 ring-white dark:ring-gray-800" title="{{language_pack_detail?.data?.locale ?? ''}}" aria-label="$t:extensions.icon.locale_badge_sr|locale={{language_pack_detail?.data?.locale ?? ''}}">{{language_pack_detail?.data?.locale}}</span>
               </div>
               <div class="min-w-0">
                 <p class="text-primary font-semibold truncate">{{language_pack_detail?.data?.name ?? ''}}</p>
@@ -81,7 +81,7 @@
               <div class="col-span-2">
                 <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.status</span>
                 <div class="flex-center gap-2 mt-1">
-                  <span data-if="{{language_pack_detail?.data?.status === 'active'}}" class="text-success-soft px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900">$t:admin.language_packs.status.active</span>
+                  <span data-if="{{language_pack_detail?.data?.status === 'active'}}" class="text-success-soft px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900">$t:admin.language_packs.status.active</span>
                   <span data-if="{{language_pack_detail?.data?.status === 'installed'}}" class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">$t:admin.language_packs.status.installed</span>
                   <span data-if="{{language_pack_detail?.data?.status === 'inactive'}}" class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">$t:admin.language_packs.status.inactive</span>
                   <span data-if="{{language_pack_detail?.data?.status === 'error'}}" class="text-danger-soft px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900">$t:admin.language_packs.status.error</span>

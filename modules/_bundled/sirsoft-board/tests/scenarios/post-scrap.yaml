@@ -65,7 +65,7 @@ effects:
   - mypage_list_search_field_title_content_matches_title_or_content
   - mypage_list_search_field_title_ignores_content
   - mypage_list_search_field_content_ignores_title
-  # 7.1.0 실측 O-K3-3 — 모르는 값은 422 대신 기본 검색 대상(제목+내용)
+  # 7.1.0 실측 — 모르는 값은 422 대신 기본 검색 대상(제목+내용)
   - mypage_list_unknown_search_field_falls_back_to_title_content
   - mypage_list_search_excludes_disabled_board
   - mypage_list_datasource_passes_search_field

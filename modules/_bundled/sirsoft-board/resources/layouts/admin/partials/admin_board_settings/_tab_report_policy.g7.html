@@ -1,10 +1,6 @@
 <!-- 설정의 「신고 정책」 탭 — 신고를 누가 할 수 있고 몇 건이 쌓이면 무엇을 하는지, 그리고 그때 관리자·글쓴이에게 알릴지를 정한다. 알림 문안 자체는 여기서 고치지 않고 「알림 정의」 탭으로 건너가는 버튼만 둔다 -->
 <partial description="게시판 환경설정 신고 정책 탭 콘텐츠">
   <div data-ref="tab_content_report_policy" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'report_policy'}}">
-    <class-map key="{{_computed.isReadOnly ? 'readonly' : 'normal'}}">
-      <variant when="readonly">opacity-60</variant>
-      <variant when="normal"></variant>
-    </class-map>
     <div>
       <!-- ========== 카드 1: 자동 블라인드 처리 ========== -->
       <section-layout data-type="layout" data-ref="section_auto_hide" class="admin-card">
@@ -87,14 +83,14 @@
         <div class="card-description">$t:sirsoft-board.admin.settings.sections.report_permissions_description</div>
         <div class="row-stack">
           <div data-ref="field_report_view_roles">
-            <span class="block text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-board.admin.settings.fields.report_view_roles</span>
+            <label class="block text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-board.admin.settings.fields.report_view_roles</label>
             <span class="block text-tertiary mb-1.5">$t:sirsoft-board.admin.settings.fields.report_view_roles_description</span>
             <tag-input data-type="composite" name="report_permissions.view_roles" options="{{_computed.roleOptions ?? []}}" class="{{(_local.errors?.['report_permissions.view_roles']) ? 'w-full input-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['report_permissions.view_roles']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_permissions.view_roles']) ? _local.errors['report_permissions.view_roles'][0] : _local.errors?.['report_permissions.view_roles']) ?? ''}}</span>
           </div>
           <div data-ref="field_report_manage_roles" class="">
             <div>
-              <span class="block text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-board.admin.settings.fields.report_manage_roles</span>
+              <label class="block text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-board.admin.settings.fields.report_manage_roles</label>
               <span class="block text-tertiary mb-1.5">$t:sirsoft-board.admin.settings.fields.report_manage_roles_description</span>
               <tag-input data-type="composite" name="report_permissions.manage_roles" options="{{_computed.roleOptions ?? []}}" class="{{(_local.errors?.['report_permissions.manage_roles']) ? 'w-full input-error' : 'w-full'}}" disabled="{{_computed.isReadOnly}}"/>
               <span data-if="{{_local.errors?.['report_permissions.manage_roles']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['report_permissions.manage_roles']) ? _local.errors['report_permissions.manage_roles'][0] : _local.errors?.['report_permissions.manage_roles']) ?? ''}}</span>
@@ -132,18 +128,18 @@
                 <div data-ref="report_received_admin_template_status" class="space-y-2">
                   <div data-each="tpl, tplIndex in (((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_received_admin')?.templates) ?? [])" class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg board-notification-template-row">
                     <div class="flex items-center gap-2 min-w-0">
-                      <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+                      <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                       <div class="min-w-0">
-                        <span class="block text-xs font-medium text-gray-500 dark:text-gray-400">{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}</span>
-                        <span class="block text-sm text-gray-800 dark:text-gray-200 truncate">{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}</span>
+                        <span class="block text-xs font-medium text-gray-500 dark:text-gray-300">{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}</span>
+                        <span class="block text-sm text-gray-800 dark:text-gray-200 truncate">{{$localized(tpl.subject) || $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}</span>
                       </div>
                     </div>
-                    <span class="{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0">{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}</span>
+                    <span class="{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0">{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}</span>
                   </div>
-                  <div data-if="{{(((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_received_admin')?.templates) ?? []).length === 0}}" class="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty</div>
+                  <div data-if="{{boardNotificationDefinitions !== undefined &amp;&amp; ((((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_received_admin')?.templates) ?? []).length === 0)}}" class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty</div>
                 </div>
                 <div class="flex items-center justify-between gap-2 flex-wrap mt-1">
-                  <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint</span>
+                  <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint</span>
                   <button data-ref="go_to_notification_settings_admin" type="button" class="flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <on type="click">
                       <!-- 관리자 알림 문안을 고치러 「알림 정의」 탭으로 건너간다 — 화면을 새로 여는 것이 아니라 탭만 바꾸므로 전역 값과 URL 을 함께 맞추고, `replace-url` 이라 뒤로가기 이력에 쌓이지 않는다 -->
@@ -178,18 +174,18 @@
                 <div data-ref="report_action_template_status" class="space-y-2">
                   <div data-each="tpl, tplIndex in (((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_action')?.templates) ?? [])" class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg board-notification-template-row">
                     <div class="flex items-center gap-2 min-w-0">
-                      <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-400 dark:text-gray-500 flex-shrink-0"/>
+                      <icon name="{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}" size="sm" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
                       <div class="min-w-0">
-                        <span class="block text-xs font-medium text-gray-500 dark:text-gray-400">{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}</span>
-                        <span class="block text-sm text-gray-800 dark:text-gray-200 truncate">{{tpl.subject?.[$locale] ?? tpl.subject?.ko ?? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}</span>
+                        <span class="block text-xs font-medium text-gray-500 dark:text-gray-300">{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}</span>
+                        <span class="block text-sm text-gray-800 dark:text-gray-200 truncate">{{$localized(tpl.subject) || $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}</span>
                       </div>
                     </div>
-                    <span class="{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0">{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}</span>
+                    <span class="{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0">{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}</span>
                   </div>
-                  <div data-if="{{(((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_action')?.templates) ?? []).length === 0}}" class="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty</div>
+                  <div data-if="{{boardNotificationDefinitions !== undefined &amp;&amp; ((((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_action')?.templates) ?? []).length === 0)}}" class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty</div>
                 </div>
                 <div class="flex items-center justify-between gap-2 flex-wrap mt-1">
-                  <span class="block text-xs text-gray-400 dark:text-gray-500">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint</span>
+                  <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint</span>
                   <button data-ref="go_to_notification_settings_author" type="button" class="flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <on type="click">
                       <!-- 글쓴이 알림 문안 쪽 진입점 — 위 관리자용 버튼과 같은 탭으로 간다(도착지가 같고 출발한 문단만 다르다) -->

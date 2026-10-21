@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Support\LocaleTag;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -55,10 +56,11 @@ class SetLocale
         }
 
         // 2. Accept-Language 헤더 확인 (브라우저 기본 언어)
+        //    정확일치 → 주 언어 → 같은 주 언어의 다른 지역 순 — fil-PH 만 켠 사이트도 fil 요청을 받는다 (#148)
         $acceptLanguage = $request->header('Accept-Language');
         if ($acceptLanguage) {
-            $locale = $this->parseAcceptLanguage($acceptLanguage);
-            if (in_array($locale, $supportedLocales)) {
+            $locale = LocaleTag::negotiate($acceptLanguage, $supportedLocales);
+            if ($locale !== null) {
                 return $locale;
             }
         }
@@ -101,32 +103,5 @@ class SetLocale
         }
 
         return null;
-    }
-
-    /**
-     * Accept-Language 헤더를 파싱하여 선호 언어를 추출합니다.
-     *
-     * @param  string  $acceptLanguage  Accept-Language 헤더 값
-     * @return string 추출된 언어 코드 (기본값: config('app.locale'))
-     */
-    private function parseAcceptLanguage(string $acceptLanguage): string
-    {
-        $supportedLocales = config('app.supported_locales', ['ko', 'en']);
-        $languages = explode(',', $acceptLanguage);
-
-        foreach ($languages as $language) {
-            $lang = trim(explode(';', $language)[0]);
-
-            // 언어-지역 형태에서 언어만 추출 (예: ko-KR -> ko)
-            if (strpos($lang, '-') !== false) {
-                $lang = explode('-', $lang)[0];
-            }
-
-            if (in_array($lang, $supportedLocales)) {
-                return $lang;
-            }
-        }
-
-        return config('app.locale', 'ko');
     }
 }

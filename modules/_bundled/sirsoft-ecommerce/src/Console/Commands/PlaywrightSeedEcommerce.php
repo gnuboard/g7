@@ -52,14 +52,14 @@ class PlaywrightSeedEcommerce extends Command
     {
         // ① CLI 한정
         if (php_sapi_name() !== 'cli') {
-            $this->error('CLI 전용 커맨드입니다.');
+            $this->error(__('sirsoft-ecommerce::playwright.guard.cli_only'));
 
             return self::FAILURE;
         }
 
         // ② 명시 옵트인
         if (env('G7_PLAYWRIGHT_BYPASS') !== '1') {
-            $this->error('G7_PLAYWRIGHT_BYPASS=1 환경변수가 필요합니다.');
+            $this->error(__('sirsoft-ecommerce::playwright.guard.bypass_required'));
 
             return self::FAILURE;
         }

@@ -1,0 +1,17 @@
+feature: 전환 상태 변화에 흐림 판정이 있는 렌더러만 다시 그린다 (engine-v1.82.0)
+
+description: |
+  화면 이동을 시작하면 전환 상태(isTransitioning)를 곧바로 켠다(engine-v1.82.0). 모든 렌더러가 전환 문맥을 읽으면
+  떠나는 화면 전체가 한 번 더 그려지고, 받는 중 표시(refreshingSources)가 켜지고 꺼질 때마다 화면 전체가 다시 그려진다.
+  흐림 판정이 있을 수 있는 렌더러(blur_until_loaded·responsive)만 전환 문맥을 읽고, 나머지는 공급하지 않는 문맥을 읽는다.
+
+axes:
+  case:
+    - transition_on_blur_and_plain_siblings
+
+effects:
+  - only_blur_renderers_rerender                          # 전환 상태를 켜도 흐림 없는 렌더러(루트·형제)는 다시 그려지지 않는다(루트급 렌더 주기 0)
+  - blur_still_applied                                    # 흐림 칸은 전환 상태를 받아 blur 래퍼가 선다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.transitionSubscription.test.tsx

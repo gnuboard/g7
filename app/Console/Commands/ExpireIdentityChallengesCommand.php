@@ -32,7 +32,7 @@ class ExpireIdentityChallengesCommand extends Command
     {
         $expired = $service->expirePastDue();
 
-        $this->info("본인인증 challenge {$expired}건이 만료 처리되었습니다.");
+        $this->info(__('identity.console.expire_challenges.done', ['count' => $expired]));
 
         return self::SUCCESS;
     }

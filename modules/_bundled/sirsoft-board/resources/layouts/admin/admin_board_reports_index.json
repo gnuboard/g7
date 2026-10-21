@@ -20,7 +20,6 @@
             "params": {
                 "page": "{{query.page || 1}}",
                 "per_page": "{{query.per_page || 15}}",
-                "sort_by": "{{query.sort_by || 'last_reported_at'}}",
                 "sort_order": "{{query.sort_order || 'desc'}}",
                 "status": "{{query['status[]']}}",
                 "target_type": "{{query['type[]']}}",
@@ -188,6 +187,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:common.search_field",
                                                             "value": "{{_local.searchField || 'all'}}",
                                                             "className": "w-24 px-3 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-700 dark:text-gray-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
                                                             "options": [
@@ -339,6 +339,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "type": "button",
                                                             "className": "flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 border-0 rounded-lg text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm"
                                                         },
                                                         "children": [
@@ -380,6 +381,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.search_field",
                                             "value": "{{_local.searchField || 'all'}}",
                                             "className": "select-composite w-32 shrink-0",
                                             "options": [
@@ -520,6 +522,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "flex-center gap-2 px-4 py-2.5 bg-gray-800 dark:bg-gray-700 border-0 rounded-xl text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm"
                                         },
                                         "children": [
@@ -1290,6 +1293,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                                         },
                                         "children": [
@@ -1319,6 +1323,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
                                         },
                                         "children": [
@@ -1673,7 +1678,8 @@
                                             }
                                         ],
                                         "props": {
-                                            "className": "px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "type": "button",
+                                            "className": "px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
                                             "disabled": "{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
                                         },
                                         "children": [
@@ -1738,6 +1744,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
                                             "disabled": "{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
                                         },
@@ -1803,7 +1810,8 @@
                                             }
                                         ],
                                         "props": {
-                                            "className": "px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "type": "button",
+                                            "className": "px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
                                             "disabled": "{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
                                         },
                                         "children": [
@@ -1868,6 +1876,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "px-3 py-1.5 bg-gray-600 text-white rounded hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
                                             "disabled": "{{reports?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}"
                                         },
@@ -1910,7 +1919,7 @@
                                 }
                             },
                             {
-                                "comment": "정렬 변경. 페이지를 1로 되돌린다 — 순서가 달라졌는데 보던 번호를 유지하면 전혀 다른 구간이 열린다",
+                                "comment": "정렬 변경. 페이지를 1로 되돌린다 — 순서가 달라졌는데 보던 번호를 유지하면 전혀 다른 구간이 열린다.\n               서버는 정렬 열을 받지 않고 마지막 신고 시각 고정으로 정렬하므로(IndexReportRequest·ReportRepository) 방향만 보낸다 — 정렬 가능한 열도\n               신고일 하나뿐이다(7.1.1: 다른 머리를 눌러도 날짜 방향만 뒤집혀 그 열로 정렬된 것처럼 보였다)",
                                 "type": "change",
                                 "event": "onSortChange",
                                 "handler": "sequence",
@@ -1931,7 +1940,6 @@
                                             "replace": true,
                                             "transition_overlay_target": "reports_data_grid__body",
                                             "query": {
-                                                "sort_by": "{{$args[0]}}",
                                                 "sort_order": "{{$args[1]}}",
                                                 "page": 1
                                             }
@@ -1995,9 +2003,12 @@
                             }
                         ],
                         "props": {
+                            "pageHrefMergeQuery": true,
+                            "pageHref": "/admin/boards/reports?page={page}",
+                            "rowLabelField": "board.title",
                             "data": "{{reports?.data?.data}}",
                             "sortable": true,
-                            "sortField": "{{query.sort_by}}",
+                            "sortField": "created_at",
                             "sortDirection": "{{query.sort_order || 'desc'}}",
                             "pagination": true,
                             "alwaysShowPagination": true,
@@ -2015,23 +2026,27 @@
                             "responsiveBreakpoint": 768,
                             "showFirstLast": true,
                             "columnSelectorText": "$t:common.column_selector",
-                            "emptyMessage": "$t:common.no_data",
+                            "emptyMessage": "{{reports === undefined ? '' : (reports === null ? $t('sirsoft-board.common.list_load_failed') : $t('common.no_data'))}}",
                             "actionsColumnHeader": "$t:common.actions",
                             "requiredText": "$t:common.required",
                             "selectedCountText": "",
                             "rowActions": [
                                 {
+                                    "href": "/admin/boards/reports/{{row.id}}",
+                                    "mergeQuery": true,
                                     "id": "view",
                                     "label": "$t:sirsoft-board.admin.reports.actions.view",
                                     "iconName": "eye",
                                     "disabledField": "abilities.can_view"
                                 },
                                 {
+                                    "href": "/admin/board/{{row.board?.slug}}",
                                     "id": "go_to_board",
                                     "label": "$t:sirsoft-board.admin.reports.actions.go_to_board",
                                     "iconName": "folder"
                                 },
                                 {
+                                    "href": "/admin/board/{{row.board?.slug}}/post/{{row.post_id}}",
                                     "id": "go_to_post",
                                     "label": "$t:sirsoft-board.admin.reports.actions.go_to_post",
                                     "iconName": "file-lines"
@@ -2044,6 +2059,7 @@
                                     "sortable": true,
                                     "cellChildren": [
                                         {
+                                            "comment": "큰 글자는 서버 정렬 기준인 마지막 신고 시각이다(ReportRepository — 재신고된 건이 위로 올라오고 기간 필터도 같은 열). 처음 신고 시각을 크게 그리면 재신고된 건이 큰 날짜 순서와 어긋난 자리에 섞여 보였다. 여러 번 신고된 건만 처음 신고 시각을 보조 줄로 보인다",
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
@@ -2056,12 +2072,12 @@
                                                     "props": {
                                                         "className": "text-sm text-gray-900 dark:text-white"
                                                     },
-                                                    "text": "{{row.is_reactivated ? (row.last_activated_at ?? row.created_at) : row.created_at}}"
+                                                    "text": "{{row.last_reported_at ?? row.created_at}}"
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
-                                                    "if": "{{row.last_reported_at && (row.report_count ?? 0) > 1}}",
+                                                    "if": "{{row.created_at && (row.report_count ?? 0) > 1}}",
                                                     "props": {
                                                         "className": "flex items-center gap-1"
                                                     },
@@ -2070,9 +2086,9 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
                                                             },
-                                                            "text": "$t:sirsoft-board.admin.reports.columns.last_reported_at_label"
+                                                            "text": "$t:sirsoft-board.admin.reports.columns.first_reported_at_label"
                                                         },
                                                         {
                                                             "type": "basic",
@@ -2080,7 +2096,7 @@
                                                             "props": {
                                                                 "className": "text-tertiary"
                                                             },
-                                                            "text": "{{row.last_reported_at}}"
+                                                            "text": "{{row.created_at}}"
                                                         }
                                                     ]
                                                 }
@@ -2091,7 +2107,7 @@
                                 {
                                     "field": "status",
                                     "header": "$t:sirsoft-board.admin.reports.columns.status",
-                                    "sortable": true,
+                                    "sortable": false,
                                     "cellChildren": [
                                         {
                                             "type": "basic",
@@ -2105,6 +2121,7 @@
                                 },
                                 {
                                     "field": "target_status",
+                                    "sortable": false,
                                     "header": "$t:sirsoft-board.admin.reports.columns.target_status",
                                     "cellChildren": [
                                         {
@@ -2121,7 +2138,7 @@
                                 {
                                     "field": "target_type",
                                     "header": "$t:sirsoft-board.admin.reports.columns.type",
-                                    "sortable": true,
+                                    "sortable": false,
                                     "required": true,
                                     "cellChildren": [
                                         {
@@ -2137,7 +2154,7 @@
                                 {
                                     "field": "snapshot_board_name",
                                     "header": "$t:sirsoft-board.admin.reports.columns.board_name",
-                                    "sortable": true,
+                                    "sortable": false,
                                     "required": true,
                                     "cellChildren": [
                                         {
@@ -2153,7 +2170,7 @@
                                 {
                                     "field": "snapshot_target_title",
                                     "header": "$t:sirsoft-board.admin.reports.columns.post_title",
-                                    "sortable": true,
+                                    "sortable": false,
                                     "required": true,
                                     "cellClassName": "max-w-xs",
                                     "cellChildren": [
@@ -2166,7 +2183,25 @@
                                             "children": [
                                                 {
                                                     "type": "basic",
+                                                    "name": "A",
+                                                    "if": "{{!!row.board?.slug && !!row.post_id}}",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "반응·스크랩 목록 제목과 같은 링크 — 보통 클릭은 화면 이동, 가운데 클릭·Ctrl+클릭은 새 탭(행 메뉴 「신고글 바로가기」와 같은 주소). 게시판이 지워진 행은 갈 곳이 없어 글자로 둔다",
+                                                            "type": "click",
+                                                            "handler": "navigate"
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "href": "/admin/board/{{row.board?.slug}}/post/{{row.post_id}}",
+                                                        "className": "font-medium truncate cursor-pointer hover:underline"
+                                                    },
+                                                    "text": "{{row.board?.title}}"
+                                                },
+                                                {
+                                                    "type": "basic",
                                                     "name": "Span",
+                                                    "if": "{{!row.board?.slug || !row.post_id}}",
                                                     "props": {
                                                         "className": "font-medium truncate"
                                                     },
@@ -2177,7 +2212,7 @@
                                                     "name": "Span",
                                                     "if": "{{row.report_count && row.report_count > 1}}",
                                                     "props": {
-                                                        "className": "text-xs text-red-500 dark:text-red-400"
+                                                        "className": "text-xs text-red-600 dark:text-red-400"
                                                     },
                                                     "text": "[{{row.report_count}}]"
                                                 }
@@ -2188,7 +2223,7 @@
                                 {
                                     "field": "snapshot_author_name",
                                     "header": "$t:sirsoft-board.admin.reports.columns.author_name",
-                                    "sortable": true,
+                                    "sortable": false,
                                     "cellChildren": [
                                         {
                                             "type": "basic",
@@ -2210,7 +2245,7 @@
                                                             "props": {
                                                                 "className": "text-heading"
                                                             },
-                                                            "text": "{{row.author?.name ?? ''}}"
+                                                            "text": "{{row.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
                                                         },
                                                         {
                                                             "type": "composite",
@@ -2240,7 +2275,7 @@
                                 {
                                     "field": "reporter_id",
                                     "header": "$t:sirsoft-board.admin.reports.columns.reporter_name",
-                                    "sortable": true,
+                                    "sortable": false,
                                     "cellChildren": [
                                         {
                                             "type": "basic",
@@ -2357,7 +2392,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-danger-soft"
+                                        "className": "text-xs board-tone-danger"
                                     },
                                     "text": "$t:sirsoft-board.admin.reports.modals.deleted_warning|count={{_global.statusCountsData?.deleted_count}}"
                                 }
@@ -2376,14 +2411,14 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "exclamation-triangle",
-                                        "className": "text-base text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                        "className": "text-base text-yellow-700 dark:text-yellow-400 flex-shrink-0"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-warning-soft"
+                                        "className": "text-xs board-tone-warning"
                                     },
                                     "text": "$t:sirsoft-board.admin.reports.modals.same_status_warning|count={{_global.statusCountsData?.same_status_count}}|status={{_global.statusCountsData?.target_status_label ?? ''}}"
                                 }
@@ -2552,6 +2587,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
@@ -2639,7 +2675,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.bulkActionType === 'pending' ? 'bg-yellow-600 hover:bg-yellow-700' : _global.bulkActionType === 'review' ? 'bg-blue-600 hover:bg-blue-700' : _global.bulkActionType === 'rejected' ? 'bg-purple-600 hover:bg-purple-700' : _global.bulkActionType === 'suspended' ? 'bg-red-600 hover:bg-red-700' : _global.bulkActionType === 'deleted' ? 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}}",
+                                "type": "button",
+                                "className": "px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.bulkActionType === 'pending' ? 'bg-yellow-700 hover:bg-yellow-800' : _global.bulkActionType === 'review' ? 'bg-blue-600 hover:bg-blue-700' : _global.bulkActionType === 'rejected' ? 'bg-purple-600 hover:bg-purple-700' : _global.bulkActionType === 'suspended' ? 'bg-red-600 hover:bg-red-700' : _global.bulkActionType === 'deleted' ? 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}}",
                                 "disabled": "{{_global.bulkStatusLoading}}"
                             },
                             "children": [
@@ -2725,6 +2762,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
                             },
                             "children": [
@@ -2783,6 +2821,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
                             },
                             "children": [
@@ -2841,6 +2880,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
                             },
                             "children": [

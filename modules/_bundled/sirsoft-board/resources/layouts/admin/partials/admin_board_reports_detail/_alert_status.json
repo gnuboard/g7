@@ -51,7 +51,7 @@
                                             "if": "{{report_detail?.data?.status === 'pending'}}",
                                             "props": {
                                                 "name": "exclamation-circle",
-                                                "className": "text-xl text-yellow-600 dark:text-yellow-400"
+                                                "className": "text-xl text-yellow-700 dark:text-yellow-400"
                                             }
                                         },
                                         {
@@ -96,12 +96,12 @@
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
-                                                        "className": "font-semibold text-sm {{report_detail?.data?.status === 'pending' ? 'text-warning-soft' : report_detail?.data?.status === 'review' ? 'text-info-soft' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-200' : report_detail?.data?.status === 'deleted' ? 'text-gray-900 dark:text-gray-300' : 'text-danger-soft'}}"
+                                                        "className": "font-semibold text-sm {{report_detail?.data?.status === 'pending' ? 'board-tone-warning' : report_detail?.data?.status === 'review' ? 'board-tone-info' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-200' : report_detail?.data?.status === 'deleted' ? 'text-gray-900 dark:text-gray-300' : 'board-tone-danger'}}"
                                                     }
                                                 }
                                             },
                                             "props": {
-                                                "className": "font-semibold text-base {{report_detail?.data?.status === 'pending' ? 'text-warning-soft' : report_detail?.data?.status === 'review' ? 'text-info-soft' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-200' : report_detail?.data?.status === 'deleted' ? 'text-gray-900 dark:text-gray-300' : 'text-danger-soft'}}"
+                                                "className": "font-semibold text-base {{report_detail?.data?.status === 'pending' ? 'board-tone-warning' : report_detail?.data?.status === 'review' ? 'board-tone-info' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-200' : report_detail?.data?.status === 'deleted' ? 'text-gray-900 dark:text-gray-300' : 'board-tone-danger'}}"
                                             },
                                             "text": "$t:sirsoft-board.admin.reports.detail.alert_title_{{report_detail?.data?.status}}"
                                         }
@@ -113,12 +113,12 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "text-xs {{report_detail?.data?.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' : report_detail?.data?.status === 'review' ? 'text-blue-600 dark:text-blue-400' : report_detail?.data?.status === 'rejected' ? 'text-purple-600 dark:text-purple-400' : report_detail?.data?.status === 'deleted' ? 'text-gray-600 dark:text-gray-400' : 'text-red-600 dark:text-red-400'}}"
+                                                "className": "text-xs {{report_detail?.data?.status === 'pending' ? 'text-yellow-800 dark:text-yellow-400' : report_detail?.data?.status === 'review' ? 'text-blue-700 dark:text-blue-300' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-300' : report_detail?.data?.status === 'deleted' ? 'text-gray-600 dark:text-gray-300' : 'text-red-700 dark:text-red-300'}}"
                                             }
                                         }
                                     },
                                     "props": {
-                                        "className": "text-sm {{report_detail?.data?.status === 'pending' ? 'text-yellow-600 dark:text-yellow-400' : report_detail?.data?.status === 'review' ? 'text-blue-600 dark:text-blue-400' : report_detail?.data?.status === 'rejected' ? 'text-purple-600 dark:text-purple-400' : report_detail?.data?.status === 'deleted' ? 'text-gray-600 dark:text-gray-400' : 'text-red-600 dark:text-red-400'}}"
+                                        "className": "text-sm {{report_detail?.data?.status === 'pending' ? 'text-yellow-800 dark:text-yellow-400' : report_detail?.data?.status === 'review' ? 'text-blue-700 dark:text-blue-300' : report_detail?.data?.status === 'rejected' ? 'text-purple-700 dark:text-purple-300' : report_detail?.data?.status === 'deleted' ? 'text-gray-600 dark:text-gray-300' : 'text-red-700 dark:text-red-300'}}"
                                     },
                                     "text": "$t:sirsoft-board.admin.reports.detail.alert_message_{{report_detail?.data?.status}}"
                                 }
@@ -141,7 +141,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "flex-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-xs font-medium transition-colors"
+                                        "className": "flex-center gap-2 px-3 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 text-xs font-medium transition-colors"
                                     }
                                 }
                             },
@@ -163,8 +163,9 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{report_detail?.data?.abilities?.can_manage !== true}}",
-                                "className": "flex-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "flex-center gap-2 px-3 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [
                                 {
@@ -197,7 +198,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "flex-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs font-medium transition-colors"
+                                        "className": "flex-center gap-2 px-3 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 text-xs font-medium transition-colors"
                                     }
                                 }
                             },
@@ -219,8 +220,9 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{report_detail?.data?.abilities?.can_manage !== true}}",
-                                "className": "flex-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "flex-center gap-2 px-3 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [
                                 {
@@ -253,7 +255,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "flex-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-xs font-medium transition-colors"
+                                        "className": "flex-center gap-2 px-3 py-2 bg-purple-600 dark:bg-purple-600 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-700 text-xs font-medium transition-colors"
                                     }
                                 }
                             },
@@ -275,8 +277,9 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{report_detail?.data?.abilities?.can_manage !== true}}",
-                                "className": "flex-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "flex-center gap-2 px-3 py-2 bg-purple-600 dark:bg-purple-600 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [
                                 {
@@ -309,7 +312,7 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "flex-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs font-medium transition-colors"
+                                        "className": "flex-center gap-2 px-3 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 text-xs font-medium transition-colors"
                                     }
                                 }
                             },
@@ -331,8 +334,9 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{report_detail?.data?.abilities?.can_manage !== true}}",
-                                "className": "flex-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "flex-center gap-2 px-3 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             },
                             "children": [
                                 {
@@ -387,6 +391,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{report_detail?.data?.abilities?.can_manage !== true}}",
                                 "className": "flex-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             },

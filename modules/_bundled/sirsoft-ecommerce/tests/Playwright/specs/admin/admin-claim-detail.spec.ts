@@ -15,9 +15,15 @@
  *  ⑤ **없는 클레임 번호**는 화면이 오류 페이지로 떨어져야 한다 — 빈 화면으로 남으면
  *     운영자는 로딩이 끝나지 않은 것으로 읽는다.
  *
- * 상세를 여는 데는 신청서 한 건이 필요하다. 시드 커맨드(`playwright:seed-ecommerce`)의
- * 클레임 축이 아직 stub 이라(계획서 이월 5) 목록에서 발견되는 건으로 진행하고, 한 건도
- * 없으면 그 사실을 드러내며 건너뛴다 — 없는 데이터를 있는 척 단언하지 않는다.
+ * 상세를 여는 데는 신청서 한 건이 필요하다. 유형만 맞으면 되는 골격 시험은 목록에서 발견되는
+ * 운영 데이터로 진행하고, 한 건도 없으면 그 사실을 드러내며 건너뛴다 — 없는 데이터를 있는 척
+ * 단언하지 않는다.
+ *
+ * **특정 모양의 신청서**가 있어야 끝까지 재는 세 시험(옵션 변경 교환의 소계·차액, 회수중으로 옮길
+ * 상품 1건짜리 반품의 송장 입력, 계좌가 빈 승인 환불의 확인 창)은 운영 데이터에 그런 건이 우연히
+ * 있을 때만 돌면 「건너뜀」이 통과로 세어진다. 그 셋은 `claimDetailSeed`(워커 단위 fixture —
+ * `playwright:seed-claim-detail`)가 세운 신청서를 연다(#757). 운영 데이터 발견은 시드 표식
+ * (`E2ECLM`)이 든 번호를 건너뛴다 — 다른 워커가 정리 중인 시드 건을 집지 않게.
  *
  *  ⑥ **신청상품 표의 금액·추가옵션 표기**(S17). 이 표는 DataGrid 셀 안에서 그려지므로
  *     단위 테스트 하네스가 `$t:defer:` 를 해소하지 못한다 — 차액 금액이 실제로 나오는지는
@@ -28,7 +34,7 @@
  * @axes claim_type=exchange|return|refund|cancel
  * @effects detail_tab_nav_stays_visible_on_scroll, detail_completion_button_follows_completable_count, detail_header_select_has_no_logistics_or_completion, detail_item_logistics_opens_prefilled_tracking, detail_tab_click_scrolls_to_section, detail_scroll_syncs_active_tab, detail_tabs_collapse_to_select_on_mobile, detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount, claim_progress_cells_uniform_width_with_chevrons, claim_progress_wraps_on_mobile_without_scroll, claim_detail_cancel_is_read_only, claim_detail_cancel_info_card_rendered
  */
-import { test, expect, authenticatePage } from '../../fixtures/ecommerce-auth';
+import { test, expect, authenticatePage, CLAIM_SEED_MARK } from '../../fixtures/claim-detail-seed';
 
 const LIST_URL = '/admin/ecommerce/claims';
 const DETAIL_URL = (claimNumber: string) => `/admin/ecommerce/claims/${encodeURIComponent(claimNumber)}`;
@@ -68,6 +74,9 @@ async function discoverClaim(
  * 교환을 먼저 고르므로, 교환이 한 건이라도 있으면 환불 축이 영영 건너뛰어진다(그 자리에서
  * skip 이 나므로 실패로도 드러나지 않는다).
  *
+ * 시드 신청서(번호에 `CLAIM_SEED_MARK`)는 건너뛴다 — 다른 워커의 `claimDetailSeed` 가 시험 도중
+ * 정리할 수 있다. 발견 모집단은 이 fixture 가 생기기 전과 같은 운영 데이터다.
+ *
  * @param request Playwright API 요청 컨텍스트
  * @param token 인증 토큰
  * @param claimType 클레임 유형
@@ -79,7 +88,7 @@ async function discoverClaimOfType(
   claimType: string,
 ): Promise<DiscoveredClaim | null> {
   const response = await request.get(
-    `/api/modules/sirsoft-ecommerce/admin/claims?type=${claimType}&per_page=1`,
+    `/api/modules/sirsoft-ecommerce/admin/claims?type=${claimType}&per_page=20`,
     { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } },
   );
 
@@ -87,7 +96,8 @@ async function discoverClaimOfType(
     return null;
   }
 
-  const row = (await response.json())?.data?.data?.[0];
+  const rows: Array<{ claim_number?: string }> = (await response.json())?.data?.data ?? [];
+  const row = rows.find((candidate) => candidate?.claim_number && !candidate.claim_number.includes(CLAIM_SEED_MARK));
 
   return row?.claim_number ? { claimNumber: row.claim_number, claimType } : null;
 }
@@ -145,6 +155,16 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
     await waitForDetail(page);
 
     await expect(page.locator('#cd_003_claim_number')).toHaveText(claim!.claimNumber);
+
+    // 「주문 보기」는 원 주문 상세로 가는 새 창 링크다(#757 결정 — 종전 openWindow 단추). 주소가 href 에 있어
+    // 가운데 클릭·새 탭·주소 복사가 같은 곳을 가리키고, 보통 클릭도 지금 보던 신청서를 두고 새 창으로 연다.
+    const orderLink = page.locator('#cd_009_order_link_button');
+    await expect(orderLink).toBeVisible({ timeout: 30_000 });
+    expect(await orderLink.evaluate((el) => el.tagName)).toBe('A');
+    await expect(orderLink).toHaveAttribute('href', /^\/admin\/ecommerce\/orders\/[^/{}]+$/);
+    await expect(orderLink).toHaveAttribute('target', '_blank');
+    await expect(orderLink).toHaveAttribute('rel', 'noopener noreferrer');
+
     await expect(page.locator('[data-section-id="claim_info"]')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('[data-section-id="activity_log"]')).toHaveCount(1);
 
@@ -559,12 +579,14 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
    * 두 축 모두 브라우저에서만 드러난다 — 차액 줄은 DataGrid 셀 안이라 `$t:defer:` 로
    * 미뤄야 항목 컨텍스트와 함께 해소되고(일반 `$t:` 는 라벨만 남는다), 소계·단가 혼재는
    * 수량 1 에서는 값이 같아 보인다.
+   *
+   * 신청서는 시드가 세운다 — 옵션 변경 교환, 수량 2, 상위 옵션(차액 ≠ 0). 운영 데이터에 그 모양의 교환이
+   * 없으면 이 시험은 끝까지 재지 못하고 건너뛰었다(#757 M1 실측 skip).
    */
   // @scenario claim_type=exchange, claim_stage=in_progress
   // @effects detail_items_amount_pairs_subtotal, detail_items_price_difference_shows_amount
-  test('신청상품 표가 교환 전후 소계를 짝으로 그리고 차액 금액을 함께 보여준다', async ({ page, request, claimsManageToken }) => {
-    const claim = await discoverClaimOfType(request, claimsManageToken, 'exchange');
-    test.skip(claim === null, '교환 신청서가 한 건도 없다 — 이 표의 교환 열은 그 유형에만 선다');
+  test('신청상품 표가 교환 전후 소계를 짝으로 그리고 차액 금액을 함께 보여준다', async ({ page, request, claimsManageToken, claimDetailSeed }) => {
+    const claim: DiscoveredClaim = { claimNumber: claimDetailSeed.exchange_number, claimType: 'exchange' };
 
     await authenticatePage(page, claimsManageToken);
     await page.goto(DETAIL_URL(claim!.claimNumber));
@@ -578,7 +600,11 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
     expect(payload.ok()).toBe(true);
     const items = (await payload.json())?.data?.claim?.items ?? [];
     const optionChange = items.find((item: any) => item?.is_option_change === true);
-    test.skip(!optionChange, '옵션 변경 교환 행이 없다 — 교환 후 금액 줄은 그 행에만 선다');
+    // 시드가 세운 행이다 — 없으면 시드나 응답이 깨진 것이라 건너뛰지 않고 실패한다.
+    expect(optionChange, '시드한 교환에 옵션 변경 행이 없다 — 교환 후 금액 줄은 그 행에만 선다').toBeTruthy();
+    // 소계·단가 혼재는 수량 2 이상에서만, 차액 줄은 차액이 있을 때만 드러난다 — 시드가 그 전제를 지켰는지 먼저 본다.
+    expect(Number(optionChange.quantity)).toBeGreaterThan(1);
+    expect(Number(optionChange.price_difference ?? 0)).not.toBe(0);
 
     await expect(page.locator('#claim_items_card')).toBeVisible({ timeout: 15_000 });
 
@@ -793,35 +819,30 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
   /**
    * 상품 칸에서 회수중·발송중을 고르면 택배사·운송장 입력이 열리고 저장된 송장으로 미리 채워진다.
    * 송장을 비운 채 [적용] 하면 요청을 보내지 않고 안내한다 — 쓰기 없이 입구만 잰다.
+   *
+   * 신청서는 시드가 세운다 — 상품 1건짜리 승인 반품(송장 없음). 운영 데이터에서 그 모양을 찾던 때는 없으면
+   * 건너뛰었다(#757 M1 실측 skip).
    */
   // @scenario claim_type=return, claim_stage=in_progress
   // @effects detail_item_logistics_opens_prefilled_tracking
-  test('상품 칸 회수중·발송중 선택이 송장 입력을 열고 미리 채운다', async ({ page, request, claimsManageToken }) => {
+  test('상품 칸 회수중·발송중 선택이 송장 입력을 열고 미리 채운다', async ({ page, request, claimsManageToken, claimDetailSeed }) => {
     const headers = { Authorization: `Bearer ${claimsManageToken}`, Accept: 'application/json' };
-    let target: { claimNumber: string; status: string; tracking: string } | null = null;
+    const claimNumber = claimDetailSeed.return_number;
 
-    for (const claimType of ['return', 'exchange']) {
-      const list = await request.get(`/api/modules/sirsoft-ecommerce/admin/claims?type=${claimType}&per_page=30`, { headers });
-      const rows: Array<{ claim_number: string }> = (await list.json())?.data?.data ?? [];
+    const detailResponse = await request.get(`/api/modules/sirsoft-ecommerce/admin/claims/${encodeURIComponent(claimNumber)}`, { headers });
+    expect(detailResponse.ok()).toBe(true);
+    const detail = (await detailResponse.json())?.data;
+    const items: Array<{ transition_options?: Array<{ value: string }>; collection_tracking_number?: string | null; redelivery_tracking_number?: string | null }> = detail?.claim?.items ?? [];
+    const first = items[0]?.transition_options?.map((option) => option.value) ?? [];
+    const status = first.includes('collecting') ? 'collecting' : first.includes('redelivering') ? 'redelivering' : null;
 
-      for (const row of rows) {
-        const detail = (await (await request.get(`/api/modules/sirsoft-ecommerce/admin/claims/${encodeURIComponent(row.claim_number)}`, { headers })).json())?.data;
-        const items: Array<{ transition_options?: Array<{ value: string }>; collection_tracking_number?: string | null; redelivery_tracking_number?: string | null }> = detail?.claim?.items ?? [];
-        const first = items[0]?.transition_options?.map((option) => option.value) ?? [];
-        const status = first.includes('collecting') ? 'collecting' : first.includes('redelivering') ? 'redelivering' : null;
+    // 시드가 세운 전제다 — 어긋나면 시드나 서버 선택지가 깨진 것이라 건너뛰지 않고 실패한다.
+    expect(items.length, '시드한 반품이 상품 1건짜리가 아니다').toBe(1);
+    expect(status, `시드한 반품 행을 회수중·발송중으로 옮길 수 없다 — 선택지 ${JSON.stringify(first)}`).not.toBeNull();
 
-        if (items.length === 1 && status) {
-          // 미리 채움은 고른 **행**의 송장이다 — 송장은 상품 행마다 있다(#599 P1).
-          const saved = status === 'redelivering' ? items[0].redelivery_tracking_number : items[0].collection_tracking_number;
-          target = { claimNumber: row.claim_number, status, tracking: saved ?? '' };
-          break;
-        }
-      }
-
-      if (target) break;
-    }
-
-    test.skip(target === null, '회수중·발송중으로 옮길 수 있는 상품 1건짜리 신청서가 없다 — 클레임 시드 선행');
+    // 미리 채움은 고른 **행**의 송장이다 — 송장은 상품 행마다 있다(#599 P1).
+    const saved = status === 'redelivering' ? items[0].redelivery_tracking_number : items[0].collection_tracking_number;
+    const target = { claimNumber, status: status!, tracking: saved ?? '' };
 
     await authenticatePage(page, claimsManageToken);
     await page.goto(DETAIL_URL(target!.claimNumber));
@@ -856,34 +877,35 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
    * 열면 칸·동의가 없는 채 422 가 나고, 반대로 입력을 0 으로 비워도 칸·잠금이 남는다.
    *
    * 실행은 하지 않는다 — 열림과 칸·버튼 상태까지만 본다.
+   *
+   * 신청서는 시드가 세운다 — 계좌가 빈 승인 환불신청서(입금된 가상계좌 주문, 저장 현금 있음). 운영 데이터에서
+   * 찾던 때는 없으면 건너뛰었다(#757 M1 실측 skip).
    */
   // @scenario payment=vbank_deposited, stored_account=none
   // @effects refund_modal_account_rows_follow_selected_method
-  test('확인 창 계좌 칸은 저장값이 아니라 지금 입력한 현금액으로 선다', async ({ page, request, claimsManageToken }) => {
+  test('확인 창 계좌 칸은 저장값이 아니라 지금 입력한 현금액으로 선다', async ({ page, request, claimsManageToken, claimDetailSeed }) => {
     test.setTimeout(180_000);
     const headers = { Authorization: `Bearer ${claimsManageToken}`, Accept: 'application/json' };
+    const claimNumber = claimDetailSeed.refund_number;
 
-    // 계좌가 아직 없고 계좌 환불이 계좌를 받아야 하는(현금이 있다면) 승인 신청서를 찾는다.
+    // 승인 환불 목록 조건이 서버에서 통한다 — 이 시험이 기대는 「승인」 상태의 모집단이다.
     const list = await request.get('/api/modules/sirsoft-ecommerce/admin/claims?type=refund&statuses[]=approved&per_page=50', { headers });
     expect(list.status()).toBe(200);
-    let claimNumber: string | null = null;
-    for (const row of (await list.json())?.data?.data ?? []) {
-      const detail = await request.get(`/api/modules/sirsoft-ecommerce/admin/claims/${encodeURIComponent(row.claim_number)}`, { headers });
-      if (!detail.ok()) continue;
-      const judgement = (await detail.json())?.data?.claim?.refund_account_by_method?.bank;
-      if (judgement?.required_if_cash === true) {
-        claimNumber = row.claim_number;
-        break;
-      }
-    }
-    test.skip(claimNumber === null, '계좌가 없는 승인 환불신청서가 없다 — 계좌 칸이 설 대상이 없다');
+
+    // 계좌가 아직 없고 계좌 환불이 계좌를 받아야 하는(현금이 있다면) 승인 신청서다 — 시드가 세운 전제를 서버 판정으로 확인한다.
+    const detail = await request.get(`/api/modules/sirsoft-ecommerce/admin/claims/${encodeURIComponent(claimNumber)}`, { headers });
+    expect(detail.ok()).toBe(true);
+    const claimPayload = (await detail.json())?.data?.claim;
+    expect(claimPayload?.status, '시드한 환불신청서가 승인 상태가 아니다').toBe('approved');
+    expect(claimPayload?.refund_account_by_method?.bank?.required_if_cash, '시드한 환불신청서의 계좌 환불이 계좌를 요구하지 않는다').toBe(true);
 
     await authenticatePage(page, claimsManageToken);
-    await page.goto(DETAIL_URL(claimNumber!));
+    await page.goto(DETAIL_URL(claimNumber));
     await waitForDetail(page);
 
+    // 전권 토큰 + 승인 상태라 확인 창을 열 수 있어야 한다 — 잠겨 있으면 건너뛰지 않고 실패한다.
     const executeButton = page.locator('#cre_014_execute_button');
-    test.skip(await executeButton.isDisabled(), '실행 권한·상태가 없어 확인 창을 열 수 없다');
+    await expect(executeButton, '실행 권한·상태가 있는데 [환불하기] 가 잠겼다').toBeEnabled({ timeout: 15_000 });
 
     let executed = false;
     page.on('request', (req) => {

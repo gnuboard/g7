@@ -12,7 +12,7 @@ use Tests\TestCase;
  * 이 프리미티브의 존재 이유는 "확보 실패가 다시 500 을 내지 않는 것" 이다. 제3자 라이브러리에
  * 쓰기 경로를 지정하는 목적 자체가 vendor 쓰기 실패로 인한 500 을 막는 것인데, 확보 지점이
  * PHP 경고를 내면 Laravel `HandleExceptions` 가 이를 `ErrorException` 으로 승격시켜 같은 500 이
- * 다른 줄에서 그대로 난다 (공개 #125 의 2차 결함).
+ * 다른 줄에서 그대로 난다 (공개 #125 의 후속 결함).
  *
  * 그래서 실패 케이스는 반환값만 보지 않고 **경고가 나지 않았다는 것까지** 단언한다 — 경고를
  * 예외로 바꾸는 핸들러를 씌운 채로 호출해, 승격이 일어나면 테스트가 실패하도록 만든다.
@@ -22,6 +22,11 @@ class FilePermissionHelperWritableDirectoryTest extends TestCase
     /** 테스트가 만든 경로 (tearDown 정리 대상) */
     private string $root;
 
+    /**
+     * 테스트 전용 임시 루트를 비운 뒤 다시 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -31,6 +36,11 @@ class FilePermissionHelperWritableDirectoryTest extends TestCase
         File::ensureDirectoryExists($this->root);
     }
 
+    /**
+     * 테스트가 만든 임시 루트를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         File::deleteDirectory($this->root);
@@ -71,6 +81,12 @@ class FilePermissionHelperWritableDirectoryTest extends TestCase
 
     /**
      * 없는 디렉토리를 만들고 쓰기 가능으로 판정합니다.
+     *
+     * @scenario target_state=missing
+     *
+     * @effects writable_directory_created_or_reused
+     *
+     * @return void 반환값 없음
      */
     public function test_creates_missing_directory_and_reports_writable(): void
     {
@@ -88,6 +104,12 @@ class FilePermissionHelperWritableDirectoryTest extends TestCase
 
     /**
      * 이미 있는 쓰기 가능 디렉토리는 그대로 통과합니다 (재생성하지 않음).
+     *
+     * @scenario target_state=existing_writable
+     *
+     * @effects writable_directory_created_or_reused
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_true_for_existing_writable_directory(): void
     {
@@ -104,6 +126,12 @@ class FilePermissionHelperWritableDirectoryTest extends TestCase
 
     /**
      * 같은 이름의 파일이 자리를 차지하면 경고 없이 실패 사유를 돌려줍니다.
+     *
+     * @scenario target_state=occupied_by_file
+     *
+     * @effects ensure_failure_reported_without_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_reports_occupied_by_file_without_raising_warning(): void
     {
@@ -127,6 +155,12 @@ class FilePermissionHelperWritableDirectoryTest extends TestCase
      *
      * 상위(`$this->root`)는 쓰기 가능하므로 `ancestor_not_writable` 로 걸러지지 않고 실제
      * `mkdir` 까지 가서 실패하는 경로다 — 억제되지 않은 `mkdir` 이었다면 여기서 경고가 난다.
+     *
+     * @scenario target_state=segment_is_file
+     *
+     * @effects ensure_failure_reported_without_warning
+     *
+     * @return void 반환값 없음
      */
     public function test_reports_create_failed_when_a_path_segment_is_a_file(): void
     {
@@ -150,6 +184,10 @@ class FilePermissionHelperWritableDirectoryTest extends TestCase
 
     /**
      * 실재하는 최근접 상위를 찾아 올라갑니다.
+     *
+     * @effects nearest_existing_ancestor_found
+     *
+     * @return void 반환값 없음
      */
     public function test_nearest_existing_ancestor_walks_up_to_first_existing_directory(): void
     {
@@ -172,6 +210,10 @@ class FilePermissionHelperWritableDirectoryTest extends TestCase
      *
      * `hardenDirectory()` 는 `@` 억제 chmod 와 소유권 상속만 수행하므로, 경합으로 대상이
      * 사라진 상황에서도 호출자에게 실패를 던지지 않아야 한다.
+     *
+     * @effects harden_directory_silent_on_absent_target
+     *
+     * @return void 반환값 없음
      */
     public function test_harden_directory_is_silent_when_target_is_absent(): void
     {

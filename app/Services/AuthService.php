@@ -24,6 +24,7 @@ use App\Exceptions\Auth\TwoFactorEnrollmentRequiredException;
 use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\User;
+use App\Support\LocaleTag;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Arr;
@@ -91,30 +92,33 @@ class AuthService
     /**
      * Accept-Language 헤더에서 국가 코드를 추출합니다.
      *
+     * 첫 항목을 언어팩 규칙(BCP 47)으로 읽는다(#148): 지역 하위 태그가 국가면 그것
+     * (`fil-PH`→PH, `zh-Hant-TW`→TW), 숫자 지역(`es-419`)·문자 표기만 있는 코드(`zh-Hant`)는
+     * 나라를 하나로 정할 수 없어 비운다. 언어만 있으면 기본 국가 매핑(config)을 쓴다 —
+     * 매핑에 없는 `fil` 은 비운다.
+     *
      * @return string|null ISO 3166-1 alpha-2 국가 코드 (2자리 대문자)
      */
     private function detectCountryFromAcceptLanguage(): ?string
     {
-        $acceptLanguage = request()->header('Accept-Language');
-
-        if (empty($acceptLanguage)) {
+        $tag = LocaleTag::firstAcceptLanguageTag(request()->header('Accept-Language'));
+        if ($tag === null) {
             return null;
         }
 
-        // Accept-Language: ko-KR,ko;q=0.9,en-US;q=0.8 형식 파싱
-        // 첫 번째 언어에서 국가 코드 추출 시도
-        if (preg_match('/^([a-z]{2})-([A-Z]{2})/', $acceptLanguage, $matches)) {
-            return $matches[2];
+        $country = LocaleTag::countryCode($tag);
+        if ($country !== null) {
+            return $country;
         }
 
-        // 언어 코드만 있는 경우 (ko, en, ja 등) → 기본 국가 매핑 (config 기반)
-        if (preg_match('/^([a-z]{2})/', $acceptLanguage, $matches)) {
-            $languageToCountry = config('app.locale_country_fallback', []);
-
-            return $languageToCountry[$matches[1]] ?? null;
+        // 숫자 지역이나 문자 표기가 붙어 있으면 언어만으로 나라를 추정하지 않는다
+        if (LocaleTag::region($tag) !== null || str_contains($tag, '-')) {
+            return null;
         }
 
-        return null;
+        $languageToCountry = config('app.locale_country_fallback', []);
+
+        return $languageToCountry[LocaleTag::primaryLanguage($tag)] ?? null;
     }
 
     /**

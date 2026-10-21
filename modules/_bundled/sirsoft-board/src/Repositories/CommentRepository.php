@@ -10,6 +10,7 @@ use App\Support\Query\BoundedPage;
 use App\Support\Query\BoundedPaginator;
 use App\Support\Query\PaginationLimits;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -297,7 +298,8 @@ class CommentRepository implements CommentRepositoryInterface
 
         $descendants = $this->loadDescendantsOfRoots($resolvedBoardId, $postId, $rootIds, $withTrashed, $slug, $scopePermission);
 
-        $comments = collect($rootPage->items())->concat($descendants);
+        // Eloquent 컬렉션으로 묶는다 — 아래 보강·정렬 메서드가 Eloquent 컬렉션을 받는다(collect() 로 묶으면 TypeError 500)
+        $comments = (new Collection($rootPage->items()))->concat($descendants);
 
         if (! $withTrashed && $resolvedBoardId) {
             $comments = $this->restoreTombstoneParents($comments, $resolvedBoardId, $postId);
@@ -865,7 +867,7 @@ class CommentRepository implements CommentRepositoryInterface
      * 보이지 않는 댓글이라 목록에도 통계에도 남기지 않는다. 목록과 통계가 같은 조건을 쓰도록 한곳에 둔다.
      *
      * @param  int  $userId  사용자 ID
-     * @return \Illuminate\Database\Eloquent\Builder<Comment> 댓글 쿼리
+     * @return Builder<Comment> 댓글 쿼리
      */
     private function userCommentsBaseQuery(int $userId)
     {
@@ -913,7 +915,7 @@ class CommentRepository implements CommentRepositoryInterface
     /**
      * 특정 날짜에 작성된 전체 게시판의 댓글 수를 조회합니다 (대시보드 집계용).
      *
-     * 날짜는 사이트 표준시의 하루로 풀어 UTC 범위로 센다(게시글 집계와 같은 경계 — 7.1.0 O-CF3).
+     * 날짜는 사이트 표준시의 하루로 풀어 UTC 범위로 센다(게시글 집계와 같은 경계 — 7.1.0).
      *
      * @param  string  $date  집계 기준 날짜 (Y-m-d, 사이트 표준시)
      * @return int 해당 날짜 작성 댓글 수

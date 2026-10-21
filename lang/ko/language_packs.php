@@ -48,6 +48,7 @@ return [
         'directory_not_writable' => '언어팩 설치 디렉토리(:path) 에 쓰기 권한이 없습니다. 웹 서버 사용자(예: www-data) 에게 쓰기 권한을 부여하세요. (예: sudo chgrp www-data :path && sudo chmod g+w :path)',
         'identifier_not_found' => '언어팩을 찾을 수 없습니다 (:identifier).',
         'unsupported_source' => '지원하지 않는 소스 (:source) — bundled, github, url 중 하나를 사용하세요.',
+        'install_directory_replace_failed' => '언어팩(:identifier) 설치 폴더를 새 파일로 바꾸지 못했습니다. 다른 프로그램이 그 폴더의 파일을 열고 있을 수 있습니다. 잠시 뒤 다시 시도하세요. 설치 기록은 바꾸지 않았습니다.',
     ],
 
     // 매니페스트 이름이 없는 내장(확장·코어 동봉) 언어팩의 표시 이름
@@ -67,5 +68,59 @@ return [
         'checksum_invalid' => 'SHA-256 체크섬은 64자 16진수여야 합니다.',
         'identifier_required' => '언어팩 식별자를 입력하세요.',
         'identifier_invalid' => '식별자는 영문/숫자/점/언더스코어/하이픈만 허용됩니다.',
+    ],
+    // `language-pack:*` 명령 출력
+    'commands' => [
+        'activate' => [
+            'not_found' => '언어팩을 찾을 수 없습니다: :identifier',
+            'done' => '언어팩 활성화 완료: :identifier',
+            'failed' => '언어팩 활성화 실패: :error',
+        ],
+        'deactivate' => [
+            'not_found' => '언어팩을 찾을 수 없습니다: :identifier',
+            'done' => '언어팩 비활성화 완료: :identifier',
+            'failed' => '언어팩 비활성화 실패: :error',
+        ],
+        'cache_clear' => [
+            'done' => '언어팩 캐시 정리 완료:',
+            'failed' => '언어팩 캐시 정리 실패: :error',
+        ],
+        'check_updates' => [
+            'none' => '확인할 GitHub 기반 언어팩이 없습니다.',
+            'entry_failed' => '[:identifier] 조회 실패: :error',
+            'entry_update_available' => '[:identifier] :current → :latest  (업데이트 가능)',
+            'done' => '확인 완료: :checked 건 검사, :updates 건 업데이트 가능.',
+            'failed' => '업데이트 확인 실패: :error',
+        ],
+        'install' => [
+            'done' => '언어팩 설치 완료: :identifier v:version (status=:status)',
+            'failed' => '언어팩 설치 실패: :error',
+        ],
+        'list' => [
+            'empty' => '언어팩이 없습니다.',
+            'files_missing' => ':status (파일 없음)',
+        ],
+        'provision' => [
+            'no_target_locales' => '프로비저닝 대상 로케일이 없습니다 (base locale 외 supported_locales 미선언).',
+            'nothing_to_do' => '설치하거나 복구할 번들 언어팩이 없습니다 (로케일: :locales). 이미 프로비저닝된 상태입니다.',
+            'skipped_blocked' => '건너뜀 (설치 불가: :reason): :identifier',
+            'installed_item' => '설치: :identifier v:version (status=:status)',
+            'repaired_item' => '복구: :identifier v:version (status=:status)',
+            'item_failed' => '실패 (건너뜀): :identifier — :error',
+            'summary' => '프로비저닝 완료 — 설치 :installed, 복구 :repaired, 건너뜀 :skipped, 실패 :failed',
+        ],
+        'uninstall' => [
+            'not_found' => '언어팩을 찾을 수 없습니다: :identifier',
+            'confirm' => '언어팩 \':identifier\' 을(를) 제거하시겠습니까?',
+            'cancelled' => '취소되었습니다.',
+            'done' => '언어팩 제거 완료: :identifier',
+            'failed' => '언어팩 제거 실패: :error',
+        ],
+        'update' => [
+            'invalid_source' => '알 수 없는 --source 값: :source (auto|bundled|github 중 선택)',
+            'not_found' => '언어팩을 찾을 수 없습니다: :identifier',
+            'done' => '언어팩 업데이트 완료: :identifier (:from → :to)',
+            'failed' => '언어팩 업데이트 실패: :error',
+        ],
     ],
 ];

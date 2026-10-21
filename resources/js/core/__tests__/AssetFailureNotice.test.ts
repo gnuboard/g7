@@ -48,7 +48,7 @@ describe('AssetFailureNotice', () => {
 
     // @scenario asset_class=vendored, outcome=failed
     // @effects layout_script_failure_label_is_human_readable
-    it('번역이 없을 때 대체 문구도 괄호 조사 없이 코어 ko 문구와 같다 (7.1.0 O-R2-9)', () => {
+    it('번역이 없을 때 대체 문구도 괄호 조사 없이 코어 ko 문구와 같다 (7.1.0)', () => {
         notifyAssetFailure({ id: 'postcode', label: '주소 검색' });
 
         const text = container()?.textContent ?? '';

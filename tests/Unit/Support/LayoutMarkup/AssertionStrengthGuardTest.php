@@ -164,6 +164,8 @@ class AssertionStrengthGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects gate_assertions_are_all_falsifiable
+     *
+     * @return void 반환값 없음
      */
     public function test_no_gate_assertion_is_vacuous(): void
     {
@@ -213,6 +215,8 @@ class AssertionStrengthGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects derivation_based_gate_tests_declare_a_population_floor
+     *
+     * @return void 반환값 없음
      */
     public function test_every_derivation_based_test_has_a_population_floor(): void
     {
@@ -269,6 +273,8 @@ class AssertionStrengthGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects assertion_strength_guard_reacts_to_population_injected_samples
+     *
+     * @return void 반환값 없음
      */
     public function test_guard_reacts_to_samples_injected_into_the_population(): void
     {
@@ -313,6 +319,8 @@ class AssertionStrengthGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects assertion_strength_self_test_detects_known_vacuous_shapes
+     *
+     * @return void 반환값 없음
      */
     public function test_predicate_detects_known_vacuous_shapes(): void
     {
@@ -350,6 +358,8 @@ class AssertionStrengthGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects assertion_strength_self_test_distinguishes_floor_presence
+     *
+     * @return void 반환값 없음
      */
     public function test_floor_predicate_distinguishes_presence(): void
     {
@@ -429,6 +439,8 @@ class AssertionStrengthGuardTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects assertion_strength_guard_judges_itself_without_file_exemption
+     *
+     * @return void 반환값 없음
      */
     public function test_this_guard_is_judged_without_exemption(): void
     {
@@ -504,6 +516,12 @@ class AssertionStrengthGuardTest extends LayoutMarkupTestCase
         return $reachable;
     }
 
+    /**
+     * 코드가 저장소에서 모집단을 도출(디스크 스캔)하는지 판정합니다.
+     *
+     * @param  string  $code  주석이 제거된 PHP 코드
+     * @return bool 모집단 도출기를 부르거나 저장소 범위를 스캔하면 true
+     */
     private function derivesPopulationFromDisk(string $code): bool
     {
         // 모집단 도출기는 그 자체가 저장소 스캔이다 (호출만으로 의무 성립).
@@ -541,6 +559,7 @@ class AssertionStrengthGuardTest extends LayoutMarkupTestCase
      * 코드가 모집단 하한을 단언하는지 판정합니다.
      *
      * @param  string  $code  주석이 제거된 PHP 코드
+     * @param  string  $file  파일 전체 코드 (상수 배열 비교 판정용, 기본값 빈 문자열)
      * @return bool 하한 단언이 하나라도 있으면 true
      */
     private function declaresPopulationFloor(string $code, string $file = ''): bool
@@ -650,7 +669,7 @@ class AssertionStrengthGuardTest extends LayoutMarkupTestCase
      * 실제로 판정에 넣을 코드 — 주석과 **합성 표본 본문**을 함께 걷어냅니다 (35차 근본 조치 J).
      *
      * 표본이 리터럴에 담기므로 본문을 지우면 판정에서 사라지고, 그래서 파일 단위 면제가
-     * 불필요해진다. 35차 실측 — 이 가드의 표본은 nowdoc 만이 아니라 **무효 형태를 설명하는
+     * 불필요해진다. 실측 — 이 가드의 표본은 nowdoc 만이 아니라 **무효 형태를 설명하는
      * 문구**와 자기시험의 인라인 문자열에도 있었다(면제를 걷어내자 12건이 드러났다). 그래서
      * 제거기는 heredoc 전용이 아니라 {@see GateTestPopulation::codeWithoutLiteralBodies()} 다 —
      * 사본을 만들면 그 자리가 다음 회차의 검출물이 된다.

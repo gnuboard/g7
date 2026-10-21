@@ -11,12 +11,12 @@
         <h2 data-ref="dashboard_analytics_title" class="section-heading">$t:admin.analytics.dashboard_widget.title</h2>
         <badge data-type="composite" data-ref="dashboard_analytics_off_badge" data-if="{{dashboard_analytics?.data?.meta?.collection_enabled === false}}" color="yellow" text="$t:admin.analytics.dashboard_widget.collection_off" size="sm"/>
       </div>
-      <button data-ref="dashboard_analytics_more_btn" type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
+      <a data-ref="dashboard_analytics_more_btn" href="/admin/analytics" class="button text-tertiary hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer">
         <on type="click">
-          <navigate path="/admin/analytics"/>
+          <navigate/>
         </on>
         $t:admin.analytics.dashboard_widget.detail
-      </button>
+      </a>
     </div>
     <div data-ref="dashboard_analytics_error" data-if="{{dashboard_analytics?.widget_error === true &amp;&amp; !dashboard_analytics?.data?.kpi}}" class="alert-danger flex-center gap-2">
       <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0"/>
@@ -55,12 +55,12 @@
       <div data-ref="dashboard_analytics_realtime" class="flex flex-col items-center justify-center gap-2 bg-white dark:bg-slate-700 rounded-lg p-4 h-full">
         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"/>
         <span data-ref="dashboard_analytics_now" class="text-xl font-semibold text-gray-900 dark:text-white">$t:admin.analytics.dashboard_widget.now|count={{(dashboard_analytics?.data?.realtime?.count ?? 0) | number}}</span>
-        <button type="button" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+        <a href="/admin/analytics/realtime" class="button text-sm text-blue-600 dark:text-blue-300 hover:underline">
           <on type="click">
-            <navigate path="/admin/analytics/realtime"/>
+            <navigate/>
           </on>
           $t:admin.analytics.overview.realtime_link
-        </button>
+        </a>
       </div>
     </div>
   </div>

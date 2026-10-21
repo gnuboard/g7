@@ -25,7 +25,7 @@
             "name": "Div",
             "if": "{{!review?.author?.avatar}}",
             "props": {
-                "className": "w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm"
+                "className": "w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold text-sm"
             },
             "text": "{{(review?.author?.name ?? '?').charAt(0).toUpperCase()}}"
         }

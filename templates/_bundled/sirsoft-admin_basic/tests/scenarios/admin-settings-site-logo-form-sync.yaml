@@ -1,0 +1,22 @@
+feature: 환경설정 사이트 로고 파일 상태와 폼 동기화
+
+description: |
+  환경설정 › 일반의 사이트 로고 업로더(FileUploader)는 파일 상태가 바뀔 때마다 `_local.form.general.site_logo`
+  와 저장 단추 활성(`hasChanges`)을 맞춘다.
+
+  - onRemove: 지운 파일만 빠지고 나머지는 남는다(전부 지우면 빈 배열)
+  - onFilesChange: 파일을 고르기만 해도 저장 단추가 켜진다
+  - onUploadComplete: 올린 파일이 목록 끝에 붙는다
+  지우기 식 자체(hash 우선 비교)는 레이아웃 파일에서 식을 꺼내 평가하는 별도 시험이 고정한다.
+
+axes:
+  event: [onRemove, onFilesChange, onUploadComplete]
+
+effects:
+  - site_logo_remove_keeps_remaining_files
+  - site_logo_remove_all_leaves_empty_list
+  - site_logo_change_marks_form_dirty
+  - site_logo_upload_appends_file
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-logo-remove.test.tsx

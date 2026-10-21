@@ -214,7 +214,8 @@ class Plugin extends AbstractPlugin
             Listeners\AdjustEcommercePaymentMethodsLayoutListener::class,
             Listeners\ProvidePaymentMethodDisplayLabelListener::class,
             Listeners\EnsureAdminOrderDetailPaymentQueryLayoutListener::class,
-            Listeners\RestoreLayoutExtensionsAfterUpdateListener::class,
+            // 스코프 강제 지점 원장 (core.permission.scope_enforcement_ledger 필터)
+            Listeners\OrderScopeLedgerListener::class,
         ];
     }
 

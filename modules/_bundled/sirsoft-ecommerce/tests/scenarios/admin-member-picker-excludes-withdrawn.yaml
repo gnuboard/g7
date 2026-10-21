@@ -1,0 +1,33 @@
+# 시나리오 매니페스트 — 받을 회원을 고르는 관리자 창은 탈퇴 회원을 검색하지 않는다 (7.1.1, 코어 exclude_withdrawn 후속)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스", docs/backend/api/users.md 「exclude_withdrawn 을 실어야 하는 자리」
+
+feature: admin_member_picker_excludes_withdrawn
+
+description: >-
+  마일리지 수동 지급/차감 창과 쿠폰 직접 발급 창은 코어 회원 검색으로 받을 회원을 고른다. 검색은 기본으로 탈퇴 회원도 돌려주고,
+  서버는 그 회원에게도 그대로 지급·발급한다(마일리지 관리자 지급은 주문 적립과 달리 탈퇴 즉시 소멸을 거치지 않고, 쿠폰 직접 발급은
+  회원 상태를 보지 않는다). 탈퇴 회원은 로그인할 수 없어 받은 것을 쓰지 못하므로 고르는 자리에서 뺀다(`exclude_withdrawn=1`).
+  목록 필터(주문·쿠폰 사용 내역·배송지 「회원」 필터)는 탈퇴 회원의 기록을 찾는 자리라 그대로 둔다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminMemberPickerExcludesWithdrawn.test.ts
+
+coverage_strategy: pairwise
+
+axes:
+  surface:
+    - admin_modal   # 마일리지 수동 지급/차감 · 쿠폰 직접 발급 (빼야 함)
+    - admin_filter   # 주문·쿠폰·배송지 목록 「회원」 필터 (빼지 않음)
+
+# exclusions 없음 — 두 갈래(고르기 창·기록 필터)가 같은 API 의 다른 쓰임이라는 것을 함께 잠근다.
+# (종전에는 admin_filter 를 exclusions 에 넣어 두어 그 갈래가 cross product 에서 빠져 있었다 — 테스트는 그 갈래도 단언한다.)
+
+effects:
+  - member_picker_excludes_withdrawn   # 고르기 창은 exclude_withdrawn=1 을 싣고, 기록 필터는 싣지 않는다
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: 7.1.1 출시 전 캠페인 재실측(탈퇴 회원 이름으로 두 창에서 검색 — 결과 없음, 주문 목록 회원 필터에서는 나옴)
+  note: |
+    수정 전 red(2026-10-18): 2 failed / 5(두 창 query.exclude_withdrawn 없음). 수정 후 5 passed.
+    서버는 탈퇴 회원 지급·발급을 받아 준다 — UserMileageService::adminEarn(forfeitIfWithdrawn 미호출) · UserCouponService::issueDirectlyToUser(상태 검사 없음). 서버 차단 여부는 판단.

@@ -14,6 +14,7 @@
 7. `_local`(target 생략 포함)·부모 상태($parent._local · setParentLocal)를 고치는 setState 는 closeModal 보다 먼저 — `_global`·`_isolated` 정리는 closeModal 뒤여도 된다(§주의사항 1, §편집 모달 표준 예)
 8. 하단 버튼이 **방금 입력한 값**을 읽어야 하면 props.footer 가 아니라 본문 맨 아래 줄에 둔다 (§Footer 예외)
 9. 부모 **폼**(저장이 실어 보내는 값)을 고칠 때는 $parent._local 만으로 부족하다 — §부모 폼 커밋 참조
+10. 창 이름 공간이 개인정보·비밀값을 담으면 닫히는 모든 갈래(X·바깥 클릭·Esc 포함)에서 비운다 — 창 본문 노드의 `lifecycle.onUnmount` (§창을 닫을 때 이름 공간 비우기)
 ```
 
 ---
@@ -23,7 +24,7 @@
 1. [모달 위치에 따른 제어 방식](#모달-위치에-따른-제어-방식)
 2. [modals 섹션 모달 구조](#modals-섹션-모달-구조)
 3. [모달 열기/닫기](#모달-열기닫기)
-4. [$parent 바인딩 컨텍스트 (engine-v1.16.0+)](#parent-바인딩-컨텍스트-v1160)
+4. [$parent 바인딩 컨텍스트 (engine-v1.16.0+)](#parent-바인딩-컨텍스트-engine-v1160)
 5. [Footer 버튼 배치](#footer-버튼-배치)
 6. [위험 작업 버튼 로딩 상태](#위험-작업-버튼-로딩-상태)
 7. [일반 액션 버튼 로딩 상태](#일반-액션-버튼-로딩-상태)
@@ -397,7 +398,8 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 이 두 제약 때문에 편집 모달의 form 데이터는 **모달별 고유 `_global` namespace 키** 안에 두는 것이 표준입니다:
 
 ```json
-// list 측 click — 객체 통째 set (매 진입 fresh)
+// list 측 click — 먼저 null 로 비운 뒤 객체를 쓴다 (매 진입 fresh)
+{ "handler": "setState", "params": { "target": "global", "<modal_namespace>": null } },
 { "handler": "setState", "params": {
   "target": "global",
   "<modal_namespace>": {
@@ -424,6 +426,56 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
   { "handler": "setState", "params": { "target": "global", "<modal_namespace>": null } }
 ]
 ```
+
+**여는 순간 비우기**: `setState` 의 기본 병합은 deep 이라, 객체를 써도 이번 객체에 없는 앞 키(앞 창의 `id`·입력값·오류)는 지워지지 않습니다. 새로 만들기 창이 수정 창과 같은 키를 쓰면 앞 `id` 가 남아 「수정」 으로 열리고 저장이 그 항목을 덮어씁니다. 그래서 여는 동작은 같은 액션 목록에서 그 키를 먼저 `null` 로 쓰고 객체를 씁니다(`null` 은 그 키만 덮어쓰고 다른 `_global` 키는 그대로 둡니다). 전역 대상에 `merge: "replace"` 를 쓰는 방식은 쓰지 않습니다.
+
+#### 창을 닫을 때 이름 공간 비우기
+
+이름 공간이 개인정보·비밀값을 담으면 창이 닫히는 **모든 갈래**에서 비운다([security.md 「_global 상태 민감 정보 금지」 예외](security.md#예외--창-고유-이름-공간은-창을-닫을-때-비우면-허용)). 다음 열기의 null 선행만으로는 닫힌 동안 값이 전역에 남는다.
+
+| 닫는 갈래 | 레이아웃 동작을 타는가 | 비우는 자리 |
+| --- | --- | --- |
+| 취소·닫기 단추(창 안 단추) | 탄다 | 그 단추의 액션 — `closeModal` 뒤에 `setState target:"global" <ns>: null` |
+| 「선택」·적용 등 값을 넘기고 닫는 단추 | 탄다 | 값을 넘긴 **뒤**(이벤트·요청 본문이 이름 공간을 읽은 뒤) 같은 정리 |
+| 저장 성공으로 닫힘 | 탄다 | 성공 갈래 — 안내 문구가 이름 공간을 읽으면 그 뒤에 |
+| 창 머리 닫기(X)·바깥 클릭·Esc | **안 탄다** — 엔진이 주입한 `onClose`(= `closeModal`)로만 이어진다 | 창 본문 노드의 `lifecycle.onUnmount` |
+
+창은 닫히면 본문을 그리지 않으므로(영구 마운트되는 것은 창 루트 렌더러다) 본문 노드의 unmount 는 어느 갈래로 닫든 한 번 돈다. 그 노드는 **창이 열려 있는 동안 내내 붙어 있어야 한다** — 조건(`data-if`)·반복 안 노드에 걸면 창이 열린 채 그 노드가 내려갈 때(목록 ↔ 폼 전환 등) 입력 중인 값을 지운다. 본문의 맨 바깥 틀이 늘 있으면 거기에, 본문이 조건으로 갈아 끼워지는 두 얼굴뿐이면 맨 끝에 보이지 않는 빈 표지를 두고 건다.
+
+```html
+<modal data-type="composite" data-ref="address_manage_modal" title="...">
+  <!-- 목록 -->
+  <div data-if="{{_global.address_manage_modal?.mode !== 'form'}}">...</div>
+  <!-- 폼 -->
+  <div data-if="{{_global.address_manage_modal?.mode === 'form'}}">...</div>
+  <!-- 창 닫힘 표지 — 열려 있는 동안 내내 붙어 있다가 닫히면 함께 내려가며 이름 공간을 비운다 -->
+  <div class="hidden" aria-hidden="true">
+    <on event="unmount">
+      <set-state target="global" :address_manage_modal="null"/>
+    </on>
+  </div>
+</modal>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
+
+```json
+{
+  "type": "basic",
+  "name": "Div",
+  "props": { "className": "hidden", "aria-hidden": "true" },
+  "lifecycle": {
+    "onUnmount": [
+      { "handler": "setState", "params": { "target": "global", "address_manage_modal": null } }
+    ]
+  }
+}
+```
+
+- 닫는 액션 목록에서 `closeModal` 뒤에 오는 동작(이벤트 보내기·안내 문구)은 unmount 보다 먼저 돈다 — 다시 그리기가 미뤄지므로 같은 목록 안의 다음 동작이 이름 공간을 읽을 수 있다. 그래도 값을 넘기는 동작 뒤에 직접 비우는 정리를 함께 둔다.
+- 위에 다른 창이 겹쳐 떠도(덮어쓰기 확인 창 등) 아래 창은 열린 채라 비워지지 않는다. 아래 창까지 닫혀야 비워진다.
+- 창이 닫힌 뒤에도 페이지가 그 값을 읽어야 하면 창 이름 공간이 아니다 — 페이지 상태로 옮기거나(「창은 알리기만 하고 페이지가 자기 상태를 고친다」) 이벤트 값으로 넘긴다.
+- **창이 닫힌 뒤 도착한 응답도 이름 공간을 되살리면 안 된다.** 창 안에서 보낸 요청(검색 자동완성·상세 조회 등)의 응답 콜백이 `<ns>.<키>` 점 경로로 쓰면, 창이 닫혀 `null` 이 된 이름 공간을 부모째 새로 만든다(검색 결과의 이름·이메일이 그대로 남는다). 액션 `if` 는 요청 시점 문맥의 `_global` 을 보므로 닫힘을 알 수 없다 — 값 식은 평가 시점 최신 `_global` 을 보므로 이름 공간 전체를 값 식으로 쓴다: `<set-state target="global" ns="{{_global.ns == null ? null : ({ results: response.data })}}"/>`(기본 deep 병합이라 다른 칸은 그대로다). 창을 닫고 다른 대상을 다시 열 수 있는 창은 「열린 창의 대상 = 요청한 대상」 도 함께 견준다.
 
 **키 분리 규칙**:
 
@@ -536,6 +588,11 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 상태를 오염시키던 사례 때문이다). 그래서 창에서 부모 폼만 고치면 **표에는 보이는데 저장 요청 본문에는
 실리지 않아**, 운영자는 「저장했는데 방금 넣은 값이 사라졌다」를 겪는다(#636 브라우저 실측).
 
+> engine-v1.81.2 부터 대상이 페이지(첫 모달을 연 화면)인 `$parent._local`·`$root._local` 쓰기와
+> `setLocal({ scope: 'parent' | 'root' })` 는 엔진이 쓴 키만 `_global._local` 에도 얹는다(모달 자신의 상태는 넣지 않는다).
+> 아래 이중 쓰기는 같은 값을 두 번 쓸 뿐이라 그대로 둬도 되고, 이전 엔진과 함께 쓰는 확장은 계속 두는 편이 안전하다.
+> 중첩 모달에서 바로 아래 모달을 고치는 `$parent._local` 은 페이지 `_local` 이 아니라 얹지 않는다.
+
 부모의 **폼 값**(하단 저장 버튼이 실어 보내는 값)을 고치는 창은 같은 배열·객체를 두 자리에 쓴다.
 
 ```html
@@ -557,7 +614,29 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
 
 > 엔진이 이 미러 정책을 바꾸면 ①이 불필요해진다. 그때까지 새로 쓸 때는 이 절을 근거로 삼는다.
 > 번들 예: 관리자 환경설정 `_modal_ip_restriction_rule_form`·`_modal_notification_channel_off_confirm`, 이커머스 공통정보 `_modal_default_confirm`·마일리지 내역 `_modal_extend_expiry`, 탭을 옮길 때 묻는 미저장 확인 창
-> `_modal_unsaved_tab_switch`(코어 환경설정, 게시판 환경설정, 이커머스 환경설정).
+> `_modal_unsaved_tab_switch`(코어 환경설정, 게시판 환경설정).
+
+#### 다른 형태 — 창은 알리기만 하고 페이지가 자기 상태를 고친다
+
+창이 고칠 페이지 상태가 많거나 페이지의 다른 동작(탭 전환·주소 갱신)과 묶여 있으면, 창은 `<close-modal>` 뒤
+`<emit-event>` 로 알리기만 하고 페이지 쪽 `<on listen>` 이 자기 `_local` 을 고친다. 리스너의 setState 는
+모달 문맥이 아니라 페이지 문맥에서 돌므로 「closeModal 뒤 setState 금지」에 걸리지 않고, 두 자리에 같은 값을
+쓸 필요도 없다(engine-v1.80.0 부터 `<on listen>` 안의 연속 실행·분기가 동작한다).
+
+```html
+<!-- 창 [이동] 버튼 -->
+<sequence>
+  <close-modal target="..."/>
+  <emit-event event="sirsoft-ecommerce:settings-switch-tab"><field name="data"><field name="tab" value="{{_global.pendingEcommerceSettingsTab}}"/></field></emit-event>
+</sequence>
+<!-- 페이지 탭 본문 틀 -->
+<on listen="sirsoft-ecommerce:settings-switch-tab">
+  <set-state target="local" :hasChanges="false"/>
+  <set-state target="global" activeEcommerceSettingsTab="{{_eventData.tab}}" :pendingEcommerceSettingsTab="null"/>
+</on>
+```
+
+> 번들 예: 이커머스 환경설정 `_modal_unsaved_tab_switch` + `admin_ecommerce_settings` 의 탭 본문 틀(#753).
 
 ### Footer 스타일 규칙
 
@@ -1223,3 +1302,5 @@ ZIP 파일을 업로드해 백엔드에 multipart/form-data 로 전송하는 모
 | 2026-01-21 | 1.2 | 모달 내 로딩 상태는 반드시 `_global` 사용 (수정: `_local` → `_global`) |
 | 2026-01-30 | 1.3 | `$parent` 바인딩 컨텍스트 추가 (engine-v1.16.0) - 부모 레이아웃 상태 접근/수정 지원 |
 | 2026-04-28 | 1.4 | ZIP 파일 업로드 모달/드로어 패턴 섹션 추가 (FileInput, contentType, body 표현식, _global, sequence 로딩) |
+| 2026-10-18 | 1.5 | 「창을 닫을 때 이름 공간 비우기」 추가 — 개인정보·비밀값을 담은 창 이름 공간은 닫히는 모든 갈래에서 비우고, X·바깥 클릭·Esc 는 창 본문 노드의 unmount 로 덮는다 |
+| 2026-10-20 | 1.6 | 「창을 닫을 때 이름 공간 비우기」 보강 — 창이 닫힌 뒤 도착한 응답이 이름 공간을 되살리지 않게 값 식에서 null 을 가른다 |

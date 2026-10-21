@@ -69,7 +69,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-500 ml-1"
+                                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                                     },
                                                     "text": "*"
                                                 },
@@ -209,7 +209,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 ml-1"
+                                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                                             },
                                                             "text": "*"
                                                         },
@@ -278,7 +278,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 ml-1"
+                                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                                             },
                                                             "text": "*"
                                                         },
@@ -444,7 +444,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 ml-1"
+                                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                                             },
                                                             "text": "*"
                                                         },
@@ -504,7 +504,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 ml-1"
+                                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                                             },
                                                             "text": "*"
                                                         },
@@ -627,7 +627,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 ml-1"
+                                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                                             },
                                                             "text": "*"
                                                         },
@@ -687,7 +687,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-500 ml-1"
+                                                                "className": "text-red-600 dark:text-red-400 ml-1"
                                                             },
                                                             "text": "*"
                                                         },
@@ -749,7 +749,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-500 ml-1"
+                                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                                     },
                                                     "text": "*"
                                                 },
@@ -848,7 +848,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-red-500 ml-1"
+                                                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                                                     },
                                                                     "text": "*"
                                                                 },
@@ -908,7 +908,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-red-500 ml-1"
+                                                                        "className": "text-red-600 dark:text-red-400 ml-1"
                                                                     },
                                                                     "text": "*"
                                                                 },
@@ -931,7 +931,7 @@
                                                             "props": {
                                                                 "type": "text",
                                                                 "name": "mail.from_name",
-                                                                "placeholder": "그누보드7",
+                                                                "placeholder": "$t:admin.brand_name",
                                                                 "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['mail.from_name'] === true}}",
                                                                 "className": "input {{_local.errors?.['mail.from_name'] ? 'input-error' : ''}}"
                                                             }
@@ -1089,8 +1089,9 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "disabled": "{{_computed.isReadOnly || _local.isSendingTest}}",
-                                "className": "flex-center justify-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                "className": "flex-center justify-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                             },
                             "children": [
                                 {
@@ -1142,7 +1143,7 @@
                                     "if": "{{_local.testMailResult === 'success'}}",
                                     "props": {
                                         "name": "check-circle",
-                                        "className": "text-green-500 dark:text-green-400 flex-shrink-0"
+                                        "className": "text-green-700 dark:text-green-400 flex-shrink-0"
                                     }
                                 },
                                 {
@@ -1169,7 +1170,7 @@
                             "name": "Div",
                             "if": "{{_local.testMailResult === 'success' && _local.testMailSubject}}",
                             "props": {
-                                "className": "mt-2 pl-7 space-y-1 text-green-600 dark:text-green-300"
+                                "className": "mt-2 pl-7 space-y-1 text-green-700 dark:text-green-300"
                             },
                             "children": [
                                 {
@@ -1217,7 +1218,7 @@
                             "name": "Div",
                             "if": "{{_local.testMailResult === 'error' && _local.testMailError}}",
                             "props": {
-                                "className": "mt-2 pl-7 text-xs text-red-600 dark:text-red-300 break-all"
+                                "className": "mt-2 pl-7 text-xs text-red-700 dark:text-red-300 break-all"
                             },
                             "children": [
                                 {

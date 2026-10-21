@@ -4,11 +4,11 @@ description: |
   [동작] 탭은 부품 역량(capability.events)마다 칸을 그리고, 노드 최상위 `actions` 를 칸별로 나눠 읽고 쓴다.
   런타임(`ActionDispatcher.bindActionsToProps`)은 액션의 `event` 를 먼저 보고(DOM 이름은 `onClick` 처럼 정규화),
   없을 때 `type`, 둘 다 없으면 클릭으로 묶는다. 탭이 같은 순서로 나눠야 기본 제공 화면의 `event` 표기 동작이
-  제 칸에 보인다(7.1.0 영역 I2 후속 D-I2F-01).
+  제 칸에 보인다(7.1.0 후속 실측).
 
   새로 붙이는 동작의 표기는 런타임이 실제로 실행하는 형태여야 한다. `type` 경로는 콜백 첫 인자가 DOM 이벤트·
   `{ target }` 모양일 때만 실행하므로, 값을 그대로 넘기는 부품 콜백 칸(onSearch·onPageChange·onItemClick 등)은
-  `event` 로 적는다. DOM 이벤트 칸(onClick·onChange 등)은 종전 `type` 그대로다(D-I2F-02, 사례 26).
+  `event` 로 적는다. DOM 이벤트 칸(onClick·onChange 등)은 종전 `type` 그대로다.
 
   축 event_notation 은 칸이 다루는 액션 표기다 — type(DOM 이벤트 이름), event(prop 이름), legacy_props
   (과거 `props.actions`/`props.events` 위치).

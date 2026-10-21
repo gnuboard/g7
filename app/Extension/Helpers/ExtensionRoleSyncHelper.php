@@ -101,7 +101,7 @@ class ExtensionRoleSyncHelper
      *
      * 판정은 모델 공통 규칙(`HasUserOverrides::planUpgrade`)을 쓴다. 다만 7.0.x 에서 올리는 코어 업데이트의 부모 프로세스는
      * 옛 `Role`(planUpgrade 가 없는 트레이트)을 이미 메모리에 올린 채 이 새 헬퍼를 불러, 메서드가 없어 코어 역할·권한
-     * 재동기화 전체가 멈췄다(새 권한이 어느 역할에도 연결되지 않음 — 7.1.0 출시 점검 CU-3). 그때는 보수적으로 계산한다:
+     * 재동기화 전체가 멈췄다(새 권한이 어느 역할에도 연결되지 않음 — 7.1.0 출시 점검). 그때는 보수적으로 계산한다:
      * 운영자 수정 표식(`user_overrides`)에 칸 이름이 있으면 그 칸을 통째로 두고, `칸.언어` 표식이면 그 언어 값만 두고
      * 나머지 언어는 새 값으로 바꾼다. 표식 해제(합의 해제)는 하지 않는다 — 다음 정상 업데이트가 처리한다.
      *
@@ -402,7 +402,20 @@ class ExtensionRoleSyncHelper
         $definedPermIdentifiers = array_map(fn ($e) => $e['identifier'], $definedPermEntries);
         $scopeTypeMap = [];
         foreach ($definedPermEntries as $entry) {
-            $scopeTypeMap[$entry['identifier']] = $entry['scope_type'];
+            $scopeType = $entry['scope_type'];
+
+            // 비회원 역할은 권한 범위를 가질 수 없다(7.1.1) — 확장 정의(와일드카드 '*' 포함)가 범위를 주면
+            // 범위 없이 부여하고 경고만 남긴다. 설치·업데이트를 멈추면 확장 하나 때문에 사이트가 막힌다.
+            if ($scopeType !== null && ! $role->supportsPermissionScope()) {
+                Log::warning('비회원 역할에는 권한 범위를 지정할 수 없어 범위 없이 부여합니다', [
+                    'role' => $role->identifier,
+                    'permission' => $entry['identifier'],
+                    'scope_type' => $scopeType instanceof \BackedEnum ? $scopeType->value : $scopeType,
+                ]);
+                $scopeType = null;
+            }
+
+            $scopeTypeMap[$entry['identifier']] = $scopeType;
         }
 
         // DB에서 이 역할이 현재 갖고 있는 이 확장의 권한 목록

@@ -140,13 +140,13 @@ class CategorySeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('카테고리 더미 데이터 생성을 시작합니다.');
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.category.start'));
 
         $this->deleteExistingCategories();
         $this->createCategories($this->categories);
 
         $count = Category::count();
-        $this->command->info("카테고리 더미 데이터 {$count}건이 성공적으로 생성되었습니다.");
+        $this->command->info(__('sirsoft-ecommerce::messages.seeders.category.done', ['count' => $count]));
     }
 
     /**
@@ -159,7 +159,7 @@ class CategorySeeder extends Seeder
         if ($deletedCount > 0) {
             // 자식 먼저 삭제하기 위해 depth 역순으로 삭제
             Category::orderBy('depth', 'desc')->delete();
-            $this->command->warn("기존 카테고리 {$deletedCount}건을 삭제했습니다.");
+            $this->command->warn(__('sirsoft-ecommerce::messages.seeders.category.purged', ['count' => $deletedCount]));
         }
     }
 
@@ -194,7 +194,7 @@ class CategorySeeder extends Seeder
             $path = $parentPath ? $parentPath.'/'.$category->id : (string) $category->id;
             $category->update(['path' => $path]);
 
-            $this->command->line("  - 카테고리 생성: {$category->getLocalizedName()} (depth: {$depth})");
+            $this->command->line('  - '.__('sirsoft-ecommerce::messages.seeders.category.created', ['name' => $category->getLocalizedName(), 'depth' => $depth]));
 
             // 자식 카테고리 재귀 생성
             if (! empty($children)) {

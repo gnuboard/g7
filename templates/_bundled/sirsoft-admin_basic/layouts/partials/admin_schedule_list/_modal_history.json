@@ -60,7 +60,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "clock",
-                        "className": "text-5xl mx-auto mb-2 text-gray-300 dark:text-gray-600"
+                        "className": "text-5xl mx-auto mb-2 text-gray-500 dark:text-gray-500"
                     }
                 },
                 {
@@ -145,7 +145,7 @@
                                             "name": "Span",
                                             "if": "{{item.trigger_type === 'scheduled'}}",
                                             "props": {
-                                                "className": "text-secondary inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700"
+                                                "className": "text-body inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700"
                                             },
                                             "text": "$t:admin.schedules.trigger_type.scheduled"
                                         }
@@ -304,6 +304,7 @@
                         }
                     ],
                     "props": {
+                        "type": "button",
                         "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                     },
                     "text": "$t:common.close"

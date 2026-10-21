@@ -1,9 +1,10 @@
 {
-    "comment": "쇼핑몰 환경설정 (운영자) — 열 개 탭을 한 레이아웃에 싣고 탭 이름을 URL 쿼리에 남긴다. 탭마다\n  필요한 자료가 달라 각 데이터소스에 `if` 로 자기 탭 조건을 걸어 두었고(안 보는 탭 것은 부르지\n  않는다), 저장은 아래 버튼 하나가 현재 탭 몫만 골라 보낸다.",
+    "comment": "쇼핑몰 환경설정 (운영자) — 열 개 탭을 한 레이아웃에 싣고 탭 이름을 URL 쿼리에 남긴다. 탭마다\n  필요한 자료가 달라 각 데이터소스에 `if` 로 자기 탭 조건을 걸어 두었고(안 보는 탭 것은 부르지\n  않는다), 저장은 아래 버튼 하나가 현재 탭 몫만 골라 보낸다. e2e:allow 탭 전환 이벤트 받기의 세 동작을\n  `<sequence>` 로 감싸 주석 자리를 맞춘 것뿐이라 산출 JSON 은 comment 외 동일하다 — 화면 동작 변화 없음(#789).",
     "version": "1.0.0",
     "layout_name": "admin_ecommerce_settings",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "$t:sirsoft-ecommerce.admin.settings.title",
         "description": "$t:sirsoft-ecommerce.admin.settings.description"
     },
@@ -24,6 +25,31 @@
                     "params": {
                         "target": "content"
                     }
+                },
+                "default": {
+                    "comment": "그 밖의 실패(500·네트워크)도 오류 화면으로 — 설정을 못 받으면 폼이 빈 채로 서서 탭마다 「등록된 택배사가 없습니다」 같은 빈 안내가 뜨고, 그대로 저장하면 빈 값이 나간다. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "전 탭의 설정값을 한 덩어리로 받아 폼에 심는다 — 이 한 응답이 열 탭을 모두 덮는다. 탭 전환은 같은 화면으로의 재진입(navigate replace)이라 refetchOnMount 로 다시 받아 폼을 덮는다 — 그래서 저장하지 않은 변경이 있으면 탭 줄이 옮기기 전에 묻는다. 저장 뒤에는 서버가 정규화한 값으로 되맞추려고 다시 받는다"
@@ -126,6 +152,26 @@
             "params": {
                 "per_page": 20
             },
+            "onSuccess": [
+                {
+                    "comment": "다시 받기에 성공하면 실패 표시를 내린다",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "privacyTargets.loadFailed": false
+                    }
+                }
+            ],
+            "errorHandling": {
+                "default": {
+                    "comment": "다시 받기(refetch)가 실패하면 창이 알 수 있게 표시를 남긴다 — 엔진 판과 무관하게 창은 이 표시로 오류 안내를 가른다(여는 버튼이 `privacyTargets` 객체를 통째로 새로 써서 다음 열기 때 지워진다)",
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "privacyTargets.loadFailed": true
+                    }
+                }
+            },
             "comment": "개인정보 보유기간 대상 주문 창 — 여는 버튼이 목록 경로를 `_global.privacyTargets.path` 에 넣고 다시 받은 뒤 연다.\n       명단은 코어 공통 대상 목록 API 가 이 모듈 핸들러를 식별자로 찾아 내려준다."
         },
         {
@@ -150,10 +196,29 @@
             "auth_required": true,
             "errorHandling": {
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "배송 탭에서만 — 택배사는 설정 본문이 아니라 별도 목록이라 따로 받는다"
@@ -188,10 +253,29 @@
             },
             "errorHandling": {
                 "default": {
-                    "handler": "showErrorPage",
-                    "params": {
-                        "target": "content"
-                    }
+                    "comment": "다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             "comment": "알림 정의는 코어가 가진 목록이라 확장 식별자로 이 모듈 몫만 걸러 받는다. 마일리지 탭도 자기 알림을 보여 주므로 두 탭이 함께 쓴다"
@@ -381,14 +465,14 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "fas fa-lock",
-                                    "className": "text-yellow-600 dark:text-yellow-400"
+                                    "className": "text-yellow-700 dark:text-yellow-400"
                                 }
                             },
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "ecommerce-tone-warning-soft text-xs"
                                 },
                                 "text": "$t:sirsoft-ecommerce.common.read_only_notice"
                             }
@@ -424,57 +508,14 @@
                                     },
                                     {
                                         "then": {
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "comment": "탭을 옮기면 열어 둔 인라인 추가 폼도 함께 정리한다(확인 창 「저장하지 않고 이동」 partials/admin_ecommerce_settings/_modal_unsaved_tab_switch 도 같은 목록 — 함께 고친다). 페이지 [저장] 가드는 이 플래그들을 **탭과 무관하게** 읽으므로, 남겨 두면 폼을 연 채 다른 탭으로 간 운영자는 그 뒤로 어느 탭에서도 저장하지 못하고 화면에 있지도 않은 폼을 확정하라는 안내만 받는다(브라우저 실측으로 재현 — S10 17차). 각 폼의 '취소' 가 비우는 것과 같은 범위를 비운다: 플래그 + 입력 버퍼 + 그 폼의 오류. 가드가 열거식이므로 새 인라인 폼이 생기면 여기에도 더해야 한다.",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "local",
-                                                        "errors": null,
-                                                        "isAddingExchangeReason": false,
-                                                        "exchangeReasonForm": null,
-                                                        "exchangeReasonFormErrors": null,
-                                                        "isAddingReturnReason": false,
-                                                        "returnReasonForm": null,
-                                                        "returnReasonFormErrors": null,
-                                                        "isAddingRefundReason": false,
-                                                        "refundReasonForm": null,
-                                                        "refundReasonFormErrors": null,
-                                                        "isAddingCarrier": false,
-                                                        "carrierForm": null,
-                                                        "carrierFormErrors": null,
-                                                        "isAddingShippingType": false,
-                                                        "shippingTypeForm": null,
-                                                        "shippingTypeFormErrors": null,
-                                                        "isAddingCountry": false,
-                                                        "newCountry": null,
-                                                        "isAddingCurrency": false,
-                                                        "form.newCurrency": null,
-                                                        "isAddingMileageCurrency": false,
-                                                        "form.newMileageCurrency": null,
-                                                        "claimReasonTab": null
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "activeEcommerceSettingsTab": "{{$args[0]}}"
-                                                    }
-                                                },
-                                                {
-                                                    "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/ecommerce/settings",
-                                                        "replace": true,
-                                                        "query": {
-                                                            "tab": "{{$args[0]}}"
-                                                        }
-                                                    }
+                                            "comment": "탭 전환은 탭 본문 틀(ecommerce_settings_tab_content)의 이벤트 받기가 전담한다 — 확인 창 [이동] 도 같은 이벤트만 보낸다",
+                                            "handler": "emitEvent",
+                                            "params": {
+                                                "event": "sirsoft-ecommerce:settings-switch-tab",
+                                                "data": {
+                                                    "tab": "{{$args[0]}}"
                                                 }
-                                            ]
+                                            }
                                         }
                                     }
                                 ]
@@ -487,46 +528,57 @@
                             "tabs": [
                                 {
                                     "id": "basic_info",
+                                    "href": "/admin/ecommerce/settings?tab=basic_info",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.basic_info"
                                 },
                                 {
                                     "id": "language_currency",
+                                    "href": "/admin/ecommerce/settings?tab=language_currency",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.language_currency"
                                 },
                                 {
                                     "id": "seo",
+                                    "href": "/admin/ecommerce/settings?tab=seo",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.seo"
                                 },
                                 {
                                     "id": "order_settings",
+                                    "href": "/admin/ecommerce/settings?tab=order_settings",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.order_settings"
                                 },
                                 {
                                     "id": "claim",
+                                    "href": "/admin/ecommerce/settings?tab=claim",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.claim"
                                 },
                                 {
                                     "id": "shipping",
+                                    "href": "/admin/ecommerce/settings?tab=shipping",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.shipping"
                                 },
                                 {
                                     "id": "review_settings",
+                                    "href": "/admin/ecommerce/settings?tab=review_settings",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.review_settings"
                                 },
                                 {
                                     "id": "notification_definitions",
+                                    "href": "/admin/ecommerce/settings?tab=notification_definitions",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.notification_definitions"
                                 },
                                 {
                                     "id": "identity_policies",
+                                    "href": "/admin/ecommerce/settings?tab=identity_policies",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.identity_policies"
                                 },
                                 {
                                     "id": "mileage",
+                                    "href": "/admin/ecommerce/settings?tab=mileage",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.mileage"
                                 },
                                 {
                                     "id": "privacy_retention",
+                                    "href": "/admin/ecommerce/settings?tab=privacy_retention",
                                     "label": "$t:sirsoft-ecommerce.admin.settings.tabs.privacy_retention"
                                 }
                             ]
@@ -536,6 +588,64 @@
                         "id": "ecommerce_settings_tab_content",
                         "type": "basic",
                         "name": "Div",
+                        "onComponentEvent": [
+                            {
+                                "comment": "탭 전환의 단일 처리처 — 탭 줄(변경 없음)과 확인 창 [이동] 이 이 이벤트만 보낸다. 정리 목록은 여기 한 곳(새 인라인 폼이 생기면 여기에만 더한다). 페이지 [저장] 가드는 인라인 추가 폼 플래그를 탭과 무관하게 읽으므로, 남겨 두면 폼을 연 채 다른 탭으로 간 운영자는 어느 탭에서도 저장하지 못한다(S10 17차). 각 폼의 '취소' 가 비우는 범위(플래그 + 입력 버퍼 + 그 폼의 오류)와 「변경 있음」·오류를 비운다. 이 받기는 페이지 문맥이라 target=local 이 페이지 폼 렌더러 상태에 닿는다(모달 문맥의 local 은 닿지 않아 옮긴 뒤 첫 입력에 옛 값이 되살아났다 — 실측 C7)",
+                                "event": "sirsoft-ecommerce:settings-switch-tab",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "hasChanges": false,
+                                            "errors": null,
+                                            "isAddingExchangeReason": false,
+                                            "exchangeReasonForm": null,
+                                            "exchangeReasonFormErrors": null,
+                                            "isAddingReturnReason": false,
+                                            "returnReasonForm": null,
+                                            "returnReasonFormErrors": null,
+                                            "isAddingRefundReason": false,
+                                            "refundReasonForm": null,
+                                            "refundReasonFormErrors": null,
+                                            "isAddingCarrier": false,
+                                            "carrierForm": null,
+                                            "carrierFormErrors": null,
+                                            "isAddingShippingType": false,
+                                            "shippingTypeForm": null,
+                                            "shippingTypeFormErrors": null,
+                                            "isAddingCountry": false,
+                                            "newCountry": null,
+                                            "isAddingCurrency": false,
+                                            "form.newCurrency": null,
+                                            "isAddingMileageCurrency": false,
+                                            "form.newMileageCurrency": null,
+                                            "claimReasonTab": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "activeEcommerceSettingsTab": "{{_eventData.tab}}",
+                                            "pendingEcommerceSettingsTab": null
+                                        }
+                                    },
+                                    {
+                                        "comment": "audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 다루는 대상이 달라 이전 탭의 목록 상태를 물려받으면 오히려 잘못된 화면이 된다.",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/ecommerce/settings",
+                                            "replace": true,
+                                            "query": {
+                                                "tab": "{{_eventData.tab}}"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
                         "props": {
                             "className": "tab-content"
                         },
@@ -572,7 +682,7 @@
                                                         "type": "basic",
                                                         "name": "H3",
                                                         "props": {
-                                                            "className": "text-error-strong"
+                                                            "className": "ecommerce-tone-error-strong text-sm font-medium"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.settings.validation_error"
                                                     },
@@ -581,7 +691,7 @@
                                                         "name": "P",
                                                         "if": "{{typeof _local.errors === 'string'}}",
                                                         "props": {
-                                                            "className": "text-error-soft mt-2"
+                                                            "className": "ecommerce-tone-error-soft mt-2 text-sm"
                                                         },
                                                         "text": "{{_local.errors}}"
                                                     },
@@ -601,7 +711,7 @@
                                                                 "type": "basic",
                                                                 "name": "Li",
                                                                 "props": {
-                                                                    "className": "text-error-soft"
+                                                                    "className": "ecommerce-tone-error-soft text-sm"
                                                                 },
                                                                 "text": "{{message}}"
                                                             }
@@ -659,17 +769,18 @@
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin"
+                                            "bypassLeaveGuard": true
                                         }
                                     }
                                 ],
                                 "props": {
+                                    "href": "/admin",
                                     "className": "btn btn-secondary"
                                 },
                                 "children": [
@@ -784,6 +895,7 @@
                                     }
                                 ],
                                 "props": {
+                                    "type": "button",
                                     "data-testid": "ecommerce-settings-save",
                                     "disabled": "{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}",
                                     "className": "btn btn-primary flex-center gap-1.5"

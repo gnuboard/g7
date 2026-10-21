@@ -1,0 +1,21 @@
+feature: language_pack_host_cascade_reactivation
+
+description: |
+  호스트 확장을 끌 때 함께 꺼진 언어팩의 「다시 켤 목록」 이 캐시에만 있어 cache:clear 로 사라지고 한 번 읽으면 지워졌다(공개 #145 F7).
+  연쇄 비활성화는 deactivated_reason=host_deactivated 와 deactivated_at 을 남기고, 다시 켤 목록은 DB 에서 읽으며 7.1.0 이하가 남긴
+  캐시 목록도 한 번 합쳐 읽는다. 켜면 두 칸을 비우고, 운영자가 직접 끄면 사유 없이 시각만 남긴다.
+
+coverage_strategy: full
+
+axes:
+  case: [cascade_then_cache_clear, legacy_stash, activate_and_manual_deactivate]
+
+effects:
+  - host_cascade_marks_language_packs_in_db
+  - pending_reactivation_survives_cache_clear
+  - legacy_stash_is_merged_once
+  - activate_clears_deactivation_marks
+  - manual_deactivate_has_no_host_reason
+
+test_files:
+  - tests/Feature/LanguagePack/HostCascadeReactivationTest.php

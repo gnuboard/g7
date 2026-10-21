@@ -61,16 +61,16 @@ const VersionListItem: React.FC<VersionListItemProps> = React.memo(({ version, i
           <Span className="font-semibold text-gray-900 dark:text-gray-100">
             버전 {version.version}
           </Span>
-          <Span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+          <Span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
             {formatDate(version.created_at)}
           </Span>
         </Div>
 
         <Div className="flex gap-3 text-sm">
-          <Span className="text-green-600 dark:text-green-400">
+          <Span className="text-green-700 dark:text-green-400">
             +{version.changes_summary.added}
           </Span>
-          <Span className="text-red-600 dark:text-red-400">
+          <Span className="text-red-700 dark:text-red-400">
             -{version.changes_summary.removed}
           </Span>
         </Div>

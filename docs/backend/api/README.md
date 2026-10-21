@@ -44,6 +44,13 @@ Authorization: Bearer {YOUR_TOKEN}
 (예: `The tags field must have at least 1 item.` / `… at least 2 items.`, 설정값인 첨부 개수 상한 포함).
 메시지 문구는 표시용이므로 클라이언트 로직은 `message` 대신 `data` 의 값(예: `deleted_count`)을 읽으세요.
 
+언어 코드는 언어팩 설치 규칙과 같은 BCP 47 형식(`ko`·`fil`·`fil-PH`·`zh-Hant`·`es-419`, 최대 20자)을 받습니다(7.1.1).
+`Accept-Language` 는 정확일치 → 주 언어(`fil-PH` → `fil`) → 같은 주 언어의 다른 지역 순으로 지원 언어와 맞춥니다.
+
+다국어 값 필드(`name`·`localized_name` 등 `{"ko": …, "en": …}` 원본에서 한 언어를 골라 주는 필드)는
+요청 언어 → 사이트 기본 언어(환경설정 「기본 언어」) → 영어 순으로 비어 있지 않은 값을 고르고, 셋 다 없으면
+저장된 첫 값을 줍니다(`App\Support\LocalizedValue::pick`). 7.1.0 까지는 요청 언어 다음이 한국어로 고정이었습니다.
+
 ### 응답 봉투
 
 성공·실패 모두 동일한 최상위 구조를 씁니다. 실제 페이로드는 항상 `data` 안에 들어갑니다.

@@ -7,7 +7,7 @@ use Modules\Gnuboard7\HelloModule\Tests\ModuleTestCase;
 /**
  * 메모 목록 화면의 페이지 번호 파라미터 테스트.
  *
- * 7.1.0 전수 실측 M3: 공개 메모 목록(`/memos`)을 쿼리 없이 열면 데이터 소스가
+ * 7.1.0 전수 실측: 공개 메모 목록(`/memos`)을 쿼리 없이 열면 데이터 소스가
  * `page={{query.page}}` 를 그대로 보내 `GET /api/modules/gnuboard7-hello_module/memos?page=undefined`
  * 가 되고, 목록 요청 검증(`page` 정수)이 422 를 돌려 메모가 한 건도 보이지 않았다(DB 메모 5건).
  * 관리자 목록도 같은 파라미터를 쓴다. 쿼리가 없을 때 1쪽을 보내도록 기본값을 둔다.

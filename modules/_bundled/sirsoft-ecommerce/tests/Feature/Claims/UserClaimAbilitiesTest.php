@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Tests\Concerns\BuildsClaimFlowOrders;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 
 /**
- * 회원 클레임 응답의 버튼 판정이 권한을 함께 보는지 테스트 (7.1.0 abilities 게이트 G31)
+ * 회원 클레임 응답의 버튼 판정이 권한을 함께 보는지 테스트 (7.1.0 abilities 게이트)
  *
  * [철회]·[수정]·[결제하기] 는 각각 `user-claims.withdraw`·`user-claims.request`·`user-claims.pay` 라우트 권한이다.
  * 응답의 `is_withdrawable`·`is_editable`·`can_pay` 가 상태와 출처만 보면, 운영자가 권한을 거둔 뒤에도 버튼이 서고

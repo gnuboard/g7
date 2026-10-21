@@ -1,0 +1,43 @@
+feature: 비회원 역할 권한 범위 금지 (7.1.1)
+
+description: |
+  비회원에게는 「본인」 을 판정할 신원이 없어, 비회원 역할에 「본인만」·「소유역할」 범위를 저장해도 코어 판정
+  경로가 범위를 건너뛰어 실제로는 「전체」 가 됐다(비회원 역할에 「비밀글 조회 = 본인만」 을 주면 비밀번호 없이
+  모든 비밀글이 열림). 7.1.1 부터 비회원 역할은 범위를 가질 수 없다.
+
+  - 역할 수정 API: 비회원 역할에 범위가 실린 항목마다 422(`permissions.N.scope_type`), 아무것도 저장되지 않는다.
+    범위 없는(전체) 부여는 통과한다. 일반 역할·비회원을 복제한 새 역할은 지금처럼 범위를 저장한다.
+  - 생성 API: 식별자가 guest 면 범위 항목을 거부한다(방어).
+  - 서비스 직접 호출(RoleService::syncPermissions): 같은 판정으로 ValidationException.
+  - 확장 동기화: 확장 선언(와일드카드 '*' 포함)이 비회원에 범위를 주면 범위 없이 부여하고 경고 로그.
+  - 응답: 역할 리소스 `supports_permission_scope`(비회원만 false) — 역할 폼이 범위 드롭다운을 숨긴다.
+  - 남은 부여 탐지: findGuestScopedGrants 가 코어 업데이트 경고의 원천.
+
+test_files:
+  - tests/Feature/Api/Admin/RoleGuestScopeTest.php
+  - tests/Feature/Security/GuestRoleScopeDefenseTest.php
+
+axes:
+  case:
+    - update_guest_with_scope
+    - update_guest_without_scope
+    - update_regular_with_scope
+    - store_clone_of_guest_with_scope
+    - store_guest_identifier_with_scope
+    - resource_flag
+    - tree_flag
+    - service_direct_call
+    - service_regular_role
+    - extension_sync
+    - guest_scoped_grant_reported
+
+effects:
+  - guest_scope_rejected_422
+  - nothing_saved_on_reject
+  - guest_unscoped_grant_saved
+  - regular_role_scope_saved
+  - supports_permission_scope_flag
+  - scope_supported_tree_flag
+  - guest_scope_rejected_in_service
+  - extension_guest_scope_nulled_with_warning
+  - guest_scoped_grant_reported

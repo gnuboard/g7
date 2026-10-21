@@ -77,7 +77,8 @@
     "reply_status": {
       "replied": "返信完了",
       "not_replied": "未返信"
-    }
+    },
+    "quantity_value": "{{count}}個"
   },
   "detail": {
     "purchase_info": {

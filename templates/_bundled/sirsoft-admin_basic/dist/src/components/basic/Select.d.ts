@@ -2,6 +2,8 @@ import { default as React } from 'react';
 export interface SelectOption {
     value: string | number;
     label: string;
+    /** 드롭다운 목록에서 라벨 아래 작은 글자로 보이는 설명 (트리거 버튼에는 보이지 않는다) */
+    description?: string;
     disabled?: boolean;
 }
 export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'onChange'> {

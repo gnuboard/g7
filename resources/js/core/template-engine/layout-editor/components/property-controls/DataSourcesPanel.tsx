@@ -275,6 +275,24 @@ function emptyDraft(): DraftState {
 }
 
 /**
+ * 데이터 소스 판에 조건(`if` 또는 `conditions`)이 있는지 — 백엔드 `LayoutDataSourceIds::isConditional` 과 같은 판정
+ * (빈 문자열·빈 배열·빈 객체는 조건 없음).
+ *
+ * @param entry 데이터 소스 항목
+ * @returns 조건이 있으면 true
+ * @since engine-v1.80.1
+ */
+function isConditionalSource(entry: Record<string, unknown> | null | undefined): boolean {
+  if (!entry) return false;
+  return [entry['if'], entry['conditions']].some((value) => {
+    if (value === undefined || value === null || value === '') return false;
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === 'object') return Object.keys(value as object).length > 0;
+    return true;
+  });
+}
+
+/**
  * 초안을 data_source 객체로 변환. 기존 엔트리의 미편집 필드(__source 등)는 보존한다.
  * 검증 실패(중복 id, JSON 파싱 오류)면 error 메시지 반환.
  */
@@ -636,14 +654,24 @@ export function DataSourcesPanel({
     if (!draft) return;
     // 중복 검사 집합 — 자기 자신(편집 중 index)과 상속 id 는 제외하지 않는다(상속과의
     // 중복은 백엔드 ValidDataSourceMerge 가 거부하므로 여기서도 차단).
+    // 자체 소스의 같은 id 는 「편집 중인 판과 같은 id 의 다른 판이 모두 조건(if·conditions)을 가질 때」 허용한다 —
+    // 엔진은 조건을 만족하는 첫 판만 쓰고 백엔드 검증(LayoutDataSourceIds::conflictingDuplicates)도 같은 규칙이다.
+    const base = draft.index >= 0 ? own[draft.index] ?? null : null;
+    const draftConditional = draft.if.trim() !== '' || isConditionalSource(base ? { conditions: base.conditions } : null);
     const existing = new Set<string>();
+    const siblingUnconditional = new Set<string>();
     own.forEach((d, i) => {
-      if (i !== draft.index && typeof d.id === 'string') existing.add(d.id);
+      if (i === draft.index || typeof d.id !== 'string') return;
+      existing.add(d.id);
+      if (!isConditionalSource(d)) siblingUnconditional.add(d.id);
     });
+    const draftId = draft.id.trim();
+    if (draftConditional && existing.has(draftId) && !siblingUnconditional.has(draftId)) {
+      existing.delete(draftId);
+    }
     inherited.forEach((d) => {
       if (typeof d.id === 'string') existing.add(d.id);
     });
-    const base = draft.index >= 0 ? own[draft.index] ?? null : null;
     const result = draftToEntry(draft, base, existing, t);
     if ('error' in result) {
       setFormError(result.error);
@@ -1101,7 +1129,7 @@ export function DataSourcesPanel({
                 <label style={labelStyle}>{t('layout_editor.data_sources.field.target_source')}</label>
                 <input data-testid="g7le-ds-ws-target" style={inputStyle} value={draft.target_source} onChange={(e) => setDraft({ ...draft, target_source: e.target.value })} list="g7le-ds-ws-target-list" />
                 <datalist id="g7le-ds-ws-target-list">
-                  {own.filter((d) => d.id !== draft.id).map((d) => (typeof d.id === 'string' ? <option key={d.id} value={d.id} /> : null))}
+                  {[...new Set(own.filter((d) => d.id !== draft.id && typeof d.id === 'string').map((d) => d.id as string))].map((id) => <option key={id} value={id} />)}
                 </datalist>
               </div>
               <div style={fieldWrap}>

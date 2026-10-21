@@ -93,6 +93,7 @@
     <field name="showUnit" :value="false"/>
     <field name="labelDrilldownKey" value=""/>
   </init-local>
+  <computed name="tabQuery">{{['preset', 'from', 'to', 'unit', 'exclude', 'per_page'].filter(k =&gt; query[k]).map(k =&gt; '&amp;' + k + '=' + encodeURIComponent(query[k])).join('')}}</computed>
   <computed name="reportEmptyHint">{{(query.tab || 'types') === 'mediums' ? $t('admin.analytics.referrers.mediums_empty') : null}}</computed>
   <computed name="reportName">{{({types: 'referrer_type', sites: 'referrer_name', keywords: 'referrer_keyword', campaigns: 'campaign', mediums: 'campaign_medium'})[query.tab || 'types'] || 'referrer_type'}}</computed>
   <computed name="csvUrl">{{((query.tab || 'types') === 'sites' &amp;&amp; !!query.host) ? '' : '/api/admin/analytics/reports/' + _computed.reportName + '?format=csv' + (query.from ? '&amp;from=' + query.from + '&amp;to=' + (query.to || query.from) : '&amp;preset=' + (query.preset || '7d')) + (query.exclude || '').split(',').filter(Boolean).map(e => '&amp;exclude[]=' + e).join('') + (query.q ? '&amp;q=' + encodeURIComponent(query.q) : '') + (query.sort ? '&amp;sort=' + query.sort : '')}}</computed>
@@ -131,11 +132,11 @@
       <include src="partials/admin_analytics/_partial_period_bar.g7.html"/>
       <tab-navigation data-type="composite" data-ref="report_tabs" class="mb-4" activeTabId="{{query.tab || 'types'}}" variant="underline">
         <prop name="tabs">
-          <item id="types" label="$t:admin.analytics.referrers.tabs.types"/>
-          <item id="sites" label="$t:admin.analytics.referrers.tabs.sites"/>
-          <item id="keywords" label="$t:admin.analytics.referrers.tabs.keywords"/>
-          <item id="campaigns" label="$t:admin.analytics.referrers.tabs.campaigns"/>
-          <item id="mediums" label="$t:admin.analytics.referrers.tabs.mediums"/>
+          <item id="types" href="/admin/analytics/referrers?tab=types{{_computed.tabQuery}}" label="$t:admin.analytics.referrers.tabs.types"/>
+          <item id="sites" href="/admin/analytics/referrers?tab=sites{{_computed.tabQuery}}" label="$t:admin.analytics.referrers.tabs.sites"/>
+          <item id="keywords" href="/admin/analytics/referrers?tab=keywords{{_computed.tabQuery}}" label="$t:admin.analytics.referrers.tabs.keywords"/>
+          <item id="campaigns" href="/admin/analytics/referrers?tab=campaigns{{_computed.tabQuery}}" label="$t:admin.analytics.referrers.tabs.campaigns"/>
+          <item id="mediums" href="/admin/analytics/referrers?tab=mediums{{_computed.tabQuery}}" label="$t:admin.analytics.referrers.tabs.mediums"/>
         </prop>
         <on type="change" event="onTabChange">
           <!-- 탭 전환 — 라벨 링크 여부를 새 탭에 맞춘 뒤 이동한다. 사이트 탭에서 열어 둔 도메인(`host`)은 새 탭에 의미가 없어 지운다. -->
@@ -168,19 +169,19 @@
         돌아가기는 `host` 만 지워 기간·쪽 크기는 그대로 두고 사이트 목록으로 되돌린다. -->
       <div data-ref="referrer_urls_card" data-if="{{(query.tab || 'types') === 'sites' &amp;&amp; !!query.host}}" class="admin-card">
         <div data-ref="referrer_urls_header" class="flex-center gap-3 mb-3">
-          <button data-ref="referrer_urls_back" type="button" class="btn-icon" aria-label="$t:admin.analytics.referrers.urls_back">
+          <a data-ref="referrer_urls_back" href="/admin/analytics/referrers?tab={{query.tab || 'sites'}}{{_computed.tabQuery}}" class="button btn-icon" aria-label="$t:admin.analytics.referrers.urls_back">
             <on type="click">
-              <!-- 사이트 목록으로 — 라벨 링크를 다시 켜고 `host` 만 지워 1쪽으로 돌아간다. 기간·쪽 크기는 병합으로 남는다. -->
+              <!-- 사이트 목록으로 — 링크(#757)라 새 탭으로도 연다. 주소는 href 한 곳: 지금 탭과 기간·쪽 크기(`tabQuery`)만 싣고
+                   `host` 는 싣지 않아 1쪽 사이트 목록으로 돌아간다(현재 쿼리를 병합하면 지우려는 host 가 남는다). -->
               <sequence>
                 <!-- 사이트 목록으로 돌아오는 것도 `replace` 라 `<init>` 이 다시 돌지 않는다 — 링크를 다시 켠다. -->
                 <set-state target="local" labelDrilldownKey="host"/>
-                <navigate path="/admin/analytics/referrers" :mergeQuery="true" :replace="true" transition_overlay_target="referrer_urls_grid__body">
-                  <query host="{{undefined}}" :page="1"/>
-                </navigate>
+                <!-- audit:allow layout-list-context-navigate-merge-query 사이트 목록 복귀 — 현재 쿼리를 병합하면 지우려는 host 가 남아 다시 주소 목록이 열린다. 이어받을 기간·쪽 크기는 href 의 tabQuery 가 싣는다. -->
+                <navigate :replace="true" transition_overlay_target="referrer_urls_grid__body"/>
               </sequence>
             </on>
             <icon name="arrow-left" class="text-xl"/>
-          </button>
+          </a>
           <div class="min-w-0">
             <h2 class="section-heading break-all">$t:admin.analytics.referrers.urls_title|host={{query.host ?? ''}}</h2>
             <p class="text-hint mt-1">$t:admin.analytics.referrers.urls_hint</p>
@@ -188,7 +189,7 @@
         </div>
         <div class="overflow-x-auto">
           <blur-until-loaded sources="analytics_referrer_urls"/>
-          <data-grid data-type="composite" data-ref="referrer_urls_grid" data-if="{{analytics_referrer_urls?.loading || (analytics_referrer_urls?.data?.data ?? []).length &gt; 0}}" data="{{analytics_referrer_urls?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_referrer_urls?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="url" :selectable="false" :sortable="false" emptyMessage="$t:admin.analytics.common.empty_title">
+          <data-grid pageHref="/admin/analytics/referrers?page={page}" :pageHrefMergeQuery="true" data-type="composite" data-ref="referrer_urls_grid" data-if="{{analytics_referrer_urls === undefined || (analytics_referrer_urls?.data?.data ?? []).length &gt; 0}}" data="{{analytics_referrer_urls?.data?.data ?? []}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{+(query.page || 1)}}" :serverTotalPages="null" serverHasMorePages="{{analytics_referrer_urls?.data?.pagination?.has_more ?? false}}" pageSize="{{+(query.per_page || 25)}}" :alwaysShowPagination="true" idField="url" :selectable="false" :sortable="false" emptyMessage="{{analytics_referrer_urls === undefined ? '' : $t('admin.analytics.common.empty_title')}}">
             <on type="action" event="onPageChange">
               <!-- 유입 주소 목록의 쪽 이동. 이 목록은 원장을 직접 읽어 총 건수를 세지 않으므로 다음 쪽 여부는 응답의 `has_more` 로만 안다. -->
               <navigate path="/admin/analytics/referrers" :mergeQuery="true" :replace="true" transition_overlay_target="referrer_urls_grid__body">
@@ -213,7 +214,7 @@
             </column>
           </data-grid>
         </div>
-        <empty-state data-type="composite" data-ref="referrer_urls_empty" data-if="{{!analytics_referrer_urls?.loading &amp;&amp; (analytics_referrer_urls?.data?.data ?? []).length === 0}}" iconName="link" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.referrers.urls_empty_description" class="py-10"/>
+        <empty-state data-type="composite" data-ref="referrer_urls_empty" data-if="{{analytics_referrer_urls !== undefined &amp;&amp; (analytics_referrer_urls?.data?.data ?? []).length === 0}}" iconName="link" title="$t:admin.analytics.common.empty_title" description="$t:admin.analytics.referrers.urls_empty_description" class="py-10"/>
       </div>
       <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->
       <extension-point name="analytics_referrers_widgets" class="space-y-4 mt-4">

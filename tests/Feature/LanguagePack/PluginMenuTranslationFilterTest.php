@@ -15,7 +15,7 @@ use ReflectionMethod;
 use Tests\TestCase;
 
 /**
- * 플러그인 관리자 메뉴 이름에 플러그인 언어팩 번역을 넣는다 (7.1.0 출시 점검 U5-1).
+ * 플러그인 관리자 메뉴 이름에 플러그인 언어팩 번역을 넣는다 (7.1.0 출시 점검).
  *
  * 플러그인 메뉴 동기화는 `plugin.{id}.admin_menus.translations` 필터를 발화하지만 언어팩 쪽 결선이 `module.{id}` 에만
  * 있었고, 주입기는 모듈 범위 팩만 골랐다. 또 플러그인을 다시 켜면 플러그인 자신의 activate() 가 필터 없이 메뉴를

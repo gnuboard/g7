@@ -68,22 +68,22 @@
                             {
                                 "id": "memo_create_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "comment": "새 메모 작성. 작성을 취소하고 돌아올 때를 위해 목록 상태를 함께 넘긴다",
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/memos/create",
                                             "mergeQuery": true,
                                             "query": {}
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "href": "/admin/memos/create",
+                                    "mergeQuery": true,
+                                    "className": "button px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed",
                                     "disabled": "{{memos?.data?.abilities?.can_create !== true}}",
                                     "title": "{{memos?.data?.abilities?.can_create === true ? '' : '$t:gnuboard7-hello_module.admin.memos.index.create_no_permission'}}"
                                 },
@@ -102,7 +102,7 @@
                         "id": "memo_empty",
                         "type": "basic",
                         "name": "P",
-                        "if": "{{(memos?.data?.data ?? []).length === 0}}",
+                        "if": "{{memos !== undefined && ((memos?.data?.data ?? []).length === 0)}}",
                         "props": {
                             "className": "py-8 text-center text-sm text-gray-500 dark:text-gray-400"
                         },

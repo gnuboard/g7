@@ -103,3 +103,8 @@
         color: oklch(96.2% 0.059 95.617); /* amber-100 */
     }
 }
+
+/* 점검 결과의 조치 안내 상자 — 안쪽 여백 0.625rem(p-2.5). 관리자 템플릿 CSS 에 이 간격 규칙이 생성되지 않는다 */
+.pay-nhnkcp-remediation-box {
+    padding: calc(var(--spacing, 0.25rem) * 2.5);
+}

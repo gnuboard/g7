@@ -54,14 +54,14 @@ class SecurityIpRestrictionCommand extends Command
     {
         // --status 는 "보기만 한다" 는 뜻이다 — 같이 주면 무엇을 의도했는지 알 수 없으므로 끄지 않고 멈춘다.
         if ($this->option('status') && $this->option('disable')) {
-            $this->error('--status 와 --disable 은 함께 쓸 수 없습니다 — 상태만 보려면 --status, 끄려면 --disable 만 주세요.');
+            $this->error(__('common.console.security_ip_restriction.conflicting_options'));
 
             return self::FAILURE;
         }
 
         if ($this->option('disable')) {
             if (! IpAccessMatcher::isEnabled($configRepository->getCategory('security'))) {
-                $this->info('IP 접근 제한은 이미 꺼져 있습니다.');
+                $this->info(__('common.console.security_ip_restriction.already_disabled'));
             } elseif (! $this->turnOff($settingsService)) {
                 return self::FAILURE;
             } else {
@@ -71,8 +71,8 @@ class SecurityIpRestrictionCommand extends Command
                     'properties' => ['via' => 'console'],
                 ]);
 
-                $this->info('IP 접근 제한을 껐습니다.');
-                $this->line('허용 목록과 규칙은 지우지 않았습니다 — 환경설정 > 보안 > 접근 제한 에서 목록을 고친 뒤 다시 켜세요.');
+                $this->info(__('common.console.security_ip_restriction.disabled'));
+                $this->line(__('common.console.security_ip_restriction.disabled_hint'));
             }
 
             $this->line('');
@@ -99,13 +99,13 @@ class SecurityIpRestrictionCommand extends Command
                 return true;
             }
         } catch (\Throwable $e) {
-            $this->error('설정을 저장하지 못했습니다 — '.$e->getMessage());
-            $this->line('storage/app/settings/security.json 의 "ip_restriction_enabled" 를 false 로 고치면 같은 효과입니다.');
+            $this->error(__('common.console.security_ip_restriction.save_failed', ['error' => $e->getMessage()]));
+            $this->line(__('common.console.security_ip_restriction.manual_disable_hint'));
 
             return false;
         }
 
-        $this->error('설정을 저장하지 못했습니다 — storage/app/settings/security.json 의 쓰기 권한을 확인하세요.');
+        $this->error(__('common.console.security_ip_restriction.save_failed_permission'));
 
         return false;
     }
@@ -125,21 +125,21 @@ class SecurityIpRestrictionCommand extends Command
         $adminAllowedIps = is_array($security['admin_allowed_ips'] ?? null) ? $security['admin_allowed_ips'] : [];
         $rules = is_array($security['ip_restriction_rules'] ?? null) ? array_values($security['ip_restriction_rules']) : [];
 
-        $this->line('<options=bold>IP 접근 제한 상태</>');
+        $this->line('<options=bold>'.__('common.console.security_ip_restriction.title').'</>');
         $this->line('');
-        $this->line('  사용 여부          : '.($enabled ? '<fg=green>켜짐</>' : '<comment>꺼짐</comment>'));
+        $this->line('  '.__('common.console.security_ip_restriction.enabled_row', ['value' => $enabled ? '<fg=green>'.__('common.console.security_ip_restriction.on').'</>' : '<comment>'.__('common.console.security_ip_restriction.off').'</comment>']));
 
         if ($adminAllowedIps === []) {
-            $this->line('  관리자 영역 허용 IP : <comment>비어 있음 (이 축은 적용되지 않음)</comment>');
+            $this->line('  '.__('common.console.security_ip_restriction.admin_ips_row', ['value' => '<comment>'.__('common.console.security_ip_restriction.admin_ips_empty').'</comment>']));
         } else {
-            $this->line('  관리자 영역 허용 IP : '.implode(', ', array_map('strval', array_filter($adminAllowedIps, 'is_scalar'))));
+            $this->line('  '.__('common.console.security_ip_restriction.admin_ips_row', ['value' => implode(', ', array_map('strval', array_filter($adminAllowedIps, 'is_scalar')))]));
         }
 
-        $this->line('  라우트별 규칙      : '.count($rules).'건 (사용 중인 첫 매칭 규칙만 적용)');
+        $this->line('  '.__('common.console.security_ip_restriction.rules_row', ['count' => count($rules)]));
 
         if ($rules !== []) {
             $this->table(
-                ['#', 'URI 패턴', '허용 IP', '메모', '사용'],
+                ['#', __('common.console.security_ip_restriction.headers.pattern'), __('common.console.security_ip_restriction.headers.ips'), __('common.console.security_ip_restriction.headers.memo'), __('common.console.security_ip_restriction.headers.enabled')],
                 array_map(function ($rule, $index) {
                     $rule = is_array($rule) ? $rule : [];
 
@@ -148,7 +148,7 @@ class SecurityIpRestrictionCommand extends Command
                         (string) ($rule['pattern'] ?? ''),
                         implode(', ', array_map('strval', array_filter((array) ($rule['ips'] ?? []), 'is_scalar'))),
                         (string) ($rule['memo'] ?? ''),
-                        IpAccessMatcher::isRuleEnabled($rule) ? '예' : '아니오',
+                        IpAccessMatcher::isRuleEnabled($rule) ? __('common.console.security_ip_restriction.yes') : __('common.console.security_ip_restriction.no'),
                     ];
                 }, $rules, array_keys($rules))
             );
@@ -157,14 +157,14 @@ class SecurityIpRestrictionCommand extends Command
         $invalid = $this->invalidEntries($adminAllowedIps, $rules);
 
         if ($invalid !== []) {
-            $this->warn('  형식이 잘못된 항목 (판정에서 무시됨): '.implode(', ', $invalid));
+            $this->warn('  '.__('common.console.security_ip_restriction.invalid_entries', ['entries' => implode(', ', $invalid)]));
         }
 
-        $this->line('  신뢰 프록시        : '.(TrustedProxyDiagnostic::isConfigured()
+        $this->line('  '.__('common.console.security_ip_restriction.trusted_proxy_row', ['value' => TrustedProxyDiagnostic::isConfigured()
             ? (string) TrustedProxyDiagnostic::configuredProxies()
-            : '<comment>미설정 — 프록시 뒤에서는 전원이 프록시 주소 하나로 보입니다 (trusted-proxy:status)</comment>'));
-        $this->line('  설정 파일          : storage/app/settings/security.json');
-        $this->line('  비상 해제          : php artisan security:ip-restriction --disable');
+            : '<comment>'.__('common.console.security_ip_restriction.trusted_proxy_unset').'</comment>']));
+        $this->line('  '.__('common.console.security_ip_restriction.config_file_row', ['path' => 'storage/app/settings/security.json']));
+        $this->line('  '.__('common.console.security_ip_restriction.emergency_row', ['command' => 'php artisan security:ip-restriction --disable']));
         $this->line('');
     }
 

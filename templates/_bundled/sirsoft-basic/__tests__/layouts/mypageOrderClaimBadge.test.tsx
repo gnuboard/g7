@@ -66,10 +66,14 @@ describe('_list.json — 클레임 배지 (D22)', () => {
 
   const block = nodes.find((n) => n.iteration?.item_var === 'claim');
 
+  // @scenario claim_presence=with_claim
+  // @effects mypage_order_card_renders_claim_badge
   it('클레임 요약을 순회하는 블록이 존재한다', () => {
     expect(block).toBeTruthy();
   });
 
+  // @scenario claim_presence=with_claim
+  // @effects mypage_order_card_renders_claim_badge
   it('래퍼는 클레임이 없는 주문에서 그려지지 않는다', () => {
     // 래퍼에 `if` 가 없으면 `[]` 에서도 빈 flex 아이템이 남아 상태 배지와 배송국가 칩 사이 gap 이
     // 한 칸 더 벌어진다 — 관리자 정본은 `length > 0` 으로 묶는다.
@@ -77,6 +81,8 @@ describe('_list.json — 클레임 배지 (D22)', () => {
     expect(wrapper?.if).toBe('{{(order.claim_summary ?? []).length > 0}}');
   });
 
+  // @scenario claim_presence=with_claim
+  // @effects mypage_order_card_renders_claim_badge
   it('순회 대상은 order.claim_summary 이고 fallback 을 갖는다', () => {
     // fallback 이 없으면 응답 도착 전 undefined 를 순회해 렌더가 throw 한다.
     expect(block?.iteration?.source).toBe('{{order.claim_summary ?? []}}');
@@ -84,6 +90,8 @@ describe('_list.json — 클레임 배지 (D22)', () => {
     expect(block?.name).toBe('Span');
   });
 
+  // @scenario claim_presence=with_claim
+  // @effects mypage_order_claim_badge_uses_server_status_label
   it('라벨은 서버가 내려준 status_label 을 그대로 쓴다 (화면이 유형·상태를 조합하지 않는다)', () => {
     const inner = flatten(block);
     const label = inner.find((n) => typeof n.text === 'string' && n.text.includes('claim.status_label'));
@@ -93,6 +101,8 @@ describe('_list.json — 클레임 배지 (D22)', () => {
     expect(label?.text).toBe('{{claim.status_label ?? claim.type_label ?? \'\'}}');
   });
 
+  // @scenario claim_presence=with_claim
+  // @effects mypage_order_claim_badge_shows_count_only_when_multiple
   it('건수는 2건 이상일 때만 덧붙는다', () => {
     const inner = flatten(block);
     // 관리자 목록 배지와 같은 표기 `(N)` — `SummarizesClaims` 가 "관리자·구매자가 같은 배지 형태" 를 계약으로 둔다.
@@ -103,6 +113,8 @@ describe('_list.json — 클레임 배지 (D22)', () => {
     expect(count?.if).toBe('{{(claim.count ?? 0) > 1}}');
   });
 
+  // @scenario claim_presence=with_claim
+  // @effects claim_status_variant_vocabulary_covered_by_both_screens
   it('상태 색상은 라이트/다크 쌍을 모두 갖는다', () => {
     const inner = flatten(block);
     const badge = inner.find((n) => n.classMap?.key === '{{claim.status_variant}}');
@@ -123,7 +135,7 @@ describe('_list.json — 클레임 배지 (D22)', () => {
     expect(variants.length).toBe(8);
     // 미지 값 폴백은 관리자 `StatusBadge.default`(회색)와 같은 색 — 보라로 갈리면 `variant()` 에 값이
     // 하나 늘 때 같은 주문이 두 화면에서 다른 색으로 보인다.
-    expect(badge?.classMap?.default).toBe('bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-400');
+    expect(badge?.classMap?.default).toBe('bg-gray-50 text-gray-600 dark:bg-gray-700 dark:text-gray-300');
 
     for (const v of variants) {
       expect(v, `다크 모드 짝이 없는 클래스: ${v}`).toMatch(/dark:/);

@@ -5,8 +5,8 @@ namespace App\Extension;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\PluginInterface;
+use App\Support\BootDeferredLog;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Log;
 
 /**
  * 정적 훅 매핑 캐시 관리자.
@@ -27,6 +27,9 @@ use Illuminate\Support\Facades\Log;
  * 오토로드 캐시(autoload-extensions.php)와 동일 위치·생명주기를 갖는다:
  * 확장 install/activate/deactivate/uninstall/update 시
  * ExtensionManager::updateComposerAutoload() 가 함께 재생성한다.
+ *
+ * 캐시를 읽는 `read()` 는 서비스 공급자 부팅 중(언어팩 번역 등록 전)에 돈다. 폴백 경고는 `BootDeferredLog` 로 등록이
+ * 끝난 뒤 남겨 사이트 언어(ja 등) 문구가 되게 한다(부팅이 끝난 뒤 부르면 바로 남긴다).
  *
  * @see HookListenerRegistrar::registerFromCache()
  */
@@ -116,7 +119,7 @@ class HookCacheManager
         try {
             $data = require $this->cacheFilePath;
         } catch (\Throwable $e) {
-            Log::warning('훅 캐시 파일 로드 실패 — 스캔 폴백', [
+            BootDeferredLog::warning('hooks.cache_load_failed', [], [
                 'path' => $this->cacheFilePath,
                 'error' => $e->getMessage(),
             ]);
@@ -126,7 +129,7 @@ class HookCacheManager
         }
 
         if (! is_array($data) || ! isset($data['core'], $data['modules'], $data['plugins'])) {
-            Log::warning('훅 캐시 파일 구조가 올바르지 않습니다 — 스캔 폴백', [
+            BootDeferredLog::warning('hooks.cache_invalid_structure', [], [
                 'path' => $this->cacheFilePath,
             ]);
             self::$memo = false;
@@ -138,7 +141,7 @@ class HookCacheManager
         $format = $data['format'] ?? null;
         $coreVersion = $data['core_version'] ?? null;
         if ($format !== self::FORMAT || $coreVersion !== CoreVersionChecker::getCoreVersion()) {
-            Log::warning('훅 캐시 파일의 형식·코어 버전이 지금과 다릅니다 — 스캔 폴백 (php artisan hooks:cache 로 다시 만드세요)', [
+            BootDeferredLog::warning('hooks.cache_stale', [], [
                 'path' => $this->cacheFilePath,
                 'format' => $format,
                 'core_version' => $coreVersion,
@@ -208,7 +211,7 @@ class HookCacheManager
             'plugins' => array_sum(array_map('count', $cache['plugins'])),
         ];
 
-        Log::info('훅 매핑 캐시 파일 생성 완료', [
+        BootDeferredLog::info('hooks.cache_file_written', [], [
             'path' => $this->cacheFilePath,
             'core' => $counts['core'],
             'modules' => $counts['modules'],
@@ -303,7 +306,7 @@ class HookCacheManager
     protected function buildListenerEntry(string $listenerClass): ?array
     {
         if (! class_exists($listenerClass)) {
-            Log::warning('훅 캐시 생성: 리스너 클래스를 찾을 수 없습니다', ['listener' => $listenerClass]);
+            BootDeferredLog::warning('hooks.cache_listener_not_found', [], ['listener' => $listenerClass]);
 
             return null;
         }
@@ -315,7 +318,7 @@ class HookCacheManager
         try {
             $hooks = $listenerClass::getSubscribedHooks();
         } catch (\Throwable $e) {
-            Log::warning('훅 캐시 생성: getSubscribedHooks() 오류 — 항목 제외', [
+            BootDeferredLog::warning('hooks.cache_listener_hooks_failed', [], [
                 'listener' => $listenerClass,
                 'error' => $e->getMessage(),
             ]);

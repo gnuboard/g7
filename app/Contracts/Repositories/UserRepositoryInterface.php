@@ -82,9 +82,10 @@ interface UserRepositoryInterface
      * 키워드로 사용자를 검색합니다. (이름, 닉네임, 이메일)
      *
      * @param  string  $keyword  검색할 키워드
+     * @param  bool  $excludeWithdrawn  탈퇴 회원을 뺄지 여부 — 알림 수신자처럼 고르는 자리는 true, 기록을 찾는 목록 필터는 false(기본)
      * @return Collection 검색된 사용자 컬렉션
      */
-    public function searchByKeyword(string $keyword): Collection;
+    public function searchByKeyword(string $keyword, bool $excludeWithdrawn = false): Collection;
 
     /**
      * 최근 등록된 사용자들을 조회합니다.
@@ -144,6 +145,34 @@ interface UserRepositoryInterface
      * @return Collection<int, User> 권한 보유 사용자 컬렉션
      */
     public function findManyByPermissionIdentifier(string $permissionIdentifier): Collection;
+
+    /**
+     * 특정 권한을 가진 역할에 소속된 사용자의 id 만 오름차순으로 조회합니다 (#139).
+     *
+     * @param  string  $permissionIdentifier  권한 identifier
+     * @return array<int, int> 사용자 id (오름차순, 중복 없음)
+     */
+    public function findIdsByPermissionIdentifier(string $permissionIdentifier): array;
+
+    /**
+     * UUID 목록에 해당하는 사용자의 id 만 오름차순으로 조회합니다 (#139).
+     *
+     * @param  array<int, string>  $uuids  사용자 UUID 목록
+     * @return array<int, int> 사용자 id (오름차순)
+     */
+    public function findIdsByUuids(array $uuids): array;
+
+    /**
+     * 알림 발송에 쓸 사용자들을 id 순으로 다시 싣습니다 (#139).
+     *
+     * 알림 대량 발송의 자식 잡이 묶음(기본 100명)마다 부른다. 역할·권한은 권한 판정이 읽는 컬럼만
+     * 싣는다(RoleRepository::getUsersByIdentifiers() 와 같은 좁힌 적재) — 수신자마다 「이 화면을 열 수 있는가」
+     * 를 물을 때 쿼리가 수신자 수에 비례해 늘지 않게 한다. 사라진 id 는 결과에서 빠진다.
+     *
+     * @param  array<int, int>  $ids  사용자 id 목록
+     * @return Collection<int, User> id 오름차순 사용자
+     */
+    public function findNotifiablesByIds(array $ids): Collection;
 
     /**
      * 사용자의 연속 로그인 실패 카운터를 1 증가시킵니다.

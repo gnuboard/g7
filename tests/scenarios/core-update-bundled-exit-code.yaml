@@ -1,0 +1,19 @@
+feature: 번들 확장 일괄 업데이트 실패를 core:update 종료 코드로 드러낸다
+
+description: |
+  #144(공개) / #770(내부). 코어 업데이트 끝의 번들 확장 일괄 업데이트가 하나라도 실패하면 `core:update` 와 단독
+  `core:execute-upgrade-steps` 가 후처리(훅 캐시 재굽기·소유권 복원·로그 정리)를 마친 뒤 경고 1줄과 함께 종료 코드 1 을
+  돌려준다. 결과 페이로드를 남기지 못하고 비정상 종료한 spawn 자식은 실패 1건으로 센다(정상 종료인데 결과가 없으면 종전대로 0/0).
+
+axes:
+  case:
+    - exit_code_by_failed_count
+    - both_commands_route_through_exit_code
+    - spawn_child_exit_without_payload
+
+effects:
+  - bundled_update_failure_returns_exit_code_one_with_warning
+  - spawn_child_crash_without_payload_counts_as_failure
+
+test_files:
+  - tests/Feature/Console/BundledUpdateExitCodeTest.php

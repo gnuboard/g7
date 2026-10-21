@@ -1,4 +1,4 @@
-# 시나리오 매니페스트 — 회원 자동완성이 지금 친 검색어의 목록만 그린다 (T2-D1 · #599 3차 실측)
+# 시나리오 매니페스트 — 회원 자동완성이 지금 친 검색어의 목록만 그린다 (#599 실측)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 
 feature: admin_member_search_keyword_guard
@@ -41,7 +41,7 @@ effects:
 
 validation:
   audit_rule: frontend-change-requires-e2e
-  browser_check: Playwright MCP   # #599 3차 실측 세션2 — 실제 관리자 화면에서 재실측
+  browser_check: Playwright MCP   # #599 실측 — 실제 관리자 화면에서 재실측
   note: |
     브라우저 축은 Playwright MCP 재실측이 덮는다. spec 을 새로 두지 않는 이유는 이 결함이
     **응답 도착 순서**에서만 드러나기 때문이다 — 시드 회원이 적은 환경에서는 한 글자 검색의

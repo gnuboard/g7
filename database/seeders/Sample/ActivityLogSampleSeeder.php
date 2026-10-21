@@ -5,9 +5,9 @@ namespace Database\Seeders\Sample;
 use App\Enums\ActivityLogType;
 use App\Models\ActivityLog;
 use App\Models\Attachment;
-use App\Models\NotificationTemplate;
 use App\Models\Menu;
 use App\Models\Module;
+use App\Models\NotificationTemplate;
 use App\Models\Plugin;
 use App\Models\Role;
 use App\Models\Schedule;
@@ -48,18 +48,18 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $admins = User::whereHas('roles', fn ($q) => $q->where('identifier', 'admin'))->get();
         if ($admins->isEmpty()) {
-            $this->command->warn('관리자 사용자가 없어 시더를 건너뜁니다.');
+            $this->command->warn(__('common.console.seeders.activity_log_sample.skip_no_admin'));
 
             return;
         }
 
-        $this->command->info('활동 로그 샘플 시딩 시작...');
+        $this->command->info(__('common.console.seeders.activity_log_sample.start'));
 
         // 이전에 이 시더가 만든 샘플 로그만 지운다 — 표식 없는 실제 활동 로그(보관 대상)는 그대로 둔다. 종전에는 코어 활동 로그
         // 전체를 지워, 설치가 끝난 사이트에서 --sample 을 돌리면 운영 기록이 사라졌다.
         $deleted = ActivityLog::where('properties->seeded_by', self::SAMPLE_MARKER)->delete();
         if ($deleted > 0) {
-            $this->command->info("기존 코어 샘플 활동 로그 {$deleted}건 삭제.");
+            $this->command->info(__('common.console.seeders.activity_log_sample.cleaned', ['count' => $deleted]));
         }
 
         $count = 0;
@@ -107,7 +107,7 @@ class ActivityLogSampleSeeder extends Seeder
         // 코어 업데이트 로그
         $count += $this->seedCoreUpdateLogs($admins);
 
-        $this->command->info("활동 로그 샘플 시딩 완료 (총 {$count}건)");
+        $this->command->info(__('common.console.seeders.activity_log_sample.done', ['count' => $count]));
     }
 
     /**
@@ -120,7 +120,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $users = User::get();
         if ($users->isEmpty()) {
-            $this->command->info('  - 사용자 데이터 없음 - 사용자 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.users'));
 
             return 0;
         }
@@ -202,7 +202,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 사용자 관리 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.user_management', ['count' => $count]));
 
         return $count;
     }
@@ -303,7 +303,7 @@ class ActivityLogSampleSeeder extends Seeder
             }
         }
 
-        $this->command->info("  - 인증 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.auth', ['count' => $count]));
 
         return $count;
     }
@@ -318,7 +318,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $roles = Role::all();
         if ($roles->isEmpty()) {
-            $this->command->info('  - 역할 데이터 없음 - 역할 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.roles'));
 
             return 0;
         }
@@ -367,7 +367,7 @@ class ActivityLogSampleSeeder extends Seeder
 
         $count = $this->generateResourceLogs($roles, $admins, ActivityLogType::Admin, $morphType, $actions);
 
-        $this->command->info("  - 역할 관리 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.role_management', ['count' => $count]));
 
         return $count;
     }
@@ -382,7 +382,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $menus = Menu::get();
         if ($menus->isEmpty()) {
-            $this->command->info('  - 메뉴 데이터 없음 - 메뉴 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.menus'));
 
             return 0;
         }
@@ -438,7 +438,7 @@ class ActivityLogSampleSeeder extends Seeder
 
         $count = $this->generateResourceLogs($menus, $admins, ActivityLogType::Admin, $morphType, $actions);
 
-        $this->command->info("  - 메뉴 관리 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.menu_management', ['count' => $count]));
 
         return $count;
     }
@@ -488,7 +488,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 환경설정 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.settings', ['count' => $count]));
 
         return $count;
     }
@@ -503,7 +503,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $schedules = Schedule::get();
         if ($schedules->isEmpty()) {
-            $this->command->info('  - 스케줄 데이터 없음 - 스케줄 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.schedules'));
 
             return 0;
         }
@@ -588,7 +588,7 @@ class ActivityLogSampleSeeder extends Seeder
             }
         }
 
-        $this->command->info("  - 스케줄 관리 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.schedule_management', ['count' => $count]));
 
         return $count;
     }
@@ -606,7 +606,7 @@ class ActivityLogSampleSeeder extends Seeder
         $extensions = $this->installedExtensions();
 
         if ($extensions === []) {
-            $this->command->info('  - 설치된 확장 없음 - 확장 시스템 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.extensions'));
 
             return 0;
         }
@@ -682,7 +682,7 @@ class ActivityLogSampleSeeder extends Seeder
             }
         }
 
-        $this->command->info("  - 확장 시스템 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.extension_system', ['count' => $count]));
 
         return $count;
     }
@@ -727,7 +727,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $attachments = Attachment::get();
         if ($attachments->isEmpty()) {
-            $this->command->info('  - 첨부파일 데이터 없음 - 첨부파일 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.attachments'));
 
             return 0;
         }
@@ -757,7 +757,7 @@ class ActivityLogSampleSeeder extends Seeder
 
         $count = $this->generateResourceLogs($attachments, $admins, ActivityLogType::Admin, $morphType, $actions);
 
-        $this->command->info("  - 첨부파일 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.attachment', ['count' => $count]));
 
         return $count;
     }
@@ -785,7 +785,7 @@ class ActivityLogSampleSeeder extends Seeder
         }
 
         if ($settingsEntries === []) {
-            $this->command->info('  - 설치된 모듈·플러그인 없음 - 확장 설정 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.extension_settings'));
 
             return 0;
         }
@@ -807,7 +807,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 확장 설정 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.extension_settings', ['count' => $count]));
 
         return $count;
     }
@@ -850,7 +850,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 레이아웃 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.layout', ['count' => $count]));
 
         return $count;
     }
@@ -865,7 +865,7 @@ class ActivityLogSampleSeeder extends Seeder
     {
         $templates = NotificationTemplate::with('definition')->get();
         if ($templates->isEmpty()) {
-            $this->command->info('  - 알림 템플릿 데이터 없음 - 알림 템플릿 로그 스킵');
+            $this->command->info('  - '.__('common.console.seeders.activity_log_sample.skip.notification_templates'));
 
             return 0;
         }
@@ -889,7 +889,7 @@ class ActivityLogSampleSeeder extends Seeder
 
         $count = $this->generateResourceLogs($templates, $admins, ActivityLogType::Admin, $morphType, $actions);
 
-        $this->command->info("  - 알림 템플릿 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.notification_template', ['count' => $count]));
 
         return $count;
     }
@@ -925,7 +925,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 대시보드 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.dashboard', ['count' => $count]));
 
         return $count;
     }
@@ -958,7 +958,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 활동 로그 조회 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.activity_log_view', ['count' => $count]));
 
         return $count;
     }
@@ -1004,7 +1004,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 활동 로그 삭제 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.activity_log_delete', ['count' => $count]));
 
         return $count;
     }
@@ -1055,7 +1055,7 @@ class ActivityLogSampleSeeder extends Seeder
             $count++;
         }
 
-        $this->command->info("  - 코어 업데이트 로그: {$count}건");
+        $this->command->info('  - '.__('common.console.seeders.activity_log_sample.counts.core_update', ['count' => $count]));
 
         return $count;
     }

@@ -3,6 +3,7 @@
 namespace App\Analytics;
 
 use App\Services\GeoIpService;
+use App\Support\LocaleTag;
 
 /**
  * 지역 판정
@@ -63,27 +64,19 @@ class GeoLocator
     /**
      * 브라우저 언어에서 국가 코드를 추정합니다.
      *
-     * `ko-KR`·`ja-JP` 처럼 지역 서브태그가 있을 때만 씁니다. `ko` 처럼 언어만 있으면
-     * 그 언어를 쓰는 나라가 여럿일 수 있어 추정하지 않습니다.
+     * `ko-KR`·`ja-JP`·`zh-Hant-TW` 처럼 지역 서브태그가 있을 때만 씁니다. `ko` 처럼 언어만
+     * 있거나 숫자 지역(`es-419`)이면 나라가 여럿일 수 있어 추정하지 않습니다. 형식 판정은
+     * 언어팩 규칙(BCP 47, `LocaleTag`)과 같습니다(#148).
      *
      * @param  string|null  $browserLanguage  브라우저 언어
      * @return string|null 국가 코드 (추정 불가 시 null)
      */
     public static function countryFromLanguage(?string $browserLanguage): ?string
     {
-        if ($browserLanguage === null || $browserLanguage === '') {
-            return null;
-        }
-
         // "ko-KR,ko;q=0.9,en;q=0.8" 처럼 목록으로 올 수 있다 — 첫 항목만 본다.
-        $first = trim(explode(',', $browserLanguage)[0]);
-        $first = trim(explode(';', $first)[0]);
+        $first = LocaleTag::firstAcceptLanguageTag($browserLanguage);
 
-        if (preg_match('/^[A-Za-z]{2,3}[-_]([A-Za-z]{2})$/', $first, $m) !== 1) {
-            return null;
-        }
-
-        return strtoupper($m[1]);
+        return $first === null ? null : LocaleTag::countryCode($first);
     }
 
     /**

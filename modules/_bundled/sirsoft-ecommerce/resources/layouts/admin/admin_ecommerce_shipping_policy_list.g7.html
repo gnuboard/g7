@@ -11,7 +11,15 @@
         <show-error-page target="content"/>
       </on-code>
       <default>
-        <show-error-page target="content"/>
+        <!-- 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
       </default>
     </error-handling>
   </data-source>
@@ -75,16 +83,16 @@
           <h1 class="page-title">$t:sirsoft-ecommerce.admin.shipping_policy.title</h1>
           <p class="text-label-subtle mt-1">$t:sirsoft-ecommerce.admin.shipping_policy.description</p>
         </div>
-        <button type="button" class="btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{shipping_policies?.data?.abilities?.can_create !== true}}">
+        <a href="/admin/ecommerce/shipping-policies/create" :mergeQuery="true" class="button btn btn-primary aria-disabled:opacity-50 aria-disabled:cursor-not-allowed" disabled="{{shipping_policies?.data?.abilities?.can_create !== true}}">
           <on type="click">
             <!-- 새 배송정책 등록. 등록을 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다 -->
-            <navigate path="/admin/ecommerce/shipping-policies/create" :mergeQuery="true">
+            <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
           <icon name="plus" size="sm"/>
           <span>$t:sirsoft-ecommerce.admin.shipping_policy.add</span>
-        </button>
+        </a>
       </div>
       <include src="partials/admin_ecommerce_shipping_policy_list/_partial_filter.g7.html"/>
       <div data-ref="data_table_section" class="mt-6">
@@ -92,7 +100,7 @@
         <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
           <span class="text-label">$t:sirsoft-ecommerce.admin.shipping_policy.pagination.total|count={{shipping_policies?.data?.pagination?.total || 0}}</span>
           <div class="flex-center gap-3">
-            <select name="sortBy" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
+            <select name="sortBy" aria-label="$t:common.sort_order" class="w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
               <options>
                 <option value="created_at_desc">$t:sirsoft-ecommerce.admin.shipping_policy.sort.created_at_desc</option>
                 <option value="created_at_asc">$t:sirsoft-ecommerce.admin.shipping_policy.sort.created_at_asc</option>
@@ -107,7 +115,7 @@
                 </navigate>
               </on>
             </select>
-            <select name="perPage" class="w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.per_page || '20'}}">
+            <select name="perPage" aria-label="$t:common.per_page" class="w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.per_page || '20'}}">
               <options>
                 <option value="10">10</option>
                 <option value="20">20</option>

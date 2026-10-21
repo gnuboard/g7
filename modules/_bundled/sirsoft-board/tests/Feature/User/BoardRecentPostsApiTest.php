@@ -215,8 +215,9 @@ class BoardRecentPostsApiTest extends ModuleTestCase
         $response1 = $this->getJson('/api/modules/sirsoft-board/boards/posts/recent?limit=5');
         $response1->assertStatus(200);
 
-        // 캐시 키 확인 (ModuleCacheDriver 접두사 `g7:module.sirsoft-board:` + key, 게시판 이름이 언어별 값이라 키에 언어가 붙는다)
-        $this->assertTrue(Cache::has('g7:module.sirsoft-board:recent_posts_5_'.app()->getLocale()));
+        // 캐시 키 확인 (ModuleCacheDriver 접두사 `g7:module.sirsoft-board:` + key, 게시판 이름이 언어별 값이라 키에 언어가 붙는다).
+        // v2 는 항목에 작성자 ID(읽기 범위 판정용)를 담은 뒤의 키다(#789 B12)
+        $this->assertTrue(Cache::has('g7:module.sirsoft-board:recent_posts_v2_5_'.app()->getLocale()));
 
         // When: 두 번째 API 호출
         $response2 = $this->getJson('/api/modules/sirsoft-board/boards/posts/recent?limit=5');
@@ -341,7 +342,7 @@ class BoardRecentPostsApiTest extends ModuleTestCase
     /**
      * 최근글·인기글 캐시는 언어와 무관하게 공유되지 않고, 시간에 따라 바뀌는 값은 응답 시점에 다시 센다.
      *
-     * 2026-10-07 실측(O-K1-14·O-N4 → K4-D8): 캐시 키에 언어가 없어 영어 화면이 먼저 채운 캐시를
+     * 2026-10-07 실측: 캐시 키에 언어가 없어 영어 화면이 먼저 채운 캐시를
      * 한국어 화면이 그대로 받아 게시판 이름·「10 minutes ago」가 영어로 나왔고, 「n분 전」·New 배지가
      * 캐시를 채운 시점에 굳었다.
      *

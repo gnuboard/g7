@@ -32,7 +32,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "triangle-exclamation",
-                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"
                             }
                         },
                         {
@@ -47,23 +47,17 @@
                             "comment": "안내 버튼은 그 화면에 갈 수 있는 계정에게만 그린다 — 권한이 없으면 눌러도 「필요 권한」 페이지뿐이라\n        안내가 막다른 길이 된다(#682 S3 라운드 3). 문구는 남겨 사실은 계속 알린다.",
                             "id": "collection_disabled_link",
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.update'))}}",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/admin/analytics/settings",
-                                        "query": {
-                                            "tab": "collection"
-                                        }
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
-                                "className": "text-sm font-medium underline text-yellow-800 dark:text-yellow-200"
+                                "href": "/admin/analytics/settings?tab=collection",
+                                "className": "button text-sm font-medium underline text-yellow-800 dark:text-yellow-200"
                             },
                             "text": "$t:admin.analytics.alerts.collection_disabled_link"
                         }
@@ -180,20 +174,17 @@
                         {
                             "id": "queue_backlog_link",
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read'))}}",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/admin/analytics/diagnostics"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
-                                "className": "text-sm font-medium underline text-red-800 dark:text-red-200"
+                                "href": "/admin/analytics/diagnostics",
+                                "className": "button text-sm font-medium underline text-red-800 dark:text-red-200"
                             },
                             "text": "$t:admin.analytics.alerts.queue_backlog_link"
                         }
@@ -237,20 +228,17 @@
                         {
                             "id": "scheduler_missing_link",
                             "type": "basic",
-                            "name": "Button",
+                            "name": "A",
                             "if": "{{((current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read'))}}",
                             "actions": [
                                 {
                                     "type": "click",
-                                    "handler": "navigate",
-                                    "params": {
-                                        "path": "/admin/analytics/diagnostics"
-                                    }
+                                    "handler": "navigate"
                                 }
                             ],
                             "props": {
-                                "type": "button",
-                                "className": "text-sm font-medium underline text-blue-800 dark:text-blue-200"
+                                "href": "/admin/analytics/diagnostics",
+                                "className": "button text-sm font-medium underline text-blue-800 dark:text-blue-200"
                             },
                             "text": "$t:admin.analytics.alerts.scheduler_missing_link"
                         }
@@ -280,7 +268,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "triangle-exclamation",
-                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"
                             }
                         },
                         {
@@ -444,7 +432,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "triangle-exclamation",
-                                "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"
                             }
                         },
                         {

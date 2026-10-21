@@ -71,7 +71,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-3 py-1.5 text-label hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                "className": "px-3 py-1.5 text-label dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                             },
                             "text": "$t:sirsoft-ecommerce.common.cancel"
                         },
@@ -153,7 +153,7 @@
                                     "type": "basic",
                                     "name": "H3",
                                     "props": {
-                                        "className": "text-error-strong"
+                                        "className": "ecommerce-tone-error-strong text-sm font-medium"
                                     },
                                     "text": "$t:common.validation_error"
                                 },
@@ -162,7 +162,7 @@
                                     "name": "P",
                                     "if": "{{typeof _local.errors === 'string'}}",
                                     "props": {
-                                        "className": "text-error-soft mt-2"
+                                        "className": "ecommerce-tone-error-soft mt-2 text-sm"
                                     },
                                     "text": "{{_local.errors}}"
                                 },
@@ -182,7 +182,7 @@
                                             "type": "basic",
                                             "name": "Li",
                                             "props": {
-                                                "className": "text-error-soft"
+                                                "className": "ecommerce-tone-error-soft text-sm"
                                             },
                                             "text": "{{message}}"
                                         }

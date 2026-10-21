@@ -13,9 +13,11 @@ import { TranslationEngine } from './TranslationEngine';
 import { hasPipes, splitPipes, executePipeChain } from './PipeRegistry';
 import { classifyExpression, extractSingleBinding, isComplexExpression, LITERALS, scanBindings } from './BindingShape';
 import { RAW_PREFIX, wrapRaw, wrapRawDeep } from './rawMarkers';
+import { findTranslationParamZones, isInTranslationParamZone, wrapTranslationParamValue } from './translationParamValues';
 import { evaluateSafeExpression, isUnsafeHostValue, isExpressionSafeFunction } from './SafeExpressionEvaluator';
 import type { G7DevToolsInterface } from './G7CoreGlobals';
 import { getCompiledExpression } from './ExpressionCompileCache';
+import { pickLocalized } from '../support/localeTag';
 import { getEngineFlags } from './EngineFlags';
 
 const logger = createLogger('DataBindingEngine');
@@ -110,6 +112,17 @@ export interface BindingOptions {
    * 반복 렌더링(DataGrid의 cellChildren 등)에서 같은 경로가 다른 값을 가져야 할 때 사용
    */
   skipCache?: boolean;
+
+  /**
+   * `$t:키|이름={{값}}` 의 인자 자리에 넣는 값을 보호 표식으로 감쌀지 여부 (`resolveBindings` 전용)
+   *
+   * 결과를 곧바로 번역 엔진(`TranslationEngine.resolveTranslations`)에 넘기는 렌더·액션 경로만 켠다 —
+   * 번역 엔진이 인자를 나눈 뒤 표식 안 글자를 그대로 치환하고 표식을 걷는다. 값에 든 `&`·`|`·`=`·끝 ` /` 가
+   * 인자 구분자·문장 꼬리로 읽히지 않는다. 번역하지 않는 경로에 켜면 표식이 결과에 남는다.
+   *
+   * @since engine-v1.80.1
+   */
+  protectTranslationParams?: boolean;
 }
 
 /**
@@ -507,11 +520,22 @@ export class DataBindingEngine {
     const bindings = scanBindings(template);
     if (bindings.length === 0) return template;
 
+    // `$t:키|이름={{값}}` 의 인자 자리 값 보호 — 번역 엔진이 인자를 나눈 뒤 글자 그대로 치환한다(engine-v1.80.1).
+    // 평가에 실패해 원본 `{{…}}` 를 돌려준 자리는 감싸지 않는다(종전처럼 번역 엔진이 다시 평가한다).
+    // 빈 값도 감싸지 않는다 — 종전처럼 그 인자가 빠져 자리표시자가 남는다(빈 인자 진단 단서 유지).
+    const zones = opts.protectTranslationParams && template.includes('$t:')
+      ? findTranslationParamZones(template, bindings)
+      : null;
+
     let output = '';
     let cursor = 0;
     for (const binding of bindings) {
       output += template.slice(cursor, binding.start);
-      output += replaceBinding(template.slice(binding.start, binding.end), binding.expr);
+      const matchText = template.slice(binding.start, binding.end);
+      const replaced = replaceBinding(matchText, binding.expr);
+      output += zones && replaced !== '' && replaced !== matchText && isInTranslationParamZone(zones, binding.start)
+        ? wrapTranslationParamValue(replaced)
+        : replaced;
       cursor = binding.end;
     }
     return output + template.slice(cursor);
@@ -606,7 +630,9 @@ export class DataBindingEngine {
     }
 
     // 파이프 체인 실행
-    const result = executePipeChain(value, pipes);
+    const result = executePipeChain(value, pipes, {
+      locale: typeof extendedContext.$locale === 'string' ? extendedContext.$locale : undefined,
+    });
 
     // DevTools: 파이프 표현식 평가 추적
     if (devTools?.isEnabled()) {
@@ -974,17 +1000,24 @@ export class DataBindingEngine {
    * {{}} 표현식이 렌더 시점 JS 객체로 고정되어 stale 값이 전송됩니다.
    * 컴포넌트 레벨 actions 배열은 bindComponentActions에서 별도 처리되므로 비해당.
    *
+   * 분기·참조 모양(`{handler:'conditions', conditions}`·`{handler:'switch', cases}`·`{actionRef}`·
+   * `{handler, if}`)도 액션이다 — 종전에는 일반 객체로 보아 `if` 가 렌더 순간 값으로 굳었다(engine-v1.80.0).
+   *
    * @param obj 검사할 객체
    * @returns 액션 정의이면 true
    */
   public isActionDefinition(obj: Record<string, any>): boolean {
+    if (typeof obj.actionRef === 'string') return true;
     if (typeof obj.handler !== 'string') return false;
     return (
       obj.params !== undefined ||
       Array.isArray(obj.actions) ||
       typeof obj.target === 'string' ||
       obj.onSuccess !== undefined ||
-      obj.onError !== undefined
+      obj.onError !== undefined ||
+      Array.isArray(obj.conditions) ||
+      (obj.cases !== null && typeof obj.cases === 'object') ||
+      obj.if !== undefined
     );
   }
 
@@ -1298,9 +1331,9 @@ export class DataBindingEngine {
         if (typeof value === 'string') {
           return value;
         }
-        // 1. 객체의 활성 로케일 키
-        if (value && typeof value === 'object' && value[locale]) {
-          return value[locale];
+        // 1. 객체의 활성 로케일 키 (빈 칸·공백만 있는 값은 건너뜀 — 백엔드 LocalizedValue 와 같다)
+        if (value && typeof value === 'object' && pickLocalized({ [locale]: value[locale] }, locale, false) !== null) {
+          return String(value[locale]);
         }
         // 2. fallbackKey 가 있으면 $t() 로 lang pack 보강 시도
         if (fallbackKey && typeof fallbackKey === 'string') {
@@ -1309,9 +1342,9 @@ export class DataBindingEngine {
             return translated;
           }
         }
-        // 3. 객체의 ko / en / 첫 번째 값
+        // 3. 사이트 기본 언어 → en → 첫 번째 값 (engine-v1.81.0 — 종전 ko 고정)
         if (value && typeof value === 'object') {
-          return value.ko || value.en || Object.values(value)[0] || '';
+          return pickLocalized(value, locale) ?? '';
         }
         if (value == null) {
           return '';
@@ -1340,18 +1373,25 @@ export class DataBindingEngine {
       // $t 헬퍼 함수 추가
       // 번역 키를 사용하여 다국어 텍스트를 반환
       // 사용법: $t('admin.settings.info.write_only') - 번역된 텍스트 반환
+      //         $t('common.row_n', {n: index + 1}) - 인자 치환(값은 글자 그대로)
       //
       // templateId / locale 은 위에서 해석된 값을 그대로 사용한다($localized 와 공유).
+      //
+      // @since engine-v1.80.1 두 번째 인자(객체) — 종전에는 인자를 버렸다. 객체가 아닌 값(배열 포함)은
+      //   인자 없는 호출과 같다.
       const translationContext = {
         templateId: templateId || '',
         locale,
       };
-      extendedContext.$t = (key: string): string => {
+      extendedContext.$t = (key: string, params?: unknown): string => {
         if (!key || typeof key !== 'string') {
           return '';
         }
         try {
           const translationEngine = TranslationEngine.getInstance();
+          if (params !== null && typeof params === 'object' && !Array.isArray(params)) {
+            return translationEngine.translate(key, translationContext, params as Record<string, unknown>);
+          }
           return translationEngine.translate(key, translationContext);
         } catch (error) {
           logger.warn('$t() translation failed for key:', key, error);

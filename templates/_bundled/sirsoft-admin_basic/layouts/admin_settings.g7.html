@@ -10,7 +10,7 @@
 
   언어팩 탭은 조각·창을 **언어팩 관리 화면 것을 그대로 빌려 쓴다** — 아래 창 목록 앞쪽 일곱이 그것이다. -->
 <layout name="admin_settings" version="1.0.0" extends="_admin_base">
-  <meta title="$t:admin.settings.page_title" description="$t:admin.settings.page_description"/>
+  <meta leave_guard="{{_local.hasChanges === true}}" title="$t:admin.settings.page_title" description="$t:admin.settings.page_description"/>
   <!-- 언어팩 목록 — 언어팩 탭에서만 받는다(빌려 온 조각이 이 id 를 그대로 읽는다). -->
   <data-source id="language_packs" label_key="$t:editor.data_source.language_packs" type="api" endpoint="/api/admin/language-packs" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'language_packs'}}" :auto_fetch="true" :auth_required="true">
     <params page="{{query.page}}" per_page="{{query.per_page ?? 10}}" scope="{{_local.filterScope || query.scope}}" target_identifier="{{_local.filterTarget || query.target_identifier}}" locale="{{query.locale}}" status="{{query.status}}" search="{{query.search}}" exclude_protected="{{query.exclude_protected ?? '1'}}"/>
@@ -25,6 +25,21 @@
           <field name="error" :value="0"/>
         </field>
         <field name="abilities" :value="{}"/>
+      </field>
+    </fallback>
+  </data-source>
+  <!-- 코어 배포본에 있지만 이 프로젝트에 배치하지 않은 공식 번들 안내(#146). 모듈·플러그인·템플릿 화면과
+       **같은 API** 를 부르고 여기서는 응답의 `language_packs` 만 읽는다. 숨김 샘플·설치·디스크·닫은 관리자는 서버가 거른다. -->
+  <data-source id="unplaced_bundled_notice" label_key="$t:editor.data_source.unplaced_bundled_notice" type="api" endpoint="/api/admin/extensions/unplaced-bundled" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'language_packs'}}" :auto_fetch="true" :auth_required="true">
+    <fallback>
+      <field name="data">
+        <field name="items">
+          <field name="modules" :value="[]"/>
+          <field name="plugins" :value="[]"/>
+          <field name="templates" :value="[]"/>
+          <field name="language_packs" :value="[]"/>
+        </field>
+        <field name="core_version" value=""/>
       </field>
     </fallback>
   </data-source>
@@ -55,6 +70,19 @@
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
   </data-source>
   <!-- 서버·프레임워크 정보 — 정보 탭에서만 받는다(읽기 전용이라 저장 대상이 아니다). -->
   <data-source id="systemInfo" label_key="$t:editor.data_source.systemInfo" type="api" endpoint="/api/admin/settings/system-info" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'info'}}" :auto_fetch="true" :auth_required="true">
@@ -87,6 +115,29 @@
         <field name="retained_versions" :value="[]"/>
       </field>
     </fallback>
+  </data-source>
+  <!-- 큐 워커 상태 (#139) — 드라이버 탭에서만 받는다. 저장된 큐 드라이버 기준으로 등록 연결·큐마다 대기 건수·마지막 워커 신호·
+       경고, 긴 작업 전용 워커 등록 단계, Supervisor 실행 명령을 서버가 판정해 돌려준다. progressive 로 받고 탭 전환 덮개는
+       다른 progressive 소스와 같이 이 응답을 기다린다. 실패하면 구역에 실패 안내를 띄운다(응답이 없을 때 「신호 없음」으로
+       오해하지 않게) — 실패 표식은 _global 에 둔다: 데이터소스 핸들러가 세운 _local 키는 이후 입력 변경의 setState 에
+       초기값으로 되돌아가 편집 중 「새로 고침」 실패가 사라진다.
+       계산값 queueConnectionList 는 연결별 큐 칸을 그릴 연결 목록(비었으면 지금 고른 드라이버 연결 하나),
+       queueErrors 는 서버 422 오류를 연결 칸·연결별 큐 칸·큐 목록 전체로 나눈 값이다(연결 간 오류가 섞이지 않게). -->
+  <data-source id="queueStatus" label_key="$t:editor.data_source.queueStatus" type="api" endpoint="/api/admin/settings/queue-status" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'drivers'}}" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <fallback>
+      <field name="data">
+        <field name="driver" value="sync"/>
+        <field name="rows" :value="[]"/>
+        <field name="commands" :value="[]"/>
+        <field name="long_worker" :value="null"/>
+      </field>
+    </fallback>
+    <success>
+      <set-state target="global" :queueStatusFailed="false"/>
+    </success>
+    <fail>
+      <set-state target="global" :queueStatusFailed="true"/>
+    </fail>
   </data-source>
   <!-- 리버스 프록시 진단 — 고급 탭과 보안 탭에서 받는다. 신뢰 프록시 설정 여부와 이 요청이 지나온 전달 헤더·클라이언트 IP 를 서버가 판정해 돌려주고, 응답이 없으면 fallback 의 status=not_applicable 로 「진단 불가」를 그린다.
        보안 탭의 접근 제한 카드는 이 값으로 현재 접속 IP 를 보여 주고 프록시 경고를 띄운다 — 저장 검증이 자기 잠금을 판정할 때 쓰는 IP 와 같은 해석(신뢰 프록시 반영)이라, 화면에 보이는 IP 를 넣으면 그 검증을 통과한다. -->
@@ -287,6 +338,8 @@
   </init-local>
   <computed name="isReadOnly">{{_global.settingsAbilities?.can_update !== true}}</computed>
   <computed name="envLocked">{{_local.form?._meta?.env_locked ?? null}}</computed>
+  <computed name="queueConnectionList">{{(function() { const d = _local.form?.drivers ?? {}; const list = Array.isArray(d.queue_connections) ? d.queue_connections.filter(c =&gt; typeof c === 'string') : []; if (list.length &gt; 0) return list; return d.queue_driver &amp;&amp; d.queue_driver !== 'sync' ? [d.queue_driver] : []; })()}}</computed>
+  <computed name="queueErrors">{{(function() { const e = _local.errors; const empty = { connections: [], namesRoot: [], names: {} }; if (!e || typeof e !== 'object') return empty; return Object.entries(e).reduce((out, [k, v]) =&gt; { const msgs = Array.isArray(v) ? v : [v]; if (k === 'drivers.queue_connections' || k.startsWith('drivers.queue_connections.')) return { ...out, connections: [...out.connections, ...msgs] }; if (k === 'drivers.queue_names') return { ...out, namesRoot: [...out.namesRoot, ...msgs] }; if (k.startsWith('drivers.queue_names.')) { const conn = k.slice('drivers.queue_names.'.length).split('.')[0]; return { ...out, names: { ...out.names, [conn]: [...(out.names[conn] ?? []), ...msgs] } }; } return out; }, empty); })()}}</computed>
   <computed name="errorsWithoutIpRules">{{(function() { const e = _local.errors; if (!e || typeof e !== 'object') return e ?? null; const rest = Object.entries(e).filter(([k]) =&gt; !k.startsWith('security.ip_restriction_rules')); return rest.length &gt; 0 ? Object.fromEntries(rest) : null; })()}}</computed>
   <computed name="ipRestrictionEnabled">{{!!_local.form?.security?.ip_restriction_enabled &amp;&amp; _local.form?.security?.ip_restriction_enabled !== '0' &amp;&amp; _local.form?.security?.ip_restriction_enabled !== 'false'}}</computed>
   <permissions>
@@ -307,10 +360,12 @@
     <wait-for>sitemap_status</wait-for>
     <wait-for>staticCacheStatus</wait-for>
     <wait-for>trustedProxy</wait-for>
+    <wait-for>queueStatus</wait-for>
     <wait-for>privacyPreview</wait-for>
     <wait-for>privacyManualRuns</wait-for>
     <wait-for>passwordExpiryPreview</wait-for>
     <wait-for>passwordExpiryManualRuns</wait-for>
+    <wait-for>unplaced_bundled_notice</wait-for>
   </transition-overlay>
   <init>
     <!-- 확장 목록 보기 방식(갤러리/목록) 복원 — 4화면이 같은 키를 공유한다.
@@ -348,7 +403,7 @@
       </page-header>
       <div data-ref="readonly_banner" data-if="{{!!_global.settingsAbilities &amp;&amp; _global.settingsAbilities.can_update !== true}}" class="alert-warning">
         <div class="flex-center gap-3">
-          <icon name="lock" class="text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+          <icon name="lock" class="text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"/>
           <p class="text-warning-soft">$t:admin.settings.readonly_notice</p>
         </div>
       </div>
@@ -361,18 +416,18 @@
       <div data-ref="sticky_header" class="sticky-tab-nav-responsive">
         <tab-navigation data-type="composite" data-ref="tab_navigation" class="sticky-tab-nav-responsive" activeTabId="{{_global.activeSettingsTab || query.tab || 'general'}}" variant="default">
           <prop name="tabs">
-            <item id="general" label="$t:admin.settings.tabs.general"/>
-            <item id="mail" label="$t:admin.settings.tabs.mail"/>
-            <item id="upload" label="$t:admin.settings.tabs.upload"/>
-            <item id="seo" label="$t:admin.settings.tabs.seo"/>
-            <item id="security" label="$t:admin.settings.tabs.security"/>
-            <item id="drivers" label="$t:admin.settings.tabs.drivers"/>
-            <item id="advanced" label="$t:admin.settings.tabs.advanced"/>
-            <item id="notification_definitions" label="$t:admin.settings.tabs.notification_definitions"/>
-            <item id="language_packs" label="$t:admin.settings.tabs.language_packs"/>
-            <item id="identity" label="$t:admin.settings.tabs.identity"/>
-            <item id="privacy" label="$t:admin.settings.tabs.privacy"/>
-            <item id="info" label="$t:admin.settings.tabs.info"/>
+            <item id="general" href="/admin/settings?tab=general" label="$t:admin.settings.tabs.general"/>
+            <item id="mail" href="/admin/settings?tab=mail" label="$t:admin.settings.tabs.mail"/>
+            <item id="upload" href="/admin/settings?tab=upload" label="$t:admin.settings.tabs.upload"/>
+            <item id="seo" href="/admin/settings?tab=seo" label="$t:admin.settings.tabs.seo"/>
+            <item id="security" href="/admin/settings?tab=security" label="$t:admin.settings.tabs.security"/>
+            <item id="drivers" href="/admin/settings?tab=drivers" label="$t:admin.settings.tabs.drivers"/>
+            <item id="advanced" href="/admin/settings?tab=advanced" label="$t:admin.settings.tabs.advanced"/>
+            <item id="notification_definitions" href="/admin/settings?tab=notification_definitions" label="$t:admin.settings.tabs.notification_definitions"/>
+            <item id="language_packs" href="/admin/settings?tab=language_packs" label="$t:admin.settings.tabs.language_packs"/>
+            <item id="identity" href="/admin/settings?tab=identity" label="$t:admin.settings.tabs.identity"/>
+            <item id="privacy" href="/admin/settings?tab=privacy" label="$t:admin.settings.tabs.privacy"/>
+            <item id="info" href="/admin/settings?tab=info" label="$t:admin.settings.tabs.info"/>
           </prop>
           <on type="change" event="onTabChange">
             <!-- 저장하지 않은 변경이 있으면 바로 옮기지 않고 확인 창을 연다 — 저장은 지금 탭의 구획만 보내고,
@@ -434,13 +489,18 @@
         <include src="partials/admin_settings/_tab_info.g7.html"/>
       </div>
       <div data-ref="footer_buttons" data-if="{{!_computed.isReadOnly &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'info' &amp;&amp; (_global.activeSettingsTab || query.tab || 'general') !== 'language_packs'}}" class="sticky-footer-buttons">
-        <button data-ref="cancel_button" class="btn btn-secondary">
+        <!-- 취소 — 저장하지 않은 변경을 버리고 받은 값으로 되돌린다 -->
+        <button type="button" data-ref="cancel_button" class="btn btn-secondary">
           <on type="click">
-            <refetch-data-source dataSourceId="settings"/>
+            <sequence>
+              <!-- 취소 — 받은 값으로 되돌리고 「고친 것이 있다」 표시도 끈다(남겨 두면 저장 단추·탭 전환 확인·이탈 확인이 되돌린 뒤에도 켜져 있다) -->
+              <refetch-data-source dataSourceId="settings"/>
+              <set-state target="local" :hasChanges="false"/>
+            </sequence>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving || ((_global.activeSettingsTab || query.tab) === 'drivers' &amp;&amp; (((_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3') &amp;&amp; !_local.driverTestResults?.s3?.success &amp;&amp; ((_local.form?.drivers?.storage_driver || '') !== (_local.originalDrivers?.storage_driver || '') || (_local.form?.drivers?.s3_bucket || '') !== (_local.originalDrivers?.s3_bucket || '') || (_local.form?.drivers?.s3_region || '') !== (_local.originalDrivers?.s3_region || '') || (_local.form?.drivers?.s3_access_key || '') !== (_local.originalDrivers?.s3_access_key || '') || (_local.form?.drivers?.s3_secret_key || '') !== (_local.originalDrivers?.s3_secret_key || '') || (_local.form?.drivers?.s3_endpoint || '') !== (_local.originalDrivers?.s3_endpoint || '') || Boolean(_local.form?.drivers?.s3_use_path_style) !== Boolean(_local.originalDrivers?.s3_use_path_style))) || (_local.form?.drivers?.cache_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.cache_driver === 'memcached' &amp;&amp; !_local.driverTestResults?.memcached?.success &amp;&amp; ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.memcached_host || '') !== (_local.originalDrivers?.memcached_host || '') || String(_local.form?.drivers?.memcached_port ?? '') !== String(_local.originalDrivers?.memcached_port ?? ''))) || (_local.form?.drivers?.session_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.session_driver || '') !== (_local.originalDrivers?.session_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.queue_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.queue_driver || '') !== (_local.originalDrivers?.queue_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.websocket_enabled &amp;&amp; !_local.driverTestResults?.websocket?.success &amp;&amp; (Boolean(_local.form?.drivers?.websocket_enabled) !== Boolean(_local.originalDrivers?.websocket_enabled) || (_local.form?.drivers?.websocket_host || '') !== (_local.originalDrivers?.websocket_host || '') || String(_local.form?.drivers?.websocket_port ?? '') !== String(_local.originalDrivers?.websocket_port ?? '') || (_local.form?.drivers?.websocket_scheme || '') !== (_local.originalDrivers?.websocket_scheme || '')))))}}" class="btn btn-primary flex-center gap-1.5">
+        <button type="button" data-ref="save_button" disabled="{{!_local.hasChanges || _local.isSaving || ((_global.activeSettingsTab || query.tab) === 'drivers' &amp;&amp; (((_local.form?.drivers?.storage_driver === 's3' || _local.form?.drivers?.public_asset_disk === 's3') &amp;&amp; !_local.driverTestResults?.s3?.success &amp;&amp; ((_local.form?.drivers?.storage_driver || '') !== (_local.originalDrivers?.storage_driver || '') || (_local.form?.drivers?.s3_bucket || '') !== (_local.originalDrivers?.s3_bucket || '') || (_local.form?.drivers?.s3_region || '') !== (_local.originalDrivers?.s3_region || '') || (_local.form?.drivers?.s3_access_key || '') !== (_local.originalDrivers?.s3_access_key || '') || (_local.form?.drivers?.s3_secret_key || '') !== (_local.originalDrivers?.s3_secret_key || '') || (_local.form?.drivers?.s3_endpoint || '') !== (_local.originalDrivers?.s3_endpoint || '') || Boolean(_local.form?.drivers?.s3_use_path_style) !== Boolean(_local.originalDrivers?.s3_use_path_style))) || (_local.form?.drivers?.cache_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.cache_driver === 'memcached' &amp;&amp; !_local.driverTestResults?.memcached?.success &amp;&amp; ((_local.form?.drivers?.cache_driver || '') !== (_local.originalDrivers?.cache_driver || '') || (_local.form?.drivers?.memcached_host || '') !== (_local.originalDrivers?.memcached_host || '') || String(_local.form?.drivers?.memcached_port ?? '') !== String(_local.originalDrivers?.memcached_port ?? ''))) || (_local.form?.drivers?.session_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.session_driver || '') !== (_local.originalDrivers?.session_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.queue_driver === 'redis' &amp;&amp; !_local.driverTestResults?.redis?.success &amp;&amp; ((_local.form?.drivers?.queue_driver || '') !== (_local.originalDrivers?.queue_driver || '') || (_local.form?.drivers?.redis_host || '') !== (_local.originalDrivers?.redis_host || '') || String(_local.form?.drivers?.redis_port ?? '') !== String(_local.originalDrivers?.redis_port ?? '') || (_local.form?.drivers?.redis_password || '') !== (_local.originalDrivers?.redis_password || ''))) || (_local.form?.drivers?.websocket_enabled &amp;&amp; !_local.driverTestResults?.websocket?.success &amp;&amp; (Boolean(_local.form?.drivers?.websocket_enabled) !== Boolean(_local.originalDrivers?.websocket_enabled) || (_local.form?.drivers?.websocket_host || '') !== (_local.originalDrivers?.websocket_host || '') || String(_local.form?.drivers?.websocket_port ?? '') !== String(_local.originalDrivers?.websocket_port ?? '') || (_local.form?.drivers?.websocket_scheme || '') !== (_local.originalDrivers?.websocket_scheme || '')))))}}" class="btn btn-primary flex-center gap-1.5">
           <on type="click">
             <!-- 저장 — **지금 보고 있는 탭 몫만** 잘라 보낸다(한꺼번에 보내면 안 본 탭까지 덮어쓴다).
                  알림 정의 탭만 예외로 다른 이름(`notifications`)의 묶음을 만든다 — 탭 이름과 저장 키가
@@ -481,6 +541,7 @@
                       <refetch-data-source dataSourceId="settings"/>
                       <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'privacy'}}" dataSourceId="privacyPreview"/>
                       <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'security'}}" dataSourceId="passwordExpiryPreview"/>
+                      <refetch-data-source if="{{(_global.activeSettingsTab || query.tab) === 'drivers'}}" dataSourceId="queueStatus"/>
                     </success>
                     <fail>
                       <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>

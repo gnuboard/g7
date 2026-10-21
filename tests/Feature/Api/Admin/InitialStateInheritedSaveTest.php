@@ -26,6 +26,8 @@ use Tests\TestCase;
  *  - 백엔드 `validated()` 는 `content.initLocal/initGlobal/initIsolated` 를 `['nullable','array']`
  *    로 통째 보존하므로 하위 키가 탈락하지 않는다(R9 부류 — 미명시 시 떨궈 격리 초기값 손실).
  *  - 부모 레이아웃 행은 자식 저장에 영향받지 않고, 재로드 시 부모+자식이 다시 병합된다.
+ *
+ * @see tests/scenarios/initial-state-inherited-save.yaml
  */
 class InitialStateInheritedSaveTest extends TestCase
 {
@@ -37,6 +39,11 @@ class InitialStateInheritedSaveTest extends TestCase
 
     private string $token;
 
+    /**
+     * 편집 권한 관리자 토큰과 대상 템플릿을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +52,12 @@ class InitialStateInheritedSaveTest extends TestCase
         $this->template = Template::factory()->create();
     }
 
+    /**
+     * 지정 권한을 붙인 관리자 역할을 가진 회원을 생성합니다.
+     *
+     * @param  array<int, string>  $permissions  부여할 권한 식별자 목록
+     * @return User 생성된 관리자 회원
+     */
     private function createAdminUser(array $permissions = []): User
     {
         $user = User::factory()->create();
@@ -75,6 +88,11 @@ class InitialStateInheritedSaveTest extends TestCase
         return $user;
     }
 
+    /**
+     * 관리자 토큰을 실은 JSON 요청 헤더를 설정합니다.
+     *
+     * @return $this 헤더가 설정된 테스트 케이스
+     */
     private function authRequest()
     {
         return $this->withHeaders(['Authorization' => 'Bearer '.$this->token, 'Accept' => 'application/json']);
@@ -84,6 +102,7 @@ class InitialStateInheritedSaveTest extends TestCase
      * 부모(base) 레이아웃 생성 — 슬롯 + 초기 상태 키 보유.
      *
      * @param  array<string, mixed>  $initialState  initLocal/initGlobal/initIsolated 키 포함
+     * @return TemplateLayout 생성된 부모 레이아웃
      */
     private function makeParent(array $initialState): TemplateLayout
     {
@@ -108,7 +127,8 @@ class InitialStateInheritedSaveTest extends TestCase
     /**
      * 자식 레이아웃 생성 — 부모를 extends, 초기 상태 키 보유.
      *
-     * @param  array<string, mixed>  $initialState
+     * @param  array<string, mixed>  $initialState  자식이 가진 초기 상태 섹션
+     * @return TemplateLayout 생성된 자식 레이아웃
      */
     private function makeChild(array $initialState): TemplateLayout
     {
@@ -130,8 +150,9 @@ class InitialStateInheritedSaveTest extends TestCase
     /**
      * 자식 content PUT 후 갱신된 DB content 반환.
      *
-     * @param  array<string, mixed>  $childInitialState
-     * @return array<string, mixed>
+     * @param  TemplateLayout  $child  저장할 자식 레이아웃
+     * @param  array<string, mixed>  $childInitialState  PUT 본문에 실을 초기 상태 섹션
+     * @return array<string, mixed> 저장 뒤 DB 의 자식 content
      */
     private function putChild(TemplateLayout $child, array $childInitialState): array
     {
@@ -153,6 +174,15 @@ class InitialStateInheritedSaveTest extends TestCase
         return $child->content;
     }
 
+    /**
+     * 자식 초기 상태만 영속하고 미덮은 부모 키는 제외한다.
+     *
+     * @scenario case=child_only
+     *
+     * @effects child_init_local_only_persisted
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_persists_only_child_init_local_and_strips_inherited(): void
     {
@@ -169,6 +199,15 @@ class InitialStateInheritedSaveTest extends TestCase
         $this->assertArrayNotHasKey('perPage', $stored['initLocal']);
     }
 
+    /**
+     * 덮은 상속 키는 자식 값으로 영속한다.
+     *
+     * @scenario case=override
+     *
+     * @effects overridden_inherited_key_persisted
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_persists_overridden_inherited_key_with_child_value(): void
     {
@@ -181,6 +220,15 @@ class InitialStateInheritedSaveTest extends TestCase
         $this->assertSame(50, $stored['initLocal']['perPage'], '덮은 상속 키는 자식 값으로 영속');
     }
 
+    /**
+     * legacy `state` 를 `initLocal` 로 이관해 저장하면 `state` 키가 사라진다.
+     *
+     * @scenario case=legacy_state
+     *
+     * @effects legacy_state_migrated_to_init_local
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_migrates_legacy_state_to_init_local_on_save(): void
     {
@@ -197,6 +245,15 @@ class InitialStateInheritedSaveTest extends TestCase
         $this->assertArrayNotHasKey('state', $stored, 'legacy state 키는 저장 후 제거');
     }
 
+    /**
+     * 세 초기 상태 섹션의 하위 키가 validated() 에서 탈락하지 않는다.
+     *
+     * @scenario case=nested_subkeys
+     *
+     * @effects nested_init_subkeys_preserved
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_preserves_nested_subkeys_across_init_buckets(): void
     {
@@ -221,6 +278,15 @@ class InitialStateInheritedSaveTest extends TestCase
         $this->assertSame(['step' => 1], $stored['initIsolated']['wizard']);
     }
 
+    /**
+     * 자식을 저장해도 부모 레이아웃 행은 바뀌지 않는다.
+     *
+     * @scenario case=parent_untouched
+     *
+     * @effects parent_row_unchanged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_leaves_parent_row_unchanged_when_child_is_saved(): void
     {
@@ -235,23 +301,41 @@ class InitialStateInheritedSaveTest extends TestCase
         $this->assertSame(0, (int) $parent->lock_version);
     }
 
+    /**
+     * JSON 객체 본문의 빈 문자열 초기값이 그대로 저장된다 (#758 — 요청 원문 재해석).
+     *
+     * @scenario case=empty_string
+     *
+     * @effects empty_string_initial_value_kept
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
-    public function it_documents_empty_string_initial_value_becomes_null_on_save(): void
+    public function it_documents_empty_string_initial_value_is_kept_on_save(): void
     {
-        // 코어 동작 가드 — Laravel 글로벌 미들웨어 ConvertEmptyStringsToNull 이 요청 본문의 빈
-        // 문자열을 검증 전에 null 로 변환한다. 따라서 편집기가 빈 텍스트 입력칸을 `''` 로 시드해
-        // PUT 해도 저장된 initLocal 값은 null 이 된다(레이아웃 content 전 저장 경로 공통).
-        // 본 작업이 도입한 동작이 아니라 프레임워크 전역 동작이며, 런타임 `_local` 주입에서
-        // null 과 '' 는 동등(빈 값)하게 취급되므로 폼 자동바인딩에 영향이 없다.
+        // 코어 동작 가드 — 저장 요청의 레이아웃 본문은 요청 원문에서 다시 읽는다(#758, 빈 객체 `{}` 보존).
+        // 그래서 JSON 객체 본문도 Laravel 글로벌 미들웨어 ConvertEmptyStringsToNull 의 변환을 거치지 않고
+        // 빈 텍스트 초기값 `''` 이 그대로 저장된다. 위지윅 편집기의 저장(JSON 문자열 본문)은 원래부터 `''` 를
+        // 지켰으므로 두 본문 형태가 같아졌다. 런타임 `_local` 주입에서 null 과 '' 는 동등(빈 값)하게
+        // 취급되므로 폼 자동바인딩에 영향이 없다.
         $this->makeParent([]);
         $child = $this->makeChild([]);
 
         $stored = $this->putChild($child, ['initLocal' => ['keyword' => '', 'tag' => 'x']]);
 
-        $this->assertNull($stored['initLocal']['keyword'], '빈 문자열 초기값은 저장 시 null 로 변환됨(프레임워크 전역 동작)');
+        $this->assertSame('', $stored['initLocal']['keyword'], '빈 문자열 초기값은 그대로 저장된다(JSON 문자열 본문과 같다)');
         $this->assertSame('x', $stored['initLocal']['tag'], '비-빈 값은 그대로 보존');
     }
 
+    /**
+     * 재로드 때 부모·자식이 다시 병합되고 편집 원본에는 자식분만 남는다.
+     *
+     * @scenario case=reload_merge
+     *
+     * @effects parent_child_remerged_on_reload
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function it_remerges_parent_and_child_on_reload(): void
     {

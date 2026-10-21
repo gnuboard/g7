@@ -1,7 +1,7 @@
-// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 W1·W2·W3 통합 뒤 총괄 세션이 권한 회수 계정으로 함께 한다(총괄 통합 — 이 플러그인 설정 화면은 세션 분할에서 빠져 통합 실측에서 발견)
+// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 권한을 회수한 계정으로 통합 실측에서 함께 한다(이 플러그인 설정 화면은 통합 실측에서 발견)
 /**
  * @file plugin-settings-read-only.test.ts
- * @description 플러그인 설정 화면 읽기 전용 (7.1.0 abilities 게이트 G19)
+ * @description 플러그인 설정 화면 읽기 전용 (7.1.0 abilities 게이트)
  *
  * 코어 설정 응답의 `data.abilities.can_update`(= core.plugins.update)가 true 가 아니면 — 응답 전·키 없음 포함(fail-closed) —
  * 안내를 보이고 설정 입력·저장·쓰기 버튼을 잠근다. 저장 PUT 은 코어가 본문의 abilities 를 버린다.
@@ -65,7 +65,7 @@ function assertReadOnly(tree: Node, settingsId: string, scopeId: string | null) 
   }
 }
 
-describe('플러그인 설정 읽기 전용 (G19)', () => {
+describe('플러그인 설정 읽기 전용', () => {
   /**
    * 수정 권한 판정(can_update)이 없거나 false 면 안내·입력·저장·쓰기 버튼이 잠긴다.
    *

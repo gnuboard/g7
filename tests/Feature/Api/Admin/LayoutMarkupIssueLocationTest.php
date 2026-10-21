@@ -4,11 +4,22 @@ namespace Tests\Feature\Api\Admin;
 
 use App\Enums\ExtensionOwnerType;
 use App\Enums\ExtensionStatus;
+use App\Enums\LayoutMarkupErrorCode;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Template;
 use App\Models\TemplateLayout;
 use App\Models\User;
+use App\Support\LayoutMarkup\DocumentCompiler;
+use App\Support\LayoutMarkup\LayoutLinter;
+use App\Support\LayoutMarkup\LayoutMarkupCompiler;
+use App\Support\LayoutMarkup\LayoutValidator;
+use App\Support\LayoutMarkup\LintWarning;
+use App\Support\LayoutMarkup\MarkupTokenizer;
+use App\Support\LayoutMarkup\MarkupTreeBuilder;
+use App\Support\LayoutMarkup\NodeCompiler;
+use App\Support\LayoutMarkup\StateTreeCompiler;
+use App\Support\LayoutMarkup\StructuredValueCompiler;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -191,6 +202,105 @@ class LayoutMarkupIssueLocationTest extends TestCase
         $this->assertSame(3, $response->json('errors.compile_error.line'), json_encode($response->json(), JSON_UNESCAPED_UNICODE));
         $this->assertSame(14, $response->json('errors.compile_error.column'));
         $this->assertSame((int) $layout->lock_version, (int) $layout->fresh()->lock_version);
+    }
+
+    /**
+     * `<init>` 액션과 위치 없는 경고가 함께 있는 레이아웃도 컴파일되고 경고는 줄을 싣는다 (#725 W12).
+     *
+     * 위치를 찾는 2차 컴파일은 경고에 줄을 붙이려는 보조 단계다. 10-07 에는 그 단계가 `<init>` 액션에 붙인 위치 표식을
+     * 작성자 키로 오인해(`init_action_key_forbidden`) 컴파일 전체를 실패시켰다 — 설치·활성화까지 막을 수 있던 자리다.
+     * 원인은 `ea5286728` 이 고쳤고, 여기서는 그 조합이 다시 깨지지 않게 잠근다.
+     *
+     * @scenario issue_kind=lint_warning
+     *
+     * @effects init_layout_with_unlocated_warning_compiles
+     *
+     * @return void 반환값 없음
+     */
+    public function test_layout_with_init_action_and_unlocated_warning_compiles(): void
+    {
+        $markup = implode("\n", [
+            "<layout name=\"{$this->layoutName}\" version=\"1.0.0\">",   // 1
+            '  <init>',                                                   // 2
+            '    <set-state target="local" ready="1"/>',                  // 3
+            '  </init>',                                                  // 4
+            '  <div id="probe_root">',                                    // 5
+            '    <input name="q">',                                       // 6
+            '      <on type="change">',                                   // 7
+            '        <refetch-data-source :debounce="300" dataSourceId="search"/>', // 8
+            '      </on>',                                                // 9
+            '      <on type="change">',                                   // 10
+            '        <set-state target="local" q="{{$event.target.value}}"/>',       // 11
+            '      </on>',                                                // 12
+            '    </input>',                                               // 13
+            '  </div>',                                                   // 14
+            '</layout>',                                                  // 15
+        ]);
+
+        $response = $this->postJson($this->compileUrl(), ['markup' => $markup], $this->headers())->assertOk();
+
+        $warnings = collect($response->json('data.warnings'))->keyBy('code');
+        $this->assertTrue($warnings->has('mixed_debounce_flushed'), json_encode($response->json('data.warnings'), JSON_UNESCAPED_UNICODE));
+        $this->assertSame(6, $warnings['mixed_debounce_flushed']['line']);
+    }
+
+    /**
+     * 위치를 찾는 2차 컴파일이 실패해도 1차 결과(위치 없는 경고)로 컴파일이 선다 (#725 W12).
+     *
+     * 2차 컴파일 협력자를 초기화되지 않은 대역으로 바꿔 그 단계가 반드시 던지게 만든다 — 보조 단계의 실패가 컴파일
+     * 전체로 번지면 안 된다.
+     *
+     * @scenario issue_kind=lint_warning
+     *
+     * @effects init_layout_with_unlocated_warning_compiles
+     *
+     * @return void 반환값 없음
+     */
+    public function test_position_pass_failure_falls_back_to_unlocated_warnings(): void
+    {
+        $markup = implode("\n", [
+            "<layout name=\"{$this->layoutName}\" version=\"1.0.0\">",
+            '  <div id="probe_root">',
+            '    <input name="q">',
+            '      <on type="change">',
+            '        <refetch-data-source :debounce="300" dataSourceId="search"/>',
+            '      </on>',
+            '      <on type="change">',
+            '        <set-state target="local" q="{{$event.target.value}}"/>',
+            '      </on>',
+            '    </input>',
+            '  </div>',
+            '</layout>',
+        ]);
+
+        $result = $this->compilerWithFailingPositionPass()->compile($markup, 'probe.g7.html');
+
+        $this->assertSame($this->layoutName, $result->json['layout_name'] ?? null, '1차 산출이 그대로 돌아와야 한다');
+        $codes = array_map(static fn (LintWarning $warning): string => $warning->getCode()->value, $result->warnings);
+        $this->assertContains('mixed_debounce_flushed', $codes, '위치를 못 붙여도 경고 자체는 남아야 한다');
+    }
+
+    /**
+     * 위치 표식을 켜는 순간 던지는 문서 컴파일러를 단 마크업 컴파일러 대역을 만듭니다.
+     *
+     * 문서 컴파일러의 액션 컴파일러를 초기화하지 않은 채 둔다 — 1차 컴파일(초기화 블록·이름 있는 액션·오류 처리 절이 없는
+     * 문서)은 그 협력자를 쓰지 않고, 2차 단계의 `markSourcePositions(true)` 만 그 협력자에 닿아 `Error` 를 던진다.
+     *
+     * @return LayoutMarkupCompiler 대역 컴파일러
+     */
+    private function compilerWithFailingPositionPass(): LayoutMarkupCompiler
+    {
+        $document = (new \ReflectionClass(DocumentCompiler::class))->newInstanceWithoutConstructor();
+        foreach (['registry' => null, 'nodes' => new NodeCompiler(null), 'state' => new StateTreeCompiler, 'values' => new StructuredValueCompiler(LayoutMarkupErrorCode::UnexpectedStructuralChild)] as $name => $value) {
+            (new \ReflectionProperty(DocumentCompiler::class, $name))->setValue($document, $value);
+        }
+
+        $compiler = (new \ReflectionClass(LayoutMarkupCompiler::class))->newInstanceWithoutConstructor();
+        foreach (['registry' => null, 'tokenizer' => new MarkupTokenizer, 'treeBuilder' => new MarkupTreeBuilder, 'document' => $document, 'validator' => new LayoutValidator, 'linter' => new LayoutLinter(null)] as $name => $value) {
+            (new \ReflectionProperty(LayoutMarkupCompiler::class, $name))->setValue($compiler, $value);
+        }
+
+        return $compiler;
     }
 
     /**

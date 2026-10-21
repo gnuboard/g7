@@ -8,7 +8,6 @@ use App\Models\NotificationLog;
 use App\Models\User;
 use App\Traits\HasSeederCounts;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 
@@ -101,6 +100,8 @@ abstract class AbstractNotificationLogSampleSeeder extends Seeder
 
     /**
      * 시더 실행.
+     *
+     * @return void
      */
     public function run(): void
     {
@@ -109,7 +110,7 @@ abstract class AbstractNotificationLogSampleSeeder extends Seeder
 
         $users = User::query()->get(['id', 'name', 'email']);
         if ($users->isEmpty()) {
-            $this->command->warn("사용자 데이터가 없어 {$label} 알림 발송 이력 시더를 건너뜁니다.");
+            $this->command->warn(__('common.console.seeders.notification_log_sample.skip_no_users', ['label' => $label]));
 
             return;
         }
@@ -119,7 +120,7 @@ abstract class AbstractNotificationLogSampleSeeder extends Seeder
         )->get(['type', 'extension_type', 'extension_identifier', 'channels']);
 
         if ($definitions->isEmpty()) {
-            $this->command->warn("{$label} 영역 활성 알림 정의가 없어 시더를 건너뜁니다.");
+            $this->command->warn(__('common.console.seeders.notification_log_sample.skip_no_definitions', ['label' => $label]));
 
             return;
         }
@@ -129,7 +130,7 @@ abstract class AbstractNotificationLogSampleSeeder extends Seeder
             ->first();
         $adminId = $admin?->id;
 
-        $this->command->info("{$label} 알림 발송 이력 시딩 시작... ({$count}건)");
+        $this->command->info(__('common.console.seeders.notification_log_sample.start', ['label' => $label, 'count' => $count]));
 
         $now = Carbon::now();
         $batch = [];
@@ -167,7 +168,7 @@ abstract class AbstractNotificationLogSampleSeeder extends Seeder
             NotificationLog::insert($chunk);
         }
 
-        $this->command->info("{$label} 알림 발송 이력 시딩 완료 ({$count}건)");
+        $this->command->info(__('common.console.seeders.notification_log_sample.done', ['label' => $label, 'count' => $count]));
     }
 
     /**

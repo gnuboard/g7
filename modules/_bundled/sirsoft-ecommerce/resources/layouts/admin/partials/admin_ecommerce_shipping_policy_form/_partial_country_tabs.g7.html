@@ -9,7 +9,7 @@
     <div class="flex-between mb-4">
       <h2 class="section-heading">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_country_settings</h2>
       <div data-ref="add_country_area" data-if="{{(_computed.addableCountries ?? []).length > 0}}" class="flex-center gap-2">
-        <select class="input w-40 text-sm" value="{{_local._selectedCountryToAdd ?? ''}}" options="{{[{value: '', label: '$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder'}].concat(_computed.addableCountryOptions ?? [])}}" disabled="{{_computed.isReadOnly}}">
+        <select aria-label="$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder" class="input w-40 text-sm" value="{{_local._selectedCountryToAdd ?? ''}}" options="{{[{value: '', label: '$t:sirsoft-ecommerce.admin.shipping_policy.form.country_select_placeholder'}].concat(_computed.addableCountryOptions ?? [])}}" disabled="{{_computed.isReadOnly}}">
           <on type="change">
             <!-- 추가할 나라 고르기 — 아직 폼에 넣지 않은 임시 선택이라 `form` 이 아니라 `_local` 바로 아래에 둔다. 옆 [추가] 버튼의 잠금 조건이기도 하다. -->
             <set-state target="_local" _selectedCountryToAdd="{{$event.target.value}}"/>
@@ -29,7 +29,7 @@
       </div>
     </div>
     <div data-ref="empty_country_settings" data-if="{{(_local.form?.country_settings ?? []).length === 0}}" class="p-8 text-center border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
-      <icon name="globe" class="text-3xl text-gray-300 dark:text-gray-600 mb-2"/>
+      <icon name="globe" class="text-3xl text-gray-500 dark:text-gray-500 mb-2"/>
       <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.shipping_policy.form.no_country_settings</p>
     </div>
     <div data-ref="country_tab_buttons" data-if="{{(_local.form?.country_settings ?? []).length > 0}}" class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">

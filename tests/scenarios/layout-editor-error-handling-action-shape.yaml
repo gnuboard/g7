@@ -1,0 +1,21 @@
+feature: 레이아웃 편집기 — [오류 처리] 칸이 저장된 동작 모양을 잃지 않는다 (#753)
+
+description: |
+  관리자 > 템플릿 > 레이아웃 편집 > 페이지 설정 > 오류 처리 칸은 순차 실행 하위 목록을 `params.actions` 에서만
+  읽어, 굽기 산출 모양(최상위 `actions`)이면 빈 목록으로 보이고, 고치면 `{handler, params:{actions}}` 로 덮어써
+  최상위 `actions`·다른 키를 지웠다. 칸이 다루지 않는 동작(conditions·switch·action-ref·if·모르는 핸들러)은
+  선택칸이 빈 값이라 손대면 원래 동작이 사라졌다. 엔진이 이 동작들을 그대로 실행하게 되면서(engine-v1.80.0)
+  편집기도 두 모양을 다 읽고, 최상위 `actions` 로 저장하며 다른 키를 보존하고, 다루지 않는 동작은 읽기 전용으로 둔다.
+  단일 동작을 고칠 때도 칸이 다루지 않는 부속 키(comment·onSuccess·onError·resultTo·errorHandling)를 보존하고,
+  동작이 여럿인 배열은 첫 동작만 고쳐 나머지를 덮지 않도록 읽기 전용으로 둔다.
+
+axes:
+  stored_shape: [top_level_actions, params_actions, code_only, single_with_extra_keys]
+
+effects:
+  - editor_reads_both_sequence_shapes
+  - editor_saves_top_level_actions_and_keeps_other_keys
+  - editor_keeps_code_only_actions_read_only
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/page-settings/ErrorHandlingForm.actionShape.test.tsx

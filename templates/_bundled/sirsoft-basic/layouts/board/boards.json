@@ -170,7 +170,7 @@
                         "comment": "게시판이 없을 때",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{!boardList.data || boardList.data.length === 0}}",
+                        "if": "{{boardList !== undefined && (!boardList.data || boardList.data.length === 0)}}",
                         "props": {
                             "className": "text-center py-12"
                         },
@@ -181,7 +181,7 @@
                                 "props": {
                                     "name": "inbox",
                                     "size": "3x",
-                                    "className": "text-gray-400 dark:text-gray-500 mx-auto mb-4"
+                                    "className": "text-gray-500 dark:text-gray-500 mx-auto mb-4"
                                 }
                             },
                             {

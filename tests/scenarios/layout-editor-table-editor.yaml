@@ -109,5 +109,5 @@ validation:
     거부, span 보정, 복합 셀 텍스트 자손 보존, cellBorder, params 중립성)와 capability 부착·등록을
     잠근다. Playwright E2E 가 라이브 편집기에서 Table 선택 → table 에디터 마운트 → 행/열 추가 →
     셀 영역 선택 → 병합 → 저장(PUT 200)을 브라우저로 검증한다. 캔버스 인플레이스(셀 단위 오버레이)는
- 단계 3-b 산출물 — 본 단계는 속성 패널 경로.
+    단계 3-b 산출물 — 본 단계는 속성 패널 경로.
   e2e_spec: tests/Playwright/specs/layout-editor/table-editor.spec.ts

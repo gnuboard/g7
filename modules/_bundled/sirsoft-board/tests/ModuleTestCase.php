@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Providers\BoardServiceProvider;
+use Modules\Sirsoft\Board\Tests\Concerns\RestoresBoardSettingsStorage;
 use Tests\TestCase;
 
 /**
@@ -34,6 +35,7 @@ abstract class ModuleTestCase extends TestCase
     use DatabaseTransactions {
         beginDatabaseTransaction as protected beginTransactionAfterSchema;
     }
+    use RestoresBoardSettingsStorage;
 
     /**
      * 모듈 루트 경로를 반환합니다.
@@ -74,6 +76,9 @@ abstract class ModuleTestCase extends TestCase
     {
         parent::setUp();
 
+        // 설정 저장소(파일)는 트랜잭션 롤백이 닿지 않는다 — 시험 전 상태를 떠 두고 tearDown 에서 되돌린다 (#789 P17)
+        $this->snapshotBoardSettingsStorage();
+
         // 모듈 오토로드 등록 (테스트 환경)
         $this->registerModuleAutoload();
 
@@ -97,6 +102,9 @@ abstract class ModuleTestCase extends TestCase
         // 테스트 환경에서 module.php 가 선언한 getHookListeners() 의 리스너들을 수동 등록.
         $this->registerBundledModuleInstance();
 
+        // 번역 네임스페이스를 시험 대상 원본(_bundled)의 lang 으로 맞춘다 (쇼핑몰 시험 기반 클래스와 같은 처리)
+        $this->isolateModuleTranslations();
+
         // 설정 미러(`g7_module_settings()` 가 읽는 config)를 이 테스트 시점의 모듈 설정으로 다시 채운다.
         // 미러는 앱 부팅 때 「활성 모듈」만 싣는데, 같은 프로세스에서 코어 시험이 먼저 스키마를 새로 만들어
         // 이 모듈의 등록 행이 없던 DB 로 부팅하면 미러가 비어 게시판 기본 권한(basic_defaults)이 빈다.
@@ -119,13 +127,38 @@ abstract class ModuleTestCase extends TestCase
     }
 
     /**
-     * tearDown 에 HookManager 상태 복원.
+     * 모듈 다국어 네임스페이스를 시험 대상 원본(_bundled)의 lang 디렉터리로 다시 등록합니다.
+     *
+     * 앱 부팅 때 등록되는 `sirsoft-board::` 경로는 활성 사본(`modules/sirsoft-board/src/lang`)이라, 원본에 새로 더한 키가
+     * 설치본 반영 전에는 원문 키로 나온다. 또 선행 시험이 활성 사본에서 읽은 그룹이 번역기에 남아 있으면 경로를 바꿔도
+     * 다시 읽지 않으므로, 읽어 둔 그룹도 비운다.
+     *
+     * @return void 반환값 없음
+     */
+    private function isolateModuleTranslations(): void
+    {
+        $langPath = $this->getModuleBasePath().'/src/lang';
+
+        if (is_dir($langPath)) {
+            $translator = $this->app['translator'];
+            $translator->addNamespace('sirsoft-board', $langPath);
+
+            // 이 모듈 네임스페이스로 이미 읽어 둔 그룹만 비운다 (다른 네임스페이스·런타임 추가 문구는 그대로)
+            $loaded = (fn () => $this->loaded)->call($translator);
+            unset($loaded['sirsoft-board']);
+            $translator->setLoaded($loaded);
+        }
+    }
+
+    /**
+     * tearDown 에 HookManager 상태·설정 저장소 복원.
      *
      * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
         $this->restoreHookManager();
+        $this->restoreBoardSettingsStorage();
 
         parent::tearDown();
     }
@@ -328,6 +361,10 @@ abstract class ModuleTestCase extends TestCase
                 ->name('api.modules.sirsoft-board.')
                 ->middleware('api')
                 ->group($apiRoutesFile);
+
+            // 라우트 이름은 등록 뒤 `->name()` 으로 붙으므로 부팅 이후 추가한 라우트는 이름 색인에 없다.
+            // 색인을 다시 만들지 않으면 route()·서명 URL 발급(첨부 미리보기 서명 주소)이 RouteNotFound 로 실패한다.
+            Route::getRoutes()->refreshNameLookups();
         }
     }
 
@@ -396,5 +433,28 @@ abstract class ModuleTestCase extends TestCase
         $user->roles()->attach($userRole->id);
 
         return $user;
+    }
+
+    /**
+     * user 역할에 한 게시판의 권한을 줍니다.
+     *
+     * 게시글 신고·반응 라우트는 그 게시판의 게시글 열람 권한(`permission:user,sirsoft-board.{slug}.posts.read`)을
+     * 요구한다. 게시판을 서비스가 아니라 모델로 바로 만드는 테스트에는 권한 행이 없으므로 여기서 만든다.
+     *
+     * @param  Board  $board  대상 게시판
+     * @param  array  $permissionKeys  권한 키 (예: ['posts.read'])
+     * @return void 반환값 없음
+     */
+    protected function grantUserRoleBoardPermissions(Board $board, array $permissionKeys = ['posts.read']): void
+    {
+        $userRole = Role::where('identifier', 'user')->first();
+
+        foreach ($permissionKeys as $key) {
+            $permission = Permission::firstOrCreate(
+                ['identifier' => "sirsoft-board.{$board->slug}.{$key}"],
+                ['name' => ['ko' => $key, 'en' => $key], 'type' => 'user']
+            );
+            $userRole->permissions()->syncWithoutDetaching([$permission->id]);
+        }
     }
 }

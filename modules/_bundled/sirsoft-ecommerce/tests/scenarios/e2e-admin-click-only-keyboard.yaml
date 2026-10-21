@@ -1,0 +1,22 @@
+feature: 관리자 이커머스 클릭만 받던 영역의 키보드 조작 브라우저 회귀 (7.1.1)
+
+description: |
+  관리자 상품 등록 화면 구획 머리(「기본정보」·「상세설명」)가 순차 초점 순서에 있고 Enter·Space 로 접고 편다.
+  관리자 머리글 통화 선택이 항목·트리거 Esc 로 닫히고 초점이 통화 단추로 돌아온다. 쓰기 요청은 모두 가로챈다.
+
+axes:
+  case:
+    - product_form_section_headers
+    - admin_header_currency_escape
+
+effects:
+  - reachable_by_tab
+  - enter_space_toggle_expanded
+  - escape_closes_currency_list
+  - focus_returns_to_trigger
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-click-only-keyboard.spec.ts
+
+notes: |
+  관리자 토큰 필요(G7_E2E_TOKEN) — 없으면 건너뛴다.

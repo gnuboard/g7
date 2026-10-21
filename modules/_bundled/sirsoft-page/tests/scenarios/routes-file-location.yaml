@@ -1,0 +1,17 @@
+feature: 페이지 모듈 라우트 파일 표준 위치 (7.1.1 출시 전 점검)
+
+description: |
+  코어는 모듈 라우트를 resources/routes/{admin|user}.json 에서 먼저 찾고, 레거시 resources/routes.json 은 관리자 라우트로
+  읽되 요청마다 WARNING 을 남긴다. 페이지 모듈 라우트를 resources/routes/admin.json 으로 옮겨 경고를 없앤다(경로·레이아웃 무변경).
+
+axes:
+  case:
+    - routes_in_standard_location
+    - routes_content_kept
+
+effects:
+  - no_legacy_routes_warning
+  - admin_routes_unchanged
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Unit/Support/RoutesFileLocationTest.php

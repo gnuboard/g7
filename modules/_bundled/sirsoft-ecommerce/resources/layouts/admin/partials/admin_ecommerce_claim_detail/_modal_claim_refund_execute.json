@@ -15,6 +15,22 @@
         {
             "type": "basic",
             "name": "Div",
+            "lifecycle": {
+                "onUnmount": [
+                    {
+                        "comment": "창 닫힘 정리 — X·바깥 클릭·Esc 는 엔진 창 닫기로만 이어져 레이아웃 동작을 타지 않는다. 창이 닫히면 본문을 그리지 않으므로 늘 붙어 있는 이 본문 틀이 내려갈 때 개인정보를 담은 창 이름 공간을 비운다(7.1.1)",
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "claimRefundExecuteContext": null,
+                            "claimRefundExecuteBankCode": null,
+                            "claimRefundExecuteBankAccount": null,
+                            "claimRefundExecuteBankHolder": null,
+                            "claimRefundExecuteForce": null
+                        }
+                    }
+                ]
+            },
             "props": {
                 "className": "space-y-4"
             },
@@ -277,7 +293,7 @@
                     ]
                 },
                 {
-                    "comment": "환불받을 계좌 (T2-D6 · #599 3차 실측 L-8) — 계좌로 송금해야 끝나는 환불인데 신청서에 계좌가 없을 때만 선다. 종전에는 이 창이 계좌를 **보여 주기만** 해서, 계좌가 비어 있어도 [환불하기]가 그대로 눌렸고 돈은 나가지 않았는데 신청서만 환불완료로 닫혔다 — 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었다. 「필요한가」는 서버가 실행 게이트와 같은 술어로 환불 수단마다 판정해 내려주고(`refund_account_by_method`) 여는 핸들러가 지금 고른 수단의 값을 싣는다(화면이 결제수단 코드로 재현하면 확장 결제수단에서 갈린다).",
+                    "comment": "환불받을 계좌 (#599 실측) — 계좌로 송금해야 끝나는 환불인데 신청서에 계좌가 없을 때만 선다. 종전에는 이 창이 계좌를 **보여 주기만** 해서, 계좌가 비어 있어도 [환불하기]가 그대로 눌렸고 돈은 나가지 않았는데 신청서만 환불완료로 닫혔다 — 그 뒤에는 되돌릴 경로도 계좌를 적을 자리도 없었다. 「필요한가」는 서버가 실행 게이트와 같은 술어로 환불 수단마다 판정해 내려주고(`refund_account_by_method`) 여는 핸들러가 지금 고른 수단의 값을 싣는다(화면이 결제수단 코드로 재현하면 확장 결제수단에서 갈린다).",
                     "type": "basic",
                     "name": "Div",
                     "if": "{{_global.claimRefundExecuteContext?.refundAccountRequired === true}}",
@@ -323,6 +339,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_name",
                                 "name": "claimRefundExecuteBankCode",
                                 "value": "{{_global.claimRefundExecuteBankCode ?? ''}}",
                                 "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.refund_execute.refund_bank_select') }].concat((paymentSettings.data?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: $localized(b.name) ?? b.code })))}}",
@@ -452,8 +469,25 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "취소 — 창을 닫은 뒤 창 이름 공간의 개인정보를 비운다(닫기보다 먼저 비우면 닫히기 전 한 번 빈 칸이 그려진다)",
                                     "type": "click",
-                                    "handler": "closeModal"
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "closeModal"
+                                        },
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "claimRefundExecuteContext": null,
+                                                "claimRefundExecuteBankCode": null,
+                                                "claimRefundExecuteBankAccount": null,
+                                                "claimRefundExecuteBankHolder": null,
+                                                "claimRefundExecuteForce": null
+                                            }
+                                        }
+                                    ]
                                 }
                             ],
                             "props": {

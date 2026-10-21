@@ -1,12 +1,13 @@
-import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback, useId } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import { Svg } from '../basic/Svg';
 import type { EditorAttrs } from '../../types';
+import { useAdjacentLabel } from '../../hooks/useAdjacentLabel';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
-// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0 O-C3b-4).
+// 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
   const translated = (window as any).G7Core?.t?.(key, params);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
@@ -58,6 +59,10 @@ export interface SearchableDropdownProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
+  /** 트리거 단추 이름 — 단추는 「{이름} {현재 값}」으로 읽힌다. 없으면 곁 라벨을 잇는다(#757) */
+  'aria-label'?: string;
+  /** 트리거 단추 이름이 될 요소 id — 단추는 「{그 요소 글자} {현재 값}」으로 읽힌다 */
+  'aria-labelledby'?: string;
 }
 
 /**
@@ -82,8 +87,10 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
   className = '',
   id,
   editorAttrs,
+  'aria-label': ariaLabel,
+  'aria-labelledby': ariaLabelledBy,
 }) => {
-  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0 O-C3b-4)
+  // 기본 문구는 화면 언어를 따른다 — 레이아웃이 넘긴 문구가 우선이다(7.1.0)
   const searchPlaceholder = searchPlaceholderProp ?? tOr('common.search_placeholder', 'Search...');
   const noResultsText = noResultsTextProp ?? tOr('common.no_results', 'No results found');
   const initialText = initialTextProp ?? tOr('common.type_to_search', 'Type to search');
@@ -133,6 +140,22 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
     const selected = options.find(opt => String(opt.value) === String(selectedValues[0]));
     return selected?.label || triggerLabel;
   }, [selectedValues, options, multiple, triggerLabel, selectedCountLabel]);
+
+  // 트리거 이름 — 종전에는 고른 값만 읽혀 무엇을 고르는 칸인지 알 수 없었다(회원 국가·작성자·수신자, #757).
+  // 이름 span + 현재 값 span 을 aria-labelledby 로 이어 「{이름} {현재 값}」으로 읽힌다. 이름 prop 이 없으면 곁 라벨 + 단추 글자.
+  const domId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const nameId = `${domId}-name`;
+  const valueId = `${domId}-value`;
+  // 고른 값이 없으면 단추 글자는 안내 글자(triggerLabel)라 이름에 잇지 않는다. 레이아웃이 값 없음을 빈 문자열('')로
+  // 넘기거나 옵션에 없는 값이면 단추에는 안내 글자가 보이므로 같은 경우로 본다 — 「국가 국가 선택」 겹침(브라우저 실측)
+  const hasValue = selectedValues.some((v) => v !== '' && v !== null && v !== undefined) && displayLabel !== triggerLabel;
+  const valuePart = hasValue ? ` ${valueId}` : '';
+  const triggerLabelledBy = ariaLabel
+    ? `${nameId}${valuePart}`
+    : ariaLabelledBy
+      ? `${ariaLabelledBy}${valuePart}`
+      : undefined;
+  useAdjacentLabel(buttonRef as React.RefObject<HTMLElement | null>, !triggerLabelledBy, true);
 
   // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
@@ -231,6 +254,11 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
 
   return (
     <Div ref={containerRef} className={`relative inline-block ${className}`} id={id} {...editorAttrs}>
+      {ariaLabel && (
+        <Span id={nameId} className="sr-only">
+          {ariaLabel}
+        </Span>
+      )}
       {/* 트리거 버튼 */}
       <Button
         ref={buttonRef}
@@ -249,10 +277,11 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
         `}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-labelledby={triggerLabelledBy}
       >
         <Div className="flex items-center gap-2">
           {triggerIcon}
-          <Span className="truncate">{displayLabel}</Span>
+          <Span id={valueId} className="truncate">{displayLabel}</Span>
         </Div>
         <Svg
           className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
@@ -278,7 +307,8 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
               value={searchTerm}
               onChange={handleSearchChange}
               placeholder={searchPlaceholder}
-              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none"
+              aria-label={tOr('common.search', 'Search')}
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:outline-none"
             />
           </Div>
 
@@ -343,14 +373,14 @@ export const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
                         <Div
                           className={`font-medium ${
                             selected
-                              ? 'text-blue-600 dark:text-blue-400'
+                              ? 'text-blue-600 dark:text-blue-300'
                               : 'text-gray-900 dark:text-white'
                           }`}
                         >
                           {option.label}
                         </Div>
                         {option.description && (
-                          <Div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                          <Div className="text-sm text-gray-500 dark:text-gray-300 mt-0.5">
                             {option.description}
                           </Div>
                         )}

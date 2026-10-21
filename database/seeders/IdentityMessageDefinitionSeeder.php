@@ -27,6 +27,6 @@ class IdentityMessageDefinitionSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command?->info('본인인증 메시지는 알림 정의로 동기화됩니다 (NotificationDefinitionSeeder) — 건너뜀');
+        $this->command?->info(__('common.console.seeders.identity_message_definition.skipped'));
     }
 }

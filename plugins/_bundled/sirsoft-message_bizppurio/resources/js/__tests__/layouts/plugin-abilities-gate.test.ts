@@ -1,7 +1,7 @@
-// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 W1·W2·W3 통합 뒤 총괄 세션이 권한 회수 계정으로 함께 한다(이력 20261010_0208_710_abilities수정_W3)
+// e2e:allow 권한 게이트(입력·버튼 잠금) 레이아웃 계약 검증 — 브라우저 실측은 권한을 회수한 계정으로 통합 실측에서 함께 한다
 /**
  * @file plugin-abilities-gate.test.ts
- * @description 비즈뿌리오 확장 화면 abilities 게이트 (7.1.0 abilities 게이트 plugins #12·N6)
+ * @description 비즈뿌리오 확장 화면 abilities 게이트 (7.1.0 abilities 게이트)
  *
  * - 알림 템플릿 편집 창의 비즈뿌리오 섹션: 메시징 관리 권한(templates/map 응답 abilities)으로 입력·쓰기 버튼 잠금
  * - 하단 등록·검수 신청 버튼: 메시징 관리 권한자에게만 그린다(노드 권한)
@@ -40,7 +40,7 @@ function evaluate(raw: unknown, scope: Record<string, unknown>): any {
 
 const WRITE = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
-describe('비즈뿌리오 확장 abilities (#12·N6)', () => {
+describe('비즈뿌리오 확장 abilities', () => {
   /**
    * 메시징 관리 권한 판정이 없거나 false 면 템플릿 섹션의 입력·쓰기 버튼이 잠긴다.
    *
@@ -101,7 +101,8 @@ describe('비즈뿌리오 확장 abilities (#12·N6)', () => {
    */
   it('[설정하기] 노드 권한', () => {
     for (const tree of [tabCore, tabBoard, tabEcommerce]) {
-      const buttons = collect(tree, (n) => n.name === 'Button' && JSON.stringify(n).includes('/admin/plugins/sirsoft-message_bizppurio/settings'));
+      // 바로가기는 링크(#757 — 새 탭으로 열 수 있게 A 로 바꿈). 권한 게이트는 노드에 그대로 걸린다
+      const buttons = collect(tree, (n) => (n.name === 'Button' || n.name === 'A') && JSON.stringify(n).includes('/admin/plugins/sirsoft-message_bizppurio/settings'));
       expect(buttons.length).toBeGreaterThan(0);
       buttons.forEach((b) => expect(b.permissions).toEqual(['core.plugins.update']));
     }

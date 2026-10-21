@@ -1,0 +1,14 @@
+feature: 마케팅 채널 편집 창을 열 때 앞 채널의 이름 문구가 남지 않는다 (7.1.1)
+
+description: |
+  채널 추가·편집이 편집 대상을 deep 병합해, 이름(label) 다국어 객체에 앞 채널에만 있던 언어 문구가 남았다(확정 시 다른 채널에 저장).
+  두 여는 자리가 같은 액션 목록에서 편집 대상을 null 로 먼저 비운다.
+
+axes:
+  entry: [add_and_edit]
+
+effects:
+  - channel_label_not_carried_over
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/resources/js/__tests__/layouts/pluginSettingsChannelOpenReset.test.ts

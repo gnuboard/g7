@@ -17,14 +17,14 @@
         <div class="flex-center gap-2 shrink-0">
           <!-- 순서 이동. 좁은 화면에서는 끌기 손잡이가 스크롤과 다투므로 형제 화면과 달리
             버튼으로 둔다 — 순서를 바꿀 수단 자체가 없으면 휴대폰에서 차례를 고칠 길이 없다. -->
-          <button data-testid="reaction-type-up-m-{{row.code}}" type="button" class="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded transition-colors board-move-button disabled:cursor-not-allowed" title="$t:sirsoft-board.admin.settings.reaction_types.actions.move_up" disabled="{{_computed.isReadOnly || row._idx === 0}}">
+          <button data-testid="reaction-type-up-m-{{row.code}}" type="button" class="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded transition-colors board-move-button disabled:cursor-not-allowed" title="$t:sirsoft-board.admin.settings.reaction_types.actions.move_up" disabled="{{_computed.isReadOnly || row._idx === 0}}">
             <on type="click">
               <!-- 위로 한 칸. 두 자리를 맞바꾸고 순서 값을 자리 번호로 다시 매긴다. -->
               <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i, a) => i === row._idx - 1 ? {...a[row._idx], display_order: i} : (i === row._idx ? {...a[row._idx - 1], display_order: i} : {...r, display_order: i}))}}" :hasChanges="true"/>
             </on>
             <icon name="fa-solid fa-chevron-up" class="text-xs"/>
           </button>
-          <button data-testid="reaction-type-down-m-{{row.code}}" type="button" class="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded transition-colors board-move-button disabled:cursor-not-allowed" title="$t:sirsoft-board.admin.settings.reaction_types.actions.move_down" disabled="{{_computed.isReadOnly || row._idx === (_local.form?.basic_defaults?.reaction_types ?? []).length - 1}}">
+          <button data-testid="reaction-type-down-m-{{row.code}}" type="button" class="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded transition-colors board-move-button disabled:cursor-not-allowed" title="$t:sirsoft-board.admin.settings.reaction_types.actions.move_down" disabled="{{_computed.isReadOnly || row._idx === (_local.form?.basic_defaults?.reaction_types ?? []).length - 1}}">
             <on type="click">
               <!-- 아래로 한 칸. -->
               <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i, a) => i === row._idx ? {...a[row._idx + 1], display_order: i} : (i === row._idx + 1 ? {...a[row._idx], display_order: i} : {...r, display_order: i}))}}" :hasChanges="true"/>
@@ -32,7 +32,7 @@
             <icon name="fa-solid fa-chevron-down" class="text-xs"/>
           </button>
           <div data-testid="reaction-type-active-m-{{row.code}}">
-            <toggle data-type="composite" checked="{{row.is_active ?? false}}" size="sm" disabled="{{_computed.isReadOnly}}">
+            <toggle data-type="composite" checked="{{row.is_active ?? false}}" ariaLabel="$t:common.row_cell|row={{row.code}}|column={{$t('sirsoft-board.admin.settings.reaction_types.columns.is_active')}}" size="sm" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 끄면 회원 화면의 반응 버튼에서 빠진다. 이미 쌓인 반응 행은 그대로다. -->
                 <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, is_active: !(r.is_active)} : r)}}" :hasChanges="true"/>
@@ -45,7 +45,7 @@
         <div class="excel-card-row">
           <span class="excel-card-label">$t:sirsoft-board.admin.settings.reaction_types.columns.name</span>
           <div class="excel-card-value flex-1">
-            <multilingual-input data-type="composite" value="{{row.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
+            <multilingual-input data-type="composite" value="{{row.name ?? {}}}" ariaLabel="$t:common.row_cell|row={{row.code}}|column={{$t('sirsoft-board.admin.settings.reaction_types.columns.name')}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['basic_defaults.reaction_types.' + row._idx + '.name']?.[0] ?? ''}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 유형 이름(언어별). 회원 화면의 반응 버튼 문구가 된다. -->
                 <set-state target="local" form.basic_defaults.reaction_types="{{(_local.form?.basic_defaults?.reaction_types ?? []).map((r, i) => i === row._idx ? {...r, name: $event.target.value} : r)}}" :hasChanges="true"/>
@@ -91,7 +91,7 @@
         <!-- 반응이 쌓인 유형은 지울 수 없다. disabled 버튼은 hover 이벤트가 죽어 툴팁이 뜨지
           않으므로 래퍼 span 에 건다. -->
         <div data-testid="reaction-type-delete-wrap-m-{{row.code}}" class="inline-block" title="{{(row.reaction_count ?? 0) > 0 ? (row.reaction_count ?? 0) + '$t:sirsoft-board.admin.settings.reaction_types.delete_blocked_suffix|count=' + (row.reaction_count ?? 0) : ''}}">
-          <button aria-label="$t:common.delete" data-testid="reaction-type-delete-m-{{row.code}}" type="button" class="p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || (row.reaction_count ?? 0) > 0}}">
+          <button aria-label="$t:common.delete" data-testid="reaction-type-delete-m-{{row.code}}" type="button" class="p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly || (row.reaction_count ?? 0) > 0}}">
             <on type="click">
               <!-- 행을 빼고 남은 자리 번호를 다시 매긴다. 게시판이 고른 코드 목록에서도 같이
                 빼야 없어진 코드를 가리키는 설정이 남지 않는다. -->
@@ -112,7 +112,7 @@
         </div>
         <div class="flex-center gap-2 shrink-0">
           <div data-testid="reaction-type-active-m-new">
-            <toggle data-type="composite" checked="{{_local.reactionTypeForm?.is_active ?? true}}" size="sm" disabled="{{_computed.isReadOnly}}">
+            <toggle data-type="composite" checked="{{_local.reactionTypeForm?.is_active ?? true}}" ariaLabel="$t:sirsoft-board.admin.settings.reaction_types.columns.is_active" size="sm" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 새 유형은 「사용」으로 시작한다. 여기서 바로 꺼 둘 수도 있다. -->
                 <set-state target="local" reactionTypeForm.is_active="{{!(_local.reactionTypeForm?.is_active ?? true)}}"/>
@@ -125,7 +125,7 @@
         <div class="excel-card-row">
           <div class="excel-card-label">$t:sirsoft-board.admin.settings.reaction_types.columns.code</div>
           <div class="excel-card-value">
-            <input data-testid="reaction-type-form-code-m" type="text" value="{{_local.reactionTypeForm?.code ?? ''}}" class="{{_local.reactionTypeFormErrors?.code ? 'input input-error font-mono w-full' : 'input font-mono w-full'}}" disabled="{{_computed.isReadOnly}}">
+            <input data-testid="reaction-type-form-code-m" type="text" aria-label="$t:sirsoft-board.admin.settings.reaction_types.columns.code" value="{{_local.reactionTypeForm?.code ?? ''}}" class="{{_local.reactionTypeFormErrors?.code ? 'input input-error font-mono w-full' : 'input font-mono w-full'}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 코드는 소문자·앞뒤 공백 없는 형태로 맞춰 둔다. 저장한 뒤엔 바꿀 수 없다. -->
                 <set-state target="local" reactionTypeForm.code="{{($event.target.value ?? '').trim().toLowerCase()}}"/>
@@ -139,7 +139,7 @@
         <div class="excel-card-row">
           <div class="excel-card-label">$t:sirsoft-board.admin.settings.reaction_types.columns.name</div>
           <div class="excel-card-value">
-            <multilingual-input data-type="composite" value="{{_local.reactionTypeForm?.name ?? {}}}" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.reactionTypeFormErrors?.name ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
+            <multilingual-input data-type="composite" value="{{_local.reactionTypeForm?.name ?? {}}}" ariaLabel="$t:sirsoft-board.admin.settings.reaction_types.columns.name" layout="compact" placeholder="$t:sirsoft-board.admin.settings.reaction_types.form.name_placeholder" error="{{_local.reactionTypeFormErrors?.name ? '$t:sirsoft-board.admin.settings.reaction_types.validation.name_required' : ''}}" disabled="{{_computed.isReadOnly}}">
               <on type="change">
                 <!-- 이름 입력 — 로케일 맵을 통째로 폼에 둔다. 기본 언어(ko) 필수 검증은 확인 버튼에서 한다 -->
                 <set-state target="local" reactionTypeForm.name="{{$event.target.value}}"/>

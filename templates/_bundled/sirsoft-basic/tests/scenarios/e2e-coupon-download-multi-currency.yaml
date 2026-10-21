@@ -1,0 +1,21 @@
+feature: 쿠폰 받기 다통화 표시 브라우저 회귀 (7.1.1)
+
+description: |
+  USD 로 보는 회원에게 상품 상세 쿠폰 칩과 받기 확인 창이 같은 선택 통화 혜택 문구를 보인다(받을 쿠폰 응답 모의, 받기 미실행).
+  주문서 「쿠폰 다운로드」 창 목록 API(`GET user/coupons/downloadable`) 항목마다 통화 맵 칸이 있다(GET 만).
+
+axes:
+  case:
+    - product_detail_confirm_modal_usd
+    - checkout_downloadable_api_shape
+
+effects:
+  - confirm_modal_benefit_in_selected_currency
+  - chip_and_modal_same_text
+  - downloadable_api_has_currency_maps
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/coupon-download-multi-currency.spec.ts
+
+notes: |
+  계정 필요(G7_E2E_TOKEN 등). 선택 통화는 화면 전역 상태로만 바꾼다(계정 선호 통화 불변).

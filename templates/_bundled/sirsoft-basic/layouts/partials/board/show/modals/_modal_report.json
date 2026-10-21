@@ -42,7 +42,7 @@
                                     "props": {
                                         "name": "info-circle",
                                         "size": "lg",
-                                        "className": "text-yellow-600 dark:text-yellow-500 flex-shrink-0 mt-0.5"
+                                        "className": "text-yellow-700 dark:text-yellow-500 flex-shrink-0 mt-0.5"
                                     }
                                 },
                                 {
@@ -117,7 +117,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-400 dark:text-gray-500/80"
+                                        "className": "text-xs text-gray-500 dark:text-gray-400/80"
                                     },
                                     "text": "{{_global.reportModal.comment_created_at}}"
                                 }
@@ -166,6 +166,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:board.post.report_reason",
                                 "value": "{{_global.reportForm?.reason_type ?? ''}}",
                                 "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             },
@@ -194,6 +195,16 @@
                                     "text": "{{type.label}}"
                                 }
                             ]
+                        },
+                        {
+                            "comment": "서버 검증 오류(422) — 창을 닫지 않으므로 무엇을 고칠지 칸 아래에 보인다(7.1.1)",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.reportErrors?.reason_type?.[0]}}",
+                            "props": {
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1"
+                            },
+                            "text": "{{_global.reportErrors?.reason_type?.[0] ?? ''}}"
                         }
                     ]
                 },
@@ -230,6 +241,7 @@
                                 }
                             ],
                             "props": {
+                                "aria-label": "$t:board.post.report_detail",
                                 "placeholder": "$t:board.post.report_detail_placeholder",
                                 "value": "{{_global.reportForm?.reason_detail ?? ''}}",
                                 "rows": 4,
@@ -237,6 +249,15 @@
                                 "minLength": 3,
                                 "maxLength": 1000
                             }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.reportErrors?.reason_detail?.[0]}}",
+                            "props": {
+                                "className": "text-red-600 dark:text-red-400 text-xs mt-1"
+                            },
+                            "text": "{{_global.reportErrors?.reason_detail?.[0] ?? ''}}"
                         }
                     ]
                 },
@@ -253,7 +274,7 @@
                             "name": "Button",
                             "actions": [
                                 {
-                                    "comment": "취소 — 적던 사유를 비우고 닫는다. 전역에 남겨 두면 다음에 다른 글을 신고하려 열 때 앞의 내용이 그대로 보인다.",
+                                    "comment": "취소 — 적던 사유와 서버 오류 표시를 비우고 닫는다. 전역에 남겨 두면 다음에 다른 글을 신고하려 열 때 앞의 내용이 그대로 보인다.",
                                     "type": "click",
                                     "handler": "sequence",
                                     "actions": [
@@ -261,6 +282,7 @@
                                             "handler": "setState",
                                             "params": {
                                                 "target": "global",
+                                                "reportErrors": null,
                                                 "reportForm": {
                                                     "reason_type": "",
                                                     "reason_detail": ""
@@ -274,6 +296,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                             },
                             "text": "$t:common.cancel"
@@ -283,7 +306,7 @@
                             "name": "Button",
                             "actions": [
                                 {
-                                    "comment": "신고 보내기 — 사유와 상세를 차례로 확인해 비어 있으면 그 자리에서 알리고 멈춘다. 성공하면 창을 닫고 글을 다시 받아 «신고됨» 표시가 새로고침 없이 바뀌게 하고, 실패(이미 신고함·권한 없음 등)해도 창을 닫아 오류 안내만 남긴다 — 열린 채로 두면 무엇이 막혔는지 모른 채 다시 누르게 된다.",
+                                    "comment": "신고 보내기 — 사유와 상세를 차례로 확인해 비어 있으면 그 자리에서 알리고 멈춘다. 성공하면 창을 닫고 글을 다시 받아 «신고됨» 표시가 새로고침 없이 바뀌게 하고, 실패(검증 오류·이미 신고함·권한 없음 등)하면 창과 적은 사유를 그대로 두고 오류 토스트를 띄우며, 서버의 칸별 오류는 칸 아래에 보인다 — 관리자 신고 창과 같은 동작이다(7.1.1. 종전 #413-60 의 「실패 시 창 닫기」 는 422 에 적은 사유까지 지웠다).",
                                     "type": "click",
                                     "handler": "conditions",
                                     "if": "{{_global.reportSubmitting !== true}}",
@@ -317,7 +340,8 @@
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
-                                                        "reportSubmitting": true
+                                                        "reportSubmitting": true,
+                                                        "reportErrors": null
                                                     }
                                                 },
                                                 {
@@ -337,6 +361,7 @@
                                                             "params": {
                                                                 "target": "global",
                                                                 "reportSubmitting": false,
+                                                                "reportErrors": null,
                                                                 "reportForm": {
                                                                     "reason_type": "",
                                                                     "reason_detail": ""
@@ -373,10 +398,12 @@
                                                     ],
                                                     "onError": [
                                                         {
+                                                            "comment": "신고 실패(422 검증·409 중복·403) — 창을 닫지 않는다. 잠금을 풀고(#413-60 증상1 의 「진행 불가」 해소는 이 잠금 해제와 토스트가 맡는다)\n                         서버 칸별 오류를 담는다(422 가 아니면 없음)",
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "global",
-                                                                "reportSubmitting": false
+                                                                "reportSubmitting": false,
+                                                                "reportErrors": "{{error.errors ?? null}}"
                                                             }
                                                         },
                                                         {
@@ -385,10 +412,6 @@
                                                                 "type": "error",
                                                                 "message": "{{error.message}}"
                                                             }
-                                                        },
-                                                        {
-                                                            "comment": "신고 실패(409 중복/403/422) 시 모달을 닫는다 → 에러 토스트만 화면에 노출되어 '진행 불가'처럼 보이던 현상 해소 (이슈 #413-60 증상1, 설계 결정: 모달 닫고 토스트)",
-                                                            "handler": "closeModal"
                                                         }
                                                     ]
                                                 }
@@ -398,7 +421,8 @@
                                 }
                             ],
                             "props": {
-                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                "type": "button",
+                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.reportSubmitting === true}}"
                             },
                             "children": [

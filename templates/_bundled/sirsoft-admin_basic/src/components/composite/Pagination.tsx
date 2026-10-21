@@ -3,6 +3,7 @@ import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
+import { handleLinkClick, mergeQueryIntoHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -54,6 +55,13 @@ export interface PaginationProps {
   id?: string;
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
+  /**
+   * 페이지 주소 틀 — `{page}` 자리에 번호를 넣는다(예: `/admin/users?page={page}`). 주면 번호·이전·다음·처음·끝이
+   * `<a href>` 가 되어 가운데 클릭·Ctrl+클릭으로 새 탭에서 열 수 있다. 보통 클릭은 지금처럼 onPageChange(#757).
+   */
+  pageHref?: string;
+  /** 페이지 주소에 현재 주소의 쿼리(검색·정렬 조건)를 합친다 — 새 탭도 같은 목록 조건으로 열린다 */
+  pageHrefMergeQuery?: boolean;
 }
 
 /**
@@ -89,6 +97,8 @@ export const Pagination: React.FC<PaginationProps> = ({
   nextText,
   id,
   editorAttrs,
+  pageHref,
+  pageHrefMergeQuery = false,
 }) => {
   // 총 건수를 정확히 세지 못한 목록은 마지막 페이지를 계산할 수 없다.
   // 계산 불가한 값은 마지막 페이지 번호 하나뿐이므로 그 점프만 감춘다. 1 부터 현재
@@ -194,6 +204,69 @@ export const Pagination: React.FC<PaginationProps> = ({
     }
   };
 
+  /** 페이지 번호의 주소 — pageHref 가 없으면 undefined(단추로 그린다) */
+  const hrefFor = (page: number): string | undefined => {
+    if (!pageHref) return undefined;
+    const raw = pageHref.split('{page}').join(String(page));
+    return pageHrefMergeQuery ? mergeQueryIntoHref(raw) : raw;
+  };
+
+  /**
+   * 페이지 조작 하나 — pageHref 가 있으면 링크(갈 수 없으면 href 없는 aria-disabled 링크), 없으면 종전 단추.
+   */
+  const renderControl = (opts: {
+    key?: React.Key;
+    page: number;
+    disabled?: boolean;
+    className: string;
+    ariaLabel: string;
+    ariaCurrent?: 'page';
+    onActivate: () => void;
+    children: React.ReactNode;
+  }): React.ReactNode => {
+    if (!pageHref) {
+      return (
+        <Button
+          key={opts.key}
+          onClick={opts.onActivate}
+          disabled={opts.disabled}
+          className={opts.className}
+          aria-label={opts.ariaLabel}
+          aria-current={opts.ariaCurrent}
+        >
+          {opts.children}
+        </Button>
+      );
+    }
+    if (opts.disabled) {
+      return (
+        <a
+          key={opts.key}
+          role="link"
+          aria-disabled="true"
+          tabIndex={-1}
+          className={`button ${opts.className}`}
+          aria-label={opts.ariaLabel}
+          onClick={(event) => event.preventDefault()}
+        >
+          {opts.children}
+        </a>
+      );
+    }
+    return (
+      <a
+        key={opts.key}
+        href={hrefFor(opts.page)}
+        className={`button ${opts.className}`}
+        aria-label={opts.ariaLabel}
+        aria-current={opts.ariaCurrent}
+        onClick={(event) => handleLinkClick(event, opts.onActivate)}
+      >
+        {opts.children}
+      </a>
+    );
+  };
+
   return (
     <Div
       className={`pagination ${className}`}
@@ -203,26 +276,24 @@ export const Pagination: React.FC<PaginationProps> = ({
       id={id} {...editorAttrs}
     >
       {/* First Button */}
-      {displayFirst && (
-        <Button
-          onClick={() => handlePageClick(1)}
-          disabled={currentPage === 1}
-          className="pagination-btn"
-          aria-label={t('common.first_page')}
-        >
-          &#171;
-        </Button>
-      )}
+      {displayFirst && renderControl({
+        page: 1,
+        onActivate: () => handlePageClick(1),
+        disabled: currentPage === 1,
+        className: 'pagination-btn',
+        ariaLabel: t('common.first_page'),
+        children: <>&#171;</>,
+      })}
 
       {/* Previous Button */}
-      <Button
-        onClick={handlePrevious}
-        disabled={currentPage === 1}
-        className="pagination-btn"
-        aria-label={t('common.prev_page')}
-      >
-        {prevText || <>&#8249;</>}
-      </Button>
+      {renderControl({
+        page: currentPage - 1,
+        onActivate: handlePrevious,
+        disabled: currentPage === 1,
+        className: 'pagination-btn',
+        ariaLabel: t('common.prev_page'),
+        children: prevText || <>&#8249;</>,
+      })}
 
       {/* Page Numbers — 마지막 페이지를 모르면 아는 범위까지만 표시 */}
       <Div className="pagination">
@@ -241,41 +312,37 @@ export const Pagination: React.FC<PaginationProps> = ({
           const pageNum = page as number;
           const isActive = pageNum === currentPage;
 
-          return (
-            <Button
-              key={pageNum}
-              onClick={() => handlePageClick(pageNum)}
-              className={isActive ? 'pagination-btn-active' : 'pagination-btn'}
-              aria-label={t('common.page_n', { n: pageNum })}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              {pageNum}
-            </Button>
-          );
+          return renderControl({
+            key: pageNum,
+            page: pageNum,
+            onActivate: () => handlePageClick(pageNum),
+            className: isActive ? 'pagination-btn-active' : 'pagination-btn',
+            ariaLabel: t('common.page_n', { n: pageNum }),
+            ariaCurrent: isActive ? 'page' : undefined,
+            children: pageNum,
+          });
         })}
       </Div>
 
       {/* Next Button */}
-      <Button
-        onClick={handleNext}
-        disabled={!canGoNext}
-        className="pagination-btn"
-        aria-label={t('common.next_page')}
-      >
-        {nextText || <>&#8250;</>}
-      </Button>
+      {renderControl({
+        page: currentPage + 1,
+        onActivate: handleNext,
+        disabled: !canGoNext,
+        className: 'pagination-btn',
+        ariaLabel: t('common.next_page'),
+        children: nextText || <>&#8250;</>,
+      })}
 
       {/* Last Button */}
-      {displayLast && (
-        <Button
-          onClick={() => handlePageClick(resolvedTotalPages)}
-          disabled={currentPage === resolvedTotalPages}
-          className="pagination-btn"
-          aria-label={t('common.last_page')}
-        >
-          &#187;
-        </Button>
-      )}
+      {displayLast && renderControl({
+        page: resolvedTotalPages,
+        onActivate: () => handlePageClick(resolvedTotalPages),
+        disabled: currentPage === resolvedTotalPages,
+        className: 'pagination-btn',
+        ariaLabel: t('common.last_page'),
+        children: <>&#187;</>,
+      })}
     </Div>
   );
 };

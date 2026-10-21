@@ -10,6 +10,18 @@
 | [user-orders.md](user-orders.md) | `user` | 사용자 영수증 URL 조회·테스트 모드 가상계좌 모의입금 정보 (JSON, 소유자·게스트 토큰·영수증 쿠키 접근 제어) |
 | [transaction-status.md](transaction-status.md) | `admin` | 관리자 주문 상세의 거래 상태·취소·환불 조회 |
 
+## 관리자 경로의 주문 권한 범위
+
+관리자 주문 연동 경로는 이커머스 주문 권한(`sirsoft-ecommerce.orders.read`·`orders.update`)을 요구하고, 그 권한을
+「본인만」·「소유역할」 범위로 받은 관리자에게는 범위 안 주문만 허용한다.
+
+| 경로 | 판정 대상 | 범위 밖일 때 |
+| --- | --- | --- |
+| `orders/{orderNumber}/transaction-status` · `orders/{orderNumber}/escrow-delivery`(조회·등록) | 주문번호의 주문 | 403 `auth.scope_denied` — PG 를 부르지 않는다 |
+| `orders/test-mode-map` | 주문번호마다 | 범위 밖 주문번호를 맵에서 뺀다 |
+
+주문이 없는 주문번호는 범위로 판정하지 않고 각 경로의 기존 응답을 따른다.
+
 ## 클레임 추가결제 (취소/반품/교환)
 
 쇼핑몰 모듈의 클레임 추가결제(결제번호 `CP` 채번)는 별도 엔드포인트 없이 기존 결제 콜백이

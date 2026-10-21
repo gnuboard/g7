@@ -47,7 +47,7 @@ exclusions:
   - { state: geoip_off, screen: settings, reason: "GeoIP 꺼짐은 지역·봇 설정 힌트로만 드러난다 — 화면 상태가 아니다" }
 
 effects:
-  # 7.1.0 전수 실측 영역 E 후속 — 관측 O-E2·E5·E6·E8·E10
+  # 7.1.0 전수 실측 통계 화면 후속 관측
   - skipped_run_shows_its_reason
   - each_address_row_says_whether_it_is_masked
   - bot_recent_hits_follow_the_selected_period

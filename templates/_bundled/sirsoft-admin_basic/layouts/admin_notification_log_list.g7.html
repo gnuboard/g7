@@ -78,7 +78,7 @@
           <icon name="refresh" class="text-xl"/>
         </button>
       </div>
-      <tab-navigation data-type="composite" data-ref="channel_tabs" tabs="{{[{id: '', label: '$t:admin.notification_log.tab_all'}].concat((notificationChannels?.data?.channels ?? []).map(ch => ({id: ch.id, label: (ch.name ?? ch.id) + (ch.source &amp;&amp; ch.source !== 'core' ? ' (' + (ch.source_label ?? ch.source) + ')' : ''), iconName: ch.icon})))}}" activeTabId="{{query.channel ?? ''}}" variant="default" class="sticky-tab-nav mb-6">
+      <tab-navigation data-type="composite" data-ref="channel_tabs" tabs="{{[{id: '', label: '$t:admin.notification_log.tab_all', href: '/admin/notification-logs'}].concat((notificationChannels?.data?.channels ?? []).map(ch => ({id: ch.id, label: (ch.name ?? ch.id) + (ch.source &amp;&amp; ch.source !== 'core' ? ' (' + (ch.source_label ?? ch.source) + ')' : ''), iconName: ch.icon, href: '/admin/notification-logs?channel=' + encodeURIComponent(ch.id) + '&amp;page=1'})))}}" activeTabId="{{query.channel ?? ''}}" variant="default" class="sticky-tab-nav mb-6">
         <on type="change" event="onTabChange">
           <!-- audit:allow layout-list-context-navigate-merge-query 채널 탭 전환 — 탭마다 다루는 대상이 다르고 '전체' 선택 시 query 가 [] 로 리셋되어야 한다. 병합하면 이전 채널의 조건이 남는다. -->
           <navigate path="/admin/notification-logs" :replace="true" query="{{$args[0] ? {channel: $args[0], page: 1} : []}}" transition_overlay_target="notification_log_datagrid__body"/>
@@ -94,7 +94,7 @@
             <span data-if="{{notificationLogs?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.notification_log.total_at_least|count={{notificationLogs?.data?.pagination?.total || 0}}</span>
           </div>
           <div class="flex-center gap-3">
-            <select name="sortBy" class="w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'sent_at_desc'}}">
+            <select name="sortBy" aria-label="$t:common.sort_order" class="w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'sent_at_desc'}}">
               <options>
                 <option value="sent_at_desc">$t:admin.notification_log.sort.sent_at_desc</option>
                 <option value="sent_at_asc">$t:admin.notification_log.sort.sent_at_asc</option>
@@ -109,7 +109,7 @@
                 </navigate>
               </on>
             </select>
-            <select name="perPage" class="w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.per_page || '20'}}">
+            <select name="perPage" aria-label="$t:common.per_page" class="w-20 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.per_page || '20'}}">
               <options>
                 <option value="10">10</option>
                 <option value="20">20</option>
@@ -128,7 +128,7 @@
         <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
           <span class="text-body font-medium whitespace-nowrap">$t:admin.notification_log.delete.selected_count|count={{(_global.selectedIds_admin_notification_logs ?? []).length}}</span>
           <div class="flex-1"/>
-          <button data-ref="bulk_delete_button" type="button" class="alert-danger text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled="{{(_global.selectedIds_admin_notification_logs ?? []).length === 0 || notificationLogs?.data?.abilities?.can_delete !== true}}">
+          <button data-ref="bulk_delete_button" type="button" class="alert-danger text-sm font-medium text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors" disabled="{{(_global.selectedIds_admin_notification_logs ?? []).length === 0 || notificationLogs?.data?.abilities?.can_delete !== true}}">
             <on type="click">
               <open-modal target="bulk_delete_confirm_modal"/>
             </on>

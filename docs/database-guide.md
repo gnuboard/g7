@@ -913,23 +913,20 @@ public function getLocalizedName(?string $locale = null): string
 
 #### 다국어 fallback chain 정책
 
-다국어 JSON 필드 (`permissions.name`, `module.name`, 모듈 모델의 `name`/`description` 등) 에서 현재 locale 의 값을 반환할 때는 **`config('app.fallback_locale', 'ko')` 기반 fallback chain** 을 사용합니다.
+다국어 JSON 필드 (`permissions.name`, `module.name`, 모듈 모델의 `name`/`description` 등) 에서 현재 locale 의 값을 반환할 때는 **`App\Support\LocalizedValue::pick()`** 을 사용합니다 — 요청 언어 → 사이트 기본 언어(환경설정 「기본 언어」) → 영어 → 첫 값, 빈 칸 건너뜀.
 
 ```php
-// ✅ DO: app.fallback_locale config 기반
+// ✅ DO: LocalizedValue::pick
+return LocalizedValue::pick($name, $locale) ?? '';
+
+// ❌ DON'T: fallback_locale 색인 · ko / en 하드코딩
 return $name[$locale]
     ?? $name[config('app.fallback_locale', 'ko')]
-    ?? (! empty($name) ? array_values($name)[0] : '')
-    ?? '';
-
-// ❌ DON'T: ko / en 하드코딩
-return $name[$locale]
     ?? $name['ko']
-    ?? $name['en']
     ?? '';
 ```
 
-운영자가 `APP_FALLBACK_LOCALE` 환경변수로 폴백 locale 을 ko 외 값으로 변경할 수 있도록 하기 위함입니다. ko 가 fallback 인 환경에서는 두 패턴이 동일 결과지만, 환경 변경 시 하드코딩 패턴은 의도와 어긋난 ko 폴백을 보입니다.
+`APP_FALLBACK_LOCALE` 은 번역 키 대체 전용입니다. 다국어 값을 그 값으로 색인하면 한국어가 기본이 아닌 사이트에서도 빈 값이 한국어로 채워집니다(#148). 강제 검사: `tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`.
 
 #### 새 언어 추가 절차
 
@@ -1127,27 +1124,28 @@ protected function prepareForValidation(): void
 }
 ```
 
-**폴백 동작**:
+**폴백 동작** (`App\Support\LocalizedValue::pick()` — 빈 문자열·공백만 있는 값은 없는 것으로 본다):
 
 1. 요청한 로케일에 번역이 있으면 반환
-2. 없으면 'ko' (기본 로케일)로 폴백
-3. 'ko'도 없으면 'en'으로 폴백
-4. 둘 다 없으면 빈 문자열 반환
+2. 없으면 사이트 기본 언어(환경설정 「기본 언어」, `config('app.site_locale')`)
+3. 그것도 없으면 'en'
+4. 그래도 없으면 배열 순서의 첫 유효값
+5. 값이 하나도 없으면 빈 문자열 반환
 
-**엣지 케이스**:
+**엣지 케이스** (사이트 기본 언어가 ko 일 때):
 
 ```php
 // 한국어만 있는 경우
 $permission->name = ['ko' => '테스트'];
-$permission->getLocalizedName('en');  // "테스트" (ko로 폴백)
+$permission->getLocalizedName('en');  // "테스트" (사이트 기본 언어 ko 로 폴백)
 
 // 영어만 있는 경우
 $role->name = ['en' => 'Test'];
-$role->getLocalizedName('ko');  // "Test" (en으로 폴백)
+$role->getLocalizedName('ja');  // "Test" (en 으로 폴백)
 
-// 빈 번역
+// 빈 번역 — 빈칸은 건너뛴다
 $menu->name = ['ko' => '메뉴', 'en' => ''];
-$menu->getLocalizedName('en');  // "" (빈 문자열 반환)
+$menu->getLocalizedName('en');  // "메뉴" (en 이 비어 사이트 기본 언어 ko 로 폴백)
 
 // NULL 값
 $module->description = null;

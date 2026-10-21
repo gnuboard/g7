@@ -4,8 +4,8 @@
   <slot name="content">
     <div class="min-h-[60vh] flex items-center justify-center">
       <div class="text-center px-4 max-w-lg">
-        <icon name="triangle-exclamation" class="text-8xl mx-auto text-orange-400 dark:text-orange-500 mb-6"/>
-        <div class="text-8xl font-bold text-gray-200 dark:text-gray-700 mb-4">503</div>
+        <icon name="triangle-exclamation" class="text-8xl mx-auto text-orange-600 dark:text-orange-500 mb-6"/>
+        <div class="text-8xl font-bold text-gray-500 dark:text-gray-500 mb-4">503</div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">$t:error.503.title</h1>
         <p class="text-gray-600 dark:text-gray-400 mb-4">$t:error.503.description</p>
         <div data-ref="dependency_info" data-if="{{_global.errorData &amp;&amp; ((_global.errorData.modules &amp;&amp; _global.errorData.modules.length > 0) || (_global.errorData.plugins &amp;&amp; _global.errorData.plugins.length > 0))}}" class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-6 text-left">
@@ -29,14 +29,14 @@
             </div>
           </div>
         </div>
-        <p class="text-sm text-gray-500 dark:text-gray-500 mb-8">$t:error.503.contact_admin</p>
-        <button class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors cursor-pointer">
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">$t:error.503.contact_admin</p>
+        <a href="/" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors cursor-pointer">
           <on type="click">
-            <navigate path="/"/>
+            <navigate/>
           </on>
           <icon name="home" class="text-xl"/>
           <span>$t:error.503.back_to_home</span>
-        </button>
+        </a>
       </div>
     </div>
   </slot>

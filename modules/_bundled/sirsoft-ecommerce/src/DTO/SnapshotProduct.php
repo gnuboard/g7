@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\DTO;
 
+use App\Support\LocalizedValue;
+use Illuminate\Support\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 
 /**
@@ -28,7 +30,7 @@ class SnapshotProduct
     /** @var object|null 배송정책 (스냅샷 모드에서는 null — calculateShippingFee에서 별도 처리) */
     public $shippingPolicy = null;
 
-    /** @var \Illuminate\Support\Collection 카테고리 (스냅샷 모드에서는 빈 컬렉션 — 쿠폰 스냅샷 모드에서 검증 우회) */
+    /** @var Collection 카테고리 (스냅샷 모드에서는 빈 컬렉션 — 쿠폰 스냅샷 모드에서 검증 우회) */
     public $categories;
 
     /**
@@ -56,7 +58,7 @@ class SnapshotProduct
     public function getLocalizedName(): string
     {
         if (is_array($this->name)) {
-            return $this->name[app()->getLocale()] ?? $this->name['ko'] ?? reset($this->name) ?: '';
+            return LocalizedValue::pick($this->name) ?? '';
         }
 
         return $this->name;

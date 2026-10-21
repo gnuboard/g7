@@ -87,6 +87,8 @@ function findAllNodes(node: any, predicate: (n: any) => boolean, acc: any[] = []
 }
 
 describe('게시판 비회원 입력 행 — 좁은 화면에서 세로 스택', () => {
+  // @scenario case=guest_comment_form_stacked
+  // @effects guest_fields_stack_vertically
   it('댓글 입력폼의 이름/비밀번호 행이 flex-col sm:flex-row 다 (+81px 오버플로 회귀)', () => {
     const layout = loadLayout('partials/board/show/_comment_input.json');
     const guestRow = findNode(
@@ -100,6 +102,8 @@ describe('게시판 비회원 입력 행 — 좁은 화면에서 세로 스택',
     expect(cls).toContain('sm:flex-row');
   });
 
+  // @scenario case=guest_write_form_stacked
+  // @effects guest_fields_stack_vertically
   it('글쓰기폼의 이름/비밀번호 행이 grid-cols-1 sm:grid-cols-2 다 (147px 압착 회귀)', () => {
     const layout = loadLayout('partials/board/form/_post_form.json');
     const guestRow = findNode(
@@ -122,6 +126,8 @@ describe('게시판 비회원 입력 행 — 좁은 화면에서 세로 스택',
 describe('상품상세 쿠폰 칩 — 라벨 한 줄, 목록은 여러 줄', () => {
   const layout = loadLayout('partials/shop/detail/_info_summary.json');
 
+  // @scenario case=coupon_chip_single_line
+  // @effects coupon_chips_wrap_instead_of_hidden_scroll
   it('칩 컨테이너가 가로 스크롤 대신 줄바꿈한다', () => {
     const container = findNode(
       layout,
@@ -135,6 +141,8 @@ describe('상품상세 쿠폰 칩 — 라벨 한 줄, 목록은 여러 줄', () 
     expect(cls).not.toContain('overflow-x-auto');
   });
 
+  // @scenario case=coupon_chip_single_line
+  // @effects coupon_chip_label_nowrap
   it('칩 라벨(할인 금액)이 whitespace-nowrap 으로 한 줄을 유지한다', () => {
     const label = findNode(
       layout,
@@ -159,6 +167,8 @@ describe('Modal 좌우 여백 — max-w-full 이 clamp 를 이기지 못하게',
   ];
 
   for (const file of modalFiles) {
+    // @scenario case=modal_side_margin
+    // @effects modal_keeps_viewport_side_margin
     it(`${file} 의 Modal props.className 에 max-w-full 이 없다`, () => {
       const layout = loadLayout(file);
       expect(layout.name).toBe('Modal');
@@ -167,6 +177,8 @@ describe('Modal 좌우 여백 — max-w-full 이 clamp 를 이기지 못하게',
     });
   }
 
+  // @scenario case=modal_side_margin
+  // @effects modal_keeps_viewport_side_margin
   it('Modal.tsx 패널이 max-w-[calc(100vw-2rem)] 로 화면 폭을 clamp 한다', () => {
     const tsx = fs.readFileSync(
       path.resolve(__dirname, '../../src/components/composite/Modal.tsx'),
@@ -179,6 +191,8 @@ describe('Modal 좌우 여백 — max-w-full 이 clamp 를 이기지 못하게',
 describe('주문금액 비교표(클레임 신청서) — 좁은 열에서 단어 중간 줄바꿈 금지', () => {
   const layout = loadLayout('partials/mypage/claims/_apply_comparison.json');
 
+  // @scenario case=claim_comparison_narrow_column
+  // @effects narrow_column_labels_break_keep
   it('행 라벨(상품쿠폰 할인 등) 16개가 모두 break-keep 이다', () => {
     // 390px 요약 카드의 3열 grid 첫 열은 좁다 — keep-all 이 없으면 "상품쿠폰 할" / "인" 으로 잘린다
     const labels = findAllNodes(
@@ -191,6 +205,8 @@ describe('주문금액 비교표(클레임 신청서) — 좁은 열에서 단�
     }
   });
 
+  // @scenario case=claim_comparison_narrow_column
+  // @effects narrow_column_labels_break_keep
   it('쿠폰 상세 행(쿠폰명 + 할인액)이 모두 break-keep 이다', () => {
     const couponLines = findAllNodes(
       layout,
@@ -206,6 +222,8 @@ describe('주문금액 비교표(클레임 신청서) — 좁은 열에서 단�
 describe('게시글 상단 네비 — 긴 게시판명이 좌우 버튼을 압착하지 않는다', () => {
   const layout = loadLayout('partials/board/show/_navigation.json');
 
+  // @scenario case=post_navigation_long_board_name
+  // @effects post_navigation_buttons_not_squeezed
   it('컨테이너가 모바일에서 줄바꿈한다 (flex-wrap)', () => {
     // 셋을 한 줄에 두면 게시판명이 남은 폭을 먹고 형제를 눌러버린다.
     // 390px 실측: '이전글' 버튼 폭이 5자 87px → 11자 73px → 21자 62px 로 줄었다.
@@ -221,6 +239,8 @@ describe('게시글 상단 네비 — 긴 게시판명이 좌우 버튼을 압�
     expect(mobile).toMatch(/\bgap-y-\d/);
   });
 
+  // @scenario case=post_navigation_long_board_name
+  // @effects post_navigation_buttons_not_squeezed
   it('게시판명이 모바일에서 자기 줄을 차지한다 (order-first w-full)', () => {
     const title = findNode(
       layout,
@@ -234,22 +254,24 @@ describe('게시글 상단 네비 — 긴 게시판명이 좌우 버튼을 압�
     expect(tokens).toContain('w-full');
   });
 
+  // @scenario case=post_navigation_long_board_name
+  // @effects post_navigation_buttons_not_squeezed
   it('목록 버튼과 이전/다음 그룹은 shrink-0 이라 눌리지 않는다', () => {
     const backBtn = findNode(
       layout,
-      (n) => n.name === 'Button' && findNode(n, (c) => c.text === '$t:board.back_to_list') !== null
+      (n) => ['A', 'Button'].includes(n.name) && findNode(n, (c) => c.text === '$t:board.back_to_list') !== null
     );
     expect(backBtn).toBeTruthy();
     expect(backBtn.props.className.split(/\s+/)).toContain('shrink-0');
 
-    // 루트 컨테이너도 이전글/다음글 을 자손으로 갖는다. 직계 자식이 두 Button 인 노드만 고른다.
+    // 루트 컨테이너도 이전글/다음글 을 자손으로 갖는다. 직계 자식이 두 이동 링크(단추)인 노드만 고른다.
     const prevNextGroup = findNode(
       layout,
       (n) =>
         n.name === 'Div' &&
         Array.isArray(n.children) &&
         n.children.length === 2 &&
-        n.children.every((c: any) => c.name === 'Button') &&
+        n.children.every((c: any) => ['A', 'Button'].includes(c.name)) &&
         findNode(n, (c: any) => c.text === '$t:board.prev') !== null &&
         findNode(n, (c: any) => c.text === '$t:board.next') !== null
     );
@@ -265,6 +287,8 @@ describe('해외주소 도시/주 입력 — 무접두 grid-cols-2 금지', () =
   ];
 
   for (const file of files) {
+    // @scenario case=overseas_address_city_state
+    // @effects two_column_rows_single_column_on_narrow
     it(`${file} 의 2열 행은 모두 좁은 화면 대비가 있다 (sm: 접두 또는 responsive.portable)`, () => {
       const layout = loadLayout(file);
       // 390px 에서 2열을 그대로 유지하는 노드를 찾는다.
@@ -282,6 +306,8 @@ describe('해외주소 도시/주 입력 — 무접두 grid-cols-2 금지', () =
       expect(offenders.map((n) => n.props.className)).toEqual([]);
     });
 
+    // @scenario case=overseas_address_city_state
+    // @effects two_column_rows_single_column_on_narrow
     it(`${file} 의 도시/주 행은 grid-cols-1 sm:grid-cols-2 다`, () => {
       const layout = loadLayout(file);
       const row = findNode(layout, (n) => {

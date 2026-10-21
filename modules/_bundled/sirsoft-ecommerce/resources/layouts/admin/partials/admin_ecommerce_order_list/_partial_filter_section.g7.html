@@ -31,7 +31,7 @@
       <div data-ref="date_filter_row" data-slot="{{(_local.visibleFilters || []).includes('date') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="2" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- E-002 편집모드 체크박스 -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('date')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.date" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('date')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('date') ? (_local.visibleFilters || []).filter(f => f !== 'date') : [...(_local.visibleFilters || []), 'date']}}"/>
           </on>
@@ -51,14 +51,14 @@
         </select>
         <div class="flex-center gap-2">
           <!-- F-012 -->
-          <input data-ref="f_012_start_date" type="date" name="startDate" value="{{_local.filter.startDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.start_date" class="input w-36">
+          <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.order.filter.date')}}" data-ref="f_012_start_date" type="date" name="startDate" value="{{_local.filter.startDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.start_date" class="input w-36">
             <on type="change">
               <set-state target="_local" filter.startDate="{{$event.target.value}}" filter.dateQuick="" filter.dateBasis=""/>
             </on>
           </input>
           <span class="text-secondary">~</span>
           <!-- F-013 -->
-          <input data-ref="f_013_end_date" type="date" name="endDate" value="{{_local.filter.endDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.end_date" class="input w-36">
+          <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.order.filter.date')}}" data-ref="f_013_end_date" type="date" name="endDate" value="{{_local.filter.endDate || ''}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.end_date" class="input w-36">
             <on type="change">
               <set-state target="_local" filter.endDate="{{$event.target.value}}" filter.dateQuick="" filter.dateBasis=""/>
             </on>
@@ -66,7 +66,7 @@
         </div>
         <div class="flex-center gap-1">
           <!-- F-014 -->
-          <button data-ref="f_014_quick_today" type="button" class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+          <button data-ref="f_014_quick_today" type="button" class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'today'}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.setDateRange" preset="today"/>
               <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
@@ -74,7 +74,7 @@
             $t:sirsoft-ecommerce.admin.order.filter.date_quick.today
           </button>
           <!-- F-015 -->
-          <button data-ref="f_015_quick_week" type="button" class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+          <button data-ref="f_015_quick_week" type="button" class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'week'}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.setDateRange" preset="week"/>
               <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
@@ -82,7 +82,7 @@
             $t:sirsoft-ecommerce.admin.order.filter.date_quick.week
           </button>
           <!-- F-016 -->
-          <button data-ref="f_016_quick_month" type="button" class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+          <button data-ref="f_016_quick_month" type="button" class="{{_local.filter.dateQuick === 'month' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'month'}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.setDateRange" preset="month"/>
               <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
@@ -90,7 +90,7 @@
             $t:sirsoft-ecommerce.admin.order.filter.date_quick.1_month
           </button>
           <!-- F-017 -->
-          <button data-ref="f_017_quick_3months" type="button" class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+          <button data-ref="f_017_quick_3months" type="button" class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === '3months'}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.setDateRange" preset="3months"/>
               <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
@@ -98,7 +98,7 @@
             $t:sirsoft-ecommerce.admin.order.filter.date_quick.3_months
           </button>
           <!-- F-018 -->
-          <button data-ref="f_018_quick_6months" type="button" class="{{_local.filter.dateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+          <button data-ref="f_018_quick_6months" type="button" class="{{_local.filter.dateQuick === '6months' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === '6months'}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.setDateRange" preset="6months"/>
               <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
@@ -106,7 +106,7 @@
             $t:sirsoft-ecommerce.admin.order.filter.date_quick.6_months
           </button>
           <!-- F-019 -->
-          <button data-ref="f_019_quick_1year" type="button" class="{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}">
+          <button data-ref="f_019_quick_1year" type="button" class="{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === '1year'}}">
             <on type="click">
               <action handler="sirsoft-ecommerce.setDateRange" preset="1year"/>
               <set-state target="_local" filter.dateQuick="{{$prev.preset}}" filter.startDate="{{$prev.startDate}}" filter.endDate="{{$prev.endDate}}" filter.dateBasis=""/>
@@ -122,7 +122,7 @@
       <div data-ref="orderStatus_filter_row" data-slot="{{(_local.visibleFilters || []).includes('orderStatus') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="3" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- E-003 편집모드 체크박스 -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('orderStatus')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.order_status" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('orderStatus')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('orderStatus') ? (_local.visibleFilters || []).filter(f => f !== 'orderStatus') : [...(_local.visibleFilters || []), 'orderStatus']}}"/>
           </on>
@@ -202,7 +202,7 @@
       <div data-ref="deliveryMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('deliveryMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="5" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- E-005 편집모드 체크박스 -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('deliveryMethod')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.delivery_method" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('deliveryMethod')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('deliveryMethod') ? (_local.visibleFilters || []).filter(f => f !== 'deliveryMethod') : [...(_local.visibleFilters || []), 'deliveryMethod']}}"/>
           </on>
@@ -226,7 +226,7 @@
       <div data-ref="paymentMethod_filter_row" data-slot="{{(_local.visibleFilters || []).includes('paymentMethod') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="6" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- E-006 편집모드 체크박스 -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('paymentMethod')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.payment_method" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('paymentMethod')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('paymentMethod') ? (_local.visibleFilters || []).filter(f => f !== 'paymentMethod') : [...(_local.visibleFilters || []), 'paymentMethod']}}"/>
           </on>
@@ -250,7 +250,7 @@
       <div data-ref="category_filter_row" data-slot="{{(_local.visibleFilters || []).includes('category') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="7" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- E-007 편집모드 체크박스 -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('category')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.category" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('category')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('category') ? (_local.visibleFilters || []).filter(f => f !== 'category') : [...(_local.visibleFilters || []), 'category']}}"/>
           </on>
@@ -259,25 +259,25 @@
         <span data-ref="f_100_category_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.category</span>
         <div class="flex-center flex-wrap gap-2">
           <!-- F-101 -->
-          <select data-ref="f_101_category_1" name="category1" value="{{_local.filter.category1}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_placeholder" class="w-32" options="{{_computed.category1Options ?? []}}">
+          <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=1" data-ref="f_101_category_1" name="category1" value="{{_local.filter.category1}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_placeholder" class="w-32" options="{{_computed.category1Options ?? []}}">
             <on type="change">
               <set-state target="_local" filter.category1="{{$event.target.value}}" filter.category2="" filter.category3="" filter.category4=""/>
             </on>
           </select>
           <!-- F-102 -->
-          <select data-ref="f_102_category_2" data-if="{{_local.filter.category1}}" name="category2" value="{{_local.filter.category2}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_placeholder" class="w-32" options="{{_computed.category2Options ?? []}}">
+          <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=2" data-ref="f_102_category_2" data-if="{{_local.filter.category1}}" name="category2" value="{{_local.filter.category2}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_placeholder" class="w-32" options="{{_computed.category2Options ?? []}}">
             <on type="change">
               <set-state target="_local" filter.category2="{{$event.target.value}}" filter.category3="" filter.category4=""/>
             </on>
           </select>
           <!-- F-103 -->
-          <select data-ref="f_103_category_3" data-if="{{_local.filter.category2}}" name="category3" value="{{_local.filter.category3}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_placeholder" class="w-32" options="{{_computed.category3Options ?? []}}">
+          <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=3" data-ref="f_103_category_3" data-if="{{_local.filter.category2}}" name="category3" value="{{_local.filter.category3}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_placeholder" class="w-32" options="{{_computed.category3Options ?? []}}">
             <on type="change">
               <set-state target="_local" filter.category3="{{$event.target.value}}" filter.category4=""/>
             </on>
           </select>
           <!-- F-104 -->
-          <select data-ref="f_104_category_4" data-if="{{_local.filter.category3}}" name="category4" value="{{_local.filter.category4}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_placeholder" class="w-32" options="{{_computed.category4Options ?? []}}">
+          <select aria-label="$t:sirsoft-ecommerce.admin.order.filter.category_level|level=4" data-ref="f_104_category_4" data-if="{{_local.filter.category3}}" name="category4" value="{{_local.filter.category4}}" placeholder="$t:sirsoft-ecommerce.admin.order.filter.category_placeholder" class="w-32" options="{{_computed.category4Options ?? []}}">
             <on type="change">
               <set-state target="_local" filter.category4="{{$event.target.value}}"/>
             </on>
@@ -288,7 +288,7 @@
       <div data-ref="price_filter_row" data-slot="{{(_local.visibleFilters || []).includes('price') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="8" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- E-008 편집모드 체크박스 -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('price')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.price" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('price')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('price') ? (_local.visibleFilters || []).filter(f => f !== 'price') : [...(_local.visibleFilters || []), 'price']}}"/>
           </on>
@@ -318,7 +318,7 @@
       <div data-ref="country_filter_row" data-slot="{{(_local.visibleFilters || []).includes('country') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="9" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- E-009 편집모드 체크박스 -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('country')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.country" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('country')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('country') ? (_local.visibleFilters || []).filter(f => f !== 'country') : [...(_local.visibleFilters || []), 'country']}}"/>
           </on>
@@ -343,7 +343,7 @@
       <div data-ref="device_filter_row" data-slot="{{(_local.visibleFilters || []).includes('device') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="10" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- E-010 편집모드 체크박스 -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('device')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.device" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('device')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('device') ? (_local.visibleFilters || []).filter(f => f !== 'device') : [...(_local.visibleFilters || []), 'device']}}"/>
           </on>
@@ -377,7 +377,7 @@
       <div data-ref="shippingPolicy_filter_row" data-slot="{{(_local.visibleFilters || []).includes('shippingPolicy') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="11" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- E-011 편집모드 체크박스 -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('shippingPolicy')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.shipping_policy" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('shippingPolicy')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('shippingPolicy') ? (_local.visibleFilters || []).filter(f => f !== 'shippingPolicy') : [...(_local.visibleFilters || []), 'shippingPolicy']}}"/>
           </on>
@@ -395,7 +395,7 @@
       <div data-ref="shippingFee_filter_row" data-slot="{{(_local.visibleFilters || []).includes('shippingFee') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="12" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- E-012 편집모드 체크박스 -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('shippingFee')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.shipping_fee" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('shippingFee')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('shippingFee') ? (_local.visibleFilters || []).filter(f => f !== 'shippingFee') : [...(_local.visibleFilters || []), 'shippingFee']}}"/>
           </on>
@@ -423,7 +423,7 @@
       <div data-ref="orderer_filter_row" data-slot="{{(_local.visibleFilters || []).includes('orderer') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="13" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- E-013 편집모드 체크박스 -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('orderer')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.orderer" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('orderer')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('orderer') ? (_local.visibleFilters || []).filter(f => f !== 'orderer') : [...(_local.visibleFilters || []), 'orderer']}}"/>
           </on>
@@ -432,7 +432,7 @@
         <span data-ref="f_160_orderer_label" class="filter-label w-20">$t:sirsoft-ecommerce.admin.order.filter.orderer</span>
         <div class="flex-center gap-2 flex-1">
           <!-- F-161 -->
-          <searchable-dropdown data-type="composite" data-ref="f_161_orderer_searchable_dropdown" options="{{_local.ordererSearchResults ?? []}}" value="{{_local.filter.ordererUuid || ''}}" triggerLabel="$t:sirsoft-ecommerce.admin.order.filter.orderer_select" searchPlaceholder="$t:sirsoft-ecommerce.admin.order.filter.orderer_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.order.filter.orderer_search_initial" class="w-64">
+          <searchable-dropdown data-type="composite" data-ref="f_161_orderer_searchable_dropdown" aria-label="$t:sirsoft-ecommerce.admin.order.filter.orderer" options="{{_local.ordererSearchResults ?? []}}" value="{{_local.filter.ordererUuid || ''}}" triggerLabel="$t:sirsoft-ecommerce.admin.order.filter.orderer_select" searchPlaceholder="$t:sirsoft-ecommerce.admin.order.filter.orderer_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.order.filter.orderer_search_initial" class="w-64">
             <on event="onSearch">
               <!-- 주문자 검색. 회원 수가 많아 선택지를 미리 받아 둘 수 없으므로 입력할 때마다 코어
                 회원 검색 API 를 친다(300ms 로 묶는다). 응답을 그대로 쓰지 않고 `{value,label,description}`
@@ -455,7 +455,7 @@
             </on>
           </searchable-dropdown>
           <!-- F-162 -->
-          <button data-ref="f_162_orderer_clear_button" data-if="{{!!_local.filter.ordererUuid}}" type="button" class="text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300" aria-label="$t:common.remove">
+          <button data-ref="f_162_orderer_clear_button" data-if="{{!!_local.filter.ordererUuid}}" type="button" class="text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300" aria-label="$t:common.remove">
             <on type="click">
               <set-state target="local" filter.ordererUuid="" :ordererSearchResults="[]"/>
             </on>
@@ -467,7 +467,7 @@
       <div data-ref="member_type_filter_row" data-slot="{{(_local.visibleFilters || []).includes('memberType') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="14" class="filter-row">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- E-014 편집모드 체크박스 -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('memberType')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.member_type" class="{{_local.isEditMode ? 'checkbox mr-2' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('memberType')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('memberType') ? (_local.visibleFilters || []).filter(f => f !== 'memberType') : [...(_local.visibleFilters || []), 'memberType']}}"/>
           </on>
@@ -490,7 +490,7 @@
       <div data-ref="claim_filter_row" data-slot="{{(_local.visibleFilters || []).includes('claim') ? 'basic_filters' : 'detail_filters'}}" data-slot-order="15" class="filter-row items-start">
         <responsive on="portable" class="filter-row flex-col items-start"/>
         <!-- E-003 편집모드 체크박스 -->
-        <input type="checkbox" class="{{_local.isEditMode ? 'checkbox mr-2 mt-1' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('claim')}}">
+        <input type="checkbox" aria-label="$t:sirsoft-ecommerce.admin.order.filter.claim.presence" class="{{_local.isEditMode ? 'checkbox mr-2 mt-1' : 'hidden'}}" checked="{{(_local.visibleFilters || []).includes('claim')}}">
           <on type="change">
             <set-state target="_local" visibleFilters="{{(_local.visibleFilters || []).includes('claim') ? (_local.visibleFilters || []).filter(f => f !== 'claim') : [...(_local.visibleFilters || []), 'claim']}}"/>
           </on>
@@ -800,15 +800,15 @@
     </div>
     <!-- 프리셋 영역 - 데이터소스 기반 동적 표시 -->
     <div data-ref="preset_row" class="flex-center flex-wrap gap-3 mb-4">
-      <div class="flex-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">
+      <button type="button" class="flex-center gap-2 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-gray-700 dark:hover:text-gray-200">
         <on type="click">
           <open-modal target="modal_preset_manage"/>
         </on>
         <icon name="sliders" class="text-base"/>
         <span class="text-sm font-medium">$t:sirsoft-ecommerce.admin.order.preset.label</span>
-      </div>
+      </button>
       <!-- 프리셋 버튼. 누르면 저장된 조건 세트를 통째로 갈아끼운다 — 지금 걸린 조건과 섞지 않는 것이 프리셋의 뜻이라 병합하지 않는다 -->
-      <div data-ref="preset_buttons_dynamic_{{presetIdx}}" data-each="preset, presetIdx in presets.data || []" class="{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}">
+      <button type="button" data-ref="preset_buttons_dynamic_{{presetIdx}}" data-each="preset, presetIdx in presets.data || []" class="{{query.preset_id === String(preset.id) ? 'btn-preset ring-1 ring-gray-400 dark:ring-gray-500 bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn-preset cursor-pointer'}}" aria-pressed="{{query.preset_id === String(preset.id)}}">
         <on type="click">
           <set-state target="_local" merge="shallow">
             <field name="filter">
@@ -853,14 +853,14 @@
           <toast type="info" message="$t:sirsoft-ecommerce.admin.order.preset.applied|name={{preset.name}}"/>
         </on>
         {{preset.name}}
-      </div>
+      </button>
     </div>
     <!-- 검색 영역 - 검색 필드와 버튼 영역 분리. `flex flex-col` 은 기준 display 다 — 빼면 md:flex-row 가 방향만 정하고 요소는 block 으로 남아 검색행과 버튼행이 두 줄로 갈린다 (#408 시맨틱 치환 때 사라졌던 회귀, 2026-08-26 복원). -->
     <div data-ref="search_row_wrapper" class="flex flex-col md:flex-row md:items-center gap-3">
       <!-- F-001, F-002 검색 필드 + 검색어 입력 -->
       <div data-ref="search_row_line1" class="flex-1 flex-center gap-2">
         <!-- F-001 -->
-        <select data-ref="f_001_search_field_select" name="searchField" class="w-80 shrink-0" value="{{_local.filter.searchField}}">
+        <select data-ref="f_001_search_field_select" name="searchField" aria-label="$t:common.search_field" class="w-80 shrink-0" value="{{_local.filter.searchField}}">
           <responsive on="portable" class="w-24 shrink-0"/>
           <options>
             <option value="all">$t:sirsoft-ecommerce.admin.order.search.field.all</option>
@@ -891,7 +891,7 @@
               </sequence>
             </on>
           </input>
-          <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted pointer-events-none"/>
+          <icon name="search" class="text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"/>
         </div>
       </div>
       <!-- F-003, F-004 컬럼 선택 + 상세검색 버튼 -->

@@ -217,7 +217,8 @@
             "hint": "This body is shared by SMS fallback and SMS-only delivery. #{variables} are substituted at send time.",
             "btn_save": "Save",
             "saved_toast": "SMS body saved.",
-            "editor_label": "SMS body editor"
+            "editor_label": "SMS body editor",
+            "body_label": "SMS body"
         },
         "cancel_approval": {
             "modal_title": "Cancel Approval",

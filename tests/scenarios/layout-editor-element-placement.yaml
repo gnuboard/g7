@@ -78,6 +78,11 @@ effects:
   - drag_card_inner_element_into_sibling_card_nest
   - drop_card_beside_hero_grid_sibling_via_parent_gap_slot
   - drop_slot_index_uses_original_tree_index_consistent_with_moveNode
+  # 브라우저 종단(drag-drop-reorder.spec.ts) — 핸들·명시 드롭 슬롯·관련 레벨 한정·편집기 속성 전달
+  - drag_handle_present_for_draggable
+  - explicit_drop_slots_render
+  - drop_slots_scoped_to_relevant_levels
+  - editor_attrs_passthrough_marks_nesting_nodes
   # S5b 후속 — 컨테이너 간 이동 + 선택 기준 드래그
   - drop_slots_span_all_accepting_containers
   - handle_zindex_depth_ordered

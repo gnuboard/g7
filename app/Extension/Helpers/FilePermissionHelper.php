@@ -42,8 +42,13 @@ class FilePermissionHelper
      *                                                 `removeOrphans=true` 라도 이 목록에 매칭되는 orphan 링크는 삭제하지 않는다 — 코어
      *                                                 업데이트 prune 모드에서 `public/storage` symlink 가 orphan 으로 판정되어 삭제되던
      *                                                 결함(#43) 차단. 화이트리스트 밖 orphan 링크는 기존대로 삭제된다.
+     * @param  array<int, string>  $skipPaths  복사·orphan 정리를 모두 건너뛸 상대경로(이 디렉토리 루트 기준, 예
+     *                                         `['sirsoft-gdpr']`). 경로와 정확히 같거나 그 하위면 건너뛴다 — `excludes` 의 단순 이름과
+     *                                         달리 다른 깊이의 같은 이름은 매치하지 않는다. 재귀에 그대로 하향 전달한다. 코어 업데이트가
+     *                                         설치되지 않았고 디스크에도 없는 공식 번들을 배치하지 않기 위함(#146). 기본값 `[]` 은 기존 동작.
+     * @return void 반환값 없음
      */
-    public static function copyDirectory(string $source, string $destination, ?\Closure $onProgress = null, array $excludes = [], string $relativePath = '', bool $removeOrphans = false, bool $preserveTopLevelOrphans = false, ?array $applyList = null, array $preserveLinkPaths = []): void
+    public static function copyDirectory(string $source, string $destination, ?\Closure $onProgress = null, array $excludes = [], string $relativePath = '', bool $removeOrphans = false, bool $preserveTopLevelOrphans = false, ?array $applyList = null, array $preserveLinkPaths = [], array $skipPaths = []): void
     {
         if (! File::isDirectory($destination)) {
             // 신규 디렉토리: 부모 디렉토리의 퍼미션/소유권 상속
@@ -58,6 +63,9 @@ class FilePermissionHelper
             $itemRelativePath = $relativePath === '' ? $itemName : $relativePath.'/'.$itemName;
 
             if (static::isExcluded($itemName, $itemRelativePath, $excludes)) {
+                continue;
+            }
+            if ($skipPaths !== [] && static::isSkippedPath($itemRelativePath, $skipPaths)) {
                 continue;
             }
 
@@ -89,7 +97,7 @@ class FilePermissionHelper
                 // preserveLinkPaths 는 이 디렉토리 루트 기준 상대경로(예 `public/storage` → `storage`)라
                 // 재귀에 그대로 하향 전달 — removeOrphanItems 가 각 레벨에서 itemRelativePath 전체로
                 // 매칭하므로 중첩 보호 경로도 정확히 판정된다.
-                static::copyDirectory($item->getPathname(), $destPath, $onProgress, $excludes, $itemRelativePath, $removeOrphans, preserveTopLevelOrphans: false, applyList: $applyList, preserveLinkPaths: $preserveLinkPaths);
+                static::copyDirectory($item->getPathname(), $destPath, $onProgress, $excludes, $itemRelativePath, $removeOrphans, preserveTopLevelOrphans: false, applyList: $applyList, preserveLinkPaths: $preserveLinkPaths, skipPaths: $skipPaths);
             } else {
                 // 증분 모드(applyList 지정): 화이트리스트에 없는 파일은 스킵 —
                 // 코어가 변경하지 않은 파일의 현재 디스크 상태(사용자 수정 포함)를 보존.
@@ -102,8 +110,30 @@ class FilePermissionHelper
 
         // 소스에 없는 대상 파일/디렉토리 삭제
         if ($removeOrphans && File::isDirectory($destination)) {
-            static::removeOrphanItems($source, $destination, $excludes, $relativePath, $preserveTopLevelOrphans, $preserveLinkPaths);
+            static::removeOrphanItems($source, $destination, $excludes, $relativePath, $preserveTopLevelOrphans, $preserveLinkPaths, $skipPaths);
         }
+    }
+
+    /**
+     * 상대경로가 skipPaths 중 하나와 같거나 그 하위인지 판정합니다.
+     *
+     * @param  string  $itemRelativePath  이 복사 루트 기준 상대경로 (슬래시 구분)
+     * @param  array<int, string>  $skipPaths  건너뛸 상대경로 목록
+     * @return bool 건너뛸 경로면 true
+     */
+    protected static function isSkippedPath(string $itemRelativePath, array $skipPaths): bool
+    {
+        foreach ($skipPaths as $skip) {
+            $skip = trim(str_replace('\\', '/', (string) $skip), '/');
+            if ($skip === '') {
+                continue;
+            }
+            if ($itemRelativePath === $skip || str_starts_with($itemRelativePath, $skip.'/')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -213,8 +243,10 @@ class FilePermissionHelper
      * @param  array<int, string>  $preserveLinkPaths  삭제하지 않고 보존할 symlink/junction
      *                                                 상대경로 화이트리스트(루트 기준). orphan 이 링크이면서 이 목록에 매칭되면 삭제하지
      *                                                 않고 보존한다 — `public/storage` symlink 보호(#43). 화이트리스트 밖 orphan 링크는 삭제.
+     * @param  array<int, string>  $skipPaths  orphan 정리에서도 건너뛸 상대경로(루트 기준) — 복사를 건너뛴 경로는 지우지도 않는다
+     * @return void 반환값 없음
      */
-    protected static function removeOrphanItems(string $source, string $destination, array $excludes, string $relativePath, bool $preserveTopLevelOrphans = false, array $preserveLinkPaths = []): void
+    protected static function removeOrphanItems(string $source, string $destination, array $excludes, string $relativePath, bool $preserveTopLevelOrphans = false, array $preserveLinkPaths = [], array $skipPaths = []): void
     {
         // 최상위 한 레벨에서 소스에 없는 항목(사용자 추가) 보존 — `_bundled/my-project` 등.
         // 호출자(copyDirectory)는 최상위 진입 시에만 relativePath='' + 플래그 true 로 들어오며,
@@ -231,6 +263,9 @@ class FilePermissionHelper
 
             // excludes 대상은 삭제하지 않음
             if (static::isExcluded($itemName, $itemRelativePath, $excludes)) {
+                continue;
+            }
+            if ($skipPaths !== [] && static::isSkippedPath($itemRelativePath, $skipPaths)) {
                 continue;
             }
 
@@ -317,6 +352,7 @@ class FilePermissionHelper
      *
      * @param  string  $source  소스 파일
      * @param  string  $destination  대상 파일
+     * @return void 반환값 없음
      */
     public static function copyFile(string $source, string $destination): void
     {
@@ -355,6 +391,7 @@ class FilePermissionHelper
      * 부모 디렉토리의 퍼미션·소유자·그룹을 상속하여 신규 디렉토리를 생성합니다.
      *
      * @param  string  $path  생성할 디렉토리 경로
+     * @return void 반환값 없음
      */
     protected static function createDirectoryInheritingParent(string $path): void
     {
@@ -376,6 +413,7 @@ class FilePermissionHelper
      * 외부 호출처(예: `SettingsMigrator::writeJsonFile`) 가 직접 호출 가능하도록 public.
      *
      * @param  string  $path  소유권을 상속받을 파일 또는 디렉토리
+     * @return void 반환값 없음
      */
     public static function inheritOwnershipFromParent(string $path): void
     {
@@ -400,6 +438,7 @@ class FilePermissionHelper
      *
      * @param  string  $path  대상 디렉토리 절대 경로
      * @param  int  $mode  적용할 퍼미션 (예: 0775)
+     * @return void 반환값 없음
      */
     public static function hardenDirectory(string $path, int $mode = 0775): void
     {
@@ -509,6 +548,7 @@ class FilePermissionHelper
      * @param  string  $path  대상 경로
      * @param  int|false  $owner  fileowner() 반환값 (false 허용)
      * @param  int|false  $group  filegroup() 반환값 (false 허용)
+     * @return void 반환값 없음
      */
     protected static function applyOwnership(string $path, int|false $owner, int|false $group): void
     {
@@ -573,6 +613,7 @@ class FilePermissionHelper
      * 테스트 전용 — 실행 환경 판정을 강제합니다 (posix 부재 환경에서 root 분기를 재현하기 위해).
      *
      * @param  array{mode: string, name: string|null}|null  $account  강제할 판정 (null 로 실판정 복귀)
+     * @return void 반환값 없음
      */
     public static function fakeWebServerAccountForTesting(?array $account): void
     {
@@ -792,6 +833,7 @@ class FilePermissionHelper
      * @param  string  $path  대상 경로
      * @param  array{changed:int}  $report  집계 (참조)
      * @param  bool  $isRoot  루트 자체는 정책 판정용으로만 사용 (chmod 안 함)
+     * @return void 반환값 없음
      */
     private static function syncGroupWritabilityInternal(string $path, array &$report, bool $isRoot = false): void
     {
@@ -837,6 +879,7 @@ class FilePermissionHelper
      * @param  int|false  $group  기준 그룹 GID
      * @param  array{changed:int, failed:int, first_failure:string|null, skipped_subtrees:int}  $report  집계 구조 (참조)
      * @param  bool  $respectPreservationMarker  `.preserve-ownership` 마커가 있는 디렉토리 서브트리 skip 여부
+     * @return void 반환값 없음
      */
     private static function chownRecursiveInternal(string $path, int $owner, int|false $group, array &$report, bool $respectPreservationMarker = false): void
     {

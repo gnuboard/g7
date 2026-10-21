@@ -11,7 +11,7 @@
     <div>
       <div class="flex-start gap-3">
         <div class="flex-center flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full justify-center">
-          <icon name="exclamation-triangle" class="text-xl text-amber-600 dark:text-amber-400"/>
+          <icon name="exclamation-triangle" class="text-xl text-amber-700 dark:text-amber-400"/>
         </div>
         <div class="flex-1">
           <p class="text-gray-700 dark:text-gray-300">$t:admin.modules.modals.deactivate_warning_message</p>
@@ -23,19 +23,19 @@
           <div data-each="template in _global.affectedTemplates" class="flex-center gap-2 text-label">
             <icon name="palette" class="text-base"/>
             <span>{{template.name || template.identifier}}</span>
-            <span data-if="{{template.type}}" class="text-xs text-gray-500 dark:text-gray-500">({{template.type === 'admin' ? '$t:admin.templates.tabs.admin' : '$t:admin.templates.tabs.user'}})</span>
+            <span data-if="{{template.type}}" class="text-xs text-gray-500 dark:text-gray-400">({{template.type === 'admin' ? '$t:admin.templates.tabs.admin' : '$t:admin.templates.tabs.user'}})</span>
           </div>
         </div>
       </div>
     </div>
     <div class="modal-footer-buttons">
-      <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button class="px-4 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600">
+      <button type="button" class="px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800">
         <on type="click">
           <!-- 강제 비활성 실행. 창을 **먼저 닫고** 요청을 낸다 — 결과는 토스트와 목록 갱신으로
                알리므로 창을 붙들 이유가 없다(대상은 전역이라 창이 사라져도 값이 남는다). -->

@@ -50,7 +50,8 @@ class GateTestPopulation
     public const GATE_FILTERS = [
         'LayoutMarkup',
         'EnsureAdminOrder',
-        'RestoreLayoutExtensions',
+        // `RestoreLayoutExtensions` 는 #725 에서 뺐다 — 결제 플러그인 4종의 업데이트 복원 리스너와 그 테스트를 지웠고(코어 재등록이
+        // 같은 일을 한다), 그 관측은 `LayoutMarkup` 필터 안의 PaymentPluginUpdateFragmentConvergenceTest 가 진다.
         'ValidLayoutExtensionStructure',
         // ── 39차: 마킹 모집단을 저장소 전량으로 반전하자 드러난 셋 ──
         //
@@ -94,7 +95,7 @@ class GateTestPopulation
      * 종료 검증 명령이 쓰는 Artisan 커맨드 → 그 명령이 넘기는 옵션 목록.
      *
      * 계획서 §"S18 종료 검증 명령" 의 Artisan 줄들과 같은 값이어야 하며, **오늘 실행 가능한
-     * 것만** 담는다. 32차 실측 — 그 블록의 세 번째 줄(`layout:decompile --all --check`)은 S18 P2
+     * 것만** 담는다. 실측 — 그 블록의 세 번째 줄(`layout:decompile --all --check`)은 S18 P2
      * 산출물이라 옵션이 없어 `exit 1` 인데, 회차 기록 넷이 "종료 검증 명령 5종 전건 초록" 이라
      * 적어 왔다(실제로는 lang-pack 을 끼워 센 다른 조합이었다). 선언한 게이트와 실제 실행
      * 가능성이 갈리는 자리에 판정 장치가 없었던 것이므로, 목록을 코드로 옮겨 잠근다.
@@ -164,7 +165,7 @@ class GateTestPopulation
      *
      * 그래서 주입 지점을 파이프라인 **입구**로 내린다. 표본을 디스크에 써서 모집단에 넣고
      * 프로덕션 테스트 메서드를 그대로 돌리면, 문지기를 포함한 전 구간이 표본 경로에 들어온다.
-     * 이 형태였다면 29·31·32차 결함은 전부 발견 즉시 red 였다.
+     * 이 형태였다면 앞선 결함들은 전부 발견 즉시 red 였다.
      *
      * @param  array<string, string>  $samples  상대 경로(파일명만) → PHP 소스
      * @param  callable():void  $callback  주입 상태에서 실행할 검사
@@ -410,7 +411,7 @@ class GateTestPopulation
     /**
      * PHP 테스트 소스를 `public function test_*` 메서드 이름 → 본문으로 분해합니다.
      *
-     * 가드의 판정 단위를 파일에서 **메서드**로 내리는 데 쓴다. 32차 실측 — 하한 의무가 파일
+     * 가드의 판정 단위를 파일에서 **메서드**로 내리는 데 쓴다. 실측 — 하한 의무가 파일
      * 단위라 한 메서드의 `assertNotEmpty` 하나가 같은 파일의 다른 도출형 메서드를 전부
      * 면제시키고 있었다. 분해기를 여기 한 곳에 두어 가드마다 사본이 생기지 않게 한다.
      *
@@ -425,7 +426,7 @@ class GateTestPopulation
         //
         // 경계는 **모든 함수 선언**이다. `test_` 만 경계로 삼으면 마지막 테스트 메서드의 본문이
         // 뒤따르는 private 헬퍼 전부를 삼켜, 그 헬퍼가 가진 신호가 테스트의 것으로 오귀속된다
-        // (32차 실측 — 그렇게 오귀속된 `GateTestPopulation::` 하나가 없는 도출을 있다고 만들었다).
+        // (실측 — 그렇게 오귀속된 `GateTestPopulation::` 하나가 없는 도출을 있다고 만들었다).
         return self::methodBodiesMatching($code, static fn (string $name): bool => str_starts_with($name, 'test_'));
     }
 
@@ -525,7 +526,7 @@ class GateTestPopulation
      *
      * 가드가 자기 판정식에 걸리는 이유는 "합성 표본을 담고 있어서" 인데, 그 표본이 담기는 그릇은
      * nowdoc 만이 아니다 — 무효 형태를 설명하는 문구(`'assertTrue(true) — 방어를 흉내낸 …'`)와
-     * 자기시험이 판정식에 직접 먹이는 인라인 문자열도 같은 그릇이다. 35차 실측에서 파일 단위
+     * 자기시험이 판정식에 직접 먹이는 인라인 문자열도 같은 그릇이다. 실측에서 파일 단위
      * 면제를 걷어내자 이 형태가 정확히 12건 드러났다.
      *
      * 판정 단위는 **코드로서의 단언**이어야 한다. 문자열 안에 적힌 단언은 데이터이지 실행되는

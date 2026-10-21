@@ -18,6 +18,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Support\BoardPermissionCacheKeys;
 use Modules\Sirsoft\Board\Support\SecretContentGate;
+use Modules\Sirsoft\Board\Support\SecretThreadAccess;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
@@ -79,6 +80,12 @@ class PostResource extends BaseApiResource
             'comments_pagination' => $this->comments_pagination ?? null,
             'attachments' => $this->getAttachmentsForResponse($request, $slug),
             'replies' => $this->relationLoaded('replies') ? static::collection($this->replies) : null,
+
+            // 상세 전용: 본문이 가려진 답변을 스레드 조상(비회원 글) 비밀번호로 열 수 있는지 (1비트만 노출)
+            'thread_password_available' => $this->isThreadPasswordAvailable($request),
+
+            // 상세 전용: 이 글 자체에는 하위를 쓸 수 있지만 비밀 조상 때문에 답변은 막히는지 (답변 버튼 숨김용)
+            'reply_locked_by_secret_ancestor' => $this->isReplyLockedBySecretAncestor($request),
 
             // 상세 전용: 신고 여부 (로그인 사용자 + board 관계 로드 시에만)
             'is_already_reported' => $this->getIsAlreadyReported($request),
@@ -911,11 +918,8 @@ class PostResource extends BaseApiResource
     /**
      * 비밀글 내용 열람 가능 여부를 확인합니다.
      *
-     * 열람 가능 조건 (우선순위 순):
-     * 1. 작성자 본인 (회원 게시글)
-     * 2. 비밀번호 검증 완료 (회원/비회원 게시글, password_verified 플래그)
-     * 3. 게시판별 비밀글 읽기 권한 (posts.read-secret)
-     * 4. 게시판 관리자 권한 (Admin: admin.manage / User: manager)
+     * 열람 가능 조건은 SecretContentGate::canView() 가 SSoT 다 — 작성자, 비밀번호 검증(플래그·열람 토큰 grant),
+     * 비밀글 읽기 권한(역할 범위 적용), 게시판 관리자, 스레드 경로 규칙(게시판 설정 secret_reply_visibility).
      *
      * @param  Request  $request  HTTP 요청
      * @param  string|null  $slug  게시판 슬러그 (getSlug 중복 호출 방지)
@@ -933,6 +937,52 @@ class PostResource extends BaseApiResource
         // 판정 규칙은 SecretContentGate(SSoT)에 있다 — 리스너·댓글 경로와 규칙을 공유해
         // 드리프트를 방지한다.
         return self::canViewSecretForPost($post, $request);
+    }
+
+    /**
+     * 본문이 가려진 답변을 스레드 조상의 비밀번호로 열 수 있는지 판정합니다.
+     *
+     * 답변 주소로 바로 들어온 비회원에게 「로그인 후 확인」 대신 원글 비밀번호 폼을 보여 줄지 정한다.
+     * 어떤 조상인지(ID)는 싣지 않는다 — 제목은 원래 공개라 1비트 외 추가 노출이 없다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return bool 스레드 비밀번호 폼을 보여 줄지 여부
+     */
+    private function isThreadPasswordAvailable(Request $request): bool
+    {
+        $post = $this->resolvePostModel();
+
+        if ($post === null || ! $post->parent_id || ! $post->is_secret || $post->deleted_at !== null) {
+            return false;
+        }
+
+        if ($this->canViewSecretContent($request)) {
+            return false;
+        }
+
+        return app(SecretThreadAccess::class)->hasGuestPasswordAncestor($post, $request);
+    }
+
+    /**
+     * 비밀 조상 때문에 이 글에 답변을 달 수 없는지 판정합니다.
+     *
+     * 하위 쓰기(canWriteChild)는 통과하는데 답변 가드(canWriteReply)가 막는 경우 true — 화면이
+     * 404 가 날 답변 버튼을 미리 숨긴다. 원글(조상 없음)은 항상 false 다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return bool 답변이 비밀 조상 때문에 막히면 true
+     */
+    private function isReplyLockedBySecretAncestor(Request $request): bool
+    {
+        $post = $this->resolvePostModel();
+
+        if ($post === null || ! $post->parent_id) {
+            return false;
+        }
+
+        $gate = app(SecretContentGate::class);
+
+        return $gate->canWriteChild($post, $request) && ! $gate->canWriteReply($post, $request);
     }
 
     /**

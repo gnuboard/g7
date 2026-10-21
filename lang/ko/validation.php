@@ -598,6 +598,13 @@ return [
 
     // 템플릿 검증 메시지
 
+    // 회원 검색(회원 고르기 창) 칸 표시 이름
+    'user_search' => [
+        'attributes' => [
+            'uuid' => '회원',
+        ],
+    ],
+
     // 메뉴 검증 메시지
     'menu' => [
         // 다국어 칸 표시 이름 — 다국어 필수 문구(「:attribute의 :language(:locale) 값은 필수입니다」)가 칸 이름으로 쓴다
@@ -1117,6 +1124,16 @@ return [
         'session_lifetime_max' => '세션 유효시간은 최대 30일(43200분)을 초과할 수 없습니다.',
         'queue_driver_required' => '큐 드라이버를 선택해주세요.',
         'queue_driver_invalid' => '올바른 큐 드라이버를 선택해주세요.',
+        'queue_connection_invalid' => '등록할 수 없는 큐 연결입니다.',
+        'queue_connection_duplicate' => '같은 큐 연결이 두 번 있습니다.',
+        'queue_connection_default_required' => '현재 큐 드라이버(:driver) 연결은 등록 해제할 수 없습니다.',
+        'queue_names_connection_unknown' => '알 수 없는 큐 연결(:connection)의 큐 목록입니다.',
+        'queue_names_required' => ':connection 연결에 큐를 하나 이상 등록하세요.',
+        'queue_names_max' => '한 연결에는 큐를 20개까지 등록할 수 있습니다.',
+        'queue_name_required' => '큐 이름을 입력하세요.',
+        'queue_name_invalid' => '큐 이름은 영문·숫자·밑줄·하이픈·점만 쓸 수 있고 영문이나 숫자로 시작해야 합니다.',
+        'queue_name_max' => '큐 이름은 64자 이하여야 합니다.',
+        'queue_name_duplicate' => ':connection 연결에 같은 큐 이름(:name)이 두 번 있습니다.',
         'websocket_enabled_boolean' => '웹소켓 사용 설정은 true 또는 false 값이어야 합니다.',
         'websocket_app_id_required' => '웹소켓 사용 시 앱 ID는 필수입니다.',
         'websocket_app_id_max' => '웹소켓 앱 ID는 255자를 초과할 수 없습니다.',
@@ -1300,6 +1317,16 @@ return [
 
     // 검증 속성명 (validation.attributes)
     'attributes' => [
+        'layout_source' => '레이아웃 설치 소스',
+        'layout_meta_icon' => '메뉴 아이콘',
+        'layout_meta_editor_label' => '편집기 표시 이름',
+        'layout_meta_authoring_note' => '작성 도구 표기',
+        'layout_meta_leave_guard' => '이탈 확인 조건',
+        'layout_meta_leave_message' => '이탈 확인 문구',
+        'layout_seo_title' => 'SEO 제목',
+        'layout_seo_description' => 'SEO 설명',
+        'layout_seo_twitter' => '트위터 카드',
+        'exclude_withdrawn' => '탈퇴 회원 제외',
         'since' => '기준 시각',
         'skip_waiting' => '대기기간 생략',
         'targets' => '조회 대상',
@@ -1394,6 +1421,9 @@ return [
         'session_driver' => '세션 드라이버',
         'session_lifetime' => '세션 유효시간',
         'queue_driver' => '큐 드라이버',
+        'queue_connections' => '큐 연결',
+        'queue_names' => '연결별 큐',
+        'queue_name' => '큐 이름',
         'websocket_enabled' => '웹소켓 사용',
         'websocket_app_key' => '웹소켓 앱 키',
         'websocket_host' => '웹소켓 호스트',

@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Models;
 use App\Casts\AsUnicodeJson;
 use App\Models\Permission;
 use App\Models\User;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +17,7 @@ use Modules\Sirsoft\Board\Enums\BoardOrderBy;
 use Modules\Sirsoft\Board\Enums\OrderDirection;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Enums\SecretMode;
+use Modules\Sirsoft\Board\Enums\SecretReplyVisibility;
 
 class Board extends Model
 {
@@ -35,6 +37,7 @@ class Board extends Model
         'use_reply' => ['label_key' => 'sirsoft-board::activity_log.fields.use_reply', 'type' => 'boolean'],
         'max_reply_depth' => ['label_key' => 'sirsoft-board::activity_log.fields.max_reply_depth', 'type' => 'number'],
         'reply_delete_policy' => ['label_key' => 'sirsoft-board::activity_log.fields.reply_delete_policy', 'type' => 'enum', 'enum' => ReplyDeletePolicy::class],
+        'secret_reply_visibility' => ['label_key' => 'sirsoft-board::activity_log.fields.secret_reply_visibility', 'type' => 'enum', 'enum' => SecretReplyVisibility::class],
         'use_report' => ['label_key' => 'sirsoft-board::activity_log.fields.use_report', 'type' => 'boolean'],
         'use_scrap' => ['label_key' => 'sirsoft-board::activity_log.fields.use_scrap', 'type' => 'boolean'],
         'use_comment_reaction' => ['label_key' => 'sirsoft-board::activity_log.fields.use_comment_reaction', 'type' => 'boolean'],
@@ -116,6 +119,7 @@ class Board extends Model
         'name',
         'slug',
         'is_active',
+        'display_order',
         'description',
 
         // 게시글 설정
@@ -135,6 +139,7 @@ class Board extends Model
         'use_reply',
         'max_reply_depth',
         'reply_delete_policy',
+        'secret_reply_visibility',
         'use_report',
         'use_scrap',
         'use_reaction',
@@ -191,11 +196,13 @@ class Board extends Model
             'allowed_extensions' => AsAllowedExtensions::class,
             'blocked_keywords' => 'array',
             'is_active' => 'boolean',
+            'display_order' => 'integer',
             'show_view_count' => 'boolean',
             'use_comment' => 'boolean',
             'use_reply' => 'boolean',
             'max_reply_depth' => 'integer',
             'reply_delete_policy' => ReplyDeletePolicy::class,
+            'secret_reply_visibility' => SecretReplyVisibility::class,
             // Post::isNew() 가 Carbon 시간 연산에 넘기는 값 — 조회 시점과 무관하게 정수를 보장한다.
             'new_display_hours' => 'integer',
             'use_report' => 'boolean',
@@ -292,10 +299,8 @@ class Board extends Model
             return (string) $this->name;
         }
 
-        return $this->name[$locale]
-            ?? $this->name[config('app.fallback_locale')]
-            ?? (! empty($this->name) ? array_values($this->name)[0] : '')
-            ?? '';
+        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        return LocalizedValue::pick($this->name, $locale) ?? '';
     }
 
     /**
@@ -324,10 +329,8 @@ class Board extends Model
             return (string) $this->description;
         }
 
-        return $this->description[$locale]
-            ?? $this->description[config('app.fallback_locale')]
-            ?? (! empty($this->description) ? array_values($this->description)[0] : '')
-            ?? '';
+        // 요청 언어 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+        return LocalizedValue::pick($this->description, $locale) ?? '';
     }
 
     /**

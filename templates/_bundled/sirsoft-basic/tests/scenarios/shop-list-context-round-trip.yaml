@@ -1,0 +1,36 @@
+feature: sirsoft-basic 상품 목록 컨텍스트 왕복 시 URL 목록 상태 보존
+
+description: |
+  상품 목록(`/shop/products`)과 그에 딸린 상품 상세는 하나의 "목록 클러스터" 다. 이 안에서의 이동은 URL 에 실린 목록 상태
+  (page / sort / keyword / category)를 손실 없이 이어받아야 한다 (공개 이슈 #75).
+
+  결함은 두 자리에 있었다.
+    - 상품 카드(ProductCard)는 컴포넌트 코드에서 navigate 를 직접 발행해 mergeQuery 없이 이동했다. 레이아웃 JSON 이 아니라
+      컴포넌트 안의 이동이라 레이아웃 검사망 밖이었고, 상세 URL 에서 목록 상태가 통째로 사라졌다.
+    - 상품 상세의 탭(상세정보/리뷰/문의) 전환은 경로 없는 replaceUrl 로 쿼리를 `tab=…` 하나로 대체해 목록 상태를 지웠다.
+      그 뒤 '상품 목록' 단추는 이미 비워진 쿼리를 병합하므로 1페이지로 되돌아갔다.
+
+  카드는 목록 클러스터 안에서 쓰는 자리만 `preserveListQuery` 로 옵트인한다. 찜 목록·검색 결과에서 상세로 나가는 이동은
+  다른 도메인으로의 이동이라 목록 상태를 승계하지 않는다. 화면이 onClick 콜백을 넘긴 카드는 이동 대신 그 콜백을 부른다.
+
+axes:
+  # 목록 클러스터 안팎의 이동 leg. 하나라도 빠지면 그 지점에서 상태가 끊긴다.
+  leg: [enter, enter_outside_cluster, self_target, back]   # 목록→상세 / 찜·검색→상세 / 경로 없는 자기 이동(탭 전환 등) / 상세→목록
+
+effects:
+  - list_entry_carries_list_query          # 목록 안 카드 클릭이 mergeQuery 로 목록 상태를 상세 URL 에 싣는다
+  - outside_cluster_entry_drops_list_query  # 찜 목록·검색 결과 카드는 목록 상태를 승계하지 않는다
+  - card_click_callback_skips_navigation    # onClick 콜백을 받은 카드는 navigate 를 발행하지 않는다
+  - self_target_actions_merge_list_query    # 클러스터 레이아웃의 경로 없는 navigate/replaceUrl 은 모두 mergeQuery
+  - tab_switch_keeps_list_query             # 상세 탭 전환 뒤에도 page·정렬·검색어·분류가 URL 에 남는다
+  - list_return_preserves_query             # 탭 전환 뒤 '상품 목록' 복귀가 보던 페이지를 복원한다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/components/ProductCard.list-context.test.tsx
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shop-list-context-round-trip.test.ts
+
+validation:
+  note: |
+    카드 이동은 컴포넌트를 렌더해 발행된 navigate 액션의 params 로, 레이아웃 쪽 leg 은 실 JSON 의 액션을 엔진으로 실행한 결과
+    URL 로 잰다. 탭 전환이 프로덕션에서 탭 값을 URL 에 싣는 근거인 `$args[0]` 바인딩은 선언으로 고정하고, 브라우저 실측
+    (상세 URL 의 목록 상태 4종이 리뷰 탭 클릭 뒤에도 전건 보존)은 수정 당시 수동으로 확인했다 — 이 기능의 전용 Playwright spec 은 없다.

@@ -13,6 +13,7 @@ use Illuminate\Validation\ValidationException;
 use Modules\Sirsoft\Board\Exceptions\MenuAlreadyExistsException;
 use Modules\Sirsoft\Board\Http\Requests\Admin\BulkBoardMembersRequest;
 use Modules\Sirsoft\Board\Http\Requests\Admin\IndexBoardRequest;
+use Modules\Sirsoft\Board\Http\Requests\Admin\ReorderBoardsRequest;
 use Modules\Sirsoft\Board\Http\Requests\StoreBoardRequest;
 use Modules\Sirsoft\Board\Http\Requests\UpdateBoardRequest;
 use Modules\Sirsoft\Board\Http\Resources\BoardCollection;
@@ -261,7 +262,7 @@ class BoardController extends AdminBaseController
 
                 // 원본 명단을 그대로 채우면 담당자를 지정할 수 없는 액터(새 게시판 ACL 밖의 위임 관리자)가
                 // 저장할 때 403 이다 — 그런 액터에게는 새 게시판에 허용되는 유일한 값인 본인 한 명을 관리자로 채우고
-                // 스텝은 비운다(_meta.can_assign_board_members=false, K4F-2)
+                // 스텝은 비운다(_meta.can_assign_board_members=false)
                 $canAssignMembers = $this->boardService->canAssignBoardMembersOnNewBoard($copyData['permissions'] ?? []);
                 if (! $canAssignMembers) {
                     $self = $this->selfManagerPrefill();
@@ -290,7 +291,7 @@ class BoardController extends AdminBaseController
                 $data['add_to_menu'] = false;
 
                 // 로그인한 관리자를 게시판 관리자 기본값으로 지정한다. 새 게시판의 기본 ACL 로 게시판 권한을 받지
-                // 못하는 위임 관리자도 새 게시판에는 본인 한 명을 관리자로 둘 수 있어(K4F-2) 같은 값을 채우고,
+                // 못하는 위임 관리자도 새 게시판에는 본인 한 명을 관리자로 둘 수 있어 같은 값을 채우고,
                 // 다른 담당자는 지정할 수 없다는 사실만 _meta.can_assign_board_members=false 로 알린다
                 $canAssignMembers = $this->boardService->canAssignBoardMembersOnNewBoard(
                     $basicDefaults['default_board_permissions'] ?? []
@@ -439,6 +440,27 @@ class BoardController extends AdminBaseController
             return $this->validationError($e->errors(), 'sirsoft-board::messages.boards.bulk_members_failed');
         } catch (\Exception $e) {
             return $this->error('sirsoft-board::messages.boards.bulk_members_failed', 500, $e->getMessage());
+        }
+    }
+
+    /**
+     * 게시판 표시 순서를 저장합니다.
+     *
+     * 사용자 메뉴·게시판 목록 화면·관리자 게시판 목록·통합검색 게시판 선택칸이 이 순서를 따릅니다.
+     *
+     * @param  ReorderBoardsRequest  $request  새 순서의 전체 게시판 id 목록
+     * @return JsonResponse 저장된 순서 (게시판 id·표시 순서)
+     */
+    public function reorder(ReorderBoardsRequest $request): JsonResponse
+    {
+        try {
+            $boards = $this->boardService->reorderBoards($request->validated('board_ids'));
+
+            return $this->success('sirsoft-board::messages.boards.reorder_success', ['boards' => $boards]);
+        } catch (AccessDeniedHttpException $e) {
+            return $this->error('auth.scope_denied', 403);
+        } catch (\Exception $e) {
+            return $this->error('sirsoft-board::messages.boards.reorder_failed', 500, $e->getMessage());
         }
     }
 }

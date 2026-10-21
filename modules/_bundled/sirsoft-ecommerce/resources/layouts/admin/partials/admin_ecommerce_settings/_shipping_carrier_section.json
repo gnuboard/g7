@@ -168,6 +168,7 @@
                                     ],
                                     "props": {
                                         "value": "{{_local.carrierForm?.name ?? {}}}",
+                                        "ariaLabel": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name",
                                         "layout": "inline",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder",
                                         "error": "{{_local.carrierFormErrors?.name_ko ? '$t:sirsoft-ecommerce.admin.settings.shipping.carriers.validation.name_required' : ''}}",
@@ -363,7 +364,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{(_local.form?.shipping?.carriers ?? []).length === 0 && !_local.isAddingCarrier}}",
+            "if": "{{settings !== undefined && ((_local.form?.shipping?.carriers ?? []).length === 0 && !_local.isAddingCarrier)}}",
             "props": {
                 "className": "p-8 text-center text-gray-500 dark:text-gray-400"
             },
@@ -498,7 +499,7 @@
                                                 "if": "{{!_computed.isReadOnly}}",
                                                 "props": {
                                                     "data-drag-handle": true,
-                                                    "className": "cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                                                    "className": "cursor-grab text-gray-500 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                                                 },
                                                 "children": [
                                                     {
@@ -538,6 +539,7 @@
                                                 "props": {
                                                     "type": "text",
                                                     "value": "{{$carrier.code ?? ''}}",
+                                                    "aria-label": "$t:common.row_cell|row={{$carrier.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.carriers.columns.code')}}",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.code_placeholder",
                                                     "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code'] ? 'input input-error font-mono' : 'input font-mono'}}",
                                                     "disabled": "{{_computed.isReadOnly}}"
@@ -578,6 +580,7 @@
                                                 ],
                                                 "props": {
                                                     "value": "{{$carrier.name ?? {}}}",
+                                                    "ariaLabel": "$t:common.row_cell|row={{$carrier.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.carriers.columns.name')}}",
                                                     "layout": "compact",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.name_ko_placeholder",
                                                     "error": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.name.' + (_global.appConfig?.siteLocale ?? $locale ?? 'ko')]?.[0] ?? _local.errors?.['shipping.carriers.' + $carrier._idx + '.name']?.[0] ?? ''}}",
@@ -610,6 +613,7 @@
                                                 ],
                                                 "props": {
                                                     "value": "{{$carrier.type ?? 'domestic'}}",
+                                                    "aria-label": "$t:common.row_cell|row={{$carrier.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.carriers.columns.type')}}",
                                                     "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.type'] ? 'input-error w-full' : 'w-full'}}",
                                                     "disabled": "{{_computed.isReadOnly}}",
                                                     "options": [
@@ -651,6 +655,7 @@
                                                 "props": {
                                                     "type": "text",
                                                     "value": "{{$carrier.tracking_url ?? ''}}",
+                                                    "aria-label": "$t:common.row_cell|row={{$carrier.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.carriers.columns.tracking_url')}}",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.tracking_url_placeholder",
                                                     "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url'] ? 'input input-error' : 'input'}}",
                                                     "disabled": "{{_computed.isReadOnly}}"
@@ -691,6 +696,7 @@
                                                 ],
                                                 "props": {
                                                     "checked": "{{$carrier.is_active ?? false}}",
+                                                    "ariaLabel": "$t:common.row_cell|row={{$carrier.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.carriers.columns.is_active')}}",
                                                     "size": "sm",
                                                     "disabled": "{{_computed.isReadOnly}}"
                                                 }
@@ -722,7 +728,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "p-1.5 text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                    "className": "p-1.5 text-gray-500 hover:text-red-700 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                     "title": "$t:common.delete",
                                                     "disabled": "{{_computed.isReadOnly}}"
                                                 },

@@ -1,5 +1,6 @@
 {
     "$schema": "https://json.schemastore.org/package.json",
+    "name": "g7",
     "private": true,
     "type": "module",
     "scripts": {

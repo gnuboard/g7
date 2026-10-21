@@ -15,19 +15,31 @@
         </h2>
       </div>
       <!-- 우측: 쿠폰 다운로드 버튼 (로그인 사용자만) -->
-      <button data-if="{{_global.currentUser?.uuid}}" type="button" class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+      <button data-if="{{_global.currentUser?.uuid}}" type="button" class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
         <on type="click">
-          <set-state target="local" :downloadableCouponsLoading="true" :downloadableCouponsPage="1"/>
-          <api-call target="/api/modules/sirsoft-ecommerce/user/coupons/downloadable?page=1&amp;per_page=8" auth_mode="required" method="GET">
-            <success>
-              <set-state target="local" downloadableCoupons="{{response.data}}" :downloadableCouponsLoading="false"/>
-              <open-modal target="coupon_download_modal"/>
-            </success>
-            <fail>
-              <set-state target="local" :downloadableCouponsLoading="false"/>
-              <toast type="error" message="{{error.message ?? '$t:shop.coupon_download.fetch_failed'}}"/>
-            </fail>
-          </api-call>
+          <!-- 창 상태는 창 고유 전역 이름 공간에 비운 뒤 다시 쓴다 — 창은 영구 마운트라 페이지 _local 에 넣으면 창이 앞서 쥔
+               목록(더보기로 늘어난 장수·받음 표시)에 가린다(7.1.1). 첫 페이지를 다시 받아 창을 연다 -->
+          <sequence>
+            <set-state target="global" :couponDownloadModal="null"/>
+            <set-state target="global">
+              <field name="couponDownloadModal">
+                <field name="coupons" :value="null"/>
+                <field name="loading" :value="true"/>
+                <field name="loadingMore" :value="false"/>
+                <field name="downloadingCouponId" :value="null"/>
+              </field>
+            </set-state>
+            <api-call target="/api/modules/sirsoft-ecommerce/user/coupons/downloadable?page=1&amp;per_page=8" auth_mode="required" method="GET">
+              <success>
+                <set-state target="global" couponDownloadModal.coupons="{{response.data}}" :couponDownloadModal.loading="false"/>
+                <open-modal target="coupon_download_modal"/>
+              </success>
+              <fail>
+                <set-state target="global" :couponDownloadModal.loading="false"/>
+                <toast type="error" message="{{error.message ?? '$t:shop.coupon_download.fetch_failed'}}"/>
+              </fail>
+            </api-call>
+          </sequence>
         </on>
         <icon name="download" size="sm"/>
         <span>$t:shop.checkout.coupon_download_btn</span>
@@ -41,7 +53,7 @@
         <span data-if="{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length > 0}}" class="ml-2 text-xs text-blue-600 dark:text-blue-400">({{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount').length}}$t:shop.checkout.coupon_count_suffix)</span>
       </label>
       <!-- 주문 쿠폰 드롭다운 -->
-      <select name="order_coupon_issue_id" value="{{_local.checkout?.order_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+      <select name="order_coupon_issue_id" aria-label="$t:shop.checkout.order_coupon_select" value="{{_local.checkout?.order_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
         <on type="change">
           <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { order_coupon_issue_id: $event.target.value || null })}}"/>
@@ -59,7 +71,7 @@
         <option data-each="coupon, couponIdx in {{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'order_amount')}}" value="{{coupon.id}}">{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}</option>
       </select>
       <!-- 적용된 주문 쿠폰 정보 -->
-      <div data-if="{{_local.checkout?.order_coupon_issue_id &amp;&amp; (checkoutData.data.calculation?.summary?.order_coupon_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+      <div data-if="{{_local.checkout?.order_coupon_issue_id &amp;&amp; (checkoutData.data.calculation?.summary?.order_coupon_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-700 dark:text-green-400 flex items-center gap-1">
         <icon name="check-circle" size="sm"/>
         <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.order_coupon_discount_formatted ?? checkoutData.data.calculation?.summary?.order_coupon_discount_formatted}}</span>
       </div>
@@ -72,7 +84,7 @@
         <span data-if="{{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length > 0}}" class="ml-2 text-xs text-blue-600 dark:text-blue-400">({{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee').length}}$t:shop.checkout.coupon_count_suffix)</span>
       </label>
       <!-- 배송비 쿠폰 드롭다운 -->
-      <select name="shipping_coupon_issue_id" value="{{_local.checkout?.shipping_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+      <select name="shipping_coupon_issue_id" aria-label="$t:shop.checkout.shipping_coupon_select" value="{{_local.checkout?.shipping_coupon_issue_id ?? ''}}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
         <responsive on="portable" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
         <on type="change">
           <set-state target="local" checkout="{{Object.assign({}, _local.checkout, { shipping_coupon_issue_id: $event.target.value || null })}}"/>
@@ -90,7 +102,7 @@
         <option data-each="coupon, couponIdx in {{(checkoutData.data.available_coupons ?? []).filter(c => c.target_type === 'shipping_fee')}}" value="{{coupon.id}}">{{'[' + coupon.target_type_short_label + '] ' + coupon.localized_name + ' (' + (coupon.multi_currency_benefit_formatted?.[_global.preferredCurrency ?? _global.defaultCurrency] ?? coupon.benefit_formatted) + ')'}}</option>
       </select>
       <!-- 적용된 배송비 쿠폰 정보 -->
-      <div data-if="{{_local.checkout?.shipping_coupon_issue_id &amp;&amp; (checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+      <div data-if="{{_local.checkout?.shipping_coupon_issue_id &amp;&amp; (checkoutData.data.calculation?.summary?.shipping_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-700 dark:text-green-400 flex items-center gap-1">
         <icon name="check-circle" size="sm"/>
         <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.shipping_discount_formatted ?? checkoutData.data.calculation?.summary?.shipping_discount_formatted ?? ($t('sirsoft-ecommerce.currency.krw_prefix') + checkoutData.data.calculation?.summary?.shipping_discount + $t('sirsoft-ecommerce.currency.krw_suffix'))}}</span>
       </div>
@@ -99,7 +111,7 @@
     <div>
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:shop.checkout.discount_code</label>
       <div class="flex gap-2">
-        <input type="text" name="discount_code" value="{{_local.checkout?.discount_code ?? ''}}" placeholder="$t:shop.checkout.discount_code_placeholder" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+        <input aria-label="$t:shop.checkout.discount_code" type="text" name="discount_code" value="{{_local.checkout?.discount_code ?? ''}}" placeholder="$t:shop.checkout.discount_code_placeholder" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
           <responsive on="portable" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 text-sm"/>
           <on type="change">
             <!-- 코드는 담기만 하고 적용은 옆 버튼이 한다. `Object.assign` 으로 통째 교체하는 이유는
@@ -125,7 +137,7 @@
         </button>
       </div>
       <!-- 적용된 할인코드 정보 -->
-      <div data-if="{{(checkoutData.data.calculation?.summary?.code_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+      <div data-if="{{(checkoutData.data.calculation?.summary?.code_discount ?? 0) > 0}}" class="mt-2 text-sm text-green-700 dark:text-green-400 flex items-center gap-1">
         <icon name="check-circle" size="sm"/>
         <span>-{{checkoutData.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.code_discount_formatted ?? checkoutData.data.calculation?.summary?.code_discount_formatted}}</span>
       </div>

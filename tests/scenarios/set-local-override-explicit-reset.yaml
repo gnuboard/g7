@@ -1,0 +1,21 @@
+feature: 자동바인딩 setLocal 덮어쓰기 기록 vs 명시적 setState (engine-v1.80.1, 7.1.1 출시 전 실측)
+
+description: |
+  자동바인딩 칸은 입력을 `G7Core.state.setLocal(patch, { render: false })` 로 쓰고, setLocal 은 쓴 경로를 `__g7SetLocalOverrideKeys`
+  에 누적한다. 기록은 `dataContext._local` 이 바뀌는 렌더에서만 지워져 render:false 뒤에 남고, 뒤따르는 명시적 setState 마다
+  `handleLocalSetState` 가 다시 얹어 단추의 초기화(null → 새 객체)에 앞 입력이 되살아났다. 명시적 setState 가 쓰는 경로는 그 기록에서
+  지운다(`ActionDispatcher.releaseSetLocalOverrides`). 축 overridden 은 기록된 경로가 setState 가 쓴 경로와 같은지다.
+
+axes:
+  write_path: [explicit_set_state]
+  overridden: [same_path, other_path]
+
+effects:
+  - explicit_set_state_beats_set_local_override
+  - untouched_override_paths_kept
+
+test_files:
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.setLocalOverrideExplicitReset.test.tsx
+
+notes: |
+  이커머스 통화 추가 줄의 같은 결함군 레이아웃 우회(언어별 빈 문자열)는 admin-settings-form-reset-before-deep-merge 매니페스트가 잠근다.

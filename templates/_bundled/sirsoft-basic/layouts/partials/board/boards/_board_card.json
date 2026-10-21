@@ -5,7 +5,7 @@
         "description": "게시판 카드 (전체 게시판 목록용)"
     },
     "type": "basic",
-    "name": "Button",
+    "name": "A",
     "responsive": {
         "portable": {
             "props": {
@@ -16,13 +16,11 @@
     "actions": [
         {
             "type": "click",
-            "handler": "navigate",
-            "params": {
-                "path": "/board/{{board.slug}}"
-            }
+            "handler": "navigate"
         }
     ],
     "props": {
+        "href": "/board/{{board.slug}}",
         "className": "block w-full text-left bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-5 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition-all cursor-pointer"
     },
     "children": [
@@ -35,10 +33,11 @@
             },
             "children": [
                 {
+                    "comment": "이름 칸은 줄어들며 줄을 바꾸고 글 수 배지는 제 폭을 지킨다 — 공백 없는 긴 게시판 이름이 카드를 넘쳤다(#143).",
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center gap-2"
+                        "className": "flex items-center gap-2 min-w-0"
                     },
                     "children": [
                         {
@@ -54,7 +53,7 @@
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "font-semibold text-gray-900 dark:text-white"
+                                "className": "font-semibold text-gray-900 dark:text-white min-w-0 wrap-anywhere"
                             },
                             "text": "{{board.name}}"
                         }
@@ -65,7 +64,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "px-2 py-0.5 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded"
+                        "className": "shrink-0 px-2 py-0.5 text-sm font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded"
                     },
                     "text": "$t:board.post_count|count={{board.posts_count ?? 0}}"
                 }
@@ -74,9 +73,9 @@
         {
             "comment": "설명",
             "type": "basic",
-            "name": "P",
+            "name": "Div",
             "props": {
-                "className": "text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3"
+                "className": "text-sm text-gray-600 dark:text-gray-400 line-clamp-2 break-words mb-3"
             },
             "text": "{{board.description ?? ''}}"
         },

@@ -106,7 +106,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "{{query.claim_payment === 'success' ? 'circle-check' : (query.claim_payment === 'failed' ? 'circle-exclamation' : 'circle-info')}}",
-                                                    "className": "{{query.claim_payment === 'success' ? 'text-base text-green-600 dark:text-green-400 flex-shrink-0' : (query.claim_payment === 'failed' ? 'text-base text-red-600 dark:text-red-400 flex-shrink-0' : 'text-base text-gray-500 dark:text-gray-400 flex-shrink-0')}}"
+                                                    "className": "{{query.claim_payment === 'success' ? 'text-base text-green-700 dark:text-green-400 flex-shrink-0' : (query.claim_payment === 'failed' ? 'text-base text-red-600 dark:text-red-400 flex-shrink-0' : 'text-base text-gray-500 dark:text-gray-400 flex-shrink-0')}}"
                                                 }
                                             },
                                             {
@@ -140,7 +140,7 @@
                                                         "name": "P",
                                                         "if": "{{query.claim_payment === 'failed' && (query.error ?? '') !== ''}}",
                                                         "props": {
-                                                            "className": "text-xs text-red-600 dark:text-red-400 mt-0.5"
+                                                            "className": "text-xs text-red-700 dark:text-red-300 mt-0.5"
                                                         },
                                                         "text": "$t:claim.payment_result.error_code|code={{query.error ?? ''}}"
                                                     },
@@ -297,7 +297,7 @@
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-red-500 dark:text-red-400 ml-1"
+                                                                    "className": "text-red-600 dark:text-red-400 ml-1"
                                                                 },
                                                                 "text": "*"
                                                             }
@@ -318,6 +318,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:shop.guest_order_form.order_number",
                                                             "type": "text",
                                                             "name": "order_number",
                                                             "value": "{{_local.form?.order_number ?? ''}}",
@@ -358,7 +359,7 @@
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-red-500 dark:text-red-400 ml-1"
+                                                                    "className": "text-red-600 dark:text-red-400 ml-1"
                                                                 },
                                                                 "text": "*"
                                                             }
@@ -379,6 +380,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:shop.guest_order_form.orderer_phone",
                                                             "type": "tel",
                                                             "name": "orderer_phone",
                                                             "value": "{{_local.form?.orderer_phone ?? ''}}",
@@ -419,7 +421,7 @@
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-red-500 dark:text-red-400 ml-1"
+                                                                    "className": "text-red-600 dark:text-red-400 ml-1"
                                                                 },
                                                                 "text": "*"
                                                             }
@@ -440,6 +442,7 @@
                                                             }
                                                         ],
                                                         "props": {
+                                                            "aria-label": "$t:shop.guest_order_form.password",
                                                             "name": "guest_lookup_password",
                                                             "value": "{{_local.form?.guest_lookup_password ?? ''}}",
                                                             "placeholder": "$t:shop.guest_order_form.password_placeholder",
@@ -492,7 +495,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-500"
+                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
                                                 },
                                                 "text": "$t:shop.guest_order_form.notice"
                                             }

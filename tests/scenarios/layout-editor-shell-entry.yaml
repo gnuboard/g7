@@ -7,9 +7,9 @@ description: |
   좌측 라우트 트리 + 캔버스 영역) 골격 + 라우트 트리 데이터 구성(소스 그룹핑).
 
   배경:
- - 기존 MVP 위지윅 편집기는 Phase 0 에서 완전 제거됨.
+    - 기존 MVP 위지윅 편집기는 Phase 0 에서 완전 제거됨.
     - 신규 편집기는 G7 코어의 한 기능으로 어떤 템플릿에도 종속되지 않고,
- 기존 템플릿 엔진(코어) 위에 얹혀진 형태로 동작 — 별도 시스템 격리 금지.
+      기존 템플릿 엔진(코어) 위에 얹혀진 형태로 동작 — 별도 시스템 격리 금지.
     - TemplateApp.init() 일반 부팅 → renderTemplate() 안 checkLayoutEditorMode 분기로 진입.
     - 셸은 state.reactRoot 에 같은 컨텍스트 래퍼 안에서 렌더(별도 createRoot/컨테이너 금지).
     - 다국어는 lang-packs/_bundled/g7-core-{locale}/frontend/layout_editor.json 한 곳 SSoT.

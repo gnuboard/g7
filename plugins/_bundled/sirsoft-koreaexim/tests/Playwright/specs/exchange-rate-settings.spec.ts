@@ -25,15 +25,16 @@ test('settings tabs, masked key, channel editor and history survive navigation',
   await expect(templateRows).toHaveCount(2);
   await templateRows.first().getByRole('button',{name:'템플릿 편집',exact:true}).click();
   await expect(page.getByRole('dialog',{name:'알림 템플릿 편집',exact:true})).toBeVisible();
-  await expect(page.getByRole('textbox',{name:'제목',exact:true})).toBeVisible();
-  await expect(page.getByRole('textbox',{name:'본문',exact:true})).toBeVisible();
+  // 바로 앞 라벨이 이름이 된다(관리자 라벨 자동 연결) — 필수 표시 「*」가 붙어 읽힐 수 있다
+  await expect(page.getByRole('textbox',{name:/^제목\*?$/})).toBeVisible();
+  await expect(page.getByRole('textbox',{name:/^본문\*?$/})).toBeVisible();
   await page.getByRole('dialog',{name:'알림 템플릿 편집',exact:true}).getByRole('button',{name:'모달 닫기',exact:true}).click();
   await page.getByRole('tab',{name:'갱신 이력',exact:true}).click();
   await expect(page).toHaveURL(/tab=history/);
   await page.reload();
   await expect(page.getByRole('tab',{name:'갱신 이력',exact:true})).toHaveAttribute('aria-selected','true');
   await expect(page.getByText('조회 기준일',{exact:true}).last()).toBeVisible();
-  await page.getByRole('button',{name:'플러그인 목록으로',exact:true}).click();
+  await page.getByRole('link',{name:'플러그인 목록으로',exact:true}).click();
   await expect(page).toHaveURL(/\/admin\/plugins$/);
 });
 
@@ -67,13 +68,14 @@ test('invalid update time returns 422 and valid correction saves through the UI'
  */
 test('history status filter sends a string and resetting it restores rows',async({page})=>{
   await page.goto(path+'?tab=history&page=3');
-  const selector=page.getByRole('button',{name:'전체',exact:true}).first();
+  // 목록형 단추 이름은 「{이름} {현재 값}」(#757) — 「결과」 필터만 고른다(「계기」도 「전체」다)
+  const selector=page.getByRole('button',{name:'결과 전체',exact:true});
   await selector.click();
   await page.getByRole('option',{name:'성공',exact:true}).click();
   await expect(page).toHaveURL(/status=success/);
   await expect(page).toHaveURL(/page=1/);
   await page.reload();
-  await expect(page.getByRole('button',{name:'성공',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'결과 성공',exact:true})).toBeVisible();
 });
 
 /**
@@ -82,7 +84,7 @@ test('history status filter sends a string and resetting it restores rows',async
  */
 test('expanding a successful run renders its currency snapshots',async({page})=>{
   await page.goto(path+'?tab=history&status=success');
-  await page.getByRole('button',{name:'Expand row',exact:true}).first().click();
+  await page.locator('#koreaexim_runs').getByRole('button',{name:'펼치기',exact:true}).first().click();
   await expect(page.locator('#koreaexim_runs').getByText('USD',{exact:true})).toBeVisible();
   await expect(page.locator('#koreaexim_runs').getByText('KRW',{exact:true})).toBeVisible();
   await expect(page.locator('#koreaexim_runs').getByText('기본통화',{exact:true})).toBeVisible();
@@ -103,6 +105,8 @@ test('three rapid pointer clicks send only one update request',async({page})=>{
     await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({success:true,data:{id:0,status:'skipped',message:'검수 응답'}})});
   });
   await page.goto(path);
+  // 첫 진입은 화면이 그려지기까지 5초를 넘길 수 있다 — 제목이 보인 뒤 칸을 잰다
+  await expect(page.getByRole('heading',{name:'수출입은행 환율',exact:true})).toBeVisible({timeout:30_000});
   const button=page.locator('#update_now');
   await expect(page.locator('#koreaexim_auth_key')).toHaveValue('••••••••');
   await page.waitForLoadState('networkidle');
@@ -212,13 +216,16 @@ test('delivery channels follow the core registry and save as a set',async({page}
   const labels=(await rows.locator('.text-heading').allTextContents()).map(t=>t.trim());
   console.log(`channel_rows=${labels.join('|')}`);
   // 코어 채널과 확장이 들인 채널이 모두 줄로 깔린다 — 드롭다운 단일 선택이 아니다.
-  expect(labels).toEqual(['메일','사이트내 알림','SMS']);
-  await expect(rows.filter({hasText:'SMS'})).toContainText('문자 플러그인');
+  // 설치된 확장(예: 비즈뿌리오)이 채널을 더 들이면 줄이 늘어난다 — 코어 3줄이 모두 있는지만 본다
+  expect(labels).toEqual(expect.arrayContaining(['메일','사이트내 알림','SMS']));
+  expect(labels.length).toBe(await rows.count());
+  const rowOf=(label:string)=>rows.filter({has:page.locator('.text-heading',{hasText:new RegExp(`^${label}$`)})});
+  await expect(rowOf('SMS')).toContainText('문자 플러그인');
 
   const save=page.locator('[id^=koreaexim_save_channels]');
   await expect(save).toBeDisabled();           // 고친 것이 없으면 저장할 것도 없다
-  const mailToggle=rows.filter({hasText:'메일'}).getByRole('switch');
-  const smsToggle=rows.filter({hasText:'SMS'}).getByRole('switch');
+  const mailToggle=rowOf('메일').getByRole('switch');
+  const smsToggle=rowOf('SMS').getByRole('switch');
   await smsToggle.click();
   await mailToggle.click();                                   // 메일을 끈다
   await expect(mailToggle).toHaveAttribute('aria-checked','false');
@@ -268,7 +275,7 @@ test('read-only user can view history but cannot run or save settings',async({pa
   await expect(page.getByRole('button',{name:'지금 갱신',exact:true})).toBeDisabled();
   await expect(page.getByRole('button',{name:'저장',exact:true})).toBeDisabled();
   await page.getByRole('tab',{name:'갱신 이력',exact:true}).click();
-  await expect(page.locator('#koreaexim_runs').getByRole('button',{name:'Expand row',exact:true})).toHaveCount(20);
+  await expect(page.locator('#koreaexim_runs').getByRole('button',{name:'펼치기',exact:true})).toHaveCount(20);
   const response=await request.post('/api/plugins/sirsoft-koreaexim/admin/runs',{headers:{Authorization:'Bearer '+token},data:{dry_run:true}});
   expect(response.status()).toBe(403);
 });

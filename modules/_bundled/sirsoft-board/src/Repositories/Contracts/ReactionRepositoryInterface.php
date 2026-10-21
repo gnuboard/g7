@@ -160,6 +160,14 @@ interface ReactionRepositoryInterface
     public function deleteById(int $id): ?Reaction;
 
     /**
+     * ID 목록으로 반응을 조회합니다 (관리자 일괄 처리의 스코프 판정용).
+     *
+     * @param  array<int, int>  $ids  반응 ID 목록
+     * @return EloquentCollection<int, Reaction> 존재하는 반응 목록
+     */
+    public function findManyByIds(array $ids): EloquentCollection;
+
+    /**
      * ID 목록으로 반응을 일괄 삭제합니다 (관리자).
      *
      * @param  array<int, int>  $ids  반응 ID 목록

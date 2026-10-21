@@ -70,6 +70,8 @@ effects:
   - renderer_render_init_actions_global_overrides_init_global_block
   - renderer_render_global_set_state_nested_local_is_merged_into_local
   - renderer_render_ignores_non_set_state_handlers_in_init_actions
+  # #753 — init 의 sequence·parallel 안 setState 도 봇 초기 상태에 반영(conditions·switch 분기는 평가하지 않음)
+  - renderer_render_descends_into_init_sequence_set_state
   - renderer_filter_context_hook_no_listener_preserves_behavior
   - renderer_filter_context_hook_modifies_context_for_meta_resolution
   - renderer_filter_meta_hook_no_listener_preserves_behavior

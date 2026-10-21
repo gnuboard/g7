@@ -1,0 +1,65 @@
+feature: 글·댓글·글쓰기 확장점과 홈 환영 배지·사이트 이름 폴백 번역
+
+description: |
+  확장 모듈이 템플릿을 고치지 않고 글마다 표시를 붙이거나 글쓰기에 입력칸을 더할 수 있도록, 글이 보이는 사용자 화면 전부와
+  글쓰기 폼에 이름이 고정된 확장점 5종(board_post_row_badges·board_post_header_badges·board_comment_row_badges·
+  board_post_form_top·board_post_form_bottom)을 연다(#149). overlay(target-id)는 첫 일치 노드 하나에만 주입되어 게시판
+  유형 세 갈래 중 basic 에만 닿으므로 확장점으로 연다. 확장점은 정규화 props(postId·boardSlug·context 등)를 넘기고,
+  호스트는 class="contents" + data-extension-point 표지만 남기며 노드 id 를 달지 않는다.
+  홈 환영 카드 배지 「Welcome」 하드코딩과 사이트 이름을 비웠을 때의 「Site」/「그누보드7」 폴백을 화면 언어 키로 바꾼다.
+
+axes:
+  surface: [board_list_basic, board_list_card, board_list_gallery, popular, home_recent, home_board_summary, user_posts, user_profile_recent, mypage_posts, mypage_scrap, search_all, search_posts, board_show, board_show_comment, mypage_comments, board_form, home_welcome, user_base_header_footer]
+  locale: [ko, en, ja]
+  site_name: [empty, set]
+
+exclusions:
+  - surface: [board_list_basic, board_list_card, board_list_gallery, popular, home_recent, home_board_summary, user_posts, user_profile_recent, mypage_posts, mypage_scrap, search_all, search_posts, board_show, board_show_comment, mypage_comments, board_form]
+    locale: [en, ja]
+    reason: 확장점 자리는 화면 언어와 무관한 구조다 — 언어별 차이가 없으므로 ko 한 축으로 잠근다
+  - surface: [board_list_basic, board_list_card, board_list_gallery, popular, home_recent, home_board_summary, user_posts, user_profile_recent, mypage_posts, mypage_scrap, search_all, search_posts, board_show, board_show_comment, mypage_comments, board_form]
+    site_name: set
+    reason: 확장점 자리는 사이트 이름 설정과 무관하다
+  - surface: home_welcome
+    locale: [en, ja]
+    site_name: empty
+    reason: 사이트 이름 폴백 키 해석은 언어 무관(같은 키) — ko 렌더로 잠그고, en·ja 는 사이트 이름이 있는 실화면 배지로 잰다
+  - surface: user_base_header_footer
+    locale: [en, ja]
+    reason: 헤더·푸터 폴백은 굽기 산출 정적 대조로 잠근다(언어 무관)
+  - surface: user_base_header_footer
+    site_name: set
+    reason: 사이트 이름이 있으면 폴백 식이 평가되지 않는다 — 정적 대조 대상은 폴백 리터럴이다
+
+effects:
+  - every_post_list_row_has_board_post_row_badges
+  - basic_list_and_scrap_have_pc_and_mobile_slots
+  - show_header_and_comment_slots_reach_all_three_type_branches
+  - form_top_and_bottom_slots_reach_all_three_type_branches
+  - slot_props_follow_normalized_contract_and_context_values
+  - slot_hosts_have_no_node_id_and_use_contents_marker
+  - welcome_badge_follows_screen_locale
+  - empty_site_name_falls_back_to_localized_site_title
+  - extension_point_in_repeated_include_branches_and_iteration_is_filled_everywhere
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/board-extension-slots.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/welcome-badge-site-fallback.test.ts
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/layout-translation-keys.test.ts
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/board-extension-slots.spec.ts
+  - tests/Unit/Services/LayoutExtensionServiceTest.php
+
+e2e:
+  - spec: templates/_bundled/sirsoft-basic/tests/Playwright/specs/board-extension-slots.spec.ts
+    axes:
+      surface: [board_list_basic, home_welcome]
+      locale: [ko, en, ja]
+    effects:
+      - basic_list_and_scrap_have_pc_and_mobile_slots
+      - welcome_badge_follows_screen_locale
+
+notes: |
+  e2e_browser=partial — 정적(파일별 개수·props·서빙 등가 전개)과 백엔드(같은 이름 확장점이 3갈래×반복 안 모든 자리에 채워짐)로
+  잠그고, 브라우저 spec 은 basic 목록 자리 수(행×2)·콘솔 0·언어별 배지를 잰다. 나머지 화면(card·gallery·인기글·검색·회원 글·
+  마이페이지·상세·댓글·글쓰기)은 QA 조각을 등록한 Chrome MCP 정밀 점검으로 쟀다(이력 문서 매트릭스).
+  사이트 이름 폴백 라이브 확인은 사이트 설정을 비우는 쓰기가 필요해 렌더 테스트로 잠근다.

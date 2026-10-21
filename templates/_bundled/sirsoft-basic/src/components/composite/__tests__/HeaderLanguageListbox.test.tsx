@@ -1,7 +1,7 @@
 /**
  * 사용자 헤더(데스크톱) 언어 메뉴의 listbox 구조·키보드와 장바구니 단추 접근 이름.
  *
- * 7.1.0 전수 실측(O-PF-1·O-C1-3, 결정 ⑬): 관리자 언어 메뉴를 listbox 패턴으로 맞추면서 사용자 헤더도 같은
+ * 7.1.0 전수 실측(결정): 관리자 언어 메뉴를 listbox 패턴으로 맞추면서 사용자 헤더도 같은
  * 계약을 둔다 — 목록은 이름 있는 `role="listbox"`(단추가 aria-controls 로 가리킴), 항목은 `role="option"` +
  * `aria-selected`, 단추에서 ↓/↑·Enter 로 열면 현재 언어 항목에 초점, 목록 안 ↓/↑/Home/End 이동, Esc 는 닫고
  * 단추로 초점. 아이콘만 있던 장바구니 단추는 담긴 수를 함께 말하는 이름을 갖는다.
@@ -46,6 +46,21 @@ afterEach(() => {
 });
 
 describe('사용자 헤더 언어 메뉴 listbox', () => {
+  // @scenario case=pack_locale_label
+  // @effects option_label_uses_language_pack_name
+  it('언어팩으로 켠 언어는 대문자 코드가 아니라 언어팩의 언어 이름으로 보인다 (#148 — 종전 FIL-PH·ZH-HANT)', async () => {
+    const user = userEvent.setup();
+    (window as any).G7Core.state.get = () => ({ appConfig: { localeNames: { 'fil-PH': 'Filipino (Pilipinas)', 'zh-Hant': '繁體中文' } } });
+    render(<Header siteName="S" availableLocales={['ko', 'fil-PH', 'zh-Hant', 'haw']} currentLocale="ko" />);
+    await user.click(screen.getByRole('button', { name: '언어' }));
+
+    const labels = screen.getAllByRole('option').map((o) => o.textContent?.trim());
+    expect(labels.some((t) => t?.includes('Filipino (Pilipinas)'))).toBe(true);
+    expect(labels.some((t) => t?.includes('繁體中文'))).toBe(true);
+    expect(labels.some((t) => t?.includes('FIL-PH') || t?.includes('ZH-HANT'))).toBe(false);
+    expect(labels.some((t) => t?.includes('haw'))).toBe(true);
+  });
+
   // @scenario case=open_by_click
   // @effects listbox_named, options_have_role, selected_marked, trigger_controls_listbox
   it('펼친 목록은 이름 있는 listbox 이고 단추가 aria-controls 로 가리킨다', async () => {
@@ -107,7 +122,8 @@ describe('사용자 헤더 아이콘 단추 이름', () => {
   // @effects cart_named_with_count
   it('아이콘만 있는 장바구니 단추가 담긴 수를 함께 말하는 이름을 갖는다', () => {
     render(<Header siteName="S" availableLocales={['ko']} currentLocale="ko" cartCount={3} />);
-    expect(screen.getByRole('button', { name: '장바구니 (담긴 상품 3개)' })).toBeInTheDocument();
+    // 장바구니는 화면 이동이라 링크로 그린다(새 탭 열기, #757) — 이름 계약은 그대로
+    expect(screen.getByRole('link', { name: '장바구니 (담긴 상품 3개)' })).toBeInTheDocument();
   });
 
   // @scenario case=mobile_menu_name

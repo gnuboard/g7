@@ -36,24 +36,24 @@
       <div data-ref="page_header" class="flex-start justify-between gap-4 mb-6">
         <responsive on="portable" class="row-stack mb-6"/>
         <div data-ref="page_header_left" class="flex-center gap-3">
-          <button aria-label="$t:common.back" type="button" class="btn btn-icon">
+          <a href="/admin/ecommerce/promotion-discount-codes" aria-label="$t:common.back" class="button btn btn-icon">
             <on type="click">
-              <navigate path="/admin/ecommerce/promotion-discount-codes"/>
+              <navigate/>
             </on>
             <icon name="arrow-left" class="text-xl"/>
-          </button>
+          </a>
           <div>
             <h1 class="page-title mb-1">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.title</h1>
             <p class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.description</p>
           </div>
         </div>
         <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
-          <button type="button" class="btn btn-outline">
+          <a href="/admin/ecommerce/promotion-discount-codes" class="button btn btn-outline">
             <on type="click">
-              <navigate path="/admin/ecommerce/promotion-discount-codes"/>
+              <navigate/>
             </on>
             $t:sirsoft-ecommerce.common.cancel
-          </button>
+          </a>
           <button type="button" class="btn btn-primary">
             <icon name="save" class="text-base mr-1.5"/>
             <span>$t:sirsoft-ecommerce.common.save</span>
@@ -68,13 +68,7 @@
         <div data-ref="field_issue_status" class="flex-center gap-4">
           <label class="form-label">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.issue_status</label>
           <div class="flex-center gap-3">
-            <span class="text-sm">
-              <span>발급 </span>
-              <span class="font-semibold">8</span>
-              <span>건 / 사용 </span>
-              <span class="font-semibold">8</span>
-              <span>건</span>
-            </span>
+            <span class="text-sm">$t:sirsoft-ecommerce.admin.sample.fmt.issued_used|issued=8|used=8</span>
             <button type="button" class="btn btn-outline btn-sm">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.button.view_history</button>
           </div>
         </div>
@@ -134,7 +128,7 @@
         <div data-ref="benefit_settings_header" class="flex-center gap-2 mb-4">
           <icon name="globe" class="text-xl text-gray-700 dark:text-gray-300"/>
           <h3 class="card-title">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.section.benefit_settings</h3>
-          <icon name="circle-question" class="text-base text-gray-400 dark:text-gray-500 ml-auto cursor-pointer"/>
+          <icon name="circle-question" class="text-base text-gray-500 dark:text-gray-500 ml-auto cursor-pointer"/>
         </div>
         <div data-ref="field_benefit" class="mb-4">
           <label class="form-label">
@@ -146,7 +140,7 @@
               <input type="text" name="benefit_amount" class="input w-24" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.amount_input"/>
               <select name="benefit_unit_fixed" aria-label="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.field.benefit_unit_fixed" class="w-20" value="{{_local.form.benefit_unit_fixed}}">
                 <options>
-                  <option value="won">원</option>
+                  <option value="won">$t:sirsoft-ecommerce.admin.sample.misc.won_unit</option>
                 </options>
               </select>
             </div>
@@ -157,7 +151,7 @@
                   <option value="percent">%</option>
                 </options>
               </select>
-              <span class="text-secondary text-sm ml-2">최대</span>
+              <span class="text-secondary text-sm ml-2">$t:sirsoft-ecommerce.admin.sample.misc.max_label</span>
               <input type="text" name="max_discount" class="input w-32" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.max_discount"/>
               <span class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.hint.max_discount_suffix</span>
             </div>
@@ -177,12 +171,12 @@
           </label>
           <div class="flex-center gap-2">
             <div class="relative">
-              <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"/>
+              <icon name="calendar" class="text-base text-gray-500 dark:text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"/>
               <input type="text" name="validity_start_date" class="input w-32 pl-9" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.start_date"/>
             </div>
             <span class="text-secondary">~</span>
             <div class="relative">
-              <icon name="calendar" class="text-base text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"/>
+              <icon name="calendar" class="text-base text-gray-500 dark:text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"/>
               <input type="text" name="validity_end_date" class="input w-32 pl-9" placeholder="$t:sirsoft-ecommerce.admin.promotion_discount_code.create.placeholder.end_date"/>
             </div>
           </div>
@@ -211,10 +205,10 @@
           <div class="flex-center gap-2">
             <select name="code_length" class="w-24" value="{{_local.form.code_length}}">
               <options>
-                <option value="6">6자리</option>
-                <option value="8">8자리</option>
-                <option value="10">10자리</option>
-                <option value="12">12자리</option>
+                <option value="6">$t:sirsoft-ecommerce.admin.sample.fmt.digits|count=6</option>
+                <option value="8">$t:sirsoft-ecommerce.admin.sample.fmt.digits|count=8</option>
+                <option value="10">$t:sirsoft-ecommerce.admin.sample.fmt.digits|count=10</option>
+                <option value="12">$t:sirsoft-ecommerce.admin.sample.fmt.digits|count=12</option>
               </options>
             </select>
             <span class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.promotion_discount_code.create.hint.code_length_suffix</span>
@@ -265,12 +259,12 @@
       <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
         <div class=""/>
         <div class="flex-center gap-3">
-          <button data-ref="cancel_button" type="button" class="btn btn-secondary">
+          <a href="/admin/ecommerce/promotion-discount-codes" data-ref="cancel_button" class="button btn btn-secondary">
             <on type="click">
-              <navigate path="/admin/ecommerce/promotion-discount-codes"/>
+              <navigate/>
             </on>
             <span>$t:sirsoft-ecommerce.common.cancel</span>
-          </button>
+          </a>
           <button data-ref="save_button" type="button" class="flex-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors">
             <icon name="save" class="text-base"/>
             <span>$t:sirsoft-ecommerce.common.save</span>

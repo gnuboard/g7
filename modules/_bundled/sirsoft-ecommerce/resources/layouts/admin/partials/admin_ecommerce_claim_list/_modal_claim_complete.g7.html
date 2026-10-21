@@ -44,7 +44,7 @@
           </div>
           <label class="w-28 flex-shrink-0 flex items-center justify-end cursor-pointer">
             <!-- 신청서 한 건의 재고 복구 여부. 체크는 신청서 단위지만 서버에는 그 신청서의 완료 대상 상품 행 전체에 같은 값으로 펴서 보내고, 바꿀 때마다 요약의 복구·폐기 수량을 미리보기로 다시 받는다(연달아 누르면 한 번으로 묶인다). -->
-            <checkbox data-ref="cc_006_restore_checkbox_{{claimRowIndex}}" :autoBinding="false" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed" checked="{{(_global.claimCompleteRestore ?? {})[claimRow.id] !== false}}" disabled="{{(claimRow.completable_item_count ?? 0) === 0}}">
+            <checkbox data-ref="cc_006_restore_checkbox_{{claimRowIndex}}" aria-label="$t:common.row_cell|row={{claimRow.claim_number ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.complete.col_restore_stock')}}" :autoBinding="false" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed" checked="{{(_global.claimCompleteRestore ?? {})[claimRow.id] !== false}}" disabled="{{(claimRow.completable_item_count ?? 0) === 0}}">
               <on type="change">
                 <action handler="sirsoft-ecommerce.toggleClaimCompleteStock" claimId="{{claimRow.id}}" restore="{{$event.target.checked}}"/>
               </on>
@@ -61,14 +61,16 @@
         <!-- 미회수 완료는 상품 대금·보증금을 청구하지 않는다(S8 · Q10 — 현행 유지). 운영자가 모른 채 완료하면 매출이 새므로 그 사실을 체크 영역에서 말한다. -->
         <p data-ref="cc_023b_unreturned_no_charge_notice" class="p-2 rounded bg-orange-50 dark:bg-orange-900/20 text-xs text-orange-700 dark:text-orange-300">$t:sirsoft-ecommerce.admin.claim.complete.unreturned_no_charge_notice</p>
         <div data-each="unretItem, unretIdx in {{(_global.claimCompletePreview?.claims ?? []).flatMap(c => c.unreturned_eligible_items ?? [])}}" class="flex-center flex-wrap gap-3">
-          <checkbox :autoBinding="false" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600" checked="{{Object.keys(_global.claimCompleteUnreturned ?? {}).includes(String(unretItem.id))}}">
-            <on type="change">
-              <!-- 회수되지 않은 상품을 미회수로 표시할지 켜고 끈다 — 켠 상품만 사유 입력칸이 열린다 -->
-              <action handler="sirsoft-ecommerce.toggleClaimCompleteUnreturned" itemId="{{unretItem.id}}" checked="{{$event.target.checked}}"/>
-            </on>
-          </checkbox>
-          <span class="text-sm text-gray-900 dark:text-gray-100">{{unretItem.label}}</span>
-          <input data-if="{{Object.keys(_global.claimCompleteUnreturned ?? {}).includes(String(unretItem.id))}}" type="text" :maxLength="2000" class="flex-1 min-w-[200px] px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.complete.unreturned_reason_placeholder" value="{{(_global.claimCompleteUnreturned ?? {})[String(unretItem.id)] ?? ''}}">
+          <label class="flex-center gap-3 cursor-pointer">
+            <checkbox :autoBinding="false" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600" checked="{{Object.keys(_global.claimCompleteUnreturned ?? {}).includes(String(unretItem.id))}}">
+              <on type="change">
+                <!-- 회수되지 않은 상품을 미회수로 표시할지 켜고 끈다 — 켠 상품만 사유 입력칸이 열린다 -->
+                <action handler="sirsoft-ecommerce.toggleClaimCompleteUnreturned" itemId="{{unretItem.id}}" checked="{{$event.target.checked}}"/>
+              </on>
+            </checkbox>
+            <span class="text-sm text-gray-900 dark:text-gray-100">{{unretItem.label}}</span>
+          </label>
+          <input data-if="{{Object.keys(_global.claimCompleteUnreturned ?? {}).includes(String(unretItem.id))}}" aria-label="$t:common.row_cell|row={{unretItem.label ?? ''}}|column={{$t('sirsoft-ecommerce.admin.claim.complete.unreturned_reason_placeholder')}}" type="text" :maxLength="2000" class="flex-1 min-w-[200px] px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg" placeholder="$t:sirsoft-ecommerce.admin.claim.complete.unreturned_reason_placeholder" value="{{(_global.claimCompleteUnreturned ?? {})[String(unretItem.id)] ?? ''}}">
             <on type="change">
               <!-- 미회수 사유를 상품별로 적어 둔다 — 완료 처리 때 함께 보낸다 -->
               <action handler="sirsoft-ecommerce.setClaimCompleteUnreturnedReason" itemId="{{unretItem.id}}" reason="{{$event.target.value}}"/>
@@ -121,7 +123,7 @@
         <span>$t:sirsoft-ecommerce.admin.claim.complete.cancel</span>
       </button>
       <!-- 완료 처리 실행. 요청 주소·방식은 모달을 연 쪽이 넘긴 실행 경로를 따르고 일괄 경로는 미리보기가 답한 신청서로 대상을 좁혀 보낸다 — 미리보기가 도는 동안 잠그는 것은 화면이 예고한 요약과 다른 선택으로 실행되지 않게 하기 위해서다. -->
-      <button data-ref="cc_022_submit_button" type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.claimCompleteRows ?? []).length === 0 || _global.isProcessing || _global.claimCompletePreviewLoading === true}}">
+      <button data-ref="cc_022_submit_button" type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.claimCompleteRows ?? []).length === 0 || _global.isProcessing || _global.claimCompletePreviewLoading === true}}">
         <on type="click">
           <set-state target="global" :isProcessing="true"/>
           <!-- onError 는 진행 상태만 되돌린다 — 사유 토스트는 핸들러가 이미 띄운다(서버 사유 우선 + 다국어 폴백). 여기서 한 번 더 띄우면 같은 문구가 두 번 뜬다. -->

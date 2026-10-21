@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * 꺼진 역할의 권한은 판정에서 제외된다 (S8, 제품 결정 2026-10-09).
+ * 꺼진 역할의 권한은 판정에서 제외된다 (제품 결정 2026-10-09).
  *
  * 역할 「사용 여부」를 끄면 그 역할로 받은 권한이 즉시 회수된다. 회원 판정(hasPermission·
  * isAdmin·Gate·미들웨어·abilities), 비회원 판정(guest 역할), 메뉴 접근이 모두 같은 기준을 쓴다.

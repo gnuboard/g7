@@ -168,7 +168,7 @@ describe('알림 정의 목록 — 채널 스코프 (#518 / 공개 #76)', () => 
      * @effects definition_list_channel_scope_matches_consumer
      */
     it('채널 표현식이 URL 단일 출처다 (_local 을 섞지 않는다)', () => {
-        // 회귀 배경 (#518 3차 실측 결함 #1):
+        // 회귀 배경 (#518 실측 결함):
         // 종전 표현식은 `_local.activeNotificationChannel ?? query.channel ?? 'mail'` 이었다.
         // 데이터소스와 소비자에 **글자까지 같은** 식이 적혀 있었으므로 위의 동치 단언은 통과했지만,
         // 두 출처는 갱신 시점이 다르다. 다른 설정 탭에 갔다 돌아오면 URL 의 channel 은 사라지고

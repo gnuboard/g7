@@ -4,7 +4,7 @@
 공유 partial 은 회원/비회원을 스스로 판단하지 않는다. 셸이 _local 에 세 값(claimApiBase / imageDeleteBase / isGuest)을 세우고 partial 은 그것만 읽는다. claimApiBase 는 주문 ID 가 필요하므로 order 데이터소스의 initLocal 이 소유한다 — 레이아웃 initLocal 에 같은 키를 두면 마운트 후 재적용에서 서로 덮어써 어느 쪽이 남는지가 순서에 좌우된다.
 이 화면의 상태는 initClaimApply 핸들러가 소유한다. 레이아웃 initLocal 에 같은 키를 두면 마운트 뒤 한 번 더 적용되면서 핸들러가 쓴 값을 초기값으로 되돌린다 — 첫 진입에서는 순서가 맞아 보이지만 SPA 뒤로가기로 되돌아오면 재적용이 뒤에 도착해, 응답 200 에 오류 0 인 채로 '신청할 수 있는 상품이 없습니다' 만 남는다(2026-08-31 실측). 그래서 여기에는 셸이 정하는 정적 계약 두 값만 둔다. 나머지 키는 표현식이 모두 fallback(?? [] / ?? '')을 갖는다.
 initLocal 의 claimListPath / claimDetailPathBase 는 접수·저장 뒤에 갈 곳이다. 작성은 신청내역 목록(유형 서브탭을 함께 싣는다 — 유형마다 서버가 다른 테이블을 읽으므로 탭이 어긋나면 방금 낸 신청서가 보이지 않는다), 수정은 그 신청서의 상세다. 공유 partial(_apply_summary.json)이 주소를 리터럴로 들면 비회원이 회원 전용 주소로 보내지고, 그 주소는 로그인 화면을 연다(오류도 토스트도 남지 않는다).
-수정 진입 핸들러는 init_actions 의 **최상위**에 둔다(if 로 가른다). conditions 의 then 안에 넣으면 화면이 열리기는 하되 그 핸들러가 실행되지 않는다 — 코어는 init_actions 최상위의 네임스페이스 핸들러만 모아 확장 번들 등록을 기다리는데(waitForHandlers), 중첩된 것은 그 목록에 들어가지 않아 아직 등록 전인 순간에 미등록 핸들러로 조용히 건너뛰어진다(엔진은 미등록 핸들러를 표시 계층으로 내보내지 않는다). 그 결과 수정 주소로 들어와도 작성 화면이 그대로 열리고, 오류도 토스트도 남지 않는다(2026-09-01 브라우저 실측). -->
+수정 진입 핸들러는 init_actions 의 **최상위**에 둔다(if 로 가른다). engine-v1.80.0 부터는 conditions·sequence 안에 둔 확장 핸들러도 엔진이 등록을 기다린다 — 그 전 엔진에서는 최상위의 네임스페이스 핸들러만 기다려 중첩된 것이 등록 전에 미등록 핸들러로 조용히 건너뛰어졌고, 수정 주소로 들어와도 작성 화면이 그대로 열렸다(2026-09-01 브라우저 실측). 그 전 엔진과의 호환을 위해 최상위 배치를 유지한다. -->
 <layout name="mypage/claims/apply" version="1.0.0" extends="_user_base">
   <meta title="$t:user.mypage.claim_apply_title" description="$t:user.mypage.claim_apply_description"/>
   <!-- SPA 뒤로가기로 이 화면에 되돌아오면 캐시된 응답이 쓰여 onSuccess 가 발화하지 않는다 — 그러면 claimOrderId 를 세우고 claimable 을 부르는 체인이 통째로 건너뛰어져, 오류 없이 '신청할 수 있는 상품이 없습니다' 만 남는다(2026-08-31 실측). 클레임 가능 여부는 진입할 때마다 서버가 다시 판정해야 하는 값이기도 하다. -->
@@ -22,13 +22,40 @@ initLocal 의 claimListPath / claimDetailPathBase 는 접수·저장 뒤에 갈 
     </success>
     <error-handling>
       <on-code code="404">
-        <!-- 작성 진입의 404 는 열 수 없는 주문이므로 오류 화면을 세운다. 수정 진입은 주소에 주문번호가 없어 첫 호출이 반드시 404 이고 그것은 정상 경로다 — 두 경우를 errorHandling 만으로는 가를 수 없어(조건 분기를 받지 않는다) 핸들러가 판정한다. -->
-        <action handler="sirsoft-ecommerce.claimApplyOrderMissing"/>
+        <!-- 작성 진입(주소에 주문번호)의 404 는 열 수 없는 주문 → 오류 화면. 수정 진입(/mypage/claims/{번호}/edit)은 주소에 주문번호가 없어 첫 호출이 반드시 404 이고 그것이 정상 경로다 → 무시 -->
+        <conditions>
+          <when if="{{!!route.claim_number}}"><suppress/></when>
+          <else><show-error-page :errorCode="404" target="content"/></else>
+        </conditions>
       </on-code>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
     </error-handling>
   </data-source>
-  <!-- 클레임 가능 상품·유형. 주문 ID 는 주문상세가 주소(?order_id)에 실어 보내므로 다른 데이터소스를 기다리지 않고 곧바로 부른다 — 체인(order 응답 → setState → refetch)에만 기대면 SPA 뒤로가기로 되돌아왔을 때 refetch 결과가 새로 마운트된 화면의 상태에 닿지 않아, 응답 200 · 오류 0 인 채로 빈 신청서만 남는다(2026-08-31 실측). 주소를 직접 입력해 들어와 order_id 가 없는 진입은 첫 호출이 404 로 끝나고(그 404 는 화면을 세우지 않는다) order 응답이 세운 _local.claimOrderId 로 체인이 다시 부른다. -->
-  <data-source id="claimable" label_key="$t:editor.data_source.claimable" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/orders/{{query.order_id ?? _local.claimOrderId ?? 0}}/claimable-options" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" :refetchOnMount="true">
+  <!-- 클레임 가능 상품·유형. 주문 ID 는 주문상세가 주소(?order_id)에 실어 보내므로 다른 데이터소스를 기다리지 않고 곧바로 부른다 — 체인(order 응답 → setState → refetch)에만 기대면 SPA 뒤로가기로 되돌아왔을 때 refetch 결과가 새로 마운트된 화면의 상태에 닿지 않아, 응답 200 · 오류 0 인 채로 빈 신청서만 남는다(2026-08-31 실측). 주소를 직접 입력해 들어와 order_id 가 없는 진입은 첫 호출이 404 로 끝나고(그 404 는 화면을 세우지 않는다) order 응답이 세운 _local.claimOrderId 로 체인이 다시 부른다. 이 판은 주소에 ?order_id 가 있을 때만 고른다(같은 id 의 첫 매칭). -->
+  <data-source id="claimable" if="{{!!query.order_id}}" label_key="$t:editor.data_source.claimable" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/orders/{{query.order_id ?? _local.claimOrderId ?? 0}}/claimable-options" method="GET" :auto_fetch="true" :auth_required="true" :cache="false" :refetchOnMount="true">
+    <error-handling>
+      <on-code code="404">
+        <!-- order_id 없는 직접 진입의 첫 호출 — 체인이 곧 올바른 ID 로 다시 부른다. 화면을 세우지 않는다. -->
+        <suppress/>
+      </on-code>
+    </error-handling>
+    <success>
+      <!-- 응답으로 상품 줄·사유·청구 기본값을 세운다. 페이로드는 응답 컨텍스트에서 직접 넘긴다 — 자기 onSuccess 시점의 데이터소스 store 는 아직 비어 있어(TemplateApp 상태 갱신이 refetch 해소 뒤) 핸들러가 거기서 읽으면 응답은 200 인데 화면만 빈 신청서로 남는다. 유형(:type)과 미리 선택된 상품(?options)은 여기서 넘기지 않는다 — 데이터소스 onSuccess 의 실행 컨텍스트에는 route·query 가 없어 빈 값이 도착하고, 넘기는 형태만 남으면 살아 있는 배선처럼 보인다. 핸들러가 주소에서 직접 읽는다. -->
+      <action handler="sirsoft-ecommerce.initClaimApply" claimable="{{response.data.data}}"/>
+    </success>
+  </data-source>
+  <!-- 같은 claimable 의 ?order_id 없는 진입 판(수정 주소·주소 직접 입력) — 주문 ID 를 모르므로 스스로 부르지 않고(auto_fetch false) order 응답의 refetch-data-source 가 claimOrderId 를 세운 뒤 부른다. 종전에는 이 진입에서 첫 호출이 orders/0/claimable-options 404 로 한 번 더 나갔다(7.1.1). 위 판과 if 가 서로 배타라 둘 중 하나만 선택된다(데이터소스 조건부 로딩 — 같은 id 첫 매칭). 아래 두 갈래(성공·404)는 위 판과 같아야 한다. -->
+  <data-source id="claimable" if="{{!query.order_id}}" label_key="$t:editor.data_source.claimable" type="api" endpoint="/api/modules/sirsoft-ecommerce/user/orders/{{_local.claimOrderId ?? 0}}/claimable-options" method="GET" :auto_fetch="false" :auth_required="true" :cache="false" :refetchOnMount="true">
     <error-handling>
       <on-code code="404">
         <!-- order_id 없는 직접 진입의 첫 호출 — 체인이 곧 올바른 ID 로 다시 부른다. 화면을 세우지 않는다. -->
@@ -69,16 +96,16 @@ initLocal 의 claimListPath / claimDetailPathBase 는 접수·저장 뒤에 갈 
         <responsive on="portable" class="py-4"/>
         <!-- 뒤로가기 — 주문상세로 돌아간다. 같은 목록 클러스터 안의 이동이므로 목록 상태를 그대로 물려준다. -->
         <div class="flex items-center gap-2 mb-4">
-          <button type="button" class="flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
+          <a href="{{route.claim_number ? ('/mypage/claims/' + route.claim_number) : ('/mypage/orders/' + (route.order_number ?? ''))}}" :mergeQuery="true" class="flex items-center gap-1 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
             <on type="click">
               <!-- 돌아갈 곳은 들어온 곳이다 — 작성은 주문 상세, 수정은 그 신청서의 상세. 수정에서 주문 상세로 보내면 방금 고친 내용을 확인할 자리가 아니다. -->
-              <navigate path="{{route.claim_number ? ('/mypage/claims/' + route.claim_number) : ('/mypage/orders/' + (route.order_number ?? ''))}}" :mergeQuery="true">
+              <navigate :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
             <icon name="chevron-left" class="text-base"/>
             <span class="text-base font-medium">{{route.claim_number ? $t('claim.edit.back') : $t('claim.apply.back')}}</span>
-          </button>
+          </a>
         </div>
         <!-- 화면 제목 — 취소·환불은 분기에 따라 라벨만 바뀐다(§6-3). 사유 카드 구성과 수량 입력은 분기와 무관하게 같다. 분기는 **지금 고른 상품**을 1순위로 읽는다 — 서버의 resolved_type 은 주문 전체의 판정이라 두 분기가 섞인 주문에서 mixed 이고, 그 값으로 제목을 정하면 결제완료 상품만 골라 즉시 취소되는데도 화면은 "환불 신청" 이라고 부른다. 아직 아무것도 고르지 않았으면 서버 판정으로 떨어진다. -->
         <div class="mb-6">
@@ -86,7 +113,7 @@ initLocal 의 claimListPath / claimDetailPathBase 는 접수·저장 뒤에 갈 
             <responsive on="portable" class="text-xl font-bold text-gray-900 dark:text-white"/>
             {{_local.claimEditMode === true ? $t('claim.edit.title') : (route.type === 'exchange' ? $t('claim.apply.title_exchange') : (route.type === 'return' ? $t('claim.apply.title_return') : ((_local.claimResolvedBranch ?? (_local.claimableSnapshot ?? claimable?.data)?.resolved_type) === 'auto' ? $t('claim.apply.title_cancel') : $t('claim.apply.title_refund'))))}}
           </h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">$t:claim.apply.order_number|number={{(order.data.order_number ?? _local.claimEditSnapshot?.order_number) ?? ''}}</p>
+          <p data-if="{{!!(order?.data?.order_number ?? _local.claimEditSnapshot?.order_number)}}" class="text-sm text-gray-500 dark:text-gray-400 mt-1">$t:claim.apply.order_number|number={{(order.data.order_number ?? _local.claimEditSnapshot?.order_number) ?? ''}}</p>
           <!-- 수정 화면에서 어느 신청서를 고치고 있는지 — 주문번호만으로는 같은 주문의 여러 신청서를 구분할 수 없다. -->
           <p data-if="{{_local.claimEditMode === true}}" class="text-sm text-gray-500 dark:text-gray-400">{{(_local.claimEditSnapshot?.claim_type_label ?? '')}} {{_local.claimEditSnapshot?.claim_number ?? ''}}</p>
           <!-- 수정 범위 안내 — 무엇을 바꿀 수 있는지 먼저 말하지 않으면 구매자는 잠긴 칸을 고장으로 읽는다(D13: 승인 전 사유·상세 사유·첨부, 교환은 재발송지까지). -->

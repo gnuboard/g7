@@ -1,0 +1,67 @@
+{
+    "version": "1.0.0",
+    "layout_name": "probe_init",
+    "named_actions": {
+        "boot": {
+            "handler": "setState",
+            "params": {
+                "target": "local",
+                "booted": "1"
+            }
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "sequence",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "a": "1"
+                    }
+                },
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "b": "2"
+                    }
+                }
+            ]
+        },
+        {
+            "handler": "switch",
+            "params": {
+                "value": "{{query.mode}}"
+            },
+            "cases": {
+                "quiet": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "m": "q"
+                    }
+                },
+                "default": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "m": "l"
+                    }
+                }
+            }
+        },
+        {
+            "actionRef": "boot"
+        }
+    ],
+    "components": [
+        {
+            "id": "root",
+            "type": "basic",
+            "name": "Div",
+            "text": "x"
+        }
+    ]
+}

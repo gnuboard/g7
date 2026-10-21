@@ -216,7 +216,7 @@
                     "name": "P",
                     "if": "{{!order.data.payment?.paid_at}}",
                     "props": {
-                        "className": "text-xs text-amber-600 dark:text-amber-400"
+                        "className": "text-xs text-amber-700 dark:text-amber-400"
                     },
                     "text": "$t:sirsoft-pay_nhnkcp.user.vbank_notice"
                 }
@@ -489,6 +489,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "e_trade_no",
+                                        "aria-label": "$t:sirsoft-pay_nhnkcp.user.mock_trade_no",
                                         "value": "{{nhnkcp_mock_deposit.data.trade_no ?? ''}}",
                                         "readOnly": true,
                                         "className": "flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"
@@ -517,6 +518,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "deposit_no",
+                                        "aria-label": "$t:sirsoft-pay_nhnkcp.user.mock_deposit_no",
                                         "value": "{{nhnkcp_mock_deposit.data.account_no ?? ''}}",
                                         "readOnly": true,
                                         "className": "flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"
@@ -546,6 +548,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "req_name",
+                                        "aria-label": "$t:sirsoft-pay_nhnkcp.user.mock_depositor",
                                         "value": "NHN KCP",
                                         "className": "flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"
                                     }
@@ -573,6 +576,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "noti_url",
+                                        "aria-label": "$t:sirsoft-pay_nhnkcp.user.mock_notify_url",
                                         "value": "{{nhnkcp_mock_deposit.data.notify_url ?? ''}}",
                                         "readOnly": true,
                                         "className": "flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-mono"
@@ -605,7 +609,7 @@
                     "name": "P",
                     "if": "{{nhnkcp_mock_deposit.data.is_admin_view === true}}",
                     "props": {
-                        "className": "mt-2 text-xs text-center text-orange-500 dark:text-orange-400 font-medium"
+                        "className": "mt-2 text-xs text-center text-orange-700 dark:text-orange-400 font-medium"
                     },
                     "text": "$t:sirsoft-pay_nhnkcp.user.mock_admin_notice"
                 }

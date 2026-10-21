@@ -254,6 +254,8 @@ class BoardSampleSeeder extends Seeder implements TranslatableSeederInterface
             'active_reaction_types' => ['like', 'dislike'],
             // 답글 삭제 정책 block — 답글이 달린 질문은 삭제할 수 없다
             'reply_delete_policy' => 'block',
+            // 비밀 답변 열람 범위 per_post — 답변마다 따로 (경로 규칙을 쓰지 않는 게시판 예시)
+            'secret_reply_visibility' => 'per_post',
             // 기본값: posts.read-secret = ['admin'] → user 추가
             // 비밀글을 작성자 외 로그인 회원도 읽을 수 있는 케이스 (고객센터 담당자 등)
             'permissions' => [
@@ -455,7 +457,7 @@ class BoardSampleSeeder extends Seeder implements TranslatableSeederInterface
      */
     public function run(): void
     {
-        $this->command->info('게시판 샘플 데이터 생성 중...');
+        $this->command->info(__('sirsoft-board::messages.seeders.board_sample.start'));
 
         // 이번 샘플 실행의 생성 범위 기록을 새로 시작한다 (활동 로그 샘플이 이 범위에만 로그를 만든다)
         SampleRunRegistry::reset();
@@ -478,7 +480,7 @@ class BoardSampleSeeder extends Seeder implements TranslatableSeederInterface
         })->pluck('uuid')->toArray();
 
         if (empty($adminIds)) {
-            $this->command->warn('  ⚠ admin 역할 사용자가 없습니다. board_manager_ids가 비어있게 됩니다.');
+            $this->command->warn('  ⚠ '.__('sirsoft-board::messages.seeders.board_sample.no_admin_role_user'));
         }
 
         // 관리자 폼과 같은 출발점 — 모듈 기본값을 먼저 깔고 샘플 정의로 덮는다(B-1·B-23).
@@ -505,7 +507,7 @@ class BoardSampleSeeder extends Seeder implements TranslatableSeederInterface
             $boardData['board_manager_ids'] = $adminIds;
             // 이미 존재하는 게시판은 스킵
             if (Board::where('slug', $boardData['slug'])->exists()) {
-                $this->command->warn("  - {$boardData['slug']} 게시판이 이미 존재합니다. 스킵합니다.");
+                $this->command->warn('  - '.__('sirsoft-board::messages.seeders.board_sample.exists_skip', ['slug' => $boardData['slug']]));
 
                 continue;
             }
@@ -513,9 +515,9 @@ class BoardSampleSeeder extends Seeder implements TranslatableSeederInterface
             try {
                 $board = $boardService->createBoard($boardData);
                 SampleRunRegistry::addBoard((int) $board->id);
-                $this->command->info("  - {$board->slug} 게시판 생성 완료 (테이블 + 권한 포함)");
+                $this->command->info('  - '.__('sirsoft-board::messages.seeders.board_sample.created', ['slug' => $board->slug]));
             } catch (\Exception $e) {
-                $this->command->error("  - {$boardData['slug']} 게시판 생성 실패: ".$e->getMessage());
+                $this->command->error('  - '.__('sirsoft-board::messages.seeders.board_sample.failed', ['slug' => $boardData['slug'], 'error' => $e->getMessage()]));
             }
         }
 
@@ -523,7 +525,7 @@ class BoardSampleSeeder extends Seeder implements TranslatableSeederInterface
             Auth::logout();
         }
 
-        $this->command->info('게시판 샘플 데이터 생성 완료: '.count($samples).'개');
+        $this->command->info(__('sirsoft-board::messages.seeders.board_sample.done', ['count' => count($samples)]));
     }
 
     /**

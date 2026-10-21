@@ -1,0 +1,33 @@
+# 시나리오 매니페스트 — 관리자 게시판 목록 표의 받는 중·빈 결과 표시
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_list_loading_empty_state
+
+description: >-
+  관리자 게시판 목록 화면은 화면을 먼저 그린 뒤 목록을 받는다(progressive). 받기 전에는 데이터소스 값이
+  비어 있어 표가 행 0개로 보이고, 표는 행이 없으면 빈 문구를 그린다 — 그래서 글 상세에서 「목록」으로
+  돌아온 직후 「데이터가 없습니다」가 흐릿하게 먼저 뜨고 잠시 뒤 행이 들어왔다. 빈 문구는 받은 결과가
+  0건일 때만 보이고, 받는 중에는 문구 없이 표를 흐리게 덮는다. 게시글·반응·신고·스크랩 4개 표가 같은
+  규칙을 쓴다. 게시판 목록 카드 표(CardGrid)는 값이 없으면 컴포넌트가 스켈레톤을 그리므로 묶는 식이
+  받는 중 값을 빈 배열로 바꾸지 않는지만 잰다. 새 목록 표가 규칙 없이 들어오면 전수 검사가 잡는다.
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-list-loading-empty-state.test.tsx
+
+coverage_strategy: full
+
+# axis 의미:
+#   load_state — 목록 데이터소스 상태. loading 은 엔진이 화면을 먼저 그릴 때 넣는 undefined,
+#                loaded_empty 는 받은 결과 0건, loaded_rows 는 1건 이상, error 는 처음 받기 실패(엔진이 넣는 null). 4개 화면은 같은 규칙을 쓰므로
+#                축으로 곱하지 않고 각 시험이 화면 전부를 돈다(it.each).
+axes:
+  load_state: [loading, loaded_empty, loaded_rows, error]
+
+effects:
+  - loading_hides_empty_message   # 받는 중에는 빈 문구가 없다
+  - loading_blurs_grid   # 받는 중에는 표가 흐림 처리된다
+  - loaded_empty_shows_message   # 받은 결과 0건이면 그 화면의 빈 문구가 보이고 흐림이 풀린다
+  - loaded_rows_hide_message   # 받은 결과가 있으면 행이 그려지고 빈 문구가 없다
+  - card_grid_loading_shows_skeleton   # 게시판 목록 카드 표는 받는 중에 스켈레톤이고 빈 문구가 없다
+  - error_shows_load_failed_message   # 처음 받기에 실패하면(null) 빈 문구 자리에 실패 문구가 보이고 「없음」은 없다
+  - every_progressive_list_grid_gated   # 관리자 표는 모두 이 규칙을 지키거나 해당 없는 이유가 적혀 있다(전수)

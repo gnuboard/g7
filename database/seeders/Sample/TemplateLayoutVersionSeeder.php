@@ -5,6 +5,7 @@ namespace Database\Seeders\Sample;
 use App\Models\TemplateLayout;
 use App\Models\TemplateLayoutVersion;
 use App\Models\User;
+use App\Support\LayoutEmptyObjects;
 use Illuminate\Database\Seeder;
 
 /**
@@ -58,7 +59,7 @@ class TemplateLayoutVersionSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('템플릿 레이아웃 버전 시더 생성을 시작합니다.');
+        $this->command->info(__('common.console.seeders.template_layout_version.start'));
 
         // 기존 버전 데이터 삭제
         $this->deleteExistingVersions();
@@ -67,15 +68,17 @@ class TemplateLayoutVersionSeeder extends Seeder
         $layouts = TemplateLayout::all();
 
         if ($layouts->isEmpty()) {
-            $this->command->warn('레이아웃이 없습니다. TemplateSeeder를 먼저 실행해주세요.');
+            $this->command->warn(__('common.console.seeders.template_layout_version.no_layouts'));
+
             return;
         }
 
         // 관리자 사용자 조회
         $adminUser = User::where('is_super', true)->first();
 
-        if (!$adminUser) {
-            $this->command->warn('관리자 사용자가 없습니다. AdminUserSeeder를 먼저 실행해주세요.');
+        if (! $adminUser) {
+            $this->command->warn(__('common.console.seeders.template_layout_version.no_admin'));
+
             return;
         }
 
@@ -84,7 +87,7 @@ class TemplateLayoutVersionSeeder extends Seeder
             $this->createVersionsForLayout($layout, $adminUser);
         }
 
-        $this->command->info('템플릿 레이아웃 버전 시더가 성공적으로 생성되었습니다.');
+        $this->command->info(__('common.console.seeders.template_layout_version.done'));
     }
 
     /**
@@ -97,7 +100,7 @@ class TemplateLayoutVersionSeeder extends Seeder
         $deletedCount = TemplateLayoutVersion::query()->where('changes_summary->is_sample', true)->delete();
 
         if ($deletedCount > 0) {
-            $this->command->warn("기존 샘플 레이아웃 버전 {$deletedCount}건을 삭제했습니다.");
+            $this->command->warn(__('common.console.seeders.template_layout_version.cleaned', ['count' => $deletedCount]));
         }
     }
 
@@ -114,10 +117,12 @@ class TemplateLayoutVersionSeeder extends Seeder
 
         foreach ($this->sampleVersions as $index => $versionData) {
             // 레이아웃 content를 복사하여 버전별로 약간 수정 (content.version 은 레이아웃 문서 형식 버전이라 건드리지 않는다)
-            $content = $layout->content;
+            // 원문 그대로 읽는다 — 캐스트는 `{}` 를 `[]` 로 만든다 (#758)
+            $content = LayoutEmptyObjects::rawPreserving($layout);
 
-            // 버전별로 컴포넌트 수정 시뮬레이션
+            // 버전별로 컴포넌트 수정 시뮬레이션 (`meta` 가 빈 객체 표식이면 배열로 바꿔 쓴다)
             if ($index > 0) {
+                $content['meta'] = is_array($content['meta'] ?? null) ? $content['meta'] : [];
                 $content['meta']['description'] = "Version {$versionData['label']} - Updated layout";
             }
 
@@ -129,7 +134,7 @@ class TemplateLayoutVersionSeeder extends Seeder
                 'created_by' => $adminUser->id,
             ]);
 
-            $this->command->info("레이아웃 '{$layout->name}'의 버전 {$version->version}이 생성되었습니다.");
+            $this->command->info(__('common.console.seeders.template_layout_version.version_created', ['layout' => $layout->name, 'version' => $version->version]));
         }
     }
 }

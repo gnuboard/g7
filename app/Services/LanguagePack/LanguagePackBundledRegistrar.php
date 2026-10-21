@@ -9,6 +9,7 @@ use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackStatus;
 use App\Models\LanguagePack;
 use App\Services\LanguagePackService;
+use App\Support\LocaleTag;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -135,8 +136,9 @@ class LanguagePackBundledRegistrar
     /**
      * 호스트 확장 비활성화 시 해당 확장에 종속된 언어팩을 cascade 비활성화합니다 (요구사항 #6).
      *
-     * 비활성화된 active 팩 ID 목록을 cache 에 stash 하여, 재활성화 시 §6 모달이
-     * 표시할 후보로 사용됩니다.
+     * 꺼진 팩은 `LanguagePackService::deactivate(cascadeFromHost: true)` 가 `deactivated_reason=host_deactivated` 로
+     * 표시한다. 재활성화 시 §6 모달과 CLI activate 가 그 표시로 다시 켤 후보를 찾는다. 예전에는 후보 목록을 캐시에만
+     * 두어 `cache:clear` 로 사라졌다(#145 F7).
      *
      * @param  string  $scope  스코프 (module/plugin/template)
      * @param  string  $targetIdentifier  대상 확장 식별자
@@ -166,10 +168,6 @@ class LanguagePackBundledRegistrar
                     'error' => $e->getMessage(),
                 ]);
             }
-        }
-
-        if (! empty($deactivated)) {
-            $this->stashDeactivatedForReactivation($scope, $targetIdentifier, $deactivated);
         }
 
         $this->registry->invalidate();
@@ -225,7 +223,10 @@ class LanguagePackBundledRegistrar
     }
 
     /**
-     * 비활성화된 팩 ID 목록을 cache 에 보관합니다 (재활성화 모달용).
+     * 비활성화된 팩 ID 목록을 cache 에 보관합니다 (레거시 — 7.1.0 이하의 재활성화 후보 보관 방식).
+     *
+     * 7.1.1 부터 연쇄 비활성화는 DB 표시(`host_deactivated`)만 남기고 이 메서드를 부르지 않는다. 업데이트 전에 쌓인
+     * 캐시 목록을 `getPendingForReactivation()` 이 한 번 읽어 합치므로 키 형식을 유지한다.
      *
      * @param  string  $scope  스코프
      * @param  string  $targetIdentifier  대상 확장 식별자
@@ -241,7 +242,9 @@ class LanguagePackBundledRegistrar
     /**
      * 호스트 확장 재활성화 시 모달에 표시할 pending 언어팩 목록을 반환합니다 (요구사항 #7).
      *
-     * stash 된 ID 중 현재도 DB 에 존재하고 inactive 상태인 팩만 필터링합니다.
+     * 대상 확장의 팩 중 `status=inactive` 이고 `deactivated_reason=host_deactivated` 인 팩(호스트를 끌 때 함께 꺼진 팩)과,
+     * 7.1.0 이하가 캐시에 남긴 레거시 목록 중 지금도 inactive 인 팩을 합쳐 ID 순으로 돌려준다. 레거시 목록은 읽은 뒤 지운다.
+     * DB 표시는 팩을 켤 때 지워지므로, 운영자가 창을 닫으면 다음 활성화 때 다시 묻는다.
      * 빈 배열을 반환하면 프론트엔드는 모달을 띄우지 않습니다 (요구사항 #8).
      *
      * @param  string  $scope  스코프
@@ -250,31 +253,35 @@ class LanguagePackBundledRegistrar
      */
     public function getPendingForReactivation(string $scope, string $targetIdentifier): array
     {
-        $key = $this->reactivationCacheKey($scope, $targetIdentifier);
-        $packIds = $this->cache->get($key, []);
-
-        if (empty($packIds)) {
-            return [];
-        }
-
-        $pending = [];
-        foreach ($packIds as $id) {
-            $pack = $this->repository->findById($id);
-            if (! $pack || $pack->status !== LanguagePackStatus::Inactive->value) {
-                continue;
+        $packs = [];
+        foreach ($this->repository->getPacksForTarget($scope, $targetIdentifier) as $pack) {
+            if ($pack->status === LanguagePackStatus::Inactive->value
+                && $pack->deactivated_reason === LanguagePackDeactivationReason::HostDeactivated->value) {
+                $packs[$pack->id] = $pack;
             }
-            $pending[] = [
-                'id' => $pack->id,
-                'identifier' => $pack->identifier,
-                'locale' => $pack->locale,
-                'locale_native_name' => $pack->locale_native_name,
-            ];
         }
 
-        // 사용 후 cache 비움
-        $this->cache->forget($key);
+        // 레거시: 7.1.0 이하가 캐시에 남긴 목록 (한 번 읽고 지운다)
+        $key = $this->reactivationCacheKey($scope, $targetIdentifier);
+        $legacyIds = $this->cache->get($key, []);
+        if (! empty($legacyIds)) {
+            foreach ((array) $legacyIds as $id) {
+                $pack = $this->repository->findById((int) $id);
+                if ($pack && $pack->status === LanguagePackStatus::Inactive->value) {
+                    $packs[$pack->id] = $pack;
+                }
+            }
+            $this->cache->forget($key);
+        }
 
-        return $pending;
+        ksort($packs);
+
+        return array_values(array_map(fn (LanguagePack $pack) => [
+            'id' => $pack->id,
+            'identifier' => $pack->identifier,
+            'locale' => $pack->locale,
+            'locale_native_name' => $pack->locale_native_name,
+        ], $packs));
     }
 
     /**
@@ -320,7 +327,7 @@ class LanguagePackBundledRegistrar
         }
 
         return array_values(array_unique(array_filter($locales, function ($locale) {
-            return preg_match('/^[a-z]{2,3}(-[A-Z]{2})?$/', $locale) === 1;
+            return LocaleTag::isValid($locale);
         })));
     }
 

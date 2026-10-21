@@ -1,0 +1,17 @@
+feature: sirsoft-basic 배송지 선택 창 — 저장 배송지를 키보드로 고르기
+
+description: |
+  마이페이지 주문 상세 「배송지 변경」 창(저장 배송지 탭)과 주문서 「배송지 관리」 창의 배송지 카드가 클릭만 받는 Div 라
+  Tab 이 닿지 않았다. 두 창 모두 배송지를 고르지 않으면 확인 단추(「변경」·「선택」)가 잠기므로 키보드 사용자는 저장 배송지로
+  진행할 수 없었다(7.1.1 출시 전). 카드(배송지 관리 창은 수정·삭제 단추와 겹치지 않게 정보 영역)를 aria-pressed 단추로
+  그려 Tab 으로 닿고 Enter·Space 로 고른다 — 주문서 결제수단 카드·후기 별점과 같은 관례. 축 surface 는 확인 대상 창이다.
+  잠금 시험의 첫 단언은 basic 레이아웃 전체의 창 안 반복 행에서 모집단을 파생한다.
+
+axes:
+  surface: [user_modal]
+
+effects:
+  - saved_address_selectable_by_keyboard
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/address-select-keyboard.test.tsx

@@ -577,7 +577,7 @@
       ]
     },
     {
-      "comment": " states 전수 — 주문/결제 배송지 관리 모달(_modal_address_manage, id=addressManageModal). 주소 검색 확장점(checkout_modal_address_search_slot)은 _local.addressModalMode === 'form' 게이트 뒤라 모달 편집 모드에서 이 상태로 연다. route scope 가 아니라 modal scope 인 이유: 확장 편집 모드의 shop/checkout 은 본문 확장점이 기본 노출되어 모달이 렌더되지 않고, 모달 내부 게이트는 모달 편집 모드(scope.kind=modal)에서 열어야 한다. /shop/checkout route 그룹(normal 등)은 ecommerce 모듈 스펙 소유 — 중복 정의 금지.",
+      "comment": " states 전수 — 주문/결제 배송지 관리 모달(_modal_address_manage, id=addressManageModal). 창 상태는 창 고유 전역 이름 공간 _global.checkoutAddressModal = {mode, editing, errors, isSaving, selectedAddressId, selectedAddressObj} 이고 여는 쪽(주문서 「배송지 관리」 단추)이 null → 객체로 다시 담는다(7.1.1) — 편집기는 그 클릭을 하지 않으므로 항목마다 이 이름 공간을 통째로 담는다(창 제목이 mode·editing.id 로 갈린다). 주소 검색 확장점(checkout_modal_address_search_slot)은 _global.checkoutAddressModal?.mode === 'form' 게이트 뒤라 모달 편집 모드에서 address_manual_form 상태로 연다. route scope 가 아니라 modal scope 인 이유: 확장 편집 모드의 shop/checkout 은 본문 확장점이 기본 노출되어 모달이 렌더되지 않고, 모달 내부 게이트는 모달 편집 모드(scope.kind=modal)에서 열어야 한다. /shop/checkout route 그룹(normal 등)은 ecommerce 모듈 스펙 소유 — 중복 정의 금지.",
       "scope": {
         "kind": "modal",
         "match": "addressManageModal"
@@ -586,14 +586,36 @@
         {
           "id": "address_list",
           "label": "$t:editor.state.address_modal_list",
-          "default": true
+          "default": true,
+          "initialState": {
+            "global": {
+              "checkoutAddressModal": {
+                "mode": "list",
+                "editing": null,
+                "errors": null,
+                "isSaving": false,
+                "selectedAddressId": null,
+                "selectedAddressObj": null
+              }
+            }
+          }
         },
         {
           "id": "address_manual_form",
           "label": "$t:editor.state.address_modal_form",
           "initialState": {
-            "local": {
-              "addressModalMode": "form"
+            "global": {
+              "checkoutAddressModal": {
+                "mode": "form",
+                "editing": {
+                  "is_default": false,
+                  "country_code": "KR"
+                },
+                "errors": null,
+                "isSaving": false,
+                "selectedAddressId": null,
+                "selectedAddressObj": null
+              }
             }
           }
         }
@@ -623,7 +645,7 @@
       ]
     },
     {
-      "comment": " states 전수 — 공통 레이아웃. 모바일 메뉴 드로어(mobile_nav_drawer)는 _global.mobileMenuOpen 게이트(닫힘=translate-x-full 화면 밖)라 편집기 정적 시뮬레이션에서 편집 불가. 이 상태로 펼침을 시뮬레이션해 모바일 디바이스 탭과 조합 편집한다.",
+      "comment": " states 전수 — 공통 레이아웃. 모바일 메뉴 드로어(mobile_nav_drawer)는 _global.mobileMenuOpen 게이트(닫힘=translate-x-full 화면 밖)라 편집기 정적 시뮬레이션에서 편집 불가. 이 상태로 펼침을 시뮬레이션해 모바일 디바이스 탭과 조합 편집한다. screen_filled 의 secretViewToken 은 비밀번호로 연 비밀글의 열람 토큰(탭 세션 sessionStorage 에서 init 의 initSecretViewToken 이 복원, globalHeaders 가 게시판 요청의 X-Board-Secret-View-Token 으로 실음)이다 — 편집기에서는 값이 있어도 화면 모양이 바뀌지 않는 샘플이다.",
       "scope": {
         "kind": "base",
         "match": "_user_base"
@@ -1026,7 +1048,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(defaultCurrency, preferredCurrency) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(defaultCurrency, preferredCurrency, couponDownloadModal — 창 고유 이름 공간에 여는 쪽이 목록을 담는다) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "coupon_download_modal"
@@ -1039,69 +1061,52 @@
           "initialState": {
             "global": {
               "defaultCurrency": "KRW",
-              "preferredCurrency": "KRW"
-            },
-            "local": {
-              "downloadableCouponsLoading": false,
-              "downloadableCoupons": {
-                "data": [
-                  {
-                    "id": 1,
-                    "name": "신규 가입 10% 할인",
-                    "localized_name": "신규 가입 10% 할인",
-                    "discount_type": "rate",
-                    "discount_value": 10,
-                    "min_order_amount": 30000,
-                    "multi_currency_min_order_amount": {
-                      "KRW": {
-                        "formatted": "30,000원"
-                      }
+              "preferredCurrency": "KRW",
+              "couponDownloadModal": {
+                "coupons": {
+                  "data": [
+                    {
+                      "id": 1,
+                      "coupon_id": 1,
+                      "name": "신규 가입 10% 할인",
+                      "localized_name": "신규 가입 10% 할인",
+                      "discount_type": "rate",
+                      "discount_value": 10,
+                      "min_order_amount": 30000,
+                      "multi_currency_min_order_amount": {
+                        "KRW": {
+                          "formatted": "30,000원"
+                        }
+                      },
+                      "valid_to": "2026-12-31 23:59:59",
+                      "is_downloaded": false
                     },
-                    "valid_to": "2026-12-31 23:59:59",
-                    "is_downloaded": false
-                  },
-                  {
-                    "id": 2,
-                    "name": "주말 5,000원 할인",
-                    "localized_name": "주말 5,000원 할인",
-                    "discount_type": "fixed",
-                    "discount_value": 5000,
-                    "multi_currency_discount_value": {
-                      "KRW": {
-                        "formatted": "5,000원"
-                      }
-                    },
-                    "min_order_amount": 50000,
-                    "multi_currency_min_order_amount": {
-                      "KRW": {
-                        "formatted": "50,000원"
-                      }
-                    },
-                    "valid_to": "2026-10-31 23:59:59",
-                    "is_downloaded": true
-                  }
-                ]
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "comment": "모달 본문이 읽는 전역 상태(pendingExclusiveCoupon) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
-      "scope": {
-        "kind": "modal",
-        "match": "exclusiveCouponConfirm"
-      },
-      "items": [
-        {
-          "id": "modal_filled",
-          "label": "$t:editor.state.modal_filled",
-          "default": true,
-          "initialState": {
-            "global": {
-              "pendingExclusiveCoupon": {
-                "id": 1
+                    {
+                      "id": 2,
+                      "coupon_id": 2,
+                      "name": "주말 5,000원 할인",
+                      "localized_name": "주말 5,000원 할인",
+                      "discount_type": "fixed",
+                      "discount_value": 5000,
+                      "multi_currency_discount_value": {
+                        "KRW": {
+                          "formatted": "5,000원"
+                        }
+                      },
+                      "min_order_amount": 50000,
+                      "multi_currency_min_order_amount": {
+                        "KRW": {
+                          "formatted": "50,000원"
+                        }
+                      },
+                      "valid_to": "2026-10-31 23:59:59",
+                      "is_downloaded": true
+                    }
+                  ]
+                },
+                "loading": false,
+                "loadingMore": false,
+                "downloadingCouponId": null
               }
             }
           }
@@ -1503,7 +1508,7 @@
       ]
     },
     {
-      "comment": "첨부 사진 보기 창이 읽는 상태(claimImageViewerUrl·claimImageViewerName) — 신청서 상세의 첨부 썸네일을 누르면 담기는 값이다. 표본이 없으면 그림 없이 빈 창으로 열린다.",
+      "comment": "첨부 사진 보기 창이 읽는 상태(창 고유 전역 이름 공간 claimImageViewer 의 url·name) — 신청서 상세의 첨부 썸네일을 누르면 담기는 값이다. 표본이 없으면 그림 없이 빈 창으로 열린다.",
       "scope": {
         "kind": "modal",
         "match": "modal_claim_image_viewer"
@@ -1514,9 +1519,11 @@
           "label": "$t:editor.state.modal_filled",
           "default": true,
           "initialState": {
-            "local": {
-              "claimImageViewerUrl": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
-              "claimImageViewerName": "evidence-photo.jpg"
+            "global": {
+              "claimImageViewer": {
+                "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+                "name": "evidence-photo.jpg"
+              }
             }
           }
         }

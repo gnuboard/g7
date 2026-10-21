@@ -156,7 +156,7 @@ describe('이슈 #524 — 게시글 상세 스크랩 버튼 (show.json)', () => 
     // @scenario action=toggle_add,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
     // @effects detail_button_reflects_is_scraped
     it('담김 여부를 aria-pressed 로도 알린다 (반응 버튼과 같은 방식, 화면 글자 「스크랩됨」에만 기대지 않는다)', () => {
-        // 7.1.0 실측 O-K2-5: 버튼에 aria-pressed 가 없어 담김 상태가 글자로만 전달됐다.
+        // 7.1.0 실측: 버튼에 aria-pressed 가 없어 담김 상태가 글자로만 전달됐다.
         const btn = scrapButtons[0];
         const props = btn.props as Record<string, unknown>;
         const raw = String(props['aria-pressed'] ?? '');
@@ -284,7 +284,7 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
         const searchArea = findByComment(scrapList, '검색 영역')[0];
         const btn = collectNodes(
             searchArea,
-            (n) => (n as any).name === 'Button' && serialized((n as any).children).includes(labelKey),
+            (n) => ['A', 'Button'].includes((n as any).name) && serialized((n as any).children).includes(labelKey),
         )[0];
         expect(btn).toBeDefined();
         return btn;
@@ -435,19 +435,18 @@ describe('이슈 #524 — 스크랩 목록 표/카드 (_list.json)', () => {
             const boardTd = tds[1];
             const titleTd = tds[2];
 
-            const boardSpan = collectNodes(boardTd, (n) => (n as any).name === 'Span' && actionsOf(n as any).length > 0)[0];
-            expect(boardSpan).toBeDefined();
-            const boardAction = actionsOf(boardSpan as any)[0] as any;
-            expect(boardAction.handler).toBe('navigate');
-            expect(boardAction.params.path).toContain('item.board_slug');
-            expect(boardAction.params.path).not.toContain('item.post_id');
+            // 각각 주소를 가진 링크다(새 탭으로 열 수 있다) — 이동할 곳은 href 에 있고 click 의 navigate 는 그 href 로 간다
+            const boardLink = collectNodes(boardTd, (n) => (n as any).name === 'A' && actionsOf(n as any).length > 0)[0] as any;
+            expect(boardLink).toBeDefined();
+            expect((actionsOf(boardLink)[0] as any).handler).toBe('navigate');
+            expect(boardLink.props.href).toContain('item.board_slug');
+            expect(boardLink.props.href).not.toContain('item.post_id');
 
-            const titleSpan = collectNodes(titleTd, (n) => (n as any).name === 'Span' && actionsOf(n as any).length > 0)[0];
-            expect(titleSpan).toBeDefined();
-            const titleAction = actionsOf(titleSpan as any)[0] as any;
-            expect(titleAction.handler).toBe('navigate');
-            expect(titleAction.params.path).toContain('item.board_slug');
-            expect(titleAction.params.path).toContain('item.post_id');
+            const titleLink = collectNodes(titleTd, (n) => (n as any).name === 'A' && actionsOf(n as any).length > 0)[0] as any;
+            expect(titleLink).toBeDefined();
+            expect((actionsOf(titleLink)[0] as any).handler).toBe('navigate');
+            expect(titleLink.props.href).toContain('item.board_slug');
+            expect(titleLink.props.href).toContain('item.post_id');
         });
 
         // @scenario action=mypage_list,actor=owner,board_setting=use_scrap_on,post_state=alive,post_scope=same_board
@@ -765,7 +764,7 @@ describe('회귀(#524): 이전글/다음글 이동 시 스크랩 로컬 상태�
     function findNavButton(labelKey: string): Node {
         const btn = collectNodes(
             boardNavigation,
-            (n) => (n as any).name === 'Button' && serialized((n as any).children).includes(labelKey),
+            (n) => ['A', 'Button'].includes((n as any).name) && serialized((n as any).children).includes(labelKey),
         )[0];
         expect(btn).toBeDefined();
         return btn;

@@ -22,6 +22,7 @@ use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Services\IdentityPolicyService;
 use App\Services\IdentityVerificationService;
+use App\Support\LocalizedValue;
 use App\Support\SiteUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -397,7 +398,7 @@ class IdentityVerificationController extends PublicBaseController
      *
      * 입력 형태 3가지 지원:
      * - i18n 키 문자열 (예: `identity.purposes.signup.label`) → `__()` 로 풀이
-     * - 다국어 배열 (`['ko' => ..., 'en' => ...]`) → 현재 로케일 우선, en 폴백
+     * - 다국어 배열 (`['ko' => ..., 'en' => ...]`) → 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값
      * - 일반 문자열 → 그대로 반환
      *
      * @param  mixed  $value  i18n 키 문자열 · 다국어 배열 · 일반 문자열
@@ -406,9 +407,8 @@ class IdentityVerificationController extends PublicBaseController
     private function resolvePurposeText($value): string
     {
         if (is_array($value)) {
-            $locale = app()->getLocale();
-
-            return (string) ($value[$locale] ?? $value['en'] ?? reset($value) ?: '');
+            // 현재 로케일 → 사이트 기본 언어 → 영어 → 첫 값 (#148)
+            return LocalizedValue::pick($value) ?? '';
         }
 
         if (! is_string($value) || $value === '') {

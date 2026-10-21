@@ -8,13 +8,6 @@
     "id": "section_basic_card",
     "type": "basic",
     "name": "Div",
-    "classMap": {
-        "key": "{{_computed.isReadOnly ? 'readonly' : 'normal'}}",
-        "variants": {
-            "readonly": "opacity-60",
-            "normal": ""
-        }
-    },
     "props": {
         "className": "admin-card"
     },
@@ -119,6 +112,7 @@
                             "props": {
                                 "name": "slug",
                                 "type": "text",
+                                "aria-label": "$t:sirsoft-board.admin.form.fields.slug",
                                 "placeholder": "$t:sirsoft-board.admin.form.placeholders.slug",
                                 "required": true,
                                 "disabled": "{{!!route?.slug || _computed.isReadOnly}}",
@@ -460,7 +454,7 @@
                             "name": "Select",
                             "props": {
                                 "name": "type",
-                                "options": "{{boards?.data?.board_types?.map(t => ({value: t.slug, label: (t.name[$locale ?? 'ko'] ?? t.name.ko ?? t.slug) + ' (' + t.slug + ')'})) ?? []}}",
+                                "options": "{{boards?.data?.board_types?.map(t => ({value: t.slug, label: ($localized(t.name) || t.slug) + ' (' + t.slug + ')'})) ?? []}}",
                                 "placeholder": "$t:sirsoft-board.admin.form.placeholders.select_type",
                                 "disabled": "{{_computed.isReadOnly}}",
                                 "className": "w-full"
@@ -533,7 +527,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-amber-600 dark:text-amber-400 mt-2"
+                                "className": "text-xs text-amber-700 dark:text-amber-400 mt-2"
                             },
                             "text": "$t:sirsoft-board.admin.form.descriptions.categories_notice"
                         }
@@ -796,14 +790,13 @@
                                             "comment": "유형 자체(이름·아이콘·순서)는 게시판마다 다르지 않고 사이트 공통이라 환경설정에서\n              고친다. 여기서는 그중 어느 것을 쓸지만 고르므로, 만들거나 고치러 갈 길을 열어 둔다\n              (형제 화면 「게시판 유형」의 관리 버튼과 같은 모양). 옮겨 간 환경설정에서 유형을 고치려면 게시판\n              환경설정 수정 권한이 필요하다(form-data _meta.can_manage_reaction_types) — 없으면 잠그고 이유를 툴팁으로 알린다.",
                                             "id": "board_form_btn_manage_reaction_types",
                                             "type": "basic",
-                                            "name": "Button",
+                                            "name": "A",
                                             "actions": [
                                                 {
                                                     "comment": "audit:allow layout-list-context-navigate-merge-query 목록 왕복이 아니라 **다른 화면**(환경설정)으로 건너가는 이동이다. 게시판 목록의 쪽·검색 조건을 그쪽 주소에 실어 보낼 이유가 없고, 실으면 환경설정이 알지 못하는 조건이 주소에 남는다. 되돌아오는 것은 브라우저 뒤로가기가 맡는다.",
                                                     "type": "click",
                                                     "handler": "navigate",
                                                     "params": {
-                                                        "path": "/admin/boards/settings",
                                                         "query": {
                                                             "tab": "basic_defaults"
                                                         }
@@ -811,9 +804,9 @@
                                                 }
                                             ],
                                             "props": {
+                                                "href": "/admin/boards/settings?tab=basic_defaults",
                                                 "data-testid": "board-form-manage-reaction-types",
-                                                "type": "button",
-                                                "className": "inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "button inline-flex items-center gap-1 text-xs rounded-full px-2.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 shrink-0 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed",
                                                 "title": "{{_local.form?._meta?.can_manage_reaction_types === true ? '' : '$t:sirsoft-board.admin.form.fields.manage_reaction_types_no_permission'}}",
                                                 "disabled": "{{_local.form?._meta?.can_manage_reaction_types !== true}}"
                                             },

@@ -102,6 +102,36 @@ function collectNavActions(node: unknown): NavAction[] {
 }
 
 /**
+ * 링크(`A`)에 단 path 없는 navigate 를 그 링크의 href 를 path 로 채워 수집합니다.
+ *
+ * 링크로 바뀐 칸(#757)은 path 없는 navigate 가 클릭한 A 의 href 로 간다(엔진 D12) — 시험의 액션 실행은
+ * 클릭 이벤트가 없어 href 를 읽지 못하므로 엔진이 채우는 path 를 여기서 채운다.
+ *
+ * @param node 순회 시작 노드
+ * @returns path 를 채운 액션 목록
+ */
+function collectLinkNavActions(node: unknown): NavAction[] {
+    const out: NavAction[] = [];
+    const walk = (n: unknown): void => {
+        if (Array.isArray(n)) {
+            n.forEach(walk);
+            return;
+        }
+        if (!n || typeof n !== 'object') return;
+        const obj = n as Record<string, any>;
+        const href = obj.name === 'A' ? obj.props?.href : undefined;
+        if (typeof href === 'string' && Array.isArray(obj.actions)) {
+            for (const a of collectNavActions(obj.actions)) {
+                if (a.handler === 'navigate' && a.params.path === undefined) out.push({ ...a, params: { ...a.params, path: href } });
+            }
+        }
+        Object.values(obj).forEach(walk);
+    };
+    walk(node);
+    return out;
+}
+
+/**
  * 목적지 경로를 비교용 표준형(`{{expr}}` → `*`)으로 바꿉니다.
  *
  * @param raw 원본 경로
@@ -301,7 +331,8 @@ describe('#75 회원/역할 목록 컨텍스트 왕복 — 실행 결과 URL', (
     it("역할 폼의 '목록' 복귀가 목록 상태를 복원한다", async () => {
         window.history.replaceState({}, '', '/admin/roles/4/edit?page=2&search=관리');
 
-        const action = collectNavActions(readLayout('admin_role_form.json')).find(
+        // 「목록」은 href="/admin/roles" 링크 + path 없는 navigate 다(#757). 저장 뒤 이동은 수정 화면에 남는다(#789).
+        const action = collectLinkNavActions(readLayout('admin_role_form.json')).find(
             (a) => a.params.path === '/admin/roles'
         );
         expect(action, "역할 폼의 '/admin/roles' 복귀 navigate 를 찾지 못했습니다.").toBeTruthy();

@@ -316,6 +316,7 @@ class LayoutRepository implements LayoutRepositoryInterface
 
         $content = is_array($layout->content)
             ? $layout->content
+            // layout-assoc-decode-ok: 노드 id 존재 판정 전용 — 저장·응답하지 않는다
             : json_decode((string) $layout->content, true);
 
         return is_array($content) && $this->containsNodeId($content, $nodeId);

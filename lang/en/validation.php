@@ -597,6 +597,13 @@ return [
         'current_locale_required_unnamed' => 'The :language (:locale) value is required.',
     ],
 
+    // Member search (member picker) field display names
+    'user_search' => [
+        'attributes' => [
+            'uuid' => 'member',
+        ],
+    ],
+
     // Menu validation messages
     'menu' => [
         // Display names of multilingual fields — used as the field name in the required-locale message
@@ -1134,6 +1141,16 @@ return [
         // Driver settings - Queue
         'queue_driver_required' => 'Please select a queue driver.',
         'queue_driver_invalid' => 'Please select a valid queue driver.',
+        'queue_connection_invalid' => 'This queue connection cannot be registered.',
+        'queue_connection_duplicate' => 'The same queue connection appears twice.',
+        'queue_connection_default_required' => 'The connection of the current queue driver (:driver) cannot be unregistered.',
+        'queue_names_connection_unknown' => 'Queue list for an unknown queue connection (:connection).',
+        'queue_names_required' => 'Register at least one queue for the :connection connection.',
+        'queue_names_max' => 'You can register up to 20 queues per connection.',
+        'queue_name_required' => 'Enter a queue name.',
+        'queue_name_invalid' => 'Queue names may contain only letters, numbers, underscores, hyphens and dots, and must start with a letter or number.',
+        'queue_name_max' => 'Queue names may not be longer than 64 characters.',
+        'queue_name_duplicate' => 'The queue name (:name) appears twice on the :connection connection.',
 
         // Driver settings - WebSocket
         'websocket_enabled_boolean' => 'WebSocket enabled must be true or false.',
@@ -1307,6 +1324,16 @@ return [
     'summary_more_errors' => '(and :count more errors)',
 
     'attributes' => [
+        'layout_source' => 'layout install source',
+        'layout_meta_icon' => 'menu icon',
+        'layout_meta_editor_label' => 'editor label',
+        'layout_meta_authoring_note' => 'authoring note',
+        'layout_meta_leave_guard' => 'leave confirmation condition',
+        'layout_meta_leave_message' => 'leave confirmation message',
+        'layout_seo_title' => 'SEO title',
+        'layout_seo_description' => 'SEO description',
+        'layout_seo_twitter' => 'Twitter card',
+        'exclude_withdrawn' => 'exclude withdrawn members',
         'since' => 'reference time',
         'skip_waiting' => 'skip waiting period',
         'targets' => 'targets',
@@ -1398,6 +1425,9 @@ return [
         'session_driver' => 'session driver',
         'session_lifetime' => 'session lifetime',
         'queue_driver' => 'queue driver',
+        'queue_connections' => 'queue connections',
+        'queue_names' => 'queues per connection',
+        'queue_name' => 'queue name',
         'websocket_enabled' => 'WebSocket enabled',
         'websocket_app_key' => 'WebSocket app key',
         'websocket_host' => 'WebSocket host',

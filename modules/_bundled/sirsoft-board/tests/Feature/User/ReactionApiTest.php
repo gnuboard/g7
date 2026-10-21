@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Board\Tests\Feature\User;
 
+use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Board\Database\Seeders\BoardReactionTypeSeeder;
 use Modules\Sirsoft\Board\Models\ReactionType;
@@ -45,7 +47,7 @@ class ReactionApiTest extends BoardTestCase
             'active_reaction_types' => ['like', 'dislike'],
         ]);
 
-        // 반응 엔드포인트는 그 게시판 글 읽기 권한을 요구한다(7.1.0 abilities 게이트 S7) — 회원 역할에 부여해 둔다
+        // 반응 엔드포인트는 그 게시판 글 읽기 권한을 요구한다(7.1.0 abilities 게이트) — 회원 역할에 부여해 둔다
         $this->grantUserRolePermissions(['posts.read']);
     }
 
@@ -392,5 +394,96 @@ class ReactionApiTest extends BoardTestCase
             ->postJson($this->reactUrl($postId), ['reaction_type_id' => $this->dislikeId])
             ->assertOk();
         $this->assertDatabaseHas('activity_logs', ['action' => 'reaction.remove']);
+    }
+
+    /**
+     * 비밀번호를 확인해 본문이 열린 사람은 비밀글에 반응할 수 있다 (D6 — 열람할 수 있으면 반응할 수 있다).
+     *
+     * 수정 전에는 반응만 비밀글 조회 권한·게시판 관리자로 따로 판정해, 비밀번호로 본문을 연 회원이
+     * 추천을 누르면 422 였다. 댓글·신고와 같은 SecretContentGate 판정으로 통일한다.
+     *
+     * @scenario case=secret_post_react_by_viewer
+     *
+     * @effects secret_post_viewer_can_react
+     *
+     * @return void 반환값 없음
+     */
+    public function test_react_allowed_on_secret_post_for_password_holder(): void
+    {
+        $reactor = $this->createUser();
+        $postId = $this->createTestPost([
+            'user_id' => null,
+            'password' => bcrypt('guest-pass'),
+            'is_secret' => true,
+        ]);
+
+        $token = $this->actingAs($reactor, 'sanctum')
+            ->postJson("/api/modules/sirsoft-board/boards/{$this->board->slug}/posts/{$postId}/verify-password", ['password' => 'guest-pass'])
+            ->assertOk()
+            ->json('secret_view_token');
+
+        $this->actingAs($reactor, 'sanctum')
+            ->withHeaders(['X-Board-Secret-View-Token' => $token])
+            ->postJson($this->reactUrl($postId), ['reaction_type_id' => $this->likeId])
+            ->assertOk();
+    }
+
+    /**
+     * 답변 작성자는 경로 규칙으로 열리는 원글에 반응할 수 있고, 열리지 않는 형제 답변에는 반응할 수 없다 (D1·D6).
+     *
+     * @scenario case=secret_post_react_by_viewer
+     *
+     * @effects secret_thread_reply_author_reacts_to_root_not_sibling
+     *
+     * @return void 반환값 없음
+     */
+    public function test_reply_author_reacts_to_root_but_not_sibling(): void
+    {
+        $rootAuthor = $this->createUser();
+        $replyAuthor = $this->createUser();
+        $siblingAuthor = $this->createUser();
+        $rootId = $this->createTestPost(['user_id' => $rootAuthor->id, 'is_secret' => true]);
+        $this->createTestPost(['user_id' => $replyAuthor->id, 'is_secret' => true, 'parent_id' => $rootId, 'depth' => 1]);
+        $siblingId = $this->createTestPost(['user_id' => $siblingAuthor->id, 'is_secret' => true, 'parent_id' => $rootId, 'depth' => 1]);
+
+        $this->actingAs($replyAuthor, 'sanctum')
+            ->postJson($this->reactUrl($rootId), ['reaction_type_id' => $this->likeId])
+            ->assertOk();
+
+        $this->actingAs($replyAuthor, 'sanctum')
+            ->postJson($this->reactUrl($siblingId), ['reaction_type_id' => $this->likeId])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.code', 'reaction_not_allowed');
+    }
+
+    /**
+     * 비밀글 조회 권한을 「본인만」으로 받은 회원은 남의 비밀글에 반응할 수 없다 (D9·B1·B6).
+     *
+     * @scenario case=secret_post_react_blocked
+     *
+     * @effects self_scoped_read_secret_cannot_react_to_others_secret
+     *
+     * @return void 반환값 없음
+     */
+    public function test_self_scoped_read_secret_cannot_react_to_others_secret_post(): void
+    {
+        $slug = $this->board->slug;
+        $permission = Permission::firstOrCreate(
+            ['identifier' => "sirsoft-board.{$slug}.posts.read-secret"],
+            ['name' => ['ko' => 'read-secret', 'en' => 'read-secret'], 'type' => 'user']
+        );
+        $permission->forceFill(['resource_route_key' => 'post', 'owner_key' => 'user_id'])->save();
+        $role = Role::create(['identifier' => 'reaction-self-secret', 'name' => ['ko' => 's', 'en' => 's']]);
+        $role->permissions()->attach($permission->id, ['scope_type' => 'self', 'granted_at' => now()]);
+
+        $author = $this->createUser();
+        $reactor = $this->createUser();
+        $reactor->roles()->attach($role->id);
+        $postId = $this->createTestPost(['user_id' => $author->id, 'is_secret' => true]);
+
+        $this->actingAs($reactor, 'sanctum')
+            ->postJson($this->reactUrl($postId), ['reaction_type_id' => $this->likeId])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.code', 'reaction_not_allowed');
     }
 }

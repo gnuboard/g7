@@ -15,7 +15,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr data-ref="no_accounts_message" data-if="{{!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0}}">
+        <tr data-ref="no_accounts_message" data-if="{{settings !== undefined &amp;&amp; (!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0)}}">
           <td :colSpan="6" class="text-center py-8 text-tertiary">$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.empty</td>
         </tr>
         <tr data-each="account, accountIndex in (Array.isArray(_local.form?.order_settings?.bank_accounts) ? _local.form.order_settings.bank_accounts : []).map((a, i) => ({...a, _idx: i}))">
@@ -25,23 +25,23 @@
                 <!-- 대표 계좌 지정. 배열 전체를 다시 만들면서 고른 것만 참으로 둔다 — 대표는 하나뿐이라 끄는 동작이 없다. -->
                 <set-state target="local" form.order_settings.bank_accounts="{{(_local.form?.order_settings?.bank_accounts ?? []).map((a, i) => ({...a, is_default: i === account._idx}))}}" :hasChanges="true"/>
               </on>
-              <icon name="{{account.is_default ? 'circle-dot' : 'circle'}}" class="{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}}"/>
+              <icon name="{{account.is_default ? 'circle-dot' : 'circle'}}" class="{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"/>
             </button>
           </td>
           <td>
-            <select name="{{'order_settings.bank_accounts.' + account._idx + '.bank_code'}}" value="{{account.bank_code}}" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'w-full input-error' : 'w-full'}}" options="{{(_local.form?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: typeof b.name === 'object' ? $localized(b.name) : b.name }))}}" disabled="{{_computed.isReadOnly}}"/>
+            <select name="{{'order_settings.bank_accounts.' + account._idx + '.bank_code'}}" aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.bank')}}" value="{{account.bank_code}}" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'w-full input-error' : 'w-full'}}" options="{{(_local.form?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: typeof b.name === 'object' ? $localized(b.name) : b.name }))}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']?.[0] ?? ''}}</span>
           </td>
           <td>
-            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_number'}}" value="{{account.account_number ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_number'}}" aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number')}}" value="{{account.account_number ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']?.[0] ?? ''}}</span>
           </td>
           <td>
-            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_holder'}}" value="{{account.account_holder ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <input type="text" name="{{'order_settings.bank_accounts.' + account._idx + '.account_holder'}}" aria-label="$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder')}}" value="{{account.account_holder ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder_placeholder" class="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error' : 'input'}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']}}" class="form-error">{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']?.[0] ?? ''}}</span>
           </td>
           <td class="text-center">
-            <toggle data-type="composite" name="{{'order_settings.bank_accounts.' + account._idx + '.is_active'}}" value="{{account.is_active}}" disabled="{{_computed.isReadOnly}}"/>
+            <toggle data-type="composite" name="{{'order_settings.bank_accounts.' + account._idx + '.is_active'}}" ariaLabel="$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_active')}}" value="{{account.is_active}}" disabled="{{_computed.isReadOnly}}"/>
           </td>
           <td class="text-center">
             <button data-if="{{(_local.form?.order_settings?.bank_accounts ?? []).length > 1}}" type="button" class="btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}" aria-label="$t:common.delete">

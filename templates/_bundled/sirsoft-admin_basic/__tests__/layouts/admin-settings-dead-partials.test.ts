@@ -1,5 +1,5 @@
 /**
- * 환경설정 화면 partial — 죽은 조각 0 계약 테스트 (7.1.0 전수 실측 validate R3)
+ * 환경설정 화면 partial — 죽은 조각 0 계약 테스트 (7.1.0 전수 실측)
  *
  * @description
  * 환경설정 화면(`admin_settings`)의 partial 은 모두 어느 레이아웃이 `partial` 로 끌어와야 한다.

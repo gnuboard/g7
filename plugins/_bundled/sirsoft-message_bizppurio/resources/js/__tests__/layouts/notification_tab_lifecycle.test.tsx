@@ -263,7 +263,7 @@ describe('lifecycle UI — 행 하단은 상태 요약만 (버튼 0)', () => {
 
     /** @effects row_footer_shows_status_summary_only */
     it('SMS 상태 3종은 문구가 아니라 배지다 — 사용=초록/미사용=회색(승인 배지와 같은 모양), 본문 미설정=외곽선 칩 (제품 결정 2026-08-23)', () => {
-        const APPROVED_SET = 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200';
+        const APPROVED_SET = 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'; // green-700 은 green-100 위 4.4996 — 대비 4.5 미달이라 800
         const GRAY_SET = 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300';
         for (const [id, field] of [['bizppurio_row_sms_fallback_badge', 'fallback_sms_enabled'], ['bizppurio_row_sms_only_badge', 'sms_only']] as const) {
             const badge = findById(row, id) as AnyNode;
@@ -362,10 +362,12 @@ describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠�
         expect(evalBinding(String(detail.if), mapScope(ROWS.draft))).toBe(true);
         expect(evalBinding(String(detail.if), mapScope(ROWS['행만 있고 내용 없음']))).toBe(true);
         expect(evalBinding(String(detail.if), mapScope(ROWS['행 없음']))).toBe(false);
+        // 응답은 창이 그대로일 때만 이름 공간 전체를 값 식으로 쓴다(7.1.1 — 닫힌 뒤·다른 알림을 연 뒤 도착한 응답 차단, editModalLateDetailResponse.test.ts)
         const onSuccess = JSON.stringify(detail.onSuccess);
-        expect(onSuccess).toContain('bz_tpl_modal.content');
-        expect(onSuccess).toContain('bz_tpl_modal.status');
-        expect(onSuccess).toContain('bz_tpl_modal.has_content');
+        expect(onSuccess).toContain('content: Object.assign');
+        expect(onSuccess).toContain('status: response.data?.template?.status');
+        expect(onSuccess).toContain('has_content: !!(response.data?.template?.content)');
+        expect(onSuccess).toContain('_global.bz_tpl_modal.notification_type !== extensionPointProps.definition?.type');
     });
 
     /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
@@ -405,8 +407,8 @@ describe('lifecycle UI — [편집] 모달 섹션: 시딩(onMount) + 편집/잠�
         const seed = (steps[0].params as { bz_tpl_modal: Record<string, unknown> }).bz_tpl_modal;
         expect(seed.loading).toBe(`{{!!(${MAP_PATH}?.id)}}`);
         expect(seed.notification_type).toBe('{{extensionPointProps.definition?.type}}');
-        expect(JSON.stringify(steps[1].onSuccess)).toContain('"bz_tpl_modal.loading":false');
-        expect(JSON.stringify(steps[1].onError)).toContain('"bz_tpl_modal.loading":false');
+        expect(JSON.stringify(steps[1].onSuccess)).toContain('loading: false');
+        expect(JSON.stringify(steps[1].onError)).toContain('loading: false');
 
         const NOT_READY = [
             ['시딩 전(상태 없음)', { _global: {}, extensionPointProps: { definition: { type: 'welcome' } } }],
@@ -683,7 +685,8 @@ describe('lifecycle UI — 검수자 전달 의견 입력란 (#597 §18.7, 제�
     /** @effects inspection_request_carries_reviewer_comment */
     it('모달 시딩이 request_comment 를 빈 문자열로 초기화한다(이전 알림의 의견 이월 금지)', () => {
         const seeds = collectActions(sectionsRoot)
-            .filter((a) => a.handler === 'setState' && (a.params as Record<string, unknown>)?.bz_tpl_modal);
+            // 시딩은 객체로 쓴다 — 값 식(문자열)으로 쓰는 상세 응답 갱신은 시딩이 아니다
+            .filter((a) => a.handler === 'setState' && typeof (a.params as Record<string, unknown>)?.bz_tpl_modal === 'object' && (a.params as Record<string, unknown>)?.bz_tpl_modal !== null);
         expect(seeds.length).toBeGreaterThan(0);
         for (const s of seeds) {
             expect(((s.params as Record<string, unknown>).bz_tpl_modal as Record<string, unknown>).request_comment).toBe('');
@@ -778,12 +781,44 @@ describe('lifecycle UI — 바인딩 브레이스 위생 (회귀: 프리필 끝 
         }
     });
 
-    /** @effects edit_modal_hosts_alimtalk_and_sms_sections */
-    it('표현식 $t 를 2-인자(파라미터 객체)로 호출하지 않는다 — 엔진은 단일 인자만 지원', () => {
-        for (const [name, json] of FILES) {
-            const offenders = collectStrings(json).filter((v) => /\$t\([^)]*,\s*\{/.test(v));
-            expect(offenders, `${name} 2-인자 $t 호출: ${offenders.join(' | ')}`).toEqual([]);
-        }
+    /**
+     * 표현식 안 `$t('키', {인자})` 는 engine-v1.80.1 부터 인자를 치환한다(그 전에는 인자를 버려 금지했다).
+     * 인자 객체의 `}` 가 바인딩 끝 `}}` 와 붙어 짝이 어긋나면 프리필 끝 잔재와 같은 깨진 식이 되므로,
+     * 2-인자 호출은 따옴표 밖 괄호·중괄호가 모두 짝을 이루는지 본다.
+     *
+     * @effects edit_modal_hosts_alimtalk_and_sms_sections
+     */
+    it('표현식 $t 의 2-인자(파라미터 객체) 호출은 괄호·중괄호 짝이 맞는다', () => {
+        /** 따옴표 안을 건너뛰고 ( ) · { } 의 짝이 맞는지 본다. */
+        const balanced = (v: string): boolean => {
+            const stack: string[] = [];
+            let quote: string | null = null;
+            for (let i = 0; i < v.length; i++) {
+                const c = v[i];
+                if (quote) {
+                    if (c === '\\') i++;
+                    else if (c === quote) quote = null;
+                    continue;
+                }
+                if (c === "'" || c === '"' || c === '`') quote = c;
+                else if (c === '(' || c === '{') stack.push(c);
+                else if (c === ')' || c === '}') {
+                    if (stack.pop() !== (c === ')' ? '(' : '{')) return false;
+                }
+            }
+            return stack.length === 0 && quote === null;
+        };
+        // 판정식 자체 — 짝 맞는 식은 통과, 인자 객체 뒤 `}` 가 남는 식은 걸린다
+        expect(balanced("{{$t('k', {n: 1})}}")).toBe(true);
+        expect(balanced("{{$t('k', {n: 1})}}}")).toBe(false);
+
+        const calls = FILES.flatMap(([name, json]) =>
+            collectStrings(json).filter((v) => /\$t\([^)]*,\s*\{/.test(v)).map((v) => [name, v] as const),
+        );
+        // 모집단: SMS 본문 이름(언어가 둘 이상이면 「SMS 본문 (한국어)」)이 실제로 2-인자 호출을 쓴다
+        expect(calls.some(([, v]) => v.includes("$t('common.field_in_language', {"))).toBe(true);
+        const broken = calls.filter(([, v]) => !balanced(v));
+        expect(broken.map(([name, v]) => `${name}: ${v}`), '짝이 어긋난 2-인자 $t 호출').toEqual([]);
     });
 });
 

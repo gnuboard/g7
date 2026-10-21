@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use App\Support\LocalizedValue;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -22,12 +23,15 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
 /**
  * 장바구니 서비스
  */
 class CartService
 {
+    use ReappliesPermissionScope;
+
     /**
      * CartService 생성자
      *
@@ -729,8 +733,8 @@ class CartService
         foreach ($topLevelOptions as $orderOption) {
             $rawName = $orderOption->product_name;
             if (is_array($rawName)) {
-                // 보는 언어 → 앱 폴백 언어 → 남은 아무 언어 순(ko·en 고정 순서가 아니다)
-                $productName = (string) ($rawName[$locale] ?? $rawName[config('app.fallback_locale')] ?? collect($rawName)->first(fn ($name) => is_string($name) && $name !== '') ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
+                // 보는 언어 → 사이트 기본 언어 → 영어 → 남은 아무 언어 순 (#148)
+                $productName = (string) (LocalizedValue::pick($rawName, $locale) ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
             } else {
                 $productName = (string) ($rawName ?? __('sirsoft-ecommerce::messages.cart.unknown_product'));
             }
@@ -1077,6 +1081,14 @@ class CartService
      */
     public function deleteByAdmin(int $id): bool
     {
+        $row = $this->cartRepository->find($id);
+        if ($row === null) {
+            return false;
+        }
+
+        // 라우트가 `{id}` 라 미들웨어 스코프 검사가 돌지 않는다 — `carts.manage` 범위를 재적용
+        $this->assertWithinScope($row, 'sirsoft-ecommerce.carts.manage');
+
         return $this->cartRepository->deleteById($id);
     }
 
@@ -1093,7 +1105,12 @@ class CartService
     {
         // 스냅샷은 삭제 «전» 에 뜬다 — 장바구니는 소프트 삭제가 아니라 지우고 나면 행이
         // 사라져 활동 로그에 남은 id 로는 「누구의 무엇」을 되짚을 수 없다.
-        $snapshots = $this->cartRepository->findByIds($ids)
+        $rows = $this->cartRepository->findByIds($ids);
+
+        // 정적 경로라 미들웨어 스코프 검사가 돌지 않는다 — 대상 전량이 `carts.manage` 범위 안이어야 한다(전량 거부)
+        $this->assertAllWithinScope($rows, 'sirsoft-ecommerce.carts.manage');
+
+        $snapshots = $rows
             ->map(fn ($row) => [
                 'id' => (int) $row->id,
                 'user_id' => $row->user_id !== null ? (int) $row->user_id : null,

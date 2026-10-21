@@ -1,0 +1,20 @@
+feature: 사용자 화면 모달 입력칸 빠른 연속 입력 브라우저 회귀 (7.1.1)
+
+description: |
+  배송지 [새 주소 추가] 창의 받는 분·배송지명·상세 주소, 게시글 신고 창의 상세 사유에 같은 문장을 키 간격 12ms 로
+  여러 회차(기본 20, G7_E2E_F48_ROUNDS) 다시 쳐서 한 글자도 잃지 않는지 본다. 저장·신고 접수는 하지 않는다.
+
+axes:
+  case:
+    - address_modal_fast_typing
+    - report_modal_fast_typing
+
+effects:
+  - modal_input_keeps_every_char_at_12ms
+  - modal_input_no_server_write
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/modal-input-fast-typing.spec.ts
+
+notes: |
+  경합 결함이라 회차 수가 판정력을 정한다(실측 12ms 4/50~14/100).

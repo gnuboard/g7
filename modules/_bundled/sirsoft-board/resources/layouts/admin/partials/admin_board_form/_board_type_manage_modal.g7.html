@@ -2,10 +2,6 @@
 <partial description="Board Type Management Modal - CRUD for board types">
   <modal data-type="composite" data-ref="board_type_manage_modal" title="$t:sirsoft-board.admin.board_types.modal_title" width="640px" :closeOnBackdropClick="false">
     <div data-ref="bt_modal_content">
-      <class-map key="{{$parent._computed.canManageBoardTypes !== true ? 'readonly' : 'normal'}}">
-        <variant when="readonly">opacity-60</variant>
-        <variant when="normal"></variant>
-      </class-map>
       <div data-ref="bt_usage_guide" class="alert-info text-xs text-blue-600 dark:text-blue-400">
         <icon data-ref="bt_usage_guide_icon" name="fa-solid fa-circle-info" class="mt-0.5 shrink-0"/>
         <span data-ref="bt_usage_guide_text" class="leading-relaxed">$t:sirsoft-board.admin.board_types.usage_guide</span>
@@ -23,13 +19,13 @@
             <tr data-ref="bt_empty_row" data-if="{{!_global.boardTypesList || _global.boardTypesList.length === 0}}">
               <td data-ref="bt_empty_cell" :colSpan="3" class="px-3 py-8 text-center text-label-subtle">$t:sirsoft-board.admin.board_types.empty</td>
             </tr>
-            <tr data-ref="bt_row_{{btIdx}}" data-if="{{_global.boardTypesList &amp;&amp; _global.boardTypesList.length > 0}}" data-each="btItem, btIdx in {{_global.boardTypesList ?? []}}" class="hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50 transition-colors duration-150">
+            <tr data-ref="bt_row_{{btIdx}}" data-if="{{_global.boardTypesList &amp;&amp; _global.boardTypesList.length > 0}}" data-each="btItem, btIdx in {{_global.boardTypesList ?? []}}" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
               <class-map key="{{_global.btEditingItem?.id === btItem.id ? 'true' : 'false'}}">
                 <variant when="true">bg-blue-50 dark:bg-blue-900/20</variant>
                 <variant when="false"></variant>
               </class-map>
               <td data-ref="bt_td_slug_{{btIdx}}" class="px-3 py-2 text-sm text-gray-900 dark:text-gray-100 font-mono">{{btItem.slug}}</td>
-              <td data-ref="bt_td_name_{{btIdx}}" class="px-3 py-2 text-sm text-gray-900 dark:text-gray-100">{{btItem.name[$locale ?? 'ko'] ?? btItem.name.ko ?? btItem.slug}}</td>
+              <td data-ref="bt_td_name_{{btIdx}}" class="px-3 py-2 text-sm text-gray-900 dark:text-gray-100">{{$localized(btItem.name) || btItem.slug}}</td>
               <td data-ref="bt_td_actions_{{btIdx}}" class="px-3 py-2 text-center">
                 <div data-ref="bt_action_btns_{{btIdx}}" class="flex-center justify-center gap-1">
                   <button data-ref="bt_edit_btn_{{btIdx}}" type="button" class="p-1 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400" title="$t:common.edit" disabled="{{$parent._computed.canManageBoardTypes !== true || _global.btSaving}}">
@@ -119,7 +115,7 @@
           </div>
         </div>
         <div data-ref="bt_form_submit" class="flex justify-end mt-3">
-          <button data-ref="bt_submit_btn" type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._computed.canManageBoardTypes !== true || _global.btSaving || !_global.btFormSlug || !_global.btFormName?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko']}}">
+          <button data-ref="bt_submit_btn" type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{$parent._computed.canManageBoardTypes !== true || _global.btSaving || !_global.btFormSlug || !_global.btFormName?.[_global.appConfig?.siteLocale ?? $locale ?? 'ko']}}">
             <on type="click">
               <!-- 저장 — 모드에 따라 새로 만들거나(POST) 고친다(PUT). 성공하면 폼을 빈 「추가」 상태로 되돌리고 목록을 다시 읽어, 창을 닫지 않고 연달아 여러 개를 만들 수 있게 한다 -->
               <sequence>

@@ -1,0 +1,20 @@
+feature: 확장 Composer 의존성 설치 커맨드
+
+description: |
+  module:composer-install · plugin:composer-install · extension:composer-install 의 기본 동작을 잠근다.
+  식별자와 --all 이 모두 없으면 사용법을 안내하고 실패 종료하며, 없는 확장을 지정하면 실패 종료한다.
+  extension:composer-install 은 모듈과 플러그인 단계를 모두 실행하고 --no-dev 옵션을 받아들인다.
+  실제 composer install 은 실행하지 않는다.
+
+axes:
+  command: [module, plugin, extension]   # 실행한 커맨드
+
+effects:
+  - composer_install_command_shows_usage_without_identifier   # 식별자·--all 없으면 사용법 안내 + 실패 종료
+  - composer_install_command_fails_for_unknown_extension      # 없는 확장 식별자는 실패 종료
+  - composer_install_command_skips_extension_without_dependencies   # 외부 의존성이 없으면 설치를 부르지 않고 안내 + 성공 종료
+  - extension_composer_install_runs_module_and_plugin_steps   # 통합 커맨드가 모듈·플러그인 단계를 모두 출력
+  - extension_composer_install_accepts_no_dev_option          # --no-dev 를 받아 성공 종료
+
+test_files:
+  - tests/Feature/Console/Commands/Extension/ComposerInstallCommandTest.php

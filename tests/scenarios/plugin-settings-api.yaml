@@ -31,7 +31,7 @@ exclusions:
   - { plugin_existence: nonexistent, payload_scope: out_of_range, reason: "플러그인 부재가 먼저 404 로 끊긴다" }
 
 effects:
-  # 7.1.0 abilities 게이트(G19) — 화면이 읽기 전용을 정할 저장 권한, 저장 본문의 권한 값은 버린다
+  # 7.1.0 abilities 게이트 — 화면이 읽기 전용을 정할 저장 권한, 저장 본문의 권한 값은 버린다
   - show_response_includes_abilities_can_update_true
   - show_response_includes_abilities_can_update_false
   - update_discards_abilities_key

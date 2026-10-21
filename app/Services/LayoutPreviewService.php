@@ -6,6 +6,7 @@ use App\Contracts\Repositories\LayoutPreviewRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\HookManager;
 use App\Models\TemplateLayoutPreview;
+use App\Support\LayoutEmptyObjects;
 use Illuminate\Support\Str;
 
 /**
@@ -134,7 +135,8 @@ class LayoutPreviewService
             );
         }
 
-        $layoutData = $preview->content;
+        // 저장 원문을 다시 읽어 값 자리의 빈 객체 `{}` 를 보존한다 — 공개 서빙과 같은 기준 (#758)
+        $layoutData = LayoutEmptyObjects::decode($preview->getAttributes()['content'] ?? null, $preview->content ?? []);
 
         // extends 상속 병합
         if (isset($layoutData['extends'])) {
@@ -166,9 +168,10 @@ class LayoutPreviewService
 
         // 편집 중인 확장 content 를 임시 적용
         if ($preview->extension_id) {
+            // 원문 그대로 넘긴다 — 확장 모델 캐스트가 다시 `{}` 로 인코딩해야 적용 단계가 빈 객체를 보존한다 (#758)
             $this->layoutExtensionService->setPreviewContentOverride(
                 $preview->extension_id,
-                $preview->content
+                LayoutEmptyObjects::rawPreserving($preview)
             );
         }
 
@@ -204,7 +207,7 @@ class LayoutPreviewService
      * 미리보기를 열 화면 셸 주소를 만듭니다.
      *
      * 관리자 템플릿 레이아웃은 관리자 셸(`/admin/preview/{token}`)로 열어야 그 템플릿의 컴포넌트·다국어·라우트로
-     * 그려진다. 사용자 셸(`/preview/{token}`)로 열면 활성 사용자 템플릿 자원으로 그려졌다(7.1.0 O-G3-6).
+     * 그려진다. 사용자 셸(`/preview/{token}`)로 열면 활성 사용자 템플릿 자원으로 그려졌다(7.1.0).
      * 두 셸 경로는 코어가 모든 템플릿 routes 에 주입하는 시스템 라우트다(`core.routes.filter_merged`).
      *
      * @param  TemplateLayoutPreview  $preview  생성된 미리보기

@@ -222,7 +222,10 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
             const badge = findById(commerceExt as any, id);
             const click = (badge.actions ?? []).find((a: any) => a.type === 'click' && a.handler === 'navigate');
             expect(click, `${id} navigate 액션 누락`).toBeDefined();
-            const path: string = click.params.path;
+            // 배지는 링크다(#757 WP-L) — 주소는 href 에 있고 navigate 는 path 없이 그 href 로 간다
+            expect(badge.name).toBe('A');
+            expect(click.params?.path).toBeUndefined();
+            const path: string = badge.props.href;
             expect(path).toContain('/admin/ecommerce/orders');
             expect(path).toContain(filter);
             // 오늘 날짜 필터(동적 표현식) 포함
@@ -293,9 +296,9 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
 
     // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=no_reviews
     // @effects latest_reviews_card_empty_state_when_no_reviews, pending_inquiries_card_empty_state_when_no_inquiries
-    it('빈 상태 메시지는 length === 0 조건으로 노출된다', () => {
-        expect(findById(commerceExt as any, 'latest_reviews_empty').if).toBe('{{(commerce_recent_reviews?.data ?? []).length === 0}}');
-        expect(findById(commerceExt as any, 'pending_inquiries_empty').if).toBe('{{(commerce_pending_inquiries?.data?.items ?? []).length === 0}}');
+    it('빈 상태 메시지는 받은 뒤 length === 0 일 때만 노출된다(받는 중에는 숨김)', () => {
+        expect(findById(commerceExt as any, 'latest_reviews_empty').if).toBe('{{commerce_recent_reviews !== undefined && ((commerce_recent_reviews?.data ?? []).length === 0)}}');
+        expect(findById(commerceExt as any, 'pending_inquiries_empty').if).toBe('{{commerce_pending_inquiries !== undefined && ((commerce_pending_inquiries?.data?.items ?? []).length === 0)}}');
     });
 
     // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_reviews
@@ -315,7 +318,10 @@ describe('admin_dashboard_commerce.json - commerce 슬롯 주입', () => {
 
         const item = findById(commerceExt as any, 'pending_inquiry_item_{{i}}');
         const click = actionsOf(item).find((a: any) => a.type === 'click' && a.handler === 'navigate');
-        expect(click.params.path).toBe('/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}/post/{{inquiry?.inquirable_id}}');
+        // 문의 행은 링크다(#757 WP-L) — 주소는 href, navigate 는 path 없이 그 href 로
+        expect(item.name).toBe('A');
+        expect(item.props.href).toBe('/admin/board/{{commerce_pending_inquiries?.data?.board_slug}}/post/{{inquiry?.inquirable_id}}');
+        expect(click.params?.path).toBeUndefined();
     });
 
     // @scenario module_state=active, user_role=admin_with_dashboard_permission, data_state=has_orders

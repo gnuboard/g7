@@ -223,7 +223,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 관리자가 전체 회원의 마일리지 거래 원장을 검색·필터·페이지네이션으로 조회합니다. `permission:sirsoft-ecommerce.mileage.read` 권한이 필요하며, 회원(member·member_id·email)·주문번호 검색, type(earn·use·expire·adjust)·통화·기간 필터, 금액/생성일 정렬을 지원합니다. `UserMileageService::paginateAdminHistory()`가 조회하고 `MileageTransactionCollection`이 통화 필터 후보(`withCurrencies`)와 함께 직렬화합니다. 각 행은 원장 스냅샷(balance_after, remaining_amount 등)을 그대로 노출하며 원장은 불변입니다.
+**설명** 관리자가 전체 회원의 마일리지 거래 원장을 검색·필터·페이지네이션으로 조회합니다. `permission:sirsoft-ecommerce.mileage.read` 권한이 필요하며, 회원(member·member_id·email)·주문번호 검색, type(earn·use·expire·adjust)·통화·기간 필터, 금액/생성일 정렬을 지원합니다. `UserMileageService::paginateAdminHistory()`가 조회하고 `MileageTransactionCollection`이 통화 필터 후보(`withCurrencies`)와 함께 직렬화합니다. 각 행은 원장 스냅샷(balance_after, remaining_amount 등)을 그대로 노출하며 원장은 불변입니다. 권한 범위가 「본인만」·「소유역할」 이면 그 범위 안의 행만 돌려줍니다(범위 밖 행은 목록·건수에서 빠집니다).
 
 
 ### POST /api/modules/sirsoft-ecommerce/admin/mileage-transactions
@@ -236,7 +236,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| user_id | body | uuid | 예 | — | user 식별자 |
+| user_id | body | uuid | 예 | — | 대상 회원 uuid. `action=earn` 이면 탈퇴 회원은 422(`user_id`: 「탈퇴한 회원에게는 마일리지를 지급할 수 없습니다.」). `deduct` 는 탈퇴 회원도 받는다(남은 잔액 정리) |
 | action | body | string | 예 | `earn`, `deduct` | 처리 동작 (earn=수동 적립 → adminEarn, deduct=수동 차감 → adminDeduct FIFO 소진) |
 | amount | body | integer | 예 | min 1 | 지급/차감할 마일리지 금액 (양수) |
 | currency | body | string | 예 | max 10 | 대상 통화 코드 (해당 통화 잔액에 적용) |
@@ -362,12 +362,12 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.mileage.manage`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반했거나, 도메인 규칙 위반(`MileageValidationException` — 예: 차감액이 잔액 초과) 시. 후자는 `message`=`마일리지 처리에 실패했습니다.` + `error.errors.general[]` 에 사유 문장 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.mileage.manage`)이 없거나, 대상 회원이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반했거나(지급 대상이 탈퇴 회원이면 `errors.user_id`), 도메인 규칙 위반(`MileageValidationException` — 예: 차감액이 잔액 초과) 시. 후자는 `message`=`마일리지 처리에 실패했습니다.` + `error.errors.general[]` 에 사유 문장 |
 
 <!-- @generated:end -->
 
-**설명** 관리자가 특정 회원에게 마일리지를 수동으로 지급하거나 차감합니다. `permission:sirsoft-ecommerce.mileage.manage` 권한이 필요하고 회원은 `user_id`(uuid)로 지정하며, `action`(earn/deduct)에 따라 `UserMileageService::adminEarn()` 또는 `adminDeduct()`를 호출합니다. 지급 시 `use_default_expiry`(기본 true)면 정책 기본 만료일을, 아니면 `expires_at`을 적용하고, 차감은 FIFO로 적립건에서 소진합니다. 잔액 부족 등 도메인 규칙 위반은 `MileageValidationException`으로 422를 반환합니다.
+**설명** 관리자가 특정 회원에게 마일리지를 수동으로 지급하거나 차감합니다. `permission:sirsoft-ecommerce.mileage.manage` 권한이 필요하고 회원은 `user_id`(uuid)로 지정하며, `action`(earn/deduct)에 따라 `UserMileageService::adminEarn()` 또는 `adminDeduct()`를 호출합니다. 지급 시 `use_default_expiry`(기본 true)면 정책 기본 만료일을, 아니면 `expires_at`을 적용하고, 차감은 FIFO로 적립건에서 소진합니다. 잔액 부족 등 도메인 규칙 위반은 `MileageValidationException`으로 422를 반환합니다. 탈퇴 회원에게는 지급하지 않습니다(7.1.1) — 로그인할 수 없어 쓰지 못하고, 주문 적립·환불 반환이 거치는 탈퇴 즉시 소멸을 관리자 지급은 거치지 않기 때문입니다. 요청 검증이 422 로 막고 `adminEarn()` 도 같은 판정으로 막습니다. 차감은 7.1.0 에서 탈퇴 회원에게 들어간 지급 잔액을 정리하는 수단이라 그대로 받습니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/admin/mileage-transactions/extend-expiry
@@ -430,12 +430,12 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.mileage.manage`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.mileage.manage`)이 없거나, 대상 회원·적립건(하나라도)이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지), 또는 고른 적립건 중 탈퇴 회원의 것이 있는 경우(전량 거부 — `message`=`마일리지 처리에 실패했습니다.` + `error.errors.general[]`=「탈퇴한 회원의 적립건은 유효기간을 연장할 수 없습니다.」) |
 
 <!-- @generated:end -->
 
-**설명** 관리자가 특정 회원의 여러 적립 lot 의 유효기간을 한 번에 연장합니다. `permission:sirsoft-ecommerce.mileage.manage` 권한이 필요하며, 회원(`user_id` uuid)과 대상 적립건 배열(`lot_ids`), 연장 일수(`days`, 최대 3650)를 받아 `UserMileageService::extendLotExpiry()`가 각 lot 의 만료일을 연장하고 실제로 연장된 건수(`extended_count`)를 반환합니다. 이미 소멸/사용된 lot 등 대상 외 건은 서비스가 걸러내므로 반환 건수가 요청한 `lot_ids` 수보다 작을 수 있습니다.
+**설명** 관리자가 특정 회원의 여러 적립 lot 의 유효기간을 한 번에 연장합니다. `permission:sirsoft-ecommerce.mileage.manage` 권한이 필요하며, 회원(`user_id` uuid)과 대상 적립건 배열(`lot_ids`), 연장 일수(`days`, 최대 3650)를 받아 `UserMileageService::extendLotExpiry()`가 각 lot 의 만료일을 연장하고 실제로 연장된 건수(`extended_count`)를 반환합니다. 이미 소멸/사용된 lot 등 대상 외 건은 서비스가 걸러내므로 반환 건수가 요청한 `lot_ids` 수보다 작을 수 있습니다. 탈퇴 회원의 적립건이 하나라도 섞이면 아무것도 연장하지 않고 422 입니다(7.1.1 — 쓸 수 없는 잔액을 늘리는 쓰기, 남은 잔액은 수동 차감으로 정리).
 
 
 ### PATCH /api/modules/sirsoft-ecommerce/admin/mileage-transactions/{id}
@@ -563,7 +563,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.mileage.manage`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.mileage.manage`)이 없거나, 적립건의 회원이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반했거나, 도메인 규칙 위반(`MileageValidationException`) 시. `message`=`마일리지 처리에 실패했습니다.` + `error.errors.general[]` 에 사유 문장 — 거래 없음(`마일리지 거래를 찾을 수 없습니다.`), 적립계 아님(`적립 거래만 수정할 수 있습니다.`), 소멸/전액 사용된 적립건(`이미 소멸되었거나 모두 사용된 적립건은 유효기간을 변경할 수 없습니다.`), 만료일이 적립일시 이전(`유효기간은 적립일시보다 이전일 수 없습니다.`) |
 
@@ -701,7 +701,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.mileage.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.mileage.read`)이 없거나, 기준 거래의 회원이 요청자의 **스코프 밖**인 경우 (`auth.scope_denied`) |
 | 404 | Not Found | `{id}` 에 해당하는 마일리지 거래가 없는 경우 |
 
 <!-- @generated:end -->

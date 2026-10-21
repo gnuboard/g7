@@ -39,6 +39,12 @@
                         "target": "content"
                     }
                 },
+                "404": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
                 "500": {
                     "handler": "showErrorPage",
                     "params": {
@@ -53,7 +59,7 @@
                     }
                 }
             },
-            "comment": "목록 본체 — 검색은 `filters[0][*]` 세 칸(대상 필드·값·연산자)으로 보낸다. 422 만 토스트로 흘리고 403·500 은 화면 자리에 오류 페이지를 세운다 — 앞은 조건이 틀린 것이고 뒤는 화면을 세울 수 없는 것이다"
+            "comment": "목록 본체 — 검색은 `filters[0][*]` 세 칸(대상 필드·값·연산자)으로 보낸다. 422 만 토스트로 흘리고 403·404(없는 게시판)·500 은 화면 자리에 오류 페이지를 세운다 — 앞은 조건이 틀린 것이고 뒤는 화면을 세울 수 없는 것이다"
         }
     ],
     "initLocal": {
@@ -177,22 +183,23 @@
                                     {
                                         "id": "create_post_button",
                                         "type": "basic",
-                                        "name": "Button",
+                                        "name": "A",
                                         "actions": [
                                             {
                                                 "comment": "새 글 작성. 작성을 취소하고 돌아왔을 때를 위해 목록 상태를 넘긴다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
-                                                    "path": "/admin/board/{{route.slug}}/create",
                                                     "mergeQuery": true,
                                                     "query": {}
                                                 }
                                             }
                                         ],
                                         "props": {
+                                            "href": "/admin/board/{{route.slug}}/create",
+                                            "mergeQuery": true,
                                             "disabled": "{{posts?.data?.abilities?.can_write !== true}}",
-                                            "className": "flex-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            "className": "button flex-center gap-2 px-4 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
                                         },
                                         "children": [
                                             {
@@ -244,6 +251,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "aria-label": "$t:common.search_field",
                                             "value": "{{_local.searchField || 'all'}}",
                                             "className": "select-composite w-32",
                                             "options": [
@@ -324,6 +332,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "flex-center gap-2 px-4 py-2.5 bg-gray-800 dark:bg-gray-700 border-0 rounded-xl text-white dark:text-gray-200 font-medium hover:bg-gray-900 dark:hover:bg-gray-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors text-sm"
                                         },
                                         "children": [
@@ -392,6 +401,7 @@
                                                     }
                                                 ],
                                                 "props": {
+                                                    "aria-label": "$t:sirsoft-board.admin.posts.filters.category_label",
                                                     "value": "{{query.category || 'all'}}",
                                                     "className": "input min-w-[200px]",
                                                     "options": "{{([{value:'all', label:'$t:sirsoft-board.admin.posts.filters.category_all'},{value:'unclassified', label:'$t:sirsoft-board.admin.posts.filters.category_unclassified'}].concat((posts?.data?.board?.categories||[]).map(function(c){return{value:c,label:c};}))) ?? []}}"
@@ -597,6 +607,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "px-4 py-2 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                                         },
                                         "children": [
@@ -641,6 +652,7 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "className": "px-4 py-2 bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
                                         },
                                         "children": [
@@ -685,6 +697,7 @@
                                 ],
                                 "props": {
                                     "name": "sort_by",
+                                    "aria-label": "$t:common.sort_order",
                                     "className": "w-40",
                                     "value": "{{(query.sort_by || 'created_at') + '_' + (query.sort_order || 'desc')}}",
                                     "options": [
@@ -729,6 +742,7 @@
                                 ],
                                 "props": {
                                     "name": "per_page",
+                                    "aria-label": "$t:common.per_page",
                                     "className": "w-36",
                                     "value": "{{query.per_page || '15'}}",
                                     "options": [
@@ -801,8 +815,9 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "data-testid": "admin-post-bulk-delete",
-                                            "className": "px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "className": "px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
                                             "disabled": "{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}"
                                         },
                                         "children": [
@@ -836,8 +851,9 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "data-testid": "admin-post-bulk-blind",
-                                            "className": "px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "className": "px-3 py-1.5 bg-orange-700 text-white rounded hover:bg-orange-800 dark:bg-orange-700 dark:hover:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
                                             "disabled": "{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}"
                                         },
                                         "children": [
@@ -871,8 +887,9 @@
                                             }
                                         ],
                                         "props": {
+                                            "type": "button",
                                             "data-testid": "admin-post-bulk-restore",
-                                            "className": "px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
+                                            "className": "px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors",
                                             "disabled": "{{posts?.data?.abilities?.can_manage !== true || !(_global.selectedIds_board_posts || []).length}}"
                                         },
                                         "children": [
@@ -933,7 +950,10 @@
                             }
                         ],
                         "props": {
+                            "pageHrefMergeQuery": true,
+                            "pageHref": "/admin/board/{{route.slug}}?page={page}",
                             "selectedCountText": "",
+                            "rowLabelField": "title",
                             "rowClassName": "{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : (row.row_type === 'reply' ? 'bg-gray-50 dark:bg-gray-800/50' : '')}}",
                             "data": "{{posts?.data?.data}}",
                             "sortable": true,
@@ -951,7 +971,7 @@
                             "responsiveBreakpoint": 768,
                             "showFirstLast": true,
                             "columnSelectorText": "$t:common.column_selector",
-                            "emptyMessage": "$t:common.no_data",
+                            "emptyMessage": "{{posts === undefined ? '' : (posts === null ? $t('sirsoft-board.common.list_load_failed') : $t('common.no_data'))}}",
                             "requiredText": "$t:common.required",
                             "columns": [
                                 {
@@ -965,7 +985,7 @@
                                             "name": "Span",
                                             "if": "{{row.row_type === 'notice'}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-500"
+                                                "className": "inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-blue-600 text-white dark:bg-blue-600"
                                             },
                                             "text": "{{row.number ?? '-'}}"
                                         },
@@ -1011,14 +1031,15 @@
                                                     "if": "{{row.is_reply}}",
                                                     "props": {
                                                         "name": "level-up-alt",
-                                                        "className": "text-sm rotate-90 mt-1 text-gray-400 dark:text-gray-500"
+                                                        "className": "text-sm rotate-90 mt-1 text-gray-500 dark:text-gray-400"
                                                     }
                                                 },
                                                 {
+                                                    "comment": "제목 칸은 줄어들 수 있고 제목은 아무 데서나 줄을 바꾼다 — 공백 없는 긴 제목이 좁은 화면에서 본문을 622px 넘겼다(#143).",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-1"
+                                                        "className": "flex-1 min-w-0"
                                                     },
                                                     "children": [
                                                         {
@@ -1061,20 +1082,21 @@
                                                                 {
                                                                     "comment": "제목",
                                                                     "type": "basic",
-                                                                    "name": "Span",
+                                                                    "name": "A",
                                                                     "actions": [
                                                                         {
                                                                             "type": "click",
                                                                             "handler": "navigate",
                                                                             "params": {
-                                                                                "path": "/admin/board/{{row.slug}}/post/{{row.id}}",
                                                                                 "mergeQuery": true,
                                                                                 "query": {}
                                                                             }
                                                                         }
                                                                     ],
                                                                     "props": {
-                                                                        "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                                        "href": "/admin/board/{{row.slug}}/post/{{row.id}}",
+                                                                        "mergeQuery": true,
+                                                                        "className": "min-w-0 wrap-anywhere font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                                     },
                                                                     "text": "{{row.title}}"
                                                                 },
@@ -1085,7 +1107,7 @@
                                                                     "if": "{{row.has_attachment}}",
                                                                     "props": {
                                                                         "name": "paperclip",
-                                                                        "className": "text-sm text-gray-400 dark:text-gray-500"
+                                                                        "className": "text-sm text-gray-500 dark:text-gray-400"
                                                                     }
                                                                 },
                                                                 {
@@ -1104,7 +1126,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{row?.is_new}}",
                                                                     "props": {
-                                                                        "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-500 dark:bg-red-600 text-white"
+                                                                        "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-600 dark:bg-red-600 text-white"
                                                                     },
                                                                     "text": "N"
                                                                 },
@@ -1147,18 +1169,16 @@
                                                     "children": [
                                                         {
                                                             "type": "basic",
-                                                            "name": "Span",
-                                                            "if": "{{!row.author.is_guest}}",
+                                                            "name": "A",
+                                                            "if": "{{!row.author.is_guest && row.author.uuid}}",
                                                             "actions": [
                                                                 {
                                                                     "type": "click",
-                                                                    "handler": "navigate",
-                                                                    "params": {
-                                                                        "path": "/admin/users/{{row.author.uuid}}"
-                                                                    }
+                                                                    "handler": "navigate"
                                                                 }
                                                             ],
                                                             "props": {
+                                                                "href": "/admin/users/{{row.author.uuid}}",
                                                                 "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                                                             },
                                                             "text": "{{row.author.name}}"
@@ -1166,11 +1186,11 @@
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
-                                                            "if": "{{row.author.is_guest}}",
+                                                            "if": "{{row.author.is_guest || !row.author.uuid}}",
                                                             "props": {
                                                                 "className": "font-medium text-gray-900 dark:text-white"
                                                             },
-                                                            "text": "{{row.author.name}}"
+                                                            "text": "{{row.author.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
                                                         },
                                                         {
                                                             "type": "basic",
@@ -1302,6 +1322,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
@@ -1374,6 +1395,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
                                 "disabled": "{{_global.deleteModalLoading}}"
                             },
@@ -1502,6 +1524,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
                             },
                             "children": [
@@ -1717,9 +1740,10 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "data-testid": "admin-post-bulk-confirm",
                                 "lockRepeatClick": true,
-                                "className": "px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.bulkPostAction === 'delete' ? 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800' : _global.bulkPostAction === 'blind' ? 'bg-orange-600 dark:bg-orange-700 hover:bg-orange-700 dark:hover:bg-orange-800' : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800'}}",
+                                "className": "px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.bulkPostAction === 'delete' ? 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800' : _global.bulkPostAction === 'blind' ? 'bg-orange-700 dark:bg-orange-700 hover:bg-orange-800 dark:hover:bg-orange-800' : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800'}}",
                                 "disabled": "{{_global.bulkPostLoading}}"
                             },
                             "children": [
@@ -1845,6 +1869,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
                             },
                             "children": [
@@ -1906,6 +1931,7 @@
                                 }
                             ],
                             "props": {
+                                "type": "button",
                                 "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
                             },
                             "children": [

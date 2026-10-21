@@ -1,0 +1,25 @@
+feature: 공개 서빙의 개발자 주석 제거 — 설명은 지우고 요청 본문의 comment 데이터는 남긴다
+
+description: |
+  레이아웃의 `comment`·`_comment` 는 편집기·개발자용 설명이라 공개 서빙 응답에서 뺀다(LayoutService::stripDeveloperComments,
+  미리보기 서빙도 같은 함수). 종전에는 깊이·위치를 가리지 않고 지워 액션 `params.body.comment` 처럼 서버로 보낼 데이터 키까지
+  사라졌다 — 비즈뿌리오 「검수 의견」이 빈 본문으로 전송됐다.
+
+  축 position 은 `comment` 키가 놓인 자리다. 정의 자리(노드·액션·액션 params·props·initLocal)는 설명이라 지우고,
+  요청 본문 자리(`body`·`query`·`headers` 아래, 데이터소스 `params` 아래)는 데이터라 남긴다.
+  액션 params·props·initLocal 은 번들에서 설명을 적는 자리로 쓰여 왔으므로(남기면 setState 가 `_local.comment` 를 쓰는 등
+  런타임 값이 된다) 계속 지운다 — 데이터 키 `comment` 는 요청 본문에만 둔다.
+
+axes:
+  position: [node, action, action_params, props, init_local, request_body, request_query, request_headers, data_source_params]
+
+effects:
+  - developer_comment_stripped
+  - request_payload_comment_preserved
+  - bundled_review_comment_survives_serving
+
+test_files:
+  - tests/Unit/Services/LayoutServiceDeveloperCommentStripTest.php
+
+notes: |
+  서빙 응답 전체에서 설명이 빠지는 것(노드·액션·모달·명명 액션·확장 조각)은 layout-markup 매니페스트의 LayoutServingTest 가 잠근다.

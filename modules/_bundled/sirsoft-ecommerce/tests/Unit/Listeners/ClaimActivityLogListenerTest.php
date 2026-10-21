@@ -519,7 +519,7 @@ class ClaimActivityLogListenerTest extends ModuleTestCase
 
     /**
      * 금액을 싣기 전에 남은 환급 로그(번호만 있는 행)는 옛 키로 그대로 읽힌다 — 옛 키 문구에 새 자리표시자를
-     * 넣으면 과거 로그가 「(CP…, :amount)」 처럼 자리표시자를 그대로 드러낸다(3차 실측 회귀 2026-09-26).
+     * 넣으면 과거 로그가 「(CP…, :amount)」 처럼 자리표시자를 그대로 드러낸다(실측 회귀 2026-09-26).
      *
      * @effects claim_payment_refund_legacy_log_renders_without_placeholders
      *

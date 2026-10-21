@@ -18,6 +18,7 @@ import filters from '../../../layouts/admin/partials/plugin_settings/_history_fi
 import ko from '../../../lang/ko.json';
 import settingsLayout from '../../../layouts/admin/plugin_settings.json';
 import grid from '../../../layouts/admin/partials/plugin_settings/_history_grid.json';
+import tabHistory from '../../../layouts/admin/partials/plugin_settings/_tab_history.json';
 import { DataBindingEngine } from '@core/template-engine/DataBindingEngine';
 
 let utils: ReturnType<typeof createLayoutTest> | null = null;
@@ -119,5 +120,39 @@ describe('실행 이력 — 뒤집힌 기간은 조회하지 않는다', () => {
     expect(gridData).toContain('koreaeximRuns');
     expect(evaluate(gridData, { tab: 'history', date_from: '2026-09-15', date_to: '2026-09-10' })).toEqual([]);
     expect(evaluate(gridData, { tab: 'history', date_from: '2026-09-10', date_to: '2026-09-20' })).toEqual([{ id: 1 }]);
+  });
+});
+
+describe('실행 이력 — 「조회 중」은 받는 동안에만', () => {
+  const engine = new DataBindingEngine();
+
+  /** 이력 탭에서 조회 중 표시(spinner-sm 을 바로 품은 노드)의 조건식을 찾는다. */
+  function spinnerIf(): string {
+    const found: string[] = [];
+    const visit = (n: any): void => {
+      if (!n || typeof n !== 'object') return;
+      if (Array.isArray(n)) { n.forEach(visit); return; }
+      if (typeof n.if === 'string' && (n.children ?? []).some((c: any) => c?.props?.className === 'spinner-sm')) found.push(n.if);
+      Object.values(n).forEach(visit);
+    };
+    visit(tabHistory);
+    expect(found).toHaveLength(1);
+    return found[0].trim().replace(/^\{\{/, '').replace(/\}\}$/, '');
+  }
+
+  /**
+   * 엔진은 데이터소스 값에 `loading` 을 싣지 않는다 — 예전 `koreaeximRuns?.loading === true` 는 늘 거짓이라
+   * 조회 중 표시가 한 번도 나오지 않았다. 받기 전(값 undefined)에만 보이고, 받은 뒤·실패(fallback 값)·
+   * 뒤집힌 기간(소스를 부르지 않음)에는 보이지 않는다.
+   *
+   * @scenario flow=filter
+   * @effects history_spinner_only_while_fetching
+   */
+  it('받기 전에만 조회 중을 보이고, 받은 뒤·뒤집힌 기간에는 보이지 않는다', () => {
+    const expr = spinnerIf();
+    const ctx = (query: Record<string, string>, runs?: unknown) => ({ query, ...(runs === undefined ? {} : { koreaeximRuns: runs }) }) as any;
+    expect(engine.evaluateExpression(expr, ctx({ tab: 'history' }), { skipCache: true })).toBe(true);
+    expect(engine.evaluateExpression(expr, ctx({ tab: 'history' }, { data: { data: [] } }), { skipCache: true })).toBe(false);
+    expect(engine.evaluateExpression(expr, ctx({ tab: 'history', date_from: '2026-09-15', date_to: '2026-09-10' }), { skipCache: true })).toBe(false);
   });
 });

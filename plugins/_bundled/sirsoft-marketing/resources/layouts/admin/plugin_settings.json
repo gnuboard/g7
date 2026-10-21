@@ -4,6 +4,7 @@
     "layout_name": "plugin_settings",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "$t:sirsoft-marketing.settings.title",
         "description": "$t:sirsoft-marketing.settings.description"
     },
@@ -39,6 +40,33 @@
                     ]
                 }
             ],
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
             "comment": "현재 설정값. 채널 목록은 편집 창과 오가야 해서 화면 상태가 아니라 전역에 풀어 둔다"
         }
     ],
@@ -93,7 +121,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-warning-soft"
+                                    "className": "text-xs text-yellow-700 dark:text-yellow-300"
                                 },
                                 "text": "$t:sirsoft-marketing.plugin_read_only"
                             }
@@ -333,10 +361,17 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
-                                                                "comment": "채널 추가 — 빈 채널을 전역에 세우고 편집 창을 연다(창이 별도 컨텍스트라 편집 대상은 전역으로만 오간다)",
+                                                                "comment": "채널 추가 — 빈 채널을 전역에 세우고 편집 창을 연다(창이 별도 컨텍스트라 편집 대상은 전역으로만 오간다).\n                       먼저 null 로 비운다 — 이름(label)이 deep 병합되면 앞 채널의 다른 언어 문구가 새 채널에 남는다(7.1.1)",
                                                                 "type": "click",
                                                                 "handler": "sequence",
                                                                 "actions": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "global",
+                                                                            "editingChannel": null
+                                                                        }
+                                                                    },
                                                                     {
                                                                         "handler": "setState",
                                                                         "params": {
@@ -364,7 +399,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "className": "flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
                                                             "disabled": "{{_computed.isPluginReadOnly}}"
                                                         },
                                                         "children": [
@@ -458,7 +493,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700/50"
+                                                                    "className": "grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-50 dark:hover:bg-gray-700/50"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -482,14 +517,14 @@
                                                                                         "props": {
                                                                                             "className": "text-heading"
                                                                                         },
-                                                                                        "text": "{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : (channel.label?.[$locale] ?? channel.label?.ko ?? channel.label?.en ?? channel.key)}}"
+                                                                                        "text": "{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : ($localized(channel.label) || channel.key)}}"
                                                                                     },
                                                                                     {
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "if": "{{channel.is_system}}",
                                                                                         "props": {
-                                                                                            "className": "text-info-soft inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900"
+                                                                                            "className": "text-xs text-blue-700 dark:text-blue-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900"
                                                                                         },
                                                                                         "text": "$t:sirsoft-marketing.settings.channels.system_badge"
                                                                                     }
@@ -508,7 +543,7 @@
                                                                                 "name": "Span",
                                                                                 "if": "{{!!channel.page_slug}}",
                                                                                 "props": {
-                                                                                    "className": "block sm:hidden text-xs text-blue-400 dark:text-blue-500 font-mono mt-0.5"
+                                                                                    "className": "block sm:hidden text-xs text-blue-600 dark:text-blue-400 font-mono mt-0.5"
                                                                                 },
                                                                                 "text": "{{channel.page_slug}}"
                                                                             }
@@ -585,10 +620,17 @@
                                                                                 "name": "Button",
                                                                                 "actions": [
                                                                                     {
-                                                                                        "comment": "채널 편집 — 그 행을 전역에 옮겨 담고 편집 창을 연다",
+                                                                                        "comment": "채널 편집 — 그 행을 전역에 옮겨 담고 편집 창을 연다. 먼저 null 로 비운다 — 기본(deep) 병합은 이름(label) 다국어 객체를\n                             합쳐, 앞서 연 채널에만 있던 언어 문구가 이 채널에 실려 확정된다(7.1.1)",
                                                                                         "type": "click",
                                                                                         "handler": "sequence",
                                                                                         "actions": [
+                                                                                            {
+                                                                                                "handler": "setState",
+                                                                                                "params": {
+                                                                                                    "target": "global",
+                                                                                                    "editingChannel": null
+                                                                                                }
+                                                                                            },
                                                                                             {
                                                                                                 "handler": "setState",
                                                                                                 "params": {
@@ -607,7 +649,7 @@
                                                                                     "aria-label": "$t:common.edit",
                                                                                     "title": "$t:common.edit",
                                                                                     "type": "button",
-                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                                    "className": "p-1.5 text-gray-500 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                                                     "disabled": "{{_computed.isPluginReadOnly}}"
                                                                                 },
                                                                                 "children": [
@@ -653,7 +695,7 @@
                                                                                     "aria-label": "$t:common.delete",
                                                                                     "title": "$t:common.delete",
                                                                                     "type": "button",
-                                                                                    "className": "p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                                    "className": "p-1.5 text-gray-500 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                                                                                     "disabled": "{{_computed.isPluginReadOnly}}"
                                                                                 },
                                                                                 "children": [
@@ -944,19 +986,19 @@
                             {
                                 "id": "cancel_button",
                                 "type": "basic",
-                                "name": "Button",
+                                "name": "A",
                                 "actions": [
                                     {
                                         "type": "click",
                                         "handler": "navigate",
                                         "params": {
-                                            "path": "/admin/plugins"
+                                            "bypassLeaveGuard": true
                                         }
                                     }
                                 ],
                                 "props": {
-                                    "type": "button",
-                                    "className": "btn btn-secondary"
+                                    "href": "/admin/plugins",
+                                    "className": "button btn btn-secondary"
                                 },
                                 "children": [
                                     {
@@ -1251,7 +1293,7 @@
                                     "props": {
                                         "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
                                     },
-                                    "text": "$t:sirsoft-marketing.settings.channel_modal.label_ko"
+                                    "text": "$t:sirsoft-marketing.settings.channels.col_label"
                                 },
                                 {
                                     "id": "channel_label_field",
@@ -1487,7 +1529,7 @@
                                     "props": {
                                         "className": "text-heading"
                                     },
-                                    "text": "{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : (blockedChannel.label?.[$locale] ?? blockedChannel.label?.ko ?? blockedChannel.label?.en ?? blockedChannel.key)}} ({{blockedChannel.key}})"
+                                    "text": "{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : ($localized(blockedChannel.label) || blockedChannel.key)}} ({{blockedChannel.key}})"
                                 }
                             ]
                         },

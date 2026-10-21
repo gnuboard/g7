@@ -33,7 +33,7 @@
       <!-- 통화 Select — name 바인딩으로 회원정보 폼(dataKey=form)에 자동 포함. 별도 저장버튼 없음(D9): 화면 하단 회원정보 [저장] 요청 본문에 실려 함께 저장된다. -->
       <select name="ecommerce_preferred_currency" aria-label="$t:sirsoft-ecommerce.admin.user_currency.title" disabled="{{user?.data?.ecommerce_currency_can_manage !== true}}" value="{{_local.form?.ecommerce_preferred_currency ?? user?.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}" options="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}" class="w-full md:w-64"/>
       <!-- 회원정보 저장 요청의 검증 오류(미등록 통화·변경 권한 없음)를 이 칸 아래에 띄운다 -->
-      <p data-if="{{_local.errors?.ecommerce_preferred_currency}}" class="text-red-500 text-xs mt-1">{{_local.errors?.ecommerce_preferred_currency?.[0] ?? ''}}</p>
+      <p data-if="{{_local.errors?.ecommerce_preferred_currency}}" class="text-red-600 dark:text-red-300 text-xs mt-1">{{_local.errors?.ecommerce_preferred_currency?.[0] ?? ''}}</p>
       <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">$t:sirsoft-ecommerce.admin.user_currency.description</p>
     </div>
   </inject>

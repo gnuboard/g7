@@ -4,6 +4,7 @@
     "layout_name": "admin_analytics_settings",
     "extends": "_admin_base",
     "meta": {
+        "leave_guard": "{{_local.hasChanges === true}}",
         "title": "$t:admin.analytics.settings.title"
     },
     "data_sources": [
@@ -17,20 +18,40 @@
             "auth_required": true,
             "loading_strategy": "progressive",
             "initLocal": "form",
-            "fallback": {
-                "data": {
-                    "settings": {}
-                }
-            },
             "errorHandling": {
                 "403": {
                     "handler": "showErrorPage",
                     "params": {
                         "target": "content"
                     }
+                },
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(선택·쪽 넘김·저장 뒤 갱신 등) 실패는 받아 둔 값·선택을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
-            "comment": "설정 전체. 응답 `{settings}` 를 폼 초기값으로 담는다 → `_local.form.settings.*`. 403 은 에러 화면.\n    그 밖의 실패(500·네트워크)에서도 `settings` 가 객체로 서 있어야 탭·입력이 그려진다 — 빈 객체라\n    저장 본문 조립이 `s[k] !== undefined` 에서 전부 걸러져 빈 값을 덮어쓰지 않는다."
+            "comment": "설정 전체. 응답 `{settings}` 를 폼 초기값으로 담는다 → `_local.form.settings.*`. 받기에 실패하면(403 포함)\n    본문 오류 화면이다 — 기본값으로 서 있는 폼을 저장하면 실제 설정을 덮어쓰므로 폼을 그리지 않는다. 첫 설치·빈 설정은\n    서버가 기본값을 담은 성공 응답으로 주므로 실패와 섞이지 않는다(그래서 fallback 을 두지 않는다 — 두면 실패가 성공으로\n    처리되어 `_dataSourceErrors` 에도 남지 않는다)."
         },
         {
             "id": "analytics_opt_out",
@@ -157,7 +178,7 @@
         "cloudRefreshing": false
     },
     "computed": {
-        "isReadOnly": "{{!!analytics_settings?.error}}",
+        "isReadOnly": "{{!!_dataSourceErrors?.analytics_settings}}",
         "canReadAnalytics": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.analytics.read')}}",
         "siteTimezoneDiffers": "{{_computed.canReadAnalytics === true && analytics_status?.data?.timezone_differs === true}}",
         "siteTimezoneName": "{{_computed.canReadAnalytics === true ? (analytics_status?.data?.timezone ?? '') : ''}}",
@@ -376,22 +397,27 @@
                                     "tabs": [
                                         {
                                             "id": "collection",
+                                            "href": "/admin/analytics/settings?tab=collection",
                                             "label": "$t:admin.analytics.settings.tabs.collection"
                                         },
                                         {
                                             "id": "privacy",
+                                            "href": "/admin/analytics/settings?tab=privacy",
                                             "label": "$t:admin.analytics.settings.tabs.privacy"
                                         },
                                         {
                                             "id": "bots",
+                                            "href": "/admin/analytics/settings?tab=bots",
                                             "label": "$t:admin.analytics.settings.tabs.bots"
                                         },
                                         {
                                             "id": "retention",
+                                            "href": "/admin/analytics/settings?tab=retention",
                                             "label": "$t:admin.analytics.settings.tabs.retention"
                                         },
                                         {
                                             "id": "reports",
+                                            "href": "/admin/analytics/settings?tab=reports",
                                             "label": "$t:admin.analytics.settings.tabs.reports"
                                         }
                                     ]
@@ -1071,20 +1097,17 @@
                                                     {
                                                         "id": "consent_source_choose_link",
                                                         "type": "basic",
-                                                        "name": "Button",
+                                                        "name": "A",
                                                         "if": "{{_computed.canReadDefinitions}}",
                                                         "actions": [
                                                             {
                                                                 "type": "click",
-                                                                "handler": "navigate",
-                                                                "params": {
-                                                                    "path": "/admin/settings?tab=privacy"
-                                                                }
+                                                                "handler": "navigate"
                                                             }
                                                         ],
                                                         "props": {
-                                                            "type": "button",
-                                                            "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                                            "href": "/admin/settings?tab=privacy",
+                                                            "className": "button text-sm text-blue-600 dark:text-blue-400 hover:underline"
                                                         },
                                                         "text": "$t:admin.analytics.settings.privacy.consent_source_choose"
                                                     }
@@ -1331,7 +1354,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "triangle-exclamation",
-                                                            "className": "text-xl text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                                                            "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"
                                                         }
                                                     },
                                                     {

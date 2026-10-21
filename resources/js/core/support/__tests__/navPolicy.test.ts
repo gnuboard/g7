@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { sanitizeNavPath, resolveSafeNavPath, isDangerousScheme } from '../navPolicy';
+import { sanitizeNavPath, resolveSameTabNavPath, isDangerousScheme, toSameOriginNavPath } from '../navPolicy';
 
 describe('navPolicy', () => {
     describe('sanitizeNavPath — 거부', () => {
@@ -88,16 +88,66 @@ describe('navPolicy', () => {
         it('양끝 공백은 걷어낸 값을 돌려준다', () => {
             expect(sanitizeNavPath('  /mypage  ')).toBe('/mypage');
         });
+
+        /**
+         * 서버가 알림 이동 주소(click_url)를 같은 사이트의 전체 주소로 준다 — 경로로 바꿔 통과시킨다
+         * (종전에는 스킴이 있다는 이유로 거부해 첫 화면 `/` 로 문서 전체 이동했다).
+         *
+         * @scenario target_kind=same_origin_full_url, sink=same_tab
+         *
+         * @effects same_origin_full_url_becomes_path
+         */
+        it('같은 출처 전체 주소는 경로(+쿼리·해시)로 바꿔 통과한다', () => {
+            const origin = window.location.origin;
+            expect(sanitizeNavPath(`${origin}/board/free/14`)).toBe('/board/free/14');
+            expect(sanitizeNavPath(`${origin}/board/free/14?page=2#comment-3`)).toBe('/board/free/14?page=2#comment-3');
+            expect(sanitizeNavPath(`  ${origin}/admin/users  `)).toBe('/admin/users');
+            expect(sanitizeNavPath(origin)).toBe('/');
+            expect(toSameOriginNavPath(`${origin}/mypage`)).toBe('/mypage');
+        });
+
+        /**
+         * @scenario target_kind=offsite, sink=same_tab
+         *
+         * @effects nav_sink_rejects_offsite_target
+         */
+        it('같은 출처처럼 보이는 다른 출처(사용자 정보·다른 스킴·다른 포트)는 계속 거부한다', () => {
+            const { protocol, hostname, origin } = window.location;
+            const otherScheme = protocol === 'https:' ? 'http:' : 'https:';
+            for (const payload of [
+                `${origin}@example.com/`,
+                `${otherScheme}//${hostname}/x`,
+                `${protocol}//${hostname}:1/x`,
+                `${protocol}//${hostname}.example.com/x`,
+                // 같은 출처 전체 주소인데 경로가 `//다른호스트` — 경로로 바꾸면 같은 탭 sink 가 바깥으로 간다
+                `${origin}//example.com/x`,
+                `${origin}/\\example.com/x`,
+                `${origin}/\\/example.com/x`,
+            ]) {
+                expect(sanitizeNavPath(payload)).toBeNull();
+                expect(toSameOriginNavPath(payload)).toBeNull();
+            }
+            // 스킴 없는 상대경로는 이 함수가 경로로 바꾸지 않는다(같은 탭 sink 는 절대 경로만)
+            expect(toSameOriginNavPath('admin/orders')).toBeNull();
+        });
     });
 
-    describe('resolveSafeNavPath', () => {
+    describe('resolveSameTabNavPath', () => {
         /**
+         * 거부된 주소는 null(이동하지 않음) — 종전 `resolveSafeNavPath` 는 fallback 으로 바꿔 첫 화면으로 보냈다
+         * (결정 2026-10-15). 주소가 비면 「어디든 가야 하는」 자리의 기본 경로를 그대로 준다.
+         *
          * @effects nav_sink_rejects_offsite_target, same_origin_redirect_preserved
          */
-        it('안전하지 않으면 fallback, 안전하면 원래 경로', () => {
-            expect(resolveSafeNavPath('javascript:alert(1)', '/')).toBe('/');
-            expect(resolveSafeNavPath('//evil.com', '/admin')).toBe('/admin');
-            expect(resolveSafeNavPath('/admin/users', '/')).toBe('/admin/users');
+        it('거부된 주소는 null, 빈 주소는 fallback, 안전하면 그 경로', () => {
+            expect(resolveSameTabNavPath('javascript:alert(1)', '/')).toBeNull();
+            expect(resolveSameTabNavPath('//evil.com', '/admin')).toBeNull();
+            expect(resolveSameTabNavPath('https://evil.example/x', '/')).toBeNull();
+            expect(resolveSameTabNavPath('', '/')).toBe('/');
+            expect(resolveSameTabNavPath('   ', '/admin')).toBe('/admin');
+            expect(resolveSameTabNavPath(undefined, '/')).toBe('/');
+            expect(resolveSameTabNavPath('/admin/users', '/')).toBe('/admin/users');
+            expect(resolveSameTabNavPath(`${window.location.origin}/admin/users?x=1`, '/')).toBe('/admin/users?x=1');
         });
     });
 

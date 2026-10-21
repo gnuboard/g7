@@ -3,6 +3,7 @@
 namespace App\Extension;
 
 use App\Jobs\DispatchHookListenerJob;
+use App\Support\Queue\ThrottledQueueWarning;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Log;
  * - Action 훅: 큐 드라이버에 따라 자동으로 큐/동기 실행
  * - Filter 훅: 항상 동기 실행 (반환값 체인)
  * - `'sync' => true` 선언 시: 큐 드라이버 무관하게 동기 실행
+ * - `'queue' => [...]` 선언 시: 큐로 도는 Action 의 실행 옵션(연결·큐·재시도·제한시간 등 10개, #139).
+ *   Filter·sync 와 함께 쓰면 무시하고 경고한다 — 큐로 가지 않으니 적용할 곳이 없다.
  */
 class HookListenerRegistrar
 {
@@ -30,6 +33,13 @@ class HookListenerRegistrar
      * @var array<string, true> key: "{source}::{listenerClass}"
      */
     private static array $registered = [];
+
+    /**
+     * 클래스가 없어 건너뛴 리스너 — 경고는 프로세스에 한 번만 남긴다.
+     *
+     * @var array<string, true>
+     */
+    private static array $missingListenersReported = [];
 
     /**
      * 리스너 클래스를 HookManager에 등록합니다.
@@ -111,20 +121,42 @@ class HookListenerRegistrar
             $priority = $config['priority'] ?? 10;
             $type = $config['type'] ?? 'action';
             $forceSync = ! empty($config['sync']);
+            $rawQueueOptions = $config['queue'] ?? null;
+
+            if ($rawQueueOptions !== null && ($type === 'filter' || $forceSync)) {
+                ThrottledQueueWarning::warn(
+                    "opt-ignored|{$listenerClass}|{$hookName}",
+                    "훅 리스너의 'queue' 옵션은 큐로 도는 Action 에만 적용됩니다 — Filter·sync 구독이라 무시합니다",
+                    ['listener' => $listenerClass, 'hook' => $hookName, 'type' => $type, 'sync' => $forceSync],
+                );
+            }
 
             if ($type === 'filter') {
                 // Filter: 항상 동기 실행 (반환값 체인이므로 큐 불가)
-                HookManager::addFilter($hookName, function ($value, ...$args) use ($listenerClass, $method) {
+                HookManager::addFilter($hookName, function ($value, ...$args) use ($listenerClass, $method, $hookName) {
+                    if (! self::listenerClassExists($listenerClass, $hookName)) {
+                        return $value;
+                    }
+
                     return app($listenerClass)->{$method}($value, ...$args);
                 }, $priority);
             } elseif ($forceSync) {
                 // Action + sync: true → 동기 실행 (개발자가 명시적으로 opt-out)
-                HookManager::addAction($hookName, function (...$args) use ($listenerClass, $method) {
-                    app($listenerClass)->{$method}(...$args);
+                HookManager::addAction($hookName, function (...$args) use ($listenerClass, $method, $hookName) {
+                    if (self::listenerClassExists($listenerClass, $hookName)) {
+                        app($listenerClass)->{$method}(...$args);
+                    }
                 }, $priority);
             } else {
                 // Action 기본: 큐 디스패치 (큐 드라이버가 sync 면 Laravel 이 즉시 실행 → 하위호환)
-                self::addQueuedAction($hookName, $listenerClass, $method, $priority);
+                self::addQueuedAction(
+                    $hookName,
+                    $listenerClass,
+                    $method,
+                    $priority,
+                    [],
+                    ListenerQueueOptions::normalize($rawQueueOptions, $listenerClass, $hookName),
+                );
             }
 
             // 등록 성공은 로그로 남기지 않는다. 리스너 112개 × 구독 400건이 요청마다 부팅되므로
@@ -152,6 +184,7 @@ class HookListenerRegistrar
      * @param  array<int, mixed>  $boundArgs  훅 발화 인자 앞에 고정으로 붙일 인자 (직렬화 가능해야 함)
      * @param  int  $priority  실행 우선순위
      * @param  bool  $sync  true 면 큐 래핑 없이 즉시 동기 실행 (큐 드라이버 무관)
+     * @param  array<string, mixed>  $queueOptions  큐 실행 옵션 (`getSubscribedHooks()` 의 `'queue'` 와 같은 10개 키, #139)
      * @return void 반환값 없음
      */
     public static function registerDynamicAction(
@@ -161,6 +194,7 @@ class HookListenerRegistrar
         array $boundArgs = [],
         int $priority = 10,
         bool $sync = false,
+        array $queueOptions = [],
     ): void {
         if ($sync) {
             HookManager::addAction($hookName, function (...$args) use ($listenerClass, $method, $boundArgs) {
@@ -170,7 +204,43 @@ class HookListenerRegistrar
             return;
         }
 
-        self::addQueuedAction($hookName, $listenerClass, $method, $priority, $boundArgs);
+        self::addQueuedAction(
+            $hookName,
+            $listenerClass,
+            $method,
+            $priority,
+            $boundArgs,
+            ListenerQueueOptions::normalize($queueOptions, $listenerClass, $hookName),
+        );
+    }
+
+    /**
+     * 리스너 메서드를 큐 잡으로 바로 디스패치합니다 (훅 발화 없이, #139).
+     *
+     * 리스너가 일을 나눠 자식 잡으로 보낼 때 쓴다(예: 알림 대량 발송의 수신자 묶음). 훅 리스너와 같은
+     * `DispatchHookListenerJob`·직렬화·컨텍스트 캡처를 거치므로 워커에서 같은 방식으로 복원된다.
+     *
+     * @param  string  $listenerClass  리스너 FQCN
+     * @param  string  $method  큐 워커에서 호출할 public 메서드명
+     * @param  array<int, mixed>  $args  메서드 인자 (HookArgumentSerializer 로 직렬화 — Model 이 아닌 객체는 null 이 된다)
+     * @param  array<string, mixed>  $queueOptions  큐 실행 옵션 (10개 키)
+     * @param  string  $hookName  경고 문맥에 남길 이름
+     * @return void 반환값 없음
+     */
+    public static function dispatchQueued(
+        string $listenerClass,
+        string $method,
+        array $args,
+        array $queueOptions = [],
+        string $hookName = '',
+    ): void {
+        self::dispatchJob(
+            $listenerClass,
+            $method,
+            $args,
+            ListenerQueueOptions::normalize($queueOptions, $listenerClass, $hookName),
+            $hookName,
+        );
     }
 
     /**
@@ -185,6 +255,7 @@ class HookListenerRegistrar
      * @param  string  $method  큐 워커에서 호출할 메서드명
      * @param  int  $priority  실행 우선순위
      * @param  array<int, mixed>  $boundArgs  훅 발화 인자 앞에 고정으로 붙일 인자
+     * @param  array<string, mixed>  $queueOptions  정규화된 큐 실행 옵션 (ListenerQueueOptions::normalize 결과)
      * @return void 반환값 없음
      */
     private static function addQueuedAction(
@@ -193,15 +264,78 @@ class HookListenerRegistrar
         string $method,
         int $priority,
         array $boundArgs = [],
+        array $queueOptions = [],
     ): void {
-        HookManager::addAction($hookName, function (...$args) use ($listenerClass, $method, $boundArgs) {
-            dispatch(new DispatchHookListenerJob(
-                $listenerClass,
-                $method,
-                HookArgumentSerializer::serialize([...$boundArgs, ...$args]),
-                HookContextCapture::capture(),
-            ));
+        HookManager::addAction($hookName, function (...$args) use ($listenerClass, $method, $boundArgs, $hookName, $queueOptions) {
+            if (! self::listenerClassExists($listenerClass, $hookName)) {
+                return;
+            }
+
+            self::dispatchJob($listenerClass, $method, [...$boundArgs, ...$args], $queueOptions, $hookName);
         }, $priority);
+    }
+
+    /**
+     * 리스너 잡을 만들어 디스패치합니다 (훅 콜백·dispatchQueued 공통).
+     *
+     * 옵션이 비면 ListenerQueueOptions::apply() 를 거치지 않는다 — 옵션을 선언하지 않은 리스너의 잡은 연결·큐·
+     * 재시도 설정이 종전과 같다(payload 에는 새 기본값 속성과 eventId 가 함께 실리지만 동작은 바뀌지 않는다).
+     *
+     * @param  string  $listenerClass  리스너 FQCN
+     * @param  string  $method  큐 워커에서 호출할 메서드명
+     * @param  array<int, mixed>  $args  메서드 인자 (직렬화 전)
+     * @param  array<string, mixed>  $queueOptions  정규화된 큐 실행 옵션
+     * @param  string  $hookName  경고 문맥에 남길 훅 이름
+     * @return void 반환값 없음
+     */
+    private static function dispatchJob(
+        string $listenerClass,
+        string $method,
+        array $args,
+        array $queueOptions,
+        string $hookName,
+    ): void {
+        $job = new DispatchHookListenerJob(
+            $listenerClass,
+            $method,
+            HookArgumentSerializer::serialize($args),
+            HookContextCapture::capture(),
+        );
+
+        if ($queueOptions !== []) {
+            ListenerQueueOptions::apply($job, $queueOptions, $listenerClass, $hookName);
+        }
+
+        dispatch($job);
+    }
+
+    /**
+     * 구독한 리스너 클래스가 지금도 있는지 봅니다 — 없으면 경고를 한 번 남기고 false.
+     *
+     * 리스너는 훅이 발화할 때 지연 로딩한다. 확장 업데이트가 리스너 클래스를 지우면, 업데이트를 실행한 프로세스에는
+     * 부팅 때 등록한 옛 구독이 남아 그 뒤 같은 훅(예: 업데이트 완료 훅)이 발화할 때 「Target class … does not exist」 로
+     * 터졌다 — 업데이트는 끝났는데 실패로 보고되고, 같은 훅의 다른 리스너도 돌지 못했다(#725). 사라진 리스너는 그 구독만
+     * 건너뛴다. 다음 프로세스는 새 판의 구독으로 부팅하므로 이 경고는 업데이트를 실행한 프로세스에서만 난다.
+     *
+     * @param  string  $listenerClass  리스너 FQCN
+     * @param  string  $hookName  발화 중인 훅 이름 (경고 문맥)
+     * @return bool 클래스가 있으면 true
+     */
+    private static function listenerClassExists(string $listenerClass, string $hookName): bool
+    {
+        if (class_exists($listenerClass)) {
+            return true;
+        }
+
+        if (! isset(self::$missingListenersReported[$listenerClass])) {
+            self::$missingListenersReported[$listenerClass] = true;
+            Log::warning('구독은 남아 있는데 리스너 클래스가 없어 건너뜁니다 — 확장 업데이트가 리스너를 지운 경우 이 프로세스에서만 일어납니다', [
+                'listener' => $listenerClass,
+                'hook' => $hookName,
+            ]);
+        }
+
+        return false;
     }
 
     /**
@@ -215,5 +349,6 @@ class HookListenerRegistrar
     public static function clear(): void
     {
         self::$registered = [];
+        self::$missingListenersReported = [];
     }
 }

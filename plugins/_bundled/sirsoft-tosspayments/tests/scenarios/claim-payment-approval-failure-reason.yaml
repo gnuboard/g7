@@ -3,7 +3,7 @@
 #   실제 라우트를 타서 각각 단언한다. 한 메서드가 세 축 조합을 동시에 재현하지 않으므로 cross product
 #   조합을 docblock @scenario 로 나열하면 거짓 매핑이 된다(같은 플러그인의 S4·S5 매니페스트 선례 동일).
 #   effects 는 전부 실제 검증 메서드에 @effects 로 매핑되어 있으며 그것이 실질 커버리지다.
-# 시나리오 매니페스트 — 클레임 추가결제가 실패할 때 사유가 어디까지 남는가 (#599 3차 실측 F-5·F-6)
+# 시나리오 매니페스트 — 클레임 추가결제가 실패할 때 사유가 어디까지 남는가 (#599 실측)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
 
 feature: claim_payment_approval_failure_reason

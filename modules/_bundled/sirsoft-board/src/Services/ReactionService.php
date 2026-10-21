@@ -4,8 +4,8 @@ namespace Modules\Sirsoft\Board\Services;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
-use App\Enums\PermissionType;
 use App\Extension\HookManager;
+use App\Helpers\PermissionHelper;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -21,7 +21,9 @@ use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReactionTypeRepositoryInterface;
-use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
+use Modules\Sirsoft\Board\Support\ReadHookContext;
+use Modules\Sirsoft\Board\Support\SecretContentGate;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 /**
  * 반응 서비스
@@ -35,8 +37,6 @@ use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
  */
 class ReactionService
 {
-    use ChecksBoardPermission;
-
     /**
      * 게시글 대상 타입.
      */
@@ -46,6 +46,11 @@ class ReactionService
      * 댓글 대상 타입.
      */
     public const TARGET_COMMENT = 'comment';
+
+    /**
+     * 관리자 반응 삭제의 스코프 기준 권한 식별자
+     */
+    private const ADMIN_MANAGE_PERMISSION = 'sirsoft-board.reactions.manage';
 
     /**
      * @param  ReactionRepositoryInterface  $reactionRepository  반응 이력 Repository
@@ -103,11 +108,11 @@ class ReactionService
             throw ReactionNotAllowedException::selfPost();
         }
 
-        // 비밀글 반응 차단 — 본문 열람 권한이 없는 사용자는 반응 불가.
-        // 신고(PostResource::canViewSecretContent)와 동일한 판정을 재사용해,
-        // 본문을 못 보는 사용자가 반응만 남기는 우회를 막는다.
-        // 작성자 본인은 위에서 이미 차단되므로 여기서는 게시판별 비밀글 열람 권한만 본다.
-        if ($post->is_secret && ! $this->canReactToSecretPost($board->slug)) {
+        // 비밀글 반응 차단 — 본문을 열 수 없는 사용자는 반응할 수 없고, 열 수 있으면 반응할 수 있다.
+        // 댓글·신고와 같은 SecretContentGate 판정을 쓴다 — 비밀번호 인증(열람 토큰)·스레드 경로 규칙·
+        // 비밀글 조회 스코프가 반응에도 똑같이 적용된다.
+        $post->setRelation('board', $board);
+        if ($post->is_secret && ! app(SecretContentGate::class)->canView($post)) {
             throw ReactionNotAllowedException::secretDenied();
         }
 
@@ -160,11 +165,13 @@ class ReactionService
             throw new PostNotFoundException((int) $comment->post_id);
         }
 
-        // 비밀글의 댓글 또는 비밀 댓글은 본문 열람 권한이 있어야 반응할 수 있다.
-        // 게시글 작성자 본인은 자기 글의 비밀 댓글을 볼 수 있으므로 허용한다.
-        if (($post->is_secret || $comment->is_secret)
-            && (int) $post->user_id !== $userId
-            && ! $this->canReactToSecretPost($board->slug)) {
+        // 비밀글의 댓글은 글 본문을, 비밀 댓글은 그 댓글 본문을 열 수 있어야 반응할 수 있다.
+        // 판정은 댓글 목록과 같은 SecretContentGate — 글 작성자·비밀번호 인증자·경로 규칙 앵커·
+        // 부모 댓글 작성자·권한자가 각자 볼 수 있는 만큼만 반응한다.
+        $post->setRelation('board', $board);
+        $gate = app(SecretContentGate::class);
+        if (($post->is_secret && ! $gate->canView($post))
+            || ($comment->is_secret && ! $gate->canViewSecretComment($comment, $post))) {
             throw ReactionNotAllowedException::secretDenied();
         }
 
@@ -183,7 +190,17 @@ class ReactionService
      */
     public function paginateForUser(int $userId, array $filters, int $perPage): LengthAwarePaginator
     {
-        return $this->reactionRepository->paginateByUser($userId, $filters, $perPage);
+        $hookContext = ReadHookContext::make(['subject_user_id' => $userId, 'filters' => $filters]);
+
+        HookManager::doAction('sirsoft-board.reaction.before_user_list', $hookContext);
+
+        $reactions = $this->reactionRepository->paginateByUser($userId, $filters, $perPage);
+
+        $reactions = HookManager::applyFilters('sirsoft-board.reaction.filter_user_list_result', $reactions, $hookContext);
+
+        HookManager::doAction('sirsoft-board.reaction.after_user_list', $reactions, $hookContext);
+
+        return $reactions;
     }
 
     /**
@@ -263,6 +280,12 @@ class ReactionService
      */
     public function removeByAdmin(int $id): bool
     {
+        // 반응 관리 권한의 스코프(본인만·소유역할)를 다시 본다 — 라우트가 {id} 라 미들웨어가 보지 않는다
+        $target = $this->reactionRepository->findById($id);
+        if ($target !== null && ! PermissionHelper::checkScopeAccess($target, self::ADMIN_MANAGE_PERMISSION)) {
+            throw new AccessDeniedHttpException(__('auth.scope_denied'));
+        }
+
         $removed = DB::transaction(function () use ($id) {
             $reaction = $this->reactionRepository->deleteById($id);
 
@@ -292,6 +315,12 @@ class ReactionService
      */
     public function removeManyByAdmin(array $ids): int
     {
+        // 범위 밖 반응이 하나라도 섞이면 아무것도 지우지 않고 전량 거부한다
+        $targets = $this->reactionRepository->findManyByIds($ids);
+        if (count(PermissionHelper::filterByScope($targets, self::ADMIN_MANAGE_PERMISSION)) !== $targets->count()) {
+            throw new AccessDeniedHttpException(__('auth.scope_denied'));
+        }
+
         $removed = DB::transaction(function () use ($ids) {
             $reactions = $this->reactionRepository->deleteManyByIds($ids);
 
@@ -497,22 +526,5 @@ class ReactionService
             $reaction->target_type,
             (int) $reaction->target_id,
         );
-    }
-
-    /**
-     * 비밀글에 반응할 수 있는 열람 권한이 있는지 확인합니다.
-     *
-     * 반응은 사용자(User) 페이지 전용 기능이므로 게시판별 비밀글 읽기 권한
-     * (posts.read-secret) 또는 게시판 매니저 권한만 인정합니다. 작성자 본인은
-     * 호출 이전에 이미 selfPost 로 차단되므로 여기서는 고려하지 않습니다.
-     * `PostResource::canViewSecretContent` 의 게시판 권한 판정과 동일한 기준입니다.
-     *
-     * @param  string  $slug  대상 게시판 슬러그
-     * @return bool 비밀글 반응 가능 여부
-     */
-    private function canReactToSecretPost(string $slug): bool
-    {
-        return $this->checkBoardPermission($slug, 'posts.read-secret', PermissionType::User)
-            || $this->checkBoardPermission($slug, 'manager', PermissionType::User);
     }
 }

@@ -2,8 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
+import { A } from '../basic/A';
 import { HighlightText } from '../shared/HighlightText';
 import type { EditorAttrs } from '../../types';
+import { handleLinkClick, mergeQueryIntoHref, resolveLinkHref } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -25,6 +27,11 @@ export interface FileTreeNode {
   badges?: Array<{ text: string; tone?: 'amber' | 'indigo' | 'red' | 'gray' }>;
   /** 보조 정보 — 크기·수정일 */
   meta?: { size?: string; updatedAt?: string; disabled?: boolean };
+  /**
+   * 이 파일을 여는 주소(예: 편집 화면 `?route=…`) — 있으면 이름이 행을 덮는 링크가 되어 가운데 클릭·Ctrl+클릭으로
+   * 새 탭에서 그 파일을 연다(#757). 보통 클릭은 지금처럼 onSelect. 주소로 가리킬 수 없는 항목(부분 레이아웃·확장 조각)은 비운다.
+   */
+  href?: string;
 }
 
 /** 한 파일에서 찾은 내용 매치. */
@@ -52,7 +59,7 @@ export interface FileTreeProps {
   searchKeyword?: string;
   /** 서버가 준 내용 검색 결과 */
   contentMatches?: FileTreeContentMatch[];
-  /** 아직 파일이 없는 가상 폴더 (PO 결정 D-2) */
+  /** 아직 파일이 없는 가상 폴더 (결정 D-2) */
   pendingFolders?: string[];
   /** 행 높이 — 터치 환경은 `touch`(44px) */
   rowSize?: 'compact' | 'touch';
@@ -62,6 +69,8 @@ export interface FileTreeProps {
   canManage?: boolean;
   /** 목록을 불러오는 중 */
   isLoading?: boolean;
+  /** 참이면 현재 주소의 쿼리를 파일 주소(href)에 합친다(같은 키는 파일 주소 쪽이 이긴다) */
+  hrefMergeQuery?: boolean;
   onSelect?: (key: string, revealAt?: FileTreeReveal) => void;
   onToggle?: (expandedPaths: string[]) => void;
   onCreateFile?: (parentPath: string) => void;
@@ -111,8 +120,8 @@ interface TreeSection {
 /** 배지 색 — 색만으로 구분하지 않도록 글자도 함께 싣는다. */
 const BADGE_TONE: Record<string, string> = {
   amber: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
-  indigo: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
-  red: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
+  indigo: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300',
+  red: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
   gray: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
 };
 
@@ -366,6 +375,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
   storageKey,
   canManage = true,
   isLoading = false,
+  hrefMergeQuery = false,
   onSelect,
   onToggle,
   onCreateFile,
@@ -707,7 +717,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                 <>
                   <Icon
                     name={open ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-right'}
-                    className="text-[10px] w-3 text-gray-400 dark:text-gray-500 shrink-0"
+                    className="text-[10px] w-3 text-gray-500 dark:text-gray-500 shrink-0"
                   />
                   <Icon
                     name={
@@ -720,14 +730,14 @@ export const FileTree: React.FC<FileTreeProps> = ({
                             : 'fa-regular fa-folder'
                     }
                     className={`text-xs w-4 shrink-0 ${
-                      item.groupKind ? 'text-gray-500 dark:text-gray-400' : 'text-amber-500 dark:text-amber-400'
+                      item.groupKind ? 'text-gray-500 dark:text-gray-400' : 'text-amber-600 dark:text-amber-400'
                     }`}
                   />
                   <Span className={`flex-1 min-w-0 truncate ${rowText} text-gray-700 dark:text-gray-200`}>
                     <HighlightText text={item.label} keyword={searchKeyword} />
                   </Span>
                   {item.pending && (
-                    <Span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 shrink-0">
+                    <Span className="px-1.5 py-0.5 text-[10px] rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 shrink-0">
                       {t('admin.templates.layout_edit.tree.pending_folder')}
                     </Span>
                   )}
@@ -743,7 +753,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                     </Span>
                   )}
                   {dirtyCount === 0 && fileCount > 0 && (
-                    <Span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">{fileCount}</Span>
+                    <Span className="text-[10px] text-gray-500 dark:text-gray-400 shrink-0">{fileCount}</Span>
                   )}
                 </>
               ),
@@ -758,6 +768,13 @@ export const FileTree: React.FC<FileTreeProps> = ({
       const isSelected = selectedKey === node.key;
       const match = matchesByKey.get(node.key);
       const lines = keyword ? (match?.lines ?? []).slice(0, MAX_VISIBLE_MATCH_LINES) : [];
+      // 주소가 있는 파일은 이름이 행을 덮는 링크다 — 행(treeitem)의 roving 초점·방향키·Enter 는 그대로이고 링크는 탭 순서 밖
+      const link = resolveLinkHref(node.href && hrefMergeQuery ? mergeQueryIntoHref(node.href) : node.href);
+      const labelClassName = `flex-1 min-w-0 truncate ${rowText} ${
+        isDirty
+          ? 'font-semibold text-amber-700 dark:text-amber-400'
+          : 'text-gray-700 dark:text-gray-200'
+      }`;
 
       return (
         <Div key={item.id}>
@@ -767,23 +784,37 @@ export const FileTree: React.FC<FileTreeProps> = ({
             role: 'treeitem',
             selected: isSelected,
             onActivate: () => onSelect?.(node.key),
-            extraClass: node.meta?.disabled ? 'opacity-50' : '',
+            extraClass: `${link ? 'relative ' : ''}`,
             children: (
               <>
                 <Icon
                   name={node.kind === 'extension' ? 'fa-solid fa-circle-plus' : 'fa-regular fa-file-code'}
-                  className="text-xs w-4 shrink-0 text-gray-400 dark:text-gray-500"
+                  className="text-xs w-4 shrink-0 text-gray-500 dark:text-gray-500"
                 />
-                <Span
-                  className={`flex-1 min-w-0 truncate ${rowText} ${
-                    isDirty
-                      ? 'font-semibold text-amber-700 dark:text-amber-400'
-                      : 'text-gray-700 dark:text-gray-200'
-                  }`}
-                  title={node.path}
-                >
-                  <HighlightText text={item.label} keyword={searchKeyword} />
-                </Span>
+                {link ? (
+                  <A
+                    href={link.href}
+                    {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    tabIndex={-1}
+                    title={node.path}
+                    onClick={(event) => {
+                      // 행(treeitem)의 선택 클릭이 다시 돌지 않게 멈춘다 — 보통 클릭만 선택(저장 안 한 버퍼 흐름 그대로),
+                      // 수정키 클릭은 브라우저가 새 탭에서 그 파일을 연다
+                      event.stopPropagation();
+                      handleLinkClick(event, () => {
+                        setActiveRowId(item.id);
+                        onSelect?.(node.key);
+                      });
+                    }}
+                    className={`${labelClassName} after:absolute after:inset-0 focus:outline-none`}
+                  >
+                    <HighlightText text={item.label} keyword={searchKeyword} />
+                  </A>
+                ) : (
+                  <Span className={labelClassName} title={node.path}>
+                    <HighlightText text={item.label} keyword={searchKeyword} />
+                  </Span>
+                )}
                 {(node.badges ?? []).map((badge, index) => (
                   <Span
                     key={index}
@@ -805,13 +836,14 @@ export const FileTree: React.FC<FileTreeProps> = ({
                   />
                 )}
                 {canManage && node.kind === 'layout' && (
-                  <Span className="flex items-center gap-1 shrink-0">
+                  // 이름 바꾸기·삭제는 덮는 링크 위층 — 링크 안에 들어가지 않는다
+                  <Span className={`${link ? 'relative z-10 ' : ''}flex items-center gap-1 shrink-0`}>
                     <Span
                       role="button"
                       tabIndex={-1}
                       aria-label={t('admin.templates.layout_edit.file.rename')}
                       title={t('admin.templates.layout_edit.file.rename')}
-                      className="px-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                      className="px-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                       onClick={(event: React.MouseEvent) => {
                         event.stopPropagation();
                         onRename?.(node.key);
@@ -824,7 +856,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                       tabIndex={-1}
                       aria-label={t('admin.templates.layout_edit.file.delete')}
                       title={t('admin.templates.layout_edit.file.delete')}
-                      className="px-1 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                      className="px-1 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
                       onClick={(event: React.MouseEvent) => {
                         event.stopPropagation();
                         onDelete?.(node.key);
@@ -852,7 +884,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
                   ariaLabel: t('admin.templates.layout_edit.search.goto_line', { line: line.line }),
                   children: (
                     <>
-                      <Span className="font-mono text-[11px] text-gray-400 dark:text-gray-500 w-9 text-right shrink-0">
+                      <Span className="font-mono text-[11px] text-gray-500 dark:text-gray-400 w-9 text-right shrink-0">
                         {line.line}
                       </Span>
                       <Span className="font-mono text-[11px] text-gray-500 dark:text-gray-400 flex-1 min-w-0 truncate">
@@ -914,12 +946,12 @@ export const FileTree: React.FC<FileTreeProps> = ({
                 <>
                   <Icon
                     name={open ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-right'}
-                    className="text-[10px] w-3 text-gray-400 dark:text-gray-500 shrink-0"
+                    className="text-[10px] w-3 text-gray-500 dark:text-gray-500 shrink-0"
                   />
                   <Span className="flex-1 min-w-0 truncate text-[11px] font-semibold text-gray-500 dark:text-gray-400">
                     {t(section.labelKey)}
                   </Span>
-                  <Span className="text-[10px] text-gray-400 dark:text-gray-500 shrink-0">{section.fileCount}</Span>
+                  <Span className="text-[10px] text-gray-500 dark:text-gray-400 shrink-0">{section.fileCount}</Span>
                 </>
               ),
             })}
