@@ -9,6 +9,7 @@
       </div>
       <button data-ref="toggle_add_button" type="button" class="btn btn-secondary text-sm" disabled="{{!_computed.canEditProviders || (providers?.data?.limits?.custom_count ?? 0) >= (providers?.data?.limits?.custom_limit ?? 0)}}">
         <on type="click">
+          <!-- 추가 폼을 열고 닫는다 — 열 때마다 입력·오류를 비워 앞서 쓰다 만 값이 남지 않게 -->
           <set-state target="local" merge="shallow" showAddForm="{{!_local.showAddForm}}" :newProviderErrors="null">
             <field name="newProvider">
               <field name="key" value=""/>
@@ -100,6 +101,7 @@
       <div class="flex justify-end gap-2">
         <button type="button" class="btn btn-secondary text-sm">
           <on type="click">
+            <!-- 추가를 취소한다 — 폼을 닫고 입력·오류를 비운다 -->
             <set-state target="local" merge="shallow" :showAddForm="false" :newProviderErrors="null">
               <field name="newProvider">
                 <field name="key" value=""/>

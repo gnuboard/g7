@@ -90,6 +90,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "집계 기간을 최근 7일로 — 주소 쿼리에 담아 새로고침 뒤에도 남긴다",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -120,6 +121,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "집계 기간을 최근 30일(기본)로",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {
@@ -150,6 +152,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "집계 기간을 최근 90일로",
                                                 "type": "click",
                                                 "handler": "navigate",
                                                 "params": {

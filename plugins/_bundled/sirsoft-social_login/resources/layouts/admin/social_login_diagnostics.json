@@ -160,6 +160,7 @@
                                         "name": "Button",
                                         "actions": [
                                             {
+                                                "comment": "진단 요약·시도 기록·웹훅 기록을 다시 받는다",
                                                 "type": "click",
                                                 "handler": "sequence",
                                                 "actions": [
@@ -609,6 +610,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "시도 기록을 제공자로 거른다 — 주소 쿼리에 담아 새로고침 뒤에도 남기고, 첫 쪽으로 돌린다",
                                                         "type": "change",
                                                         "handler": "navigate",
                                                         "params": {
@@ -655,6 +657,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "시도 기록을 결과로 거른다 — 주소 쿼리에 담고 첫 쪽으로 돌린다",
                                                         "type": "change",
                                                         "handler": "navigate",
                                                         "params": {
@@ -741,6 +744,7 @@
                                 "name": "DataGrid",
                                 "actions": [
                                     {
+                                        "comment": "시도 기록 쪽 이동 — 다른 필터는 그대로 두고 쪽 번호만 바꾼다",
                                         "type": "change",
                                         "event": "onPageChange",
                                         "handler": "navigate",
@@ -884,6 +888,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "웹훅 기록을 제공자로 거른다 — 주소 쿼리에 담고 첫 쪽으로 돌린다",
                                                         "type": "change",
                                                         "handler": "navigate",
                                                         "params": {
@@ -942,6 +947,7 @@
                                                 "name": "Select",
                                                 "actions": [
                                                     {
+                                                        "comment": "웹훅 기록을 처리 상태로 거른다 — 주소 쿼리에 담고 첫 쪽으로 돌린다",
                                                         "type": "change",
                                                         "handler": "navigate",
                                                         "params": {
@@ -1012,6 +1018,7 @@
                                 "name": "DataGrid",
                                 "actions": [
                                     {
+                                        "comment": "웹훅 기록 쪽 이동 — 다른 필터는 그대로 두고 쪽 번호만 바꾼다",
                                         "type": "change",
                                         "event": "onPageChange",
                                         "handler": "navigate",

@@ -85,6 +85,7 @@
           </button>
           <button type="button" data-ref="social_unlink_confirm_submit" class="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm cursor-pointer disabled:opacity-50" disabled="{{_global.socialLoginUnlinking}}">
             <on type="click">
+              <!-- 연결 해제 확정 — 진행 표지를 켜고 해제를 요청한다. 성공하면 창을 닫고 연결 목록을 다시 받으며, 실패하면 사유를 카드에 남긴다 -->
               <sequence>
                 <set-state target="global" :socialLoginUnlinking="true"/>
                 <api-call :auth_required="true" target="/api/plugins/sirsoft-social_login/me/accounts/{{_global.socialLoginUnlinkTarget?.provider_key}}" method="DELETE">

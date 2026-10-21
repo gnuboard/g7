@@ -33,6 +33,7 @@
           <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-social_login.signup.expired</p>
           <button type="button" class="w-full px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer">
             <on type="click">
+              <!-- 만료 안내에서 닫고 로그인 화면으로 — 가입 대기 정보가 사라졌으므로 처음부터 다시 시작하게 한다 -->
               <sequence>
                 <close-modal/>
                 <navigate path="/login"/>
@@ -49,6 +50,7 @@
               <label for="social_signup_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-social_login.signup.name</label>
               <input type="text" id="social_signup_name" name="social_name" value="{{_global.socialLoginForm?.name ?? ''}}" maxLength="255" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" disabled="{{_global.socialLoginBusy}}">
                 <on event="onChange">
+                  <!-- 입력한 이름을 가입 폼 전역 상태에 담는다 — 가입 요청 본문이 이 값을 읽는다 -->
                   <set-state target="global" socialLoginForm.name="{{$event.target.value}}"/>
                 </on>
               </input>
@@ -57,6 +59,7 @@
               <label for="social_signup_nickname" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:sirsoft-social_login.signup.nickname</label>
               <input type="text" id="social_signup_nickname" name="social_nickname" value="{{_global.socialLoginForm?.nickname ?? ''}}" maxLength="50" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" disabled="{{_global.socialLoginBusy}}">
                 <on event="onChange">
+                  <!-- 입력한 닉네임을 가입 폼 전역 상태에 담는다 -->
                   <set-state target="global" socialLoginForm.nickname="{{$event.target.value}}"/>
                 </on>
               </input>
@@ -73,6 +76,7 @@
             <div class="flex gap-2">
               <input type="email" id="social_signup_email" name="social_email" value="{{_global.socialLoginForm?.email ?? ''}}" maxLength="255" class="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" disabled="{{_global.socialLoginBusy || _global.socialLoginEmailVerified}}">
                 <on event="onChange">
+                  <!-- 이메일을 바꾸면 앞서 확인한 인증 상태를 무효로 돌린다 — 다른 주소로 확인 없이 가입하지 못하게 -->
                   <set-state target="global" socialLoginForm.email="{{$event.target.value}}" :socialLoginEmailVerified="false"/>
                 </on>
               </input>
@@ -100,6 +104,7 @@
             <div data-if="{{!!_global.socialLoginEmailChallengeId &amp;&amp; !_global.socialLoginEmailVerified}}" class="flex gap-2">
               <input type="text" name="social_email_code" value="{{_global.socialLoginForm?.code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" maxLength="10" placeholder="$t:sirsoft-social_login.signup.code_placeholder" class="flex-1 min-w-0 px-3 py-2 text-center tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" disabled="{{_global.socialLoginBusy}}">
                 <on event="onChange">
+                  <!-- 입력한 인증번호를 담는다 — [확인] 이 이 값으로 인증을 요청한다 -->
                   <set-state target="global" socialLoginForm.code="{{$event.target.value}}"/>
                 </on>
               </input>
@@ -133,11 +138,13 @@
             <div class="flex items-center gap-2">
               <checkbox name="social_agree_terms" checked="{{!!_global.socialLoginForm?.agree_terms}}" :autoBinding="false" aria-label="$t:auth.agree_terms_label" disabled="{{_global.socialLoginBusy}}">
                 <on type="change">
+                  <!-- 이용약관 동의 여부를 담는다(자동바인딩을 끈 체크박스라 직접 쓴다) -->
                   <set-state target="global" socialLoginForm.agree_terms="{{$event.target.checked}}"/>
                 </on>
               </checkbox>
               <button type="button" class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                 <on type="click">
+                  <!-- 약관 본문을 다시 받아 열람 창을 연다 — 운영자가 약관을 바꿨으면 최신 본문을 보여 준다 -->
                   <sequence>
                     <refetch-data-source dataSourceId="termsContent"/>
                     <open-modal target="termsModal"/>
@@ -150,11 +157,13 @@
             <div class="flex items-center gap-2">
               <checkbox name="social_agree_privacy" checked="{{!!_global.socialLoginForm?.agree_privacy}}" :autoBinding="false" aria-label="$t:auth.agree_privacy_label" disabled="{{_global.socialLoginBusy}}">
                 <on type="change">
+                  <!-- 개인정보 처리방침 동의 여부를 담는다(자동바인딩을 끈 체크박스라 직접 쓴다) -->
                   <set-state target="global" socialLoginForm.agree_privacy="{{$event.target.checked}}"/>
                 </on>
               </checkbox>
               <button type="button" class="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                 <on type="click">
+                  <!-- 처리방침 본문을 다시 받아 열람 창을 연다 -->
                   <sequence>
                     <refetch-data-source dataSourceId="privacyContent"/>
                     <open-modal target="privacyModal"/>
@@ -179,7 +188,7 @@
                   <success>
                     <set-state target="global" :socialLoginBusy="false"/>
                     <close-modal/>
-                    <navigate path="{{response.data?.handoff_url ?? response.data?.redirect_url ?? '/login'}}"/>
+                    <navigate path="{{response.data?.handoff_url ?? response.data?.redirect_url ?? '/login'}}" fallbackPath="/login"/>
                   </success>
                   <fail>
                     <set-state target="global" :socialLoginBusy="false" socialLoginSignupError="{{error.message}}" socialLoginSignupExpired="{{error.errors?.code === 'expired'}}"/>
@@ -205,6 +214,7 @@
           <div class="flex gap-2">
             <password-input id="social_existing_password_input" name="social_existing_password" value="{{_global.socialLoginForm?.password ?? ''}}" class="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" :showToggle="true" disabled="{{_global.socialLoginBusy}}">
               <on type="change">
+                <!-- 기존 계정 연결용 비밀번호를 담는다 — 연결 요청 본문이 이 값을 읽고, 요청 뒤에는 지운다 -->
                 <set-state target="global" socialLoginForm.password="{{$event.target.value}}"/>
               </on>
             </password-input>
@@ -218,7 +228,7 @@
                     <success>
                       <set-state target="global" :socialLoginBusy="false"/>
                       <close-modal/>
-                      <navigate path="{{response.data?.handoff_url ?? '/login'}}"/>
+                      <navigate path="{{response.data?.handoff_url ?? '/login'}}" fallbackPath="/login"/>
                     </success>
                     <fail>
                       <set-state target="global" :socialLoginBusy="false" socialLoginSignupError="{{error.message}}" socialLoginForm.password=""/>
@@ -256,6 +266,7 @@
           <div data-if="{{!!_global.socialLoginExistingChallengeId}}" class="flex gap-2">
             <input type="text" name="social_existing_code" value="{{_global.socialLoginForm?.existing_code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" maxLength="10" placeholder="$t:sirsoft-social_login.signup.code_placeholder" class="flex-1 min-w-0 px-3 py-2 text-center tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" disabled="{{_global.socialLoginBusy}}">
               <on event="onChange">
+                <!-- 기존 계정 연결용 인증번호를 담는다 -->
                 <set-state target="global" socialLoginForm.existing_code="{{$event.target.value}}"/>
               </on>
             </input>
@@ -269,7 +280,7 @@
                     <success>
                       <set-state target="global" :socialLoginBusy="false"/>
                       <close-modal/>
-                      <navigate path="{{response.data?.handoff_url ?? '/login'}}"/>
+                      <navigate path="{{response.data?.handoff_url ?? '/login'}}" fallbackPath="/login"/>
                     </success>
                     <fail>
                       <set-state target="global" :socialLoginBusy="false" socialLoginSignupError="{{error.message}}"/>
@@ -305,6 +316,7 @@
           </button>
           <button type="button" class="flex-1 px-3 py-3 sm:py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline cursor-pointer">
             <on type="click">
+              <!-- 연결을 그만두고 로그인 화면으로 — 가입 창과 연결 창을 모두 닫는다 -->
               <sequence>
                 <close-modal/>
                 <navigate path="/login"/>

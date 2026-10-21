@@ -5,7 +5,7 @@
  * `login` 액션과 **키 단위로 같아야** 로그인 화면이 같은 `onSuccess` 분기(2단계 인증 블록·비밀번호 변경 블록·휴면
  * 해제 안내)를 그대로 쓴다.
  *
- * @since engine-v1.81.0
+ * @since engine-v1.83.0
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';

@@ -235,7 +235,7 @@ export type ActionType =
   | 'loginTwoFactorResend' // 2단계 인증 코드 재발송
   | 'loginPasswordChange' // 로그인 비밀번호 변경 단계 완료 (engine-v1.77.0)
   | 'loginPasswordChangePostpone' // 로그인 비밀번호 변경 단계 연기 (engine-v1.77.0)
-  | 'loginHandoff' // 로그인 인계 코드 교환 — 외부 인증 로그인 (engine-v1.81.0)
+  | 'loginHandoff' // 로그인 인계 코드 교환 — 외부 인증 로그인 (engine-v1.83.0)
   | 'logout' // 로그아웃
   | 'setState' // 상태 변경
   | 'setError' // 에러 상태 설정
@@ -4539,7 +4539,7 @@ export class ActionDispatcher {
    * @param target 인증 타입 (지금은 user 만 — admin 은 서버가 인계를 지원하지 않는다)
    * @param params 요청 파라미터 (body에 code 포함)
    * @param context 액션 컨텍스트
-   * @since engine-v1.81.0
+   * @since engine-v1.83.0
    */
   private async handleLoginHandoff(
     target: string,
@@ -4580,7 +4580,7 @@ export class ActionDispatcher {
    *
    * @param result AuthManager 로그인 결과
    * @returns 레이아웃 `response`
-   * @since engine-v1.81.0
+   * @since engine-v1.83.0
    */
   private toLoginResponse(result: LoginResult): Record<string, any> {
     // 2단계 인증이 켜진 사이트에서는 아직 로그인이 끝나지 않았다. 레이아웃이 그 사실을

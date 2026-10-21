@@ -18,6 +18,7 @@
     <div class="flex justify-end gap-2">
       <button data-ref="impact_close_button_{{provider.key}}" type="button" class="btn btn-secondary text-sm">
         <on type="click">
+          <!-- 영향 패널을 닫는다 — 저장하지 않고 편집 칸으로 돌아간다 -->
           <set-state target="local" :impact="null"/>
         </on>
         <span>$t:common.close</span>

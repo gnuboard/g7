@@ -48,6 +48,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "추가 폼을 열고 닫는다 — 열 때마다 입력·오류를 비워 앞서 쓰다 만 값이 남지 않게",
                             "type": "click",
                             "handler": "setState",
                             "params": {
@@ -479,6 +480,7 @@
                             "name": "Button",
                             "actions": [
                                 {
+                                    "comment": "추가를 취소한다 — 폼을 닫고 입력·오류를 비운다",
                                     "type": "click",
                                     "handler": "setState",
                                     "params": {

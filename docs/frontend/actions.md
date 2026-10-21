@@ -432,7 +432,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `loginTwoFactorResend` | 인증번호 재발송 (기존 challenge 취소 후 새로 발행, engine-v1.65.0+) | 인증 타입 (admin/user) | body (challenge_id) |
 | `loginPasswordChange` | 로그인 비밀번호 변경 단계 완료 → 새 토큰 발급 (engine-v1.77.0+) | 인증 타입 (admin/user) | body (challenge_id, password, password_confirmation) |
 | `loginPasswordChangePostpone` | 로그인 비밀번호 변경 단계 연기 → 로그인 완료 (engine-v1.77.0+) | 인증 타입 (admin/user) | body (challenge_id) |
-| `loginHandoff` | 로그인 인계 코드 교환 → 로그인 (외부 인증, 반환값은 `login` 과 같음, engine-v1.81.0+) | 인증 타입 (user) | body (code) |
+| `loginHandoff` | 로그인 인계 코드 교환 → 로그인 (외부 인증, 반환값은 `login` 과 같음, engine-v1.83.0+) | 인증 타입 (user) | body (code) |
 | `logout` | 로그아웃 | - | - |
 | `setState` | 상태 변경 | - | target (global/local), 상태 값들 |
 | `setError` | 에러 상태 설정 | 에러 메시지 | - |

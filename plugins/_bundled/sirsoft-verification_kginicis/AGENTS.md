@@ -156,7 +156,7 @@ Cache 에 stash(`inicis:pending_record:{key}`) → 회원가입 완료 → `core
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 24개 | `plugins/_bundled/sirsoft-verification_kginicis/tests` |
+| PHPUnit | 25개 | `plugins/_bundled/sirsoft-verification_kginicis/tests` |
 | Vitest | 18개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 20개 | `tests/scenarios` |

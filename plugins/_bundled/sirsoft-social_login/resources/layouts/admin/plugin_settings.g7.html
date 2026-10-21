@@ -4,7 +4,21 @@
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
   <meta title="$t:sirsoft-social_login.settings.title" description="$t:sirsoft-social_login.settings.description"/>
   <!-- 정책 설정값 — 들어올 때마다 다시 받아 정책 폼 초기값으로 넣는다(저장 뒤 돌아왔을 때 낡은 값이 남지 않게) -->
-  <data-source id="settings" label_key="$t:sirsoft-social_login.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true"/>
+  <data-source id="settings" label_key="$t:sirsoft-social_login.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+    <error-handling>
+      <default>
+        <!-- 받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(저장 뒤 갱신 등) 실패는 받아 둔 값을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+  </data-source>
   <!-- 제공자 목록 — 내장 4·일반 OIDC·확장 등록(읽기 전용). 비밀값은 마스크로만 온다. 저장·정렬·추가·삭제 뒤 다시 받는다 -->
   <data-source id="providers" label_key="$t:sirsoft-social_login.editor.data_source.providers" type="api" endpoint="/api/plugins/sirsoft-social_login/admin/providers" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true"/>
   <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
@@ -129,6 +143,7 @@
               <code data-ref="redirect_uri_value_{{provider.key}}" class="flex-1 min-w-0 break-all text-xs bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 px-2 py-1.5 rounded">{{provider.redirect_uri}}</code>
               <button data-ref="copy_redirect_uri_button_{{provider.key}}" type="button" class="btn btn-secondary text-xs flex-center gap-1" aria-label="$t:sirsoft-social_login.admin.providers.copy">
                 <on type="click">
+                  <!-- 콜백 주소를 복사한다 — 제공자 콘솔에 그대로 붙여 넣는 값이다 -->
                   <action handler="sirsoft-social_login.copyToClipboard" text="{{provider.redirect_uri}}"/>
                 </on>
                 <icon name="fa-regular fa-copy" class="text-xs"/>
@@ -140,6 +155,7 @@
               <code class="flex-1 min-w-0 break-all text-xs bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 px-2 py-1.5 rounded">{{hook.url}}</code>
               <button type="button" class="btn btn-secondary text-xs flex-center gap-1" aria-label="$t:sirsoft-social_login.admin.providers.copy">
                 <on type="click">
+                  <!-- 웹훅 주소를 복사한다 — 제공자 콘솔의 웹훅 설정에 붙여 넣는 값이다 -->
                   <action handler="sirsoft-social_login.copyToClipboard" text="{{hook.url}}"/>
                 </on>
                 <icon name="fa-regular fa-copy" class="text-xs"/>
@@ -185,6 +201,7 @@
               </button>
               <button data-ref="test_login_button_{{provider.key}}" type="button" class="btn btn-secondary text-sm" disabled="{{!_computed.canEditProviders}}">
                 <on type="click">
+                  <!-- 브라우저 테스트 로그인 창을 연다 — 실제 제공자 화면까지 왕복해 설정을 확인한다 -->
                   <action handler="sirsoft-social_login.openTestLogin" provider="{{provider.key}}"/>
                 </on>
                 <span>$t:sirsoft-social_login.admin.providers.test_login</span>
@@ -205,6 +222,7 @@
               </button>
               <button data-ref="delete_provider_button_{{provider.key}}" data-if="{{provider.type === 'custom'}}" type="button" class="btn btn-danger text-sm" disabled="{{!_computed.canEditProviders}}">
                 <on type="click">
+                  <!-- 일반 OIDC 제공자를 지운다(확인 창을 거친다) — 성공하면 제공자 목록을 다시 받는다 -->
                   <api-call :auth_required="true" target="/api/plugins/sirsoft-social_login/admin/providers/{{provider.key}}" method="DELETE" confirm="$t:sirsoft-social_login.admin.providers.delete_confirm">
                     <success>
                       <toast type="success" message="$t:sirsoft-social_login.admin.providers.deleted"/>

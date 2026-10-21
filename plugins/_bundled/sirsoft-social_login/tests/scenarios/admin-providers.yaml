@@ -40,6 +40,7 @@ axes:
   identifier: [self, other]
   scopes: [text, array]
   provider: [disabled_with_links, kakao, custom_oidc]
+  fetch: [settings_failed]
 effects:
   - ambiguous_rejection_is_inconclusive
   - guest_401
@@ -150,6 +151,7 @@ effects:
   - kakao_webhook_app_id_editable
   - editor_covers_credential_schema
   - prune_clears_expired_mock_flag
+  - settings_fetch_failure_shows_error_page
 test_files:
   - plugins/_bundled/sirsoft-social_login/tests/Feature/Admin/ProviderControllerTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Feature/Admin/ProviderTestServiceTest.php

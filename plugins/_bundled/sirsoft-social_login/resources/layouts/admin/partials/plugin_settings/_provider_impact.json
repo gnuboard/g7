@@ -115,6 +115,7 @@
                     "name": "Button",
                     "actions": [
                         {
+                            "comment": "영향 패널을 닫는다 — 저장하지 않고 편집 칸으로 돌아간다",
                             "type": "click",
                             "handler": "setState",
                             "params": {

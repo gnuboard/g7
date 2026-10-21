@@ -99,6 +99,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "연결 해제 확정 — 진행 표지를 켜고 해제를 요청한다. 성공하면 창을 닫고 연결 목록을 다시 받으며, 실패하면 사유를 카드에 남긴다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

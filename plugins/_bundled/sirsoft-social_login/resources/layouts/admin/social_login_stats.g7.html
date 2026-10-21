@@ -24,6 +24,7 @@
         <div data-ref="period_buttons" class="flex items-center gap-1" role="group" aria-label="$t:sirsoft-social_login.admin.stats.period">
           <button data-ref="period_7" type="button" aria-pressed="{{String(query.days || 30) === '7'}}" class="{{String(query.days || 30) === '7' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
             <on type="click">
+              <!-- 집계 기간을 최근 7일로 — 주소 쿼리에 담아 새로고침 뒤에도 남긴다 -->
               <navigate path="/admin/plugins/sirsoft-social_login/stats" :mergeQuery="true">
                 <query :days="7"/>
               </navigate>
@@ -32,6 +33,7 @@
           </button>
           <button data-ref="period_30" type="button" aria-pressed="{{String(query.days || 30) === '30'}}" class="{{String(query.days || 30) === '30' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
             <on type="click">
+              <!-- 집계 기간을 최근 30일(기본)로 -->
               <navigate path="/admin/plugins/sirsoft-social_login/stats" :mergeQuery="true">
                 <query :days="30"/>
               </navigate>
@@ -40,6 +42,7 @@
           </button>
           <button data-ref="period_90" type="button" aria-pressed="{{String(query.days || 30) === '90'}}" class="{{String(query.days || 30) === '90' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
             <on type="click">
+              <!-- 집계 기간을 최근 90일로 -->
               <navigate path="/admin/plugins/sirsoft-social_login/stats" :mergeQuery="true">
                 <query :days="90"/>
               </navigate>

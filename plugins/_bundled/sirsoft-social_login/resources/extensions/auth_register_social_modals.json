@@ -128,6 +128,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "만료 안내에서 닫고 로그인 화면으로 — 가입 대기 정보가 사라졌으므로 처음부터 다시 시작하게 한다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [
@@ -195,6 +196,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "입력한 이름을 가입 폼 전역 상태에 담는다 — 가입 요청 본문이 이 값을 읽는다",
                                                             "event": "onChange",
                                                             "handler": "setState",
                                                             "params": {
@@ -233,6 +235,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "입력한 닉네임을 가입 폼 전역 상태에 담는다",
                                                             "event": "onChange",
                                                             "handler": "setState",
                                                             "params": {
@@ -319,6 +322,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "이메일을 바꾸면 앞서 확인한 인증 상태를 무효로 돌린다 — 다른 주소로 확인 없이 가입하지 못하게",
                                                             "event": "onChange",
                                                             "handler": "setState",
                                                             "params": {
@@ -434,6 +438,7 @@
                                                     "name": "Input",
                                                     "actions": [
                                                         {
+                                                            "comment": "입력한 인증번호를 담는다 — [확인] 이 이 값으로 인증을 요청한다",
                                                             "event": "onChange",
                                                             "handler": "setState",
                                                             "params": {
@@ -574,6 +579,7 @@
                                                     "name": "Checkbox",
                                                     "actions": [
                                                         {
+                                                            "comment": "이용약관 동의 여부를 담는다(자동바인딩을 끈 체크박스라 직접 쓴다)",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -595,6 +601,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "약관 본문을 다시 받아 열람 창을 연다 — 운영자가 약관을 바꿨으면 최신 본문을 보여 준다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -639,6 +646,7 @@
                                                     "name": "Checkbox",
                                                     "actions": [
                                                         {
+                                                            "comment": "개인정보 처리방침 동의 여부를 담는다(자동바인딩을 끈 체크박스라 직접 쓴다)",
                                                             "type": "change",
                                                             "handler": "setState",
                                                             "params": {
@@ -660,6 +668,7 @@
                                                     "name": "Button",
                                                     "actions": [
                                                         {
+                                                            "comment": "처리방침 본문을 다시 받아 열람 창을 연다",
                                                             "type": "click",
                                                             "handler": "sequence",
                                                             "actions": [
@@ -755,7 +764,8 @@
                                                         {
                                                             "handler": "navigate",
                                                             "params": {
-                                                                "path": "{{response.data?.handoff_url ?? response.data?.redirect_url ?? '/login'}}"
+                                                                "path": "{{response.data?.handoff_url ?? response.data?.redirect_url ?? '/login'}}",
+                                                                "fallbackPath": "/login"
                                                             }
                                                         }
                                                     ],
@@ -850,6 +860,7 @@
                                             "name": "PasswordInput",
                                             "actions": [
                                                 {
+                                                    "comment": "기존 계정 연결용 비밀번호를 담는다 — 연결 요청 본문이 이 값을 읽고, 요청 뒤에는 지운다",
                                                     "type": "change",
                                                     "handler": "setState",
                                                     "params": {
@@ -911,7 +922,8 @@
                                                                 {
                                                                     "handler": "navigate",
                                                                     "params": {
-                                                                        "path": "{{response.data?.handoff_url ?? '/login'}}"
+                                                                        "path": "{{response.data?.handoff_url ?? '/login'}}",
+                                                                        "fallbackPath": "/login"
                                                                     }
                                                                 }
                                                             ],
@@ -1048,6 +1060,7 @@
                                             "name": "Input",
                                             "actions": [
                                                 {
+                                                    "comment": "기존 계정 연결용 인증번호를 담는다",
                                                     "event": "onChange",
                                                     "handler": "setState",
                                                     "params": {
@@ -1112,7 +1125,8 @@
                                                                 {
                                                                     "handler": "navigate",
                                                                     "params": {
-                                                                        "path": "{{response.data?.handoff_url ?? '/login'}}"
+                                                                        "path": "{{response.data?.handoff_url ?? '/login'}}",
+                                                                        "fallbackPath": "/login"
                                                                     }
                                                                 }
                                                             ],
@@ -1229,6 +1243,7 @@
                                     "name": "Button",
                                     "actions": [
                                         {
+                                            "comment": "연결을 그만두고 로그인 화면으로 — 가입 창과 연결 창을 모두 닫는다",
                                             "type": "click",
                                             "handler": "sequence",
                                             "actions": [

@@ -56,6 +56,7 @@
           <a data-ref="settings_link" href="/admin/plugins/sirsoft-social_login/settings" class="btn btn-secondary text-sm">$t:sirsoft-social_login.settings.title</a>
           <button data-ref="refresh_button" type="button" class="btn-icon" title="$t:sirsoft-social_login.admin.diagnostics.refresh" aria-label="$t:sirsoft-social_login.admin.diagnostics.refresh">
             <on type="click">
+              <!-- 진단 요약·시도 기록·웹훅 기록을 다시 받는다 -->
               <sequence>
                 <refetch-data-source dataSourceId="diagnostics"/>
                 <refetch-data-source dataSourceId="attempts"/>
@@ -129,6 +130,7 @@
               <option value="">$t:sirsoft-social_login.admin.diagnostics.filters.all_providers</option>
               <option data-each="row in diagnostics?.data?.providers ?? []" value="{{row.key}}">{{row.label}}</option>
               <on type="change">
+                <!-- 시도 기록을 제공자로 거른다 — 주소 쿼리에 담아 새로고침 뒤에도 남기고, 첫 쪽으로 돌린다 -->
                 <navigate path="/admin/plugins/sirsoft-social_login/diagnostics" :mergeQuery="true">
                   <query attempt_provider="{{$event.target.value}}" :attempt_page="1"/>
                 </navigate>
@@ -143,6 +145,7 @@
               <option value="link">$t:sirsoft-social_login.admin.diagnostics.outcomes.link</option>
               <option value="login">$t:sirsoft-social_login.admin.diagnostics.outcomes.login</option>
               <on type="change">
+                <!-- 시도 기록을 결과로 거른다 — 주소 쿼리에 담고 첫 쪽으로 돌린다 -->
                 <navigate path="/admin/plugins/sirsoft-social_login/diagnostics" :mergeQuery="true">
                   <query attempt_outcome="{{$event.target.value}}" :attempt_page="1"/>
                 </navigate>
@@ -152,6 +155,7 @@
         </div>
         <data-grid data-type="composite" data-ref="attempts_datagrid" data="{{attempts?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{attempts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{attempts?.data?.pagination?.last_page ?? null}}" pageSize="20" idField="id" :selectable="false" emptyMessage="$t:sirsoft-social_login.admin.diagnostics.attempts.empty">
           <on type="change" event="onPageChange">
+            <!-- 시도 기록 쪽 이동 — 다른 필터는 그대로 두고 쪽 번호만 바꾼다 -->
             <navigate path="/admin/plugins/sirsoft-social_login/diagnostics" :mergeQuery="true">
               <query attempt_page="{{$args[0]}}"/>
             </navigate>
@@ -193,6 +197,7 @@
               <option value="naver">$t:sirsoft-social_login.admin.diagnostics.webhooks.providers.naver</option>
               <option value="facebook">$t:sirsoft-social_login.admin.diagnostics.webhooks.providers.facebook</option>
               <on type="change">
+                <!-- 웹훅 기록을 제공자로 거른다 — 주소 쿼리에 담고 첫 쪽으로 돌린다 -->
                 <navigate path="/admin/plugins/sirsoft-social_login/diagnostics" :mergeQuery="true">
                   <query webhook_provider="{{$event.target.value}}" :webhook_page="1"/>
                 </navigate>
@@ -205,6 +210,7 @@
               <option value="ignored">$t:sirsoft-social_login.admin.diagnostics.statuses.ignored</option>
               <option value="failed">$t:sirsoft-social_login.admin.diagnostics.statuses.failed</option>
               <on type="change">
+                <!-- 웹훅 기록을 처리 상태로 거른다 — 주소 쿼리에 담고 첫 쪽으로 돌린다 -->
                 <navigate path="/admin/plugins/sirsoft-social_login/diagnostics" :mergeQuery="true">
                   <query webhook_status="{{$event.target.value}}" :webhook_page="1"/>
                 </navigate>
@@ -214,6 +220,7 @@
         </div>
         <data-grid data-type="composite" data-ref="webhooks_datagrid" data="{{webhookEvents?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{webhookEvents?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{webhookEvents?.data?.pagination?.last_page ?? null}}" pageSize="20" idField="id" :selectable="false" emptyMessage="$t:sirsoft-social_login.admin.diagnostics.webhooks.empty">
           <on type="change" event="onPageChange">
+            <!-- 웹훅 기록 쪽 이동 — 다른 필터는 그대로 두고 쪽 번호만 바꾼다 -->
             <navigate path="/admin/plugins/sirsoft-social_login/diagnostics" :mergeQuery="true">
               <query webhook_page="{{$args[0]}}"/>
             </navigate>

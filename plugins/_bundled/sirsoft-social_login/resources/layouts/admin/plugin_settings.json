@@ -18,6 +18,33 @@
             "auth_required": true,
             "initLocal": "form",
             "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패(권한·없음 외) — 빈 폼·기본값으로 저장되지 않게 본문 오류 화면. 다시 받기(저장 뒤 갱신 등) 실패는 받아 둔 값을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
             "comment": "정책 설정값 — 들어올 때마다 다시 받아 정책 폼 초기값으로 넣는다(저장 뒤 돌아왔을 때 낡은 값이 남지 않게)"
         },
         {
@@ -497,6 +524,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "콜백 주소를 복사한다 — 제공자 콘솔에 그대로 붙여 넣는 값이다",
                                                                 "type": "click",
                                                                 "handler": "sirsoft-social_login.copyToClipboard",
                                                                 "params": {
@@ -563,6 +591,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "웹훅 주소를 복사한다 — 제공자 콘솔의 웹훅 설정에 붙여 넣는 값이다",
                                                                 "type": "click",
                                                                 "handler": "sirsoft-social_login.copyToClipboard",
                                                                 "params": {
@@ -774,6 +803,7 @@
                                                         "name": "Button",
                                                         "actions": [
                                                             {
+                                                                "comment": "브라우저 테스트 로그인 창을 연다 — 실제 제공자 화면까지 왕복해 설정을 확인한다",
                                                                 "type": "click",
                                                                 "handler": "sirsoft-social_login.openTestLogin",
                                                                 "params": {
@@ -843,6 +873,7 @@
                                                         "if": "{{provider.type === 'custom'}}",
                                                         "actions": [
                                                             {
+                                                                "comment": "일반 OIDC 제공자를 지운다(확인 창을 거친다) — 성공하면 제공자 목록을 다시 받는다",
                                                                 "type": "click",
                                                                 "handler": "apiCall",
                                                                 "target": "/api/plugins/sirsoft-social_login/admin/providers/{{provider.key}}",

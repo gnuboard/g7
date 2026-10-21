@@ -265,3 +265,27 @@ test('settings viewer sees provider cards read only', async ({ page }) => {
   await expect(page.locator('select[name="email_conflict_policy"]')).toBeDisabled();
   await expect(page.locator('#save_button')).toBeDisabled();
 });
+
+/**
+ * 정책 설정을 처음 받지 못하면 빈 정책 폼 대신 본문 오류 화면이 선다 — 빈 폼이 보이면 운영자가 기본값을 그대로 저장해 사이트 정책을
+ * 덮을 수 있다. 제공자 목록 응답은 그대로 두고 플러그인 설정 GET 만 실패시킨다.
+ *
+ * @scenario surface=provider_settings, fetch=settings_failed
+ * @effects settings_fetch_failure_shows_error_page
+ */
+test('settings fetch failure shows the error page instead of an empty policy form', async ({ page }) => {
+  await authenticatePage(page, admin);
+  await page.addInitScript(() => localStorage.setItem('g7_locale', 'ko'));
+  await page.route(
+    (url) => url.pathname.endsWith('/api/admin/plugins/sirsoft-social_login/settings'),
+    async (route) => {
+      if (route.request().method() !== 'GET') return route.fallback();
+      await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ success: false, message: 'e2e40 settings failure' }) });
+    },
+  );
+
+  await page.goto(`${SETTINGS}?tab=policy`);
+  await expect(page.locator('#error_code')).toHaveText('500', { timeout: 30_000 });
+  await expect(page.locator('select[name="email_conflict_policy"]')).toHaveCount(0);
+  await expect(page.locator('#save_button')).toHaveCount(0);
+});
