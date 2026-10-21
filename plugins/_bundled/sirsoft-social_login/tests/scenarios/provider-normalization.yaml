@@ -12,6 +12,8 @@ axes:
   attack: [tampered_payload, alg_none, alg_hs256]
   state: [one_time, redirect_whitelist]
   profile: [normalize_helpers, email_trust]
+  reconsent: ['on', 'off', population]
+  scopes: [configured]
 effects:
   - authorize_url_has_pkce_and_state
   - authorize_url_without_pkce
@@ -22,6 +24,7 @@ effects:
   - graph_version_from_settings
   - profile_variants_normalized
   - provider_error_code_mapped
+  - naver_profile_error_code_kept
   - id_token_sub_must_match_userinfo
   - id_token_nonce_checked
   - google_issuer_both_forms_accepted
@@ -45,11 +48,15 @@ effects:
   - redirect_limited_to_same_origin_path
   - masked_email_and_string_bool_handled
   - email_trust_matrix_resolved
+  - reconsent_expectation_covers_every_driver
+  - reconsent_params_only_on_reconsent
+  - kakao_reconsent_keeps_configured_scopes
 test_files:
   - plugins/_bundled/sirsoft-social_login/tests/Unit/Drivers/KakaoDriverTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Unit/Drivers/NaverDriverTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Unit/Drivers/GoogleDriverTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Unit/Drivers/FacebookDriverTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Unit/Drivers/OidcDriverTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Unit/Drivers/ReconsentParamsTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Unit/Support/Jwt/JwtSupportTest.php
   - plugins/_bundled/sirsoft-social_login/tests/Unit/Services/VerifierAndStateTest.php

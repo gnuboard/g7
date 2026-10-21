@@ -128,7 +128,7 @@ return [
             'provider_label' => '제공자 이름',
             'site_url' => '사이트 주소',
             'reset_url' => '비밀번호 찾기 화면 주소',
-            'failure_count' => '연속 실패 횟수',
+            'failure_count' => '최근 10분 실패 횟수',
             'last_error_code' => '마지막 오류 코드',
             'diagnostics_url' => '진단 화면 주소',
             'count' => '이번 시간 가입 수',

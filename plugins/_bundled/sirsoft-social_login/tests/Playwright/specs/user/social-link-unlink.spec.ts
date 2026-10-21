@@ -10,13 +10,18 @@ test.describe.configure({ mode: 'serial' });
 
 const id = runId();
 const email = `e2e40.link.${id}@example.test`;
+const naverOnlyEmail = `e2e40.linkbi.${id}@example.test`;
 let token: string;
+let naverOnlyToken: string;
 
 test.beforeAll(() => {
   members('purge');
   members('member', email);
   members('link', email, 'mock_kakao', `e2e-link-kakao-${id}`);
   token = members('token', email);
+  members('member', naverOnlyEmail);
+  members('link', naverOnlyEmail, 'mock_naver', `e2e-linkbi-naver-${id}`);
+  naverOnlyToken = members('token', naverOnlyEmail);
   mockOn();
 });
 
@@ -78,4 +83,21 @@ test('네이버 연결 → 해제 → 마지막 연결 해제는 막히고 비�
   await expect(page.locator('#social_accounts_last_method')).toBeVisible();
   await expect(page.locator('#social_accounts_set_password')).toBeEnabled();
   await expect(card.locator('li')).toHaveCount(1);
+});
+
+/**
+ * @scenario intent=link, provider=other_provider
+ * @effects e2e_kakao_link_button_uses_bi_label
+ */
+test('카카오 [연결] 버튼은 카카오 디자인 가이드 문구 「카카오 로그인」이고, 다른 제공자는 「… 연결」이다', async ({ page }) => {
+  await authenticatePage(page, naverOnlyToken);
+  await page.goto('/mypage/profile');
+  const card = page.locator('#social_accounts_card');
+  await expect(card.locator('li')).toHaveCount(1, { timeout: 15_000 });
+
+  const kakao = card.locator('button[data-social-provider="mock_kakao"]');
+  await expect(kakao).toHaveText('카카오 로그인');
+  await expect(kakao).toHaveAttribute('aria-label', '카카오 로그인');
+  expect(await kakao.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgb(254, 229, 0)');
+  await expect(card.locator('button[data-social-provider="mock_google"] .sl-button__text')).toHaveText(/ 연결$/);
 });

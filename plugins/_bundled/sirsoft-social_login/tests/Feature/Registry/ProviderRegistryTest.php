@@ -65,6 +65,31 @@ class ProviderRegistryTest extends PluginTestCase
     }
 
     /**
+     * 내장 제공자의 이메일 신뢰 기본값이 제공자 성격대로인지 확인한다 — 이메일 검증 표시를 주는 카카오·구글은 「검증 표시만
+     * 믿음」, 표시를 주지 않는 네이버·페이스북은 「항상 믿음」(그러지 않으면 두 제공자 가입자 모두가 인증번호를 받아야 한다).
+     * 다시 시딩해도 운영자가 바꾼 값은 지킨다.
+     *
+     * @scenario seed=builtin, email_trust=flag|trust
+     *
+     * @effects builtin_email_trust_defaults
+     *
+     * @return void 반환값 없음
+     */
+    public function test_builtin_email_trust_defaults_follow_provider_flag_support(): void
+    {
+        (new ProviderSeeder)->run();
+
+        $expected = ['kakao' => 'flag', 'naver' => 'trust', 'google' => 'flag', 'facebook' => 'trust'];
+        $seeded = SocialLoginProvider::query()->pluck('email_trust', 'key')->all();
+        $this->assertEqualsCanonicalizing(array_column((new ProviderSeeder)->getDefaults(), 'key'), array_keys($expected), '기대값 표가 내장 제공자 전체를 덮는다');
+        $this->assertEquals($expected, $seeded);
+
+        SocialLoginProvider::query()->where('key', 'naver')->update(['email_trust' => 'verify']);
+        (new ProviderSeeder)->run();
+        $this->assertSame('verify', SocialLoginProvider::query()->where('key', 'naver')->value('email_trust'), '운영자가 바꾼 값은 다시 시딩해도 그대로');
+    }
+
+    /**
      * 내장 제공자 이름 기본값은 기본 언어(ko·en)만 갖고, 다른 언어는 활성 언어팩의 시드(`seed/providers.json`)가 시딩 때
      * 채운다 — 시더가 일본어를 직접 들고 있으면 언어팩 번역과 값이 갈린다.
      *

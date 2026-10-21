@@ -107,7 +107,7 @@
             },
             "provider_failure_streak_threshold": {
                 "label": "Provider Failure Streak Threshold",
-                "hint": "Notify administrators when one provider fails this many times in a row. 0 disables the notice."
+                "hint": "Notify administrators once a day when one provider fails this many times within 10 minutes, even with successes in between. 0 disables the notice."
             }
         },
         "warnings": {
@@ -128,14 +128,15 @@
             "custom": "Sign in with {{provider}}"
         },
         "register_with": {
-            "kakao": "Sign up with Kakao",
+            "kakao": "Login with Kakao",
             "naver": "Sign up with NAVER",
             "google": "Sign up with Google",
             "facebook": "Sign up with Facebook",
             "custom": "Sign up with {{provider}}"
         },
         "link_with": "Link {{provider}}",
-        "reauth_with": "Confirm with {{provider}}"
+        "reauth_with": "Confirm with {{provider}}",
+        "reconsent_with": "Share your email with {{provider}} again"
     },
     "errors": {
         "provider_error": "Social sign-in failed. Please try again later or sign in another way.",
@@ -149,7 +150,7 @@
         "provider_unknown": "Sign-in with this provider is not available now.",
         "admin_blocked": "Administrator accounts cannot use social sign-in. Please sign in with your password.",
         "signup_disabled": "New sign-ups are not allowed with this provider. If you already have an account, sign in and link it from My Page.",
-        "email_required": "An email is required to sign up. Allow email sharing on the provider screen and try again.",
+        "email_required": "An email is required to sign up. Use the button below to reopen the provider consent screen and allow email sharing.",
         "account_missing": "The linked member cannot be found. Please sign up again.",
         "already_linked_other_user": "This social account is linked to another member.",
         "provider_already_linked": "Another account of this provider is already linked. Unlink it first.",
@@ -160,7 +161,8 @@
         "expired": "The pending sign-up has expired. Please start the social sign-in again."
     },
     "notices": {
-        "pending_verification": "Your sign-up is complete. You can sign in after identity verification."
+        "pending_verification": "Your sign-up is complete. You can sign in after identity verification.",
+        "reconsent": "You could not sign up because email sharing was not allowed. The button below reopens the provider consent screen."
     },
     "signup": {
         "title": "Sign up with {{provider}}",
@@ -313,7 +315,7 @@
                 "webhook_app_id": "Enter the app ID (digits) from the Kakao developer console to ignore unlink notices sent for other apps. Leave empty to skip the check.",
                 "webhook_ip_allowlist_enabled": "Accept webhooks only from Kakao sender ranges. Behind a reverse proxy, configure trusted proxies first.",
                 "placeholder_warning": "Members who sign up with a placeholder email (…@social.invalid) cannot receive mail — no mail two-factor, notices or password reset mail; they confirm themselves by signing in again with the provider.",
-                "email_trust": "\"Trust the verified flag only\" is the default. \"Always trust\" treats even unverified provider emails as confirmed.",
+                "email_trust": "Kakao, Google and generic OIDC default to \"Trust the verified flag only\"; Naver and Facebook, which send no email verified flag, default to \"Always trust\". \"Always trust\" treats even unverified provider emails as confirmed.",
                 "key": "2 to 50 lowercase letters, digits or underscores, starting with a letter. Built-in provider names and keys starting with mock_ are reserved.",
                 "label_example": "e.g. Company Account"
             },
@@ -341,10 +343,11 @@
                 "kakao": {
                     "client_secret_default_on": "Kakao turns Client Secret on by default. Issue the code under [Security] in the console and enter it (KOE010 otherwise).",
                     "biz_app_email": "Receiving emails requires switching to a business app and setting the email consent item.",
-                    "redirect_koe006": "KOE006 occurs when the Redirect URI differs from the registered value."
+                    "redirect_koe006": "KOE006 occurs when the Redirect URI differs from the registered value.",
+                    "webhook_https_443": "Kakao accepts only https on port 443 for the unlink webhook URL. If the site runs on another port, provide a separate address served on 443."
                 },
                 "naver": {
-                    "review_no_test_account": "Do not add a screen that asks reviewers for a designated ID and password (a rejection reason).",
+                    "review_no_test_account": "Until the review is approved, only test IDs registered in the console can sign in. Naver rejects the review if sign-up asks for a separate site password (this plugin never asks).",
                     "redirect_exact": "Register the service URL and callback URL exactly as the address above."
                 },
                 "google": {

@@ -6,6 +6,8 @@ description: |
   같은 이메일의 기존 회원은 기본으로 그 계정의 비밀번호나 이메일 인증번호로 확인한 뒤에만 연결한다.
 coverage_strategy: pairwise
 axes:
+  social_error: [email_required, other]
+  reconsent: ['1']
   email: [verified, missing, unverified, input, taken, verified_then_changed, locked, conflict]
   policy: [default, verify_link, auto_link_verified, never_link]
   signup_allowed: ['off']
@@ -26,6 +28,7 @@ axes:
   mail: [failed]
   viewport: ['390']
 effects:
+  - e2e_reconsent_button_reopens_provider_consent
   - e2e_signup_modal_code_consent_handoff
   - e2e_signup_card_shows_link
   - signup_creates_passwordless_user

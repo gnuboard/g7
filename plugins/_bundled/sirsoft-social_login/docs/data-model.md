@@ -29,7 +29,7 @@
 <!-- @generated:tables END -->
 
 <!-- @intent START -->
-`social_accounts.provider_user_id` 는 utf8mb4_bin 입니다. 네이버처럼 대소문자로 다른 계정을 구분하는 제공자가 있어, 기본 collation 이면 서로 다른 두 계정이 한 회원으로 묶입니다. 시도 기록은 통계 보존을 위해 회원 FK 를 두지 않고, 연결 테이블의 회원 FK 에도 CASCADE 를 걸지 않습니다 — 회원 삭제(`core.user.before_delete`)와 탈퇴(`core.user.after_withdraw`) 때 리스너 `CleanAccountsOnUserDelete`·`CleanAccountsOnUserWithdraw` 가 연결을 명시 삭제하고 제공자 권한 회수를 시도합니다.
+`social_accounts.provider_user_id` 는 utf8mb4_bin 입니다. 네이버처럼 대소문자로 다른 계정을 구분하는 제공자가 있어, 기본 collation 이면 서로 다른 두 계정이 한 회원으로 묶입니다. 시도 기록은 통계 보존을 위해 회원 FK 를 두지 않고, 연결 테이블의 회원 FK 에도 CASCADE 를 걸지 않습니다 — 회원 삭제(`core.user.before_delete`)와 탈퇴(`core.user.after_withdraw`) 때 리스너 `CleanAccountsOnUserDelete`·`CleanAccountsOnUserWithdraw` 가 연결을 명시 삭제하고 제공자 권한 회수를 시도합니다. 회원이 없는 연결 행(고아)은 생기지 않습니다 — `social_accounts.user_id` 는 NOT NULL 이고, 가입을 마치지 않은 사용자는 테이블이 아니라 캐시(가입 대기, 기본 30분)에만 있다가 만료됩니다. 그래서 고아를 지우는 정리 작업을 두지 않습니다.
 <!-- @intent END -->
 
 ## 마이그레이션

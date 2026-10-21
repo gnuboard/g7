@@ -14,8 +14,13 @@ axes:
   registry: [builtin, extension, custom_limit, mock_gate]
   seed: [builtin, language_pack_reseed, list_column]
   locale: [ko, en, ja]
+  reconsent: ['1', absent, invalid]
+  session: [fixed_id]
+  email_trust: [flag, trust]
 effects:
   - start_redirects_to_provider
+  - start_reconsent_asks_provider_again
+  - callback_success_regenerates_session
   - start_refused_back_to_login
   - test_result_page_shown_once
   - test_result_expires_after_sixty_seconds
@@ -29,6 +34,7 @@ effects:
   - login_without_link_goes_to_signup
   - test_login_requires_settings_update
   - builtin_four_seeded_disabled
+  - builtin_email_trust_defaults
   - builtin_labels_base_locales_only
   - reseed_entrypoint_runs_install_seeders
   - seed_merge_limited_to_translatable_columns

@@ -31,9 +31,10 @@ class OAuthController extends Controller
     /**
      * 로그인 왕복을 시작합니다.
      *
-     * 이미 로그인한 세션이면 제공자로 보내지 않고 복귀 주소로 보낸다.
+     * 이미 로그인한 세션이면 제공자로 보내지 않고 복귀 주소로 보낸다. `reconsent=1` 이면 제공자에 동의 화면을 다시 띄워 달라고
+     * 요청한다(이메일 제공을 거절해 가입이 막힌 회원이 로그인 화면의 재동의 단추로 들어온다).
      *
-     * @param  OAuthStartRequest  $request  요청 (redirect 쿼리)
+     * @param  OAuthStartRequest  $request  요청 (redirect·reconsent 쿼리)
      * @param  string  $provider  제공자 키
      * @return RedirectResponse 제공자 인가 화면 또는 로그인 화면(오류)
      */
@@ -46,7 +47,7 @@ class OAuthController extends Controller
         }
 
         try {
-            return redirect()->away($this->flow->start($provider, AttemptIntent::Login, $redirect));
+            return redirect()->away($this->flow->start($provider, AttemptIntent::Login, $redirect, reconsent: $request->wantsReconsent()));
         } catch (ProviderException $e) {
             return redirect()->to(OAuthFlowService::loginErrorUrl($e->errorCode, $redirect));
         }

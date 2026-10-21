@@ -476,7 +476,7 @@ discovery 문서를 캐시 없이 읽어 주소 칸 값을 돌려줍니다. 저�
 
 | 경로 | 동작 |
 | --- | --- |
-| `GET oauth/{provider}/start?redirect=/경로` | 로그인 왕복 시작. 켜진 제공자면 인가 화면으로 302, 아니면 `/login?social_error={코드}&provider={키}` (`provider_disabled`, `provider_unknown`). 이미 로그인한 세션이면 복귀 주소로. `throttle:30,1,sirsoft-social_login.oauth-start` |
+| `GET oauth/{provider}/start?redirect=/경로` | 로그인 왕복 시작. `reconsent=1` 이면 제공자에 동의 화면을 다시 띄워 달라고 요청한다(로그인 화면의 [이메일 제공 다시 동의하기] 단추, 다른 값은 무시). 켜진 제공자면 인가 화면으로 302, 아니면 `/login?social_error={코드}&provider={키}` (`provider_disabled`, `provider_unknown`). 이미 로그인한 세션이면 복귀 주소로. `throttle:30,1,sirsoft-social_login.oauth-start` |
 | `GET\|POST oauth/{provider}/callback` | 제공자 콜백. state 는 꺼내자마자 지운다(재사용 시 `state_invalid`). 시작한 의도에 따라 갈린다 — 관리자 테스트는 결과 화면, 로그인은 연결된 회원이면 코어 로그인 인계 주소(`/login?login_handoff=…`)·없으면 가입 모달(`/register?social_pending=…`), 연결은 마이페이지, 재확인은 돌아갈 주소. CSRF 면제, `throttle:60,1,sirsoft-social_login.oauth-callback` |
 | `GET test-result/{code}` | 연결 테스트 결과(일회용, `Cache-Control: no-store`). 두 번째 요청은 404 |
 | `GET\|POST mock/authorize` · `GET\|POST mock/token` · `GET mock/userinfo` · `GET mock/.well-known/openid-configuration` · `GET mock/jwks` | 모의 제공자. `php artisan sirsoft-social_login:mock --enable` 로 켰을 때만 응답하고, 꺼져 있으면 404. `throttle:120,1,sirsoft-social_login.mock` |

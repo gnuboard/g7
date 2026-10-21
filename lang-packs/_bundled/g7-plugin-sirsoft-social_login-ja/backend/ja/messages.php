@@ -128,7 +128,7 @@ return [
             'provider_label' => 'プロバイダー名',
             'site_url' => 'サイトのアドレス',
             'reset_url' => 'パスワード再設定画面のアドレス',
-            'failure_count' => '連続失敗回数',
+            'failure_count' => '直近10分の失敗回数',
             'last_error_code' => '最後のエラーコード',
             'diagnostics_url' => '診断画面のアドレス',
             'count' => 'この1時間の登録数',

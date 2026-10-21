@@ -120,3 +120,27 @@ test('휴대폰 폭에서 가입 모달의 [인증번호 받기]와 이메일 �
   await page.setViewportSize({ width: 1280, height: 900 });
   await expect.poll(async () => (await button.boundingBox())!.height).toBeLessThan(44);
 });
+
+/**
+ * @scenario provider=mock_naver, social_error=email_required|other, reconsent=1
+ * @effects e2e_reconsent_button_reopens_provider_consent
+ */
+test('이메일 제공을 거절해 돌아온 로그인 화면은 그 제공자의 재동의 단추를 보이고, 누르면 동의 화면 재요청을 실어 제공자로 간다', async ({ page }) => {
+  // 다른 사유로 돌아오면 재동의 단추는 없다
+  await page.goto('/login?social_error=access_denied&provider=mock_naver');
+  await dismissCookieBanner(page);
+  await expect(page.locator('[data-social-provider="mock_naver"]')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('link', { name: /이메일 제공 다시 동의하기/ })).toHaveCount(0);
+
+  await page.goto('/login?social_error=email_required&provider=mock_naver&redirect=%2Fmypage%2Fprofile');
+  const reconsent = page.getByRole('link', { name: /이메일 제공 다시 동의하기/ });
+  await expect(reconsent).toBeVisible({ timeout: 15_000 });
+  await expect(reconsent).toHaveAttribute('href', '/plugins/sirsoft-social_login/oauth/mock_naver/start?reconsent=1&redirect=%2Fmypage%2Fprofile');
+  // 평소 로그인 단추는 재동의를 요청하지 않는다
+  await expect(page.locator('[data-social-provider="mock_naver"]')).not.toHaveAttribute('href', /reconsent/);
+
+  await Promise.all([page.waitForURL(/\/mock\/authorize\?/), reconsent.click()]);
+  const authorize = new URL(page.url());
+  expect(authorize.searchParams.get('auth_type')).toBe('reprompt');
+  expect(authorize.searchParams.get('state')).toMatch(/^[A-Za-z0-9]{40}$/);
+});

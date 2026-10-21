@@ -3,6 +3,7 @@
 return [
     'attributes' => [
         'redirect' => '戻り先アドレス',
+        'reconsent' => '同意の再取得',
         'state' => 'ログイン確認値',
         'code' => '認可コード',
         'error' => 'プロバイダーエラー',

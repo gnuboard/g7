@@ -38,6 +38,7 @@ class StateStore
      * @param  bool  $useNonce  OIDC nonce 사용 여부
      * @param  int|null  $ttlMinutes  TTL(분)
      * @param  string|null  $challengeId  본인 재확인 의도의 코어 본인인증 요청 ID
+     * @param  bool  $reconsent  제공자 동의 화면 재요청 여부
      * @return AuthorizationRequest 저장한 시작 정보
      */
     public function create(
@@ -50,6 +51,7 @@ class StateStore
         bool $useNonce = false,
         ?int $ttlMinutes = null,
         ?string $challengeId = null,
+        bool $reconsent = false,
     ): AuthorizationRequest {
         $request = new AuthorizationRequest(
             providerKey: $providerKey,
@@ -62,6 +64,7 @@ class StateStore
             codeVerifier: $usePkce ? Str::random(64) : null,
             createdAt: time(),
             challengeId: $challengeId,
+            reconsent: $reconsent,
         );
 
         $ttl = max(1, $ttlMinutes ?? self::DEFAULT_TTL_MINUTES) * 60;

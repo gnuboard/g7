@@ -289,6 +289,10 @@ abstract class AbstractOAuth2Driver implements ProviderDriverInterface
 
         $query += $this->extraAuthorizeParams($req);
 
+        if ($req->reconsent) {
+            $query = array_merge($query, $this->reconsentParams($query));
+        }
+
         $base = (string) $this->endpoint('authorize');
 
         return $base.(str_contains($base, '?') ? '&' : '?').http_build_query($query, '', '&', PHP_QUERY_RFC3986);
@@ -303,6 +307,21 @@ abstract class AbstractOAuth2Driver implements ProviderDriverInterface
     protected function extraAuthorizeParams(AuthorizationRequest $req): array
     {
         return [];
+    }
+
+    /**
+     * 동의 화면을 다시 띄워 달라는 인가 파라미터를 반환합니다.
+     *
+     * 회원이 처음 동의할 때 이메일 제공을 끄면 제공자는 같은 앱의 다음 로그인에 동의 화면을 다시 보여 주지 않는다. 로그인 화면의
+     * 재동의 단추로 시작한 왕복(`AuthorizationRequest::$reconsent`)에만 붙는다. 기본값은 OpenID Connect 의 `prompt=consent` 이고,
+     * 다른 방식을 쓰는 제공자는 재정의한다. 돌려준 키는 기존 파라미터를 덮어쓴다.
+     *
+     * @param  array<string, string>  $query  지금까지 만든 인가 파라미터
+     * @return array<string, string> 덧붙이거나 덮어쓸 파라미터
+     */
+    protected function reconsentParams(array $query): array
+    {
+        return ['prompt' => 'consent'];
     }
 
     /**

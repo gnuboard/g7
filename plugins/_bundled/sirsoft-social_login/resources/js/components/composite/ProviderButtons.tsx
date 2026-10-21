@@ -2,7 +2,10 @@ import React from 'react';
 import { ProviderSymbol, type ProviderBrand } from '../../support/ProviderSymbol';
 
 /** 버튼이 하는 일 — 로그인·가입은 시작 주소로 이동, 연결·재확인은 로그인 회원의 API 를 거친다. */
-export type ProviderButtonsIntent = 'login' | 'register' | 'link' | 'reauth';
+export const PROVIDER_BUTTON_INTENTS = ['login', 'register', 'link', 'reauth'] as const;
+
+/** 버튼이 하는 일 */
+export type ProviderButtonsIntent = (typeof PROVIDER_BUTTON_INTENTS)[number];
 
 /** 공개 제공자 목록(`GET /api/plugins/sirsoft-social_login/providers`)의 한 항목 */
 export interface ProviderButtonItem {
@@ -79,6 +82,7 @@ function t(key: string, fallback: string, params?: Record<string, string>): stri
 
 /**
  * 버튼 문구를 고릅니다 — 내장 제공자는 각 사 버튼 가이드의 문구, 그 밖은 제공자 이름을 넣은 문구.
+ * 카카오 모양 버튼은 카카오 디자인 가이드가 문구를 정해 두었으므로 연결·재확인 버튼도 로그인 문구를 쓴다.
  *
  * @param intent 버튼이 하는 일
  * @param brand 모양 계열
@@ -88,6 +92,10 @@ function t(key: string, fallback: string, params?: Record<string, string>): stri
 function buttonText(intent: ProviderButtonsIntent, brand: ProviderBrand, label: string): string {
   const params = { provider: label };
   const builtin = BRANDS.includes(brand) ? brand : 'custom';
+
+  if (brand === 'kakao' && (intent === 'link' || intent === 'reauth')) {
+    return t('buttons.login_with.kakao', '카카오 로그인', params);
+  }
 
   switch (intent) {
     case 'register':

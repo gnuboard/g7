@@ -30,16 +30,16 @@
   "social_login_provider_failing": {
     "definition": {
       "name": "ソーシャルログインプロバイダーの連続失敗",
-      "description": "1つのプロバイダーのログイン往復が基準回数だけ連続して失敗すると、1日1回管理者に通知します。"
+      "description": "1つのプロバイダーのログイン往復が10分以内に基準回数以上失敗すると、1日1回管理者に通知します。"
     },
     "templates": {
       "mail": {
-        "subject": "[{app_name}] {provider_label} のソーシャルログインが連続して失敗しています",
-        "body": "<p>{name}様、{provider_label} のログインが {failure_count}回連続して失敗しました(最後のエラー {last_error_code})。</p><p><a href=\"{diagnostics_url}\">診断画面を開く</a></p>"
+        "subject": "[{app_name}] {provider_label} のソーシャルログインの失敗が続いています",
+        "body": "<p>{name}様、{provider_label} のログインが直近10分で {failure_count}回失敗しました(最後のエラー {last_error_code})。</p><p><a href=\"{diagnostics_url}\">診断画面を開く</a></p>"
       },
       "database": {
         "subject": "{provider_label} ログインの連続失敗",
-        "body": "{failure_count}回連続して失敗 — 最後のエラー {last_error_code}"
+        "body": "直近10分で {failure_count}回失敗 — 最後のエラー {last_error_code}"
       }
     }
   },

@@ -76,6 +76,17 @@ class FacebookDriver extends AbstractOAuth2Driver
     }
 
     /**
+     * 페이스북은 거절한 권한을 `auth_type=rerequest` 로 다시 묻는다.
+     *
+     * @param  array<string, string>  $query  지금까지 만든 인가 파라미터
+     * @return array<string, string> 덧붙일 파라미터
+     */
+    protected function reconsentParams(array $query): array
+    {
+        return ['auth_type' => 'rerequest'];
+    }
+
+    /**
      * 기본 요청 범위를 반환합니다.
      *
      * @return array<int, string> 범위 목록

@@ -20,7 +20,9 @@ class NaverDriverTest extends DriverTestCase
      * 네이버 인가 주소에 PKCE 가 없는지 확인한다.
      *
      * @scenario provider=naver
+     *
      * @effects authorize_url_without_pkce
+     *
      * @return void 반환값 없음
      */
     public function test_authorize_url_has_no_pkce(): void
@@ -35,7 +37,9 @@ class NaverDriverTest extends DriverTestCase
      * 네이버의 문자열 expires_in 과 갱신 토큰 부재를 처리하는지 확인한다.
      *
      * @scenario provider=naver
+     *
      * @effects token_normalized
+     *
      * @return void 반환값 없음
      */
     public function test_string_expires_in_and_missing_refresh(): void
@@ -53,7 +57,9 @@ class NaverDriverTest extends DriverTestCase
      * 네이버 토큰 발급 요청은 시작 때 만든 state 를 함께 보낸다(네이버 발급 요청 필수 값).
      *
      * @scenario provider=naver
+     *
      * @effects naver_token_request_carries_state
+     *
      * @return void 반환값 없음
      */
     public function test_token_exchange_sends_state(): void
@@ -69,7 +75,9 @@ class NaverDriverTest extends DriverTestCase
      * 네이버는 토큰 오류도 HTTP 200 본문으로 준다.
      *
      * @scenario provider=naver, error=invalid_request
+     *
      * @effects provider_error_code_mapped
+     *
      * @return void 반환값 없음
      */
     public function test_token_error_in_200_body(): void
@@ -81,6 +89,36 @@ class NaverDriverTest extends DriverTestCase
             $this->fail('예외가 나야 한다');
         } catch (ProviderException $e) {
             $this->assertSame('invalid_request', $e->errorCode);
+        }
+    }
+
+    /**
+     * 프로필 조회가 2xx 가 아닌 응답으로 실패하면 네이버가 준 사유 코드(두 가지 본문 모양)를 그대로 남기고, 사유 코드가 없을 때만
+     * 공통 코드(`profile_fetch_failed`)를 쓰는지 확인한다.
+     *
+     * @scenario provider=naver, error=http_401_resultcode|http_403_error_code|http_500_empty
+     *
+     * @effects naver_profile_error_code_kept
+     *
+     * @return void 반환값 없음
+     */
+    public function test_profile_http_error_keeps_naver_reason_code(): void
+    {
+        Http::fake(['openapi.naver.com/*' => Http::sequence()
+            ->push(['resultcode' => '024', 'message' => 'Authentication failed'], 401)
+            ->push(['errorCode' => '403', 'errorMessage' => 'Forbidden'], 403)
+            ->push([], 500)]);
+        $expected = [[401, '024', 'Authentication failed'], [403, '403', 'Forbidden'], [500, 'profile_fetch_failed', 'profile_fetch_failed']];
+
+        foreach ($expected as [$status, $code, $message]) {
+            try {
+                $this->driver(NaverDriver::class)->fetchProfile($this->tokens(), $this->request(false));
+                $this->fail('예외가 나야 한다');
+            } catch (ProviderException $e) {
+                $this->assertSame($code, $e->errorCode, "HTTP {$status}");
+                $this->assertSame($message, $e->getMessage());
+                $this->assertSame($status, $e->httpStatus);
+            }
         }
     }
 
@@ -104,7 +142,9 @@ class NaverDriverTest extends DriverTestCase
      * 부록 B 프로필 변종이 정규화되는지 확인한다.
      *
      * @scenario provider=naver, variant=appendix_b
+     *
      * @effects profile_variants_normalized
+     *
      * @param  string  $fixture  데이터 제공자가 준 값
      * @param  string|null  $id  데이터 제공자가 준 값
      * @param  string|null  $email  데이터 제공자가 준 값
@@ -136,7 +176,9 @@ class NaverDriverTest extends DriverTestCase
      * 네이버 연결 해제가 delete grant 로 가고 HTTP 상태로 판정하는지 확인한다.
      *
      * @scenario provider=naver
+     *
      * @effects revoke_judged_by_http_status
+     *
      * @return void 반환값 없음
      */
     public function test_revoke_posts_delete_grant_and_reads_status(): void

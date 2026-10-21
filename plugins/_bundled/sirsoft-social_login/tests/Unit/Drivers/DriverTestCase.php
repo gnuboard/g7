@@ -46,9 +46,10 @@ abstract class DriverTestCase extends PluginTestCase
      *
      * @param  bool  $pkce  PKCE 사용
      * @param  bool  $nonce  nonce 사용
+     * @param  bool  $reconsent  제공자 동의 화면 재요청
      * @return AuthorizationRequest 시작 정보
      */
-    protected function request(bool $pkce = true, bool $nonce = false): AuthorizationRequest
+    protected function request(bool $pkce = true, bool $nonce = false, bool $reconsent = false): AuthorizationRequest
     {
         return new AuthorizationRequest(
             providerKey: 'test',
@@ -59,6 +60,7 @@ abstract class DriverTestCase extends PluginTestCase
             nonce: $nonce ? 'nonce-xyz' : null,
             codeVerifier: $pkce ? str_repeat('v', 64) : null,
             createdAt: time(),
+            reconsent: $reconsent,
         );
     }
 

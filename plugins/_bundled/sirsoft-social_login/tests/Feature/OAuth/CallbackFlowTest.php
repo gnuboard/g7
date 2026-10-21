@@ -114,6 +114,30 @@ class CallbackFlowTest extends PluginTestCase
     }
 
     /**
+     * 로그인 화면의 재동의 단추(`reconsent=1`)로 시작하면 제공자에 동의 화면을 다시 띄워 달라고 요청하는지 확인한다.
+     * 평소 시작과 형식이 틀린 값(`reconsent=yes`)은 요청하지 않는다.
+     *
+     * @scenario intent=login, reconsent=1|absent|invalid
+     *
+     * @effects start_reconsent_asks_provider_again
+     *
+     * @return void 반환값 없음
+     */
+    public function test_reconsent_start_asks_provider_for_consent_again(): void
+    {
+        $scopeOf = function (string $query): ?string {
+            $location = (string) $this->get('/plugins/sirsoft-social_login/oauth/kakao/start'.$query)->headers->get('Location');
+            parse_str((string) parse_url($location, PHP_URL_QUERY), $q);
+
+            return $q['scope'] ?? null;
+        };
+
+        $this->assertSame('account_email', $scopeOf('?reconsent=1&redirect=/mypage'));
+        $this->assertNull($scopeOf('?redirect=/mypage'));
+        $this->assertNull($scopeOf('?reconsent=yes'));
+    }
+
+    /**
      * 꺼졌거나 없는 제공자는 로그인 화면 오류로 돌려보내는지 확인한다.
      *
      * @scenario intent=login, provider=disabled|unknown
@@ -129,6 +153,31 @@ class CallbackFlowTest extends PluginTestCase
 
         $this->get('/plugins/sirsoft-social_login/oauth/nobody/start')
             ->assertRedirect(url('/login').'?social_error=provider_unknown');
+    }
+
+    /**
+     * 제공자 왕복이 성공한 콜백은 세션 ID 를 새로 만들고 옛 ID 를 버리는지(세션 고정 방지 — 미리 심어 둔 ID 로는 로그인 뒤
+     * 세션을 쓸 수 없다) 확인한다.
+     *
+     * @scenario intent=test, response=success, session=fixed_id
+     *
+     * @effects callback_success_regenerates_session
+     *
+     * @return void 반환값 없음
+     */
+    public function test_successful_callback_regenerates_session(): void
+    {
+        $this->fakeKakao();
+        $this->startSession();
+        $before = session()->getId();
+        session()->getHandler()->write($before, 'planted');
+
+        // 브라우저가 들고 온 세션 쿠키(미리 심어 둔 ID)로 콜백을 연다
+        $this->withCookie(session()->getName(), $before)
+            ->get('/plugins/sirsoft-social_login/oauth/kakao/callback?code=c1&state='.$this->startTest())->assertStatus(302);
+
+        $this->assertNotSame($before, session()->getId(), '성공한 콜백은 세션 ID 를 바꾼다');
+        $this->assertSame('', (string) session()->getHandler()->read($before), '옛 세션 ID 는 버려진다');
     }
 
     /**

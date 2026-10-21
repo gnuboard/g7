@@ -37,6 +37,7 @@ class OAuthStartRequest extends FormRequest
     {
         return [
             'redirect' => ['nullable', 'string', 'max:2000'],
+            'reconsent' => ['nullable', 'in:1'],
         ];
     }
 
@@ -49,6 +50,7 @@ class OAuthStartRequest extends FormRequest
     {
         return [
             'redirect' => __('sirsoft-social_login::validation.attributes.redirect'),
+            'reconsent' => __('sirsoft-social_login::validation.attributes.reconsent'),
         ];
     }
 
@@ -73,5 +75,15 @@ class OAuthStartRequest extends FormRequest
         $redirect = $this->query('redirect');
 
         return ! $this->invalid && is_string($redirect) ? $redirect : null;
+    }
+
+    /**
+     * 제공자 동의 화면 재요청 여부를 반환합니다 (`reconsent=1` 일 때만).
+     *
+     * @return bool 재요청 여부
+     */
+    public function wantsReconsent(): bool
+    {
+        return $this->query('reconsent') === '1';
     }
 }

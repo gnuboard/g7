@@ -22,6 +22,7 @@ final class AuthorizationRequest
      * @param  string|null  $codeVerifier  PKCE code_verifier
      * @param  int  $createdAt  생성 시각(유닉스 초)
      * @param  string|null  $challengeId  본인 재확인(reauth) 의도의 코어 본인인증 요청 ID
+     * @param  bool  $reconsent  제공자에 동의 화면을 다시 띄워 달라고 요청할지 (이메일 제공을 거절한 회원의 재동의)
      */
     public function __construct(
         public readonly string $providerKey,
@@ -34,6 +35,7 @@ final class AuthorizationRequest
         public readonly ?string $codeVerifier = null,
         public readonly int $createdAt = 0,
         public readonly ?string $challengeId = null,
+        public readonly bool $reconsent = false,
     ) {}
 
     /**
@@ -54,6 +56,7 @@ final class AuthorizationRequest
             'code_verifier' => $this->codeVerifier,
             'created_at' => $this->createdAt,
             'challenge_id' => $this->challengeId,
+            'reconsent' => $this->reconsent,
         ];
     }
 
@@ -76,6 +79,7 @@ final class AuthorizationRequest
             codeVerifier: $data['code_verifier'] ?? null,
             createdAt: (int) ($data['created_at'] ?? 0),
             challengeId: isset($data['challenge_id']) && is_string($data['challenge_id']) ? $data['challenge_id'] : null,
+            reconsent: ($data['reconsent'] ?? false) === true,
         );
     }
 }

@@ -29,6 +29,8 @@ axes:
   type: [last_method, link_removed, provider_failing, signup_surge, webhook_failed, missing_member]
   channel: [database, mail]
   threshold: ['3', '0']
+  window: [within, expired]
+  success: [mixed]
   code: [provider, access_denied]
   path: [callback]
   input: [valid, out_of_range, bad_enum, other_plugin]
@@ -110,7 +112,8 @@ effects:
   - app_name_filled_in_every_notification
   - streak_fires_at_threshold
   - streak_cooldown_daily
-  - success_resets_streak
+  - success_does_not_reset_window
+  - failures_outside_window_dropped
   - user_cancel_not_counted
   - test_intent_not_counted
   - zero_threshold_disables

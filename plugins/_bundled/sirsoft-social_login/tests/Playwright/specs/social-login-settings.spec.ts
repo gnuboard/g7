@@ -10,7 +10,7 @@ test.beforeAll(()=>{environment('restore');environment('prepare');admin=issueTok
 test.afterAll(()=>{console.log(environment('restore'));});
 test.beforeEach(async({page})=>{await authenticatePage(page,admin);await page.addInitScript(()=>localStorage.setItem('g7_locale','ko'));});
 
-// 정책 칸은 설정 화면의 「정책」 탭에 있다(S3 에서 제공자 탭이 기본이 됐다).
+// 정책 칸은 설정 화면의 「정책」 탭에 있다(제공자 탭이 기본 탭이다).
 const SETTINGS='/admin/plugins/sirsoft-social_login/settings?tab=policy';
 const FIELDS=['email_conflict_policy','extra_info_mode','webhook_unlink_policy','two_factor_enabled','allow_admin_social_login','allow_unlink_last_method','revoke_on_unlink',
   'state_ttl_minutes','pending_signup_ttl_minutes','custom_provider_limit','profile_raw_retention_days','attempt_log_retention_days','webhook_event_retention_days',

@@ -128,7 +128,7 @@ return [
             'provider_label' => 'Provider name',
             'site_url' => 'Site address',
             'reset_url' => 'Forgot-password screen address',
-            'failure_count' => 'Consecutive failure count',
+            'failure_count' => 'Failures in the last 10 minutes',
             'last_error_code' => 'Last error code',
             'diagnostics_url' => 'Diagnostics screen address',
             'count' => 'Signups in this hour',

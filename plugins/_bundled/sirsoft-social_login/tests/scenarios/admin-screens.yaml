@@ -18,6 +18,7 @@ axes:
   response: [https, http_external, error]
   role: [settings_view_only]
 effects:
+  - provider_notes_translated_and_complete
   - settings_sources_and_tabs
   - settings_opens_read_only_for_view_permission
   - card_copy_test_impact_actions

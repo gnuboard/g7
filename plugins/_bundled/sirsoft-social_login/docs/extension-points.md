@@ -20,7 +20,7 @@
 | `sirsoft-social_login.provider.after_create` | action | 관리자가 일반 OIDC 제공자를 추가한 직후 발행됩니다. 인자: (array $summary — key·driver·type·enabled·label, 비밀값 없음) | 선언 (호출 위치 미확인) |
 | `sirsoft-social_login.provider.after_delete` | action | 관리자가 일반 OIDC 제공자를 삭제한 직후 발행됩니다. 인자: (array $summary) | 선언 (호출 위치 미확인) |
 | `sirsoft-social_login.provider.after_update` | action | 관리자가 제공자 설정을 바꾼 직후 발행됩니다(바뀐 칸이 있을 때만). 인자: (array $summary, array $changed — 바뀐 칸 이름, 값은 싣지 않음) | 선언 (호출 위치 미확인) |
-| `sirsoft-social_login.provider.failing` | action | 한 제공자의 로그인 왕복이 설정 기준만큼 잇달아 실패하면 하루 한 번 발행됩니다(회원의 동의 취소·관리자 연결 테스트는 세지 않음). 인자: (string $providerKey, int $count, string $lastErrorCode) | 선언 (호출 위치 미확인) |
+| `sirsoft-social_login.provider.failing` | action | 한 제공자의 로그인 왕복이 10분 안에 설정 기준 이상 실패하면 하루 한 번 발행됩니다(회원의 동의 취소·관리자 연결 테스트는 세지 않음). 인자: (string $providerKey, int $count, string $lastErrorCode) | 선언 (호출 위치 미확인) |
 | `sirsoft-social_login.provider.filter_registered` | filter | 제공자 드라이버 목록을 걸러 냅니다. 확장이 새 키로 ProviderDriverInterface 구현을 더할 수 있습니다(내장 키 덮어쓰기는 무시). 인자: (array<string, ProviderDriverInterface> $drivers) | 선언 (호출 위치 미확인) |
 | `sirsoft-social_login.signup.filter_registration_data` | filter | 소셜 가입으로 코어 가입에 넘기기 직전의 가입 데이터를 걸러 냅니다. 필수 키(name, email, 동의)는 지워도 되살립니다. 인자: (array $data, NormalizedProfile $profile) | 선언 (호출 위치 미확인) |
 | `sirsoft-social_login.signup.surge` | action | 한 제공자의 시간당 소셜 가입 수가 설정 기준에 닿으면 하루 한 번 발행됩니다. 인자: (string $providerKey, int $count, int $threshold) | 선언 (호출 위치 미확인) |
@@ -63,6 +63,30 @@
 <!-- @intent START -->
 코어 `core.plugin_settings.update_validation_rules` 를 구독해 이 플러그인 식별자일 때만 설정 검증 규칙을 더합니다. 자기 필터 `provider.filter_registered` 도 구독합니다 — 모의 게이트가 켜졌을 때만 모의 제공자 5종을 더해, 다른 확장이 제공자를 등록하는 경로를 그대로 실증합니다.
 <!-- @intent END -->
+
+## 활동 로그 훅
+
+> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 7개입니다.
+> 위 「구독 훅」 절이 이 확장의 구독 전량을 싣고, 이 절은 그중 **기록을 남기는 것**만 추려 훅마다 남기는 action 을 적습니다.
+
+> 새 항목을 추가하면 이 플러그인의 `lang/{ko,en}/activity_log.php` 에 action 라벨(`action.*`)과 description 본문(`description.*`)을,
+> 번들 일본어 팩 `backend/ja/activity_log.php` 에 같은 키를 함께 정의합니다. 이 리스너는 대상(loggable)이 없는 관리자 행위에도
+> 기록 주체 확장(`extension_origin`)을 남기므로 action 라벨을 이 플러그인 lang 에서 찾습니다.
+
+### 소셜 로그인 훅 (ActivityLogListener)
+
+**파일**: `plugins/_bundled/sirsoft-social_login/src/Listeners/ActivityLogListener.php`
+**총 7훅**
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-social_login.account.after_link` | `onLinked` | `account_linked`, `account_auto_linked`(자동 연결) — 가입과 함께 생긴 연결은 남기지 않음 | `ResolvesActivityLogType` 로 해석 | User |
+| `sirsoft-social_login.account.after_unlink` | `onUnlinked` | `account_unlinked`, `account_unlinked_by_admin`, `account_unlinked_by_webhook`(사유별) | `ResolvesActivityLogType` 로 해석 | User |
+| `sirsoft-social_login.auth.after_social_signup` | `onSignup` | `signup` | `ResolvesActivityLogType` 로 해석 | User |
+| `sirsoft-social_login.provider.after_create` | `onProviderCreated` | `provider_created` | `ResolvesActivityLogType` 로 해석 | - |
+| `sirsoft-social_login.provider.after_update` | `onProviderUpdated` | `provider_updated`(바뀐 칸 이름만, 값은 남기지 않음) | `ResolvesActivityLogType` 로 해석 | - |
+| `sirsoft-social_login.provider.after_delete` | `onProviderDeleted` | `provider_deleted` | `ResolvesActivityLogType` 로 해석 | - |
+| `core.plugin_settings.after_save` | `onSettingsSaved` | `settings_updated`(이 플러그인 저장 성공만, 위험 정책 6종은 값까지) | `ResolvesActivityLogType` 로 해석 | - |
 
 ## 훅 리스너
 
@@ -175,7 +199,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `clientSecret()` | 토큰 요청에 쓸 비밀값. 저장값을 풀 수 없으면 `credentials_unreadable` 로 멈춘다 |
 | `withConfig($row 또는 배열)` | 설정을 입힌 새 인스턴스(원본을 바꾸지 않는다) |
 
-OAuth 2.0 왕복이면 `Drivers\AbstractOAuth2Driver` 를 상속해 `driverName()`, `defaultEndpoints()`, `normalizeProfile()` 세 개만 채우면 됩니다. state 와 PKCE, 코드 교환, 오류 매핑, 요청 제한 시간은 부모가 맡고, 제공자가 토큰 요청에 값을 더 요구하면 `extraTokenParams()` 를, 인가 주소에 값을 더 붙이려면 `extraAuthorizeParams()` 를 덮어씁니다. OpenID Connect 제공자는 `Drivers\OidcDriver` 를 상속하면 discovery, JWKS 캐시, id_token RS256 검증까지 그대로 씁니다.
+OAuth 2.0 왕복이면 `Drivers\AbstractOAuth2Driver` 를 상속해 `driverName()`, `defaultEndpoints()`, `normalizeProfile()` 세 개만 채우면 됩니다. state 와 PKCE, 코드 교환, 오류 매핑, 요청 제한 시간은 부모가 맡고, 제공자가 토큰 요청에 값을 더 요구하면 `extraTokenParams()` 를, 인가 주소에 값을 더 붙이려면 `extraAuthorizeParams()` 를 덮어씁니다. 이메일 제공을 거절한 회원이 로그인 화면의 재동의 단추로 다시 시작하면 부모가 `reconsentParams()` 를 붙입니다 — 기본은 OpenID Connect 의 `prompt=consent` 이고, 동의 화면을 다른 값으로 다시 띄우는 제공자는 이 메서드를 덮어씁니다. OpenID Connect 제공자는 `Drivers\OidcDriver` 를 상속하면 discovery, JWKS 캐시, id_token RS256 검증까지 그대로 씁니다.
 
 확장이 등록한 드라이버는 테이블 행이 없으므로 필터가 돌려주는 동안 켜진 것으로 보고, 끄려면 필터 결과에서 빼면 됩니다. 가입 허용(`signup_allowed`), 이메일 미제공 처리(`email_missing_policy`), 이메일 신뢰(`email_trust`)는 드라이버 설정 배열에서 읽습니다. 관리자 제공자 탭에는 읽기 전용 카드로 보이고, 자격증명은 등록한 확장이 자기 설정에 보관해 `withConfig()` 로 넘깁니다. 버튼은 `custom` 모양(이름 첫 글자 원형)으로 그려집니다.
 

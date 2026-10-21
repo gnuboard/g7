@@ -103,6 +103,26 @@ describe('관리자 설정 화면', () => {
   const root = read(SETTINGS[0]);
 
   /**
+   * @scenario surface=provider_card, locale=ko|en
+   * @effects provider_notes_translated_and_complete
+   */
+  it('제공자 카드 주의사항은 서버가 고른 키가 ko·en 에 모두 있고, 카카오 웹훅 포트 제약과 네이버 검수 조건을 싣는다', () => {
+    const php = fs.readFileSync(path.join(ROOT, 'src/Services/ProviderAdminService.php'), 'utf8');
+    const block = /private const NOTES = \[([\s\S]*?)\n {4}\];/.exec(php)?.[1] ?? '';
+    const notes = [...block.matchAll(/'([a-z]+)' => \[([^\]]*)\]/g)].flatMap((m) => [...m[2].matchAll(/'([a-z0-9_]+)'/g)].map((n) => `${m[1]}.${n[1]}`));
+
+    expect(notes.length).toBeGreaterThan(0);
+    for (const locale of ['ko', 'en']) {
+      const missing = notes.filter((key) => typeof key.split('.').reduce((acc: any, part) => acc?.[part], lang(locale).admin.providers.notes) !== 'string');
+      expect(missing).toEqual([]);
+    }
+    expect(notes).toContain('kakao.webhook_https_443');
+    expect(lang('ko').admin.providers.notes.kakao.webhook_https_443).toContain('443');
+    expect(lang('ko').admin.providers.notes.naver.review_no_test_account).toContain('비밀번호를 따로 요구하면');
+    expect(lang('ko').admin.providers.notes.naver.review_no_test_account).toContain('테스트 아이디만');
+  });
+
+  /**
    * @scenario surface=settings, tab=providers|policy
    * @effects settings_sources_and_tabs
    */

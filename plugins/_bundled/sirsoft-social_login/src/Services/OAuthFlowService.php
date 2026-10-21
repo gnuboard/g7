@@ -62,11 +62,12 @@ class OAuthFlowService
      * @param  string|null  $redirect  복귀 주소
      * @param  int|null  $userId  시작한 회원 ID
      * @param  string|null  $challengeId  본인 재확인 의도의 코어 본인인증 요청 ID
+     * @param  bool  $reconsent  제공자에 동의 화면을 다시 띄워 달라고 요청할지 — 이메일 제공을 거절해 가입이 막힌 회원이 다시 동의할 때
      * @return string 인가 주소
      *
      * @throws ProviderException 제공자가 없거나 꺼져 있을 때
      */
-    public function start(string $providerKey, AttemptIntent $intent, ?string $redirect, ?int $userId = null, ?string $challengeId = null): string
+    public function start(string $providerKey, AttemptIntent $intent, ?string $redirect, ?int $userId = null, ?string $challengeId = null, bool $reconsent = false): string
     {
         $driver = $this->registry->get($providerKey);
         if ($driver === null) {
@@ -88,6 +89,7 @@ class OAuthFlowService
             useNonce: (bool) ($supports['oidc'] ?? false),
             ttlMinutes: (int) plugin_setting('sirsoft-social_login', 'state_ttl_minutes', StateStore::DEFAULT_TTL_MINUTES),
             challengeId: $challengeId,
+            reconsent: $reconsent,
         );
 
         return $driver->authorizeUrl($request);

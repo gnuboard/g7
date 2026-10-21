@@ -3,6 +3,7 @@
 return [
     'attributes' => [
         'redirect' => 'return path',
+        'reconsent' => 'ask for consent again',
         'state' => 'sign-in check value',
         'code' => 'authorization code',
         'error' => 'provider error',

@@ -1,6 +1,12 @@
 <!-- 로그인 화면 폼 아래에 소셜 로그인 버튼을 붙이는 조각 — 켜진 제공자가 없으면 영역째 그리지 않는다.
      버튼은 이 사이트의 시작 주소로 가는 링크이고, 로그인 뒤 돌아갈 주소(query.redirect)를 함께 싣는다. -->
 <extension extension-point="auth_login_extensions" mode="append" priority="100">
+  <!-- 이메일 제공을 거절해 가입이 막혀 돌아온 회원(social_error=email_required) — 그 제공자의 동의 화면을 다시 여는 단추.
+       제공자는 같은 앱의 다음 로그인에 동의 화면을 다시 띄우지 않으므로, 시작 주소에 재동의 요청(reconsent=1)을 싣는다. -->
+  <div data-ref="social_login_reconsent" data-if="{{query.social_error === 'email_required' &amp;&amp; (socialProviders?.data ?? []).some(p => p.key === query.provider)}}" class="mt-6 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4">
+    <p class="text-sm text-amber-800 dark:text-amber-200">$t:sirsoft-social_login.notices.reconsent</p>
+    <a data-ref="social_login_reconsent_link" href="{{((socialProviders?.data ?? []).find(p => p.key === query.provider)?.start_url ?? '') + '?reconsent=1' + (typeof query.redirect === 'string' &amp;&amp; query.redirect.startsWith('/') &amp;&amp; !query.redirect.startsWith('//') ? '&amp;redirect=' + encodeURIComponent(query.redirect) : '')}}" class="mt-3 inline-flex items-center justify-center w-full px-4 py-3 sm:py-2 text-sm font-medium rounded-lg bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-gray-900">$t:sirsoft-social_login.buttons.reconsent_with|provider={{(socialProviders?.data ?? []).find(p => p.key === query.provider)?.label ?? ''}}</a>
+  </div>
   <div data-ref="social_login_buttons_section" data-if="{{(socialProviders?.data ?? []).length > 0}}" class="mt-6">
     <div class="flex items-center gap-3 mb-4">
       <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"/>

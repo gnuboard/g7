@@ -54,15 +54,18 @@ class ProviderSeeder extends Seeder implements TranslatableSeederInterface
     /**
      * 내장 제공자 기본값을 반환합니다 — 이름은 기본 언어(ko·en)만. 다른 언어는 활성 언어팩 시드가 시딩 때 채운다.
      *
+     * 이메일 신뢰는 카카오·구글이 「검증 표시만 믿음」(`flag`), 이메일 검증 표시를 주지 않는 네이버·페이스북이 「항상 믿음」(`trust`)
+     * 이다 — 표시가 없다는 이유만으로 모든 가입자에게 인증번호를 받게 하지 않는다. 운영자는 제공자 카드에서 바꿀 수 있다.
+     *
      * @return array<int, array<string, mixed>> 기본값 목록
      */
     public function getDefaults(): array
     {
         return [
             ['key' => 'kakao', 'label' => ['ko' => '카카오', 'en' => 'Kakao'], 'sort_order' => 10],
-            ['key' => 'naver', 'label' => ['ko' => '네이버', 'en' => 'Naver'], 'sort_order' => 20],
+            ['key' => 'naver', 'label' => ['ko' => '네이버', 'en' => 'Naver'], 'sort_order' => 20, 'email_trust' => 'trust'],
             ['key' => 'google', 'label' => ['ko' => '구글', 'en' => 'Google'], 'sort_order' => 30],
-            ['key' => 'facebook', 'label' => ['ko' => '페이스북', 'en' => 'Facebook'], 'sort_order' => 40, 'graph_api_version' => 'v26.0'],
+            ['key' => 'facebook', 'label' => ['ko' => '페이스북', 'en' => 'Facebook'], 'sort_order' => 40, 'graph_api_version' => 'v26.0', 'email_trust' => 'trust'],
         ];
     }
 

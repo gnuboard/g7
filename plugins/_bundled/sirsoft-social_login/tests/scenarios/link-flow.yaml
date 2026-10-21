@@ -33,6 +33,7 @@ effects:
   - e2e_unlink_removes_row
   - e2e_last_method_409_notice
   - e2e_row_shows_provider_symbol
+  - e2e_kakao_link_button_uses_bi_label
   - link_start_returns_authorize_url
   - link_callback_creates_account
   - after_link_fired

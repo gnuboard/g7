@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Drivers;
 
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
 use Plugins\Sirsoft\SocialLogin\DTO\AuthorizationRequest;
 use Plugins\Sirsoft\SocialLogin\DTO\NormalizedProfile;
@@ -55,6 +56,42 @@ class NaverDriver extends AbstractOAuth2Driver
     public function supports(): array
     {
         return ['pkce' => false, 'revoke' => true, 'webhook' => true] + parent::supports();
+    }
+
+    /**
+     * 실패 응답(2xx 아님)을 제공자 오류로 바꿉니다.
+     *
+     * 네이버 프로필 API 는 실패 본문의 키가 정상 응답과 다르다 — `resultcode`/`message` 또는 `errorCode`/`errorMessage`
+     * (예: `024` 인증 실패, `028`, `403` 권한 없음). 그 사유 코드를 진단에 남기고, 둘 다 없으면 공통 처리(`error`·`error_code`)를 쓴다.
+     *
+     * @param  Response  $response  응답
+     * @param  string  $fallbackCode  기본 오류 코드
+     * @return ProviderException 예외
+     */
+    protected function errorFrom(Response $response, string $fallbackCode): ProviderException
+    {
+        $body = $response->json();
+        $body = is_array($body) ? $body : [];
+
+        $code = $body['resultcode'] ?? $body['errorCode'] ?? null;
+        if (! is_scalar($code) || (string) $code === '' || (string) $code === '00') {
+            return parent::errorFrom($response, $fallbackCode);
+        }
+
+        $message = $body['message'] ?? $body['errorMessage'] ?? '';
+
+        return new ProviderException((string) $code, mb_substr(is_scalar($message) ? (string) $message : '', 0, 500), $response->status());
+    }
+
+    /**
+     * 네이버는 `auth_type=reprompt` 로 정보 제공 동의 화면을 다시 띄운다.
+     *
+     * @param  array<string, string>  $query  지금까지 만든 인가 파라미터
+     * @return array<string, string> 덧붙일 파라미터
+     */
+    protected function reconsentParams(array $query): array
+    {
+        return ['auth_type' => 'reprompt'];
     }
 
     /**

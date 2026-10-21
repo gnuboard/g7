@@ -102,13 +102,51 @@ describe('사용자 화면 확장 조각', () => {
    */
   it('로그인 버튼은 로그인 확장점에 붙고, 켜진 제공자가 없으면 그리지 않으며, 복귀 주소를 넘긴다', () => {
     const json = load('auth_login_buttons');
-    const section = json.components[0];
+    const section = json.components.find((c: any) => c.id === 'social_login_buttons_section');
     const buttons = flatten(section).find((n) => n.name === 'sirsoft-social_login.ProviderButtons');
 
     expect(json.extension_point).toBe('auth_login_extensions');
     expect(section.if).toContain('socialProviders?.data');
     expect(buttons.props).toMatchObject({ intent: 'login', redirect: "{{query.redirect ?? '/'}}" });
     expect(json.data_sources[0]).toMatchObject({ id: 'socialProviders', endpoint: '/api/plugins/sirsoft-social_login/providers', auth_mode: 'optional' });
+  });
+
+  /**
+   * @scenario surface=login, social_error=email_required|other, provider=enabled|unknown, redirect=safe|unsafe|absent
+   * @effects login_reconsent_button_for_email_refusal
+   */
+  it('이메일 제공을 거절해 돌아온 회원에게만 그 제공자의 재동의 단추를 보이고, 시작 주소에 재동의 요청과 같은 출처 복귀 주소만 싣는다', () => {
+    const block = load('auth_login_buttons').components.find((c: any) => c.id === 'social_login_reconsent');
+    const link = flatten(block).find((n) => n.id === 'social_login_reconsent_link');
+    const run = (expr: string, query: Record<string, unknown>): unknown => {
+      const socialProviders = { data: [{ key: 'naver', label: '네이버', start_url: '/plugins/sirsoft-social_login/oauth/naver/start' }] };
+      // eslint-disable-next-line no-new-func
+      return new Function('query', 'socialProviders', `return (${expr.replace(/^\{\{|\}\}$/g, '')});`)(query, socialProviders);
+    };
+
+    expect(run(block.if, { social_error: 'email_required', provider: 'naver' })).toBe(true);
+    expect(run(block.if, { social_error: 'access_denied', provider: 'naver' })).toBe(false);
+    expect(run(block.if, { social_error: 'email_required', provider: 'kakao' })).toBe(false);
+
+    const start = '/plugins/sirsoft-social_login/oauth/naver/start?reconsent=1';
+    expect(run(link.props.href, { provider: 'naver', redirect: '/mypage' })).toBe(`${start}&redirect=%2Fmypage`);
+    expect(run(link.props.href, { provider: 'naver', redirect: '//evil.test' })).toBe(start);
+    expect(run(link.props.href, { provider: 'naver' })).toBe(start);
+    expect(link.name).toBe('A');
+    expect(link.text).toContain('$t:sirsoft-social_login.buttons.reconsent_with|provider=');
+  });
+
+  /**
+   * @scenario surface=register, brand=all, locale=ko|en
+   * @effects kakao_register_label_follows_bi
+   */
+  it('카카오 단추는 가입 화면에서도 카카오 디자인 가이드가 허용한 로그인 문구를 쓴다', () => {
+    for (const locale of ['ko', 'en']) {
+      const buttons = lang(locale).buttons;
+      expect(buttons.register_with.kakao).toBe(buttons.login_with.kakao);
+    }
+    expect(lang('ko').buttons.register_with.kakao).toBe('카카오 로그인');
+    expect(lang('en').buttons.register_with.kakao).toBe('Login with Kakao');
   });
 
   /**

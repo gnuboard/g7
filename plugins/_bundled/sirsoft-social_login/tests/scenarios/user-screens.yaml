@@ -8,7 +8,7 @@ description: |
 axes:
   intent: [login, register, link, reauth]
   brand: [all]
-  redirect: [external]
+  redirect: [external, safe, unsafe, absent]
   i18n: [missing]
   providers: [none]
   network: [failed]
@@ -16,7 +16,7 @@ axes:
   url: [same_origin, https, http_external, javascript]
   handler: [startLink, startReauth]
   response: [ok, '409']
-  provider: [invalid]
+  provider: [invalid, enabled, unknown]
   surface: [all, login, register, register_modal, signup_modal, existing_modal, mypage_card, profile_edit_gate, change_password]
   viewport: ['390']
   locale: [ko, en]
@@ -31,6 +31,7 @@ axes:
   policy: [allow_unlink_last_method, signup_before_submit]
   code: [sent]
   theme: [light, dark]
+  social_error: [email_required, other]
 effects:
   - buttons_are_links_with_redirect
   - brand_class_per_provider
@@ -51,6 +52,9 @@ effects:
   - no_deferred_translation_in_data_each
   - modal_state_lives_in_global
   - login_buttons_slot_and_guard
+  - login_reconsent_button_for_email_refusal
+  - kakao_register_label_follows_bi
+  - kakao_label_follows_bi_for_every_intent
   - provider_list_failure_is_silent
   - login_notices_toast_with_fallback
   - register_buttons_hidden_during_social_signup

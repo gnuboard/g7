@@ -65,6 +65,24 @@ class KakaoDriver extends AbstractOAuth2Driver
     }
 
     /**
+     * 카카오는 `scope` 에 동의 항목을 적어 보내면 아직 동의하지 않은 항목의 동의 화면(추가 항목 동의)을 띄운다.
+     *
+     * 범위를 비워 둔 사이트(콘솔 동의 항목 설정을 그대로 쓰는 경우)도 이메일 동의 항목(`account_email`)을 다시 묻게 한다.
+     *
+     * @param  array<string, string>  $query  지금까지 만든 인가 파라미터
+     * @return array<string, string> 덮어쓸 파라미터
+     */
+    protected function reconsentParams(array $query): array
+    {
+        $scopes = isset($query['scope']) && $query['scope'] !== '' ? explode(' ', $query['scope']) : [];
+        if (! in_array('account_email', $scopes, true)) {
+            $scopes[] = 'account_email';
+        }
+
+        return ['scope' => implode(' ', $scopes)];
+    }
+
+    /**
      * 설정 화면 자격증명 필드 정의를 반환합니다 — 어드민 키가 더 있습니다.
      *
      * @return array<int, array<string, mixed>> 필드 정의

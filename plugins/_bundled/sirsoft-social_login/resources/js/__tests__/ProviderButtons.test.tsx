@@ -7,7 +7,7 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
-import { ProviderButtons } from '../components/composite/ProviderButtons';
+import { ProviderButtons, PROVIDER_BUTTON_INTENTS } from '../components/composite/ProviderButtons';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -88,6 +88,40 @@ describe('ProviderButtons', () => {
     });
 
     expect(texts).toEqual(['사내 계정(으)로 로그인', '사내 계정(으)로 가입', '사내 계정 연결', '사내 계정(으)로 다시 확인']);
+  });
+
+  /**
+   * @scenario intent=login|register|link|reauth, brand=kakao|naver, locale=ko|en
+   * @effects kakao_label_follows_bi_for_every_intent
+   */
+  it('카카오 모양 버튼은 모든 의도에서 카카오 디자인 가이드의 로그인 문구를 쓰고, 다른 제공자는 의도별 문구를 쓴다', () => {
+    expect(PROVIDER_BUTTON_INTENTS.length).toBeGreaterThan(0);
+
+    for (const locale of ['ko', 'en']) {
+      const messages = JSON.parse(readFileSync(resolve(__dirname, `../../lang/${locale}.json`), 'utf8'));
+      const lookup = (key: string, params?: Record<string, string>): string => {
+        const value = key.replace('sirsoft-social_login.', '').split('.').reduce((node: any, part) => node?.[part], messages);
+        return typeof value === 'string'
+          ? Object.entries(params ?? {}).reduce((text, [name, v]) => text.replace(`{{${name}}}`, v), value)
+          : key;
+      };
+      (window as any).G7Core = { dispatch, t: lookup };
+
+      const textOf = (intent: (typeof PROVIDER_BUTTON_INTENTS)[number], provider: (typeof providers)[number]): string => {
+        const { container, unmount } = render(<ProviderButtons providers={[provider]} intent={intent} />);
+        const button = container.querySelector('[data-social-provider]') as HTMLElement;
+        const text = button.querySelector('.sl-button__text')?.textContent ?? '';
+        expect(button.getAttribute('aria-label')).toBe(text);
+        unmount();
+        return text;
+      };
+
+      for (const intent of PROVIDER_BUTTON_INTENTS) {
+        expect(textOf(intent, providers[0])).toBe(messages.buttons.login_with.kakao);
+      }
+      expect(textOf('link', providers[1])).toBe(lookup('buttons.link_with', { provider: '네이버' }));
+      expect(textOf('reauth', providers[1])).toBe(lookup('buttons.reauth_with', { provider: '네이버' }));
+    }
   });
 
   /**
