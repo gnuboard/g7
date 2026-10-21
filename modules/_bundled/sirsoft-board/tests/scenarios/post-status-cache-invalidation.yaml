@@ -1,0 +1,25 @@
+feature: 블라인드·복원 뒤 목록 캐시를 비운다 (#147 같은 결함군)
+
+description: |
+  삭제는 게시글 캐시를 비우지만 블라인드와 블라인드 복원은 비우지 않아, 홈 최근·인기 게시글과 이웃 글의
+  이전/다음 글이 최대 하루(캐시 TTL) 동안 예전 상태로 남았다. 상태 변경 공통 지점(executeBlind·executeRestore)
+  에서 비우므로 단건·일괄·신고 처리·자동 숨김 다섯 경로가 함께 덮인다.
+
+axis_notes:
+  path: |
+    상태를 바꾸는 진입 경로. 경로마다 캐시가 남던 세 표면(최근 게시글·인기 게시글·이웃 글의 이전/다음)을
+    한 케이스 안에서 모두 단언한다 — 표면은 축이 아니라 효과(effects)로 둔다.
+
+axes:
+  path: [blind, restore, bulk_blind, bulk_restore, report_blind, report_restore, auto_hide]
+
+effects:
+  - blinded_post_leaves_recent      # 블라인드 직후 최근 게시글 캐시에서 빠진다
+  - blinded_post_leaves_popular     # 블라인드 직후 인기 게시글 캐시에서 빠진다
+  - blinded_post_leaves_adjacent    # 블라인드 직후 이웃 글의 이전/다음에서 빠진다
+  - restored_post_returns_to_recent    # 복원 직후 최근 게시글에 다시 나온다
+  - restored_post_returns_to_popular   # 복원 직후 인기 게시글에 다시 나온다
+  - restored_post_returns_to_adjacent  # 복원 직후 이전/다음에 다시 나온다
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/PostStatusChangeCacheInvalidationTest.php

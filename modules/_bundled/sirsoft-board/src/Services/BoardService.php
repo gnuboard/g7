@@ -37,6 +37,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Support\BoardReadScope;
+use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 use Modules\Sirsoft\Board\Support\ReadHookContext;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -451,8 +452,9 @@ class BoardService
         HookManager::doAction('sirsoft-board.post.before_recent_list', $context);
 
         // 키의 v2 는 항목에 작성자 ID(읽기 스코프 판정용)를 담기 전의 캐시를 다시 읽지 않기 위한 것이다.
+        // 확장이 최근 게시글을 사람·언어마다 좁히면 그 축(filter_list_cache_variant)이 키 끝에 붙는다 — 없으면 키는 그대로
         $posts = $this->cache->remember(
-            "recent_posts_v2_{$limit}_{$locale}",
+            "recent_posts_v2_{$limit}_{$locale}".PostQueryExtensions::cacheSuffix('recent'),
             fn () => $this->getRecentPosts($limit),
             $ttl,
             tags: ['board-posts']
@@ -494,7 +496,7 @@ class BoardService
         HookManager::doAction('sirsoft-board.post.before_popular_list', $context);
 
         $posts = $this->cache->remember(
-            "popular_posts_v2_{$period}_{$limit}_{$locale}",
+            "popular_posts_v2_{$period}_{$limit}_{$locale}".PostQueryExtensions::cacheSuffix('popular'),
             fn () => $this->getPopularPosts($period, $limit),
             $ttl,
             tags: ['board-posts']
@@ -1383,7 +1385,10 @@ class BoardService
      */
     public function getRecentPosts(int $limit): array
     {
-        return $this->boardRepository->getRecentPosts($limit);
+        return $this->boardRepository->getRecentPosts(
+            $limit,
+            PostQueryExtensions::collect(['recent'], ['audience' => 'user'])
+        );
     }
 
     /**
@@ -1395,7 +1400,11 @@ class BoardService
      */
     public function getPopularPosts(string $period = 'week', int $limit = 20): array
     {
-        return $this->boardRepository->getPopularPosts($period, $limit);
+        return $this->boardRepository->getPopularPosts(
+            $period,
+            $limit,
+            PostQueryExtensions::collect(['popular'], ['audience' => 'user'])
+        );
     }
 
     /**
@@ -1409,7 +1418,14 @@ class BoardService
      */
     public function getBoardRecentPosts(string $slug, int $limit): array
     {
-        return $this->boardRepository->getBoardRecentPosts($slug, $limit);
+        return $this->boardRepository->getBoardRecentPosts(
+            $slug,
+            $limit,
+            PostQueryExtensions::collect(['board_recent'], [
+                'audience' => 'user',
+                'board' => fn () => $this->boardRepository->findBySlug($slug),
+            ])
+        );
     }
 
     /**
@@ -1417,11 +1433,19 @@ class BoardService
      *
      * @param  int  $boardId  게시판 ID
      * @param  int  $limit  조회 개수
+     * @param  Board|null  $board  이미 조회한 게시판 (확장 맥락에 싣는다 — 없으면 확장 리스너가 있을 때만 조회)
      * @return array<int, array<string, mixed>> 결과 배열
      */
-    public function getBoardRecentPostsById(int $boardId, int $limit): array
+    public function getBoardRecentPostsById(int $boardId, int $limit, ?Board $board = null): array
     {
-        return $this->boardRepository->getBoardRecentPostsById($boardId, $limit);
+        return $this->boardRepository->getBoardRecentPostsById(
+            $boardId,
+            $limit,
+            PostQueryExtensions::collect(['board_recent'], [
+                'audience' => 'user',
+                'board' => $board ?? fn () => $this->boardRepository->find($boardId),
+            ])
+        );
     }
 
     /**

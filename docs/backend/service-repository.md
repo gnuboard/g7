@@ -363,29 +363,30 @@ class ProductService
     }
 
     /**
-     * 상품 목록 조회
+     * 사용자(공개) 상품 목록 조회
      *
      * @param array $filters 검색 필터
-     * @return Collection
+     * @param int $perPage 페이지당 개수
+     * @return LengthAwarePaginator
      */
-    public function getProducts(array $filters = []): Collection
+    public function getPublicList(array $filters, int $perPage = 20): LengthAwarePaginator
     {
         // Before 훅 - 검색 조건 전처리
-        HookManager::doAction('sirsoft-ecommerce.product.before_list', $filters);
+        HookManager::doAction('sirsoft-ecommerce.product.before_public_list', $filters);
 
-        // 필터 훅 - 검색 조건 변형
-        $filters = HookManager::applyFilters('sirsoft-ecommerce.product.filter_list_query', $filters);
+        // 필터 훅 - 검색 조건 배열 변형 (쿼리 빌더가 아니다)
+        $filters = HookManager::applyFilters('sirsoft-ecommerce.product.filter_public_list_params', $filters);
 
-        $products = $this->productRepository->getAll($filters);
-
-        // 필터 훅 - 결과 데이터 변형
-        $products = HookManager::applyFilters('sirsoft-ecommerce.product.filter_list_result', $products, $filters);
+        $result = $this->repository->getPublicList($filters, $perPage);
 
         // After 훅 - 조회 후처리 (로깅, 캐싱 등)
-        HookManager::doAction('sirsoft-ecommerce.product.after_list', $products, $filters);
+        HookManager::doAction('sirsoft-ecommerce.product.after_public_list', $result);
 
-        return $products;
+        return $result;
     }
+
+    // 목록 쿼리 자체에 확장 조건을 더하는 표준은 조건 함수 등록 훅(`*.list_query_extensions`)이다 —
+    // docs/extension/hooks.md §목록 쿼리 확장 훅 표준
 
     /**
      * 상품 상세 조회

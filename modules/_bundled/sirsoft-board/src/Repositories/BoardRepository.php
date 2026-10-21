@@ -19,6 +19,7 @@ use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Comment;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
+use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 use Modules\Sirsoft\Board\Traits\FormatsBoardDate;
 
 /**
@@ -228,9 +229,10 @@ class BoardRepository implements BoardRepositoryInterface
      * board_posts 단일 테이블에서 활성 게시판의 최근 게시글을 조회합니다.
      *
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 recent — 게시판별 하위 쿼리마다)
      * @return array<int, array<string, mixed>>
      */
-    public function getRecentPosts(int $limit): array
+    public function getRecentPosts(int $limit, ?PostQueryExtensions $extensions = null): array
     {
         // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         $activeBoardIds = Board::where('is_active', true)->pluck('id');
@@ -253,6 +255,8 @@ class BoardRepository implements BoardRepositoryInterface
                 ->where('status', 'published')
                 // 비밀글도 제목은 공개한다(본문만 보호) — 2026-02-04 확정 정책. 목록/검색/홈과 동일.
                 // 게시판별 열람 권한은 BoardService::getCachedRecentPosts 가 응답 시점에 적용한다.
+                // 확장 조건은 합치기(unionAll) 전 게시판별 하위 쿼리에 건다 — 걸러진 뒤의 최신 N건을 고른다.
+                ->tap(fn ($q) => $extensions?->apply('recent', $q))
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
         );
@@ -305,9 +309,10 @@ class BoardRepository implements BoardRepositoryInterface
      *
      * @param  string  $slug  게시판 슬러그
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 board_recent)
      * @return array<int, array<string, mixed>>
      */
-    public function getBoardRecentPosts(string $slug, int $limit): array
+    public function getBoardRecentPosts(string $slug, int $limit, ?PostQueryExtensions $extensions = null): array
     {
         $board = Board::where('slug', $slug)->first();
 
@@ -332,6 +337,7 @@ class BoardRepository implements BoardRepositoryInterface
             ->whereNull('deleted_at')
             ->whereNull('parent_id')
             ->where('status', 'published')
+            ->tap(fn ($q) => $extensions?->apply('board_recent', $q))
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
@@ -359,9 +365,10 @@ class BoardRepository implements BoardRepositoryInterface
      *
      * @param  int  $boardId  게시판 ID
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 board_recent)
      * @return array<int, array<string, mixed>>
      */
-    public function getBoardRecentPostsById(int $boardId, int $limit): array
+    public function getBoardRecentPostsById(int $boardId, int $limit, ?PostQueryExtensions $extensions = null): array
     {
         // 반응 게이트 판정용 설정 두 칸 + 읽기 스코프 판정용 슬러그
         $board = Board::select(['id', 'slug', 'use_reaction', 'active_reaction_types'])->find($boardId);
@@ -385,6 +392,7 @@ class BoardRepository implements BoardRepositoryInterface
             ->where('status', 'published')
             // 게시판 디렉터리의 내장 최근글도 목록과 같은 읽기 스코프(본인만·소유역할)를 건다
             ->when($board?->slug, fn ($q, $slug) => PermissionHelper::applyPermissionScope($q, "sirsoft-board.{$slug}.posts.read"))
+            ->tap(fn ($q) => $extensions?->apply('board_recent', $q))
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
@@ -497,9 +505,10 @@ class BoardRepository implements BoardRepositoryInterface
      *
      * @param  string  $period  기간 필터 (today, week, month, year)
      * @param  int  $limit  조회 개수
+     * @param  PostQueryExtensions|null  $extensions  목록 쿼리 확장 조건 (구분값 popular — 작성자·첨부 조인이 있어 조건은 컬럼을 한정해야 한다)
      * @return array<int, array<string, mixed>>
      */
-    public function getPopularPosts(string $period, int $limit): array
+    public function getPopularPosts(string $period, int $limit, ?PostQueryExtensions $extensions = null): array
     {
         // audit:allow query-unbounded-get reason: boards 는 운영자 등록 설정성 테이블 — 행 수가 운영자 행위에 묶여 데이터 증가에 비례하지 않는다
         $activeBoardIds = Board::where('is_active', true)->pluck('id');
@@ -553,6 +562,8 @@ class BoardRepository implements BoardRepositoryInterface
             ->where('board_posts.status', 'published')
             ->where('board_posts.is_secret', false)
             ->where('board_posts.created_at', '>=', $dateFilter);
+
+        $extensions?->apply('popular', $query);
 
         $posts = $query
             ->orderBy('board_posts.view_count', 'desc')

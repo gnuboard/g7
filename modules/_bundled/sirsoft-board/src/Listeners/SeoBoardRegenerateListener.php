@@ -9,6 +9,7 @@ use App\Seo\SeoCacheRegenerator;
 use App\Seo\SitemapIndexer;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 
 /**
  * 게시판 SEO 의 무거운 후속 작업 리스너 (큐)
@@ -151,7 +152,9 @@ class SeoBoardRegenerateListener implements HookListenerInterface
                 // 1,000건씩 묶어 색인한다 — 글마다 색인하면 수만 건 게시판에서 큐 작업 시간 제한(60초)을
                 // 넘겨 앞쪽 글만 색인된 채 실패한다(공개 글 27,000건 실측: 건별 255초 / 묶음 3초).
                 $batch = [];
-                foreach ($postRepository->streamPublishedForSitemap((int) $board->id) as $post) {
+                // 사이트맵 생성과 같은 확장 조건(구분값 sitemap) — 사이트맵에 없는 글을 색인하지 않는다
+                $extensions = PostQueryExtensions::collect(['sitemap'], ['audience' => 'user', 'board' => $board]);
+                foreach ($postRepository->streamPublishedForSitemap((int) $board->id, 500, $extensions) as $post) {
                     $batch[$post->id] = [[
                         'url' => "/board/{$board->slug}/{$post->id}",
                         'lastmod' => $post->updated_at?->toW3cString(),

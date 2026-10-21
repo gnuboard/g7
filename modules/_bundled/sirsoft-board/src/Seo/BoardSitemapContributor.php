@@ -7,6 +7,7 @@ use App\Seo\AbstractSitemapContributor;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
+use Modules\Sirsoft\Board\Support\PostQueryExtensions;
 
 /**
  * Board 모듈 Sitemap 기여자
@@ -112,8 +113,10 @@ class BoardSitemapContributor extends AbstractSitemapContributor
                 continue;
             }
 
-            // 각 게시판의 공개된 게시글 (비밀글 제외, 게시 상태만)
-            foreach ($this->postRepository->streamPublishedForSitemap($board->id) as $post) {
+            // 각 게시판의 공개된 게시글 (비밀글 제외, 게시 상태만). 확장 조건(구분값 sitemap)은 요청 없는 생성이라
+            // 화면 언어·열람자가 없다 — 사이트맵 캐시는 확장 축으로 나뉘지 않는다.
+            $extensions = PostQueryExtensions::collect(['sitemap'], ['audience' => 'user', 'board' => $board]);
+            foreach ($this->postRepository->streamPublishedForSitemap($board->id, 500, $extensions) as $post) {
                 yield [
                     'url' => "/board/{$board->slug}/{$post->id}",
                     'lastmod' => $post->updated_at?->toW3cString(),
