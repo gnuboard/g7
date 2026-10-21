@@ -19,7 +19,7 @@ import { Img } from '../basic/Img';
 import type { EditorAttrs } from '../../types';
 import { LinkButton } from '../../support/LinkButton';
 import { solidChipColors } from '../../support/accessibleColor';
-import { mergeQueryIntoHref } from '../../support/navigationLink';
+import { mergeQueryIntoHref, useLocationSearch } from '../../support/navigationLink';
 
 /**
  * 선호 통화를 전역 상태에서 읽고, 변경을 구독하는 훅.
@@ -193,6 +193,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 쿼리만 바꾸는 같은 화면 이동 뒤에도 링크 href 가 새 쿼리를 합치도록 주소를 구독한다(props 가 같아 엔진이 다시 그리지 않는다)
+  useLocationSearch(preserveListQuery && !onClick);
   const preferredCurrency = usePreferredCurrency();
 
   /**

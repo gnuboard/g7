@@ -3,7 +3,7 @@ import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
-import { handleLinkClick, mergeQueryIntoHref } from '../../support/navigationLink';
+import { handleLinkClick, mergeQueryIntoHref, useLocationSearch } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -102,6 +102,9 @@ export const Pagination: React.FC<PaginationProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 쿼리만 바꾸는 같은 화면 이동 뒤에도 링크 href 가 새 쿼리를 합치도록 주소를 구독한다(props 가 같아 엔진이 다시 그리지 않는다)
+  useLocationSearch(pageHrefMergeQuery && !!pageHref);
+
   // 총 건수를 정확히 세지 못한 목록은 마지막 페이지를 계산할 수 없다.
   // 계산 불가한 값은 마지막 페이지 번호 하나뿐이므로 그 점프만 감춘다. 1 부터 현재
   // 페이지까지는 확실히 존재하고, 다음 페이지 존재 여부는 서버가 `hasMorePages` 로 알린다.

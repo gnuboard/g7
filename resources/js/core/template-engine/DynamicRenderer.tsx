@@ -2474,7 +2474,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           // 가드에 걸려 슬롯 미등록으로 조용히 흡수된다(컴포넌트가 화면에서 사라짐).
           // @since engine-v1.54.10
           const result = hasPipes(expr)
-            ? bindingEngine.evaluatePipeExpression(expr, extendedDataContext, undefined, slotTrackingInfo)
+            ? bindingEngine.evaluatePipeExpression(expr, extendedDataContext, { skipCache: true }, slotTrackingInfo)
             : bindingEngine.evaluateExpression(expr, extendedDataContext, slotTrackingInfo);
           if (logger.isDebugEnabled?.() || isDevToolsTracking()) {
             logger.log(`[Slot] 표현식 평가: "${expr}" => "${result}" (컴포넌트: ${effectiveComponentDef.id})`);

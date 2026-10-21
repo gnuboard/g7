@@ -30,8 +30,10 @@ effects:
   - guard_reads_state_without_writing         # 판정은 실제 writer 가 쓴 값(pending 포함)을 읽고, 전후 상태 저장소가 같다
   - pending_debounce_counts_as_dirty          # 디바운스 대기 입력만으로 묻고, 대기분은 실행·정리하지 않는다
   - intentional_leave_not_asked               # 세션 만료 이동은 묻지 않고, 머무르면 이탈 표지를 되돌린다
+  - dispatch_navigate_flushes_pending_input   # G7Core.dispatch(navigate)도 판정 전 대기 디바운스를 반영해, 폼 변경 없는 화면에서 묻지 않고 이동(engine-v1.82.1)
 
 test_files:
   - resources/js/core/routing/__tests__/Router.leaveGuard.test.ts
   - resources/js/core/template-engine/__tests__/ActionDispatcher.leaveGuard.test.tsx
   - resources/js/core/template-engine/__tests__/LeaveGuard.autoBindingDebounce.test.tsx
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.leaveGuardDispatchFlush.test.tsx

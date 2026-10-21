@@ -1,6 +1,7 @@
 import { AuthManager } from '../auth/AuthManager';
 import { createLogger } from '../utils/Logger';
 import { suffixed } from '../support/assetUrl';
+import { notifyLocationReplaced } from '../template-engine/navigationLinks';
 import {
   consumeArmedLeaveGuardBypass,
   endLeaveApproval,
@@ -499,6 +500,8 @@ export class Router {
     try {
       // URL 변경 (브라우저 히스토리에 추가)
       window.history.pushState({}, '', path);
+      // 같은 레이아웃으로 쿼리만 바뀌는 이동에서도 `:mergeQuery` 링크가 새 주소로 다시 그려지게 알린다 (engine-v1.82.1)
+      notifyLocationReplaced();
       this.committedUrl = currentUrl();
       this.committedHistoryIndex = currentHistoryEntryIndex();
 

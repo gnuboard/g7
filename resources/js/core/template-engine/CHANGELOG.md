@@ -5,6 +5,22 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.82.1] - 2026-10-21
+
+### Added
+
+- 공개 API `G7Core.navigation.subscribeLocationSearch(cb)` — 주소 검색부가 바뀔 수 있는 순간(뒤로/앞으로·엔진의 주소 교체 알림 `g7:location-replaced`)을 구독하고 해제 함수를 돌려준다. 렌더 때 주소를 읽어 href 를 만드는 `:mergeQuery` 링크 컴포넌트가 쓴다 (navigationLinks.ts, G7CoreGlobals.ts)
+
+### Fixed
+
+- 같은 화면에서 쿼리만 바꾸면(`navigate replace`·`replaceUrl`·같은 레이아웃 이동) `:mergeQuery` 링크가 props 가 같아 다시 그려지지 않아, 가운데 클릭·Ctrl+클릭·새 탭이 옛 쿼리 주소로 열리던 문제(7.1.1 링크 전환 회귀 — 보통 클릭은 누를 때 다시 합쳐 정상). 엔진이 주소를 바꾼 직후 `g7:location-replaced` 를 알린다 — 템플릿 링크 컴포넌트가 구독해 다시 그린다 (TemplateApp.ts `updateQueryParams`, ActionDispatcher.ts `handleReplaceUrl`, routing/Router.ts `executeNavigation`)
+
+- 화면을 SPA 로 옮긴 뒤 30초 동안 `{{route.*}}`·`{{query.*}}` 단순 경로가 직전 화면 값으로 그려지던 문제. 글 보기(`/board/notice/226`) → 메뉴로 다른 게시판 목록(`/board/opinion`)에 가면 「글쓰기」 링크 `/board/{{route.slug}}/write` 가 `/board/notice/write` 로 남아, 누르면 글쓰기 화면이 앞 게시판의 `form-data`·`form-meta` 를 받아 권한 없는 회원은 403 이었다. 정적 경로 영구 캐시(키 = 경로 글자, 30초)가 `route`·`query` 루트도 담았고 화면 전환은 이 루트를 무효화하지 않았다. `route`·`query` 를 `_global`·`_local` 과 같이 렌더 사이클 캐시만 쓰게 한다(루트 이름이 정확히 같을 때만 — `routes` 같은 데이터소스는 종전대로 영구 캐시). `resolveBindings`·`evaluatePipeExpression`·`resolve` 세 경로 공통. 같은 원인으로 같은 레이아웃의 다른 대상에 가면 반복 밖 props 의 데이터소스 단순 경로(관리자 클레임 상세 A → B 의 「주문 보기」 `/admin/ecommerce/orders/{{claim.data.claim.order_number}}` 등)도 30초 동안 앞 대상 값이었다 — 화면 전환이 새 화면 route·query 를 확정한 직후(첫 렌더 전) 바인딩 값 캐시를 비우고 렌더 사이클 캐시도 비운다(앞 화면 커밋 뒤 자식만 다시 그려지며 채운 값이 남지 않게) (TemplateApp.ts `handleRouteChange`). 발생: 정적 경로 캐시는 그 이전부터 있었고, 7.1.1 주기에 이동 단추를 렌더 시점 `href` 로 바꾸며 드러났다(액션 파라미터는 누를 때 해소돼 캐시를 타지 않았다). - 같은 화면 안에서 컴포넌트마다 값이 다른 루트(`_computed`·`$computed`·`extensionPointProps`)를 문자열 보간·배열·중첩 객체 props 로 읽으면 바인딩 캐시를 공유해, 통계 화면 기간을 바꿔도 탭 `href="...?tab=x{{_computed.tabQuery}}"` 가 30초 동안 옛 기간이었고 형제 확장 지점은 먼저 그린 인스턴스 값을 받던 문제. 이 루트를 읽는 식은 식 안 어디에 있든 영구·렌더 사이클 캐시를 모두 쓰지 않는다(종전엔 단일 바인딩 prop 만 렌더러가 건너뛰었다). slot 파이프식도 주석대로 캐시 없이 평가한다 (DataBindingEngine.ts `isUncacheablePath`, DynamicRenderer.tsx)
+- 같은 화면 쿼리 갱신(`navigate replace`)에서 다시 받을 소스가 없거나 다시 받기가 모두 실패하면 화면의 `query`·query 에서 나온 `_computed` 가 옛 쿼리로 남던 문제 — 주소만 바뀌고 `{{query.*}}` 는 그대로였다. 바뀐 값이 없어도 새 `query` 를 그린다(겹친 뒤 호출에 밀린 앞 호출은 종전대로 그리지 않음). 이때 렌더 사이클도 새로 시작한다(`route`·`query` 가 렌더 사이클 캐시만 쓰게 되어 앞 커밋 뒤 채워진 옛 값이 남지 않게) (TemplateApp.ts `updateQueryParams`·`applyQueryContextToScreen`)
+- 이탈 가드(`leave_guard`) 화면에서 폼 변경 없이 검색창·목록 스크롤 디바운스 대기만 있을 때 관리자 사이드바·링크(`G7Core.dispatch(navigate)`)로 이동하면 확인 창이 떠 이동이 막히던 문제(engine-v1.82.0 회귀). 이벤트 액션 경로처럼 navigate 가 판정 전에 대기 디바운스를 반영한다. 같은 화면 쿼리 갱신(replace)은 종전대로 (ActionDispatcher.ts `handleNavigate`)
+
+회귀 잠금: `template-engine/__tests__/DataBindingEngine.routeQueryCache.test.ts`(5 — 수정 전 5 red) · `template-engine/__tests__/DynamicRenderer.contextBoundCache.test.tsx`(3 — 수정 전 3 red) · `__tests__/TemplateApp.updateQueryParams.queryContext.test.ts`(3 — 수정 전 2 red, 1 대조군) · `template-engine/__tests__/ActionDispatcher.leaveGuardDispatchFlush.test.tsx`(4 — 수정 전 디스패치 갈래 확인 창 1회·이동 0) · `template-engine/__tests__/TemplateApp.routeBindingCache.test.tsx`(3 — 실물 TemplateApp 화면 전환, 화면 전환 캐시 비움 전 데이터소스 갈래 1 red) · `tests/Playwright/specs/route-binding-after-navigation.spec.ts`(배포 번들, 수정 전 번들로 red) (DataBindingEngine.ts, TemplateApp.ts)
+
 ## [engine-v1.82.0] - 2026-10-20
 
 ### Added

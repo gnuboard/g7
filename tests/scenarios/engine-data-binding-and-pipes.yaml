@@ -26,6 +26,8 @@ effects:
   - skip_cache_option_bypasses_cache
   - array_values_not_coalesced                   # Array.isArray 판정(?? 로 배열을 덮지 않음)
   - cache_invalidation_clears_entries
+  - context_bound_roots_not_cached              # _computed·$computed·extensionPointProps 를 읽는 식은 어떤 캐시에도 담지 않는다(engine-v1.82.1)
+  - route_query_bindings_follow_current_screen    # route·query 는 영구 캐시 제외 — 화면 전환 뒤 새 값(engine-v1.82.1)
   - pipe_expression_parsing                      # splitPipes·hasPipes·parsePipeExpression·executePipeChain
   - builtin_pipes_transform_values               # date·number·default·filterBy·join·truncate 등 내장 파이프
   - localized_pipe_picks_locale_value            # localized 파이프 — 인자 → 화면 언어 → 사이트 기본 언어 → 영어
@@ -40,3 +42,9 @@ test_files:
   - resources/js/core/template-engine/__tests__/DataBindingEngine.pipe.test.ts
   - resources/js/core/template-engine/__tests__/PipeRegistry.test.ts
   - resources/js/core/template-engine/__tests__/DataBindingEngine.pipeRenderLocale.test.ts
+  - resources/js/core/template-engine/__tests__/DataBindingEngine.routeQueryCache.test.ts
+  - resources/js/core/template-engine/__tests__/TemplateApp.routeBindingCache.test.tsx
+  - resources/js/core/template-engine/__tests__/DynamicRenderer.contextBoundCache.test.tsx
+  - tests/Playwright/specs/route-binding-after-navigation.spec.ts
+  - tests/Playwright/specs/board-spa-navigation-route-binding.spec.ts
+  - tests/Playwright/specs/admin/claim-detail-spa-navigation-order-link.spec.ts

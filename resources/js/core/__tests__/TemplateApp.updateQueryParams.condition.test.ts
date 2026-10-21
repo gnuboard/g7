@@ -41,7 +41,7 @@ vi.mock('../template-engine', () => ({
     reactRoot: null,
     currentLayoutJson: null,
     currentDataContext: { _global: { activeSettingsTab: 'language_packs' } },
-    bindingEngine: { invalidateCacheByKeys: vi.fn() },
+    bindingEngine: { invalidateCacheByKeys: vi.fn(), clearCache: vi.fn(), startRenderCycle: vi.fn() },
   }),
 }));
 
@@ -139,6 +139,10 @@ describe('updateQueryParams 데이터소스 if 재평가 (#415)', () => {
     delete (window as any).G7Core;
   });
 
+  /**
+   * @scenario case=single_call
+   * @effects datasource_if_reevaluated_on_query_update
+   */
   it('본인인증→언어팩 탭 전환 시 language_packs 가 재선택되어 fetch 되고 policies 는 제외된다', async () => {
     await app.updateQueryParams('/admin/settings?tab=language_packs');
 
@@ -151,6 +155,10 @@ describe('updateQueryParams 데이터소스 if 재평가 (#415)', () => {
     expect(fetchedSources).toContain('settings');
   });
 
+  /**
+   * @scenario case=single_call
+   * @effects datasource_if_reevaluated_on_query_update
+   */
   it('재평가 결과가 currentDataSources 에도 반영된다 (이후 refetchDataSource/wait_for 참조용)', async () => {
     await app.updateQueryParams('/admin/settings?tab=language_packs');
 
@@ -159,6 +167,10 @@ describe('updateQueryParams 데이터소스 if 재평가 (#415)', () => {
     expect(currentIds).not.toContain('policies');
   });
 
+  /**
+   * @scenario case=single_call
+   * @effects datasource_if_reevaluated_on_query_update
+   */
   it('언어팩→본인인증 탭 전환 시 policies 가 재선택되어 fetch 되고 language_packs 는 제외된다', async () => {
     // 직전 진입(언어팩 탭) 스냅샷으로 재설정
     const dm = new DataSourceManager();

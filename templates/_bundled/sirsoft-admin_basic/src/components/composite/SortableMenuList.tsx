@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { SortableMenuItem, MenuItemData } from './SortableMenuItem';
-import { mergeQueryIntoHref, resolveRowExpression } from '../../support/navigationLink';
+import { mergeQueryIntoHref, resolveRowExpression, useLocationSearch } from '../../support/navigationLink';
 import { Div } from '../basic/Div';
 import { H3 } from '../basic/H3';
 import type { EditorAttrs } from '../../types';
@@ -289,6 +289,8 @@ export const SortableMenuList: React.FC<SortableMenuListProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 쿼리만 바꾸는 같은 화면 이동 뒤에도 링크 href 가 새 쿼리를 합치도록 주소를 구독한다(props 가 같아 엔진이 다시 그리지 않는다)
+  useLocationSearch(itemHrefMergeQuery && !!itemHref && !selectionMode);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [localItems, setLocalItems] = useState<MenuItem[]>(items);

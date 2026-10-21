@@ -186,3 +186,48 @@ export function mergeQueryIntoHref(href: string): string {
   const qs = merged.toString();
   return `${url.pathname}${qs ? `?${qs}` : ''}${url.hash}`;
 }
+
+/**
+ * 엔진이 같은 화면에서 주소만 바꿨을 때 창에 쏘는 이벤트 이름.
+ *
+ * 쿼리만 바꾸는 `navigate replace`(TemplateApp.updateQueryParams)·`replaceUrl` 은 `history.replaceState` 로 주소를 바꾸고
+ * 화면을 다시 마운트하지 않는다. 브라우저는 replaceState·pushState 에 이벤트를 쏘지 않으므로 엔진이 대신 알린다.
+ *
+ * @since engine-v1.82.1
+ */
+export const LOCATION_REPLACED_EVENT = 'g7:location-replaced';
+
+/**
+ * 같은 화면에서 주소(검색부)를 바꿨다고 구독자에게 알립니다 — `history.replaceState`·`pushState` 직후에 부른다.
+ *
+ * 렌더할 때 현재 쿼리를 href 에 합치는 링크(`mergeQuery`)는 props 가 그대로라 주소만 바뀌면 다시 그려지지 않는다
+ * (DynamicRenderer memo·props 참조 안정화). 그 링크가 {@link subscribeLocationSearch} 로 이 알림을 받아 다시 그린다.
+ *
+ * @since engine-v1.82.1
+ */
+export function notifyLocationReplaced(): void {
+  if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') return;
+  window.dispatchEvent(new Event(LOCATION_REPLACED_EVENT));
+}
+
+/**
+ * 현재 주소 검색부(`window.location.search`)가 바뀔 수 있는 순간을 구독합니다 — 뒤로/앞으로(`popstate`)와
+ * 엔진의 같은 화면 주소 교체({@link notifyLocationReplaced}).
+ *
+ * `useSyncExternalStore(subscribeLocationSearch, () => window.location.search)` 의 subscribe 로 쓴다 — 값이 같으면
+ * React 가 다시 그리지 않으므로 해시만 바뀐 알림은 비용이 없다. 렌더 때 현재 쿼리를 읽는 링크(`mergeQuery`)만 구독한다.
+ *
+ * @param callback 바뀔 수 있을 때 부를 함수
+ * @returns 구독 해제 함수
+ * @since engine-v1.82.1
+ */
+export function subscribeLocationSearch(callback: () => void): () => void {
+  if (typeof window === 'undefined' || typeof callback !== 'function') return () => {};
+  const handler = (): void => callback();
+  window.addEventListener('popstate', handler);
+  window.addEventListener(LOCATION_REPLACED_EVENT, handler);
+  return () => {
+    window.removeEventListener('popstate', handler);
+    window.removeEventListener(LOCATION_REPLACED_EVENT, handler);
+  };
+}

@@ -5,7 +5,7 @@ import { Icon } from '../basic/Icon';
 import { A } from '../basic/A';
 import { HighlightText } from '../shared/HighlightText';
 import type { EditorAttrs } from '../../types';
-import { handleLinkClick, mergeQueryIntoHref, resolveLinkHref } from '../../support/navigationLink';
+import { handleLinkClick, mergeQueryIntoHref, resolveLinkHref, useLocationSearch } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -386,6 +386,8 @@ export const FileTree: React.FC<FileTreeProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 쿼리만 바꾸는 같은 화면 이동 뒤에도 링크 href 가 새 쿼리를 합치도록 주소를 구독한다(props 가 같아 엔진이 다시 그리지 않는다)
+  useLocationSearch(hrefMergeQuery);
   const [internalExpanded, setInternalExpanded] = useState<string[]>(() => readExpanded(storageKey));
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
