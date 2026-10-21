@@ -35,7 +35,7 @@
           </div>
         </div>
       </div>
-      <data-grid data-type="composite" data-ref="board_schedules_grid" data="{{boardSchedules?.data?.data}}" :pagination="false" idField="id" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="{{boardSchedules === undefined ? '' : $t('sirsoft-board.admin.settings.schedules.empty')}}">
+      <data-grid data-type="composite" data-ref="board_schedules_grid" data="{{boardSchedules?.data?.data}}" :pagination="false" idField="id" :selectable="false" :showColumnSelector="false" :responsiveBreakpoint="768" emptyMessage="{{boardSchedules === undefined ? '' : (boardSchedules === null ? $t('sirsoft-board.common.list_load_failed') : $t('sirsoft-board.admin.settings.schedules.empty'))}}">
         <blur-until-loaded sources="boardSchedules"/>
         <column field="name" header="$t:sirsoft-board.admin.settings.schedules.columns.name" :sortable="false" :required="true">
           <cell>
