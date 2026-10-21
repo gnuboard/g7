@@ -539,7 +539,7 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 }
 ```
 
-화면 이동을 링크로 쓰는 법(주소는 href 한 곳, path 없는 `navigate`)은 [actions-handlers-navigation.md 「화면 이동을 링크로 쓰는 법」](actions-handlers-navigation.md#화면-이동을-링크로-쓰는-법-engine-v1801) 참조. 합성 컴포넌트가 직접 `<a>` 를 그릴 때는 `G7Core.navigation.isPlainLeftClick(event)` 가 참일 때만 기본 동작을 막고 SPA 로 옮긴다(엔진과 같은 판정).
+화면 이동을 링크로 쓰는 법(주소는 href 한 곳, path 없는 `navigate`)은 [actions-handlers-navigation.md 「화면 이동을 링크로 쓰는 법」](actions-handlers-navigation.md#화면-이동을-링크로-쓰는-법-engine-v1801) 참조. 합성 컴포넌트가 직접 `<a>` 를 그릴 때는 `G7Core.navigation.isPlainLeftClick(event)` 가 참일 때만 기본 동작을 막고 SPA 로 옮긴다(엔진과 같은 판정). 렌더할 때 `mergeQueryIntoHref` 로 쿼리를 합치는 링크는 `G7Core.navigation.subscribeLocationSearch` 로 주소 변경을 구독해 다시 그린다(같은 절, engine-v1.82.1).
 
 > **동명이의 주의 — 컴포넌트 prop `stopPropagation` 은 이 액션 키가 아니다.** `sirsoft-basic` 의 `UserInfo` 는 자체 prop `stopPropagation?: boolean` 을 갖고 자기 클릭 핸들러 안에서 `e.stopPropagation()` 을 호출한다([UserInfo.tsx](../../templates/_bundled/sirsoft-basic/src/components/composite/UserInfo.tsx) `:172`·`:355`). 소스 코퍼스에서 이 이름의 **다수파는 prop 쪽**(게시판 목록 4파일)이므로, `<user-info :stopPropagation="true"/>` 처럼 **노드 속성 자리**에 있으면 컴포넌트 prop 이고, `<on>` 아래 핸들러 태그 속성 자리에 있으면 액션 키다. 배치 자리가 둘을 가른다.
 

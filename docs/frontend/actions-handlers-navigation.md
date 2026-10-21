@@ -333,7 +333,7 @@
 }
 ```
 
-합성 컴포넌트가 직접 `<a>` 를 그릴 때(사이드바·행 메뉴·페이지 번호·탭)는 `G7Core.navigation.isPlainLeftClick(event)` 가 참일 때만 `preventDefault()` 후 기존 콜백을 부르고, 목록 문맥이 필요한 주소는 `G7Core.navigation.mergeQueryIntoHref(href)` 로 렌더한다.
+합성 컴포넌트가 직접 `<a>` 를 그릴 때(사이드바·행 메뉴·페이지 번호·탭)는 `G7Core.navigation.isPlainLeftClick(event)` 가 참일 때만 `preventDefault()` 후 기존 콜백을 부르고, 목록 문맥이 필요한 주소는 `G7Core.navigation.mergeQueryIntoHref(href)` 로 렌더한다. 이렇게 렌더할 때 쿼리를 합치는 컴포넌트는 `G7Core.navigation.subscribeLocationSearch` 를 구독해(`useSyncExternalStore(subscribe, () => window.location.search)`) 주소가 바뀌면 다시 그린다 — 같은 화면에서 쿼리만 바뀌면(`navigate` `replace`·`replaceUrl`) props 가 같아 다시 그려지지 않으므로, 구독하지 않으면 가운데 클릭·새 탭·주소 복사가 바꾸기 전 쿼리로 열린다. 구독 API 가 없는 옛 엔진에서는 `popstate` 만 구독한다(engine-v1.82.1).
 
 ### mergeQuery 옵션
 

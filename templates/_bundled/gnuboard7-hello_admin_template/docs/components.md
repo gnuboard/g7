@@ -29,4 +29,9 @@ SSoT 는 코어 `config/template.php` 의 `required_admin_components` 입니다.
 선언된 `name` 으로 번들의 export 를 찾아 등록하므로, 선언이 없거나 export 이름이 다르면
 레이아웃이 그 이름을 찾지 못해 그 컴포넌트만 조용히 렌더되지 않습니다. TSX 를 고쳤으면 `template:build --production` 후
 `dist/` 를 함께 커밋합니다.
+
+`A` 의 `mergeQuery` 는 렌더할 때 현재 쿼리를 href 에 합치므로, 같은 화면에서 쿼리만 바꾸는 `navigate replace` 뒤에도
+href 가 새 쿼리를 따르도록 엔진 `G7Core.navigation.subscribeLocationSearch` 를 구독합니다(없는 옛 엔진은 뒤로/앞으로만).
+링크 props 가 그대로라 엔진이 그 링크를 다시 그리지 않기 때문입니다 — 구독하지 않으면 가운데 클릭·새 탭·주소 복사가
+바꾸기 전 쿼리로 갑니다. `mergeQuery` 가 없는 링크는 구독하지 않습니다(0.2.2).
 <!-- @intent END -->

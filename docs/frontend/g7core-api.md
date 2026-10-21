@@ -592,6 +592,7 @@ G7Core.modal.close();
 | `onComplete(callback)` | 전환 완료 시 콜백 실행 | 구독 해제 함수 |
 | `isPlainLeftClick(event)` | 「보통 클릭」(왼쪽 단추·수정키 없음·링크면 `target` 없음/`_self`·`download` 없음)인지 — 링크를 그리는 합성 컴포넌트가 참일 때만 기본 동작을 막는다 (engine-v1.80.1) | `boolean` |
 | `mergeQueryIntoHref(href)` | 현재 주소의 쿼리를 링크 주소에 합친다(링크 쪽 키가 이김). 같은 출처가 아니면 그대로 (engine-v1.80.1) | `string` |
+| `subscribeLocationSearch(callback)` | 현재 주소의 쿼리가 바뀔 수 있는 순간(뒤로/앞으로, 같은 화면에서 쿼리만 바꾸는 `navigate` `replace`)에 `callback` 을 부른다. 렌더할 때 `mergeQueryIntoHref` 로 href 를 만드는 컴포넌트가 `useSyncExternalStore(subscribe, () => window.location.search)` 로 구독해 주소만 바뀌어도 링크를 다시 그린다 (engine-v1.82.1) | 구독 해제 함수 |
 | `getRouteGeneration()` | 지금 경로 전환 세대 — 경로 전환이 시작될 때마다 1 씩 는다(같은 주소로 다시 들어와도 는다). 진행 중인 이동 뒤에 새 이동이 대기열에 들어와 진행 중인 화면 처리가 밀릴 때도 는다(engine-v1.82.0 — 값은 늘 같은 방향으로만 바뀐다). 엔진이 없으면 `0` (engine-v1.81.1) | `number` |
 | `isLeaveGuarded()` | 지금 화면을 떠나면 이탈 확인 창이 뜨는지 — 레이아웃 `meta.leave_guard` 식을 읽기 전용으로 평가한다. 선언이 없거나 이미 떠나기로 승인된 이동 중이면 `false` (engine-v1.82.0) | `boolean` |
 

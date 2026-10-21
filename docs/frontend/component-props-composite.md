@@ -821,7 +821,7 @@ G7에서는 콘텐츠의 렌더링 모드를 DB의 `*_mode` 컬럼(`'text'` / `'
 
 **템플릿**: `sirsoft-admin_basic`, `sirsoft-basic`(표의 「사용자 템플릿」 행) (#757)
 
-화면을 옮기는 항목에 주소를 주면 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 된다. 보통 클릭은 지금처럼 각 컴포넌트의 콜백으로 간다. 보통 클릭 판정은 엔진 `G7Core.navigation.isPlainLeftClick` 한 곳이다([A · Pagination 링크](component-props.md#a--pagination-링크)). 바깥 주소(다른 출처 `http(s)://`)는 `target="_blank" rel="noopener noreferrer"` 로 그리고 SPA 이동을 하지 않는다. 실행 스킴(`javascript:`)·`#`·빈 값은 링크로 그리지 않는다.
+화면을 옮기는 항목에 주소를 주면 `<a href>` 로 그려 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 된다. 보통 클릭은 지금처럼 각 컴포넌트의 콜백으로 간다. 보통 클릭 판정은 엔진 `G7Core.navigation.isPlainLeftClick` 한 곳이다([A · Pagination 링크](component-props.md#a--pagination-링크)). 현재 쿼리를 합치는 항목(페이지 번호·행 메뉴·탭 등)은 주소 변경을 구독해(`G7Core.navigation.subscribeLocationSearch`) 쿼리만 바뀌어도 `href` 를 다시 그린다(engine-v1.82.1). 바깥 주소(다른 출처 `http(s)://`)는 `target="_blank" rel="noopener noreferrer"` 로 그리고 SPA 이동을 하지 않는다. 실행 스킴(`javascript:`)·`#`·빈 값은 링크로 그리지 않는다.
 
 | 컴포넌트 | prop / 데이터 | 렌더 · 보통 클릭 |
 | -------- | ------------- | ---------------- |

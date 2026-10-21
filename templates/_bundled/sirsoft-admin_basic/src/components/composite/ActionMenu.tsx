@@ -6,7 +6,7 @@ import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
-import { handleLinkClick, mergeQueryIntoHref, resolveLinkHref } from '../../support/navigationLink';
+import { handleLinkClick, mergeQueryIntoHref, resolveLinkHref, useLocationSearch } from '../../support/navigationLink';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다(컴포넌트 기본값은 영어 — data-binding-i18n.md)
 const tOr = (key: string, fallback: string): string => {
@@ -121,6 +121,8 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({
   id,
   editorAttrs,
 }) => {
+  // 쿼리만 바꾸는 같은 화면 이동 뒤에도 링크 href 가 새 쿼리를 합치도록 주소를 구독한다(props 가 같아 엔진이 다시 그리지 않는다)
+  useLocationSearch(Array.isArray(items) && items.some((item) => item?.mergeQuery === true));
   // 기본 트리거 글자는 화면 언어를 따른다 — 종전 기본값이 한국어 「작업」 고정이라 영어·일본어 화면에도 그대로 보였다.
   // 번역이 없거나 엔진 밖(단위 테스트)이면 영어 대체 문구를 쓴다(컴포넌트 기본값은 영어 — data-binding-i18n.md).
   // 빈 문자열("")은 아이콘만 그리는 뜻이라 그대로 둔다.

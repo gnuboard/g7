@@ -591,9 +591,10 @@ describe('computed 속성', () => {
       const resultA = engine.resolve('_computed.isReadOnly', contextA);
       expect(resultA).toBe(false);
 
-      // 컴포넌트 B가 skipCache 없이 resolve → 캐시에서 false 반환 (버그 재현)
+      // 컴포넌트 B가 skipCache 없이 resolve — 종전엔 캐시에서 false(stale). engine-v1.82.1 부터 엔진이
+      // `_computed` 경로를 어떤 캐시에도 담지 않아 호출자 옵션과 무관하게 B 값이다
       const resultB_cached = engine.resolve('_computed.isReadOnly', contextB);
-      expect(resultB_cached).toBe(false); // 캐시로 인한 stale 값
+      expect(resultB_cached).toBe(true);
 
       // skipCache로 resolve → 정확한 true 반환 (수정 후 동작)
       const resultB_skipCache = engine.resolve('_computed.isReadOnly', contextB, { skipCache: true });
@@ -645,9 +646,10 @@ describe('computed 속성', () => {
       const ifResult = engine.resolve('_computed.isReadOnly', contextReadOnly, { skipCache: true });
       expect(ifResult).toBe(true);
 
-      // 수정 전: disabled prop 경로 (캐시) — stale false
+      // disabled prop 경로 (skipCache 없음) — 종전엔 캐시된 stale false. engine-v1.82.1 부터 엔진이
+      // `_computed` 경로를 캐시하지 않아 if 조건과 같은 true
       const propResult_cached = engine.resolve('_computed.isReadOnly', contextReadOnly);
-      expect(propResult_cached).toBe(false); // 캐시된 stale 값
+      expect(propResult_cached).toBe(true);
 
       // 수정 후: disabled prop 경로 (skipCache) — 정확한 true
       const propResult_fixed = engine.resolve('_computed.isReadOnly', contextReadOnly, { skipCache: true });
