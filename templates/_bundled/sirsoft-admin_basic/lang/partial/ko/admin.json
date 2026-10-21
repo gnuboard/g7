@@ -1989,9 +1989,7 @@
       "sitemap_progress_phase": "현재 처리 중: {{phase}}",
       "sitemap_progress_urls": "누적 URL: {{count}}개",
       "sitemap_realtime_connected": "실시간으로 연결되어 있습니다.",
-      "sitemap_polling": "진행 상황을 주기적으로 확인하고 있습니다.",
-      "meta_title_suffix_placeholder": " | 그누보드7",
-      "meta_keywords_placeholder": "CMS, 그누보드7, 오픈소스"
+      "sitemap_polling": "진행 상황을 주기적으로 확인하고 있습니다."
     },
     "security": {
       "title": "보안 설정",

@@ -2019,9 +2019,7 @@
       "sitemap_progress_phase": "Processing: {{phase}}",
       "sitemap_progress_urls": "URLs so far: {{count}}",
       "sitemap_realtime_connected": "Connected in real time.",
-      "sitemap_polling": "Checking progress periodically.",
-      "meta_title_suffix_placeholder": " | Gnuboard7",
-      "meta_keywords_placeholder": "CMS, Gnuboard7, open source"
+      "sitemap_polling": "Checking progress periodically."
     },
     "security": {
       "title": "Security Settings",
