@@ -187,6 +187,13 @@ return [
             'password_expiry_notice' => [
                 'action_url' => '비밀번호 변경 화면 URL',
             ],
+            'schedule_failed' => [
+                'schedule_label' => '작업 표시 명칭',
+                'schedule_name' => '작업 식별자(name)',
+                'owner' => '소유자(코어·확장 이름·직접 등록)',
+                'failed_at' => '실패 시각',
+                'schedule_url' => '스케줄 관리 화면 URL',
+            ],
         ],
         'identity' => [
             'code' => '인증 코드 (text_code 흐름)',

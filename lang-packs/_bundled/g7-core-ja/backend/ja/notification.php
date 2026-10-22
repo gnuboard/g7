@@ -163,6 +163,13 @@ return [
             'password_expiry_notice' => [
                 'action_url' => 'パスワード変更画面URL',
             ],
+            'schedule_failed' => [
+                'schedule_label' => 'タスク表示名',
+                'schedule_name' => 'タスク識別子(name)',
+                'owner' => '所有者(コア・拡張名・直接登録)',
+                'failed_at' => '失敗日時',
+                'schedule_url' => 'スケジュール管理画面URL',
+            ],
         ],
         'identity' => [
             'code' => '認証コード（text_code フロー）',

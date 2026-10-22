@@ -187,6 +187,13 @@ return [
             'password_expiry_notice' => [
                 'action_url' => 'Password change page URL',
             ],
+            'schedule_failed' => [
+                'schedule_label' => 'Task display name',
+                'schedule_name' => 'Task identifier (name)',
+                'owner' => 'Owner (core, extension name, or manually registered)',
+                'failed_at' => 'Failure time',
+                'schedule_url' => 'Schedule management page URL',
+            ],
         ],
         'identity' => [
             'code' => 'Verification code (text_code flow)',
