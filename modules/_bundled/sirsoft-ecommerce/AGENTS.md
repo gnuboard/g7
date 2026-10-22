@@ -81,7 +81,7 @@
 목록 결과와 같은지 잠급니다 — 필터를 복제하면 화면은 걸러진 건수인데 파일은 전건이 되는 어긋남이 조용히 생깁니다. 목록의 [내보내기] 버튼은
 다른 목록 버튼처럼 목록 응답의 `abilities.can_export` 로 보일지 정합니다. 파일은 큐 작업(`GenerateExportJob`)이
 요청 시각(`cutoff_at`) 기준으로 500행씩 순회해 비공개 기본 디스크 `exports` 카테고리에 쓰고, 내려받기는 60초·1회용 주소로만
-하며 받는 시점에 권한·범위·원본 조회 권한을 다시 봅니다. 「본인/전체」 범위는 `exports.all` 권한이 나눕니다(`Support\ExportAccess`).
+하며 받는 시점에 권한·범위·원본 조회 권한을 다시 봅니다. 작업 범위는 코어 표준 권한 범위입니다(`owner_key = requested_by`) — 역할 관리에서 권한마다 본인만/소유 역할/전체를 고르고, 기본은 관리자 전체·이커머스 관리자 본인만입니다(`Support\ExportAccess`). 별도 「전체 관리」 권한을 다시 만들지 않습니다.
 열은 `Exports\Declarations\*` 의 모델 선언(`type`·`personal` 필수)에서 오고, 선언도 제외 사유도 없는 컬럼은
 `ExportDeclarationCoverageTest` 가 잡습니다. 새 유형·형식·항목은 `sirsoft-ecommerce.export.*` 필터 훅으로 붙고, 모든 단계가
 액션 훅과 활동 로그를 남깁니다. 창과 진행 표시는 세 목록이 함께 쓰는 `partials/admin_ecommerce_export/*` 조각입니다. 목록 버튼은 창 조건(`_global.ecommerceExportContext`)을
@@ -382,7 +382,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 713개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| PHPUnit | 714개 | `modules/_bundled/sirsoft-ecommerce/tests` |
 | Vitest | 274개 | `vitest.config.ts` |
 | Playwright | 74개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 372개 | `tests/scenarios` |

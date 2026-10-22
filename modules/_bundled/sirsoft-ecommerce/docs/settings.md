@@ -259,7 +259,7 @@ _`getSettingsSchema()` 선언이 없습니다._
 | `carts` | 장바구니 관리 | `read`, `manage` | `cart` |
 | `user-addresses` | 회원 배송지 관리 | `read`, `manage` | `user-address` |
 | `mileage` | 마일리지 관리 | `read`, `manage` | `mileage-transaction` |
-| `exports` | 내보내기 | `read`, `create`, `download`, `delete`, `personal_data`, `all` | - |
+| `exports` | 내보내기 | `read`, `create`, `download`, `delete`, `personal_data` | `export` |
 | `user-currency` | 회원 결제 통화 관리 | `manage` | - |
 | `user-shipping-country` | 회원 배송국가 관리 | `manage` | - |
 <!-- @generated:permissions END -->

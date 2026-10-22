@@ -198,7 +198,7 @@ return [
         'processing_not_deletable' => '進行中の作業は削除できません。',
         'not_retryable' => '失敗した作業のみ再度要求できます。',
         'download_link_expired' => 'ダウンロードアドレスが期限切れまたは既に使用されています。エクスポート管理でファイル名をもう一度クリックしてください。',
-        'scope_denied' => '別の管理者が要求したエクスポートです。全エクスポート管理権限が必要です。',
+        'scope_denied' => '権限範囲外のエクスポートです。他の運営者が要求したエクスポートを扱うには、管理者にロール管理でエクスポート権限の範囲を広げるよう依頼してください。',
         'domain_permission_required' => 'このファイルの元のデータを表示する権限がありません。',
         'declaration_missing_personal' => ':model のエクスポート宣言 :column に personal(個人情報の有無)がありません。',
         'declaration_invalid_type' => ':model のエクスポート宣言 :column の type が正しくありません。',

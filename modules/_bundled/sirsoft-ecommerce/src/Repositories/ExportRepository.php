@@ -102,7 +102,7 @@ class ExportRepository implements ExportRepositoryInterface
     {
         $query = $this->model->newQuery()->with('requester');
 
-        // 보는 사람의 범위 — `exports.all` 이 없으면 본인이 요청한 작업만 보인다
+        // 보는 사람의 범위 — 역할 관리의 「내보내기 관리 조회」 범위(본인/소유 역할/전체)
         ExportAccess::applyScope($query, $viewer);
 
         $this->applyAdminFilters($query, $filters, $viewer);

@@ -2,8 +2,13 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests;
 
+use App\Enums\PermissionType;
+use App\Enums\ScopeType;
 use App\Extension\HookListenerRegistrar;
+use App\Extension\ModuleManager;
 use App\Helpers\PermissionHelper;
+use App\Models\Permission;
+use App\Models\User;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Modules\Sirsoft\Ecommerce\Exports\Declarations\ModelDeclarationRegistry;
@@ -62,6 +67,57 @@ abstract class ExportTestCase extends ModuleTestCase
         }
 
         ModelDeclarationRegistry::flush();
+        $this->syncExportPermissionScope();
+        $this->clearPermissionCache();
+    }
+
+    /**
+     * 내보내기 권한 행에 모듈 선언의 범위 열(resource_route_key·owner_key)을 싣습니다.
+     *
+     * 설치(모듈 관리자)가 하는 것과 같게 「요청」 외 동작에만 싣는다. 테스트 도우미가 만든 권한 행은 이 열이 비어 있어
+     * 범위가 조용히 「전체」로 판정되므로, 선언을 그대로 옮겨 범위 판정이 설치본과 같은 경로를 타게 한다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function syncExportPermissionScope(): void
+    {
+        $category = collect(app(ModuleManager::class)->getModule(self::IDENTIFIER)->getPermissions()['categories'])
+            ->firstWhere('identifier', 'exports');
+
+        foreach ($category['permissions'] as $permission) {
+            $scopeable = $permission['action'] !== 'create';
+            Permission::query()->updateOrCreate(
+                ['identifier' => self::IDENTIFIER.'.exports.'.$permission['action']],
+                [
+                    'name' => $permission['name'],
+                    'type' => PermissionType::Admin,
+                    'resource_route_key' => $scopeable ? $category['resource_route_key'] : null,
+                    'owner_key' => $scopeable ? $category['owner_key'] : null,
+                ],
+            );
+        }
+
+        PermissionHelper::clearPermissionScopeCache();
+    }
+
+    /**
+     * 운영자의 내보내기 권한 범위를 정합니다 — 역할 관리에서 권한마다 범위를 고르는 것과 같다.
+     *
+     * @param  User  $user  대상 운영자 (createAdminUser 로 만든 단일 역할)
+     * @param  ScopeType|null  $scope  범위 (null 이면 전체)
+     * @param  array<int, string>  $actions  범위를 줄 동작
+     * @return void 반환값 없음
+     */
+    protected function setExportScope(User $user, ?ScopeType $scope, array $actions = ['read', 'download', 'delete']): void
+    {
+        $role = $user->roles()->firstOrFail();
+        foreach ($actions as $action) {
+            $permission = Permission::where('identifier', self::IDENTIFIER.'.exports.'.$action)->firstOrFail();
+            $role->permissions()->updateExistingPivot($permission->id, ['scope_type' => $scope?->value]);
+        }
+
+        $user->flushPermissionCaches();
+        PermissionHelper::clearPermissionScopeCache();
         $this->clearPermissionCache();
     }
 

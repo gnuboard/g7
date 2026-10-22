@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Export;
 
+use App\Enums\ScopeType;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Support\Facades\Bus;
@@ -118,14 +119,20 @@ class ExportControllerTest extends ExportTestCase
      * 요청 → 생성까지 마친 작업을 돌려줍니다.
      *
      * @param  array<string, mixed>  $body  본문
+     * @param  User|null  $requester  요청자로 둘 운영자 (null 이면 기본 관리자 — 범위 시험용으로 요청자만 바꾼다)
      * @return Export 작업
      */
-    private function generated(array $body): Export
+    private function generated(array $body, ?User $requester = null): Export
     {
-        $id = (int) $this->request($this->admin, $body)->assertStatus(202)->json('data.id');
+        $id = (int) $this->request($this->admin, $body, 'key-'.uniqid())->assertStatus(202)->json('data.id');
         app(ExportService::class)->generate($id);
 
-        return Export::findOrFail($id);
+        $export = Export::findOrFail($id);
+        if ($requester !== null) {
+            $export->forceFill(['requested_by' => $requester->id])->save();
+        }
+
+        return $export;
     }
 
     /**
@@ -389,38 +396,98 @@ class ExportControllerTest extends ExportTestCase
     }
 
     /**
-     * 「다른 운영자의 내보내기 관리」 권한(all)이 없는 운영자는 남이 만든 작업을 목록에서 보지 못하고 상세·다운로드·삭제도
-     * 할 수 없다. 그 권한이 있으면 남의 작업도 보인다.
+     * 내보내기 권한 범위가 「본인만」인 운영자는 남이 만든 작업을 목록에서 보지 못하고 상세·다운로드·삭제도 할 수 없다.
+     * 범위가 「전체」(역할 관리에서 범위를 정하지 않은 기본)이면 남의 작업도 보인다.
      *
-     * 범위는 별도 권한(`exports.all`)으로 나뉘어 있다.
+     * 범위는 코어 표준 권한 범위다 — 내보내기 권한이 `owner_key = requested_by` 를 선언한다.
      *
      * @return void 반환값 없음
      *
      * @scenario type=orders, permission=self_scope
      *
-     * @effects self_scope_hides_others_jobs, all_permission_reveals_others_jobs
+     * @effects self_scope_hides_others_jobs, full_scope_reveals_others_jobs
      */
-    public function test_without_all_permission_others_jobs_are_hidden(): void
+    public function test_self_scope_hides_others_jobs(): void
     {
         $order = $this->makeOrder();
         $export = $this->generated($this->body([$order->id]));
 
         $own = ['sirsoft-ecommerce.orders.read', 'sirsoft-ecommerce.exports.read', 'sirsoft-ecommerce.exports.download', 'sirsoft-ecommerce.exports.delete'];
         $operator = $this->createAdminUser($own);
+        $this->setExportScope($operator, ScopeType::Self);
 
         $this->actingAs($operator)->getJson($this->exportsUrl())->assertOk()->assertJsonCount(0, 'data.data');
         $this->actingAs($operator)->getJson($this->exportsUrl("/{$export->id}"))->assertStatus(403);
+        $this->actingAs($operator)->getJson($this->exportsUrl("/{$export->id}/downloads"))->assertStatus(403);
         $this->actingAs($operator)->get($this->exportsUrl("/{$export->id}/download"))->assertStatus(403);
+        $this->actingAs($operator)->postJson($this->exportsUrl("/{$export->id}/download-link"))->assertStatus(403);
         $this->actingAs($operator)->deleteJson($this->exportsUrl("/{$export->id}"))->assertStatus(403);
         $this->actingAs($operator)->deleteJson($this->exportsUrl('/bulk'), ['ids' => [$export->id]])
             ->assertOk()->assertJsonPath('data.deleted_count', 0)->assertJsonPath('data.skipped_count', 1);
         $this->assertSame(0, ExportDownload::count());
         $this->assertNotSoftDeleted('ecommerce_exports', ['id' => $export->id]);
 
-        $manager = $this->createAdminUser([...$own, 'sirsoft-ecommerce.exports.all']);
-        $this->actingAs($manager)->getJson($this->exportsUrl())->assertOk()->assertJsonCount(1, 'data.data')
-            ->assertJsonPath('data.data.0.abilities.can_download', true);
-        $this->actingAs($manager)->getJson($this->exportsUrl("/{$export->id}"))->assertOk();
+        // 자기 작업은 「본인만」이어도 그대로 다룬다
+        $mine = $this->generated($this->body([$order->id]), $operator);
+        $this->actingAs($operator)->getJson($this->exportsUrl())->assertOk()->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.id', $mine->id)->assertJsonPath('data.data.0.abilities.can_download', true);
+
+        $manager = $this->createAdminUser($own);
+        $this->actingAs($manager)->getJson($this->exportsUrl())->assertOk()->assertJsonCount(2, 'data.data');
+        $this->actingAs($manager)->getJson($this->exportsUrl("/{$export->id}"))->assertOk()
+            ->assertJsonPath('data.abilities.can_download', true);
+    }
+
+    /**
+     * 다시 요청은 범위를 두지 않는 「요청」 권한으로 돌므로 라우트 미들웨어가 범위를 보지 않는다 — 조회 범위가
+     * 「본인만」이면 남의 실패 작업을 다시 요청할 수 없다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario action=retry, permission=self_scope
+     *
+     * @effects self_scope_hides_others_jobs
+     */
+    public function test_self_scope_cannot_retry_others_job(): void
+    {
+        $order = $this->makeOrder();
+        $export = $this->generated($this->body([$order->id]));
+        $export->forceFill(['status' => ExportStatusEnum::FAILED->value, 'file_path' => null])->save();
+
+        $operator = $this->createAdminUser(['sirsoft-ecommerce.orders.read', 'sirsoft-ecommerce.exports.read', 'sirsoft-ecommerce.exports.create']);
+        $this->setExportScope($operator, ScopeType::Self, ['read']);
+
+        $this->actingAs($operator)->postJson($this->exportsUrl("/{$export->id}/retry"))->assertStatus(403);
+        $this->assertSame(1, Export::count());
+    }
+
+    /**
+     * 범위가 「소유 역할」이면 같은 역할을 가진 운영자가 요청한 작업까지 보이고, 역할이 다른 운영자의 작업은 보이지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario type=orders, permission=role_scope
+     *
+     * @effects role_scope_reveals_same_role_jobs
+     */
+    public function test_role_scope_reveals_same_role_jobs(): void
+    {
+        $order = $this->makeOrder();
+        $own = ['sirsoft-ecommerce.orders.read', 'sirsoft-ecommerce.exports.read', 'sirsoft-ecommerce.exports.download'];
+        $viewer = $this->createAdminUser($own);
+        $this->setExportScope($viewer, ScopeType::Role, ['read', 'download']);
+
+        $teammate = $this->createAdminUser($own);
+        $teammate->roles()->attach($viewer->roles()->firstOrFail()->id);
+        $outsider = $this->createAdminUser($own);
+
+        $teamJob = $this->generated($this->body([$order->id]), $teammate);
+        $outsideJob = $this->generated($this->body([$order->id]), $outsider);
+
+        $this->actingAs($viewer)->getJson($this->exportsUrl())->assertOk()->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.id', $teamJob->id);
+        $this->actingAs($viewer)->getJson($this->exportsUrl("/{$teamJob->id}"))->assertOk();
+        $this->actingAs($viewer)->getJson($this->exportsUrl("/{$outsideJob->id}"))->assertStatus(403);
     }
 
     /**

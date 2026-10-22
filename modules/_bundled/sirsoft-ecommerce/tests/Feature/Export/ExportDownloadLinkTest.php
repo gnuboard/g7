@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Export;
 
+use App\Enums\ScopeType;
 use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Support\Facades\Bus;
@@ -132,6 +133,7 @@ class ExportDownloadLinkTest extends ExportTestCase
     {
         $export = $this->completedExport();
         $other = $this->createAdminUser(self::PERMISSIONS);
+        $this->setExportScope($other, ScopeType::Self);
 
         $this->actingAs($other)->postJson($this->exportsUrl("/{$export->id}/download-link"))->assertStatus(403);
     }

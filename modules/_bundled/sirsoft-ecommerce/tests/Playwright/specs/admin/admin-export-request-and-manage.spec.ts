@@ -372,7 +372,6 @@ test.describe('내보내기 요청·관리', () => {
       'sirsoft-ecommerce.exports.create',
       'sirsoft-ecommerce.exports.read',
       'sirsoft-ecommerce.exports.personal_data',
-      'sirsoft-ecommerce.exports.all',
     ];
     const ownerToken = issueToken(...perms);
     const day = (d: Date) => d.toISOString().slice(0, 10);

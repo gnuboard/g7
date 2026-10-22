@@ -9,8 +9,8 @@
 ```text
 1. 목록 화면의 [내보내기] 창: 카탈로그(GET catalog) → 예상 행 수(POST estimate) → 요청(POST, 202, Idempotency-Key 헤더 필수)
 2. 파일은 큐 작업이 만든다 — 요청 응답은 대기(pending) 작업이고, 진행 상황은 목록(GET)·상세(GET {export})로 본다
-3. 권한: exports.create/read/download/delete + 그 유형의 원본 조회 권한(주문=orders.read …) + 개인정보 필드는 exports.personal_data
-4. 범위: `exports.all`(다른 운영자의 내보내기 관리)이 없으면 본인이 요청한 작업만 보고·받고·지우고·다시 요청한다. 범위 밖 작업은 403(`scope_denied`)
+3. 권한: exports.create/read/download/delete + 그 유형의 원본 조회 권한(주문=orders.read …) + 개인정보 필드는 exports.personal_data. 이미 만든 작업의 개인정보(파일 받기·다시 요청·받은 사람 IP)는 exports.personal_data 의 범위도 본다
+4. 범위: 코어 표준 권한 범위(`owner_key = requested_by`) — 역할 관리에서 조회·다운로드·삭제마다 본인만/소유 역할/전체를 고른다(기본: 관리자 전체, 이커머스 관리자 본인만). 다시 요청은 조회 범위를 따른다. 범위 밖 작업은 403(`{export}` 경로는 코어 `auth.scope_denied`, 다시 요청·일회용 주소는 `scope_denied`)
 5. 내려받기(GET {export}/download)는 파일 바이트를 준다(JSON 아님) — 다운로드 이력·횟수·활동 로그가 남는다
 6. 화면은 일회용 주소를 쓴다: POST {export}/download-link 로 60초·1회용 주소를 받고 브라우저가 GET exports/file/{token} 을 직접 연다(파일을 메모리에 올리지 않음)
 ```
@@ -106,7 +106,7 @@
 
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.exports.index`
 - **컨트롤러**: `ExportController@index`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.exports.read` (`exports.all` 이 없으면 자기 요청만)
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.exports.read` (조회 범위 안의 작업만 — 본인만/소유 역할/전체)
 
 **요청 파라미터**
 
@@ -159,13 +159,13 @@
 
 ### GET /api/modules/sirsoft-ecommerce/admin/exports/{export}/download
 
-- **라우트명**: `api.modules.sirsoft-ecommerce.admin.exports.download` · **권한**: `exports.download` (범위 검사 — 범위 밖 403 `scope_denied`) + 원본 조회 권한 + (개인정보 파일이면) `exports.personal_data` · 남이 만든 파일이면 원본 조회 범위가 「전체」, 자기 파일이면 만들 때보다 좁지 않아야 함(아니면 403 `domain_permission_required`)
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.exports.download` · **권한**: `exports.download` (범위 검사 — 범위 밖 403 `scope_denied`) + 원본 조회 권한 + (개인정보 파일이면) `exports.personal_data` 와 그 범위 · 남이 만든 파일이면 원본 조회 범위가 「전체」, 자기 파일이면 만들 때보다 좁지 않아야 함(아니면 403 `domain_permission_required`)
 - 응답: 파일 바이트(`text/csv`, `Content-Disposition: attachment`). 완료 전 410(`not_downloadable`) · 만료 410(`file_expired`) · 파일 없음 404 · 원본 조회 권한 없음 403
 - 부수 효과: 다운로드 이력 1행, `download_count` +1, 활동 로그 `export.download`
 
 ### POST /api/modules/sirsoft-ecommerce/admin/exports/{export}/download-link
 
-- **라우트명**: `api.modules.sirsoft-ecommerce.admin.exports.download-link` · **권한**: `exports.download` (범위 검사 — 범위 밖 403 `scope_denied`) + 원본 조회 권한 + (개인정보 파일이면) `exports.personal_data` · 남이 만든 파일이면 원본 조회 범위가 「전체」, 자기 파일이면 만들 때보다 좁지 않아야 함(아니면 403 `domain_permission_required`)
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.exports.download-link` · **권한**: `exports.download` (범위 검사 — 범위 밖 403 `scope_denied`) + 원본 조회 권한 + (개인정보 파일이면) `exports.personal_data` 와 그 범위 · 남이 만든 파일이면 원본 조회 범위가 「전체」, 자기 파일이면 만들 때보다 좁지 않아야 함(아니면 403 `domain_permission_required`)
 - 본인 확인(IDV) 정책을 다운로드에 걸려면 이 라우트와 `admin.exports.download` 둘 다에 건다 — 화면은 이 라우트를, API 직접 호출은 다른 쪽을 쓴다. 일회용 주소(`exports.file`)는 로그인 없이 열리는 경로라 정책 대상이 아니다
 - 브라우저는 주소창·링크로 여는 요청에 인증 헤더를 싣지 못한다 — 그래서 먼저 이 API 로 일회용 주소를 받는다
 - 응답 `data`: `{url, expires_in, download_count}` — `url` 은 아래 `exports/file/{token}` 의 상대 경로, `expires_in` 은 60(초), `download_count` 는 발급 시점의 횟수(화면이 기록 반영을 확인하는 기준). 주소는 한 번만 쓸 수 있다
@@ -183,7 +183,7 @@
 - **라우트명**: `api.modules.sirsoft-ecommerce.admin.exports.downloads` · **권한**: `exports.read` (범위 검사 — 범위 밖 403 `scope_denied`)
 - 요청: `per_page`(10~100) · `page`
 - 응답 `data.data[]`: `{id, sequence, user: {name, uuid}, ip_address, downloaded_at}` + `pagination`. 조회 자체가 활동 로그 `export.view_downloads` 로 남는다
-- `ip_address` 는 보는 사람에게 `exports.personal_data` 가 있을 때만 값이 있고 없으면 `null`
+- `ip_address` 는 보는 사람에게 `exports.personal_data` 가 있고 이 작업이 그 권한의 범위(본인만/소유 역할/전체) 안일 때만 값이 있고 아니면 `null`
 
 ### POST /api/modules/sirsoft-ecommerce/admin/exports/{export}/retry
 

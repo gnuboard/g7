@@ -102,7 +102,6 @@ class ExportSecurityTest extends ExportTestCase
             'sirsoft-ecommerce.orders.read',
             'sirsoft-ecommerce.exports.read',
             'sirsoft-ecommerce.exports.download',
-            'sirsoft-ecommerce.exports.all',
         ]);
         $this->narrowOrderScopeToSelf($scoped);
         $this->assertNotNull(PermissionHelper::getOwnerKey('sirsoft-ecommerce.orders.read'), '전제: 주문 조회 권한은 범위를 갖는다');
@@ -118,7 +117,6 @@ class ExportSecurityTest extends ExportTestCase
             'sirsoft-ecommerce.orders.read',
             'sirsoft-ecommerce.exports.read',
             'sirsoft-ecommerce.exports.download',
-            'sirsoft-ecommerce.exports.all',
         ]);
         $this->actingAs($manager)->postJson($this->exportsUrl("/{$others->id}/download-link"))->assertOk();
     }
@@ -139,7 +137,6 @@ class ExportSecurityTest extends ExportTestCase
             'sirsoft-ecommerce.exports.create',
             'sirsoft-ecommerce.exports.read',
             'sirsoft-ecommerce.exports.personal_data',
-            'sirsoft-ecommerce.exports.all',
         ];
         $owner = $this->createAdminUser($permissions);
         // 다시 요청은 지금 내보낼 행이 있어야 받는다 — 조건(전체 주문)에 걸리는 주문 하나
@@ -154,6 +151,51 @@ class ExportSecurityTest extends ExportTestCase
 
         $ownId = (int) $this->actingAs($owner)->postJson($this->exportsUrl("/{$failed->id}/retry"))->assertStatus(202)->json('data.id');
         $this->assertSame('원래 요청자의 사유', Export::findOrFail($ownId)->reason);
+    }
+
+    /**
+     * 개인정보 권한의 범위가 「본인만」이면 남이 요청한 개인정보 작업은 받지도, 다시 요청하지도, 받은 사람 IP 를 보지도
+     * 못한다. 자기 개인정보 작업은 그대로 받는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario action=download, permission=personal_data
+     *
+     * @effects personal_scope_limits_others_personal_jobs
+     */
+    public function test_personal_scope_self_limits_others_personal_jobs(): void
+    {
+        $permissions = [
+            'sirsoft-ecommerce.orders.read',
+            'sirsoft-ecommerce.exports.create',
+            'sirsoft-ecommerce.exports.read',
+            'sirsoft-ecommerce.exports.download',
+            'sirsoft-ecommerce.exports.personal_data',
+        ];
+        $owner = $this->createAdminUser($permissions);
+        $others = $this->export($owner, ['contains_personal_data' => true, 'reason' => '원래 요청자의 사유']);
+        OrderFactory::new()->paid()->create();
+        $othersFailed = $this->export($owner, ['status' => ExportStatusEnum::FAILED->value, 'file_path' => null, 'contains_personal_data' => true, 'reason' => '원래 요청자의 사유']);
+        ExportDownload::query()->create([
+            'export_id' => $others->id, 'user_id' => $owner->id, 'user_name_snapshot' => 'x',
+            'ip_address' => '203.0.113.7', 'downloaded_at' => now(),
+        ]);
+
+        $operator = $this->createAdminUser($permissions);
+        $this->setExportScope($operator, ScopeType::Self, ['personal_data']);
+        $mine = $this->export($operator, ['contains_personal_data' => true, 'reason' => '내 사유']);
+
+        $this->actingAs($operator)->postJson($this->exportsUrl("/{$others->id}/download-link"))->assertStatus(403);
+        $this->actingAs($operator)->getJson($this->exportsUrl("/{$others->id}"))->assertOk()
+            ->assertJsonPath('data.abilities.can_download', false);
+        $this->actingAs($operator)->getJson($this->exportsUrl("/{$others->id}/downloads"))->assertOk()
+            ->assertJsonPath('data.data.0.ip_address', null);
+        $this->actingAs($operator)->postJson($this->exportsUrl("/{$othersFailed->id}/retry"), ['reason' => '다시 요청한 사람의 사유'])->assertStatus(403);
+        $this->actingAs($operator)->postJson($this->exportsUrl("/{$mine->id}/download-link"))->assertOk();
+
+        // 범위가 「전체」인 운영자는 같은 작업을 받고 IP 도 본다
+        $this->actingAs($owner)->getJson($this->exportsUrl("/{$others->id}/downloads"))->assertOk()
+            ->assertJsonPath('data.data.0.ip_address', '203.0.113.7');
     }
 
     /**
@@ -176,7 +218,7 @@ class ExportSecurityTest extends ExportTestCase
 
         $this->actingAs($viewer)->getJson($this->exportsUrl("/{$export->id}/downloads"))->assertOk()->assertJsonPath('data.data.0.ip_address', null);
 
-        $privileged = $this->createAdminUser(['sirsoft-ecommerce.orders.read', 'sirsoft-ecommerce.exports.read', 'sirsoft-ecommerce.exports.personal_data', 'sirsoft-ecommerce.exports.all']);
+        $privileged = $this->createAdminUser(['sirsoft-ecommerce.orders.read', 'sirsoft-ecommerce.exports.read', 'sirsoft-ecommerce.exports.personal_data']);
         $this->actingAs($privileged)->getJson($this->exportsUrl("/{$export->id}/downloads"))->assertOk()->assertJsonPath('data.data.0.ip_address', '203.0.113.7');
     }
 

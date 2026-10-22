@@ -35,8 +35,8 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * 내보내기 컨트롤러 — 목록 화면 모달(카탈로그·예상 건수·요청)과 내보내기 관리 화면
  *
- * 내보내기 권한은 라우트 미들웨어가 보고, 범위(본인/전체)는 이 컨트롤러가 작업마다 {@see ExportAccess} 로 본다 —
- * 범위는 별도 권한 `sirsoft-ecommerce.exports.all` 로 나뉘어 있다. 그 위에 「그 유형의 조회 권한」(주문=orders.read …)과
+ * 내보내기 권한은 라우트 미들웨어가 보고, 범위(본인/소유 역할/전체 — 역할 관리의 코어 표준 범위)는 이 컨트롤러가
+ * 작업마다 {@see ExportAccess} 로 다시 본다. 그 위에 「그 유형의 조회 권한」(주문=orders.read …)과
  * 개인정보 권한을 더 확인한다 — 주문 조회 권한을 잃은 운영자가 예전에 만든
  * 주문 파일을 받아 가지 못하게 하려는 것이다.
  */
@@ -176,7 +176,7 @@ class ExportController extends AdminBaseController
      */
     public function download(DownloadExportRequest $request, Export $export): Response
     {
-        if (! ExportAccess::inScope($export, $request->user())) {
+        if (! ExportAccess::inScope($export, $request->user(), ExportAccess::DOWNLOAD_PERMISSION)) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'exceptions.export.scope_denied', 403);
         }
 
@@ -204,7 +204,7 @@ class ExportController extends AdminBaseController
      */
     public function downloadLink(DownloadExportRequest $request, Export $export): JsonResponse
     {
-        if (! ExportAccess::inScope($export, $request->user())) {
+        if (! ExportAccess::inScope($export, $request->user(), ExportAccess::DOWNLOAD_PERMISSION)) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'exceptions.export.scope_denied', 403);
         }
         if (! ExportAccess::canReadSource($export, $request->user(), $this->types->find($export->type))) {
@@ -246,7 +246,7 @@ class ExportController extends AdminBaseController
         ['export' => $export, 'user' => $user] = $claim;
         Auth::setUser($user);
 
-        if (! PermissionHelper::check('sirsoft-ecommerce.exports.download', $user) || ! ExportAccess::inScope($export, $user)) {
+        if (! ExportAccess::inScope($export, $user, ExportAccess::DOWNLOAD_PERMISSION)) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'exceptions.export.scope_denied', 403);
         }
         if (! ExportAccess::canReadSource($export, $user, $this->types->find($export->type))) {
@@ -281,7 +281,7 @@ class ExportController extends AdminBaseController
         return ResponseHelper::moduleSuccess(
             'sirsoft-ecommerce',
             'messages.export.downloads_retrieved',
-            (new ExportDownloadCollection($history))->toArray($request)
+            (new ExportDownloadCollection($history))->forExport($export)->toArray($request)
         );
     }
 
@@ -327,7 +327,7 @@ class ExportController extends AdminBaseController
      */
     public function destroy(DestroyExportRequest $request, Export $export): JsonResponse
     {
-        if (! ExportAccess::inScope($export, $request->user())) {
+        if (! ExportAccess::inScope($export, $request->user(), ExportAccess::DELETE_PERMISSION)) {
             return ResponseHelper::moduleError('sirsoft-ecommerce', 'exceptions.export.scope_denied', 403);
         }
 
@@ -378,7 +378,7 @@ class ExportController extends AdminBaseController
     private function canReadDomain(Export $export, ?User $user): bool
     {
         return $this->canReadType($this->types->find($export->type), $user)
-            && (! $export->contains_personal_data || PermissionHelper::check('sirsoft-ecommerce.exports.personal_data', $user));
+            && ExportAccess::canHandlePersonal($export, $user);
     }
 
     /**

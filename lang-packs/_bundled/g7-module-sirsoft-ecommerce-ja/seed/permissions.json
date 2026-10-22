@@ -406,9 +406,5 @@
   "sirsoft-ecommerce.exports.personal_data": {
     "name": "個人情報 含む エクスポート",
     "description": "連絡先·住所 等 個人情報フィールドを選んでエクスポートしてそのファイルを受け取る (理由入力必須)"
-  },
-  "sirsoft-ecommerce.exports.all": {
-    "name": "他の運営者のエクスポート管理",
-    "description": "他の運営者が要求したエクスポートも見て·受け取って·削除する (ない場合は本人要求のみ)"
   }
 }

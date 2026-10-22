@@ -124,7 +124,8 @@ class ExportLifecycleTest extends ExportTestCase
     }
 
     /**
-     * 개인정보 포함·다른 운영자 내보내기 관리는 기본으로 관리자에게만 준다.
+     * 개인정보 포함 내보내기는 기본으로 관리자에게만 준다. 다른 운영자의 내보내기를 다루는 범위는 별도 권한이 아니라
+     * 권한 범위로 정한다({@see ExportPermissionScopeDeclarationTest}).
      *
      * @return void 반환값 없음
      *
@@ -141,7 +142,7 @@ class ExportLifecycleTest extends ExportTestCase
         }
 
         $this->assertSame(['admin'], $roles['personal_data']);
-        $this->assertSame(['admin'], $roles['all']);
+        $this->assertArrayNotHasKey('all', $roles);
         $this->assertSame(['admin', 'sirsoft-ecommerce.manager'], $roles['create']);
     }
 

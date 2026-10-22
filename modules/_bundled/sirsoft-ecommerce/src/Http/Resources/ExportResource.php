@@ -132,8 +132,8 @@ class ExportResource extends BaseApiResource
         $user = $request->user();
         $type = app(ExportTypeRegistry::class)->find($export->type);
         $domainRead = $type !== null && PermissionHelper::check($type->readPermission(), $user);
-        $personalOk = ! $export->contains_personal_data || PermissionHelper::check('sirsoft-ecommerce.exports.personal_data', $user);
-        // 범위 — `exports.all` 이 없으면 본인이 요청한 작업만 다룬다
+        $personalOk = ExportAccess::canHandlePersonal($export, $user);
+        // 범위 — 역할 관리의 권한 범위(본인/소유 역할/전체)를 동작마다 본다
         $inScope = ExportAccess::inScope($export, $user);
 
         $base = $this->resolveAbilitiesFromMap([
@@ -146,8 +146,8 @@ class ExportResource extends BaseApiResource
         return [
             'can_view_downloads' => $base['can_view_downloads'] && $inScope,
             // 남이 만든 파일은 원본 조회 범위가 「전체」여야 받는다 — 판정은 컨트롤러와 같은 한곳
-            'can_download' => $base['can_download'] && $inScope && $export->isDownloadable() && ExportAccess::canReadSource($export, $user, $type),
-            'can_delete' => $base['can_delete'] && $inScope && $export->status->isDeletable(),
+            'can_download' => $base['can_download'] && ExportAccess::inScope($export, $user, ExportAccess::DOWNLOAD_PERMISSION) && $export->isDownloadable() && ExportAccess::canReadSource($export, $user, $type),
+            'can_delete' => $base['can_delete'] && ExportAccess::inScope($export, $user, ExportAccess::DELETE_PERMISSION) && $export->status->isDeletable(),
             'can_retry' => $base['can_retry'] && $inScope && $export->status === ExportStatusEnum::FAILED && $domainRead && $personalOk,
             // 남의 개인정보 작업을 다시 요청하면 자기 사유를 남겨야 한다(창이 사유 칸을 연다)
             'retry_needs_reason' => $export->contains_personal_data && (int) $export->requested_by !== (int) $user?->id,

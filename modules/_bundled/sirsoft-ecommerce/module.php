@@ -1405,10 +1405,13 @@ class Module extends AbstractModule
 
                 // 내보내기 권한 (#787) — 목록 화면의 내보내기 요청과 내보내기 관리 화면.
                 // 데이터 범위는 그 유형의 조회 권한(주문=orders.read …)이 정하고, 이 카테고리는 작업(파일)에 대한 권한이다.
-                // 「본인/전체」 범위는 별도 권한 `all` 로 나눈다(Support\ExportAccess) — 없으면 본인이 요청한 작업만 다룬다.
-                // 개인정보 대량 반출이라 기본 역할은 admin·이커머스 관리자만이고, 개인정보·전체 범위는 admin 만이다.
+                // 작업 범위는 코어 표준 권한 범위다 — 주인은 요청자(requested_by)이고, 역할 관리에서 권한마다 본인만/소유 역할/전체를
+                // 고른다(Support\ExportAccess). 기본은 admin 전체, 이커머스 관리자 본인만(요청한 내보내기만 조회·다운로드·삭제).
+                // 개인정보 대량 반출이라 기본 역할은 admin·이커머스 관리자만이고, 개인정보 포함 내보내기는 admin 만이다.
                 [
                     'identifier' => 'exports',
+                    'resource_route_key' => 'export',
+                    'owner_key' => 'requested_by',
                     'name' => [
                         'ko' => '내보내기',
                         'en' => 'Exports',
@@ -1422,7 +1425,7 @@ class Module extends AbstractModule
                             'action' => 'read',
                             'name' => ['ko' => '내보내기 관리 조회', 'en' => 'Read Exports'],
                             'description' => ['ko' => '내보내기 관리 메뉴·목록·다운로드 이력 조회', 'en' => 'View the export management menu, list and download history'],
-                            'roles' => ['admin', 'sirsoft-ecommerce.manager'],
+                            'roles' => ['admin', ['role' => 'sirsoft-ecommerce.manager', 'scope_type' => 'self']],
                         ],
                         [
                             'action' => 'create',
@@ -1434,24 +1437,18 @@ class Module extends AbstractModule
                             'action' => 'download',
                             'name' => ['ko' => '내보내기 파일 다운로드', 'en' => 'Download Exports'],
                             'description' => ['ko' => '완료된 내보내기 파일 다운로드 (그 목록의 조회 권한도 필요)', 'en' => 'Download completed export files (also requires read permission of that list)'],
-                            'roles' => ['admin', 'sirsoft-ecommerce.manager'],
+                            'roles' => ['admin', ['role' => 'sirsoft-ecommerce.manager', 'scope_type' => 'self']],
                         ],
                         [
                             'action' => 'delete',
                             'name' => ['ko' => '내보내기 삭제', 'en' => 'Delete Exports'],
                             'description' => ['ko' => '내보내기 작업과 파일 삭제 (다운로드 이력은 남음)', 'en' => 'Delete export jobs and files (download history is kept)'],
-                            'roles' => ['admin', 'sirsoft-ecommerce.manager'],
+                            'roles' => ['admin', ['role' => 'sirsoft-ecommerce.manager', 'scope_type' => 'self']],
                         ],
                         [
                             'action' => 'personal_data',
                             'name' => ['ko' => '개인정보 포함 내보내기', 'en' => 'Export Personal Data'],
                             'description' => ['ko' => '연락처·주소 등 개인정보 필드를 골라 내보내고 그 파일을 받기 (사유 입력 필수)', 'en' => 'Export and download personal data fields such as phone and address (reason required)'],
-                            'roles' => ['admin'],
-                        ],
-                        [
-                            'action' => 'all',
-                            'name' => ['ko' => '다른 운영자의 내보내기 관리', 'en' => 'Manage All Exports'],
-                            'description' => ['ko' => '다른 운영자가 요청한 내보내기도 보고·받고·지우기 (없으면 본인 요청만)', 'en' => 'View, download and delete exports requested by other operators (otherwise only your own)'],
                             'roles' => ['admin'],
                         ],
                     ],

@@ -720,7 +720,7 @@ class ExportService
     {
         $allowed = PermissionHelper::check('sirsoft-ecommerce.exports.create', $requester)
             && PermissionHelper::check($type->readPermission(), $requester)
-            && (! $export->contains_personal_data || PermissionHelper::check('sirsoft-ecommerce.exports.personal_data', $requester));
+            && ExportAccess::canHandlePersonal($export, $requester);
 
         if (! $allowed) {
             throw new ExportException('permission_revoked');
@@ -1048,7 +1048,7 @@ class ExportService
         $skipped = 0;
 
         foreach ($this->exports->findManyByIds($ids) as $export) {
-            if (! $export->status->isDeletable() || ! ExportAccess::inScope($export, $user)) {
+            if (! $export->status->isDeletable() || ! ExportAccess::inScope($export, $user, ExportAccess::DELETE_PERMISSION)) {
                 $skipped++;
 
                 continue;
