@@ -798,6 +798,16 @@ Admin 타입 템플릿 개발 시 필수 컴포넌트를 반드시 구현해야 
 - [컴포넌트 Props 레퍼런스 (Basic)](../../../../docs/frontend/component-props.md)
 - [컴포넌트 Props 레퍼런스 (Composite)](../../../../docs/frontend/component-props-composite.md)
 
+#### 현재 쿼리를 합치는 링크 (1.1.2)
+
+렌더할 때 `G7Core.navigation.mergeQueryIntoHref` 로 href 를 만드는 링크(`A` 의 `mergeQuery`, `Pagination` 의
+`pageHrefMergeQuery`, `ActionMenu` 항목 `mergeQuery`, `FileTree`·`FileTreePicker` 의 `hrefMergeQuery`,
+`SortableMenuList` 의 `itemHrefMergeQuery`)는 `src/support/navigationLink.ts` 의 `useLocationSearch(enabled)` 를
+부른다. 같은 화면에서 쿼리만 바꾸는 `navigate replace` 는 화면을 다시 마운트하지 않고 링크 props 도 그대로라 엔진이
+그 링크를 다시 그리지 않는다 — 구독하지 않으면 가운데 클릭·새 탭·주소 복사가 바꾸기 전 쿼리로 간다. 훅은 엔진
+`G7Core.navigation.subscribeLocationSearch` 를 구독하고(없는 옛 엔진은 뒤로/앞으로만), 쿼리를 합치지 않는 링크는
+`enabled=false` 로 구독하지 않는다. 같은 방식의 새 링크 컴포넌트도 이 훅을 부른다.
+
 ---
 
 ### AdminSidebar 상세

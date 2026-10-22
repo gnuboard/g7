@@ -47,7 +47,7 @@ vi.mock('../template-engine', async () => {
       reactRoot: null,
       currentLayoutJson: null,
       currentDataContext: { _global: {} },
-      bindingEngine: { invalidateCacheByKeys: vi.fn() },
+      bindingEngine: { invalidateCacheByKeys: vi.fn(), clearCache: vi.fn(), startRenderCycle: vi.fn() },
     }),
   };
 });

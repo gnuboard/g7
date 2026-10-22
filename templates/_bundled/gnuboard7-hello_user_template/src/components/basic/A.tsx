@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useSyncExternalStore } from 'react';
 
 export interface AProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   /** 참이면 링크를 끈다 — href 를 빼고 aria-disabled="true"·tabIndex -1 을 달며 클릭을 막는다 */
@@ -13,6 +13,47 @@ const g7 = (): any => (typeof window !== 'undefined' ? (window as any).G7Core : 
 /** 같은 사이트 안 주소인가 — '/' 로 시작하고 '//'·'/\'(브라우저가 다른 호스트로 읽음)가 아닌 것만 SPA 로 옮긴다 */
 const isInternalHref = (href?: string): href is string =>
   typeof href === 'string' && /^\/(?![/\\])/.test(href);
+
+/** 구독하지 않는 링크의 subscribe·snapshot — 같은 함수여야 React 가 다시 구독하지 않는다 */
+const noSubscribe = (): (() => void) => () => {};
+const noSnapshot = (): string => '';
+const readLocationSearch = (): string => (typeof window === 'undefined' ? '' : window.location.search);
+
+/**
+ * 주소 검색부가 바뀔 수 있는 순간을 구독한다 — 엔진 `G7Core.navigation.subscribeLocationSearch`(뒤로/앞으로·같은 화면 쿼리 교체).
+ * 그 API 가 없는 옛 엔진에서는 뒤로/앞으로(`popstate`)만 본다.
+ *
+ * @param callback 검색부가 바뀌었을 수 있을 때 부를 함수
+ * @returns 구독 해제 함수
+ */
+const subscribeLocationSearch = (callback: () => void): (() => void) => {
+  const fn = g7()?.navigation?.subscribeLocationSearch;
+  if (typeof fn === 'function') {
+    const off = fn(callback);
+
+    return typeof off === 'function' ? off : () => {};
+  }
+  window.addEventListener('popstate', callback);
+
+  return () => window.removeEventListener('popstate', callback);
+};
+
+/**
+ * 렌더할 때 현재 쿼리를 href 에 합치는 링크(`mergeQuery`)가 주소 검색부를 구독한다.
+ *
+ * 같은 화면에서 쿼리만 바꾸는 `navigate replace` 는 화면을 다시 마운트하지 않고 링크 props 도 그대로라 엔진이 링크를
+ * 다시 그리지 않는다 — 그러면 가운데 클릭·Ctrl+클릭·새 탭·주소 복사가 옛 쿼리로 간다. 검색부가 바뀌면 이 훅이 다시 그린다.
+ * `enabled` 가 거짓이면 구독하지 않는다(쿼리를 합치지 않는 링크의 렌더 비용은 그대로).
+ *
+ * @param enabled 현재 쿼리를 href 에 합치면 true
+ * @returns 현재 주소 검색부(구독하지 않으면 '')
+ */
+const useLocationSearch = (enabled: boolean): string =>
+  useSyncExternalStore(
+    enabled ? subscribeLocationSearch : noSubscribe,
+    enabled ? readLocationSearch : noSnapshot,
+    noSnapshot,
+  );
 
 /**
  * 새 창(`target="_blank"`) 링크의 rel — 이미 준 값은 지키고 `noopener noreferrer` 를 합친다.
@@ -48,6 +89,9 @@ export const A: React.FC<AProps> = ({
   onClick,
   ...props
 }) => {
+  // 쿼리만 바꾸는 같은 화면 이동 뒤에도 href 가 새 쿼리를 합치도록 주소를 구독한다(props 가 같아 엔진이 다시 그리지 않는다)
+  useLocationSearch(mergeQuery && !disabled && typeof href === 'string' && href !== '');
+
   if (disabled) {
     return (
       <a

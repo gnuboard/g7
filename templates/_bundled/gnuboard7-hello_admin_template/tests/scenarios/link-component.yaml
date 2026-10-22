@@ -3,10 +3,12 @@ feature: Hello 예제 템플릿 링크(A) — 새 탭 열기와 보통 클릭 SP
 description: |
   화면 이동을 링크로 쓰면 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 되어야 하고, 보통 클릭은 화면 전체를
   다시 부르지 않고 옮겨 가야 한다. 보통 클릭인지는 엔진 G7Core.navigation.isPlainLeftClick 하나로 판정한다.
-  축 click 은 클릭 종류와 링크 상태(레이아웃 액션 유무·끄기·쿼리 병합·엔진 전역 없음)다.
+  축 click 은 클릭 종류와 링크 상태(레이아웃 액션 유무·끄기·쿼리 병합·엔진 전역 없음·같은 화면 쿼리 교체)다.
+  mergeQuery 링크는 같은 화면에서 쿼리만 바꾸는 `navigate replace` 뒤에도 새 쿼리를 합친 href 로 다시 그려진다
+  (엔진 `subscribeLocationSearch` 구독, props 가 같아도). mergeQuery 가 없는 링크는 구독하지 않는다.
 
 axes:
-  click: [plain, modifier, external, layout_action, disabled, merge_query, no_engine, new_window]
+  click: [plain, modifier, external, layout_action, disabled, merge_query, no_engine, new_window, query_replace]
 
 effects:
   - plain_click_spa_navigate          # 액션 없는 내부 링크 보통 클릭 = 기본 이동을 막고 SPA navigate 1회
@@ -14,7 +16,9 @@ effects:
   - layout_action_owns_click          # 레이아웃 클릭 액션이 있으면 그것이 클릭을 맡는다
   - disabled_link_has_no_href         # 끄면 href 없음·aria-disabled·tabIndex -1·클릭 막음
   - merge_query_href                  # mergeQuery 면 현재 쿼리를 합친 주소를 href 로
+  - merge_query_href_follows_query_replace  # 쿼리만 바꾼 같은 화면 이동·뒤로/앞으로 뒤 mergeQuery href 가 새 쿼리를 합친다(구독은 mergeQuery 링크만)
   - new_window_link_has_noopener      # target=_blank 링크는 rel 에 noopener noreferrer 를 합친다(기존 rel 유지·중복 없음)
 
 test_files:
   - templates/_bundled/gnuboard7-hello_admin_template/__tests__/components/A.test.tsx
+  - templates/_bundled/gnuboard7-hello_admin_template/__tests__/components/A.locationSync.test.tsx

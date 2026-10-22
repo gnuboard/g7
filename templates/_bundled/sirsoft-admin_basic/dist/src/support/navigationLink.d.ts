@@ -36,6 +36,17 @@ export declare function isPlainLeftClick(event: React.MouseEvent | MouseEvent | 
  */
 export declare function mergeQueryIntoHref(href: string): string;
 /**
+ * 렌더할 때 현재 쿼리를 href 에 합치는 컴포넌트가 주소 검색부를 구독합니다(`mergeQuery`·`pageHrefMergeQuery` 등).
+ *
+ * 같은 화면에서 쿼리만 바꾸는 `navigate replace` 는 화면을 다시 마운트하지 않고, 링크 props 도 그대로라 엔진이 그 링크를
+ * 다시 그리지 않는다 — 그러면 가운데 클릭·Ctrl+클릭·새 탭·주소 복사가 옛 쿼리로 간다. 검색부가 바뀌면 이 훅이 다시 그린다.
+ * `enabled` 가 거짓이면 구독하지 않는다(쿼리를 합치지 않는 링크의 렌더 비용은 그대로).
+ *
+ * @param enabled 현재 쿼리를 href 에 합치면 true
+ * @return 현재 주소 검색부(`?a=1`, 구독하지 않으면 '')
+ */
+export declare function useLocationSearch(enabled: boolean): string;
+/**
  * 링크로 그려도 되는 주소인지 판정해 href 값을 돌려줍니다.
  *
  * - 빈 값·`#`·실행 스킴(`javascript:` 등)은 링크가 아니다 → null

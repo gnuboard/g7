@@ -118,7 +118,7 @@ describe('updateQueryParams 겹침 — 덮개와 결과 적용은 마지막 호�
         transition_overlay: { enabled: true, style: 'spinner', target: 'tab_content', fallback_target: 'right_content_area', wait_for: ['settings', 'roles', 'definitions'] },
       },
       currentDataContext: { _global: {} },
-      bindingEngine: { invalidateCacheByKeys: vi.fn() },
+      bindingEngine: { invalidateCacheByKeys: vi.fn(), clearCache: vi.fn(), startRenderCycle: vi.fn() },
     });
     updateTemplateDataMock.mockClear();
     setPendingMock.mockClear();

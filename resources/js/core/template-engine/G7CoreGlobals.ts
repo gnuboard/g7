@@ -71,7 +71,7 @@ import {
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
 import { isLocaleSwitching, stashForLocaleSwitch, takeLocaleSwitchHandoff } from './localeSwitchHandoff';
 import { getSiteLocale, pickLocalized } from '../support/localeTag';
-import { isPlainLeftClick, mergeQueryIntoHref, type LinkClickLike } from './navigationLinks';
+import { isPlainLeftClick, mergeQueryIntoHref, subscribeLocationSearch, type LinkClickLike } from './navigationLinks';
 import { configureLeaveGuard, isLeaveGuarded } from '../routing/LeaveGuard';
 import {
   notifyAssetFailure,
@@ -3246,6 +3246,8 @@ function initNavigationAPI(G7Core: any, deps: G7CoreDependencies): void {
      * @since engine-v1.80.1
      */
     mergeQueryIntoHref: (href: string): string => mergeQueryIntoHref(href),
+    /** 주소 검색부가 바뀔 수 있는 순간(뒤로/앞으로·같은 화면 쿼리 교체) 구독 — mergeQuery 링크 다시 그리기용 @since engine-v1.82.1 */
+    subscribeLocationSearch: (callback: () => void): (() => void) => subscribeLocationSearch(callback),
     /**
      * 지금 경로 전환 세대를 돌려줍니다 — 경로 전환이 시작될 때마다 1 씩 는다(같은 주소로 다시 들어와도 는다).
      *

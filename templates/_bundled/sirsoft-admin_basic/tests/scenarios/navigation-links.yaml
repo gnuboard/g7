@@ -5,6 +5,8 @@ description: |
   「새 탭에서 열기」가 되지 않았다(G7 은 SPA 라 렌더 시점에 주소가 없음). 이동 자리를 `<a href>` 로 그리고 보통 클릭만
   지금처럼 SPA 로 옮긴다. 판정은 엔진 `G7Core.navigation.isPlainLeftClick`(W9), 목록 문맥 유지는 `mergeQueryIntoHref`(W8).
   레이아웃 잠금 시험은 click 이동 navigate 노드가 `<a href>` 인지, rowActions·탭·페이지 번호가 주소를 갖는지 잠근다.
+  쿼리를 합치는 링크(`mergeQuery`·`pageHrefMergeQuery`·`hrefMergeQuery`·`itemHrefMergeQuery`)는 같은 화면에서 쿼리만 바꾸는
+  `navigate replace` 뒤에도 새 쿼리를 합친 href 로 다시 그려진다(엔진 `subscribeLocationSearch` 구독, props 가 같아도).
 
 axes:
   component: [a, admin_sidebar, user_profile, notification_center, dropdown_menu_item, data_grid, action_menu, pagination, tab_navigation, card_grid, extension_card_grid, page_header, layout_lock, code_workspace, button_styles, breadcrumb, sortable_menu_list, file_tree, dropdown_button]
@@ -14,6 +16,7 @@ effects:
   - modified_click_opens_browser_default
   - disabled_link_has_no_href
   - merge_query_in_href
+  - merge_query_href_follows_query_replace
   - link_roles_preserved
   - layout_moves_are_links
   - link_open_marks_notification_read
@@ -31,6 +34,7 @@ effects:
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/NavigationLinks.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/NavigationLinks.menus.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/NavigationLinks.locationSync.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/navigation-links.test.ts
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-base-notification-new-tab-read.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeWorkspace.leaveGuard.test.tsx
