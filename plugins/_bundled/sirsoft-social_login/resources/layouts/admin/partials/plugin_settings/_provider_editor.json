@@ -1,0 +1,989 @@
+{
+    "comment": "제공자 카드의 편집 칸 — [설정 편집]을 누른 카드 하나만 열린다. 값은 _local.providerForm 에 있고, 비밀값은 마스크 그대로 두면 유지·비우면 삭제다.\n     제공자 반복(provider) 안에 인라인된다.",
+    "meta": {
+        "is_partial": true,
+        "description": "제공자 편집 칸"
+    },
+    "layout_name": "partials/plugin_settings/_provider_editor",
+    "id": "provider_editor_{{provider.key}}",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_local.editingKey === provider.key}}",
+    "dataKey": "providerForm",
+    "props": {
+        "className": "mt-2 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4"
+    },
+    "children": [
+        {
+            "id": "editor_enabled_row_{{provider.key}}",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex-start gap-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Input",
+                    "props": {
+                        "type": "checkbox",
+                        "name": "enabled",
+                        "className": "mt-1 h-4 w-4 rounded text-blue-600"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.fields.enabled"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.hints.enabled"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_local.providerErrors?.enabled}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.providerErrors?.enabled?.[0] ?? ''}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "editor_label_row_{{provider.key}}",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "comment": "표시 이름 — 사이트가 쓰는 언어마다 칸이 나온다. 값은 _local.providerForm.label 객체",
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "form-label"
+                    },
+                    "text": "$t:sirsoft-social_login.admin.providers.fields.label"
+                },
+                {
+                    "type": "composite",
+                    "name": "MultilingualInput",
+                    "props": {
+                        "name": "label",
+                        "maxLength": 100
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!_local.providerErrors && Object.keys(_local.providerErrors).some((k) => k === 'label' || k.startsWith('label.'))}}",
+                    "props": {
+                        "className": "form-error"
+                    },
+                    "text": "{{_local.providerErrors ? Object.entries(_local.providerErrors).find(([k]) => k === 'label' || k.startsWith('label.'))?.[1]?.[0] : ''}}"
+                }
+            ]
+        },
+        {
+            "id": "editor_credentials_{{provider.key}}",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "grid-2col-responsive"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "{{$t('sirsoft-social_login.admin.providers.fields.client_id_' + provider.driver)}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "text",
+                                "name": "client_id",
+                                "className": "input",
+                                "autoComplete": "off"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_local.providerErrors?.client_id}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.providerErrors?.client_id?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "{{$t('sirsoft-social_login.admin.providers.fields.client_secret_' + provider.driver)}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "password",
+                                "name": "client_secret",
+                                "className": "input",
+                                "autoComplete": "new-password"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.hints.secret"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_local.providerErrors?.client_secret}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.providerErrors?.client_secret?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{provider.driver === 'kakao'}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.fields.admin_key"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "password",
+                                "name": "admin_key",
+                                "className": "input",
+                                "autoComplete": "new-password"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.hints.admin_key"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{provider.driver === 'facebook'}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.fields.graph_api_version"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "text",
+                                "name": "graph_api_version",
+                                "className": "input",
+                                "placeholder": "v26.0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_local.providerErrors?.graph_api_version}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.providerErrors?.graph_api_version?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.fields.scopes"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "text",
+                                "name": "scopes_text",
+                                "className": "input",
+                                "placeholder": "$t:sirsoft-social_login.admin.providers.hints.scopes_placeholder"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.hints.scopes"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "editor_custom_endpoints_{{provider.key}}",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{provider.type === 'custom'}}",
+            "props": {
+                "className": "space-y-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-col sm:flex-row sm:items-end gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.fields.discovery_url"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "url",
+                                        "name": "discovery_url",
+                                        "className": "input",
+                                        "placeholder": "https://"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!!_local.providerErrors?.discovery_url}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.providerErrors?.discovery_url?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "editor_discover_button_{{provider.key}}",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "discovery 문서를 읽어 아래 주소 칸을 채운다(저장은 [저장] 으로)",
+                                    "type": "click",
+                                    "handler": "apiCall",
+                                    "target": "/api/plugins/sirsoft-social_login/admin/providers/discover",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "discovery_url": "{{_local.providerForm?.discovery_url ?? ''}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "providerForm": "{{Object.assign({}, _local.providerForm, response.data)}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-social_login.admin.providers.discovered"
+                                            }
+                                        }
+                                    ],
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:sirsoft-social_login.admin.providers.save_failed'}}"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-social_login.admin.providers.discover"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-2col-responsive"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.fields.issuer"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "text",
+                                        "name": "issuer",
+                                        "className": "input"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.fields.authorize_url"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "url",
+                                        "name": "authorize_url",
+                                        "className": "input"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.fields.token_url"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "url",
+                                        "name": "token_url",
+                                        "className": "input"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.fields.userinfo_url"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "url",
+                                        "name": "userinfo_url",
+                                        "className": "input"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.fields.jwks_url"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "url",
+                                        "name": "jwks_url",
+                                        "className": "input"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid grid-cols-3 gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.fields.button_bg"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "버튼 배경색 입력을 편집 폼에 담는다(자동바인딩을 끈 칸)",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "providerForm.button_style.bg": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "className": "input",
+                                        "placeholder": "#1F2937",
+                                        "value": "{{_local.providerForm?.button_style?.bg ?? ''}}",
+                                        "autoBinding": false
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.fields.button_fg"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "버튼 글자색 입력을 편집 폼에 담는다(자동바인딩을 끈 칸)",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "providerForm.button_style.fg": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "className": "input",
+                                        "placeholder": "#FFFFFF",
+                                        "value": "{{_local.providerForm?.button_style?.fg ?? ''}}",
+                                        "autoBinding": false
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.fields.button_border"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "버튼 테두리색 입력을 편집 폼에 담는다(자동바인딩을 끈 칸)",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "providerForm.button_style.border": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "className": "input",
+                                        "placeholder": "#1F2937",
+                                        "value": "{{_local.providerForm?.button_style?.border ?? ''}}",
+                                        "autoBinding": false
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "editor_signup_policy_{{provider.key}}",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "grid-2col-responsive"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-start gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "checkbox",
+                                "name": "signup_allowed",
+                                "className": "mt-1 h-4 w-4 rounded text-blue-600"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.fields.signup_allowed"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.hints.signup_allowed"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{provider.driver === 'kakao'}}",
+                    "props": {
+                        "className": "flex-start gap-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "checkbox",
+                                "name": "webhook_ip_allowlist_enabled",
+                                "className": "mt-1 h-4 w-4 rounded text-blue-600"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.fields.webhook_ip_allowlist_enabled"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.hints.webhook_ip_allowlist_enabled"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{provider.driver === 'kakao'}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.fields.webhook_app_id"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "props": {
+                                "type": "text",
+                                "name": "webhook_app_id",
+                                "className": "input",
+                                "inputMode": "numeric",
+                                "autoComplete": "off"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.hints.webhook_app_id"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_local.providerErrors?.webhook_app_id}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_local.providerErrors?.webhook_app_id?.[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.fields.email_missing_policy"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "name": "email_missing_policy",
+                                "className": "focus:border-transparent"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "props": {
+                                        "value": "ask"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.email_missing.ask"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "props": {
+                                        "value": "deny"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.email_missing.deny"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "props": {
+                                        "value": "placeholder"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.email_missing.placeholder"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "placeholder_warning_{{provider.key}}",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_local.providerForm?.email_missing_policy === 'placeholder'}}",
+                            "props": {
+                                "role": "alert",
+                                "className": "form-error"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.hints.placeholder_warning"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.fields.email_trust"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Select",
+                            "props": {
+                                "name": "email_trust",
+                                "className": "focus:border-transparent"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "props": {
+                                        "value": "flag"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.email_trust.flag"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "props": {
+                                        "value": "trust"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.email_trust.trust"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Option",
+                                    "props": {
+                                        "value": "verify"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.providers.email_trust.verify"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.providers.hints.email_trust"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "editor_buttons_{{provider.key}}",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-wrap justify-end gap-2"
+            },
+            "children": [
+                {
+                    "id": "editor_cancel_button_{{provider.key}}",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "[저장]이 띄운 영향 확인(계속 저장 있음)도 닫는다 — 편집 칸 없이 남으면 [계속 저장]이 갈 곳이 없다",
+                            "type": "click",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "merge": "shallow",
+                                "editingKey": null,
+                                "providerForm": {},
+                                "providerFormOrigin": {},
+                                "providerErrors": null,
+                                "impact": "{{_local.impact?.confirm === true ? null : _local.impact}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary text-sm"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.cancel"
+                        }
+                    ]
+                },
+                {
+                    "id": "editor_save_button_{{provider.key}}",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "켜진 제공자를 끄거나 자격증명을 바꾸면 먼저 영향(이 제공자로만 로그인하는 회원 수)을 보여 주고 확인을 받는다. 그 밖에는 바로 저장한다",
+                            "type": "click",
+                            "handler": "conditions",
+                            "conditions": [
+                                {
+                                    "if": "{{provider.enabled && (!_local.providerForm?.enabled || (_local.providerForm?.client_id ?? '') !== (provider.client_id ?? '') || (_local.providerForm?.client_secret ?? null) !== (provider.client_secret ?? null))}}",
+                                    "then": {
+                                        "handler": "apiCall",
+                                        "target": "/api/plugins/sirsoft-social_login/admin/providers/{{provider.key}}/impact",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "GET"
+                                        },
+                                        "onSuccess": {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "impact": "{{Object.assign({ key: provider.key, label: provider.display_label, confirm: true }, response.data)}}"
+                                            }
+                                        },
+                                        "onError": {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message ?? '$t:sirsoft-social_login.admin.providers.save_failed'}}"
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "then": {
+                                        "actionRef": "saveProvider"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary text-sm",
+                        "disabled": "{{_local.isSavingProvider || !_computed.canEditProviders || JSON.stringify(_local.providerForm) === JSON.stringify(_local.providerFormOrigin)}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!_local.isSavingProvider}}",
+                            "text": "$t:common.save"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_local.isSavingProvider}}",
+                            "text": "$t:common.saving"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

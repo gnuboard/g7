@@ -11,6 +11,7 @@ use App\Services\NotificationChannelService;
 use App\Services\NotificationDefinitionService;
 use App\Services\NotificationLogService;
 use App\Services\NotificationTemplateService;
+use App\Support\UndeliverableEmail;
 use Illuminate\Support\Facades\Log;
 
 class GenericNotification extends BaseNotification
@@ -109,6 +110,15 @@ class GenericNotification extends BaseNotification
                     return [];
                 }
 
+                // 메일을 보낼 수 없는 주소(비어 있음·예약 도메인 `.invalid` 대체 주소)는 메일 채널을 건너뛴다.
+                if ($this->isMailUndeliverable($notifiable, $this->channel)) {
+                    $this->logSkippedChannels([
+                        ['channel' => $this->channel, 'reason' => 'notification.recipient_email_undeliverable'],
+                    ], $notifiable);
+
+                    return [];
+                }
+
                 // 0단계: 확장 단위 채널 전역 활성 여부 확인
                 if (! $channelService->isChannelEnabledForExtension(
                     $this->extensionType,
@@ -173,6 +183,15 @@ class GenericNotification extends BaseNotification
                     $skippedChannels[] = [
                         'channel' => $channel,
                         'reason' => 'notification.channel_guest_not_allowed',
+                    ];
+
+                    continue;
+                }
+
+                if ($this->isMailUndeliverable($notifiable, $channel)) {
+                    $skippedChannels[] = [
+                        'channel' => $channel,
+                        'reason' => 'notification.recipient_email_undeliverable',
                     ];
 
                     continue;
@@ -253,6 +272,25 @@ class GenericNotification extends BaseNotification
         }
 
         return ! app(NotificationChannelService::class)->isChannelGuestAllowed($channel);
+    }
+
+    /**
+     * 메일 채널인데 수신자 주소로 메일을 보낼 수 없는지 확인합니다.
+     *
+     * 외부 인증 회원의 대체 주소(`…@xxx.invalid`)는 절대 닿지 않으므로 「이메일 없음」과 같게 건너뛴다.
+     * 이메일 속성이 아예 없는 수신자(메일이 아닌 식별 수단만 가진 수신자)는 판정하지 않는다 — 종전 동작 유지.
+     *
+     * @param  object  $notifiable  수신자
+     * @param  string  $channel  채널 식별자
+     * @return bool true = 건너뜀
+     */
+    private function isMailUndeliverable(object $notifiable, string $channel): bool
+    {
+        if ($channel !== 'mail' || ! isset($notifiable->email)) {
+            return false;
+        }
+
+        return UndeliverableEmail::is(is_string($notifiable->email) ? $notifiable->email : null);
     }
 
     /**

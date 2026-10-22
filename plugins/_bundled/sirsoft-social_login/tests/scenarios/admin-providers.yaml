@@ -1,0 +1,168 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 제공자 설정·연결 테스트·진단·통계·회원 연결은 서로 다른 관리자 표면이라 축을 곱하면 성립하지 않는 조합만 늘어난다 — 표면별 시험으로 나눴다.
+feature: social_login_admin_providers
+coverage_strategy: pairwise
+description: |
+  관리자 화면의 서버 표면. 제공자 설정(목록·수정·일반 OIDC 추가·삭제·정렬·discovery·영향)은 비밀값을 값 대신 마스크로만 보이고
+  마스크 회신은 유지, 빈 값은 삭제다. 연결 테스트는 없는 인가 코드로 토큰 주소를 불러 거절 사유를 정상·클라이언트 오류·콜백 주소
+  불일치·도달 불가로 나누고, 브라우저 테스트는 인가 주소를 준다. 진단은 제공자·큐·메일·모의·회원·웹훅 카드와 앱 키 교체로 풀 수
+  없는 자격증명을 보이고, 통계는 기간 안 시도(관리자 테스트 제외)와 지금의 연결 수를 센다. 회원 상세 탭은 연결 열람(제공자 사용자
+  ID 앞 6자)과 강제 해제(마지막 수단 가드 없음)이고, 권한 4종이 라우트마다 갈린다. 브라우저 종단(E2E)은 자격증명 저장 뒤 새로고침의
+  마스킹, 일반 OIDC 추가와 연결 테스트(닫힌 포트라 서명 키 목록 실패)와 삭제, 설정 조회 전용 관리자의 읽기 전용 카드를 잰다.
+axes:
+  surface: [provider_settings]
+  actor: [guest, member, viewer, editor, unlinker, accounts_viewer]
+  route: [all_admin]
+  secret: [unset, set, mask_echo, empty_string]
+  enable: [without_credentials, with_credentials]
+  custom: [reserved_key, create, limit, reorder, delete_with_links, delete]
+  discovery: [ok, incomplete, failed, unreachable]
+  member: [social_only, password_and_social, two_providers, passwordless_single_link]
+  token_reply: [KOE320, KOE010, KOE006, connection_failed, server_error, naver_invalid_request]
+  credentials: [missing_secret, readable, unreadable, schema_fields]
+  oidc: [discovery_down, jwks_empty]
+  test_login: [disabled_provider, unknown_provider]
+  mock: ['on']
+  filter: [provider, outcome, status]
+  days: ['7', '30', invalid]
+  intent: [login, test]
+  definition: [all]
+  type: [last_method, link_removed, provider_failing, signup_surge, webhook_failed, missing_member]
+  channel: [database, mail]
+  threshold: ['3', '0']
+  window: [within, expired]
+  success: [mixed]
+  code: [provider, access_denied]
+  path: [callback]
+  input: [valid, out_of_range, bad_enum, other_plugin]
+  mode: [dry_run, run]
+  schedule: [declared]
+  action: [provider_updated, settings_updated, save_credentials, webhook_app_id]
+  identifier: [self, other]
+  scopes: [text, array]
+  provider: [disabled_with_links, kakao, custom_oidc]
+  fetch: [settings_failed]
+effects:
+  - ambiguous_rejection_is_inconclusive
+  - guest_401
+  - member_403
+  - viewer_reads_list
+  - viewer_cannot_update
+  - editor_updates
+  - secret_unset_is_null
+  - secret_set_is_masked
+  - mask_echo_keeps_value
+  - empty_string_deletes
+  - builtin_key_immutable
+  - enable_without_credentials_refused
+  - enabled_provider_listed_publicly
+  - extra_mock_flag_ignored
+  - reserved_key_refused
+  - custom_created_disabled
+  - custom_limit_enforced
+  - reorder_saved
+  - delete_blocked_by_links
+  - builtin_not_deletable
+  - provider_activity_logged
+  - discovery_fills_endpoints
+  - discovery_incomplete_refused
+  - discovery_failure_refused
+  - impact_counts_social_only
+  - impact_counts_linked
+  - scopes_text_split_by_server
+  - scopes_array_kept
+  - code_rejected_means_credentials_ok
+  - bad_secret_is_invalid_client
+  - redirect_mismatch_classified
+  - unreachable_classified
+  - missing_credentials_short_circuit
+  - unreadable_credentials_reported_by_test
+  - discovery_failure_reported
+  - jwks_failure_reported
+  - test_login_returns_authorize_url
+  - unknown_provider_404
+  - summary_contract
+  - unreadable_credentials_flagged
+  - mock_badge_expiry
+  - member_counts
+  - last_webhook_shown
+  - attempts_filtered
+  - webhook_events_filtered
+  - pagination_meta
+  - diagnostics_requires_view
+  - stats_counts_by_outcome
+  - stats_excludes_test_intent
+  - stats_period_filter
+  - stats_invalid_days_refused
+  - stats_linked_and_social_only
+  - admin_list_masks_uid
+  - viewer_cannot_unlink
+  - admin_unlink_ignores_last_method_guard
+  - unlinked_by_admin_hook
+  - admin_unlink_activity_logged
+  - admin_unlink_revokes
+  - filter_options_include_disabled_linked
+  - filter_options_require_accounts_view
+  - five_definitions_seeded
+  - placeholders_declared
+  - recipients_by_audience
+  - optional_mail_off_by_default
+  - member_data_and_context
+  - admin_data_and_urls
+  - missing_member_skips
+  - admin_unlink_database_notice_delivered
+  - app_name_filled_in_every_notification
+  - streak_fires_at_threshold
+  - streak_cooldown_daily
+  - success_does_not_reset_window
+  - failures_outside_window_dropped
+  - user_cancel_not_counted
+  - test_intent_not_counted
+  - zero_threshold_disables
+  - callback_failure_counted
+  - surge_fires_at_threshold
+  - surge_cooldown_daily
+  - surge_zero_disables
+  - valid_settings_pass
+  - out_of_range_refused
+  - bad_enum_refused
+  - other_plugin_untouched
+  - dry_run_counts_only
+  - prune_removes_old_attempts
+  - prune_removes_old_webhooks
+  - prune_clears_expired_profile_raw
+  - prune_keeps_recent
+  - prune_scheduled_daily
+  - provider_update_logs_field_names_only
+  - settings_save_logs_policies
+  - other_plugin_save_not_logged
+  - provider_credentials_saved
+  - provider_secret_masked_after_reload
+  - provider_editor_closes_after_save
+  - custom_provider_added_disabled
+  - custom_provider_test_reports_jwks_unreachable
+  - custom_provider_deleted
+  - provider_editor_state_not_carried_over
+  - add_form_cleared_after_close
+  - impact_panel_closes_when_editor_changes
+  - impact_continue_saves_own_provider
+  - provider_settings_read_only_for_viewer
+  - settings_opens_read_only_for_view_permission
+  - admin_routes_gated_by_single_permission
+  - kakao_webhook_app_id_editable
+  - editor_covers_credential_schema
+  - prune_clears_expired_mock_flag
+  - settings_fetch_failure_shows_error_page
+test_files:
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Admin/ProviderControllerTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Admin/ProviderTestServiceTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Admin/DiagnosticsControllerTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Admin/StatsControllerTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Admin/UserAccountsControllerTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Notifications/NotificationDefinitionsTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Monitors/FailureStreakMonitorTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Monitors/SurgeMonitorTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Listeners/SettingsValidationTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Listeners/ActivityLogTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Console/PruneCommandTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Playwright/specs/admin/social-provider-settings.spec.ts
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Admin/AdminPermissionMatrixTest.php

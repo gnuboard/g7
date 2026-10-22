@@ -736,6 +736,10 @@ return [
             'challenge_invalid' => '認証リクエスト情報が正しくありません。',
             'code_required' => '認証番号を入力してください。',
         ],
+        // ログイン引き継ぎ (#40)
+        'login_handoff' => [
+            'code_required' => 'ログイン引き継ぎコードがありません。もう一度ログインしてください。',
+        ],
         'password_change' => [
             'challenge_required' => 'パスワード変更ステップの情報がありません。最初からログインし直してください。',
             'challenge_invalid' => 'パスワード変更ステップの情報が正しくありません。',
@@ -1292,6 +1296,8 @@ return [
         'current_password' => '現在のパスワード',
         'password_confirmation' => 'パスワード（確認）',
         'challenge_id' => '変更ステップ識別子',
+        'verification_token' => '本人確認',
+        'login_handoff_code' => 'ログイン引き継ぎコード',
         'two_factor_auth' => '2段階認証',
         'allow_internal_outbound_urls' => '内部ネットワークアドレス呼び出しの許可',
         'advanced_cache_enabled' => 'キャッシュの使用',

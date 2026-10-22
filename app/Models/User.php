@@ -504,6 +504,26 @@ class User extends Authenticatable implements HasLocalePreference
     }
 
     /**
+     * 비밀번호가 설정된 회원인지 확인합니다.
+     *
+     * 소셜 로그인처럼 외부 인증으로만 가입한 회원은 비밀번호가 NULL 이다. 접근자·`hashed` 캐스트를 거치지 않도록
+     * 저장 속성을 직접 읽는다. 열 일부만 조회해 비밀번호 속성이 아예 없으면 알 수 없으므로 「있음」으로 본다 —
+     * 비밀번호 없는 회원 분기는 모르는 상태에서 열리면 안 된다.
+     *
+     * @return bool 비밀번호가 있으면 true
+     */
+    public function hasPassword(): bool
+    {
+        $attributes = $this->getAttributes();
+
+        if (! array_key_exists('password', $attributes)) {
+            return true;
+        }
+
+        return $attributes['password'] !== null && $attributes['password'] !== '';
+    }
+
+    /**
      * 슈퍼 관리자인지 확인합니다.
      *
      * 슈퍼 관리자는 삭제할 수 없으며, 다른 관리자의 권한을 관리할 수 있습니다.

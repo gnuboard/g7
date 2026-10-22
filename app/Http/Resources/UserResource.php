@@ -9,6 +9,7 @@ use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Services\MemberNotificationService;
 use App\Services\PasswordExpiryService;
+use App\Support\UndeliverableEmail;
 use App\Support\UserGradeGuard;
 use App\Traits\HasCountryAttributes;
 use Carbon\Carbon;
@@ -42,6 +43,11 @@ class UserResource extends BaseApiResource
             'status_label' => $this->getStatusLabel(),
             'status_variant' => $this->getStatusVariant(),
             'is_admin' => $this->resource->isAdmin(),
+            // 비밀번호 설정 여부만 싣는다(해시 값 노출 없음) — 외부 인증 전용 회원의 「비밀번호 처음 설정」·「비밀번호 미설정」 분기가 읽는다.
+            'has_password' => $this->resource->hasPassword(),
+            // 이메일로 메일을 받을 수 있는지만 싣는다(주소 노출 없음) — 대체 이메일(`…@social.invalid`) 회원은 인증번호 메일을 받을 수 없어
+            // 본인 재확인 화면이 메일 대신 확장 수단(예: 소셜 재로그인)을 보인다.
+            'email_deliverable' => ! UndeliverableEmail::is($this->resource->email),
             'homepage' => $this->getValue('homepage'),
             'mobile' => $this->getValue('mobile'),
             'phone' => $this->getValue('phone'),
@@ -453,6 +459,8 @@ class UserResource extends BaseApiResource
             'bio' => $this->getValue('bio'),
             'is_super' => $this->resource->isSuperAdmin(),
             'is_admin' => $this->resource->isAdmin(),
+            'has_password' => $this->resource->hasPassword(),
+            'email_deliverable' => ! UndeliverableEmail::is($this->resource->email),
             'withdrawn_at' => $this->getValue('withdrawn_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('withdrawn_at'))
                 : null,
@@ -479,16 +487,20 @@ class UserResource extends BaseApiResource
      *
      * 적용 판정은 역할을 읽으므로 목록에는 넣지 않는다(A13).
      *
-     * @return array{changed_at: string|null, expires_at: string|null, expired: bool, applies: bool, policy: string, change_required: bool, postponed_until: string|null, days_left: int|null} 비밀번호 상태
+     * 비밀번호가 없는 회원은 만료 정책 비대상이라 `applies=false`·예정일 null·`change_required=false` 로 「해당 없음」 이 된다.
+     *
+     * @return array{has_password: bool, changed_at: string|null, expires_at: string|null, expired: bool, applies: bool, policy: string, change_required: bool, postponed_until: string|null, days_left: int|null} 비밀번호 상태
      */
     public function passwordStatusArray(): array
     {
         $expiry = app(PasswordExpiryService::class);
+        $hasPassword = $this->resource->hasPassword();
         $applies = $expiry->appliesTo($this->resource);
         $expiresAt = $applies ? $expiry->expiresAt($this->resource) : null;
         $postponedUntil = $this->getValue('password_change_postponed_until');
 
         return [
+            'has_password' => $hasPassword,
             'changed_at' => $this->getValue('password_changed_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('password_changed_at'))
                 : null,
@@ -496,7 +508,7 @@ class UserResource extends BaseApiResource
             'expired' => $expiresAt !== null && ! $expiresAt->isFuture(),
             'applies' => $applies,
             'policy' => $this->passwordExpiryPolicyValue(),
-            'change_required' => (bool) $this->getValue('password_change_required'),
+            'change_required' => $hasPassword && (bool) $this->getValue('password_change_required'),
             'postponed_until' => $postponedUntil && $postponedUntil->isFuture()
                 ? $this->formatDateTimeStringForUser($postponedUntil)
                 : null,

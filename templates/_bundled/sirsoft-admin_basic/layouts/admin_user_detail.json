@@ -524,6 +524,40 @@
                                                         ]
                                                     },
                                                     {
+                                                        "comment": "비밀번호 설정 여부 — 외부 인증(소셜 로그인 등)으로만 가입한 회원은 비밀번호가 없다. 값(해시)은 싣지 않고 여부만 본다.",
+                                                        "id": "field_has_password",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "text-label-subtle block font-medium mb-1"
+                                                                },
+                                                                "text": "$t:admin.users.detail.password.state"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{user?.data?.has_password === false}}",
+                                                                "props": {
+                                                                    "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                                                },
+                                                                "text": "$t:admin.users.detail.password.not_set"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "if": "{{user?.data?.has_password !== false}}",
+                                                                "props": {
+                                                                    "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                                                },
+                                                                "text": "$t:admin.users.detail.password.set"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
                                                         "id": "field_email_verified",
                                                         "type": "basic",
                                                         "name": "Div",
@@ -1322,8 +1356,20 @@
                                 ]
                             },
                             {
+                                "comment": "비밀번호가 없는 회원은 만료 정책 대상이 아니다 — 변경일·만료·변경 요구 대신 안내 한 줄만 보인다.",
+                                "id": "password_not_set_notice",
+                                "type": "basic",
+                                "name": "P",
+                                "if": "{{user?.data?.has_password === false}}",
+                                "props": {
+                                    "className": "text-sm text-secondary"
+                                },
+                                "text": "$t:admin.users.detail.password.not_set_hint"
+                            },
+                            {
                                 "type": "basic",
                                 "name": "Div",
+                                "if": "{{user?.data?.has_password !== false}}",
                                 "props": {
                                     "className": "grid-2col-responsive"
                                 },

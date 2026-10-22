@@ -21,7 +21,6 @@ export { HtmlEditor } from './HtmlEditor';
 export { ExpandableContent } from './ExpandableContent';
 export { default as FileUploader } from './FileUploader';
 export { ConfirmDialog } from './ConfirmDialog';
-export { default as SocialLoginButtons } from './SocialLoginButtons';
 export { default as Toast } from './Toast';
 export { default as PageTransitionIndicator } from './PageTransitionIndicator';
 export { default as PageTransitionBlur } from './PageTransitionBlur';
@@ -69,7 +68,6 @@ export declare const compositeComponents: {
     ExpandableContent: () => Promise<typeof import("./ExpandableContent")>;
     FileUploader: () => Promise<typeof import("./FileUploader")>;
     ConfirmDialog: () => Promise<typeof import("./ConfirmDialog")>;
-    SocialLoginButtons: () => Promise<typeof import("./SocialLoginButtons")>;
     Toast: () => Promise<typeof import("./Toast")>;
     PageTransitionIndicator: () => Promise<typeof import("./PageTransitionIndicator")>;
     PageTransitionBlur: () => Promise<typeof import("./PageTransitionBlur")>;

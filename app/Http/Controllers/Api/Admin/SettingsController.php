@@ -434,10 +434,10 @@ class SettingsController extends AdminBaseController
     public function regenerateAppKey(RegenerateAppKeyRequest $request): JsonResponse
     {
         try {
-            $result = $this->settingsService->regenerateAppKey($request->password);
+            $result = $this->settingsService->regenerateAppKey($request->validated());
 
             if (! $result['success']) {
-                return $this->error($result['error'], 401);
+                return $this->error($result['error'], $result['status'] ?? 401);
             }
 
             return $this->success('settings.app_key_regenerated', [

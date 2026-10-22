@@ -47,6 +47,13 @@ export interface AuthConfig {
   /** 로그인 비밀번호 변경 단계 연기 엔드포인트 */
   passwordChangePostponeEndpoint: string;
   /**
+   * 로그인 인계 코드 교환 엔드포인트 — 외부 인증(소셜 로그인 등)이 발급한 일회용 코드를 바꿔 로그인한다.
+   * 없으면 그 인증 타입은 인계를 지원하지 않는다(관리자는 아직 미지원).
+   *
+   * @since engine-v1.83.0
+   */
+  handoffEndpoint?: string;
+  /**
    * 로그인 전용 화면 경로(로그인·가입·비밀번호 찾기·재설정 등) — 로그인 이동 시 복귀 경로로 싣지 않는다.
    * `loginPath` 는 이 목록과 무관하게 항상 로그인 전용 화면으로 취급한다.
    *
@@ -225,6 +232,7 @@ const defaultConfigs: Record<AuthType, AuthConfig> = {
     twoFactorResendEndpoint: '/auth/login/two-factor/resend',
     passwordChangeEndpoint: '/auth/login/password-change',
     passwordChangePostponeEndpoint: '/auth/login/password-change/postpone',
+    handoffEndpoint: '/auth/login/handoff',
     guestOnlyPaths: ['/login', '/register', '/forgot-password', '/reset-password'],
   },
 };
@@ -467,6 +475,61 @@ export class AuthManager {
     } catch (error: any) {
       this.clearState();
 
+      throw this.enhanceAuthError(error, type, 'Login failed');
+    }
+  }
+
+  /**
+   * 로그인 인계 코드를 교환해 로그인합니다.
+   *
+   * 외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원에 대해 발급한 일회용 코드를 서버에 보내면, 서버가 잠금·회원 상태·
+   * 2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리하고 같은 세 형태의 응답을 돌려준다 —
+   * 결과도 {@link login} 과 같은 `LoginResult` 다.
+   *
+   * 실패해도 상태를 지우지 않는다 — 인계는 로그인 전 화면에서만 부르므로 지울 세션이 없고, 혹시 열린 세션이 있어도
+   * 코드 하나가 틀렸다고 그 세션을 닫을 이유가 없다(`login()` 은 자격 증명 실패 시 지운다).
+   *
+   * @param type - 인증 타입
+   * @param code - 인계 코드
+   * @param options - 추가 옵션 (headers 등 — globalHeaders 의 장바구니 키 등)
+   * @returns 인증 완료 / 2단계 인증 요구 / 비밀번호 변경 단계 요구
+   * @throws Error 인계를 지원하지 않는 인증 타입이거나 코드가 무효(422)·상태 거절(401)·잠금(423)일 때
+   * @since engine-v1.83.0
+   */
+  async loginWithHandoff(
+    type: AuthType,
+    code: string,
+    options?: { headers?: Record<string, string> }
+  ): Promise<LoginResult> {
+    const apiClient = getApiClient();
+    const config = this.config.get(type);
+
+    if (!config) {
+      throw new Error(`Unknown auth type: ${type}`);
+    }
+
+    if (!config.handoffEndpoint) {
+      throw new Error(`Login handoff is not supported for auth type: ${type}`);
+    }
+
+    try {
+      const requestConfig = options?.headers ? { headers: options.headers } : undefined;
+
+      const response = await apiClient.post<{
+        success: boolean;
+        data: LoginResponseData;
+      }>(config.handoffEndpoint, { code }, requestConfig);
+
+      const result = response.success && response.data
+        ? this.resolveLoginPayload(type, response.data, true)
+        : null;
+
+      if (result) {
+        return result;
+      }
+
+      throw new Error('Login failed');
+    } catch (error: any) {
       throw this.enhanceAuthError(error, type, 'Login failed');
     }
   }

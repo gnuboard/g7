@@ -106,6 +106,8 @@ return [
     // Password verification messages
     'password_verified' => 'Password verified successfully.',
     'password_incorrect' => 'Password is incorrect.',
+    'password_not_set' => 'This account has no password. Verify with an email code or set a password first.',
+    'reauthentication_invalid' => 'Your verification has expired or is invalid. Please request a new code.',
     'password_verify_failed' => 'Failed to verify password.',
 
     // Password change messages
@@ -151,6 +153,7 @@ return [
         'password_min' => 'Password must be at least :min characters.',
         'current_password_required' => 'Current password is required.',
         'current_password_invalid' => 'Current password is incorrect.',
+        'current_password_not_set' => 'This account has no password yet, so set a new password without the current one.',
         'password_expiry_policy_invalid' => 'Password expiry must be inherit, apply, or exempt.',
         'password_confirmation_required' => 'Password confirmation is required.',
         'language_required' => 'Please select a language.',

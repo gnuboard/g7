@@ -353,7 +353,7 @@ plugins/_bundled/sirsoft-payment/
 │   └── layouts/                 # 레이아웃 파일
 │       └── admin/               # 관리자 레이아웃 (admin 템플릿 등록)
 │           ├── plugin_settings.g7.html  # 설정 페이지 레이아웃 (소스 SSoT)
-│           └── plugin_settings.json     # 짝 런타임 계약 (AbstractPlugin 이 직접 읽음 — 디스크 상주 필수)
+│           └── plugin_settings.json     # 짝 런타임 계약 (`layout:decompile --sync` 로 굽는다 — 소스가 없을 때의 대체 경로)
 ├── src/
 │   ├── Listeners/              # 이벤트(훅)를 처리하는 리스너
 │   └── Providers/              # 서비스 컨테이너에 기능을 등록하는 프로바이더
@@ -633,14 +633,14 @@ public function getHooks(): array
 
 ## 설정 레이아웃 파일 시스템
 
-플러그인 설정 UI는 레이아웃 소스(`plugin_settings.g7.html`)으로 정의하고, 그 짝 JSON(`plugin_settings.json`)이 런타임 계약이 됩니다. `AbstractPlugin`의 `getSettingsLayout()` 메서드가 그 JSON 경로를 반환하며, 파일이 존재하면 자동으로 설정 UI를 제공합니다.
+플러그인 설정 UI는 레이아웃 소스(`plugin_settings.g7.html`)로 정의합니다. `AbstractPlugin`의 `getSettingsLayout()` 은 소스 `.g7.html` 을 먼저 찾고, 없으면 짝 JSON(`plugin_settings.json`)을 찾아 그 경로를 돌려줍니다 — 둘 중 하나가 있으면 자동으로 설정 UI 를 제공합니다(코어 관리자 화면 `/admin/plugins/{identifier}/settings`).
 
 ### 핵심 원칙
 
 ```text
 필수: 설정 UI는 resources/layouts/admin/plugin_settings.g7.html 로 작성 (PHP 코드에 하드코딩 금지)
-필수: 짝 plugin_settings.json 을 함께 둔다 — AbstractPlugin::getSettingsLayout() 이 그 경로를 직접 읽으므로
-      DB 설치 레이아웃과 달리 .json 이 디스크에 있어야 한다
+권장: 짝 plugin_settings.json 도 `php artisan layout:decompile <경로> --sync` 로 구워 둔다 — 편집기·검증 도구가 짝을 읽고,
+      JSON 우선 설치 플래그를 켠 환경에서는 짝이 먼저 쓰인다(소스를 고쳤는데 짝을 안 구우면 낡은 화면이 나온다)
 ✅ 필수: 템플릿 오버라이드 우선순위 준수
 ```
 
@@ -651,14 +651,22 @@ public function getHooks(): array
 
 마크업 문법은 [layout-markup.md](../frontend/layout-markup.md), 산출 JSON 의 키 계약은 [layout-json.md](../frontend/layout-json.md) 를 따른다.
 
-`getSettingsLayout()` 은 DB 설치 레이아웃과 달리 파일을 직접 읽으므로 짝 `.json` 이 디스크에 있어야 한다.
+`getSettingsLayout()` 은 DB 설치 레이아웃과 달리 파일을 직접 읽는다. 후보 순서는 레이아웃 설치와 같은 규약(소스 `.g7.html` → 짝 `.json`)이다.
 
 ```php
-// AbstractPlugin 기본 구현
+// AbstractPlugin 기본 구현 (요지)
 public function getSettingsLayout(): ?string
 {
-    $path = $this->getBasePath() . '/resources/layouts/admin/plugin_settings.json';
-    return file_exists($path) ? $path : null;
+    $base = $this->getPluginPath().'/resources/layouts/admin/plugin_settings';
+
+    // 소스(.g7.html) 우선, 없으면 짝(.json) — JSON 우선 설치 플래그면 순서가 바뀐다
+    foreach ($this->layoutSourceCandidates($base.'.json') as $candidate) {
+        if (file_exists($candidate['path'])) {
+            return $candidate['path'];
+        }
+    }
+
+    return null;
 }
 
 // hasSettings()는 레이아웃 파일 존재 여부로 판단
@@ -681,7 +689,7 @@ public function hasSettings(): bool
 | 우선순위 | 경로 | 설명 |
 |----------|------|------|
 | 1순위 | `templates/{template}/layouts/plugins/{identifier}/admin/plugin_settings.json` | 템플릿 오버라이드 |
-| 2순위 | `plugins/{identifier}/resources/layouts/admin/plugin_settings.json` | 플러그인 기본 |
+| 2순위 | `plugins/{identifier}/resources/layouts/admin/plugin_settings.g7.html` → 없으면 짝 `plugin_settings.json` | 플러그인 기본 (소스를 먼저 찾는다) |
 
 ### 레이아웃 JSON 구조 (간소화 버전)
 
@@ -1316,6 +1324,8 @@ php artisan plugin:build [identifier]
 ```bash
 php artisan plugin:seed [identifier]
 ```
+
+`plugin:seed` 는 플러그인의 `Database\Seeders\DatabaseSeeder` 를 찾아 실행합니다(`--class` 를 주지 않았을 때). 설치와 업데이트는 `getSeeders()` 목록을 쓰지만, 언어팩을 켜고 끌 때 코어(`RunSeedersOnLanguagePackLifecycle`)는 이 명령으로 시더를 다시 돌려 새 언어의 시드 번역을 기존 행에 채웁니다. 다국어 행을 시딩하는 플러그인은 `database/seeders/DatabaseSeeder.php` 를 두고 `getSeeders()` 와 같은 시더를 실행해야 합니다 — 없으면 재시딩이 「시더 클래스를 찾을 수 없습니다」로 끝나 나중에 켠 언어가 기존 행에 들어가지 않습니다(설치 시험만으로는 드러나지 않습니다). 목록은 사본으로 두지 말고 `getSeeders()` 를 그대로 읽게 합니다.
 
 **옵션**:
 

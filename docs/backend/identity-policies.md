@@ -136,6 +136,8 @@ scope=hook 정책은 훅 인자에서 바뀐 항목을 직접 계산한다(`Enfo
 
 두 정책 모두 비활성이면 일반 가입 흐름 (Active 사용자 즉시 생성, IDV 없음).
 
+어느 단계든 메일 수단(`g7:core.mail`)으로 그 회원의 이메일을 확인했으면 `users.email_verified_at` 을 기록한다(`RecordVerifiedSignupEmail` — 가입 전 단계는 `core.auth.after_register` 문맥의 `verification_token`, 가입 후 단계는 `core.identity.after_verify`). 다른 수단으로 확인한 가입은 이메일 소유를 증명하지 않으므로 기록하지 않는다. 외부 인증으로 가입시키는 확장도 이메일 소유를 확인했으면 `UserRepositoryInterface::markEmailVerified()` 로 같은 칸을 채운다.
+
 ## 5. filter 훅 — `core.identity.resolve_policy`
 
 플러그인이 정책 해석을 가로채기 위한 훅:

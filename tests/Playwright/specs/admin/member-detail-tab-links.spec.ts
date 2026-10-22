@@ -22,12 +22,15 @@ import {
 } from '../../../../modules/_bundled/sirsoft-ecommerce/tests/Playwright/fixtures/member-data-seed';
 import { issueToken } from '../../fixtures/auth';
 
-/** 탭 링크와 그 링크가 가야 할 목록 주소. */
-const LINKS: ReadonlyArray<readonly [string, string]> = [
-  ['user-wishlists-link', '/admin/ecommerce/wishlists'],
-  ['user-carts-link', '/admin/ecommerce/carts'],
-  ['user-addresses-link', '/admin/ecommerce/user-addresses'],
-  ['user-inquiries-link', '/admin/ecommerce/inquiries'],
+/**
+ * 탭 링크, 그 링크가 가야 할 목록 주소, 회원을 싣는 쿼리 이름(주소에 인코딩된 모양).
+ * 배송지 목록은 여러 회원을 한 번에 거는 전용 필터라 `user_uuids[]` 를 쓴다(#745).
+ */
+const LINKS: ReadonlyArray<readonly [string, string, string]> = [
+  ['user-wishlists-link', '/admin/ecommerce/wishlists', 'user_uuid'],
+  ['user-carts-link', '/admin/ecommerce/carts', 'user_uuid'],
+  ['user-addresses-link', '/admin/ecommerce/user-addresses', 'user_uuids%5B%5D'],
+  ['user-inquiries-link', '/admin/ecommerce/inquiries', 'user_uuid'],
 ];
 
 test.describe('회원 상세 쇼핑 데이터 탭 링크 (#524)', () => {
@@ -39,7 +42,7 @@ test.describe('회원 상세 쇼핑 데이터 탭 링크 (#524)', () => {
 
     await authenticatePage(page, token);
 
-    for (const [testId, path] of LINKS) {
+    for (const [testId, path, param] of LINKS) {
       await page.goto(`/admin/users/${uuid}`);
 
       // 탭 버튼을 눌러야 본문이 붙는다 — 탭은 `inject_props`, 본문은 `append_child` 로 갈라져 있다.
@@ -50,7 +53,7 @@ test.describe('회원 상세 쇼핑 데이터 탭 링크 (#524)', () => {
       await link.click();
 
       // 「눌렀는데 아무 일도 없다」 를 잡는 자리 — 주소가 실제로 바뀌어야 한다.
-      await expect(page).toHaveURL(new RegExp(`${path}\\?.*user_uuid=${uuid}`), {
+      await expect(page).toHaveURL(new RegExp(`${path}\\?.*${param}=${uuid}`), {
         timeout: 15_000,
       });
     }

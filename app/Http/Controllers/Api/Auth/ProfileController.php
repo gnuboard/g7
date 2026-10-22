@@ -12,6 +12,7 @@ use App\Http\Requests\User\UploadAvatarRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AttachmentService;
+use App\Services\Auth\ReauthenticationService;
 use App\Services\IdentityPolicyService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
@@ -34,11 +35,13 @@ class ProfileController extends AuthBaseController
      * @param  UserService  $userService  회원 서비스
      * @param  AttachmentService  $attachmentService  첨부파일 서비스 (아바타)
      * @param  IdentityPolicyService  $identityPolicyService  본인인증 정책 서비스 (정보수정 API 의 비밀번호 변경)
+     * @param  ReauthenticationService  $reauthenticationService  민감 작업 재확인 서비스 (비밀번호 또는 이메일 인증번호)
      */
     public function __construct(
         private UserService $userService,
         private AttachmentService $attachmentService,
-        private IdentityPolicyService $identityPolicyService
+        private IdentityPolicyService $identityPolicyService,
+        private ReauthenticationService $reauthenticationService,
     ) {
         parent::__construct();
     }
@@ -265,7 +268,18 @@ class ProfileController extends AuthBaseController
                 return $this->unauthorized('auth.unauthenticated');
             }
 
-            if (! Hash::check($request->password, $user->password)) {
+            // 비밀번호가 있는 회원은 비밀번호로, 없는 회원은 이메일 인증번호로 받은 토큰으로 확인한다.
+            $result = $this->reauthenticationService->verify($user, $request->validated());
+
+            if ($result === ReauthenticationService::PASSWORD_NOT_SET) {
+                return $this->error('user.password_not_set', 422, ['password' => [__('user.password_not_set')]]);
+            }
+
+            if ($result === ReauthenticationService::TOKEN_INVALID) {
+                return $this->error('user.reauthentication_invalid', 422, ['verification_token' => [__('user.reauthentication_invalid')]]);
+            }
+
+            if ($result !== ReauthenticationService::PASSED) {
                 return $this->error('user.password_incorrect', 401);
             }
 

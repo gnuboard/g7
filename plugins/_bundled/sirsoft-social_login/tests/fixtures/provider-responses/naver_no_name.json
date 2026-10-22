@@ -1,0 +1,9 @@
+{
+    "resultcode": "00",
+    "message": "success",
+    "response": {
+        "id": "NoName777",
+        "email": "naver.noname@example.test",
+        "nickname": "네이버닉"
+    }
+}

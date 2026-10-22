@@ -1,0 +1,35 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 관리자·2단계 인증·회원 상태·비밀번호·이메일 축은 코어 관문(loginVerifiedUser)이 각자 판정한다 — 코어 시험(LoginVerifiedUserTest)이 축별로 덮고, 여기서는 인계 교환까지 이어지는 대표 조합만 잰다.
+feature: social_login_login_policy
+description: |
+  연결된 회원의 소셜 로그인. 플러그인은 관리자 차단 판정과 로그인 인계 코드 발급까지만 하고, 잠금·회원 상태·2단계 인증·
+  비밀번호 변경·휴면 해제는 로그인 화면이 코드를 교환할 때 코어가 비밀번호 로그인과 같게 처리한다. 콜백 → 인계 주소 →
+  교환 API 까지 이어서 잰다.
+coverage_strategy: pairwise
+axes:
+  link: [existing]
+  admin: ['yes', 'no']
+  allow_admin: ['off', 'on']
+  two_factor: ['off', 'on']
+  plugin_two_factor: ['on', 'off']
+  two_factor_method: [mail, app]
+  enrolled: ['yes', 'no']
+  status: [blocked, locked, dormant]
+  password: [expired, none]
+  email: [placeholder]
+  provider: [mock_google]
+effects:
+  - e2e_social_login_goes_through_two_factor
+  - handoff_url_issued
+  - exchange_logs_in
+  - last_login_recorded
+  - attempt_handoff_recorded
+  - after_social_login_fired
+  - admin_blocked_by_default
+  - admin_allowed_by_setting
+  - two_factor_step_on_exchange
+  - two_factor_skipped_by_setting
+  - exchange_follows_core_gates
+  - app_two_factor_step_on_exchange
+test_files:
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Login/SocialLoginServiceTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Playwright/specs/user/social-login-2fa.spec.ts

@@ -12,11 +12,12 @@
 - 환경설정 「사용자 화면 URL」 검증 문구(`validation.settings.user_screen_url_*`·속성 이름)의 일본어 번역을 추가했습니다.
 - 알림 발송 로그 조회 조건(검색 대상·상태·확장 유형 등)의 검증 오류 문구에 쓰는 항목 이름의 일본어 번역을 추가했습니다.
 - 코어 7.2.0 의 예약 작업(스케줄) 관리 문구 — 소유자·상태 조회, 큐로 보내기, 실행 방식·실행 이력·30초 주기, 직접 등록, 검증 오류 문구와 항목 이름 — 의 일본어 번역을 추가했습니다.
-- 큐 처리 기록 사용 여부·보관 기간 설정의 검증 문구와 항목 이름, 큐 작업 관리 권한 4종(조회·재시도·삭제), 알림 정의 「예약 작업 실패」의 일본어 번역을 추가했습니다.
+- 큐 처리 기록 사용 여부·보관 기간 설정의 검증 문구와 항목 이름, 큐 작업 관리 권한 4종(조회·재시도·삭제), 알림 정의 「예약 작업 실패」와 그 변수 설명(작업 표시 명칭·작업 식별자·소유자·실패 시각·스케줄 관리 화면 URL)의 일본어 번역을 추가했습니다.
 - 큐 관리 화면의 응답·검증 문구(대기·실패 작업 조회, 재시도·삭제 결과, 처리 기록 정리)의 일본어 번역을 추가했습니다.
 - 코어 예약 작업 32종의 이름과 설명 일본어 번역을 추가했습니다. 스케줄 관리 화면에서 일본어로 표시됩니다.
 - 스케줄 보안 정책 조회 응답 문구와 서버 관리자 덮어쓰기 파일(`storage/app/schedule_security.json`) 형식 오류 안내 9종, 큐 대기·실패·처리 기록 목록 정렬 검증 문구와 항목 이름의 일본어 번역을 추가했습니다.
 - 코어 스케줄 시딩(`common.console.seeders.core_schedule.*` — 시작·카탈로그 없음·건너뜀·정리·완료)과 개발자 패키지 명령(`custom:vendor-bundle`·`custom:vendor-verify`)의 「custom/composer.json 없음」「custom/vendor-bundle.zip 없음」 안내(`settings.custom_reserved.vendor.no_composer_json`·`no_bundle_zip`) 콘솔 출력의 일본어 번역을 추가했습니다. 없으면 일본어 사이트에서 이 출력이 키 그대로 보입니다.
+- 소셜 로그인 같은 외부 인증과 비밀번호 없는 회원 문구의 일본어 번역을 추가했습니다 — 로그인 인계 실패 안내(`auth.login_handoff_invalid`·`validation.auth.login_handoff.code_required`), 비밀번호 미설정·본인 재확인 안내(`user.password_not_set`·`user.reauthentication_invalid`·`user.validation.current_password_not_set`), 메일을 받을 수 없는 주소로 알림을 건너뛴 기록(`notification.recipient_email_undeliverable`), 항목 이름(`validation.attributes.verification_token`·`login_handoff_code`), 레이아웃 편집기 「로그인 인계 코드로 로그인」 액션 이름(`layout_editor.action_recipe.login_handoff.*`), 외부 인증이 로그인 수단 이름을 빠뜨렸을 때의 오류(`exceptions.login_method_required`), 최고관리자만 할 수 있는 작업을 다른 관리자가 요청했을 때의 안내(`auth.super_admin_required`).
 
 ### Changed
 

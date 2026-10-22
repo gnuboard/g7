@@ -808,6 +808,10 @@ return [
             'challenge_invalid' => 'Verification request is not valid.',
             'code_required' => 'Enter the verification code.',
         ],
+        // 로그인 인계 (#40)
+        'login_handoff' => [
+            'code_required' => 'The sign-in handoff code is missing. Please sign in again.',
+        ],
         // Sign-in password change step (#736)
         'password_change' => [
             'challenge_required' => 'Password change step is missing. Please sign in again.',
@@ -1526,6 +1530,8 @@ return [
         'current_password' => 'current password',
         'password_confirmation' => 'password confirmation',
         'challenge_id' => 'password change step ID',
+        'verification_token' => 'identity verification',
+        'login_handoff_code' => 'sign-in handoff code',
         'two_factor_auth' => 'two-factor authentication',
         'two_factor_scope' => 'two-factor authentication scope',
         'allow_internal_outbound_urls' => 'allow internal outbound URLs',

@@ -67,6 +67,9 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
      */
     public function test_signup_before_submit_full_http_lifecycle(): void
     {
+        // 「확인 직후」 재시도는 유예 0분 정책에서 확인 시각과 같은 초여야 통과한다 — 부하로 초 경계를 넘으면 428 로 흔들리므로 시각을 고정한다.
+        $this->freezeSecond();
+
         $policy = $this->enableSignupPolicy('core.auth.signup_before_submit');
 
         // 1단계 — 보호된 register 호출은 428 (정책 위반)

@@ -1,0 +1,40 @@
+{
+    "_meta": {
+        "version": "1.0.0",
+        "description": "소셜 로그인 환경설정 — 사이트 전체 정책. 제공자별 자격증명은 설정이 아니라 제공자 테이블(social_login_providers)에 있다. 어느 값도 공개 설정에 내보내지 않는다."
+    },
+    "defaults": {
+        "email_conflict_policy": "verify_link",
+        "extra_info_mode": "when_missing",
+        "two_factor_enabled": true,
+        "allow_admin_social_login": false,
+        "allow_unlink_last_method": false,
+        "webhook_unlink_policy": "unlink_only",
+        "revoke_on_unlink": true,
+        "profile_raw_retention_days": 14,
+        "attempt_log_retention_days": 90,
+        "webhook_event_retention_days": 90,
+        "signup_surge_threshold_per_hour": 100,
+        "provider_failure_streak_threshold": 10,
+        "pending_signup_ttl_minutes": 30,
+        "state_ttl_minutes": 10,
+        "custom_provider_limit": 10
+    },
+    "frontend_schema": {
+        "email_conflict_policy": { "expose": false },
+        "extra_info_mode": { "expose": false },
+        "two_factor_enabled": { "expose": false },
+        "allow_admin_social_login": { "expose": false },
+        "allow_unlink_last_method": { "expose": false },
+        "webhook_unlink_policy": { "expose": false },
+        "revoke_on_unlink": { "expose": false },
+        "profile_raw_retention_days": { "expose": false },
+        "attempt_log_retention_days": { "expose": false },
+        "webhook_event_retention_days": { "expose": false },
+        "signup_surge_threshold_per_hour": { "expose": false },
+        "provider_failure_streak_threshold": { "expose": false },
+        "pending_signup_ttl_minutes": { "expose": false },
+        "state_ttl_minutes": { "expose": false },
+        "custom_provider_limit": { "expose": false }
+    }
+}

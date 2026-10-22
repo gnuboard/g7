@@ -1,0 +1,11 @@
+{
+  "sirsoft-social_login": {
+    "name": "ソーシャルログイン"
+  },
+  "sirsoft-social_login-diagnostics": {
+    "name": "診断"
+  },
+  "sirsoft-social_login-stats": {
+    "name": "統計"
+  }
+}

@@ -293,7 +293,8 @@ class TrackingRequestFactory
     /**
      * 관리자 역할 보유 여부를 판정합니다.
      *
-     * 관리자 트래픽을 따로 세어 「관리자 제외」 토글이 뺄셈으로 동작하게 합니다.
+     * 관리자 트래픽을 따로 세어 「관리자 제외」 토글이 뺄셈으로 동작하게 합니다. 최고관리자는 역할이 아니라
+     * 최고관리자 표지(`isSuperAdmin()`)로 판정한다 — 코어에 최고관리자 역할은 없다.
      *
      * @param  mixed  $user  인증된 사용자
      * @return bool 관리자 여부
@@ -305,8 +306,12 @@ class TrackingRequestFactory
         }
 
         try {
+            if (method_exists($user, 'isSuperAdmin') && (bool) $user->isSuperAdmin()) {
+                return true;
+            }
+
             if (method_exists($user, 'hasRole')) {
-                return (bool) $user->hasRole('admin') || (bool) $user->hasRole('superadmin');
+                return (bool) $user->hasRole('admin');
             }
         } catch (\Throwable $e) {
             // 역할 판정이 실패해도 수집은 계속된다 — 일반 회원으로 센다.

@@ -125,6 +125,12 @@
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.status</label>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{({success: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', secondary: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200', danger: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', warning: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', info: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'})[user?.data?.status_variant] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}">{{user?.data?.status_label ?? '-'}}</span>
               </div>
+              <!-- 비밀번호 설정 여부 — 외부 인증(소셜 로그인 등)으로만 가입한 회원은 비밀번호가 없다. 값(해시)은 싣지 않고 여부만 본다. -->
+              <div data-ref="field_has_password">
+                <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.password.state</label>
+                <span data-if="{{user?.data?.has_password === false}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">$t:admin.users.detail.password.not_set</span>
+                <span data-if="{{user?.data?.has_password !== false}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">$t:admin.users.detail.password.set</span>
+              </div>
               <div data-ref="field_email_verified">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.email_verification</label>
                 <div class="flex-center gap-1">
@@ -276,7 +282,9 @@
           <icon name="key" class="text-secondary text-xl"/>
           <h3 class="section-heading">$t:admin.users.detail.password.title</h3>
         </div>
-        <div class="grid-2col-responsive">
+        <!-- 비밀번호가 없는 회원은 만료 정책 대상이 아니다 — 변경일·만료·변경 요구 대신 안내 한 줄만 보인다. -->
+        <p data-ref="password_not_set_notice" data-if="{{user?.data?.has_password === false}}" class="text-sm text-secondary">$t:admin.users.detail.password.not_set_hint</p>
+        <div data-if="{{user?.data?.has_password !== false}}" class="grid-2col-responsive">
           <div data-ref="field_password_changed_at">
             <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.password.changed_at</label>
             <div class="text-primary text-sm">{{user?.data?.password_status?.changed_at ?? '-'}}</div>

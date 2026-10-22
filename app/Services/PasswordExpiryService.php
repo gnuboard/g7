@@ -205,6 +205,11 @@ class PasswordExpiryService
      */
     public function policyAppliesTo(User $user): bool
     {
+        // 비밀번호가 없는 회원(외부 인증 전용)은 만료될 비밀번호가 없다 — 안내 메일·토큰 회수·변경 관문 모두 비대상.
+        if (! $user->hasPassword()) {
+            return false;
+        }
+
         $own = $user->password_expiry_policy instanceof PasswordExpiryPolicy
             ? $user->password_expiry_policy
             : (PasswordExpiryPolicy::tryFrom((string) $user->password_expiry_policy) ?? PasswordExpiryPolicy::Inherit);
@@ -252,6 +257,9 @@ class PasswordExpiryService
         $model = $query->getModel();
         $policyColumn = $model->qualifyColumn('password_expiry_policy');
         $scope = $this->scope();
+
+        // `policyAppliesTo()` 첫 판정(비밀번호 없는 회원 제외)의 SQL 짝.
+        $query->whereNotNull($model->qualifyColumn('password'));
 
         return $query->where(function (Builder $q) use ($policyColumn, $scope) {
             $q->where($policyColumn, PasswordExpiryPolicy::Apply->value)
@@ -348,6 +356,12 @@ class PasswordExpiryService
      */
     public function loginRequirement(User $user): ?PasswordChangeRequirement
     {
+        // 비밀번호가 없는 회원은 바꿀 비밀번호가 없다 — 관리자 지정·만료 둘 다 요구하지 않는다(요구하면 변경하는
+        // 순간 의도 없이 비밀번호 회원이 된다).
+        if (! $user->hasPassword()) {
+            return null;
+        }
+
         if ((bool) $user->password_change_required) {
             return new PasswordChangeRequirement(PasswordChangeReason::AdminAssigned);
         }

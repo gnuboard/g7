@@ -92,6 +92,19 @@ class UserRepository implements UserRepositoryInterface
     }
 
     /**
+     * 회원 이메일을 인증된 것으로 기록합니다 (이미 기록돼 있으면 처음 시각을 유지).
+     *
+     * @param  User  $user  회원
+     * @return void 반환값 없음
+     */
+    public function markEmailVerified(User $user): void
+    {
+        if ($user->email_verified_at === null) {
+            $user->forceFill(['email_verified_at' => now()])->save();
+        }
+    }
+
+    /**
      * 사용자를 삭제합니다.
      *
      * @param  User  $user  삭제할 사용자 모델
@@ -982,9 +995,10 @@ class UserRepository implements UserRepositoryInterface
     }
 
     /**
-     * 비밀번호 만료 처리 후보 쿼리를 반환합니다 — 활성 회원이면서 관리자 지정 변경 대기가 아닌 회원.
+     * 비밀번호 만료 처리 후보 쿼리를 반환합니다 — 비밀번호가 있는 활성 회원이면서 관리자 지정 변경 대기가 아닌 회원.
      *
      * 휴면·차단·탈퇴·인증대기는 로그인 관문에서 처리하고, 관리자 지정 대기자에게 만료 안내는 모순이다.
+     * 비밀번호가 없는 회원(외부 인증 전용)은 만료될 비밀번호가 없어 안내·토큰 회수 대상이 아니다.
      *
      * @return Builder<User> 후보 쿼리
      */
@@ -992,6 +1006,7 @@ class UserRepository implements UserRepositoryInterface
     {
         return User::query()
             ->where('status', UserStatus::Active->value)
+            ->whereNotNull('password')
             ->where('password_change_required', false);
     }
 

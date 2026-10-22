@@ -4,6 +4,7 @@ return [
     // 인증 관련 메시지
     'login_success' => '로그인이 성공했습니다.',
     'login_failed' => '인증에 실패했습니다.',
+    'login_handoff_invalid' => '로그인 정보가 만료되었거나 올바르지 않습니다. 다시 로그인해 주세요.',
     'two_factor_required' => '인증번호를 보냈습니다. 받은 번호를 입력해 로그인을 완료해주세요.',
     'two_factor_required_app' => '인증 앱의 6자리 코드를 입력해 로그인을 완료해주세요.',
     'two_factor_enrollment_required' => '로그인하려면 인증 앱 등록이 필요합니다. 관리자에게 문의해주세요.',
@@ -28,6 +29,7 @@ return [
     'invalid_credentials' => '잘못된 인증 정보입니다.',
     'admin_login_success' => '관리자 로그인이 성공했습니다.',
     'admin_required' => '관리자 권한이 필요합니다.',
+    'super_admin_required' => '최고관리자만 할 수 있는 작업입니다.',
     // 휴면이었던 비관리자 회원이 관리자 로그인으로 들어온 경우 — 비밀번호 확인은 성공해
     // 휴면은 이미 해제됐다. 그 사실을 알리지 않으면 회원은 로그인이 실패한 줄로만 안다.
     'admin_required_dormancy_restored' => '관리자 권한이 필요합니다. 휴면 상태였던 계정은 해제되었으니 일반 로그인 화면을 이용해 주세요.',

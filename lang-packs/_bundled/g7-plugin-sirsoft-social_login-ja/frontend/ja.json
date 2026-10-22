@@ -1,0 +1,517 @@
+{
+    "plugin_read_only": "この設定を変更する権限がありません。値の閲覧のみ可能です。",
+    "editor": {
+        "data_source": {
+            "settings": "ソーシャルログイン設定",
+            "providers": "ソーシャルログインプロバイダー一覧",
+            "accounts": "自分のソーシャルアカウント連携",
+            "diagnostics": "診断の概要",
+            "attempts": "試行記録",
+            "webhook_events": "Webhook 受信履歴",
+            "stats": "統計",
+            "user_accounts": "会員のソーシャル連携"
+        },
+        "palette": {
+            "group": "ソーシャルログイン",
+            "provider_buttons": {
+                "label": "ソーシャルログインボタン"
+            }
+        },
+        "state": {
+            "signup_email_input": "登録モーダル — メールアドレス入力",
+            "signup_code_sent": "登録モーダル — 認証番号送信後",
+            "signup_email_locked": "登録モーダル — プロバイダー確認済みメール",
+            "signup_expired": "登録モーダル — 時間切れ",
+            "existing_with_password": "既存アカウント — パスワードあり",
+            "existing_without_password": "既存アカウント — パスワードなし",
+            "unlink_confirm": "連携解除の確認",
+            "unlink_last_method": "連携解除 — 最後のログイン手段"
+        }
+    },
+    "settings": {
+        "title": "ソーシャルログイン設定",
+        "description": "ソーシャルログインの登録、連携、保存のポリシーを管理します。",
+        "sections": {
+            "policy": "登録・連携ポリシー",
+            "limits": "時間・保存・通知の基準"
+        },
+        "fields": {
+            "email_conflict_policy": {
+                "label": "同じメールアドレスの既存会員",
+                "hint": "ソーシャルアカウントのメールアドレスが既存会員のメールアドレスと同じ場合の処理を決めます。",
+                "options": {
+                    "verify_link": "既存アカウントを確認してから連携(推奨)",
+                    "auto_link_verified": "プロバイダーが検証したメールアドレスならすぐに連携(注意: プロバイダーの検証をそのまま信頼します)",
+                    "never_link": "連携しない"
+                }
+            },
+            "extra_info_mode": {
+                "label": "登録時の追加情報画面",
+                "hint": "ソーシャル登録時に追加情報画面をいつ表示するかを決めます。",
+                "options": {
+                    "when_missing": "必須情報が不足している場合のみ",
+                    "always": "常に"
+                }
+            },
+            "webhook_unlink_policy": {
+                "label": "プロバイダーからの連携解除通知",
+                "hint": "会員がプロバイダー側でアプリ連携を解除したという通知を受け取ったときの処理方法です。",
+                "options": {
+                    "unlink_only": "連携のみ削除",
+                    "withdraw_user": "会員の退会処理(管理者を除く)"
+                }
+            },
+            "two_factor_enabled": {
+                "label": "ソーシャルログインにも2段階認証",
+                "hint": "無効にすると、認証アプリを登録した会員もソーシャルログイン時に2段階認証をスキップします。"
+            },
+            "allow_admin_social_login": {
+                "label": "管理者のソーシャルログインを許可",
+                "hint": "管理者ロールの会員もソーシャルアカウントでログインできるようにします。"
+            },
+            "allow_unlink_last_method": {
+                "label": "最後のログイン手段の解除を許可",
+                "hint": "パスワードのない会員が最後のソーシャル連携を解除できるようにします。解除すると、パスワード再設定からのみ再度ログインできます。"
+            },
+            "revoke_on_unlink": {
+                "label": "連携を解除するときにプロバイダーの権限も取り消す",
+                "hint": "会員または管理者が連携を解除するとき、プロバイダー側のアプリ権限も取り消します。"
+            },
+            "state_ttl_minutes": {
+                "label": "ログイン往復の有効時間(分)",
+                "hint": "プロバイダーの画面からこの時間内に戻る必要があります。3~30。"
+            },
+            "pending_signup_ttl_minutes": {
+                "label": "登録待機の有効時間(分)",
+                "hint": "プロバイダーでの確認後、登録画面を完了するまでの時間です。5~120。"
+            },
+            "custom_provider_limit": {
+                "label": "カスタムプロバイダーの最大数",
+                "hint": "管理者が追加できる OIDC プロバイダーの数です。0~10。"
+            },
+            "profile_raw_retention_days": {
+                "label": "元のプロフィールの保存(日)",
+                "hint": "プロバイダーから送られた元のプロフィールを問題確認用に保存する期間です。0 の場合は保存しません。0~90。"
+            },
+            "attempt_log_retention_days": {
+                "label": "試行記録の保存(日)",
+                "hint": "統計と診断に使う試行記録の保存期間です。7~365。"
+            },
+            "webhook_event_retention_days": {
+                "label": "Webhook 記録の保存(日)",
+                "hint": "プロバイダー通知の受信記録の保存期間です。7~365。"
+            },
+            "signup_surge_threshold_per_hour": {
+                "label": "登録急増通知の基準(1時間あたり)",
+                "hint": "1つのプロバイダーで1時間にこの数以上の登録があると管理者に通知します。0 の場合は通知しません。"
+            },
+            "provider_failure_streak_threshold": {
+                "label": "プロバイダー連続失敗通知の基準",
+                "hint": "1つのプロバイダーで10分以内にこの回数以上失敗すると、管理者に1日1回通知します。間に成功があっても数えます。0 の場合は通知しません。"
+            }
+        },
+        "warnings": {
+            "auto_link_verified": "危険: プロバイダーが検証したという表示だけを信頼して、同じメールアドレスの既存アカウントにすぐ連携します。他人が先にそのメールアドレスで登録していたり、プロバイダーの検証が誤っていたりすると、アカウントを乗っ取られるおそれがあります。",
+            "two_factor_off": "注意: 無効にすると、認証アプリ(TOTP)を登録した会員にもソーシャルログインで認証番号を求めません。"
+        }
+    },
+    "divider": {
+        "or": "または",
+        "or_email_signup": "またはメールアドレスで登録"
+    },
+    "buttons": {
+        "login_with": {
+            "kakao": "カカオでログイン",
+            "naver": "NAVERでログイン",
+            "google": "Google でログイン",
+            "facebook": "Facebookでログイン",
+            "custom": "{{provider}}でログイン"
+        },
+        "register_with": {
+            "kakao": "カカオでログイン",
+            "naver": "NAVERで登録",
+            "google": "Google で登録",
+            "facebook": "Facebookで登録",
+            "custom": "{{provider}}で登録"
+        },
+        "link_with": "{{provider}}を連携",
+        "reauth_with": "{{provider}}で再確認",
+        "reconsent_with": "{{provider}}へのメールアドレス提供にもう一度同意する"
+    },
+    "errors": {
+        "provider_error": "ソーシャルログインに失敗しました。しばらくしてから再度お試しいただくか、別の方法でログインしてください。",
+        "access_denied": "プロバイダーの画面で同意しなかったため、ログインしませんでした。",
+        "state_invalid": "ログインの有効時間が過ぎたか、すでに処理されたリクエストです。もう一度お試しください。",
+        "code_missing": "プロバイダーからログイン結果が送られませんでした。もう一度お試しください。",
+        "unexpected_error": "ソーシャルログインの処理中に問題が発生しました。しばらくしてから再度お試しください。",
+        "profile_missing_id": "プロバイダーからアカウント情報が送られませんでした。もう一度お試しください。",
+        "profile_fetch_failed": "プロバイダーからアカウント情報を受け取れませんでした。しばらくしてから再度お試しください。",
+        "provider_disabled": "現在、このプロバイダーではログインできません。",
+        "provider_unknown": "現在、このプロバイダーではログインできません。",
+        "admin_blocked": "管理者アカウントはソーシャルログインを使用できません。パスワードでログインしてください。",
+        "signup_disabled": "このプロバイダーでは新規登録できません。すでに登録済みのアカウントがある場合は、そのアカウントでログインしてからマイページで連携してください。",
+        "email_required": "登録にはメールアドレスが必要です。下のボタンでプロバイダーの同意画面をもう一度開き、メールアドレスの提供に同意してください。",
+        "account_missing": "連携された会員が見つかりません。もう一度登録してください。",
+        "already_linked_other_user": "このソーシャルアカウントは別の会員に連携されています。",
+        "provider_already_linked": "このプロバイダーの別のアカウントがすでに連携されています。先に解除してから連携してください。",
+        "user_missing": "ログイン情報が変わりました。再度ログインしてから連携してください。",
+        "reauth_mismatch": "連携されたアカウントとは別のアカウントでログインしました。連携したアカウントで再度確認してください。",
+        "reauth_failed": "本人確認を完了できませんでした。もう一度お試しください。",
+        "last_method": "パスワードを設定するか、別のアカウントを連携してから解除できます。",
+        "expired": "登録の待機時間が過ぎました。ソーシャルログインを最初からやり直してください。"
+    },
+    "notices": {
+        "pending_verification": "登録が完了しました。本人認証を完了するとログインできます。",
+        "reconsent": "メールアドレスの提供に同意しなかったため登録できませんでした。下のボタンを押すと、プロバイダーの同意画面がもう一度開きます。"
+    },
+    "signup": {
+        "title": "{{provider}}アカウントで登録",
+        "intro": "以下の内容を確認して同意すると登録が完了します。パスワードを設定する必要はありません。",
+        "expired": "登録の待機時間が過ぎたか、すでに登録が完了しています。ソーシャルログインを最初からやり直してください。",
+        "retry_login": "再度ログイン",
+        "name": "名前",
+        "nickname": "ニックネーム",
+        "email": "メール",
+        "placeholder_notice": "メールアドレスなしで登録します。代替メールアドレスが発行されるため、メール通知やメールの認証番号を受け取れません。登録後、マイページでメールアドレスを変更できます。",
+        "request_code": "認証番号を受け取る",
+        "resend_code": "認証番号を再度受け取る",
+        "code_placeholder": "認証番号6桁",
+        "code_sent": "認証番号を送信しました。メールボックスを確認してください。",
+        "verify_code": "確認",
+        "email_verified": "メールアドレスを確認しました。",
+        "submit": "登録して始める",
+        "code_remaining": "残り時間 {{minutes}}:{{seconds}}",
+        "code_expired": "認証番号の有効時間が過ぎました。再送信を押してください。",
+        "provider_generic": "ソーシャル"
+    },
+    "existing": {
+        "title": "すでに登録されているメールアドレス",
+        "message": "{{email}} で登録したアカウントがあります。そのアカウントの所有者であることを確認すると、ソーシャルアカウントを連携してログインします。",
+        "hint": "メールアドレスが同じというだけでは、アカウントを統合しません。",
+        "by_password": "既存アカウントのパスワードで確認",
+        "by_email": "既存アカウントのメールアドレスで認証番号を受け取る",
+        "confirm": "確認",
+        "new_account": "新しいアカウントで登録"
+    },
+    "mypage": {
+        "title": "連携されたソーシャルアカウント",
+        "no_password": "パスワードのないアカウントです。パスワードを設定すると、メールアドレスでもログインできます。",
+        "set_password": "パスワード設定",
+        "empty": "連携されたソーシャルアカウントはありません。",
+        "linked_label": "連携日",
+        "unlink": "連携解除",
+        "unlink_title": "ソーシャルアカウント連携解除",
+        "unlink_confirm": "{{provider}}アカウントの連携を解除しますか?解除すると、そのアカウントでログインできなくなります。",
+        "unlinked_toast": "連携を解除しました。",
+        "last_method": "パスワードがなく連携が1つだけのため解除できません。パスワードを設定するか、別のアカウントを連携してから解除してください。",
+        "available": "別のアカウントを連携する",
+        "linked_toast": "ソーシャルアカウントを連携しました。",
+        "unlink_last_warning": "最後のログイン手段です。解除すると、ログアウト後はパスワード再設定でパスワードを設定しない限り再度ログインできません。"
+    },
+    "reauth": {
+        "notice": "このアカウントはメールで認証番号を受け取れません。連携したソーシャルアカウントで再度ログインして本人確認をしてください。",
+        "unavailable": "連携されたソーシャルアカウントがないため、本人確認ができません。管理者にお問い合わせください。",
+        "verified_toast": "本人確認が完了しました。",
+        "password_notice": "パスワードを初めて設定する前に、連携したソーシャルアカウントで再度ログインして本人確認をしてください。",
+        "password_ready": "本人確認が完了しました。数分以内に新しいパスワードを保存してください。"
+    },
+    "admin": {
+        "tabs": {
+            "providers": "プロバイダー",
+            "policy": "ポリシー"
+        },
+        "providers": {
+            "read_only": "設定を変更する権限がないため、閲覧のみ可能です。",
+            "types": {
+                "builtin": "内蔵",
+                "custom": "一般 OIDC",
+                "extension": "拡張による登録(読み取り専用)"
+            },
+            "enabled": "使用中",
+            "disabled": "無効",
+            "move_up": "上へ",
+            "move_down": "下へ",
+            "extension_notice": "別の拡張が登録したプロバイダーです。この画面では変更できません。",
+            "extension_hint": "別の拡張が登録したプロバイダーは、上の一覧に読み取り専用で表示されます。",
+            "credentials_unreadable": "保存されたシークレットを復号できません。サイトのアプリキーが変わった場合は、シークレットを再度入力して保存してください。",
+            "redirect_uri": "Redirect URI",
+            "copy": "コピー",
+            "copied": "コピーしました。",
+            "copy_failed": "コピーできませんでした。アドレスを直接選択してコピーしてください。",
+            "webhook_kinds": {
+                "unlink": "連携解除 Webhook",
+                "deauthorize": "アプリ権限解除コールバック",
+                "data_deletion": "データ削除コールバック"
+            },
+            "last_success": "最終成功",
+            "last_error": "最終失敗",
+            "edit": "設定を編集",
+            "test": "接続テスト",
+            "test_login": "ブラウザでログインテスト",
+            "impact": "影響を確認",
+            "test_failed": "接続テストを実行できませんでした。",
+            "test_login_failed": "ログインテストを開始できませんでした。",
+            "popup_blocked": "新しいウィンドウがブロックされました。ブラウザでポップアップを許可してから、もう一度押してください。",
+            "provider_code": "プロバイダーの応答コード",
+            "test_results": {
+                "credentials_ok": "認証情報は正しいです(プロバイダーがクライアントを認めました)。実際のログインは[ブラウザでログインテスト]で確認してください。",
+                "invalid_client": "クライアント ID またはシークレットが正しくありません。",
+                "redirect_mismatch": "プロバイダーのコンソールに登録した Redirect URI が上のアドレスと異なります。",
+                "unreachable": "プロバイダーに接続できませんでした(ネットワークまたはプロバイダーの障害)。",
+                "credentials_missing": "必須の認証情報が空です。",
+                "credentials_unreadable": "保存されたシークレットを復号できません(アプリキーが変更されました)。シークレットを再度入力して保存してください。",
+                "discovery_failed": "discovery ドキュメントを取得できませんでした。",
+                "discovery_incomplete": "discovery ドキュメントに必須項目がありません。",
+                "jwks_unreachable": "署名鍵一覧(JWKS)を取得できませんでした。",
+                "unexpected": "予期しない応答です。プロバイダーの応答コードを確認してください。",
+                "inconclusive": "このプロバイダーは、テスト用のリクエストでは認証情報が正しいかどうかを返しません。[ブラウザでログインテスト]で確認してください。"
+            },
+            "delete_confirm": "この一般 OIDC プロバイダーを削除しますか?連携されている会員がいる場合は削除されません。",
+            "deleted": "プロバイダーを削除しました。",
+            "saved": "プロバイダー設定を保存しました。",
+            "save_failed": "保存できませんでした。",
+            "created": "一般 OIDC プロバイダーを追加しました。接続テストを終えてから有効にしてください。",
+            "discover": "discovery を取得",
+            "discovered": "discovery ドキュメントからアドレスを入力しました。確認してから保存してください。",
+            "fields": {
+                "enabled": "使用",
+                "label": "表示名",
+                "client_id_kakao": "REST API キー",
+                "client_id_naver": "Client ID",
+                "client_id_google": "クライアント ID",
+                "client_id_facebook": "アプリ ID",
+                "client_id_oidc": "クライアント ID",
+                "client_secret_kakao": "Client Secret",
+                "client_secret_naver": "Client Secret",
+                "client_secret_google": "クライアントシークレット",
+                "client_secret_facebook": "app secret(アプリシークレット)",
+                "client_secret_oidc": "クライアントシークレット",
+                "admin_key": "アドミンキー",
+                "graph_api_version": "Graph API バージョン",
+                "scopes": "リクエストスコープ(scope)",
+                "discovery_url": "Discovery アドレス",
+                "issuer": "発行者(issuer)",
+                "authorize_url": "認可アドレス",
+                "token_url": "トークンアドレス",
+                "userinfo_url": "ユーザー情報アドレス",
+                "jwks_url": "署名鍵(JWKS)アドレス",
+                "button_bg": "ボタンの背景色",
+                "button_fg": "ボタンの文字色",
+                "button_border": "ボタンの枠線色",
+                "signup_allowed": "このプロバイダーでの新規登録を許可",
+                "webhook_app_id": "Webhook アプリ ID",
+                "webhook_ip_allowlist_enabled": "Webhook 送信元 IP の確認",
+                "email_missing_policy": "メールアドレスが提供されない場合",
+                "email_trust": "プロバイダーのメールアドレスの信頼",
+                "key": "プロバイダーキー"
+            },
+            "hints": {
+                "enabled": "有効にするとログイン・登録画面にボタンが表示されます。有効にするには認証情報を入力する必要があります。",
+                "secret": "保存された値は••••••••と表示されます。そのままにすると維持され、空にして保存すると削除されます。",
+                "admin_key": "連携解除 Webhook の検証と会員の連携解除(権限の取り消し)に使用します。",
+                "scopes": "空白またはカンマで区切ります。空欄の場合はドライバーの既定値を使用します。",
+                "scopes_placeholder": "例: openid email profile",
+                "signup_allowed": "無効にすると、このプロバイダーでは既存の連携会員のみがログインでき、新規登録はできません。",
+                "webhook_app_id": "Kakao Developers コンソールのアプリ ID(数字)を入力すると、別のアプリから送られた連携解除通知を無視します。空欄の場合は照合しません。",
+                "webhook_ip_allowlist_enabled": "カカオの送信元 IP 帯域から届いた Webhook のみ受け付けます。リバースプロキシの背後にある場合は、先に信頼済みプロキシを設定してください。",
+                "placeholder_warning": "代替メールアドレス(…@social.invalid)で登録した会員はメールを受け取れません — メールの2段階認証、通知、パスワード再設定メールは届かず、本人の再確認はソーシャルでの再ログインで行います。",
+                "email_trust": "既定はカカオ・Google・一般 OIDC が「検証表示のみ信頼」、メールアドレスの検証表示を送らない NAVER・Facebook が「常に信頼」です。「常に信頼」は、プロバイダーが検証していないメールアドレスも確認済みとみなします。",
+                "key": "英小文字で始まり、英小文字・数字・アンダースコアの2~50文字。内蔵プロバイダー名と mock_ で始まるキーは使用できません。",
+                "label_example": "例: 社内アカウント"
+            },
+            "email_missing": {
+                "ask": "直接入力してもらう(認証番号で確認)",
+                "deny": "ログインを拒否(プロバイダーで再度同意するよう案内)",
+                "placeholder": "代替メールアドレスを発行"
+            },
+            "email_trust": {
+                "flag": "プロバイダーの検証表示のみ信頼",
+                "trust": "常に信頼",
+                "verify": "常に認証番号で確認"
+            },
+            "impact_title": "変更の影響",
+            "impact_body": "{{provider}}を無効にするか認証情報を変更すると、以下の会員が影響を受けます。",
+            "impact_social_only": "このプロバイダーでのみログインする会員",
+            "impact_linked": "連携されている会員",
+            "impact_warning": "このプロバイダーでのみログインする会員は、プロバイダーを無効にするとログイン手段がなくなります。パスワード再設定でパスワードを設定するよう案内してください。",
+            "impact_continue": "保存を続ける",
+            "add_title": "一般 OIDC プロバイダーを追加",
+            "add_limit": "追加したプロバイダー {{count}} / 最大 {{limit}}",
+            "add_button": "+ 追加",
+            "add_submit": "追加",
+            "notes": {
+                "kakao": {
+                    "client_secret_default_on": "カカオは Client Secret を既定で有効にしています。コンソールの[アプリ] > [プラットフォームキー] > [REST API キー] > [クライアントシークレット]でコードを発行して入力してください(入力しないと KOE010)。Redirect URI も同じ REST API キーの画面で登録します。",
+                    "biz_app_email": "メールアドレスを受け取るには、ビズアプリへの切り替えとメールアドレスの同意項目の設定が必要です。",
+                    "reconsent_needs_email_item": "メールアドレスの同意項目がないアプリで「メールアドレスが提供されない場合」を「ログインを拒否」にすると、ログイン画面の[メールアドレス提供にもう一度同意する]がカカオのエラー(KOE205)で終わります。このようなアプリでは「直接入力してもらう」を選んでください。",
+                    "redirect_koe006": "Redirect URI がコンソールの登録値と異なると KOE006 になります。",
+                    "webhook_https_443": "カカオは連携解除 Webhook のアドレスに https・443 ポートしか受け付けません。別のポートで運用している場合は、443 で受けるアドレスを別に用意してください。"
+                },
+                "naver": {
+                    "review_no_test_account": "検収が承認されるまでは、コンソールに登録したテスト ID だけがログインできます。登録時にサービス独自のパスワードを別途求めると検収で却下されます(このプラグインは求めません)。",
+                    "redirect_exact": "サービス URL と Callback URL を上のアドレスとまったく同じに登録してください。"
+                },
+                "google": {
+                    "redirect_exact_match": "承認済みのリダイレクト URI は一文字まで同じである必要があります(末尾の / を含む)。",
+                    "unverified_app": "アプリを公開する前は、テストユーザーとして登録したアカウントのみログインできます。"
+                },
+                "facebook": {
+                    "strict_mode": "有効な OAuth リダイレクト URI に上のアドレスを入力し、Strict Mode を有効にしたままにしてください。",
+                    "email_app_review": "メールアドレスの権限にはアプリレビュー(アドバンスアクセス)が必要な場合があります。",
+                    "data_deletion_callback": "アプリ設定の「データ削除コールバック URL」に上のデータ削除コールバックアドレスを入力してください。"
+                },
+                "oidc": {
+                    "redirect_exact": "IdP に上の Redirect URI をそのまま登録してください。",
+                    "discovery_https": "discovery アドレスとすべてのエンドポイントは https である必要があります。"
+                }
+            }
+        },
+        "diagnostics": {
+            "title": "ソーシャルログイン診断",
+            "description": "プロバイダーの状態、Webhook の受信、失敗記録をまとめて確認します。",
+            "refresh": "再読み込み",
+            "queue": {
+                "title": "キュー",
+                "connection": "接続",
+                "pending": "待機中のジョブ",
+                "failed_jobs": "このプラグインの失敗ジョブ",
+                "sync_hint": "キューが同期(sync)のため、Webhook はリクエスト内で処理されます。運用環境ではキューワーカーを起動してください。"
+            },
+            "mail": {
+                "title": "メール",
+                "mailer": "送信手段",
+                "delivering": "使用可能",
+                "not_delivering": "実際には送信しない手段です(認証番号が届きません)",
+                "recent_failures": "直近7日間の認証番号送信失敗 {{count}}件"
+            },
+            "mock": {
+                "title": "モックプロバイダー",
+                "on": "有効 — {{until}} まで",
+                "off": "無効",
+                "hint": "モックプロバイダーはサーバーコマンドでのみ有効・無効を切り替えます。"
+            },
+            "members": {
+                "title": "会員",
+                "linked": "ソーシャル連携会員 {{count}}名",
+                "passwordless": "うちパスワードのない会員 {{count}}名"
+            },
+            "providers": {
+                "title": "プロバイダーの状態",
+                "provider": "プロバイダー",
+                "state": "状態",
+                "last_success": "最終成功",
+                "last_error": "最終失敗",
+                "last_webhook": "最終 Webhook",
+                "configured": "設定済み(無効)",
+                "not_configured": "認証情報なし",
+                "unreadable": "シークレットを復号できません"
+            },
+            "attempts": {
+                "title": "最近の試行記録",
+                "empty": "記録がありません。",
+                "col": {
+                    "created_at": "日時",
+                    "provider": "プロバイダー",
+                    "intent": "意図",
+                    "outcome": "結果",
+                    "error": "エラー"
+                }
+            },
+            "webhooks": {
+                "title": "Webhook 受信履歴",
+                "empty": "受信した Webhook はありません。",
+                "attempts": "処理試行",
+                "summary": "直近{{days}}日 受信 {{received}}件 · 無視 {{ignored}}件 · 失敗 {{failed}}件",
+                "proxy_hint": "無視された Webhook があり、信頼済みプロキシが設定されていません。プロキシの背後にある場合、送信元 IP の確認がすべて失敗する可能性があります。",
+                "providers": {
+                    "kakao": "カカオ",
+                    "naver": "NAVER",
+                    "facebook": "Facebook"
+                },
+                "col": {
+                    "received_at": "受信日時",
+                    "provider": "プロバイダー",
+                    "event_type": "種類",
+                    "status": "状態",
+                    "detail": "内容"
+                }
+            },
+            "filters": {
+                "provider": "プロバイダー",
+                "outcome": "結果",
+                "status": "状態",
+                "all_providers": "すべてのプロバイダー",
+                "all_outcomes": "すべての結果",
+                "all_statuses": "すべての状態"
+            },
+            "intents": {
+                "login": "ログイン",
+                "link": "接続",
+                "test": "テスト",
+                "reauth": "再確認"
+            },
+            "outcomes": {
+                "login": "ログイン",
+                "signup": "登録",
+                "link": "接続",
+                "pending": "待機",
+                "handoff": "ログイン引き継ぎ",
+                "denied": "拒否",
+                "failed": "失敗"
+            },
+            "statuses": {
+                "received": "受信",
+                "processed": "処理済み",
+                "ignored": "無視",
+                "failed": "失敗"
+            },
+            "event_types": {
+                "unlink": "連携解除",
+                "account_delete": "プロバイダーアカウント削除",
+                "deauthorize": "アプリ権限の解除",
+                "data_deletion": "データ削除リクエスト",
+                "incomplete_signup": "登録未完了"
+            }
+        },
+        "stats": {
+            "title": "ソーシャルログイン統計",
+            "description": "期間内のプロバイダー別の登録・ログイン・失敗と、現在の連携数を確認します(管理者の接続テストを除く)。",
+            "period": "期間",
+            "days_7": "7日",
+            "days_30": "30日",
+            "days_90": "90日",
+            "since": "{{since}} から",
+            "empty": "データがありません。",
+            "totals": "合計 — 登録 {{signups}} · ログイン {{logins}} · 失敗 {{failures}}",
+            "col": {
+                "provider": "プロバイダー",
+                "signups": "登録",
+                "logins": "ログイン",
+                "links": "接続",
+                "failures": "失敗",
+                "linked_accounts": "連携数",
+                "social_only_users": "このプロバイダーでのみログイン"
+            }
+        },
+        "users": {
+            "filter_label": "登録経路(ソーシャル)",
+            "filter_all": "すべて",
+            "column_header": "ソーシャル連携",
+            "tab_label": "ソーシャルログイン",
+            "tab_title": "ソーシャルアカウント連携",
+            "forbidden": "会員の連携を閲覧する権限がありません。",
+            "passwordless_notice": "パスワードのない会員です — 連携をすべて解除すると、パスワード再設定からのみ再度ログインできます。",
+            "empty": "連携されたソーシャルアカウントはありません。",
+            "unlink": "強制解除",
+            "unlink_confirm": "このソーシャルアカウントの連携を強制的に解除しますか?会員に通知が送られ、アクティビティログに記録されます。",
+            "unlink_failed": "連携を解除できませんでした。",
+            "col": {
+                "provider": "プロバイダー",
+                "provider_user_id": "プロバイダーのユーザー ID",
+                "email": "プロバイダーのメールアドレス",
+                "linked_at": "連携日",
+                "last_login_at": "最近のログイン"
+            }
+        }
+    }
+}

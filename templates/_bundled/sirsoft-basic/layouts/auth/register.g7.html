@@ -17,6 +17,8 @@
       <!-- 회원가입 폼 -->
       <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:auth.register.title</h2>
+        <!-- 확장 영역 — 소셜 계정으로 가입하기 버튼처럼 다른 가입 수단을 확장이 붙이는 자리(가입 폼 위). 붙인 확장이 없으면 아무것도 그리지 않는다. -->
+        <extension-point name="auth_register_extensions" data-ref="auth_register_extensions_slot"/>
         <include src="partials/auth/_register_form.g7.html"/>
         <div class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           <span>$t:auth.already_member</span>

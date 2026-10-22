@@ -1,0 +1,11 @@
+{
+    "client_id": "fx-naver-client",
+    "client_secret": "fx-naver-secret",
+    "unique_id": "AbCdEf_GhIjK-123xyz",
+    "request": {
+        "clientId": "fx-naver-client",
+        "encryptUniqueId": "MDEyMzQ1Njc4OWFiY2RlZpiVTM+McSKSaZSL/BWWCfhs7FFBumk/rxFML4A5uVAK",
+        "timestamp": "1760900000000",
+        "signature": "F0pkxgm7A+YQxZpzXdCS3AL5LhmvVjO5EvJ0LuEZyyE="
+    }
+}

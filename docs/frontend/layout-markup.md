@@ -418,7 +418,7 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(액�
 | refetchDataSource | `<refetch-data-source>` | `dataSourceId` |
 | setLocale | `<set-locale>` | `locale` |
 
-> `<api-call>` 의 `target` 이 곧 요청 URL(엔드포인트)이다. `method` 는 params 로 전달. 핸들러 49종은 kebab↔camel 자동 변환(`<set-state>`↔setState). 확장/점 핸들러는 `<action handler="sirsoft-ecommerce.toggleArrayValue">`.
+> `<api-call>` 의 `target` 이 곧 요청 URL(엔드포인트)이다. `method` 는 params 로 전달. 핸들러 51종은 kebab↔camel 자동 변환(`<set-state>`↔setState). 확장/점 핸들러는 `<action handler="sirsoft-ecommerce.toggleArrayValue">`.
 >
 > **`<action-ref name>` 은 핸들러 없이 성립하는 유일한 액션이다.** `named_actions` 에 정의해 둔 액션을 이름으로 불러 쓰는 형태(`actionRef`)로, `<action>` 은 `handler` 가 필수라 이 형태를 지을 수 없다. 같은 액션을 여러 진입점에서 재사용할 때 쓴다. `<init>`·`<on listen>`·`<fail>`·`<on-code>` 안에서도 그대로 실행된다(engine-v1.80.0 — 그 전에는 `<init>` 이 이 형태를 굽기에서 거부했고 JSON 으로 적으면 화면 진입이 실패했다).
 >

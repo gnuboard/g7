@@ -1,0 +1,35 @@
+<!-- 제공자 영향 확인 칸 — [영향 보기]로 열면 수치만, 켜진 제공자를 끄거나 자격증명을 바꾸는 [저장]으로 열면 [계속 저장]이 함께 보인다.
+     「이 제공자로만 로그인하는 회원」은 비밀번호가 없고 연결이 이것 하나뿐이라 제공자를 끄면 로그인할 수단이 없어진다. 제공자 반복(provider) 안에 인라인된다. -->
+<partial name="partials/plugin_settings/_provider_impact" description="제공자 변경 영향 확인">
+  <div data-ref="provider_impact_panel_{{provider.key}}" data-if="{{_local.impact?.key === provider.key}}" role="dialog" aria-label="$t:sirsoft-social_login.admin.providers.impact_title" class="rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 space-y-3">
+    <p class="text-sm font-semibold text-gray-900 dark:text-white">$t:sirsoft-social_login.admin.providers.impact_title</p>
+    <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-social_login.admin.providers.impact_body|provider={{_local.impact?.label ?? ''}}</p>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="p-3 rounded-lg bg-white dark:bg-gray-800">
+        <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-social_login.admin.providers.impact_social_only</p>
+        <p data-ref="impact_social_only_value_{{provider.key}}" class="text-lg font-semibold text-gray-900 dark:text-white">{{_local.impact?.social_only_users ?? 0}}</p>
+      </div>
+      <div class="p-3 rounded-lg bg-white dark:bg-gray-800">
+        <p class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-social_login.admin.providers.impact_linked</p>
+        <p data-ref="impact_linked_value_{{provider.key}}" class="text-lg font-semibold text-gray-900 dark:text-white">{{_local.impact?.linked_users ?? 0}}</p>
+      </div>
+    </div>
+    <p data-if="{{(_local.impact?.social_only_users ?? 0) > 0}}" role="alert" class="text-sm text-red-700 dark:text-red-300">$t:sirsoft-social_login.admin.providers.impact_warning</p>
+    <div class="flex justify-end gap-2">
+      <button data-ref="impact_close_button_{{provider.key}}" type="button" class="btn btn-secondary text-sm">
+        <on type="click">
+          <!-- 영향 패널을 닫는다 — 저장하지 않고 편집 칸으로 돌아간다 -->
+          <set-state target="local" :impact="null"/>
+        </on>
+        <span>$t:common.close</span>
+      </button>
+      <!-- [계속 저장]은 지금 열린 편집 칸(_local.editingKey)을 저장한다 — 이 카드 편집 칸이 열려 있을 때만 보인다 -->
+      <button data-ref="impact_confirm_button_{{provider.key}}" data-if="{{_local.impact?.confirm === true &amp;&amp; _local.editingKey === provider.key}}" type="button" class="btn btn-primary text-sm" disabled="{{_local.isSavingProvider}}">
+        <on type="click">
+          <action-ref name="saveProvider"/>
+        </on>
+        <span>$t:sirsoft-social_login.admin.providers.impact_continue</span>
+      </button>
+    </div>
+  </div>
+</partial>

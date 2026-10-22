@@ -114,6 +114,22 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
     }
 
     /**
+     * 토큰으로 verified 상태의 challenge 를 소비·만료 여부와 무관하게 찾습니다.
+     *
+     * @param  string  $token  verification_token
+     * @param  string  $purpose  IDV 목적 (예: signup)
+     * @return IdentityVerificationLog|null 매칭 로그 또는 null
+     */
+    public function findVerifiedByToken(string $token, string $purpose): ?IdentityVerificationLog
+    {
+        return IdentityVerificationLog::query()
+            ->where('verification_token', $token)
+            ->where('purpose', $purpose)
+            ->where('status', IdentityVerificationStatus::Verified->value)
+            ->first();
+    }
+
+    /**
      * 만료 시각이 지난 챌린지를 일괄 만료 처리합니다.
      *
      * @return int 만료 처리된 행 수

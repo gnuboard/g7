@@ -20,6 +20,7 @@ return [
     'channel_skipped_no_template' => ':channel チャネルに :type タイプのアクティブテンプレートがないため、送信をスキップしました。',
     'channel_disabled_by_extension' => '拡張環境設定でそのチャネルが無効化されているため、送信をスキップしました。',
     'channel_guest_not_allowed' => 'そのチャネルは非会員送信を許可していないため、送信をスキップしました。',
+    'recipient_email_undeliverable' => 'メールを受信できない宛先(代替メールアドレス)のため、メール送信をスキップしました。',
     'channel_unavailable' => 'そのチャネルを提供する拡張が無効または削除されているため、送信をスキップしました。',
     'template_updated' => '通知テンプレートが編集されました。',
     'template_update_failed' => '通知テンプレートの編集に失敗しました。',
@@ -161,6 +162,13 @@ return [
             ],
             'password_expiry_notice' => [
                 'action_url' => 'パスワード変更画面URL',
+            ],
+            'schedule_failed' => [
+                'schedule_label' => 'タスク表示名',
+                'schedule_name' => 'タスク識別子(name)',
+                'owner' => '所有者(コア・拡張名・直接登録)',
+                'failed_at' => '失敗日時',
+                'schedule_url' => 'スケジュール管理画面URL',
             ],
         ],
         'identity' => [

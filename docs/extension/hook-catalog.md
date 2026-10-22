@@ -9,8 +9,8 @@
 
 ## 목차
 
-- [코어](#코어) (631)
-- [기본 제공 확장](#기본-제공-확장) (15)
+- [코어](#코어) (633)
+- [기본 제공 확장](#기본-제공-확장) (16)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
 
@@ -109,6 +109,7 @@
 | `core.auth.forgot_password_validation_rules` | filter | 2 |  |
 | `core.auth.lockout_minutes` | filter | 2 |  |
 | `core.auth.login_failed` | action | 2 |  |
+| `core.auth.login_handoff_validation_rules` | filter | 2 |  |
 | `core.auth.login_validation_rules` | filter | 2 |  |
 | `core.auth.logout` | action | 1 |  |
 | `core.auth.max_login_attempts` | filter | 2 |  |
@@ -632,6 +633,7 @@
 | `core.user.delete_validation_rules` | filter | 2 |  |
 | `core.user.filter_create_data` | filter | 1 |  |
 | `core.user.filter_list_params` | filter | 1 |  |
+| `core.user.filter_list_rows` | filter | 2 |  |
 | `core.user.filter_resource_data` | filter | 2 |  |
 | `core.user.filter_update_data` | filter | 2 |  |
 | `core.user.list_query_extensions` | filter | 2 |  |
@@ -669,6 +671,7 @@
 | `sirsoft-pay_kginicis` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-pay_kginicis/docs/extension-points.md#발행-훅) |
 | `sirsoft-pay_nhnkcp` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/extension-points.md#발행-훅) |
 | `sirsoft-pay_nicepayments` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-pay_nicepayments/docs/extension-points.md#발행-훅) |
+| `sirsoft-social_login` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-social_login/docs/extension-points.md#발행-훅) |
 | `sirsoft-tosspayments` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-tosspayments/docs/extension-points.md#발행-훅) |
 | `sirsoft-totp` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-totp/docs/extension-points.md#발행-훅) |
 

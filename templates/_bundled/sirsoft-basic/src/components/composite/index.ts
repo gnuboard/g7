@@ -32,7 +32,6 @@ export { ExpandableContent } from './ExpandableContent';
 // 공통 컴포넌트
 export { default as FileUploader } from './FileUploader';
 export { ConfirmDialog } from './ConfirmDialog';
-export { default as SocialLoginButtons } from './SocialLoginButtons';
 export { default as Toast } from './Toast';
 export { default as PageTransitionIndicator } from './PageTransitionIndicator';
 export { default as PageTransitionBlur } from './PageTransitionBlur';
@@ -96,7 +95,6 @@ export const compositeComponents = {
   // 공통
   FileUploader: () => import('./FileUploader'),
   ConfirmDialog: () => import('./ConfirmDialog'),
-  SocialLoginButtons: () => import('./SocialLoginButtons'),
   Toast: () => import('./Toast'),
   PageTransitionIndicator: () => import('./PageTransitionIndicator'),
   PageTransitionBlur: () => import('./PageTransitionBlur'),

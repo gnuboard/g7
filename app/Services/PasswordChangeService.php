@@ -104,9 +104,13 @@ class PasswordChangeService
      */
     public function initializeNewUser(User $user, PasswordChangeSource $source): void
     {
+        // 비밀번호 없이 가입한 회원(외부 인증 전용)은 변경일이 없다 — 기준일을 남기면 나중에 비밀번호를 처음
+        // 정할 때까지 만료 계산이 없는 비밀번호를 대상으로 돈다. 처음 정하는 순간 recordChange() 가 기록한다.
+        $hasPassword = $user->hasPassword();
+
         $this->userRepository->update($user, [
-            'password_changed_at' => now(),
-            'password_change_required' => $source === PasswordChangeSource::AdminCreate,
+            'password_changed_at' => $hasPassword ? now() : null,
+            'password_change_required' => $hasPassword && $source === PasswordChangeSource::AdminCreate,
         ]);
     }
 

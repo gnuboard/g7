@@ -71,6 +71,13 @@ class HandleFailedLoginListener implements HookListenerInterface
             return;
         }
 
+        // 비밀번호가 없는 회원(외부 인증 전용)은 비밀번호로 로그인할 수 없으므로 틀린 비밀번호를 세지 않는다 —
+        // 세면 이메일만 아는 남이 그 계정을 잠가 소셜 로그인까지 막을 수 있다. 응답은 그대로(`invalid_credentials`)라
+        // 비밀번호 부재가 드러나지 않는다.
+        if (! $user->hasPassword()) {
+            return;
+        }
+
         $lockoutMinutes = (int) HookManager::applyFilters(
             'core.auth.lockout_minutes',
             (int) g7_core_settings('security.login_lockout_time', 5),

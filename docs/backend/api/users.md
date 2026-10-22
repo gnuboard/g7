@@ -338,6 +338,8 @@ _단건 응답: `data` 객체의 필드 (생성된 사용자 — `UserResource::
 | bio | string\|null | `null` | 자기소개 |
 | last_login_at | string\|null | `null` | 마지막 로그인 일시 (신규 생성 시 null) |
 | email_verified_at | string\|null | `null` | 이메일 인증 일시 (미인증 시 null) |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 |
 | created_at | string | `2026-07-08 10:41:24` | 생성 일시 |
 | updated_at | string | `2026-07-08 10:41:24` | 최종 수정 일시 |
@@ -697,6 +699,8 @@ _단건 응답: `data` 객체의 필드._
 | bio | null | `null` | 자기소개 |
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | created_at | string | `2026-07-30 23:37:44` | 생성 일시 |
 | updated_at | string | `2026-08-04 19:00:10` | 최종 수정 일시 |
@@ -811,6 +815,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | bio | null | `null` | 자기소개 |
 | last_login_at | null | `null` | last login 일시 |
 | email_verified_at | string | `2026-08-04 16:57:08` | email verified 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | created_at | string | `2026-08-04 16:57:09` | 생성 일시 |
 | updated_at | string | `2026-08-04 16:57:09` | 최종 수정 일시 |
@@ -963,6 +969,8 @@ _목록 응답: `data[]` 배열 항목의 필드 (페이지네이션 없는 단�
 | bio | string\|null | `null` | 자기소개 |
 | last_login_at | string\|null | `2026-07-07 10:41:24` | 마지막 로그인 일시 (미로그인 시 null) |
 | email_verified_at | string\|null | `2026-07-08 10:41:24` | 이메일 인증 일시 (미인증 시 null) |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 |
 | created_at | string | `2026-07-08 10:41:24` | 생성 일시 |
 | updated_at | string | `2026-07-08 10:41:24` | 최종 수정 일시 |
@@ -1215,6 +1223,8 @@ _단건 응답: `data` 객체의 필드._
 | bio | null | `null` | 자기소개 |
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | modules_count | integer | `0` | modules 개수 (집계) |
 | plugins_count | integer | `0` | plugins 개수 (집계) |
@@ -1242,6 +1252,7 @@ _단건 응답: `data` 객체의 필드._
 | is_locked | boolean | `false` | locked 여부 |
 | password_expiry_policy | string | `inherit` | 비밀번호 만료 개별 설정 (`inherit` 따름 · `apply` 적용 · `exempt` 제외 — #736) |
 | password_status | object | `{"applies":true, …}` | 비밀번호 상태 — 상세 응답에만 실린다(목록은 회원마다 역할 판정이 들어 제외) |
+| password_status.has_password | boolean | `true` | 비밀번호가 있는지 — false 면 만료 정책 대상이 아니고 나머지 만료 값은 비어 있다 |
 | password_status.changed_at | string\|null | `2026-07-01 10:20:00` | 마지막 변경 일시 (사용자 시간대) |
 | password_status.expires_at | string\|null | `2026-09-29 10:20:00` | 만료 예정 일시 (적용되지 않으면 null) |
 | password_status.expired | boolean | `false` | 만료됐는지 |
@@ -1425,7 +1436,8 @@ HTTP/1.1 200
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
 | password | body | string | 아니오 | 보안 설정의 작성 규칙 | 비밀번호 — **다른 회원**이면 재사용 검사 없이 정하고 그 회원은 다음 로그인 때 바꿔야 하며 모든 기기가 로그아웃된다. **본인**이면 재사용 금지가 걸리고 현재 기기만 남는다(#736) |
-| current_password | body | string | 본인 계정에 password 를 보낼 때 | — | 현재 비밀번호 — 수정 대상이 요청자 본인일 때만 요구한다(#736 D19) |
+| current_password | body | string | 본인 계정에 password 를 보낼 때 | — | 현재 비밀번호 — 수정 대상이 요청자 본인일 때만 요구한다(#736 D19). 본인에게 비밀번호가 없으면(외부 인증 전용) 보내지 않는다(422 `prohibited`) |
+| verification_token | body | string | 비밀번호 없는 본인 계정에 password 를 보낼 때 | 최대 128자 | 비밀번호가 없는 관리자가 자기 비밀번호를 처음 정할 때의 본인 확인 — 코어 본인인증(`purpose: sensitive_action`)으로 확인해 받은 토큰(본인 것·1회, 검증을 모두 통과하면 소비) (7.2.0) |
 | password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 개별 설정 (따름·적용·제외, 미지정 시 따름 — #736) |
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
@@ -1525,6 +1537,8 @@ _단건 응답: `data` 객체의 필드 (수정된 사용자 — `UserResource::
 | bio | string\|null | `null` | 자기소개 |
 | last_login_at | string\|null | `2026-07-07 10:41:24` | 마지막 로그인 일시 (미로그인 시 null) |
 | email_verified_at | string\|null | `2026-07-08 10:41:24` | 이메일 인증 일시 (미인증 시 null) |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 |
 | created_at | string | `2026-07-08 10:41:24` | 생성 일시 |
 | updated_at | string | `2026-07-08 11:02:07` | 최종 수정 일시 |
@@ -1645,6 +1659,8 @@ _단건 응답: `data` 객체의 필드._
 | bio | null | `null` | 자기소개 |
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | created_at | string | `2026-07-30 23:37:44` | 생성 일시 |
 | updated_at | string | `2026-08-04 19:00:10` | 최종 수정 일시 |

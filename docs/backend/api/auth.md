@@ -211,6 +211,8 @@ _단건 응답: `data` 객체의 필드._
 | bio | null | `null` | 자기소개 |
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | roles | array | `[{"id":1,"identifier":"admin","name":"관리자"}]` | 사용자에게 부여된 역할 목록 (원소 id/identifier/name — roles 관계 파생, name 은 현지화 라벨) |
 | permissions | array | `[{"id":2,"identifier":"sirsoft-ecommerce.user-products.re…` | 연결된 권한 목록 (id/identifier/name — 역할 경유 권한 관계 파생) |
@@ -683,7 +685,7 @@ HTTP/1.1 200
 
 관리자 로그인의 인증번호 재발송. 규칙은 `POST /api/auth/login/two-factor/resend` 와 동일하다 — 기존 challenge 를 취소하고 새로 발행하므로 앞서 받은 인증번호는 통하지 않는다.
 
-이 단계는 토큰을 발급하지 않으므로 회수할 것이 없다. 다만 완료할 수 없는 상대에게 새 인증번호를 계속 보내지는 않으므로, challenge 가 식별한 사용자가 관리자가 아니면 `403 auth.admin_required` 로 거부한다. 발급 자체를 막는 것이 아니라 **재발송만** 막는 것이며, 비밀번호 확인 단계(`POST /api/auth/admin/login`)는 종전대로 관리자 판정 없이 challenge 를 돌려준다.
+이 단계는 토큰을 발급하지 않으므로 회수할 것이 없다. 다만 완료할 수 없는 상대에게 새 인증번호를 보내지 않으므로, challenge 가 식별한 사용자가 관리자가 아니면 `403 auth.admin_required` 로 거부한다. 판정은 기존 challenge 를 취소하고 새 인증번호를 보내기 **전에** 한다(7.2.0) — 거부되면 메일이 다시 가지 않고 원 challenge 도 그대로 남는다. 비밀번호 확인 단계(`POST /api/auth/admin/login`)도 7.2.0 부터 관리자가 아닌 회원에게 challenge 를 만들지 않으므로, 이 403 은 사용자 로그인 등 다른 경로에서 받은 challenge 를 들고 온 경우에만 난다.
 
 
 ### POST /api/auth/forgot-password
@@ -868,6 +870,83 @@ HTTP/1.1 200
 **인증번호를 보내지 못한 경우**: 자격 증명은 올바르지만 코드를 전달할 수단이 없으므로 로그인을 완료할 수 없다. 이때는 `401`(자격 증명 오류)이 아니라 `503 auth.two_factor_delivery_failed` 를 반환한다 — `401` 로 뭉뚱그리면 사용자는 비밀번호를 의심하며 같은 실패를 반복하고, 운영자는 메일 설정이 깨진 사실을 알 방법이 없다. 발송에 실패해도 2단계 인증을 건너뛰고 로그인시키지는 않는다.
 
 **쓸 수 있는 수단이 하나도 없는 경우**: 갈림길은 그것이 **운영자의 결정인지** 다. 인증 앱 플러그인 설정에서 메일 폴백을 명시적으로 껐다면 `401 auth.two_factor_enrollment_required` 로 로그인을 차단한다 — 그냥 통과시키면 운영자가 끈 결과가 "2단계 인증이 아예 없는 로그인" 이 되어 정반대가 되기 때문이다. 구제는 관리자의 등록 해제(`DELETE /api/plugins/sirsoft-totp/admin/credentials/{user}`) 또는 `totp:reset` artisan 이다. 반면 운영자의 결정이 아닌 이유(메일 설정이 깨진 경우 등)로 수단이 없을 때는 차단하지 않고 경고 로그만 남긴다 — 차단하면 아무도 로그인하지 못해 설정을 되돌릴 수단까지 사라진다.
+
+
+### POST /api/auth/login/handoff
+<!-- @generated:start:api.auth.login.handoff -->
+- **라우트명**: `api.auth.login.handoff`
+- **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@loginHandoff`
+- **인증/권한**: 공개 (인증 불필요 — 주체는 인계 코드가 식별)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| code | body | string | 예 | 최대 128자 | 외부 인증 확장이 `LoginHandoffService::issue()` 로 발급해 `/login?login_handoff=` 로 넘긴 일회용 코드 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.login_handoff_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/auth/login/handoff HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "code": "hR0c7m2qL9w4s1XzYv8Bn3Kd6Tf5Ga0PjEuQiNoWl2"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `POST /api/auth/login` 과 **같은 세 형태**다 — 인증 완료(`user`·`token`·`token_type`·`dormancy_restored?`), 2단계 인증(`two_factor_required`·`challenge_id`·`provider_id`·`expires_at`), 비밀번호 변경(`password_change_required`·`challenge_id`·`reason`·`can_postpone`·`postpone_days`·`expired_at`·`expires_at`). 필드 설명은 `POST /api/auth/login` 을 본다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| user | object | `{ "uuid": "…" }` | 인증 완료 형태에만 — 사용자 리소스 |
+| token | string | `12\|a1b2…` | 인증 완료 형태에만 — Bearer 토큰 |
+| token_type | string | `Bearer` | 인증 완료 형태에만 |
+| dormancy_restored | boolean | `true` | 이 로그인으로 휴면이 풀렸을 때만 실린다 |
+| two_factor_required | boolean | `true` | 2단계 인증 형태에만 |
+| password_change_required | boolean | `true` | 비밀번호 변경 형태에만 |
+| challenge_id | string | `9f1c2f2e-…` | 단계 형태의 식별자 — 이어서 `POST /api/auth/login/two-factor` 또는 `…/password-change` 로 보낸다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "로그인되었습니다.",
+    "data": {
+        "user": { "uuid": "0d6f…", "name": "홍길동" },
+        "token": "12|a1b2c3…",
+        "token_type": "Bearer"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | 코드 없음·형식 위반, 또는 교환할 수 없는 코드(`auth.login_handoff_invalid`, `errors.code`) — 없음 / 120초 만료 / 이미 사용 / 관리자 경로로 발급 / 회원 삭제. **사유를 구분하지 않는다** |
+| 401 | Unauthorized | 회원 상태가 로그인을 허용하지 않음(차단·탈퇴·비활성) — `errors.email` 에 상태 문구 |
+| 423 | Locked | 계정이 잠겨 있음. 응답 형태는 `POST /api/auth/login` 의 423 과 같다 |
+| 428 | Precondition Required | 2단계 인증 수단을 등록해야 함(`POST /api/auth/login` 과 같다) |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 |
+| 503 | Service Unavailable | 2단계 인증 코드를 보내지 못함(`auth.two_factor_delivery_failed`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+외부 인증(소셜 로그인 등)으로 본인 확인을 마친 회원을 로그인 화면이 로그인시키는 교환 창구다(7.2.0). 확장은 토큰을 직접 만들지 않고 코드만 발급하며, 이 엔드포인트가 코드를 꺼내는 순간 지운 뒤(한 번만 통한다) `AuthService::loginVerifiedUser()` 로 계정 잠금·회원 상태·2단계 인증(인증 앱 포함)·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리한다. 응답이 `POST /api/auth/login` 과 같아 로그인 화면은 같은 분기를 쓴다(엔진 액션 `loginHandoff`). 로그인과 같은 요청 제한·세션 시작(`start.api.session`)이 걸린다. 관리자 로그인 인계는 아직 지원하지 않는다.
 
 
 ### POST /api/auth/login/password-change
@@ -1481,6 +1560,8 @@ _단건 응답: `data` 객체의 필드._
 | bio | null | `null` | 자기소개 |
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | modules_count | array | `[]` | 접근 가능 모듈 수 (modules_count 속성이 로드된 경우에만 포함 — whenLoaded 성격의 조건부 필드) |
 | plugins_count | array | `[]` | 접근 가능 플러그인 수 (plugins_count 속성이 로드된 경우에만 포함) |

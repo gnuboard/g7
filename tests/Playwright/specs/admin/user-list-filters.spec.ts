@@ -251,9 +251,12 @@ test.describe('회원관리 목록 필터', () => {
 
     // `/admin` 은 `/admin/dashboard` 로 넘어가며 기록을 하나 더 쌓아 뒤로가기가 다시 대시보드로 튕긴다 —
     // 그 전환과 무관하게 「다른 화면에 갔다가 돌아오기」만 보려고 대시보드 주소로 바로 가고, 다 그려진 뒤 돌아간다.
+    // 「다 그려졌다」는 대시보드 데이터 응답으로 본다 — networkidle 은 자산 URL 방식 감지(`/api/system/asset-probe.js`)가
+    // 웹 서버 설정에 따라 끝나지 않는 환경에서 오지 않는다.
+    const dashboardData = page.waitForResponse((r) => r.url().includes('/api/admin/dashboard/activities'), { timeout: 60_000 });
     await page.goto('/admin/dashboard');
     await expect(page.getByRole('heading', { name: '대시보드', level: 1 })).toBeVisible({ timeout: 60_000 });
-    await page.waitForLoadState('networkidle', { timeout: 30_000 });
+    await dashboardData;
 
     // 돌아오면 조건과 결과가 함께 살아 있어야 한다 — 체크박스만 살고 표가 전체 목록이면 안 된다.
     // (브라우저가 페이지를 캐시에서 되살리면 요청이 다시 나가지 않으므로 요청이 아니라 화면의 건수를 본다.)

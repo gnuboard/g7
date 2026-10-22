@@ -141,6 +141,8 @@ _단건 응답: `data` 객체의 필드._
 | last_login_human | string | `2시간 전` | 마지막 로그인 시각의 상대 표현 (diffForHumans() 산물, 사용자 시간대 기준) |
 | created_at | string | `2026-07-30 23:37:44` | 생성 일시 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | password_changed_at | string\|null | `2026-07-01 10:20:00` | 비밀번호 마지막 변경 일시 (사용자 시간대, 기능 도입 전 회원은 null — #736) |
 | password_expires_at | string\|null | `2026-09-29 10:20:00` | 비밀번호 만료 예정 일시 — 만료가 적용되지 않으면 null |
 | password_expiry_days_left | integer\|null | `3` | 만료까지 남은 날수 (지났으면 0, 적용되지 않으면 null) |
@@ -285,7 +287,7 @@ HTTP/1.1 200
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
 | password | body | string | 아니오 | 보안 설정의 작성 규칙 | 새 비밀번호 — 보안 설정의 작성 규칙(길이·특수문자·조합·추측 방지)을 따른다. 바꾸면 현재 기기만 남기고 다른 기기는 로그아웃된다(#736) |
-| current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18) |
+| current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18). 비밀번호가 없는 회원(외부 인증 전용)은 보내지 않는다(보내면 422 `prohibited`, 7.2.0) |
 | language | body | string | 아니오 | — | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
@@ -373,6 +375,8 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — GE
 | bio | string\|null | `null` | 자기소개 |
 | last_login_at | string\|null | `2026-07-07 10:41:24` | 마지막 로그인 일시 (사용자 시간대 기준 문자열) |
 | email_verified_at | string\|null | `null` | 이메일 인증 일시 (미인증 시 null) |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | created_at | string | `2026-07-08 10:41:24` | 생성 일시 (사용자 시간대 기준 문자열) |
 | updated_at | string | `2026-07-08 11:02:10` | 수정 일시 (사용자 시간대 기준 문자열) |

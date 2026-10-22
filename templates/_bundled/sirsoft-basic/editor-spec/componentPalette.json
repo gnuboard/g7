@@ -39,8 +39,7 @@
         "FileUploader",
         "AvatarUploader",
         "HtmlEditor",
-        "RichTextEditor",
-        "SocialLoginButtons"
+        "RichTextEditor"
       ]
     },
     {
@@ -524,21 +523,6 @@
         "props": {
           "value": "",
           "placeholder": "$t:layout_editor.palette.rich_text_editor.default_placeholder"
-        }
-      }
-    },
-    "SocialLoginButtons": {
-      "label": "$t:layout_editor.palette.social_login_buttons.label",
-      "requiresDefaultNode": true,
-      "defaultNode": {
-        "type": "composite",
-        "name": "SocialLoginButtons",
-        "props": {
-          "providers": [
-            "google",
-            "kakao",
-            "naver"
-          ]
         }
       }
     },
