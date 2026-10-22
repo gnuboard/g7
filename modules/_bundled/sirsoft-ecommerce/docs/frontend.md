@@ -56,6 +56,7 @@
 | `_panel_form` | `admin` | partial | - |
 | `_panel_view` | `admin` | partial | - |
 | `_modal_delete_confirm` | `admin` | partial | - |
+| `_modal_editing_confirm` | `admin` | partial | - |
 | `_modal_image_preview` | `admin` | partial | - |
 | `_panel_category_list` | `admin` | partial | - |
 | `_panel_detail` | `admin` | partial | - |
@@ -219,7 +220,6 @@
 | `_modal_clear_seo_cache` | `admin` | partial | - |
 | `_modal_identity_policy_delete` | `admin` | partial | - |
 | `_modal_identity_policy_form` | `admin` | partial | - |
-| `_modal_mail_template_edit` | `admin` | partial | - |
 | `_modal_notification_definition_reset` | `admin` | partial | - |
 | `_modal_notification_template_edit` | `admin` | partial | - |
 | `_modal_notification_template_preview` | `admin` | partial | - |
@@ -377,7 +377,7 @@
 ## 액션 핸들러
 
 <!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-핸들러 219개 (정의: `resources/js/handlers/index.ts`).
+핸들러 221개 (정의: `resources/js/handlers/index.ts`).
 
 | 핸들러 | 레이아웃에서 부르는 이름 |
 |---|---|
@@ -387,6 +387,8 @@
 | `initPreferredCurrency` | `sirsoft-ecommerce.initPreferredCurrency` |
 | `initPreferredShippingCountry` | `sirsoft-ecommerce.initPreferredShippingCountry` |
 | `setDateRange` | `sirsoft-ecommerce.setDateRange` |
+| `focusElement` | `sirsoft-ecommerce.focusElement` |
+| `stopEventPropagation` | `sirsoft-ecommerce.stopEventPropagation` |
 | `setDefaultOption` | `sirsoft-ecommerce.setDefaultOption` |
 | `toggleOption` | `sirsoft-ecommerce.toggleOption` |
 | `toggleProductOptions` | `sirsoft-ecommerce.toggleProductOptions` |

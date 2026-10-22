@@ -1373,7 +1373,6 @@ return [
             ],
         ],
     ],
-    // コンソールコマンド出力
     'console' => [
         'mileage' => [
             'disabled' => 'マイレージ機能が無効になっています。',
@@ -1448,8 +1447,10 @@ return [
             'start' => 'マイレージ残高キャッシュの再算出を開始します...',
             'done' => 'マイレージ残高キャッシュの再算出が完了しました。',
         ],
+        'prune_exports' => [
+            'done' => '期限切れ処理 :expired件、タイムアウト失敗処理 :failed件',
+        ],
     ],
-    // シーダーのコンソール出力 (module:install・module:seed)
     'seeders' => [
         'activity_log_sample' => [
             'skip_no_admin' => '管理者ユーザーがいないため、eコマースのアクティビティログシーダーをスキップします。',

@@ -98,7 +98,7 @@
         <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
           <span class="text-label">$t:sirsoft-ecommerce.admin.export.pagination.total|count={{exports?.data?.pagination?.total || 0}}</span>
           <div class="flex-center gap-3">
-            <select name="sortBy" class="w-40 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'requested_at_desc'}}">
+            <select name="sortBy" aria-label="$t:common.sort_order" class="w-40 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'requested_at_desc'}}">
               <options>
                 <option value="requested_at_desc">$t:sirsoft-ecommerce.admin.export.sort.requested_at_desc</option>
                 <option value="requested_at_asc">$t:sirsoft-ecommerce.admin.export.sort.requested_at_asc</option>
@@ -113,7 +113,7 @@
                 </navigate>
               </on>
             </select>
-            <select name="perPage" class="w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.per_page || '20'}}">
+            <select name="perPage" aria-label="$t:common.per_page" class="w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{query.per_page || '20'}}">
               <options>
                 <option value="10">10</option>
                 <option value="20">20</option>

@@ -1516,6 +1516,9 @@ return [
     ],
     // Console command output
     'console' => [
+        'prune_exports' => [
+            'done' => 'Expired :expired export(s), marked :failed timed-out export(s) as failed.',
+        ],
         'mileage' => [
             'disabled' => 'The mileage feature is disabled.',
         ],

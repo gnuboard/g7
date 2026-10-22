@@ -134,7 +134,7 @@
             <div data-if="{{(_global.ecommerceExportCatalog?.row_units ?? []).length > 1}}" class="flex-center gap-3 flex-wrap mt-1">
               <span class="text-label shrink-0 whitespace-nowrap">$t:sirsoft-ecommerce.admin.export.modal.row_unit</span>
               <div class="w-full md:w-64">
-              <select name="exportRowUnit" class="w-full" value="{{_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit}}" options="{{(_global.ecommerceExportCatalog?.row_units ?? []).map(u => ({ value: u.key, label: u.label }))}}">
+              <select name="exportRowUnit" aria-label="$t:sirsoft-ecommerce.admin.export.modal.row_unit" class="w-full" value="{{_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit}}" options="{{(_global.ecommerceExportCatalog?.row_units ?? []).map(u => ({ value: u.key, label: u.label }))}}">
                 <on type="change">
                   <!-- 행 단위가 바뀌면 고를 수 있는 필드도 달라진다. 데이터 선택이면 화면 컬럼이 새 단위에서 덮는 필드를 화면 순서로
                        다시 세운다 — 두 단위에 함께 있는 필드는 운영자가 고른 대로 두고, 새 단위에만 있는 필드(주문상품의 상품명·수량 등)는
@@ -302,7 +302,7 @@
             <div data-if="{{(_global.ecommerceExportForm?.locale_mode ?? 'locale') === 'locale' &amp;&amp; (_global.ecommerceExportCatalog?.locales ?? []).length > 1}}" class="flex-center gap-3">
               <span class="text-label shrink-0 whitespace-nowrap">$t:sirsoft-ecommerce.admin.export.modal.locale_select</span>
               <div class="w-full md:w-64">
-              <select name="exportLocale" class="w-full" value="{{_global.ecommerceExportForm?.locale ?? _global.ecommerceExportCatalog?.default_locale}}" options="{{(_global.ecommerceExportCatalog?.locales ?? []).map(l => ({ value: l.code, label: l.label }))}}">
+              <select name="exportLocale" aria-label="$t:sirsoft-ecommerce.admin.export.modal.locale_select" class="w-full" value="{{_global.ecommerceExportForm?.locale ?? _global.ecommerceExportCatalog?.default_locale}}" options="{{(_global.ecommerceExportCatalog?.locales ?? []).map(l => ({ value: l.code, label: l.label }))}}">
                 <on type="change">
                   <!-- 한 언어로 낼 때 쓸 언어 — 건수와 무관하다 -->
                   <set-state target="global" ecommerceExportForm.locale="{{$event.target.value}}"/>

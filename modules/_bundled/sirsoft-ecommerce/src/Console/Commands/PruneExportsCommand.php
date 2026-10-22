@@ -49,7 +49,10 @@ class PruneExportsCommand extends Command
     {
         $result = $this->exportService->prune();
 
-        $this->info("만료 처리 {$result['expired']}건, 시간 초과 실패 처리 {$result['failed']}건");
+        $this->info(__('sirsoft-ecommerce::messages.console.prune_exports.done', [
+            'expired' => $result['expired'],
+            'failed' => $result['failed'],
+        ]));
 
         Log::info('PruneExportsCommand: 내보내기 파일 정리 완료', $result);
 

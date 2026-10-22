@@ -126,6 +126,7 @@ effects:
   - export_button_hidden_without_permission
   - request_progress_shown_on_list
   - requester_menu_opens_member_and_filters_list
+  - requester_member_item_is_new_window_link
   - custom_item_row_unit_selects_item_fields
   - export_actions_fit_on_mobile
   - empty_estimate_blocks_request

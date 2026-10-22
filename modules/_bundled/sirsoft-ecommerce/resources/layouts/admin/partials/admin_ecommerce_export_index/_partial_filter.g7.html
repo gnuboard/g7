@@ -7,7 +7,7 @@
   <div data-ref="filter_section" class="admin-card">
     <div data-ref="search_row" class="mb-4">
       <div class="flex-center gap-2">
-        <select name="searchField" class="select-composite w-36" value="{{_local.filter.searchField || 'all'}}">
+        <select name="searchField" aria-label="$t:common.search_field" class="select-composite w-36" value="{{_local.filter.searchField || 'all'}}">
           <options>
             <option value="all">$t:sirsoft-ecommerce.admin.export.filter.search_field.all</option>
             <option value="file_name">$t:sirsoft-ecommerce.admin.export.filter.search_field.file_name</option>

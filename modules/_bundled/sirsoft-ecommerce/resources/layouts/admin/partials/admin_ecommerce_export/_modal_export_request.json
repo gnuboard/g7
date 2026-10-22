@@ -657,6 +657,7 @@
                                                     ],
                                                     "props": {
                                                         "name": "exportRowUnit",
+                                                        "aria-label": "$t:sirsoft-ecommerce.admin.export.modal.row_unit",
                                                         "className": "w-full",
                                                         "value": "{{_global.ecommerceExportForm?.row_unit ?? _global.ecommerceExportCatalog?.default_row_unit}}",
                                                         "options": "{{(_global.ecommerceExportCatalog?.row_units ?? []).map(u => ({ value: u.key, label: u.label }))}}"
@@ -1403,6 +1404,7 @@
                                                     ],
                                                     "props": {
                                                         "name": "exportLocale",
+                                                        "aria-label": "$t:sirsoft-ecommerce.admin.export.modal.locale_select",
                                                         "className": "w-full",
                                                         "value": "{{_global.ecommerceExportForm?.locale ?? _global.ecommerceExportCatalog?.default_locale}}",
                                                         "options": "{{(_global.ecommerceExportCatalog?.locales ?? []).map(l => ({ value: l.code, label: l.label }))}}"

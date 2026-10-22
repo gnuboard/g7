@@ -1505,6 +1505,9 @@ return [
     ],
     // 콘솔 명령 출력
     'console' => [
+        'prune_exports' => [
+            'done' => '만료 처리 :expired건, 시간 초과 실패 처리 :failed건',
+        ],
         'mileage' => [
             'disabled' => '마일리지 기능이 비활성화되어 있습니다.',
         ],

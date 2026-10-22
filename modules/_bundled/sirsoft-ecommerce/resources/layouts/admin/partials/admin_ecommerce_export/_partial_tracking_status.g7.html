@@ -29,12 +29,9 @@
       <span>$t:sirsoft-ecommerce.admin.export.tracking.download</span>
     </button>
     <span data-if="{{_global.ecommerceExportTracking?.status === 'failed' || _global.ecommerceExportTracking?.status === 'expired'}}" class="text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.admin.export.tracking.failed</span>
-    <button data-if="{{['completed', 'failed', 'expired'].includes(_global.ecommerceExportTracking?.status) &amp;&amp; !(_global.ecommerceExportTracking?.status === 'completed' &amp;&amp; _global.ecommerceExportTracking?.can_download === true)}}" type="button" class="text-blue-600 dark:text-blue-400 hover:underline">
-      <on type="click">
-        <navigate path="/admin/ecommerce/exports"/>
-      </on>
+    <a data-if="{{['completed', 'failed', 'expired'].includes(_global.ecommerceExportTracking?.status) &amp;&amp; !(_global.ecommerceExportTracking?.status === 'completed' &amp;&amp; _global.ecommerceExportTracking?.can_download === true)}}" href="/admin/ecommerce/exports" class="text-blue-600 dark:text-blue-400 hover:underline">
       <span>$t:sirsoft-ecommerce.admin.export.tracking.open_manage</span>
-    </button>
+    </a>
     <button type="button" aria-label="$t:sirsoft-ecommerce.admin.export.tracking.dismiss" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
       <on type="click">
         <!-- 표시 닫기 — 따라가던 반복도 멈춘다 -->

@@ -128,19 +128,10 @@
         },
         {
             "type": "basic",
-            "name": "Button",
+            "name": "A",
             "if": "{{['completed', 'failed', 'expired'].includes(_global.ecommerceExportTracking?.status) && !(_global.ecommerceExportTracking?.status === 'completed' && _global.ecommerceExportTracking?.can_download === true)}}",
-            "actions": [
-                {
-                    "type": "click",
-                    "handler": "navigate",
-                    "params": {
-                        "path": "/admin/ecommerce/exports"
-                    }
-                }
-            ],
             "props": {
-                "type": "button",
+                "href": "/admin/ecommerce/exports",
                 "className": "text-blue-600 dark:text-blue-400 hover:underline"
             },
             "children": [

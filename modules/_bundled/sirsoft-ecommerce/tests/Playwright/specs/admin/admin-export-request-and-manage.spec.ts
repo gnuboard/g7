@@ -428,7 +428,7 @@ test.describe('내보내기 요청·관리', () => {
   });
 
   // @scenario action=requester_menu
-  // @effects requester_menu_opens_member_and_filters_list
+  // @effects requester_menu_opens_member_and_filters_list, requester_member_item_is_new_window_link
   test('요청자 이름을 누르면 메뉴가 열리고 회원 정보는 새 창으로, 요청자 거르기는 이 목록에서 동작한다', async ({ page }) => {
     test.setTimeout(120_000);
     const token = issueToken(
@@ -461,10 +461,13 @@ test.describe('내보내기 요청·관리', () => {
     const nameCell = page.getByRole('row').filter({ hasText: name }).first().getByText(name, { exact: true }).first();
     await expect(nameCell).toBeVisible({ timeout: 20_000 });
 
-    // 회원 정보 보기 — 목록 조건을 잃지 않게 새 창으로 연다
+    // 회원 정보 보기 — 목록 조건을 잃지 않게 새 창으로 연다. 실제 주소를 가진 링크라 가운데 클릭·Ctrl+클릭으로도 열린다
     await nameCell.click();
+    const memberItem = page.getByRole('menuitem', { name: '회원 정보 보기' });
+    await expect(memberItem).toHaveAttribute('href', new RegExp(`/admin/users/${requester.uuid}$`));
+    await expect(memberItem).toHaveAttribute('target', '_blank');
     const popupPromise = page.waitForEvent('popup');
-    await page.getByText('회원 정보 보기', { exact: true }).click();
+    await memberItem.click();
     const popup = await popupPromise;
     await expect(popup).toHaveURL(new RegExp(`/admin/users/${requester.uuid}$`), { timeout: 10_000 });
     await popup.close();

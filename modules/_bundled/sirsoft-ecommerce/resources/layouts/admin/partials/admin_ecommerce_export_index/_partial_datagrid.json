@@ -153,13 +153,16 @@
         }
     ],
     "props": {
+        "pageHref": "/admin/ecommerce/exports?page={page}",
+        "pageHrefMergeQuery": true,
+        "rowLabelField": "file_name",
         "data": "{{exports?.data?.data || []}}",
         "idField": "id",
         "selectable": true,
         "selectionScope": "page",
         "selectedIds": "{{_global.ecommerceExportBulkSelectedItems || []}}",
         "selectedCountText": "",
-        "emptyMessage": "$t:sirsoft-ecommerce.admin.export.table.empty",
+        "emptyMessage": "{{exports === undefined ? '' : $t('sirsoft-ecommerce.admin.export.table.empty')}}",
         "pagination": true,
         "serverSidePagination": true,
         "serverCurrentPage": "{{exports?.data?.pagination?.current_page ?? 1}}",
@@ -226,16 +229,10 @@
                         "if": "{{!!row.requester?.uuid}}",
                         "actions": [
                             {
-                                "comment": "요청자 메뉴 — 회원 상세는 **새 창**으로 열고(이 목록의 검색 조건을 잃지 않게), 요청자로 거르기는 같은 창에서 검색 조건만 갈아끼운다.\n                 거르기는 필터 칸의 「요청자」 검색과 같은 조건이라 진입 `<init>` 이 필터 칸에도 그대로 되돌려 담는다.",
+                                "comment": "요청자 메뉴 — 회원 상세는 **새 창** 링크로 열고(이 목록의 검색 조건을 잃지 않게 — 항목의 href·target), 요청자로 거르기는 같은 창에서 검색 조건만 갈아끼운다.\n                 거르기는 필터 칸의 「요청자」 검색과 같은 조건이라 진입 `<init>` 이 필터 칸에도 그대로 되돌려 담는다.",
                                 "event": "onItemClick",
                                 "handler": "switch",
                                 "cases": {
-                                    "view_member": {
-                                        "handler": "openWindow",
-                                        "params": {
-                                            "path": "/admin/users/{{row.requester.uuid}}"
-                                        }
-                                    },
                                     "search_member": {
                                         "comment": "같은 화면 안에서 주소만 바뀌면 진입 `<init>` 이 다시 돌지 않으므로 필터 칸도 함께 채운다",
                                         "handler": "sequence",
@@ -272,6 +269,8 @@
                             "items": [
                                 {
                                     "id": "view_member",
+                                    "href": "/admin/users/{{row.requester.uuid}}",
+                                    "target": "_blank",
                                     "label": "$t:sirsoft-ecommerce.admin.export.table.requester_menu.view_member",
                                     "iconName": "user"
                                 },

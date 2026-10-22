@@ -57,6 +57,7 @@ import claimRequestModal from '../../../layouts/admin/partials/admin_ecommerce_o
 import privacyTargetsModal from '../../../layouts/admin/partials/admin_ecommerce_settings/_modal_privacy_targets.json';
 import extraFeeTemplateModal from '../../../layouts/admin/partials/admin_ecommerce_shipping_policy_form/_modal_extra_fee_template.json';
 import schedulesTab from '../../../layouts/admin/partials/admin_ecommerce_settings/_tab_schedules.json';
+import exportGrid from '../../../layouts/admin/partials/admin_ecommerce_export_index/_partial_datagrid.json';
 
 type Node = Record<string, any>;
 
@@ -86,6 +87,8 @@ const CASES: GridCase[] = [
   { screen: '상품 후기 목록', layout: reviewIndex, source: 'reviews', emptyKey: 'sirsoft-ecommerce.admin.product_review.table.empty' },
   // 환경설정 「스케줄」 탭(7.2.0) — develop-7.2.0 병합(2026-10-21)에서 전수 시험이 처음 만난 표
   { screen: '환경설정 스케줄 탭', layout: schedulesTab, source: 'ecommerceSchedules', emptyKey: 'sirsoft-ecommerce.admin.settings.schedules.empty' },
+  // 내보내기 관리(#787) — develop-7.2.0 위 리베이스(2026-10-22)에서 전수 시험이 처음 만난 표
+  { screen: '내보내기 관리', layout: exportGrid, source: 'exports', emptyKey: 'sirsoft-ecommerce.admin.export.table.empty' },
 ];
 
 /** 스텁이 쓰는 기본 빈 문구 — 실제 DataGrid 의 `t('common.no_data')` 자리 */
@@ -624,7 +627,7 @@ describe('관리자 이커머스 목록 — 전수', () => {
 
     expect(offenders).toEqual([]);
     expect(exclusions.sort()).toEqual([...EXPECTED_EXCLUSIONS].sort());
-    // 모집단과 렌더 표본이 같은 12개여야 표본이 낡지 않는다
+    // 모집단과 렌더 표본이 같아야 표본이 낡지 않는다
     expect([...population].sort()).toEqual([...covered].sort());
   });
 
