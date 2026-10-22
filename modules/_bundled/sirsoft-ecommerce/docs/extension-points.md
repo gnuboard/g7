@@ -862,6 +862,55 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 `order_delivered`·`order_completed`·`order_cancelled`)은 비회원 주문이면 주문자 연락처를 extract_data 의
 data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습니다. 문자·알림톡 채널은 이 모듈의
 주문 모델을 읽지 않고 그 키만 읽습니다. 연락처가 없거나 회원 주문이면 키를 넣지 않습니다.
+
+### 내보내기 — 형식·유형·항목을 더하는 방법 (#787)
+
+내보내기는 「무엇을(유형·항목)」과 「어떻게 쓰는가(형식)」를 나눠 둡니다. 기본은 CSV 한 형식과 주문내역·상품내역·마일리지
+내역 세 유형이고, 다른 확장(플러그인)은 아래 필터로 더하거나 바꿉니다. 이 모듈의 코드를 고칠 필요가 없습니다.
+
+```text
+ExportService ──► ExportTypeRegistry ──► Order/Product/MileageExportType ──► 각 Repository::newExportQuery(요청자 범위)
+     │        └─► ExportFormatRegistry ──► CsvExportFormat ──► CsvExportWriter (BOM·CRLF·수식 무력화)
+     │        └─► ModelDeclarationRegistry ──► Declarations\*Declaration (컬럼 → 값 종류·개인정보·합계 / 제외 사유)
+     ▼
+GenerateExportJob(큐) 가 행을 청크로 읽어 작성기에 한 줄씩 넘긴다 — 메모리에 쌓지 않는다
+```
+
+**새 파일 형식(예: XLSX)** — `Exports\Contracts\ExportFormatInterface` 를 구현하고 `sirsoft-ecommerce.export.registered_formats`
+필터에서 `[키 => 형식 인스턴스]` 배열에 더합니다. 형식은 키·라벨 키·확장자·MIME·형식 버전과 `createWriter($absolutePath)` 만
+책임지고, 작성기(`ExportWriterInterface`)는 머리 줄·행·합계 행을 **받는 즉시** 파일에 씁니다(10만 행도 메모리가 일정해야 한다 —
+`ExportScaleTest`). 열·값·개인정보 가림은 엔진이 정해 넘기므로 형식은 셀 값을 바꾸지 않습니다. 등록되면 내보내기 창의 「파일
+형식」 선택지와 요청 검증(`format`)에 자동으로 나타납니다. `ExportFormatInterface` 가 아닌 값은 경고 로그를 남기고 무시합니다.
+
+```php
+// 플러그인 리스너 — HookListenerInterface::getSubscribedHooks()
+'sirsoft-ecommerce.export.registered_formats' => ['method' => 'addXlsx', 'type' => 'filter'],
+
+public function addXlsx(array $formats): array
+{
+    $xlsx = new XlsxExportFormat;           // implements ExportFormatInterface
+    $formats[$xlsx->key()] = $xlsx;
+
+    return $formats;
+}
+```
+
+**새 유형** — `Exports\Contracts\ExportTypeInterface`(공통 구현은 `Exports\Types\AbstractExportType`)를 구현해
+`sirsoft-ecommerce.export.registered_types` 필터로 더합니다. 유형은 「어떤 행을, 어떤 필드로」를 책임지며, 행을 고르는
+조건(`query()`)은 그 유형의 **목록 화면과 같은 필터·권한 범위**여야 합니다 — 어긋나면 화면 건수와 파일 행 수가 조용히
+달라집니다. 기본 세 유형은 각 Repository 의 `newExportQuery($filters, $ids, $requester)` 를 부릅니다(큐 작업에는 로그인
+사용자가 없어 범위를 요청자로 판정한다). `readPermission()` 은 파일을 받을 때도 다시 보는 원본 조회 권한입니다.
+
+**새 모델 선언·항목** — 내보낼 컬럼은 모델이 아니라 선언 클래스(`Exports\Declarations\ModelDeclaration` 구현)가 갖습니다.
+`fields()` 는 컬럼 → `type`(string·integer·money·datetime·translatable…)·`personal`(개인정보 여부)·`summable`, `excluded()` 는
+내보내지 않는 컬럼 → 사유이고, 모델의 모든 컬럼은 둘 중 한 곳에만 있어야 합니다(스키마 동기화 테스트가 잡는다). 다른 확장의
+모델은 `sirsoft-ecommerce.export.declarations` 필터로 선언 클래스를 더하고, 이미 있는 유형에 항목만 더하려면
+`sirsoft-ecommerce.export.{orders|products|mileage}.fields`(인자: 필드 배열·행 단위) 필터에서 `ExportField` 를 덧붙입니다.
+`personal: true` 항목은 개인정보 권한이 있는 운영자에게만 보이고, 고르면 다운로드 사유가 필수입니다.
+
+**행 가공·요청 가공** — `sirsoft-ecommerce.export.filter_row`(파일 한 행의 셀)와 `filter_request_data`(저장 전 요청 본문)로
+값을 바꿀 수 있고, 생애주기는 `export.after_*` 액션(요청·시작·완료·실패·다운로드·삭제·만료·다시 요청)으로 받습니다. 이
+모듈의 활동 로그와 완료·실패 알림도 같은 액션을 구독해 붙입니다.
 <!-- @intent END -->
 
 ## 구독 훅

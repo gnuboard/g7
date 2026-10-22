@@ -76,8 +76,9 @@
 `ClaimShippingFeeService` 가 주문 시점 배송정책 스냅샷에서 다시 산출합니다.
 
 **내보내기(상품·주문·마일리지 내역 → 파일)는 목록의 필터 경로를 그대로 지난다.** 파일 대상 행은
-`Sources\EcommerceListQueries` 가 각 목록 Repository 의 공개 메서드 `applyListFilters()`(목록 메서드도 같은 메서드를 부른다)로
-만들고, 권한 범위는 요청자를 명시해 건다(큐 작업에서도 범위가 빠지지 않는다). `EcommerceListQueriesParityTest` 가 축마다
+각 목록 Repository 의 `newExportQuery($filters, $ids, $requester)` 가 목록과 같은 필터 메서드(`applyListFilters()`, 저장소 안쪽)로
+만들고, 권한 범위는 요청자를 인자로 건다(큐 작업에는 로그인 사용자가 없어 현재 사용자 기준이면 범위가 빠진다). 쿼리를 저장소 밖에서
+조립하지 않는다. `ExportSourceQueryParityTest` 가 축마다
 목록 결과와 같은지 잠급니다 — 필터를 복제하면 화면은 걸러진 건수인데 파일은 전건이 되는 어긋남이 조용히 생깁니다. 목록의 [내보내기] 버튼은
 다른 목록 버튼처럼 목록 응답의 `abilities.can_export` 로 보일지 정합니다. 파일은 큐 작업(`GenerateExportJob`)이
 요청 시각(`cutoff_at`) 기준으로 500행씩 순회해 비공개 기본 디스크 `exports` 카테고리에 쓰고, 내려받기는 60초·1회용 주소로만

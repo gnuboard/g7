@@ -11,7 +11,7 @@ use Modules\Sirsoft\Ecommerce\Enums\ExportTypeEnum;
 use Modules\Sirsoft\Ecommerce\Exports\ExportFieldType;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\MileageTransactionListRequest;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
-use Modules\Sirsoft\Ecommerce\Sources\EcommerceListQueries;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 
 /**
  * 마일리지 내역 내보내기 — 원장 거래 1건 = 1행
@@ -28,10 +28,10 @@ class MileageExportType extends AbstractExportType
     private const CHUNK = 1000;
 
     /**
-     * @param  EcommerceListQueries  $sources  이커머스 목록과 같은 조건의 원천 쿼리
+     * @param  MileageTransactionRepositoryInterface  $transactions  마일리지 거래 저장소 — 내보내기 원천 쿼리(목록과 같은 조건·요청자 범위)
      */
     public function __construct(
-        private readonly EcommerceListQueries $sources,
+        private readonly MileageTransactionRepositoryInterface $transactions,
     ) {}
 
     /**
@@ -158,7 +158,7 @@ class MileageExportType extends AbstractExportType
      */
     public function query(array $filters, ?array $ids, User $requester, ?CarbonInterface $cutoff): Builder
     {
-        $query = $this->sources->mileageTransactions($filters, $ids, $requester);
+        $query = $this->transactions->newExportQuery($filters, $ids, $requester);
 
         if ($cutoff !== null) {
             $query->where('created_at', '<', $cutoff);

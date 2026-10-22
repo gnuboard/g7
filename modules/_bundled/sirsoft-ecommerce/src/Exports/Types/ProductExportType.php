@@ -15,7 +15,7 @@ use Modules\Sirsoft\Ecommerce\Http\Requests\Admin\ProductListRequest;
 use Modules\Sirsoft\Ecommerce\Models\Category;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
-use Modules\Sirsoft\Ecommerce\Sources\EcommerceListQueries;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 
 /**
  * 상품내역 내보내기
@@ -25,7 +25,7 @@ use Modules\Sirsoft\Ecommerce\Sources\EcommerceListQueries;
  * - 옵션(SKU)별(option): 옵션 1건 = 1행 — 물류는 SKU 단위가 필요하다. 상품 단위 합계 값(재고)은 그 상품의
  *   첫 행에만 쓴다
  *
- * 원천 쿼리는 상품 목록과 같은 조건({@see EcommerceListQueries::products()} — 같은 권한 범위·같은 검색어·필터)다.
+ * 원천 쿼리는 상품 목록과 같은 조건({@see ProductRepositoryInterface::newExportQuery()} — 목록과 같은 검색어·필터 경로·요청자 기준 권한 범위)다.
  */
 class ProductExportType extends AbstractExportType
 {
@@ -39,10 +39,10 @@ class ProductExportType extends AbstractExportType
     private const CHUNK = 500;
 
     /**
-     * @param  EcommerceListQueries  $sources  이커머스 목록과 같은 조건의 원천 쿼리
+     * @param  ProductRepositoryInterface  $products  상품 저장소 — 내보내기 원천 쿼리(목록과 같은 조건·요청자 범위)
      */
     public function __construct(
-        private readonly EcommerceListQueries $sources,
+        private readonly ProductRepositoryInterface $products,
     ) {}
 
     /**
@@ -206,7 +206,7 @@ class ProductExportType extends AbstractExportType
      */
     public function query(array $filters, ?array $ids, User $requester, ?CarbonInterface $cutoff): Builder
     {
-        $query = $this->sources->products($filters, $ids, $requester);
+        $query = $this->products->newExportQuery($filters, $ids, $requester);
 
         if ($cutoff !== null) {
             $query->where('created_at', '<', $cutoff);

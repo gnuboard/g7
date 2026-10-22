@@ -346,7 +346,32 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     /**
      * {@inheritDoc}
      */
-    public function applyListFilters(Builder $query, array $filters): void
+    public function newExportQuery(array $filters, ?array $ids, User $requester): Builder
+    {
+        $query = MileageTransaction::query();
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.mileage.read', $requester);
+
+        if ($ids !== null) {
+            // 「선택한 행」은 그 선택이 대상이다 — 목록 필터를 덧씌우지 않는다
+            return $query->whereIn('id', $ids);
+        }
+
+        $this->applyListFilters($query, $filters);
+
+        return $query;
+    }
+
+    /**
+     * 목록 필터 조건을 쿼리에 겁니다 — 목록 조회와 내보내기 원천 쿼리(`newExportQuery`)가 같은 이 한 경로를 지난다.
+     *
+     * 축을 두 곳에 복제하면 한쪽에만 필터가 늘어나는 순간 화면 건수와 파일 행 수가 조용히 어긋난다. 권한 범위는 걸지
+     * 않는다 — 필터가 아니라 호출자의 열람 범위이므로 호출부가 각자 건다.
+     *
+     * @param  Builder  $query  쿼리
+     * @param  array  $filters  검증된 목록 필터
+     * @return void 반환값 없음 (쿼리에 직접 조건을 건다)
+     */
+    protected function applyListFilters(Builder $query, array $filters): void
     {
         if (! empty($filters['user_id'])) {
             $query->where('user_id', $filters['user_id']);

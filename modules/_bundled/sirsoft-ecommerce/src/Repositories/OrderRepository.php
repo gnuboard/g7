@@ -884,9 +884,27 @@ class OrderRepository implements OrderRepositoryInterface
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function newExportQuery(array $filters, ?array $ids, User $requester): Builder
+    {
+        $query = $this->model->newQuery();
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.orders.read', $requester);
+
+        if ($ids !== null) {
+            // 「선택한 행」은 그 선택이 대상이다 — 목록 필터를 덧씌우지 않는다
+            return $query->whereIn('id', $ids);
+        }
+
+        $this->applyListFilters($query, $filters);
+
+        return $query;
+    }
+
+    /**
      * 목록 필터를 쿼리에 적용합니다. (목록·엑셀 내려받기 공용 단일 출처)
      *
-     * 목록 조회(`getListWithFilters`)·엑셀 내려받기(`getForExport`)·내보내기(`EcommerceListQueries::orders`)가 같은 메서드를 부른다.
+     * 목록 조회(`getListWithFilters`)·엑셀 내려받기(`getForExport`)·내보내기 원천 쿼리(`newExportQuery`)가 같은 메서드를 부른다.
      * 축을 두 곳에 복제하면 한쪽에만 필터가 늘어나는 순간 화면은 42건인데 내려받은 파일은
      * 전건이 되고, 오류도 경고도 없이 **파일 내용만** 달라져 운영자가 알아챌 방법이 없다.
      *
@@ -897,7 +915,7 @@ class OrderRepository implements OrderRepositoryInterface
      * @param  array  $filters  요청 필터
      * @return void 반환값 없음 (쿼리에 직접 조건을 건다)
      */
-    public function applyListFilters($query, array $filters): void
+    protected function applyListFilters($query, array $filters): void
     {
         // 목록 기본 숨김 상태 제외 (PENDING_ORDER 등 임시 주문 상태 — OrderStatusEnum::listHiddenValues SSoT)
         // order_status 필터가 명시적으로 지정된 경우에만 숨김 상태 표시 가능

@@ -60,6 +60,8 @@ axes:
   model:
     - declared            # 실제 모델 선언
     - undeclared_personal # personal 누락 선언 (고정물)
+  viewport:
+    - mobile              # 휴대폰 너비(767px 이하)
 
 effects:
   # 요청
@@ -141,6 +143,9 @@ effects:
   - reason_field_announces_required_and_invalid
   - export_request_sources_identical_across_lists
 
+scale:
+  - { n: 100000, dataset: ecommerce_orders, job: GenerateExportJob, assert: [chunked_scan_bounded_memory, all_rows_exported_across_chunks] }
+
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportControllerTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportPermissionScopeDeclarationTest.php
@@ -158,7 +163,7 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Exports/ExportDeclarationCoverageTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Listeners/ExportActivityLogDescriptionResolverTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Services/ExportServiceTest.php
-  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Sources/EcommerceListQueriesParityTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/ExportSourceQueryParityTest.php
   - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/downloadExportFile.test.ts
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/exportRequestSourcesIdentical.test.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-export-request-and-manage.spec.ts

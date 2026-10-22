@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Export\Sources;
+namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Export;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,13 +14,14 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\MileageTransactionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRepository;
-use Modules\Sirsoft\Ecommerce\Sources\EcommerceListQueries;
+use Modules\Sirsoft\Ecommerce\Exports\Types\OrderExportType;
+use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Tests\ExportTestCase;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionClass;
 
 /**
- * 이커머스 관리 목록 ↔ 내보내기 원천 쿼리 파리티 테스트
+ * 이커머스 관리 목록 ↔ 내보내기 원천 쿼리(`Repository::newExportQuery`) 파리티 테스트
  *
  * 내보내기는 목록과 같은 조건이어야 한다 — 어긋나면 화면은 걸러진 건수인데 파일은 전건이 되고, 오류도 경고도 없이
  * 파일 내용만 달라져 운영자가 알아챌 방법이 없다. 같은 조건을 다음 두 방식으로 보장한다.
@@ -28,11 +29,9 @@ use ReflectionClass;
  * - 마일리지: 필터가 목록 메서드 안에 직접 쓰여 있어 이쪽에 옮겨 두었다 — 목록 메서드 **소스에서 필터 키를 파생**해
  *   새 축이 생기면 대응 케이스가 없다는 이유로 붉어지고, 축마다 결과 ID 가 같은지 본다.
  */
-class EcommerceListQueriesParityTest extends ExportTestCase
+class ExportSourceQueryParityTest extends ExportTestCase
 {
     protected User $operator;
-
-    protected EcommerceListQueries $sources;
 
     /**
      * 목록 조회 권한을 모두 가진 운영자와 원천 쿼리를 준비합니다.
@@ -49,7 +48,6 @@ class EcommerceListQueriesParityTest extends ExportTestCase
             'sirsoft-ecommerce.mileage.read',
         ]);
         $this->actingAs($this->operator);
-        $this->sources = app(EcommerceListQueries::class);
     }
 
     /**
@@ -162,12 +160,12 @@ class EcommerceListQueriesParityTest extends ExportTestCase
         $order = OrderFactory::new()->create(['order_status' => OrderStatusEnum::PAYMENT_COMPLETE->value]);
 
         $this->assertSame([$order->id], $this->orderListIds([]));
-        $this->assertSame([$order->id], $this->ids($this->sources->orders([], null, $this->operator)));
+        $this->assertSame([$order->id], $this->ids(app(OrderRepositoryInterface::class)->newExportQuery([], null, $this->operator)));
 
         $leaked = [];
         foreach ($this->orderExcludingPayloads() as $axis => $filters) {
             $this->assertSame([], $this->orderListIds($filters), "주문 목록이 {$axis} 축으로 걸러내지 못했다 (케이스 payload 재검토 필요)");
-            if ($this->ids($this->sources->orders($filters, null, $this->operator)) !== []) {
+            if ($this->ids(app(OrderRepositoryInterface::class)->newExportQuery($filters, null, $this->operator)) !== []) {
                 $leaked[] = $axis;
             }
         }
@@ -193,14 +191,14 @@ class EcommerceListQueriesParityTest extends ExportTestCase
         $mismatch = [];
         foreach ($this->productExcludingPayloads((string) $product->product_code) as $axis => $filters) {
             $list = collect($repository->getListWithFilters($filters, 100)->items())->pluck('id')->sort()->values()->all();
-            $export = $this->ids($this->sources->products($filters, null, $this->operator));
+            $export = $this->ids(app(ProductRepositoryInterface::class)->newExportQuery($filters, null, $this->operator));
             if ($list !== $export) {
                 $mismatch[] = $axis;
             }
         }
 
         $this->assertSame([], $mismatch, '상품 목록과 결과가 다른 축: '.implode(', ', $mismatch));
-        $this->assertSame([$product->id], $this->ids($this->sources->products(['search_field' => 'product_code', 'search_keyword' => (string) $product->product_code], null, $this->operator)));
+        $this->assertSame([$product->id], $this->ids(app(ProductRepositoryInterface::class)->newExportQuery(['search_field' => 'product_code', 'search_keyword' => (string) $product->product_code], null, $this->operator)));
     }
 
     /**
@@ -254,12 +252,12 @@ class EcommerceListQueriesParityTest extends ExportTestCase
         $listIds = fn (array $filters) => collect($repository->paginateWithFilters($filters, 100)->items())->pluck('id')->sort()->values()->all();
 
         $this->assertSame([$transaction->id], $listIds([]));
-        $this->assertSame([$transaction->id], $this->ids($this->sources->mileageTransactions([], null, $this->operator)));
+        $this->assertSame([$transaction->id], $this->ids(app(MileageTransactionRepositoryInterface::class)->newExportQuery([], null, $this->operator)));
 
         $leaked = [];
         foreach ($this->mileageExcludingPayloads() as $axis => $filters) {
             $this->assertSame([], $listIds($filters), "마일리지 목록이 {$axis} 축으로 걸러내지 못했다 (케이스 payload 재검토 필요)");
-            if ($this->ids($this->sources->mileageTransactions($filters, null, $this->operator)) !== []) {
+            if ($this->ids(app(MileageTransactionRepositoryInterface::class)->newExportQuery($filters, null, $this->operator)) !== []) {
                 $leaked[] = $axis;
             }
         }
@@ -268,7 +266,8 @@ class EcommerceListQueriesParityTest extends ExportTestCase
     }
 
     /**
-     * 목록 저장소가 다른 구현으로 바뀌면 내보내기도 그 구현의 목록 필터를 그대로 쓴다 — 목록과 같은 경로를 지난다.
+     * 내보내기 유형은 원천 쿼리를 바인딩된 저장소 계약(`newExportQuery`)에서 받는다 — 저장소가 다른 구현으로 바뀌어도 그 구현의
+     * 목록 조건·요청자 범위를 그대로 쓰고, 쿼리를 저장소 밖에서 조립하지 않는다.
      *
      * @return void 반환값 없음
      *
@@ -281,10 +280,12 @@ class EcommerceListQueriesParityTest extends ExportTestCase
     {
         $filters = ['order_status' => ['x']];
         $repository = $this->createMock(OrderRepositoryInterface::class);
-        $repository->expects($this->once())->method('applyListFilters')->with($this->isInstanceOf(Builder::class), $filters);
+        $repository->expects($this->once())->method('newExportQuery')
+            ->with($filters, null, $this->operator)
+            ->willReturn(Order::query());
         $this->app->instance(OrderRepositoryInterface::class, $repository);
 
-        $this->app->make(EcommerceListQueries::class)->orders($filters, null, $this->operator);
+        $this->assertInstanceOf(Builder::class, $this->app->make(OrderExportType::class)->query($filters, null, $this->operator, null));
     }
 
     /**

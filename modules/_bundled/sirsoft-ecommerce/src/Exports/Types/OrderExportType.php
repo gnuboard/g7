@@ -18,7 +18,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderOption;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderShipping;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
-use Modules\Sirsoft\Ecommerce\Sources\EcommerceListQueries;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 
 /**
  * 주문내역 내보내기
@@ -28,7 +28,7 @@ use Modules\Sirsoft\Ecommerce\Sources\EcommerceListQueries;
  * - 주문상품별(order_option): 주문 옵션 1건 = 1행. 주문 단위 합계 금액은 그 주문의 **첫 행에만** 쓴다(D13) —
  *   행마다 반복하면 엑셀에서 열을 더할 때 같은 금액이 여러 번 더해진다
  *
- * 원천 쿼리는 주문 목록과 같은 조건({@see EcommerceListQueries::orders()} — 같은 권한 범위·같은 `applyListFilters`)다.
+ * 원천 쿼리는 주문 목록과 같은 조건({@see OrderRepositoryInterface::newExportQuery()} — 목록과 같은 필터 경로·요청자 기준 권한 범위)다.
  */
 class OrderExportType extends AbstractExportType
 {
@@ -42,10 +42,10 @@ class OrderExportType extends AbstractExportType
     private const CHUNK = 500;
 
     /**
-     * @param  EcommerceListQueries  $sources  이커머스 목록과 같은 조건의 원천 쿼리
+     * @param  OrderRepositoryInterface  $orders  주문 저장소 — 내보내기 원천 쿼리(목록과 같은 조건·요청자 범위)
      */
     public function __construct(
-        private readonly EcommerceListQueries $sources,
+        private readonly OrderRepositoryInterface $orders,
     ) {}
 
     /**
@@ -266,7 +266,7 @@ class OrderExportType extends AbstractExportType
      */
     public function query(array $filters, ?array $ids, User $requester, ?CarbonInterface $cutoff): Builder
     {
-        $query = $this->sources->orders($filters, $ids, $requester);
+        $query = $this->orders->newExportQuery($filters, $ids, $requester);
 
         if ($cutoff !== null) {
             $query->where('ordered_at', '<', $cutoff);
