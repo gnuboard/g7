@@ -203,6 +203,24 @@ const PREVIEW_SUPPRESSED_LAYOUT_FEATURES: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * 두 객체의 1단 키·값이 모두 같은지(참조 비교) 판정한다 — `G7Core.state.get()` 은 부를 때마다 얕은 사본을 돌려주므로
+ * 객체 참조로는 「같은 상태」를 가릴 수 없다.
+ *
+ * @param a 앞 객체
+ * @param b 뒤 객체
+ * @returns 1단 키·값이 모두 같으면 true
+ * @since engine-v1.83.0
+ */
+function shallowEqualRecords(a: Record<string, any> | undefined, b: Record<string, any> | undefined): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const aKeys = Object.keys(a);
+  if (aKeys.length !== Object.keys(b).length) return false;
+
+  return aKeys.every((key) => Object.prototype.hasOwnProperty.call(b, key) && a[key] === b[key]);
+}
+
+/**
  * G7Core.devTools 인터페이스 가져오기
  *
  * G7DevToolsCore.getInstance() 직접 호출 대신 G7Core.devTools를 사용합니다.
@@ -765,6 +783,8 @@ export class ActionDispatcher {
   private pendingDebounceFlushers: Map<string, () => void> = new Map();
   /** {@link runWithoutDebounceFlush} 중첩 깊이 — 0 보다 크면 flushPendingDebounceTimers 가 아무것도 하지 않는다 (engine-v1.81.2) */
   private debounceFlushSuppressDepth = 0;
+  /** 다른 화면으로 가는 navigate 가 대기 디바운스를 반영하는 중인지의 중첩 깊이 — {@link isFlushingForNavigation} (engine-v1.83.0) */
+  private navigationFlushDepth = 0;
 
   /**
    * 디바운스 대기 중 누적된 객체 값
@@ -1485,11 +1505,11 @@ export class ActionDispatcher {
         return;
       }
 
-      // G7Core.state에서 현재 _global._remountKeys 가져오기
-      // dataContext._global에 저장되어 있으므로 _global을 통해 접근
+      // G7Core.state.get() 은 `_global` 그 자체(TemplateApp.getGlobalState)다 — 그 안의 `_remountKeys` 를 읽는다 (@since engine-v1.83.0).
+      // 종전에는 `._global._remountKeys` 를 읽어 늘 undefined 였고, 카운터가 늘 1 이라 두 번째 remount 부터 다시 마운트되지 않았다
       const G7Core = (window as any).G7Core;
       const currentState = G7Core?.state?.get() || {};
-      const remountKeys = currentState._global?._remountKeys || {};
+      const remountKeys = currentState._remountKeys || {};
       const currentValue = remountKeys[componentId] || 0;
 
       // 해당 컴포넌트의 리마운트 키 증가
@@ -3350,6 +3370,21 @@ export class ActionDispatcher {
   }
 
   /**
+   * navigate 목적지가 지금 화면과 같은 경로(쿼리·해시만 다름)인지 판정합니다 (engine-v1.83.0).
+   *
+   * @param target navigate 목적지(경로·쿼리·해시 또는 같은 출처 주소)
+   * @return 같은 경로면 true
+   */
+  private isSamePathTarget(target: string): boolean {
+    if (typeof window === 'undefined' || typeof target !== 'string' || target === '') return false;
+    try {
+      return new URL(target, window.location.href).pathname === window.location.pathname;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * navigate 액션을 처리합니다.
    *
    * @param target 이동할 경로 (기본 경로)
@@ -3371,8 +3406,15 @@ export class ActionDispatcher {
     // `G7Core.dispatch(navigate)`(관리자 사이드바·링크 `navigateTo`)는 그대로 이탈 가드 판정에 들어가, 폼 변경이
     // 없는 화면(`leave_guard`)에서도 검색창·목록 스크롤 디바운스 대기만으로 확인 창이 떠 이동이 막혔다(engine-v1.82.0).
     // 같은 화면 쿼리 갱신(replace)은 가드 대상이 아니라 종전대로 둔다 (engine-v1.82.1)
-    if (params.replace !== true) {
-      this.flushPendingDebounceTimers();
+    // engine-v1.83.0: 같은 경로의 쿼리만 바꾸는 이동은 화면을 떠나지 않으므로 반영하지 않는다 — 반영하면 다시 받은 데이터가 그 값을
+    // 덮어 치던 입력이 사라졌다. 다른 경로로 갈 때의 반영은 `isFlushingForNavigation` 로 알려 칸이 이전 화면 입력을 남기지 않게 한다
+    if (params.replace !== true && !this.isSamePathTarget(target)) {
+      this.navigationFlushDepth++;
+      try {
+        this.flushPendingDebounceTimers();
+      } finally {
+        this.navigationFlushDepth--;
+      }
     }
     let finalPath = target;
     // 링크 href 의 #해시는 쿼리 병합·교체 뒤에 다시 붙인다 (engine-v1.80.1)
@@ -6048,13 +6090,13 @@ export class ActionDispatcher {
         // 이를 통해 메모리 사용량을 크게 줄임 (120MB → 수 KB)
         // sequence 내에서 setState 후 호출 시 context.state에 최신 _local 상태가 있음
         // context.state를 우선 사용하여 stale closure 문제 방지
-        dataContext: {
-          _local: effectiveState || context.data?._local,
+        dataContext: this.createParentDataContext(
+          effectiveState || context.data?._local,
           // hasDirectContext: 기존 동작 유지 (context.data?._global만 사용)
           // hasFallbackContext: context.data?._global이 없으므로 G7Core.state.get() 사용
-          _global: hasDirectContext ? context.data?._global : (context.data?._global || G7Core?.state?.get?.()),
-          _computed: context.data?._computed,
-        },
+          hasDirectContext ? context.data?._global : (context.data?._global || G7Core?.state?.get?.()),
+          context.data,
+        ),
       });
       (window as any).__g7LayoutContextStack = layoutContextStack;
       logger.log(`[handleOpenModal] 레이아웃 컨텍스트 스택에 push, 스택 크기: ${layoutContextStack.length}, state:`, effectiveState, hasDirectContext ? '(direct)' : '(fallback via G7Core)');
@@ -6082,6 +6124,72 @@ export class ActionDispatcher {
         initialState: context.state ? { ...context.state } : {},
       });
     }
+  }
+
+  /**
+   * 모달의 `$parent` 로 쓸 부모 데이터 컨텍스트를 만듭니다.
+   *
+   * `_global`·`_computed` 는 연 시점 사본이 아니라 읽을 때의 값을 돌려주는 접근자다 (@since engine-v1.83.0). 종전에는 연 시점 사본을
+   * 담아, 모달을 연 뒤 부모 전역 상태가 바뀌어도(권한 로드 완료·모달 안 조작) `$parent._global`·`$parent._computed` 가 옛 값이었다
+   * (게시판 유형 관리 모달의 `$parent._computed.canManageBoardTypes`). `_local` 은 종전처럼 부모 상태 쓰기 지점이 함께 갱신한다.
+   *
+   * - `_global`: 전역 상태 접근(`G7Core.state.get()`)이 있으면 지금 값, 없으면(부트 전·단위 테스트) 연 시점 값.
+   * - `_computed`: 부모가 computed 정의(`_computedDefinitions`)를 가졌으면 지금의 `_local`·`_global` 로 다시 계산한다(연 시점 데이터
+   *   소스 값 위에서). 같은 입력이면 앞 결과를 그대로 돌려준다. 정의가 없으면 연 시점 값.
+   *
+   * 대량 API 데이터는 복사하지 않는다 — 다시 계산할 때만 연 시점 컨텍스트를 참조로 쓴다.
+   *
+   * @param local 부모 `_local`
+   * @param openedGlobal 연 시점 부모 `_global`
+   * @param openedData 연 시점 부모 데이터 컨텍스트
+   * @returns `$parent` 데이터 컨텍스트
+   */
+  private createParentDataContext(
+    local: Record<string, any> | undefined,
+    openedGlobal: Record<string, any> | undefined,
+    openedData: Record<string, any> | undefined,
+  ): Record<string, any> {
+    const definitions = openedData?._computedDefinitions;
+    const openedComputed = openedData?._computed;
+    const bindingEngine = this.bindingEngine;
+    const latestGlobal = (): Record<string, any> | undefined => {
+      const current = (window as any).G7Core?.state?.get?.();
+
+      return current && typeof current === 'object' ? current : openedGlobal;
+    };
+    let memo: { local: unknown; global: Record<string, any> | undefined; value: Record<string, any> } | null = null;
+    const parentContext: Record<string, any> = { _local: local };
+
+    Object.defineProperty(parentContext, '_global', {
+      enumerable: true,
+      configurable: true,
+      get: latestGlobal,
+    });
+    Object.defineProperty(parentContext, '_computed', {
+      enumerable: true,
+      configurable: true,
+      get: () => {
+        if (!definitions || typeof definitions !== 'object' || Object.keys(definitions).length === 0) {
+          return openedComputed;
+        }
+        const currentLocal = parentContext._local;
+        const currentGlobal = latestGlobal();
+        if (memo && memo.local === currentLocal && shallowEqualRecords(memo.global, currentGlobal)) {
+          return memo.value;
+        }
+        const value = evaluateComputedDefinitions(
+          definitions,
+          { ...(openedData ?? {}), _local: currentLocal, _global: currentGlobal },
+          bindingEngine,
+          { previous: memo?.value ?? openedComputed ?? {}, onError: 'keep-previous' },
+        );
+        memo = { local: currentLocal, global: currentGlobal, value };
+
+        return value;
+      },
+    });
+
+    return parentContext;
   }
 
   /**
@@ -8013,7 +8121,12 @@ export class ActionDispatcher {
             `키는 해석되지 않습니다. 배열 항목 수정은 .map()/.filter() 패턴을 사용하세요.`
         );
       }
-      if (typeof value === 'string' && value.includes('{{')) {
+      if (key === 'callbackAction' && value !== null && typeof value === 'object') {
+        // 콜백 때 실행할 액션 정의는 풀지 않고 그대로 넘긴다 (@since engine-v1.83.0) — 그 안의 `{{$event.*}}` 는 콜백이 넘긴 값으로
+        // 콜백 시점에 풀린다. 종전에는 디스패치 때 미리 풀어 undefined 가 됐다. 문자열 식(`{{extensionPointCallbacks.x}}`)은 아래에서
+        // 종전대로 풀어 액션 정의를 얻는다
+        resolved[key] = value;
+      } else if (typeof value === 'string' && value.includes('{{')) {
         // {{}} 표현식인 경우 evaluateExpression 사용 (타입 보존)
         resolved[key] = this.evaluateExpression(value, dataContext, protectTranslationParams);
       } else if (typeof value === 'string') {
@@ -8702,6 +8815,19 @@ export class ActionDispatcher {
       this.pendingDebounceFlushers.clear();
       this.debounceAccumulatedValues.clear();
     }
+  }
+
+  /**
+   * 다른 화면으로 가는 navigate 가 대기 디바운스를 반영하는 중인지 반환합니다 (engine-v1.83.0).
+   *
+   * 자동바인딩 칸은 이때 실행된 쓰기를 「경로 이동으로 버린 대기 값」처럼 다룬다 — 쓰기는 떠나는 화면 상태에 들어가고, 새 화면에서
+   * 칸 표시값이 다르면 다시 마운트해 이전 화면 입력이 칸에 남지 않게 한다(engine-v1.81.2 다시 마운트 규칙).
+   *
+   * @return 반영 중이면 true
+   * @since engine-v1.83.0
+   */
+  isFlushingForNavigation(): boolean {
+    return this.navigationFlushDepth > 0;
   }
 
   /**

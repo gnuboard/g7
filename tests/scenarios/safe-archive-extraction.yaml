@@ -1,0 +1,31 @@
+feature: 확장·코어·vendor·GeoIP·설치 마법사의 압축 해제가 항목 이름을 검사한다 (7.1.3)
+
+description: |
+  `ZipArchive::extractTo()` 는 항목 이름을 그대로 써서, Windows PowerShell 5.1 이 만든 zip 의 `dir\file.php` 가 리눅스에서
+  역슬래시가 든 파일 하나가 되고(폴더 미생성), `../../public/x.php` 같은 항목은 압축을 푸는 폴더 밖에 써질 수 있었다(Zip Slip).
+  코어 `SafeArchiveExtractor` 와 설치 마법사 `safe-archive-extractor.php` 가 `\` 를 `/` 로 정규화한 뒤 `..`·절대경로·드라이브·
+  UNC·널 문자·심볼릭 링크 항목이 하나라도 있으면 아무것도 풀지 않고 거부한다. unzip 명령 폴백은 제거했다.
+  축 entry 는 항목 모양(압축 밖 경로 6종은 한 시험의 데이터 공급자로 묶음), caller 는 해제를 부르는 쪽이다.
+
+axes:
+  entry: [backslash_path, outside_path, symlink, normal_zip, normal_tar_gz, tar_link]
+  caller: [safe_extractor, zip_install_helper, install_wizard]
+
+exclusions:
+  - { entry: tar_link, caller: zip_install_helper, reason: "확장 zip 설치 경로는 zip 만 받는다" }
+  - { entry: tar_link, caller: install_wizard, reason: "설치 마법사는 vendor-bundle.zip 만 푼다" }
+  - { entry: normal_tar_gz, caller: zip_install_helper, reason: "확장 zip 설치 경로는 zip 만 받는다" }
+  - { entry: normal_tar_gz, caller: install_wizard, reason: "설치 마법사는 vendor-bundle.zip 만 푼다" }
+  - { entry: symlink, caller: zip_install_helper, reason: "ZipInstallHelper::extractZip 은 SafeArchiveExtractor::extractZip 한 줄 위임 — 심볼릭 링크 판정은 safe_extractor 칸이 같은 함수로 덮는다" }
+  - { entry: normal_zip, caller: zip_install_helper, reason: "정상 zip 은 기존 ZipInstallHelperTest 가 덮는다" }
+  - { entry: normal_zip, caller: install_wizard, reason: "정상 vendor 번들 해제는 기존 VendorBundleInstallerShimTest 가 덮는다" }
+  - { entry: symlink, caller: install_wizard, reason: "설치 마법사 역슬래시 시험이 같은 시험 안에서 심볼릭 링크 거부까지 단언한다(g7InstallFindUnsafeZipEntry)" }
+
+effects:
+  - backslash_entries_extracted_as_directories
+  - unsafe_entry_rejects_whole_archive
+  - normal_archive_extracted_unchanged
+  - backslash_normalization_reported_as_warning
+
+test_files:
+  - tests/Unit/Extension/SafeArchiveExtractorTest.php

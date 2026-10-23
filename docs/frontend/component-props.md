@@ -1441,14 +1441,16 @@ id prop 사용: scrollIntoView 등 DOM selector로 접근해야 할 때 필수 �
 
 화면을 옮기는 자리는 `<a href>` 로 그려야 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 된다(SPA 는 클릭 때 주소를 정하므로 단추로 그리면 새 탭이 없다). 보통 클릭(왼쪽 단추·수정키 없음·`target` 없음·`download` 없음)만 지금처럼 SPA 로 옮기고, 나머지는 브라우저에 맡긴다. 보통 클릭인지는 엔진 `G7Core.navigation.isPlainLeftClick` 한 곳이 판정한다 — 컴포넌트는 그 결과만 쓰고 규칙을 따로 두지 않는다. 판정 API 가 없는 옛 엔진에서는 종전처럼 SPA 로 옮긴다.
 
+**코어 API 사용 (코어 7.1.3 · engine-v1.83.0)**: 링크 컴포넌트는 쿼리 구독·내부 링크 판정·새 창 rel 을 직접 구현하지 않고 코어를 부른다 — 쿼리 구독은 `G7Core.navigation.useLocationSearch(enabled)`(쿼리가 바뀌면 다시 그리는 React 훅), 「보통 클릭을 SPA 로 옮겨도 되는 내부 링크인가」는 `G7Core.navigation.resolveInternalHref(href)`(같은 출처 내부 링크면 경로+쿼리+해시, 아니면 `null` — `//host`·같은 출처 `//경로`·백슬래시 변형·실행 스킴은 거부), 새 창 rel 은 `G7Core.navigation.mergeRelForTarget(rel, target)`. 이 API 가 없는 옛 코어에서는 훅 대신 코어 `G7Core.navigation.subscribeLocationSearch`(7.1.2)로 구독하고 그마저 없을 때만 `popstate` 를 구독하며, 내부 링크 판정은 `href.startsWith('/') && !href.startsWith('//')` 로 대신한다. 상세·예시: [화면 이동을 링크로 쓰는 법](actions-handlers-navigation.md#링크-컴포넌트는-코어-api-를-쓴다-코어-713--engine-v1830).
+
 ### A
 
 | Prop | 타입 | 기본값 | 설명 |
 | ---- | ---- | ------ | ---- |
 | `href` | string | - | 이동할 주소. 비었거나 `#` 이면 이동 없음 |
 | `disabled` | boolean | `false` | 참이면 `href` 를 빼고 `aria-disabled="true"` · `tabindex="-1"` 로 그린다. 클릭해도 아무 일도 하지 않는다. `<a>` 에는 `disabled` 속성이 없으므로 꾸밈은 `disabled:` 가 아니라 **`aria-disabled:`** 변형으로 쓴다 |
-| `target` | string | - | `_blank` 면 새 창. `rel` 에 `noopener` 가 없으면 컴포넌트가 `noopener noreferrer` 를 더한다(기존 `rel` 값은 지킨다) — 레이아웃에서 `rel` 을 따로 적지 않아도 새 창이 `window.opener` 로 이 화면을 조작하지 못한다 |
-| `mergeQuery` | boolean | `false` | 렌더할 때 현재 주소의 쿼리를 `href` 에 합친다(`G7Core.navigation.mergeQueryIntoHref` — 같은 키는 `href` 쪽이 이긴다). 새 탭도 같은 목록 조건(검색·정렬·쪽)으로 열린다. 같은 화면에서 쿼리만 바뀌어도 주소 변경을 구독해(`G7Core.navigation.subscribeLocationSearch`) `href` 를 다시 그린다 — 코어 7.1.2(engine-v1.82.1) 미만에서는 뒤로/앞으로만 따른다. DOM 속성으로 새지 않는다 |
+| `target` | string | - | `_blank` 면 새 창. `rel` 은 코어 `G7Core.navigation.mergeRelForTarget(rel, target)` 로 정한다 — `noopener`·`noreferrer` 중 빠진 것만 덧붙이고 기존 `rel` 토큰은 지킨다. 레이아웃에서 `rel` 을 따로 적지 않아도 새 창이 `window.opener` 로 이 화면을 조작하지 못한다 |
+| `mergeQuery` | boolean | `false` | 렌더할 때 현재 주소의 쿼리를 `href` 에 합친다(`G7Core.navigation.mergeQueryIntoHref` — 같은 키는 `href` 쪽이 이긴다). 새 탭도 같은 목록 조건(검색·정렬·쪽)으로 열린다. 같은 화면에서 쿼리만 바뀌어도 코어 훅 `G7Core.navigation.useLocationSearch(true)` 로 주소 변경을 구독해 `href` 를 다시 그린다 — 훅이 없는 7.1.2 코어에서는 코어 `G7Core.navigation.subscribeLocationSearch` 로 같은 화면 쿼리 교체까지 따르고, 그마저 없는 옛 코어에서만 `popstate` 를 구독해 뒤로/앞으로만 따른다. DOM 속성으로 새지 않는다 |
 | `fallbackHref` | string | - | **`sirsoft-basic` 만.** 대체 주소 — `href` 가 이 사이트 주소가 아니면(실행 주소·다른 사이트·`//host`) 대신 이 주소를 `href` 로 단다. 바깥에서 정해지는 `href`(알림 이동 주소 등)가 새 탭으로 그대로 열리지 않게 하며, 보통 클릭의 `navigate` `fallbackPath` 와 같은 착지점을 적는다. 빈 `href` 는 그대로. DOM 속성으로 새지 않는다 |
 
 | 클릭 | 동작 |

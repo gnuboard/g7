@@ -806,7 +806,7 @@ class LanguagePackService
 
         try {
             $zipPath = $file->getRealPath();
-            ZipInstallHelper::extractZip($zipPath, $extractPath);
+            ZipInstallHelper::extractZip($zipPath, $extractPath, $file->getClientOriginalName());
 
             return $this->finalizeInstall($extractPath, 'zip', $file->getClientOriginalName(), $autoActivate, $installedBy);
         } catch (Throwable $e) {
@@ -2203,7 +2203,7 @@ class LanguagePackService
 
         try {
             $zipPath = $file->getRealPath();
-            ZipInstallHelper::extractZip($zipPath, $extractPath);
+            ZipInstallHelper::extractZip($zipPath, $extractPath, $file->getClientOriginalName());
 
             $manifestPath = ZipInstallHelper::findManifest($extractPath, 'language-pack.json');
             if (! $manifestPath) {

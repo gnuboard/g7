@@ -1,0 +1,33 @@
+feature: 코어 링크 API — 주소 구독 훅·내부 링크 판정·새 창 rel 규칙 (7.1.3, engine-v1.83.0)
+
+description: |
+  링크(A)·페이지 번호·탭은 같은 화면에서 쿼리만 바뀔 때 다시 그려져야 한다. 코어는 함수만 주고 React 훅과 내부 링크 판정·
+  새 창 rel 규칙을 템플릿마다 따로 구현해 사본이 갈라졌다(sirsoft-admin_basic 은 같은 출처 `//다른호스트` 경로를 내부 링크로 봄,
+  rel 규칙 세 갈래). 코어가 useLocationSearch·resolveInternalHref·mergeRelForTarget 을 제공하고 번들 템플릿 4종이 부른다.
+  코어 API 가 없는 옛 코어에서는 템플릿이 짧은 대체(popstate 구독·`/` 하나로 시작하는 경로만 내부)로 깨지지 않는다.
+
+  축 surface 는 시험 하나와 짝이다 — engine_* 는 엔진 단위 시험, tpl_* 는 각 템플릿의 링크 시험 파일(코어 API 사용·같은 출처
+  `//다른호스트` 거부·옛 코어 대체 세 건이 같은 칸을 표시한다).
+
+axes:
+  surface: [engine_useLocationSearch, engine_resolveInternalHref, engine_mergeRelForTarget, engine_globals, tpl_sirsoft_basic, tpl_sirsoft_admin_basic, tpl_hello_user, tpl_hello_admin]
+
+effects:
+  - location_search_hook_rerenders_on_replace   # useLocationSearch(true) 는 같은 화면 쿼리 교체 뒤 다시 그리고 false 는 그리지 않는다
+  - internal_href_single_judgment               # 내부 링크 판정은 코어 하나 — //host·같은 출처 //경로·/\host·실행 스킴·다른 출처는 내부가 아니다
+  - new_window_rel_merged_once                  # _blank 면 noopener·noreferrer 중 빠진 것만 덧붙이고 기존 토큰을 남긴다
+  - core_link_api_exposed                       # G7Core.navigation 에 세 API 가 있다
+  - template_uses_core_link_api                 # 번들 템플릿 링크가 코어 API(훅·내부 링크 판정·rel)를 부른다
+  - template_old_core_fallback                  # 코어 링크 API 가 없는 옛 코어에서는 짧은 대체(코어 주소 구독 함수, 없으면 popstate·`/` 경로만 내부·rel 직접 합침)로 깨지지 않는다
+  - old_core_same_origin_absolute_is_internal    # 옛 코어 대체에서도 같은 출처 http(s) 전체 주소는 내부 링크(7.1.2 템플릿과 같은 결과, 경로 // 시작은 제외)
+  - template_712_core_follows_query_replace     # 7.1.2 코어(subscribeLocationSearch 만 있음)에서도 대체 구독이 코어 함수를 써 같은 화면 쿼리 교체 뒤 mergeQuery 링크를 다시 그린다
+
+test_files:
+  - resources/js/core/template-engine/__tests__/navigationLinks.coreLinkApi.test.tsx
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/NavigationLinks.coreLinkApi.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/NavigationLinks.coreLinkApi.test.tsx
+  - templates/_bundled/gnuboard7-hello_user_template/__tests__/components/A.coreLinkApi.test.tsx
+  - templates/_bundled/gnuboard7-hello_admin_template/__tests__/components/A.coreLinkApi.test.tsx
+  - tests/Playwright/specs/engine-713-binding-cache-links.spec.ts
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/core-link-api-and-direct-asset.spec.ts
+  - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/admin-core-link-api.spec.ts

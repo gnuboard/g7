@@ -7,6 +7,7 @@ use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\MenuPermissionType;
+use App\Extension\Support\LifecycleWarnings;
 use App\Models\Menu;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -242,6 +243,7 @@ class ExtensionMenuSyncHelper
                 'menu_id' => $menu->id ?? null,
                 'error' => $e->getMessage(),
             ]);
+            LifecycleWarnings::current()->add('menu_role', (string) ($menu->slug ?? $menu->id ?? ''), $e->getMessage());
         }
     }
 

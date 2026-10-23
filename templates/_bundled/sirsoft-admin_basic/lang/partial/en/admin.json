@@ -2474,7 +2474,7 @@
       "update_guide_desc": "Connect to your server terminal and run the following command in the Gnuboard7 installation directory.",
       "update_guide_note": "Maintenance mode is automatically enabled during updates and disabled after completion.",
       "manual_update_title": "Manual Update (No ZIP Extension)",
-      "manual_update_desc": "If PHP zip extension or unzip command is not available on your server, you can download the release ZIP from GitHub and update manually.",
+      "manual_update_desc": "If the PHP zip extension (ZipArchive) is not available on your server, you can download the release ZIP from GitHub and update manually.",
       "manual_update_step1": "# 1. Download ZIP from GitHub releases page and extract on server",
       "manual_update_step2": "# 2. Run update with the extracted path",
       "update_guide_cmd_comment": "# Run with administrator privileges (Linux/macOS)",
@@ -4373,7 +4373,8 @@
       "reaggregate_modal": "Re-aggregate range",
       "subject_delete_modal": "Delete data subject records confirm",
       "row_trend_modal": "Item trend"
-    }
+    },
+    "lifecycle_warnings_modal": "Extension operation warnings window"
   },
   "brand_name": "Gnuboard7",
   "default_user_name": "Administrator",
@@ -4397,5 +4398,16 @@
     "header_description": "This file is templates/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html",
     "card_title": "✨ Composite Component Include Test",
     "card_content": "This card was included from partials/template_partial_test/_info_card.g7.html.\n\n📌 Include system features:\n• Supported by both modules and templates\n• Unlimited nesting depth (depth limit 10)\n• Automatic circular reference detection\n• Both basic and composite components can be used"
+  },
+  "extensions": {
+    "lifecycle_warnings": {
+      "title": "Some items failed",
+      "summary": "Completed, but some items failed ({{count}})",
+      "description": "The operation itself finished. Only the items below were not applied — check the reasons and run the related operation (such as refreshing layouts) again.",
+      "toggle": "Show details",
+      "notice_title": "Notices to review",
+      "notice_summary": "Completed — notices to review: {{count}}",
+      "notice_description": "Everything was applied. Please review the notices below."
+    }
   }
 }

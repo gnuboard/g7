@@ -6,6 +6,7 @@ use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Exceptions\ExtensionUpdateFailedException;
@@ -18,6 +19,7 @@ class UpdateTemplateCommand extends Command
     use HasProgressBar;
     use HasUnifiedConfirm;
     use RendersLayoutSyncResult;
+    use ReportsLifecycleWarnings;
     use ReportsStuckUpdateRecovery;
     use SelectsLayoutInstallSource;
 
@@ -177,7 +179,7 @@ class UpdateTemplateCommand extends Command
 
             if ($updateResult['success']) {
                 $this->newLine();
-                $this->info('✅ '.__('templates.commands.update.success', ['template' => $identifier]));
+                $this->info($this->lifecycleDoneIcon().' '.__('templates.commands.update.success', ['template' => $identifier]));
                 $this->info('   '.__('templates.commands.update.version_change', [
                     'from' => $updateResult['from_version'],
                     'to' => $updateResult['to_version'],

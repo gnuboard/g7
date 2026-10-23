@@ -2734,6 +2734,37 @@
       ]
     },
     {
+      "comment": "확장 작업 경고 결과 창(모듈·플러그인·템플릿·언어팩 화면 공용, 코어 7.1.3)이 읽는 전역 상태(lifecycleWarnings, lifecycleWarningsOpen) — 작업 성공 응답이 담는 값이라, 편집기에서는 이 상태로 담아야 「0건」·빈 목록으로 열리지 않는다. 목록 행을 편집할 수 있게 펼친 모습으로 담는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "lifecycle_warnings_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "lifecycleWarnings": [
+                {
+                  "step": "layout_refresh",
+                  "target": "board_list.g7.html",
+                  "message": "레이아웃 저장에 실패했습니다."
+                },
+                {
+                  "step": "seeder",
+                  "target": "sirsoft-board",
+                  "message": "기본 데이터 생성에 실패했습니다."
+                }
+              ],
+              "lifecycleWarningsOpen": true
+            }
+          }
+        }
+      ]
+    },
+    {
       "comment": "모달 본문이 읽는 전역 상태(isPluginRefreshingLayouts, pluginLayoutSource, pluginLayoutSourceOpen, selectedPlugin) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",

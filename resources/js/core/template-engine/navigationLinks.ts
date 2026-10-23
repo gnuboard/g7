@@ -10,6 +10,7 @@
  * @since engine-v1.80.1
  */
 
+import { useSyncExternalStore } from 'react';
 import { isDangerousScheme, toSameOriginNavPath } from '../support/navPolicy';
 
 /** 클릭 판정에 쓰는 이벤트 모양 — DOM MouseEvent·React 합성 이벤트·대체 이벤트 모두 받는다 */
@@ -122,6 +123,45 @@ export function toSameOriginPath(href: unknown): string | null {
 }
 
 /**
+ * 링크 href 가 이 사이트 안 주소(SPA 로 옮길 수 있는 내부 링크)인지 판정해 「경로?쿼리#해시」로 돌려줍니다.
+ *
+ * 링크 컴포넌트(A·페이지 번호·탭·메뉴)의 「보통 클릭을 SPA 로 옮겨도 되는가」 판정 하나다 — 템플릿은 이 함수를 부르고
+ * 판정을 다시 만들지 않는다. 종전에는 템플릿마다 사본이 있어 갈라졌다(sirsoft-admin_basic 은 `https://이 사이트//다른호스트` 를
+ * 내부 링크로 봐 href·새 탭은 바깥으로 가는데 보통 클릭만 거부됐다). 판정 규칙은 엔진 navigate 와 같다({@link toSameOriginPath}):
+ * 빈 값·`#…`·실행 스킴·다른 출처·`//host`·`/\host`·경로가 `//` 로 시작하는 같은 출처 주소는 null.
+ *
+ * @param href 링크 주소
+ * @returns 내부 링크면 경로(+쿼리·해시), 아니면 null
+ * @since engine-v1.83.0
+ */
+export function resolveInternalHref(href: unknown): string | null {
+  return toSameOriginPath(href);
+}
+
+/**
+ * 새 창 링크의 rel 을 정합니다 — `target="_blank"` 면 `noopener`·`noreferrer` 중 빠진 것만 덧붙이고 넘겨받은 토큰은 남깁니다.
+ *
+ * 새 창이 `window.opener` 로 이 화면을 바꾸거나 주소를 넘겨받지 못하게 하는 보호다(#757). 새 창이 아니면 받은 값을 그대로
+ * 돌려준다(없으면 undefined — rel 속성을 달지 않는다). 대소문자는 가리지 않고 판정한다. 템플릿 링크 컴포넌트의 rel 규칙이
+ * 세 갈래(빠진 토큰마다 추가·`noopener` 가 있으면 그대로·늘 둘 다 추가)였던 것을 하나로 둔다(sirsoft-basic 규칙이 정본).
+ *
+ * @param rel 넘겨받은 rel
+ * @param target 링크 target
+ * @returns 붙일 rel
+ * @since engine-v1.83.0
+ */
+export function mergeRelForTarget(rel: string | undefined | null, target: string | undefined | null): string | undefined {
+  const given = typeof rel === 'string' ? rel : undefined;
+  if (target !== '_blank') return given;
+  const tokens = (given ?? '').split(/\s+/).filter(Boolean);
+  for (const required of ['noopener', 'noreferrer']) {
+    if (!tokens.some((token) => token.toLowerCase() === required)) tokens.push(required);
+  }
+
+  return tokens.join(' ');
+}
+
+/**
  * 쿼리 파라미터 묶음에 값 객체를 덮어씁니다 — `navigate` `mergeQuery` 와 같은 규칙.
  *
  * 빈 값(null·undefined·'')은 그 키를 지우고, 배열은 `키[]` 로 펼친다(Laravel 배열 인식).
@@ -230,4 +270,30 @@ export function subscribeLocationSearch(callback: () => void): () => void {
     window.removeEventListener('popstate', handler);
     window.removeEventListener(LOCATION_REPLACED_EVENT, handler);
   };
+}
+
+/** 구독하지 않는 링크의 subscribe·snapshot — 같은 함수여야 React 가 다시 구독하지 않는다 */
+const noSubscribe = (): (() => void) => () => {};
+const noSnapshot = (): string => '';
+const readLocationSearch = (): string => (typeof window === 'undefined' ? '' : window.location.search);
+
+/**
+ * 렌더할 때 현재 쿼리를 href 에 합치는 링크(`mergeQuery`·`pageHrefMergeQuery` 등)가 주소 검색부를 구독하는 React 훅.
+ *
+ * 같은 화면에서 쿼리만 바꾸는 `navigate replace` 는 화면을 다시 마운트하지 않고 링크 props 도 그대로라 엔진이 링크를 다시
+ * 그리지 않는다 — 그러면 가운데 클릭·Ctrl+클릭·새 탭·주소 복사가 옛 쿼리로 간다. 검색부가 바뀌면(뒤로/앞으로·
+ * {@link notifyLocationReplaced}) 이 훅이 다시 그린다. `enabled` 가 거짓이면 구독하지 않는다 — 같은 함수 참조를 넘겨 React 가
+ * 다시 구독하지 않고, 쿼리를 합치지 않는 링크의 렌더 비용은 그대로다. 템플릿은 코어와 같은 React(`window.React`)를 쓰므로
+ * 이 훅을 그대로 부른다(종전에는 템플릿마다 사본, 7.1.2 엔진 수정을 템플릿마다 손으로 옮겨야 했다).
+ *
+ * @param enabled 현재 쿼리를 href 에 합치면 true
+ * @returns 현재 주소 검색부(`?a=1`, 구독하지 않으면 '')
+ * @since engine-v1.83.0
+ */
+export function useLocationSearch(enabled: boolean): string {
+  return useSyncExternalStore(
+    enabled ? subscribeLocationSearch : noSubscribe,
+    enabled ? readLocationSearch : noSnapshot,
+    noSnapshot,
+  );
 }

@@ -14,7 +14,7 @@
 | `banner_enabled` | `boolean` | `true` | 쿠키 배너 노출 |
 | `banner_position` | `string` | `bottom_bar` | 배너 위치 |
 | `blocked_domains` | `json` | `{"functional":["*.crisp.chat","client.crisp.chat","*.intercom.io","widget.intercom.io","*.tawk.to","embed.tawk.to","cdn.weglot.com","*.weglot.com","*.usercentrics.eu"],"analytics":["google-analytics.com","*.google-analytics.com","googletagmanager.com","*.googletagmanager.com","ssl.google-analytics.com","*.hotjar.com","static.hotjar.com","*.mixpanel.com","cdn.mxpnl.com","*.amplitude.com","cdn.amplitude.com","*.segment.io","*.segment.com","wcs.naver.net","wcs.naver.com","*.beusable.net"],"marketing":["facebook.net","connect.facebook.net","facebook.com","*.facebook.com","doubleclick.net","*.doubleclick.net","googleadservices.com","googlesyndication.com","ads.google.com","*.criteo.com","static.criteo.net","*.adnxs.com","*.taboola.com","cdn.taboola.com","*.outbrain.com","*.kakao.com","analytics.ad.daum.net","platform.twitter.com","*.twitter.com","platform.linkedin.com","*.linkedin.com"]}` | 추적 도메인 차단 목록 |
-| `necessary_storage_allowlist` | `array` | `{"localStorage":["g7_locale","g7_color_scheme","g7_cache_version","g7_asset_url_mode*","g7-devtools-panel","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_admin_sidebar_collapsed","g7_filter_visibility_*","g7_dismissed_warnings","g7_view_mode_*","g7le.*","g7.identity.redirectStash"],"sessionStorage":["g7.identity.redirectStash","g7le.*","g7_devtools_*","g7_filters_*","g7_columns_*","g7_order_*","g7_filter_visibility_*"],"cookie":["laravel_maintenance","g7_analytics_optout"]}` | 필수 저장 항목 허용목록 |
+| `necessary_storage_allowlist` | `array` | `{"localStorage":["g7_locale","g7_color_scheme","g7_cache_version","g7_asset_url_mode*","g7-devtools-panel","g7_devtools_*","g7_filters_*","g7_columns_*","g7_admin_sidebar_collapsed","g7_filter_visibility_*","g7_dismissed_warnings","g7_view_mode_*","g7le.*","g7.identity.redirectStash"],"sessionStorage":["g7.identity.redirectStash","g7le.*","g7_devtools_*","g7_filters_*","g7_columns_*","g7_filter_visibility_*"],"cookie":["laravel_maintenance","g7_analytics_optout"]}` | 필수 저장 항목 허용목록 |
 | `cookie_categories` | `json` | `[]` | 쿠키 카테고리 정의 |
 
 기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
@@ -45,10 +45,16 @@
 세션 쿠키 이름은 `session.cookie` 설정에서 런타임 해석됩니다.
 
 `necessary_storage_provided` 도 **설정이 아닙니다.** 활성 확장이 필터 훅
-`sirsoft-gdpr.necessary_storage.filter_provided_keys` 로 제공한 키를 요청마다 모은 계산값이며,
+`sirsoft-gdpr.necessary_storage.filter_provided_keys` 로 제공한 키와 활성 템플릿이 `template.json` 의
+`necessary_storage` 로 선언한 키(코어 7.1.3+)를 요청마다 모은 계산값이며,
 화면에는 「확장 제공 항목 (자동)」으로 읽기 전용 표시됩니다. 확장 소유 키를 운영자 목록에 넣지 않는
 이유는, 넣으면 그 확장을 지워도 키가 허용된 채 남기 때문입니다(1.0.4 가 목록에 넣었던 확장 키는 1.1.0
-업그레이드가 걷어냅니다).
+업그레이드가, 이커머스 주문 목록 열 키 `g7_order_*` 는 1.1.2 업그레이드가 걷어냅니다 — 이커머스가 1.3.2
+미만이면 남김).
+
+두 키는 코어 계산값 키(`getComputedSettingKeys()`, 코어 7.1.3+)로 선언돼 있어 설치 때 설정 파일에 쓰이지 않고,
+저장 요청·기존 파일에서 빠지며, 읽을 때 늘 실시간 값을 씁니다. 1.1.1 까지 설치 시점 값이 설정 파일에 굳은
+사이트는 1.1.2 업그레이드가 그 값을 지웁니다.
 <!-- @intent END -->
 
 ## 권한

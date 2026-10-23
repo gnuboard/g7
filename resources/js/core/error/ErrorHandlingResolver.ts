@@ -172,8 +172,9 @@ export class ErrorHandlingResolver {
                 handler: 'sequence',
                 actions: normalizedOnError as any,
               };
+        // onError 안 showErrorPage 도 실제 오류 코드를 받는다 (@since engine-v1.83.0) — 종전에는 넣지 않아 기본값 500 화면
         return {
-          handler: sequenceHandler,
+          handler: ErrorHandlingUtils.injectErrorCode(sequenceHandler, 'onError', errorCode),
           level: 'action',
           matchedKey: 'onError',
         };

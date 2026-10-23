@@ -2442,7 +2442,7 @@
       "update_guide_desc": "서버 터미널에 접속하여 그누보드7 설치 디렉토리에서 아래 명령어를 실행하세요.",
       "update_guide_note": "업데이트 중 자동으로 유지보수 모드가 활성화됩니다. 업데이트 완료 후 자동으로 해제됩니다.",
       "manual_update_title": "수동 업데이트 (ZIP 확장 미설치 환경)",
-      "manual_update_desc": "서버에 PHP zip 확장이나 unzip 명령어가 없는 경우, GitHub에서 릴리스 ZIP을 직접 다운로드하여 업데이트할 수 있습니다.",
+      "manual_update_desc": "서버에 PHP zip 확장(ZipArchive)이 없는 경우, GitHub에서 릴리스 ZIP을 직접 다운로드하여 업데이트할 수 있습니다.",
       "manual_update_step1": "# 1. GitHub 릴리스 페이지에서 ZIP 다운로드 후 서버에 압축 해제",
       "manual_update_step2": "# 2. 압축 해제된 경로를 지정하여 업데이트 실행",
       "update_guide_cmd_comment": "# 관리자 권한으로 실행 권장 (Linux/macOS)",
@@ -4318,7 +4318,8 @@
       "reaggregate_modal": "구간 재집계",
       "subject_delete_modal": "정보주체 기록 삭제 확인",
       "row_trend_modal": "항목 추이"
-    }
+    },
+    "lifecycle_warnings_modal": "확장 작업 경고 결과 창"
   },
   "brand_name": "그누보드7",
   "default_user_name": "관리자",
@@ -4342,5 +4343,16 @@
     "header_description": "이 파일은 templates/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html 입니다",
     "card_title": "✨ Composite 컴포넌트 Include 테스트",
     "card_content": "이 Card는 partials/template_partial_test/_info_card.g7.html에서 include되었습니다.\n\n📌 Include 시스템 특징:\n• 모듈과 템플릿 모두 지원\n• 무제한 중첩 깊이 (depth 제한 10)\n• 순환 참조 자동 감지\n• Basic과 Composite 컴포넌트 모두 사용 가능"
+  },
+  "extensions": {
+    "lifecycle_warnings": {
+      "title": "일부 항목이 실패했습니다",
+      "summary": "완료했지만 일부 항목이 실패했습니다 ({{count}}건)",
+      "description": "작업 자체는 끝났습니다. 아래 항목만 반영되지 않았으니 사유를 확인한 뒤 해당 작업(레이아웃 갱신 등)을 다시 실행하세요.",
+      "toggle": "자세히 보기",
+      "notice_title": "확인할 안내가 있습니다",
+      "notice_summary": "완료했습니다 — 확인할 안내 {{count}}건",
+      "notice_description": "작업은 모두 반영됐습니다. 아래 안내를 확인하세요."
+    }
   }
 }

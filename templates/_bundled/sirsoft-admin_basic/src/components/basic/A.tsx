@@ -1,5 +1,5 @@
 import React from 'react';
-import { handleLinkClick, mergeQueryIntoHref, navigateTo, resolveLinkHref, useLocationSearch } from '../../support/navigationLink';
+import { handleLinkClick, mergeQueryIntoHref, mergeRelForTarget, navigateTo, resolveLinkHref, useLocationSearch } from '../../support/navigationLink';
 
 export interface AProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   /**
@@ -10,23 +10,6 @@ export interface AProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   /** 현재 주소의 쿼리를 href 에 합친다(목록 문맥 유지) — 보통 클릭과 새 탭이 같은 주소로 간다 */
   mergeQuery?: boolean;
 }
-
-/**
- * 새 창 링크의 rel — `target="_blank"` 인데 `noopener` 가 없으면 `noopener noreferrer` 를 더한다(기존 값은 지킨다).
- * 새 창이 `window.opener` 로 이 화면을 조작하지 못하게 한다(#757). 같은 창 링크는 받은 rel 그대로.
- *
- * @param target target 속성 값
- * @param rel 받은 rel 속성 값
- * @return 쓸 rel 값
- */
-const relForTarget = (target: unknown, rel: unknown): string | undefined => {
-  const given = typeof rel === 'string' ? rel : undefined;
-  if (target !== '_blank') return given;
-  const tokens = (given ?? '').split(/\s+/).filter(Boolean);
-  if (tokens.includes('noopener')) return given;
-
-  return [...tokens, 'noopener', 'noreferrer'].filter((v, i, all) => all.indexOf(v) === i).join(' ');
-};
 
 /**
  * 기본 a(링크) 컴포넌트
@@ -52,7 +35,7 @@ export const A: React.FC<AProps> = ({
       <a
         className={className}
         {...props}
-        rel={relForTarget(props.target, props.rel)}
+        rel={mergeRelForTarget(props.target, props.rel)}
         role="link"
         aria-disabled="true"
         tabIndex={-1}
@@ -83,7 +66,7 @@ export const A: React.FC<AProps> = ({
       className={className}
       href={finalHref}
       {...props}
-      rel={relForTarget(props.target, props.rel)}
+      rel={mergeRelForTarget(props.target, props.rel)}
       onClick={handleClick}
     >
       {children}

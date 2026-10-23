@@ -8,7 +8,9 @@ use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\Extension\Cache\PluginCacheDriver;
+use App\Extension\Exceptions\UpgradeStepClassMissingException;
 use App\Extension\Storage\PluginStorageDriver;
+use App\Extension\Support\UnusableUpgradeStep;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ReportsLifecycleFailure;
 use App\Extension\Traits\ResolvesLayoutInstallSource;
@@ -287,9 +289,16 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
             $namespacePart = ExtensionManager::directoryToNamespace($this->getIdentifier());
             $namespace = 'Plugins\\'.$namespacePart.'\\Upgrades\\'.$filename;
 
-            if (class_exists($namespace) && is_subclass_of($namespace, UpgradeStepInterface::class)) {
-                $steps[$version] = new $namespace;
+            // 파일이 있는데 클래스가 없거나 인터페이스 미구현이면 자리 표시를 둔다 — 업데이트가 이번 범위로 고른 단계에
+            // 있을 때만 실패한다(7.1.3, 코어와 같은 규칙 — 예전엔 조용히 건너뜀)
+            try {
+                UpgradeStepClassMissingException::assertUsable($file, $namespace, UpgradeStepInterface::class);
+            } catch (UpgradeStepClassMissingException $e) {
+                $steps[$version] = new UnusableUpgradeStep($e);
+
+                continue;
             }
+            $steps[$version] = new $namespace;
         }
 
         ksort($steps, SORT_NATURAL);
@@ -445,6 +454,20 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
      * @return array 설정 값 배열
      */
     public function getConfigValues(): array
+    {
+        return [];
+    }
+
+    /**
+     * 매번 계산하는 값이라 설정 파일에 저장하지 않는 설정 키 목록 (7.1.3)
+     *
+     * `getConfigValues()` 가 요청마다 계산해 돌려주는 값(다른 확장의 훅 결과·세션 쿠키 이름 등)은 여기에 선언한다.
+     * 코어는 이 키를 설치 때 설정 파일에 쓰지 않고, 저장 요청·기존 파일에서 빼고, 읽을 때 늘 실시간 값을 쓴다.
+     * 선언하지 않으면 설치 시점 값이 파일에 굳어 이후 실시간 값을 덮는다.
+     *
+     * @return array<int, string> 계산값 키 (도트 표기 가능)
+     */
+    public function getComputedSettingKeys(): array
     {
         return [];
     }

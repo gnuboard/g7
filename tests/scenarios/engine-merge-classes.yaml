@@ -1,0 +1,25 @@
+feature: mergeClasses 가 지우면 안 되는 기본 클래스를 지우던 충돌 판정 (7.1.3, engine-v1.83.0)
+
+description: |
+  G7Core.style.mergeClasses(base, className) 는 같은 충돌 그룹이면 base 쪽 클래스를 지운다. 그룹이 너무 거칠게 묶여
+  축·변이 다른 유틸리티(px ↔ p, top ↔ left, border-t ↔ border, overflow-x ↔ overflow, space-x-reverse ↔ space-x,
+  break-after ↔ break-words, gap-x ↔ gap, rounded-t ↔ rounded, translate-x ↔ translate-y)를 같은 속성으로 보고 지웠고,
+  order 정규식 오타로 order-* 는 충돌 판정에서 빠졌다. Tailwind 의 실제 충돌 단위로 나누고 상위 유틸리티가 하위 축을
+  덮는 방향만 지운다(tailwind-merge 규칙). v4 신규 유틸리티·변형 접두사 확장은 하지 않는다.
+
+axes:
+  group: [spacing, flex, position, border, overflow, typography, same_type, unchanged]
+
+effects:
+  - axis_utility_keeps_shorthand        # 축 유틸리티(px·mt·gap-x·rounded-t·scale-x)는 전체 유틸리티를 지우지 않고, 전체는 축을 지운다
+  - flex_direction_wrap_size_separate   # flex 방향·줄바꿈·크기는 서로 지우지 않는다
+  - inset_sides_separate                # top·left 등 변은 서로 지우지 않고 inset 은 변을 지운다
+  - border_sides_separate               # border-t 는 border 를 지우지 않고 border 는 변을 지운다
+  - overflow_axes_separate              # overflow-x 는 overflow 를 지우지 않는다
+  - space_reverse_separate              # space-x-reverse 는 space-x-* 를 지우지 않는다
+  - break_after_not_word_break          # break-after-* 는 break-words 를 지우지 않는다
+  - order_grouped                       # order-* 끼리 충돌한다
+  - existing_conflicts_unchanged        # 같은 그룹·같은 변이만 지우는 종전 동작은 그대로
+
+test_files:
+  - resources/js/core/template-engine/__tests__/StyleHelpers.mergeClasses.test.ts

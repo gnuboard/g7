@@ -4,6 +4,7 @@ namespace App\Console\Commands\Template;
 
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Models\Template;
 use App\Services\TemplateService;
 use Illuminate\Console\Command;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Log;
 class RefreshTemplateLayoutCommand extends Command
 {
     use RendersLayoutSyncResult;
+    use ReportsLifecycleWarnings;
     use SelectsLayoutInstallSource;
 
     /**
@@ -89,7 +91,7 @@ class RefreshTemplateLayoutCommand extends Command
         $result = $this->templateService->refreshTemplateLayouts($identifier);
 
         if ($result) {
-            $this->info('✅ '.__('templates.commands.refresh_layout.success', ['template' => $identifier]));
+            $this->info($this->lifecycleDoneIcon().' '.__('templates.commands.refresh_layout.success', ['template' => $identifier]));
             $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
             Log::info('템플릿 레이아웃 갱신 완료', ['template' => $identifier]);
 
@@ -122,13 +124,14 @@ class RefreshTemplateLayoutCommand extends Command
         $failCount = 0;
 
         foreach ($templates as $templateIdentifier) {
+            $itemMark = $this->lifecycleMark();
             $this->line('  '.__('templates.commands.refresh_layout.item_refreshing', ['identifier' => $templateIdentifier]));
 
             try {
                 $result = $this->templateService->refreshTemplateLayouts($templateIdentifier);
 
                 if ($result) {
-                    $this->info('  ✅ '.__('templates.commands.refresh_layout.item_done', ['identifier' => $templateIdentifier]));
+                    $this->info('  '.$this->lifecycleDoneIcon($itemMark).' '.__('templates.commands.refresh_layout.item_done', ['identifier' => $templateIdentifier]));
                     $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
                     $successCount++;
                 } else {
@@ -142,7 +145,7 @@ class RefreshTemplateLayoutCommand extends Command
         }
 
         $this->newLine();
-        $this->info('✅ '.__('templates.commands.refresh_layout.summary', ['success' => $successCount, 'failed' => $failCount]));
+        $this->info($this->lifecycleDoneIcon().' '.__('templates.commands.refresh_layout.summary', ['success' => $successCount, 'failed' => $failCount]));
 
         Log::info('템플릿 레이아웃 일괄 갱신 완료', [
             'success' => $successCount,

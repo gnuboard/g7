@@ -7,6 +7,7 @@ use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\RebuildsSearchIndex;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Exceptions\ExtensionUpdateFailedException;
@@ -21,6 +22,7 @@ class UpdateModuleCommand extends Command
     use HasUnifiedConfirm;
     use RebuildsSearchIndex;
     use RendersLayoutSyncResult;
+    use ReportsLifecycleWarnings;
     use ReportsStuckUpdateRecovery;
     use SelectsLayoutInstallSource;
 
@@ -204,7 +206,7 @@ class UpdateModuleCommand extends Command
 
             if ($updateResult['success']) {
                 $this->newLine();
-                $this->info('✅ '.__('modules.commands.update.success', ['module' => $identifier]));
+                $this->info($this->lifecycleDoneIcon().' '.__('modules.commands.update.success', ['module' => $identifier]));
                 $this->info('   '.__('modules.commands.update.version_change', [
                     'from' => $updateResult['from_version'],
                     'to' => $updateResult['to_version'],

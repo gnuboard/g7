@@ -2,11 +2,11 @@
 
 # Gnuboard7
 
-**A modern, extensible CMS platform built with Laravel + React**
-The next generation of Gnuboard — Korea's most widely used open-source CMS
+**The clean open-source CMS for builders and agents.**
+Enterprise-grade foundation. Minimal tokens.
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-7.1.2-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-7.1.3-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/PHP-8.2%2B-777BB4?logo=php&logoColor=white" alt="PHP"></a>
   <a href="#"><img src="https://img.shields.io/badge/Laravel-12.x-FF2D20?logo=laravel&logoColor=white" alt="Laravel"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React"></a>
@@ -31,12 +31,12 @@ The next generation of Gnuboard — Korea's most widely used open-source CMS
 
 ## About Gnuboard7
 
-**Gnuboard7** is a complete, ground-up redesign of Gnuboard — Korea's most widely used open-source CMS for 23 years — rebuilt on a modern stack.
+**Gnuboard7** is an open-source CMS designed so that anyone can build their own web platform quickly, together with AI agents.
 
-Everything from security to architecture was rewritten from scratch on Laravel and React.
+Declarative layouts, an extension system that never touches the core, and agent development rules built into the repository let agents read and write only what matters — so you can build community or storefront services with **minimal tokens**, on an enterprise-grade foundation where access control, i18n, identity verification, and payments are built in from day one. It is the next generation of Gnuboard, Korea's most widely used open-source CMS for 23 years, built anew on Laravel and React.
 
 - **Declarative layout engine**: define React-based UI declaratively with HTML-like markup (`.g7.html`) alone, no React knowledge required — the server compiles it into a runtime JSON contract at install time. Modules and plugins inject or extend UI dynamically without a frontend build. When you need something more advanced, you can develop and register custom React components
-- **One platform, many business models**: community, storefront, subscription, booking — extend it to fit your business
+- **One platform, many business models**: community, storefront — extend it to fit your business
 - **Fine-grained access control**: Role + Permission + Scope, a three-tier model that keeps control as your service grows
 - **Global-ready**: native i18n support, locale-driven UI, multi-currency handling
 - **Extension system**: modules + plugins + templates, a three-layer structure that adds functionality without touching the core

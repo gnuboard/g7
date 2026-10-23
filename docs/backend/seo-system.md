@@ -1233,7 +1233,7 @@ SEO 렌더링은 `renderComponent()` 진입 시점에 이 값을 해석해 데�
 | `$t:` / `$t:defer:` | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::resolveTranslation` | 봇 화면은 지연 개념이 없어 동일 키로 해석. 인자 값의 `{{…}}`(파이프·`\|\|` 포함)는 인자를 나눈 뒤 푼다(engine-v1.80.1). **빈 인자 값(`이름=`·`{{없는.경로}}`)은 빈 글자로 치환한다** — 일반 화면은 그 인자를 빼서 자리표시자(`{{name}}`)가 남지만(빈 인자 진단 단서), 봇 화면은 없는 키를 빈 글자로 내는 것과 같은 이유로 색인 HTML 에 자리표시자를 싣지 않는다(의도된 차이). 값이 빌 수 있는 줄은 레이아웃에서 `if` 로 숨기거나 대체 문구를 준다 |
 | `$t(키, 인자)` 식 안 인자 | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::evaluateTranslationFunction` / `translateKey` | engine-v1.80.1 — 객체 인자 치환, 값은 글자 그대로 |
 | `$t:키\|count=N` 복수형 변형(`키_one` 등) | ✅ | ✅ | `app/Seo/ExpressionEvaluator.php::pluralVariant` | engine-v1.78.7 — 현재 로케일 CLDR 범주로 `키_{범주}` 를 먼저, 없거나 other 면 기본 키. intl 이 없으면 ko·ja·zh 등 other, 나머지 1 → one 근사([다국어 처리](../frontend/data-binding-i18n.md#수에-따른-단수복수-engine-v1787)) |
-| `actions` | ✅ | 링크만 | `app/Seo/ComponentHtmlMapper.php::extractLinkAction` | 페이지 이동/새 창 열기 액션만 `<a href>` 로 승격 |
+| `actions` | ✅ | 링크만 | `app/Seo/ComponentHtmlMapper.php::extractLinkAction` | 페이지 이동/새 창 열기 액션만 `<a href>` 로 승격 — sequence·parallel·conditions·switch·중첩 sequence 안까지, 최상위 `target` 경로 포함(7.1.3) |
 | 정적 링크(`a`)의 `target`·`rel`·`fallbackHref`·`disabled` | ✅ | ✅ | `app/Seo/ComponentHtmlMapper.php::presetAnchorAttributes` | 템플릿 `A` 컴포넌트와 같은 규칙(7.1.1) — `target="_blank"` 면 `rel` 에 `noopener noreferrer` 를 합치고(받은 토큰 유지), `fallbackHref` 가 있으면 이 사이트 주소가 아닌 href(다른 사이트·`//host`·`https://이 사이트//다른호스트`·`#`·실행 스킴)를 그 주소로, `disabled` 가 참이면 href 를 빼고 `role="link"`. 대체 주소가 없는 href 는 양쪽 모두 그대로(실행 스킴만 `#`) — 같은 출처 전체 주소·외부 주소를 경로로 바꾸지 않는다. `mergeQuery` 는 봇 화면이 합치지 않는다(이동 액션의 `mergeQuery` 와 같음) |
 | `extensionPointCallbacks` | ✅ | ❌ (의도) | 미처리 | 액션 실행기 부재 |
 | `lifecycle` / `dataKey` / `trackChanges` | ✅ | ❌ (무해) | 미처리 | 입력·생명주기 전용 |
@@ -1674,7 +1674,8 @@ SEO 렌더링 시 `navigate`/`openWindow` 핸들러가 정의된 컴포넌트에
 - **동적 경로**: `"path": "/posts/{{post.slug}}"` → 데이터소스 컨텍스트에서 해석
 - **_global 참조**: `"path": "{{_global.shopBase}}/products"` → globalResolver로 `g7_module_settings()`/`g7_plugin_settings()` 해석
 - **query params**: `"query": { "q": "test" }` → `?q=test` 쿼리스트링 빌드
-- **sequence 내부**: `handler: "sequence"` 내 navigate/openWindow 자동 추출
+- **중첩 액션 내부 (7.1.3+)**: 엔진이 실행하는 중첩 키를 모두 따라 내려가 첫 navigate/openWindow 를 추출 — `sequence`·`parallel` 의 `actions`(또는 `params.actions`), `conditions` 의 `then`, `switch` 의 `cases`, 그리고 sequence 안의 sequence 같은 중첩(깊이 상한 8). 7.1.2 까지는 sequence 한 단계만 봐서 parallel·conditions·switch·중첩 sequence 안의 링크가 봇 HTML 에서 빠졌다
+- **최상위 `target` 경로 (7.1.3+)**: `params.path` 가 없고 액션 최상위 `target` 에 경로가 있으면 그것을 path 로 쓴다 — 엔진과 같은 해석
 
 #### skip 조건
 

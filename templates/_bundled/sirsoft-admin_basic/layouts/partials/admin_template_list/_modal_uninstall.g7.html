@@ -76,6 +76,9 @@
                 <reload-extensions/>
                 <close-modal if="{{!(response.data?.preserved_backups?.length)}}"/>
                 <set-state if="{{!(response.data?.preserved_backups?.length)}}" target="global" :selectedTemplate="null" :deleteTemplateData="false"/>
+                <!-- 정리 단계 일부가 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 백업 안내로 이 창이 남아 있으면 그 위에 뜬다. -->
+                <set-state target="global" lifecycleWarnings="{{response?.data?.warnings ?? []}}" :lifecycleWarningsOpen="false"/>
+                <open-modal if="{{(response?.data?.warnings?.length ?? 0) &gt; 0}}" target="lifecycle_warnings_modal"/>
               </success>
               <fail>
                 <set-state target="global" :isTemplateUninstalling="false"/>

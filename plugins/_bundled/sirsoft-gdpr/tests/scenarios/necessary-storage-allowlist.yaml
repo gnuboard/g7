@@ -39,6 +39,10 @@ exclusions:
   - { settings_state: unreachable, request: any, reason: "설정이 도달하지 못한 상태는 저장 경로가 아니라 판정 경로의 축이다" }
 
 effects:
+  - template_declarations_merged_into_provided
+  - computed_keys_removed_from_saved_settings
+  - ecommerce_order_keys_removed_from_allowlist
+  - shipped_catalog_has_no_ecommerce_order_keys
   # 설정 정의 · 노출
   - allowlist_default_seeded_from_shipped_catalog
   - allowlist_exposed_in_inline_payload_via_frontend_schema
@@ -112,6 +116,9 @@ effects:
   - upgrade_skips_when_settings_json_malformed
   - upgrade_does_not_seed_locked_items
 
+  # 저장 키 모집단 (코드에서 도출한 모든 저장 키가 허용목록 판정 대상에 든다)
+  - storage_keys_population_covered_by_allowlist
+
   # 두 구현 정합 (PHP ↔ TS)
   - ts_fallback_matches_php_locked_set
   - ts_fallback_is_not_a_catalog_copy
@@ -137,6 +144,7 @@ effects:
   - e2e_allowlist_invalid_item_rejected
 
 test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/Upgrades/Upgrade112Test.php
   # PHPUnit (백엔드)
   - plugins/_bundled/sirsoft-gdpr/tests/Unit/Http/Middleware/CookieConsentMiddlewareTest.php
   - plugins/_bundled/sirsoft-gdpr/tests/Feature/Api/Admin/GdprAdminSettingsControllerTest.php

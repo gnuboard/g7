@@ -2,6 +2,8 @@
 
 use App\Support\ComposerInstallInfo;
 
+require_once __DIR__.'/safe-archive-extractor.php';
+
 /**
  * Vendor 번들 설치 헬퍼 (웹 인스톨러 전용 shim).
  *
@@ -139,25 +141,19 @@ function extractVendorBundle(string $sourceDir, string $targetDir): array
         }
     }
 
-    $zip = new ZipArchive;
-    $openResult = $zip->open($zipPath);
-    if ($openResult !== true) {
+    // 역슬래시 경로 정규화 + 압축 밖 경로·심볼릭 링크 거부
+    $extracted = g7InstallSafeExtractZip($zipPath, $targetDir);
+
+    if (! $extracted['success']) {
         if ($hasBackup && is_dir($backupDir)) {
             restoreVendorFromBackup($vendorDir, $backupDir, $backupDirName);
         }
 
-        return ['success' => false, 'error' => 'extraction_failed: ZipArchive::open failed (code '.$openResult.')'];
-    }
-
-    $extracted = $zip->extractTo($targetDir);
-    $zip->close();
-
-    if (! $extracted) {
-        if ($hasBackup && is_dir($backupDir)) {
-            restoreVendorFromBackup($vendorDir, $backupDir, $backupDirName);
+        if (($extracted['error'] ?? '') === 'unsafe_entry') {
+            return ['success' => false, 'error' => 'bundle_contains_unsafe_path: '.$extracted['unsafe_entry']];
         }
 
-        return ['success' => false, 'error' => 'extraction_failed: ZipArchive::extractTo returned false'];
+        return ['success' => false, 'error' => 'extraction_failed: '.($extracted['error'] ?? 'unknown')];
     }
 
     // 성공: 백업 디렉토리 삭제 (vendor/.bundle_backup_{ts}/)
@@ -238,31 +234,8 @@ function restoreVendorFromBackup(string $vendorDir, string $backupDir, string $b
  */
 function checkVendorBundleZipSafety(string $zipPath): ?string
 {
-    $zip = new ZipArchive;
-    if ($zip->open($zipPath) !== true) {
-        return 'cannot open zip';
-    }
-
-    for ($i = 0; $i < $zip->numFiles; $i++) {
-        $name = $zip->getNameIndex($i);
-        if ($name === false) {
-            continue;
-        }
-        $normalized = str_replace('\\', '/', $name);
-        if (
-            str_contains($normalized, '../')
-            || str_starts_with($normalized, '/')
-            || preg_match('#^[A-Za-z]:/#', $normalized)
-        ) {
-            $zip->close();
-
-            return $name;
-        }
-    }
-
-    $zip->close();
-
-    return null;
+    // `..` 조각·절대경로·드라이브·UNC·널 문자·심볼릭 링크 거부 (safe-archive-extractor.php)
+    return g7InstallFindUnsafeZipEntry($zipPath);
 }
 
 /**

@@ -33,9 +33,17 @@
 로그인을 처리하고 토큰을 저장합니다.
 
 ```html
-<partial name="doc_example">
-<json>{"version":"1.0.0","type":"submit","handler":"login","target":"admin","params":{"body":{"email":"{{form.email}}","password":"{{form.password}}"}},"onSuccess":[{"handler":"navigate","params":{"path":"/admin/dashboard"}}],"onError":[{"handler":"setError","target":"{{error.response.message}}"}],"components":[{"type":"basic","name":"Div","props":{"className":"content"}}]}</json>
-</partial>
+<on type="submit">
+  <login target="admin">
+    <body email="{{form.email}}" password="{{form.password}}"/>
+    <success>
+      <navigate path="/admin/dashboard"/>
+    </success>
+    <fail>
+      <set-error target="{{error.response.message}}"/>
+    </fail>
+  </login>
+</on>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -370,6 +378,8 @@
 }
 ```
 
+> `closeModal` 은 `target` 을 읽지 않는다 — 모달 id 를 적어도 **모달 스택의 맨 위 모달 하나**를 닫는다. 특정 모달을 골라 닫는 인자는 없다.
+
 **작동 원리**:
 - `openModal`: `_global.modalStack`에 모달 ID를 push, `_global.activeModal`도 동시 설정
 - `closeModal`: `_global.modalStack`에서 최상위 모달만 제거, 이전 모달 유지
@@ -393,9 +403,9 @@
 브라우저 기본 알림(alert)을 표시합니다.
 
 ```html
-<partial name="doc_example">
-<json>{"version":"1.0.0","type":"click","handler":"showAlert","target":"$t:messages.confirm_delete","components":[{"type":"basic","name":"Div","props":{"className":"content"}}]}</json>
-</partial>
+<on type="click">
+  <show-alert target="$t:messages.confirm_delete"/>
+</on>
 ```
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
@@ -1127,8 +1137,9 @@ sequence 내에서 `target: "isolated"` setState가 실행되면, 이후 스텝�
 |------|------|------|--------|------|
 | `errorCode` | number | ❌ | errorHandling 키값 | 에러 코드 |
 | `target` | string | ❌ | `"content"` | `"full"` 또는 `"content"` |
-| `containerId` | string | ❌ | - | 렌더링할 컨테이너 ID |
-| `layout` | string | ❌ | - | 사용할 레이아웃 경로 |
+| `containerId` | string | ❌ | `target` 이 `full` 이면 `app`, 아니면 `main_content` | 렌더링할 컨테이너 ID |
+
+> 오류 화면 레이아웃은 에러 코드로 정해진다 — 레이아웃을 고르는 인자(`layout`)는 엔진이 읽지 않는다.
 
 ---
 
@@ -1766,7 +1777,16 @@ new daum.Postcode({
 | `render_hint` | `string` | ❌ | 인증 UI 렌더 힌트 |
 | `target` | `object` | ❌ | 인증 대상 (`{ email, phone }`) — `apiCall` 의 `identity_target` 과 같은 채널 |
 
-`resolveIdentityChallenge` 는 외부 redirect 콜백 이후 challenge 를 해소하는 짝 핸들러다.
+`resolveIdentityChallenge` 는 본인인증 모달·풀페이지·외부 redirect 콜백이 진행 중인 인증 대기(인터셉터)에 결과를 알리는 짝 핸들러다.
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `result` | `string` | ❌ | `verified` / `pending` / `failed` / `cancelled` (그 밖의 값·생략은 `cancelled`) |
+| `token` | `string` | `verified` 일 때 | 인증 토큰. 비면 `failed`(`MISSING_TOKEN`)로 강등 |
+| `providerData` | `object` | ❌ | 제공자 부가 정보 (`verified`) |
+| `pollUrl` · `expiresAt` | `string` | `pending` 일 때 | 상태 조회 주소·만료 시각. 하나라도 없으면 `failed`(`MALFORMED_PENDING`)로 강등 |
+| `pollIntervalMs` | `number` | ❌ | 조회 간격 (`pending`) |
+| `failureCode` · `reason` | `string` | ❌ | 실패 코드(기본 `UNKNOWN`)·사유 (`failed`) |
 
 ---
 

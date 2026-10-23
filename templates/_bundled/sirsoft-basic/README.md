@@ -5,7 +5,7 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.2-0066FF?style=flat-square" alt="version 1.2.2">
+  <img src="https://img.shields.io/badge/version-1.2.3-0066FF?style=flat-square" alt="version 1.2.3">
   <img src="https://img.shields.io/badge/type-%ED%85%9C%ED%94%8C%EB%A6%BF-555555?style=flat-square" alt="type 템플릿">
   <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.1-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.1">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
@@ -80,6 +80,10 @@ flowchart LR
 
 화면은 이 템플릿이 그리고 데이터는 모듈이 제공합니다. 그래서 템플릿을 바꿔도 게시글이나
 주문 데이터는 그대로 남습니다.
+
+화면 색 모드(`g7_color_scheme`)처럼 쿠키 동의와 무관하게 필요한 브라우저 저장 항목은 `template.json` 의
+`necessary_storage` 에 선언돼 있어, 개인정보 동의 플러그인을 쓰는 사이트에서도 동의 전에 지워지지 않습니다
+(그누보드7 7.1.3 이상).
 <!-- @intent END -->
 
 ## 요구 사항

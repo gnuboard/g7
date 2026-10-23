@@ -236,6 +236,7 @@ _단건 응답: `data` 객체의 필드 (`data.module` 은 목록과 동일한 `
 | module | object | `{"identifier":"sirsoft-board", ...}` | 활성화된 모듈 정보 (`ModuleResource` — 목록 응답 항목과 동일 필드 구성). 업데이트의 판 전환이 끝나지 않은 확장이면 `version` 은 기록 판, `file_version` 은 파일 판이고 `update_available` 이 `true` 다 |
 | pending_language_packs | array | `[]` | 이전 비활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록 (재활성화 안내 모달용). 각 항목: `id`, `identifier`, `locale`, `locale_native_name`. 없으면 빈 배열 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -530,6 +531,7 @@ _단건 응답: `data` 는 설치된 모듈의 `ModuleResource` 필드 + `langua
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자가 수행 가능한 작업 불리언 맵 |
 | language_pack_failures | array | `[]` | cascade 2단계(번들 언어팩 best-effort 설치)에서 실패한 항목. 각 항목: `identifier`, `reason`. 실패 없으면 빈 배열 |
 | language_packs_awaiting_host | array | `[]` | 함께 고른 언어팩 중 이 확장이 아직 꺼져 있어 **꺼진 채 설치**된 것의 식별자 목록(실패 아님). 이 확장을 켤 때 함께 켜진다. 없으면 빈 배열 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -643,6 +645,7 @@ _단건 응답: `data` 는 설치된 모듈의 `ModuleResource` 객체 (HTTP 201
 | deactivated_at | string\|null | `null` | 비활성화 일시 |
 | incompatible_required_version | string\|null | `null` | 요구 코어 버전 미충족 시 필요한 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자가 수행 가능한 작업 불리언 맵 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -751,6 +754,7 @@ _단건 응답: `data` 는 설치된 모듈의 `ModuleResource` 객체 (HTTP 201
 | deactivated_at | string\|null | `null` | 비활성화 일시 |
 | incompatible_required_version | string\|null | `null` | 요구 코어 버전 미충족 시 필요한 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자가 수행 가능한 작업 불리언 맵 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -1084,6 +1088,7 @@ _단건 응답: `data` 는 갱신된 모듈의 `ModuleResource` 객체 (목록 �
 | incompatible_required_version | string\|null | `null` | 요구 코어 버전 미충족 시 필요한 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자가 수행 가능한 작업 불리언 맵 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -1932,6 +1937,7 @@ _단건 응답: `data` 는 업데이트된 모듈의 `ModuleResource` 객체 (�
 | incompatible_required_version | string\|null | `null` | 요구 코어 버전 미충족 시 필요한 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자가 수행 가능한 작업 불리언 맵 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 

@@ -37,6 +37,12 @@ return [
         'not_auto_deactivated' => 'This extension was not automatically deactivated due to core version incompatibility.',
         'hidden_extension' => 'Hidden (internal-only) extensions are not exposed to user actions.',
         'internal_error' => 'An internal server error occurred. Check the server log for details.',
+        'seeder_failed' => 'Installation was cancelled because seeding default data (:seeder) failed: :message',
+        'seeder_class_not_found' => 'Seeder class not found',
+        'upgrade_step_class_missing' => 'The update was stopped because class :class of upgrade step :file was not found',
+        'upgrade_step_interface_missing' => 'The update was stopped because class :class of upgrade step :file does not implement :interface',
+        'entry_class_missing_on_update' => 'The update was stopped because class :class was not found in :file of the new version',
+        'unsafe_archive_entry' => 'The archive contains a path that is not allowed: :entry',
     ],
 
     'warnings' => [
@@ -47,6 +53,15 @@ return [
         'dependency_not_installed' => ':identifier :required is required, but it is not installed',
         'dependency_inactive' => 'Extension :identifier is turned off (requires :required)',
         'dependency_summary' => 'However, some dependencies do not meet the requirements — :list. Update or turn on those extensions as well.',
+        'archive_backslash_normalized' => 'Extracted after normalizing :count backslash (\\) paths to /',
+        'seeder_class_name_mismatch' => 'Skipped seeder file :file because the inferred class :class was not found',
+        'storage_cleanup_incomplete' => 'Could not delete the whole extension storage folder — check the server file permissions and delete the remaining files manually',
+        'completed_with_warnings' => '⚠️ Completed, but some items failed (:count warnings)',
+        'completed_with_notices' => 'ℹ️ Completed — notices to review: :count',
+        'column_step' => 'Step',
+        'column_target' => 'Target',
+        'column_message' => 'Reason',
+        'composer_install_failed' => 'Installing Composer dependencies failed — run composer install manually in the extension directory',
     ],
 
     'alerts' => [

@@ -1,0 +1,24 @@
+feature: 템플릿이 template.json necessary_storage 로 필수 브라우저 저장 키를 선언한다 (7.1.3)
+
+description: |
+  쿠키 동의 플러그인이 동의 전 지우지 않는 「필수」 저장 키를 PHP 리스너가 없는 템플릿도 선언할 수 있게 한다.
+  TemplateManager::getActiveTemplatesNecessaryStorage() 가 활성 사용자·관리자 템플릿의 선언을 저장소 종류별로 합치고,
+  형식이 틀린 항목(동의 플러그인 운영자 항목 규칙과 같은 패턴·128자)은 무시한다(설치 때는 경고 목록에도 남긴다).
+  동의 플러그인(1.1.2)은 그 결과를 제공 목록에 더한다 — 플러그인 쪽 시험이 잠근다.
+
+axes:
+  declaration: [valid, invalid_items, absent]
+  template_state: [active, inactive]
+
+exclusions:
+  - { declaration: invalid_items, template_state: inactive, reason: "비활성이면 선언을 읽지 않는다 — 형식 판정과 무관" }
+  - { declaration: absent, template_state: inactive, reason: "비활성이면 선언을 읽지 않는다" }
+
+effects:
+  - active_template_declarations_are_merged
+  - inactive_template_declarations_ignored
+  - invalid_declaration_items_ignored_with_warning
+  - absent_declaration_is_empty
+
+test_files:
+  - tests/Unit/Extension/TemplateNecessaryStorageTest.php

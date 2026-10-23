@@ -571,12 +571,12 @@ describe('클레임 신청서 상세 — 렌더', () => {
     const text = container.textContent ?? '';
 
     expect(text).toContain('미수납 금액');
-    // 형제 케이스와 **같은 토큰**으로 잰다 — 이 하네스는 표현식 안의 `$t(...)` 를 해석하지
-    // 않으므로 해석된 문구('결제하기')로 재면 게이트를 지워도 통과하는 공허한 단언이 된다.
-    expect(text).not.toContain('claim.detail.pay_action');
+    // 형제 케이스와 **같은 토큰**으로 잰다 — 시험 도구가 실제 앱처럼 표현식 안의 `$t(...)` 를 번역하므로(7.1.3)
+    // 번역된 문구('결제하기')가 결제 단추 라벨이다(형제 케이스가 같은 문구로 단추가 선 것을 확인한다).
+    expect(text).not.toContain('결제하기');
     expect(
       Array.from(container.querySelectorAll('button')).filter((b) =>
-        (b.textContent ?? '').includes('claim.detail.pay_action')
+        (b.textContent ?? '').includes('결제하기')
       )
     ).toHaveLength(0);
   });
@@ -609,12 +609,10 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('결제 수단');
     expect(text).toContain('신용카드');
 
-    // 라벨은 표현식 안의 `$t(...)` 형태다(진행 중 표시와 한 노드를 쓴다). 이 하네스는 그
-    // 형태를 해석하지 않아 키가 그대로 남는다 — 형제 항목(`compare_charge`)도 같다.
-    // 그래서 잰다: 결제 버튼 노드가 그 자리에 서고 라벨 자리가 결제 라벨 키를 가리키는가.
-    // 문구가 실제로 해석되는지는 i18n 대칭 게이트와 브라우저 실측이 맡는다.
+    // 라벨은 표현식 안의 `$t(...)` 형태다(진행 중 표시와 한 노드를 쓴다). 시험 도구가 실제 앱처럼 $locale·$templateId 를
+    // 실으면서(7.1.3) 번역된 라벨이 보인다 — 결제 버튼 노드가 그 자리에 서고 결제 라벨(진행 중 라벨 아님)을 고르는가를 잰다.
     const button = Array.from(container.querySelectorAll('button')).find(
-      (b) => (b.textContent ?? '').includes('claim.detail.pay_action')
+      (b) => (b.textContent ?? '').includes('결제하기')
     );
 
     expect(button).toBeTruthy();
@@ -1305,8 +1303,8 @@ describe('클레임 신청서 상세 — 렌더', () => {
     expect(text).toContain('$24.65');
     expect(text).toContain('블랙 / L');
     expect(text).toContain('29,000원 → 32,000원');
-    // 열 라벨은 유형 분기 식이라 하네스에서는 키가 난다 — 교환 키가 골라졌는지를 잰다.
-    expect(text).toContain('claim.detail.comparison.col_before_exchange');
+    // 열 라벨은 유형 분기 식(`$t(...)`) — 번역된 교환 라벨이 골라졌는지를 잰다(7.1.3 시험 도구).
+    expect(text).toContain('교환 전');
     expect(container.querySelector('[data-testid="claim-detail-comparison-empty"]')).toBeNull();
     // 기존 3행 대비표(원 주문 ↔ 이 클레임)는 그대로 남는다.
     expect(text).toContain('원 주문');
