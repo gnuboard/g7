@@ -66,6 +66,9 @@
                 <close-modal/>
                 <!-- 고른 팩은 창을 닫은 뒤에 비운다 — 먼저 비우면 목록을 다시 받는 동안 열린 창의 식별자·범위·버전 칸이 빈 값으로 다시 그려진다. -->
                 <set-state target="global" :selectedBundledLanguagePack="null"/>
+                <!-- 일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다. -->
+                <set-state target="global" lifecycleWarnings="{{response?.data?.warnings ?? []}}" :lifecycleWarningsOpen="false"/>
+                <open-modal if="{{(response?.data?.warnings?.length ?? 0) &gt; 0}}" target="lifecycle_warnings_modal"/>
               </success>
               <fail>
                 <set-state target="global" :isLanguagePackInstalling="false"/>

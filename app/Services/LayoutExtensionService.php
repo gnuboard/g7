@@ -19,6 +19,7 @@ use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\Layout\LayoutSyncReport;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Extension\Traits\CollectsFragmentSources;
@@ -2504,6 +2505,7 @@ class LayoutExtensionService
                     'fragment_key' => $definition['key'],
                     'error' => $e->getMessage(),
                 ]);
+                LifecycleWarnings::current()->add('layout_extension_register', basename((string) $definition['path']), $e->getMessage());
             }
         }
 

@@ -193,6 +193,9 @@
                 <refetch-data-source dataSourceId="templates"/>
                 <close-modal/>
                 <set-state target="global" :selectedTemplate="null" templateLayoutSource="auto" :templateLayoutSourceOpen="false" templateLayoutStrategy="overwrite" :hasModifiedTemplateLayouts="false" :modifiedTemplateLayoutsCount="0" :modifiedTemplateLayouts="[]"/>
+                <!-- 일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다. -->
+                <set-state target="global" lifecycleWarnings="{{response?.data?.warnings ?? []}}" :lifecycleWarningsOpen="false"/>
+                <open-modal if="{{(response?.data?.warnings?.length ?? 0) &gt; 0}}" target="lifecycle_warnings_modal"/>
               </success>
               <fail>
                 <!-- 409 = 같은 템플릿의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고

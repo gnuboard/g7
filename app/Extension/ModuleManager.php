@@ -25,6 +25,7 @@ use App\Exceptions\ExtensionUpdateFailedException;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
+use App\Extension\Exceptions\ExtensionSeederFailedException;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\DependencyVersionWarnings;
 use App\Extension\Helpers\ExtensionBackupHelper;
@@ -32,6 +33,7 @@ use App\Extension\Helpers\ExtensionInstallRollbackHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\ExtensionPendingHelper;
+use App\Extension\Helpers\ExtensionProviderRegistrar;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\ExtensionRollbackCacheRepair;
 use App\Extension\Helpers\ExtensionStatusGuard;
@@ -46,6 +48,9 @@ use App\Extension\Helpers\StuckUpdateRecovery;
 use App\Extension\Layout\DTO\LayoutSyncEntry;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\Layout\LayoutSyncReport;
+use App\Extension\Support\ComputedSettingKeys;
+use App\Extension\Support\LifecycleWarnings;
+use App\Extension\Support\UnusableUpgradeStep;
 use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
@@ -261,6 +266,12 @@ class ModuleManager implements ModuleManagerInterface
                         // 브로드캐스트 채널 자동 등록
                         $this->registerModuleChannels($module);
                     }
+                } else {
+                    // 진입 파일은 있는데 클래스가 없다(네임스페이스 오타 등) — 조용히 빠지지 않게 경고 (7.1.3)
+                    Log::warning('module.php 는 있지만 모듈 클래스를 찾을 수 없어 로드하지 않았습니다', [
+                        'module' => $moduleName,
+                        'expected_class' => $moduleClass,
+                    ]);
                 }
             }
         }
@@ -433,6 +444,7 @@ class ModuleManager implements ModuleManagerInterface
                             'module' => $moduleName,
                             'error' => $e->getMessage(),
                         ]);
+                        LifecycleWarnings::current()->add('composer_install', $moduleName, $e->getMessage());
                     }
                 }
             }
@@ -445,6 +457,11 @@ class ModuleManager implements ModuleManagerInterface
         // 방금 만든 활성 디렉토리가 고아로 남는다 — DB 행이 없어 목록에도 뜨지 않고 오류도
         // 남지 않은 채 디스크만 점유한다. 이번 호출이 만든 것이면 되돌린다.
         $rollbackDirExisted = File::isDirectory($rollbackActivePath);
+        // 설치 실패 되돌림이 「이번 호출이 만든 것」만 지우도록 호출 전 스토리지 존재를 기록한다
+        // (데이터 보존 제거 뒤 재설치면 storage/app/modules/{id} 가 운영 데이터로 남아 있다)
+        $storageExisted = File::isDirectory(ExtensionStoragePath::module($moduleName));
+        $installSnapshot = null;
+        $module = null;
 
         $onProgress?->__invoke('copy', __('extensions.progress.copy_files'));
         $this->copyFromPendingOrBundled($moduleName, $onProgress, $force);
@@ -457,6 +474,10 @@ class ModuleManager implements ModuleManagerInterface
         ExtensionManager::registerExtensionAutoloadPaths('modules', $moduleName);
 
         try {
+            // 부팅 뒤에 놓인 디렉터리라 프로바이더($repositories 바인딩)가 등록된 적이 없다 — 시더·install()
+            // 이 저장소 인터페이스를 해석하기 전에 부팅 때와 같은 규칙으로 등록한다(7.1.3)
+            ExtensionProviderRegistrar::ensureRegistered('modules', $moduleName);
+
             // 모듈이 활성 디렉토리에 있지 않으면 로드 시도
             $module = $this->getModule($moduleName);
             if (! $module) {
@@ -501,6 +522,9 @@ class ModuleManager implements ModuleManagerInterface
 
                 return false;
             }
+
+            // 실패 되돌림용 — 호출 전에 이미 있던 마이그레이션 기록·권한·IDV·알림 정의(데이터 보존 제거의 잔존분)
+            $installSnapshot = $this->snapshotModuleInstallState($module, $storageExisted);
 
             // Phase 1: 마이그레이션 실행 (DDL - 트랜잭션 외부)
             // MySQL에서 CREATE TABLE 등 DDL 문은 암시적 커밋을 유발하므로 트랜잭션 외부에서 실행
@@ -594,6 +618,7 @@ class ModuleManager implements ModuleManagerInterface
                     $composerResult = $this->extensionManager->runComposerInstall('modules', $moduleName);
                     if (! $composerResult) {
                         Log::warning('모듈 Composer 의존성 설치 실패', ['module' => $moduleName]);
+                        LifecycleWarnings::current()->add('composer_install', $moduleName, __('extensions.warnings.composer_install_failed'));
                     }
                 }
             }
@@ -617,6 +642,12 @@ class ModuleManager implements ModuleManagerInterface
             //   after_install 이다. 구독자(SEO 캐시 등·사외 확장)가 있어 다음 메이저까지 유지한다.
             HookManager::doAction('core.modules.installed', $moduleName);
         } catch (\Throwable $e) {
+            // 새 설치(호출 전 DB 행 없음)면 이번 호출이 만든 행·테이블·설정을 되돌린다.
+            // 재설치(--force, 호출 전 DB 행 있음)는 운영 데이터라 아무것도 지우지 않는다.
+            if ($existingRecord === null && $module !== null && $installSnapshot !== null) {
+                $this->rollbackFailedModuleInstall($module, $installSnapshot);
+            }
+
             ExtensionInstallRollbackHelper::removeIfCreatedByThisInstall(
                 $rollbackActivePath,
                 $rollbackDirExisted,
@@ -654,6 +685,11 @@ class ModuleManager implements ModuleManagerInterface
                 'reason' => __('modules.errors.not_found', ['module' => $moduleName]),
             ];
         }
+
+        // 같은 요청에서 방금 설치(연쇄 설치 포함)된 모듈이면 프로바이더가 아직 없다 — 활성화 훅·언어팩 시더가
+        // 저장소를 해석하기 전에 등록한다(7.1.3). 이미 등록됐으면 아무것도 하지 않는다.
+        ExtensionManager::registerExtensionAutoloadPaths('modules', $moduleName);
+        ExtensionProviderRegistrar::ensureRegistered('modules', $moduleName);
 
         $module->clearLifecycleFailureReason();
 
@@ -800,6 +836,9 @@ class ModuleManager implements ModuleManagerInterface
             // 확장 미들웨어 인덱스 무효화 — 재활성화 시 이 모듈이 선언한 미들웨어가
             // 게이트 매칭 후보에 다시 포함되도록 한다.
             ExtensionMiddlewareRegistry::flush();
+            // 훅 캐시 다시 굽기 — 활성 목록이 바뀌었는데 캐시가 그대로면 켠 확장의 리스너가 빠지거나
+            // (스캔 폴백은 캐시에 그 확장 항목이 없을 때만) 끈 확장의 리스너가 남는다 (7.1.3)
+            $this->extensionManager->regenerateHookCache();
         }
 
         // 훅 발행: 모듈 활성화 완료
@@ -819,11 +858,12 @@ class ModuleManager implements ModuleManagerInterface
                 'success' => false,
                 'layouts_registered' => $layoutsRegistered,
                 'layout_warnings' => $layoutWarnings,
+                'warnings' => LifecycleWarnings::current()->all(),
                 'reason' => $module->getLifecycleFailureReason() ?? __('modules.errors.unknown_error'),
             ];
         }
 
-        return ['success' => true, 'layouts_registered' => $layoutsRegistered, 'layout_warnings' => $layoutWarnings];
+        return ['success' => true, 'layouts_registered' => $layoutsRegistered, 'layout_warnings' => $layoutWarnings, 'warnings' => LifecycleWarnings::current()->all()];
     }
 
     /**
@@ -979,6 +1019,10 @@ class ModuleManager implements ModuleManagerInterface
             // 확장 미들웨어 인덱스 무효화 — 비활성 모듈의 미들웨어가 게이트 매칭에서 즉시 제외.
             ExtensionMiddlewareRegistry::flush();
 
+            // 훅 캐시 다시 굽기 — 활성 목록이 바뀌었는데 캐시가 그대로면 켠 확장의 리스너가 빠지거나
+            // (스캔 폴백은 캐시에 그 확장 항목이 없을 때만) 끈 확장의 리스너가 남는다 (7.1.3)
+            $this->extensionManager->regenerateHookCache();
+
             // 요구사항 #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
             HookManager::doAction('core.modules.after_deactivate', $module->getIdentifier());
         }
@@ -1128,6 +1172,7 @@ class ModuleManager implements ModuleManagerInterface
                                 'module' => $module->getIdentifier(),
                                 'error' => $e->getMessage(),
                             ]);
+                            LifecycleWarnings::current()->add('cleanup', $module->getIdentifier(), $e->getMessage());
                         }
                     }
 
@@ -1141,6 +1186,7 @@ class ModuleManager implements ModuleManagerInterface
                                 'module' => $module->getIdentifier(),
                                 'error' => $e->getMessage(),
                             ]);
+                            LifecycleWarnings::current()->add('cleanup', $module->getIdentifier(), $e->getMessage());
                         }
                     }
                 }
@@ -1709,9 +1755,16 @@ class ModuleManager implements ModuleManagerInterface
                 if ($module instanceof ModuleInterface) {
                     return $module;
                 }
+            } else {
+                // 진입 파일은 있는데 클래스가 없다(네임스페이스 오타 등) — 번들 목록에서 조용히 빠지지 않게 경고 (7.1.3)
+                Log::warning('module.php 는 있지만 모듈 클래스를 찾을 수 없어 번들 정보를 읽지 않았습니다', [
+                    'module' => $moduleName,
+                    'expected_class' => $moduleClass,
+                    'pending' => $isPending,
+                ]);
             }
         } catch (\Throwable $e) {
-            Log::debug("Failed to load bundled module instance for {$moduleName}: ".$e->getMessage());
+            Log::warning("Failed to load bundled module instance for {$moduleName}: ".$e->getMessage());
         }
 
         return null;
@@ -1944,6 +1997,7 @@ class ModuleManager implements ModuleManagerInterface
                         'migration' => basename($filePath),
                         'error' => $e->getMessage(),
                     ]);
+                    LifecycleWarnings::current()->add('cleanup', basename($filePath), $e->getMessage());
                 }
             }
 
@@ -2004,9 +2058,9 @@ class ModuleManager implements ModuleManagerInterface
             return;
         }
 
-        // _meta.categories와 defaults 섹션 확인
+        // _meta.categories와 defaults 섹션 확인 — 계산값 키(도트 표기 `카테고리.키`)는 설치 때 쓰지 않는다 (7.1.3)
         $categories = $data['_meta']['categories'] ?? [];
-        $defaults = $data['defaults'] ?? [];
+        $defaults = ComputedSettingKeys::strip($data['defaults'] ?? [], ComputedSettingKeys::of($module));
 
         if (empty($categories) || empty($defaults)) {
             Log::info('모듈 defaults.json에 카테고리 또는 기본값이 없습니다.', [
@@ -2065,6 +2119,7 @@ class ModuleManager implements ModuleManagerInterface
                 'module' => $module->getIdentifier(),
                 'error' => $e->getMessage(),
             ]);
+            LifecycleWarnings::current()->add('cleanup', $module->getIdentifier(), $e->getMessage());
 
             return;
         }
@@ -2087,6 +2142,7 @@ class ModuleManager implements ModuleManagerInterface
                     'table' => $table,
                     'error' => $e->getMessage(),
                 ]);
+                LifecycleWarnings::current()->add('cleanup', (string) $table, $e->getMessage());
             }
         }
 
@@ -2122,6 +2178,17 @@ class ModuleManager implements ModuleManagerInterface
         try {
             File::deleteDirectory($moduleStoragePath);
 
+            // deleteDirectory 는 파일 권한 등으로 지우지 못해도 예외 없이 true 를 돌려준다 — 남았는지로 판정한다.
+            if (File::isDirectory($moduleStoragePath)) {
+                Log::error('모듈 스토리지 디렉토리를 모두 삭제하지 못했습니다', [
+                    'module' => $module->getIdentifier(),
+                    'path' => $moduleStoragePath,
+                ]);
+                LifecycleWarnings::current()->add('cleanup', $module->getIdentifier(), __('extensions.warnings.storage_cleanup_incomplete'));
+
+                return;
+            }
+
             Log::info('모듈 스토리지 디렉토리 삭제 완료', [
                 'module' => $module->getIdentifier(),
                 'path' => $moduleStoragePath,
@@ -2132,6 +2199,7 @@ class ModuleManager implements ModuleManagerInterface
                 'path' => $moduleStoragePath,
                 'error' => $e->getMessage(),
             ]);
+            LifecycleWarnings::current()->add('cleanup', $module->getIdentifier(), $e->getMessage());
         }
     }
 
@@ -3027,8 +3095,14 @@ class ModuleManager implements ModuleManagerInterface
      * getSeeders()가 비어있지 않으면 해당 목록만 순서대로 실행합니다.
      * 빈 배열이면 database/seeders/ 디렉토리의 모든 시더를 자동 검색하여 실행합니다. (역호환)
      *
+     * 시더가 실패하거나 선언된 시더 클래스가 없으면 설치를 실패로 끝낸다(7.1.3 — 예전에는 로그만 남기고
+     * 설치가 「성공」해 기본 데이터 0건인 사이트가 됐다). glob 폴백에서 파일은 있는데 추론한 클래스가 없으면
+     * 경고 목록에 남기고 건너뛴다.
+     *
      * @param  ModuleInterface  $module  시더를 실행할 모듈 인스턴스
      * @return void 반환값 없음
+     *
+     * @throws ExtensionSeederFailedException 시더 실패 또는 선언된 시더 클래스 없음
      */
     protected function runModuleSeeders(ModuleInterface $module): void
     {
@@ -3054,20 +3128,11 @@ class ModuleManager implements ModuleManagerInterface
 
         if (! empty($definedSeeders)) {
             foreach ($definedSeeders as $seederClass) {
-                if (class_exists($seederClass)) {
-                    try {
-                        Artisan::call('db:seed', [
-                            '--class' => $seederClass,
-                            '--force' => true,
-                        ]);
-
-                        Log::info("모듈 시더 실행 완료: {$seederClass}");
-                    } catch (\Exception $e) {
-                        Log::error("모듈 시더 실행 실패: {$seederClass}", [
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
+                if (! class_exists($seederClass)) {
+                    throw new ExtensionSeederFailedException($seederClass, __('extensions.errors.seeder_class_not_found'));
                 }
+
+                $this->runSeederOrFail($seederClass);
             }
 
             return;
@@ -3090,22 +3155,150 @@ class ModuleManager implements ModuleManagerInterface
             $fileName = basename($seederFile, '.php');
             $seederClass = "Modules\\{$namespace}\\Database\\Seeders\\{$fileName}";
 
-            // 시더 클래스가 존재하는지 확인
-            if (class_exists($seederClass)) {
-                try {
-                    Artisan::call('db:seed', [
-                        '--class' => $seederClass,
-                        '--force' => true,
-                    ]);
+            // 파일은 있는데 추론한 클래스가 없으면(네임스페이스·클래스명 불일치) 경고만 남기고 건너뛴다
+            if (! class_exists($seederClass)) {
+                $message = __('extensions.warnings.seeder_class_name_mismatch', [
+                    'file' => basename($seederFile),
+                    'class' => $seederClass,
+                ]);
+                Log::warning("모듈 시더 클래스 추론 불일치: {$seederClass}", ['file' => $seederFile]);
+                LifecycleWarnings::current()->add('seeder', $moduleDirName, $message);
 
-                    Log::info("모듈 시더 실행 완료: {$seederClass}");
-                } catch (\Exception $e) {
-                    Log::error("모듈 시더 실행 실패: {$seederClass}", [
-                        'error' => $e->getMessage(),
-                    ]);
-                }
+                continue;
+            }
+
+            $this->runSeederOrFail($seederClass);
+        }
+    }
+
+    /**
+     * 시더 하나를 실행하고, 실패하면 설치 실패 예외로 올립니다.
+     *
+     * @param  string  $seederClass  시더 클래스(FQCN)
+     * @return void 반환값 없음
+     *
+     * @throws ExtensionSeederFailedException 시더 예외 또는 0 이 아닌 종료 코드
+     */
+    private function runSeederOrFail(string $seederClass): void
+    {
+        try {
+            $exitCode = Artisan::call('db:seed', [
+                '--class' => $seederClass,
+                '--force' => true,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error("모듈 시더 실행 실패: {$seederClass}", ['error' => $e->getMessage()]);
+
+            throw new ExtensionSeederFailedException($seederClass, $e->getMessage(), $e);
+        }
+
+        if ($exitCode !== 0) {
+            $output = trim(Artisan::output());
+            Log::error("모듈 시더 실행 실패: {$seederClass}", ['exit_code' => $exitCode, 'output' => $output]);
+
+            throw new ExtensionSeederFailedException($seederClass, $output !== '' ? $output : "exit code {$exitCode}");
+        }
+
+        Log::info("모듈 시더 실행 완료: {$seederClass}");
+    }
+
+    /**
+     * 설치 실패 되돌림에 쓸 「호출 전 상태」를 기록합니다.
+     *
+     * 데이터 보존 제거(--delete-data 없이 제거) 뒤 재설치면 DB 행은 없어도 테이블·마이그레이션 기록·권한·
+     * IDV 정책·알림 정의·스토리지가 운영 데이터로 남아 있다. 되돌림은 이 기록에 없던 것만 지운다.
+     *
+     * @param  ModuleInterface  $module  설치 중인 모듈
+     * @param  bool  $storageExisted  호출 전 storage/app/modules/{id} 존재 여부
+     * @return array{migrations: array<int, string>, permissions: bool, identity_policies: bool, notification_definitions: bool, storage: bool}
+     */
+    protected function snapshotModuleInstallState(ModuleInterface $module, bool $storageExisted): array
+    {
+        $identifier = $module->getIdentifier();
+        $migrationNames = [];
+        foreach ($module->getMigrations() as $migrationPath) {
+            foreach (glob($migrationPath.'/*.php') ?: [] as $file) {
+                $migrationNames[] = pathinfo($file, PATHINFO_FILENAME);
             }
         }
+
+        $recorded = [];
+        if ($migrationNames !== [] && Schema::hasTable('migrations')) {
+            $recorded = DB::table('migrations')->whereIn('migration', $migrationNames)->pluck('migration')->all();
+        }
+
+        return [
+            'migrations' => $recorded,
+            'permissions' => $this->permissionRepository->getByExtension(ExtensionOwnerType::Module, $identifier)->isNotEmpty(),
+            'identity_policies' => Schema::hasTable('identity_policies') && $this->hasExistingIdentityPolicies('module', $identifier),
+            'notification_definitions' => Schema::hasTable('notification_definitions') && $this->hasExistingNotificationDefinitions('module', $identifier),
+            'storage' => $storageExisted,
+        ];
+    }
+
+    /**
+     * 새 설치가 실패했을 때 이번 호출이 만든 DB 행·테이블·설정·스토리지를 되돌립니다.
+     *
+     * 제거 훅(before_uninstall·after_uninstall)은 발화하지 않는다 — 설치되지 않은 것으로 본다.
+     * 각 단계는 실패해도 다음 단계를 계속하고, 원래 실패 사유를 가리지 않도록 로그만 남긴다.
+     *
+     * @param  ModuleInterface  $module  설치에 실패한 모듈
+     * @param  array{migrations: array<int, string>, permissions: bool, identity_policies: bool, notification_definitions: bool, storage: bool}  $snapshot  snapshotModuleInstallState() 결과
+     * @return void 반환값 없음
+     */
+    protected function rollbackFailedModuleInstall(ModuleInterface $module, array $snapshot): void
+    {
+        $identifier = $module->getIdentifier();
+        $steps = [
+            'registrations' => function () use ($module, $identifier, $snapshot) {
+                if (! $snapshot['permissions']) {
+                    $this->removeModulePermissionsAndMenus($module);
+                }
+                if (! $snapshot['identity_policies'] && Schema::hasTable('identity_policies')) {
+                    app(IdentityPolicySyncHelper::class)->cleanupStalePolicies('module', $identifier, []);
+                }
+                if (! $snapshot['notification_definitions'] && Schema::hasTable('notification_definitions')) {
+                    app(NotificationSyncHelper::class)->cleanupStaleDefinitions('module', $identifier, []);
+                }
+            },
+            'module_row' => fn () => $this->moduleRepository->deleteByIdentifier($identifier),
+            'migrations' => function () use ($module, $identifier, $snapshot) {
+                if ($snapshot['migrations'] === []) {
+                    $this->cleanupDynamicModuleData($module);
+                }
+                foreach ($module->getMigrations() as $migrationPath) {
+                    $files = glob($migrationPath.'/*.php') ?: [];
+                    rsort($files);
+                    foreach ($files as $file) {
+                        if (in_array(pathinfo($file, PATHINFO_FILENAME), $snapshot['migrations'], true)) {
+                            continue;
+                        }
+                        $this->rollbackSingleMigration($file, $identifier);
+                    }
+                }
+            },
+            'storage' => function () use ($module, $snapshot) {
+                if (! $snapshot['storage']) {
+                    $this->deleteModuleStorage($module);
+                }
+            },
+        ];
+
+        foreach ($steps as $step => $run) {
+            try {
+                $run();
+            } catch (\Throwable $e) {
+                Log::error("모듈 설치 실패 되돌림 단계 실패: {$step}", [
+                    'module' => $identifier,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        self::invalidateModuleStatusCache();
+        unset($this->modules[$identifier]);
+
+        Log::warning('모듈 설치 실패 — 이번 설치가 만든 데이터를 되돌렸습니다', ['module' => $identifier]);
     }
 
     /**
@@ -3504,6 +3697,7 @@ class ModuleManager implements ModuleManagerInterface
                     'module' => $module->getIdentifier(),
                     'error' => $e->getMessage(),
                 ]);
+                LifecycleWarnings::current()->add('layout_register', $module->getIdentifier(), $e->getMessage());
             }
         }
 
@@ -3639,6 +3833,7 @@ class ModuleManager implements ModuleManagerInterface
                     'module' => $identifier,
                     'error' => $e->getMessage(),
                 ]);
+                LifecycleWarnings::current()->add('layout_register', basename((string) $layoutFile), $e->getMessage());
             }
         }
 
@@ -3736,7 +3931,7 @@ class ModuleManager implements ModuleManagerInterface
         if ($adminTemplates->isEmpty() && $userTemplates->isEmpty()) {
             Log::warning("활성화된 admin/user 템플릿이 없어 모듈 레이아웃을 갱신할 수 없습니다: {$moduleName}");
 
-            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'layout_sync' => $report->toArray(), 'layout_warnings' => []];
+            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'layout_sync' => $report->toArray(), 'layout_warnings' => [], 'warnings' => LifecycleWarnings::current()->all()];
         }
 
         $stats = ['created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0];
@@ -3789,6 +3984,7 @@ class ModuleManager implements ModuleManagerInterface
                             'module' => $identifier,
                             'error' => $e->getMessage(),
                         ]);
+                        LifecycleWarnings::current()->add('layout_refresh', basename((string) $validatedLayout['file']), $e->getMessage());
                     }
                 }
 
@@ -3852,6 +4048,7 @@ class ModuleManager implements ModuleManagerInterface
             'extensions_refreshed' => $extensionStats['refreshed'] ?? 0,
             'layout_sync' => $report->toArray(),
             'layout_warnings' => $layoutWarnings,
+            'warnings' => LifecycleWarnings::current()->all(),
         ];
     }
 
@@ -3957,6 +4154,7 @@ class ModuleManager implements ModuleManagerInterface
                     'template' => $template->identifier,
                     'error' => $e->getMessage(),
                 ]);
+                LifecycleWarnings::current()->add('layout_extension_reregister', (string) $template->identifier, $e->getMessage());
             }
         }
     }
@@ -3991,6 +4189,7 @@ class ModuleManager implements ModuleManagerInterface
             Log::error("모듈 레이아웃 확장 복원 실패: {$module->getIdentifier()}", [
                 'error' => $e->getMessage(),
             ]);
+            LifecycleWarnings::current()->add('layout_extension_restore', $module->getIdentifier(), $e->getMessage());
 
             // 복원 실패가 모듈 활성화를 중단시키지 않음
         }
@@ -4022,6 +4221,7 @@ class ModuleManager implements ModuleManagerInterface
             Log::error("모듈 레이아웃 확장 soft delete 실패: {$module->getIdentifier()}", [
                 'error' => $e->getMessage(),
             ]);
+            LifecycleWarnings::current()->add('layout_extension_unregister', $module->getIdentifier(), $e->getMessage());
 
             // 확장 삭제 실패가 모듈 비활성화를 중단시키지 않음
         }
@@ -4053,6 +4253,7 @@ class ModuleManager implements ModuleManagerInterface
             Log::error("모듈 레이아웃 확장 영구 삭제 실패: {$module->getIdentifier()}", [
                 'error' => $e->getMessage(),
             ]);
+            LifecycleWarnings::current()->add('cleanup', $module->getIdentifier(), $e->getMessage());
         }
     }
 
@@ -4101,15 +4302,15 @@ class ModuleManager implements ModuleManagerInterface
      * _pending/_bundled에서 복사된 후 클래스를 로드하여 $this->modules에 등록합니다.
      *
      * @param  string  $moduleName  모듈명 (identifier)
-     * @return void 반환값 없음
+     * @return bool 새 파일의 모듈 클래스를 읽어 등록했으면 true (진입 파일이 없거나 클래스를 못 찾으면 false)
      */
-    protected function reloadModule(string $moduleName): void
+    protected function reloadModule(string $moduleName): bool
     {
         $moduleDir = $this->modulesPath.DIRECTORY_SEPARATOR.$moduleName;
         $moduleFile = $moduleDir.DIRECTORY_SEPARATOR.'module.php';
 
         if (! File::exists($moduleFile)) {
-            return;
+            return false;
         }
 
         $namespace = $this->convertDirectoryToNamespace($moduleName);
@@ -4149,7 +4350,17 @@ class ModuleManager implements ModuleManagerInterface
 
             // 확장 미들웨어 인덱스 무효화 — 재로드된 모듈의 갱신된 미들웨어 선언 반영.
             ExtensionMiddlewareRegistry::flush();
+
+            return true;
         }
+
+        // 진입 파일은 있는데 클래스가 없다(네임스페이스 오타 등) — 옛 인스턴스가 남은 채 조용히 넘어가지 않게 경고 (7.1.3)
+        Log::warning('module.php 는 있지만 모듈 클래스를 찾을 수 없어 다시 읽지 않았습니다', [
+            'module' => $moduleName,
+            'expected_class' => $moduleClass,
+        ]);
+
+        return false;
     }
 
     /**
@@ -4517,6 +4728,9 @@ class ModuleManager implements ModuleManagerInterface
         // 버전순 정렬
         uksort($filteredSteps, 'version_compare');
 
+        // 이번 범위의 단계 파일이 쓸 수 없으면(클래스 없음·인터페이스 미구현) 아무 단계도 돌리기 전에 업데이트 실패 (7.1.3)
+        UnusableUpgradeStep::assertNoneIn($filteredSteps);
+
         // 확장 업그레이드는 코어(sudo/root)와 다른 실행 주체(php-fpm/www-data)로 실행되므로
         // 코어 'upgrade' 채널과 로그 파일을 분리한다. 같은 파일 공유 시 root 소유 파일에
         // www-data 가 append 하지 못해 Permission denied 로 실패하던 결함을 원천 차단.
@@ -4812,7 +5026,13 @@ class ModuleManager implements ModuleManagerInterface
 
             // 모듈 재로드 (새 파일로)
             $onProgress?->__invoke('reload', __('extensions.progress.module_reload'));
-            $this->reloadModule($identifier);
+            if (! $this->reloadModule($identifier)) {
+                // 새 판 클래스를 못 읽으면 옛 인스턴스로 나머지 단계를 돌고 판만 새로 적게 된다 — 판을 적기 전에 실패 (7.1.3, D10)
+                throw new \RuntimeException(__('extensions.errors.entry_class_missing_on_update', [
+                    'file' => 'module.php',
+                    'class' => 'Modules\\'.$this->convertDirectoryToNamespace($identifier).'\\Module',
+                ]));
+            }
             $module = $this->getModule($identifier);
 
             // 4. 마이그레이션 실행
@@ -4971,6 +5191,7 @@ class ModuleManager implements ModuleManagerInterface
                 'layout_source' => self::normalizeLayoutInstallSource(config('template.layout_markup.install_source')),
                 'layout_sync' => $layoutSync,
                 'layout_warnings' => $layoutWarnings,
+                'warnings' => LifecycleWarnings::current()->all(),
                 'dependency_warnings' => $dependencyWarnings,
                 'message' => DependencyVersionWarnings::appendToMessage(__('modules.update_success', [
                     'module' => $identifier,

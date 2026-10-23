@@ -865,7 +865,7 @@ class PluginService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'plugin.json', 'plugins'
+                $file->getRealPath(), $extractPath, 'plugin.json', 'plugins', $file->getClientOriginalName()
             );
 
             $manifest = $result['config'];
@@ -915,7 +915,7 @@ class PluginService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'plugin.json', 'plugins'
+                $file->getRealPath(), $extractPath, 'plugin.json', 'plugins', $file->getClientOriginalName()
             );
 
             $this->ensurePluginNotInstalled($result['identifier']);

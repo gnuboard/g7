@@ -714,6 +714,8 @@ effects:
   - switch_subject_placement_is_expressible_in_both_forms
   - switch_top_level_value_is_warned_as_not_consumed
   - switch_params_value_is_the_canonical_placement
+  - set_state_underscore_global_target_is_warned
+  - set_state_global_target_and_result_to_underscore_global_do_not_warn
   # W4 착수 실측이 드러낸 문법 갭 (D51 G14~G17)
   - seo_structured_children_use_structured_value_grammar
   - structured_field_placement_follows_handler_manifest

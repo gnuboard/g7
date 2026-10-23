@@ -2437,7 +2437,7 @@
       "update_guide_desc": "サーバーターミナルに接続して、グヌボード7インストールディレクトリで以下のコマンドを実行してください。",
       "update_guide_note": "アップデート中は自動的にメンテナンスモードが有効化されます。アップデート完了後は自動的に解除されます。",
       "manual_update_title": "手動アップデート (ZIP拡張未インストール環境)",
-      "manual_update_desc": "サーバーにPHP zip拡張やunzipコマンドがない場合、GitHubからリリースZIPを直接ダウンロードしてアップデートできます。",
+      "manual_update_desc": "サーバーにPHP zip拡張 (ZipArchive) がない場合、GitHubからリリースZIPを直接ダウンロードしてアップデートできます。",
       "manual_update_step1": "# 1. GitHubリリースページからZIPをダウンロードし、サーバーで解凍",
       "manual_update_step2": "# 2. 解凍されたパスを指定してアップデートを実行",
       "update_guide_cmd_comment": "# 管理者権限での実行を推奨 (Linux/macOS)",
@@ -3549,7 +3549,8 @@
       "reaggregate_modal": "期間再集計",
       "subject_delete_modal": "情報主体記録削除確認",
       "row_trend_modal": "項目の推移"
-    }
+    },
+    "lifecycle_warnings_modal": "拡張機能の操作警告ウィンドウ"
   },
   "member_notification": {
     "page_title": "会員通知ボックス",
@@ -4342,5 +4343,16 @@
     "header_description": "このファイルは templates/sirsoft-admin_basic/layouts/partials/template_partial_test/_header_section.g7.html です",
     "card_title": "✨ Composite コンポーネント Include テスト",
     "card_content": "この Card は partials/template_partial_test/_info_card.g7.html から include されました。\n\n📌 Include システムの特徴:\n• モジュールとテンプレートの両方に対応\n• 無制限のネスト深さ(depth 上限 10)\n• 循環参照の自動検出\n• Basic と Composite コンポーネントの両方を使用可能"
+  },
+  "extensions": {
+    "lifecycle_warnings": {
+      "title": "一部の項目が失敗しました",
+      "summary": "完了しましたが、一部の項目が失敗しました（{{count}}件）",
+      "description": "操作自体は完了しました。以下の項目のみ反映されていません。理由を確認してから、該当する操作（レイアウトの更新など）を再度実行してください。",
+      "toggle": "詳細を表示",
+      "notice_title": "確認すべきお知らせがあります",
+      "notice_summary": "完了しました — 確認すべきお知らせ {{count}} 件",
+      "notice_description": "すべて反映されました。以下のお知らせを確認してください。"
+    }
   }
 }

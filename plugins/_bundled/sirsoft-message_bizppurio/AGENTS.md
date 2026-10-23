@@ -168,6 +168,12 @@ HookManager::addAction(
 후보에 오릅니다. 비회원 수신 번호는 알림을 보내는 도메인이 코어 표준 키
 (`GenericNotification::RECIPIENT_PHONE_KEY`)로 알림 data 에 싣고, 이 플러그인은 그 키만 읽습니다.
 
+**활성화 재시드 실패는 경고로 보고합니다.** `activate()` 는 이미 저장된 알림 정의에도 템플릿 행을 만들도록
+코어 시더 → 활성 모듈 → 활성 플러그인 순으로 재시드하며, 한 단계가 실패해도 다음 단계와 활성화는 막지
+않습니다. 그 실패는 로그와 함께 코어 생명주기 경고 목록(`LifecycleWarnings`, step `reseed`, target
+`sirsoft-message_bizppurio:{core|modules|plugins}`)에 올라가 관리자 결과 창·API `data.warnings`·CLI 경고 표로
+운영자에게 보입니다(코어 7.1.3+ — 클래스가 없는 옛 코어에서는 `class_exists` 가드로 로그만 남깁니다).
+
 레이아웃 조각 7개가 UI 대부분입니다 — 알림 설정 화면의 비즈뿌리오 탭(코어·게시판·이커머스
 각각), 알림 목록 행 하단 요약, 알림 템플릿 편집 창의 알림톡·문자 섹션과 하단 버튼, 발송 이력
 화면의 결과 열. 대상 화면이 그 자리를 없애면 조각은 **오류 없이 사라집니다.**
@@ -217,7 +223,7 @@ HookManager::addAction(
 | PHPUnit | 46개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
 | Vitest | 24개 | `vitest.config.ts` |
 | Playwright | 3개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 26개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 27개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -295,7 +295,7 @@ unzip g7-release.zip
 
 # 압축 해제 결과 확인 — 루트 디렉토리가 g7이 아니면 이름 변경
 ls -la
-# (필요 시) mv g7-7.1.2 g7
+# (필요 시) mv g7-7.1.3 g7
 
 # ZIP 파일 정리 (선택)
 rm g7-release.zip
@@ -554,7 +554,7 @@ sudo php artisan core:update
 
 ### 방법 3: 수동 ZIP 업그레이드 (PHP zip 확장 미설치 환경)
 
-PHP `zip` 확장 또는 시스템 `unzip` 명령이 없는 서버에서는 GitHub Release ZIP 을 직접 다운로드한 뒤 압축 해제 경로를 지정해 업그레이드합니다.
+PHP `zip` 확장이 없는 서버에서는 GitHub Release ZIP 을 직접 다운로드한 뒤 압축 해제 경로를 지정해 업그레이드합니다. 7.1.3 부터 코어·확장 업데이트는 시스템 `unzip` 명령으로 대신 풀지 않으므로, `unzip` 명령만 있는 서버도 이 방법을 씁니다.
 
 ```bash
 # 1. GitHub 릴리스 페이지에서 ZIP 다운로드 후 서버에 압축 해제

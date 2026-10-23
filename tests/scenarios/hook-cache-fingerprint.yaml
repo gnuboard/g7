@@ -1,0 +1,35 @@
+feature: 훅·확장 오토로드 캐시가 활성 확장 파일 지문으로 스스로 고쳐진다 (7.1.3)
+
+description: |
+  훅 캐시는 형식·코어 버전만 보고 캐시에 확장 항목이 있으면 그 확장을 다시 스캔하지 않아, 확장 파일만 교체하면 새 리스너가
+  빠졌다. 두 캐시에 활성 확장의 매니페스트·진입 파일·composer.json 수정 시각(지문)을 기록하고, 다르면 훅 캐시는 스캔 폴백 +
+  요청 끝 재생성, 오토로드 캐시는 부팅 때 Composer 없이 재생성(사라진 클래스는 classmap null → PSR-4)한다. 리스너 일부가
+  실패한 확장은 훅 캐시에 넣지 않는다. 활성화·비활성화도 훅 캐시를 다시 굽는다(InstallSeederProviderTest 가 잠금).
+  진입점(index.php·artisan)이 오토로드를 먼저 등록해도 부팅이 지문을 기억해야 오토로드 자기 복구가 실제 요청에서 판정한다.
+
+axes:
+  cache: [fingerprint, hooks, autoload]
+  change: [entry_file_replaced, listener_broken, none, activation_toggled, entry_point_registered]
+
+exclusions:
+  - { cache: fingerprint, change: listener_broken, reason: "지문은 파일 수정 시각만 본다 — 리스너 실패는 훅 캐시 수집 칸" }
+  - { cache: fingerprint, change: none, reason: "변화 없음 판정은 같은 시험의 첫 단언(matches true)이 덮는다" }
+  - { cache: autoload, change: listener_broken, reason: "오토로드 캐시는 리스너를 모른다" }
+  - { cache: fingerprint, change: activation_toggled, reason: "활성 토글은 훅 캐시 재생성 칸 — 지문 계산과 무관" }
+  - { cache: autoload, change: activation_toggled, reason: "활성 토글은 오토로드를 다시 만들지 않는다(설치·제거·업데이트만)" }
+  - { cache: fingerprint, change: entry_point_registered, reason: "진입점 등록 여부는 오토로드 기억 칸 — 지문 계산과 무관" }
+  - { cache: hooks, change: entry_point_registered, reason: "훅 캐시는 진입점이 아니라 HookCacheManager 가 읽는다" }
+  - { cache: autoload, change: none, reason: "같은 시험의 마지막 단언(다시 만든 뒤 false)이 변화 없음을 덮는다" }
+
+effects:
+  - fingerprint_detects_file_only_replacement
+  - stale_hook_cache_falls_back_to_scan
+  - unchanged_cache_still_used
+  - partially_failed_extension_left_out_of_cache
+  - stale_autoload_cache_regenerated_and_vanished_class_unmapped
+  - activation_toggle_regenerates_hook_cache
+  - entry_point_boot_remembers_autoload_fingerprint
+
+test_files:
+  - tests/Unit/Extension/HookCacheFingerprintTest.php
+  - tests/Feature/Extension/InstallSeederProviderTest.php

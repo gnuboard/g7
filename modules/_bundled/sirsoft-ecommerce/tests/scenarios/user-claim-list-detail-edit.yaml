@@ -128,6 +128,7 @@ effects:
   - claim_edit_saves_the_refund_account                # 구매자가 고친 계좌가 신청서에 남는다
   - claim_edit_keeps_the_recorded_refund_account       # 보내지 않으면 기록된 계좌를 지우지 않는다
   - claim_edit_rejects_a_partly_filled_refund_account  # 일부만 채운 계좌는 422 (송금 대상이 되지 못한다)
+  - claim_edit_refund_account_is_editable_and_explained # 수정 화면의 환불 계좌는 편집할 수 있고, 빈 칸으로 여는 이유(기록된 계좌·비우면 유지)를 화면이 말한다
   - claim_edit_locks_items_and_quantity
   - claim_edit_hides_charge_axes_and_shows_the_recorded_method
   - claim_edit_replaces_submit_with_save

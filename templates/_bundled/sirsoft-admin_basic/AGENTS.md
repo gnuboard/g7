@@ -79,7 +79,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 제공 컴포넌트 | 134개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 185개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 레이아웃 | 186개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
 | 전용 핸들러 | 23개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 0개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
@@ -91,6 +91,10 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 이 템플릿에서만 다르게 그리고 싶다면 첫 번째 경로를, 새 화면 유형(예: 새로운 카드 스타일)이
 필요하면 `src/components/composite/` 에 컴포넌트를 추가하고 `components.json` 에 등록하는
 쪽을 씁니다.
+
+`template.json` 의 `necessary_storage`(코어 7.1.3+)는 이 템플릿 화면이 쿠키 동의와 무관하게 쓰는 브라우저 저장
+키(색 모드·사이드바 접힘·목록 필터·표시 열·보기 방식, 경고 닫음 기록)를 선언합니다 — 개인정보 동의 플러그인이
+이 선언을 「확장 제공 항목」에 합쳐 동의 전에도 지우지 않습니다. 화면이 새 필수 키를 쓰게 되면 여기에 추가합니다.
 <!-- @intent END -->
 
 ## 5. 수정 시 동반 의무
@@ -104,7 +108,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 화면에서 다국어 값을 고를 때는 레이아웃 `$localized(x)` · 핸들러 `G7Core.locale.pick(x)`(요청 언어 → 사이트 기본 언어 → 영어, engine-v1.81.0). `?.ko ??` 고정 대체는 강제 검사가 막는다. 언어 이름은 대문자 코드가 아니라 언어팩 이름(`appConfig.localeNames`)으로 보인다(#148)
-- [ ] 컴포넌트가 `localStorage` 에 적는 키는 `g7le.` 접두를 쓴다 — GDPR 동의 플러그인의 strictly-necessary 허용 목록(`plugins/_bundled/sirsoft-gdpr/plugin.php`)이 이 접두만 통과시키고, 밖의 키는 동의 전 쓰기가 조용히 버려지며 부팅 때 정리된다. 쓴 직후 되읽어 성공을 확인한다
+- [ ] 컴포넌트가 브라우저 저장소에 새 키를 적으면 `template.json` 의 `necessary_storage` 에 선언한다(코어 7.1.3+) — GDPR 동의 플러그인은 필수 목록(출하 목록·확장 제공·템플릿 선언) 밖의 키를 동의 전에 버리고 부팅 때 정리한다. 레이아웃 편집기 키는 종전대로 `g7le.` 접두(출하 목록)를 쓴다. 쓴 직후 되읽어 성공을 확인한다
 - [ ] 필수 컴포넌트(35개) 의 Props 시그니처를 깨는 변경은 전체 번들 확장 관리자 화면에 영향 — 변경 전 `src/components/{basic,composite}/` 의 실사용처를 넓게 확인
 - [ ] `_admin_base.g7.html` 슬롯 구조(`content` 슬롯 등) 변경 시 그 슬롯에 의존하는 모든 화면(145개 레이아웃 대다수) 영향 검토
 - [ ] AdminSidebar 의 `MenuItem`/`AdminSidebarProps` 인터페이스 확장 시 이 문서의 §docs/components.md "AdminSidebar 상세" 동기화
@@ -112,6 +116,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] 로그인 화면의 2단계 인증·비밀번호 변경 단계를 고쳤다면 세 단계 `if` 의 상보성과 `login`/`loginTwoFactor`/`loginPasswordChange` 의 상호배타 `if` 를 함께 확인 — 한쪽이 빠지면 인증번호·변경 단계에서 Enter 가 새 challenge 를 발급한다
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_role_form`·`admin_user_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고 `state.form` 기본값을 다시 쓴다 — 엔진은 `layout_name` 이 바뀔 때만 `_local` 을 비우므로 수정 → 등록 SPA 이동에서 직전 값이 등록 폼에 남는다. 새 폼 레이아웃을 같은 구조로 만들면 같은 액션을 둔다(트러블슈팅 state-global 사례 7)
 - [ ] 사이트·회원·게시판 이름처럼 입력값을 그리는 글은 넘침을 막는다 — 모바일 상단 좌측 칸은 `min-w-0 flex-1`(이름 `truncate`, 우측 `flex-shrink-0`), 블록 제목·설명은 `break-words`, 이름·이메일 같은 좁은 칸은 `truncate` + 폭 상한. `.admin_layout_root` 가 `overflow-hidden` 이라 문서 넘침은 늘 0 이므로 우측 묶음 clip 이나 `#right_content_area` 초과분으로 잰다 (#143)
+- [ ] 확장·언어팩 작업(설치·활성화·업데이트·레이아웃 갱신) 성공 갈래를 새로 만들면 응답 `data.warnings` 를 `_global.lifecycleWarnings` 에 담고(`lifecycleWarningsOpen` 은 false) 경고가 있을 때만 `lifecycle_warnings_modal` 을 연다 — 그 화면에 `partials/_modal_lifecycle_warnings.g7.html` 을 포함한다. 항목 `level` 이 `notice`(실패 아닌 안내)뿐이면 창이 안내 제목·파란 상자로 바뀐다(코어 7.1.3). `admin-extension-lifecycle-warnings-modal.test.tsx` 가 성공 갈래 전수를 잠근다
 - [ ] `_admin_base` 자식 레이아웃에 progressive 데이터소스를 추가하면 `transition_overlay.wait_for` 에도 같은 ID 를 넣는다 — 레이아웃 테스트(`admin-base-transition-overlay`)가 누락을 잡는다
 
 ## 6. 금지 패턴
@@ -119,6 +124,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 링크 컴포넌트에 주소 구독 훅·내부 링크 판정·새 창 rel 규칙을 따로 구현 | `G7Core.navigation.useLocationSearch`·`resolveInternalHref`·`mergeRelForTarget` 를 부르고(engine-v1.83.0), 그 API 가 없는 옛 코어에만 짧은 대체를 둔다(내부 링크는 `/` 경로와 경로가 `//` 로 시작하지 않는 같은 출처 `http(s)://` 주소 — 7.1.2 템플릿과 같은 결과라 알림·메뉴의 전체 주소가 새 탭으로 열리지 않는다) | 템플릿마다 사본이 갈라져 엔진 수정을 템플릿마다 옮겨야 했고, 같은 출처 `//다른호스트` 주소를 내부 링크로 본 사본이 생겼다(7.1.3) |
 | `AdminSidebar` 메뉴 아이콘을 `Icon name="home"` 식으로 렌더 | `I` 컴포넌트 + FontAwesome 클래스 문자열(`icon` 필드가 이미 `"fas fa-home"` 형태) | 메뉴 API 가 클래스 문자열을 내려주므로 `Icon`(IconName enum) 으로 받으면 렌더되지 않는다 |
 | 필수 컴포넌트 목록 밖의 이 템플릿 전용 컴포넌트를 모듈 레이아웃에서 사용 | 필수 컴포넌트(config/template.php) 만 사용 | 다른 admin 템플릿으로 교체 시 그 화면만 깨진다 |
 | 사이드바 접힘 상태를 레이아웃 `init_actions` 로 매번 복원 | 템플릿 부트스트랩(`src/index.ts`)에서 1회 복원 | `init_actions` 는 화면 진입마다 재실행되어 불필요한 반복 처리가 된다 |
@@ -184,8 +190,8 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 439개 | `vitest.config.ts` |
-| Playwright | 27개 | `tests/Playwright` |
+| Vitest | 441개 | `vitest.config.ts` |
+| Playwright | 28개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 114개 | `tests/scenarios` |
 
 ```bash

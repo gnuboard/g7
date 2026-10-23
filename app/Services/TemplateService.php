@@ -2035,7 +2035,7 @@ class TemplateService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'template.json', 'templates'
+                $file->getRealPath(), $extractPath, 'template.json', 'templates', $file->getClientOriginalName()
             );
 
             $manifest = $result['config'];
@@ -2085,7 +2085,7 @@ class TemplateService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'template.json', 'templates'
+                $file->getRealPath(), $extractPath, 'template.json', 'templates', $file->getClientOriginalName()
             );
 
             $this->ensureTemplateNotInstalled($result['identifier']);

@@ -278,6 +278,28 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 [선택 연동](plugin-development.md#2-의존성-dependency). 템플릿은 같은 유형(admin·user)끼리 하나만 활성이므로, 템플릿을 바꿔 끼울 때는
 교체될 템플릿의 선언이 충돌 검사에서 빠집니다.
 
+### 필수 브라우저 저장 키 (necessary_storage) — 7.1.3+
+
+템플릿 화면이 동의와 무관하게 써야 하는 브라우저 저장 키(색 모드, 사이드바 접힘 등)를 선언하는 **선택 필드**입니다. 쿠키 동의 플러그인은 동의 전 「필수」 목록 밖의 저장 키를 지우므로, 선언하지 않은 키는 동의 전에 지워질 수 있습니다. 코어는 활성 사용자·관리자 템플릿의 선언을 합쳐 `TemplateManager::getActiveTemplatesNecessaryStorage()` 로 내놓고, 동의 플러그인이 이를 자기 제공 목록에 더합니다(PHP 리스너가 없는 템플릿도 키를 등록할 수 있는 통로).
+
+```json
+"necessary_storage": {
+    "localStorage": ["g7_color_scheme", "g7_admin_sidebar_collapsed", "g7_filters_*"],
+    "sessionStorage": ["g7_dismissed_warnings"],
+    "cookie": []
+}
+```
+
+| 항목 | 규칙 |
+|------|------|
+| 저장소 키 | `localStorage` · `sessionStorage` · `cookie` (각각 문자열 배열, 생략 가능) |
+| 키 문자 | 영문·숫자와 `_` `.` `:` `@` `+` `-` |
+| 와일드카드 | 끝의 `*` 하나만 — 앞부분이 같은 키 모두와 매칭 (`g7_filters_*`) |
+| 길이 | 128자 이하 |
+| 틀린 항목 | 그 항목만 무시하고 경고 로그를 남긴다. 설치는 막지 않으며, 설치 때는 결과의 생명주기 경고 목록(`warnings`)에도 실린다 |
+
+활성 템플릿의 선언만 반영됩니다 — 템플릿을 바꾸면 이전 템플릿이 선언한 키는 목록에서 빠집니다.
+
 ### 외부 리소스 (externals)
 
 `externals`는 admin/user 템플릿에 공통 적용되는 선택 필드입니다. 최초 HTML 문서에 정적으로 필요한 스타일, 웹폰트, 스크립트, 리소스 힌트를 선언합니다. `external_styles`는 사용하지 않습니다.

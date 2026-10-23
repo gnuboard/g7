@@ -78,6 +78,11 @@ function listLayout(): any {
   };
 }
 
+/** 서브탭 번역 라벨(아래 TRANSLATIONS 와 같은 값) */
+const TAB_LABELS = ['교환', '반품', '환불', '취소'];
+/** 서브탭 텍스트 — 라벨 + (선택) 건수 배지 */
+const TAB_PATTERN = /^(교환|반품|환불|취소)\d*$/;
+
 const TRANSLATIONS = {
   claim: {
     list: {
@@ -243,15 +248,10 @@ describe('클레임 신청내역 목록 — 렌더', () => {
 
     const text = container.textContent ?? '';
 
-    // 탭 라벨은 iteration source 안의 `$t('...')` 로 만든다 — 테스트 하네스는 그 형태를
-    // 치환하지 않고 키를 그대로 남기므로 키로 잰다(실 화면에서는 엔진이 치환한다).
-    for (const key of [
-      'claim.list.tab_exchange',
-      'claim.list.tab_return',
-      'claim.list.tab_refund',
-      'claim.list.tab_cancel',
-    ]) {
-      expect(text).toContain(key);
+    // 탭 라벨은 iteration source 안의 `$t('...')` 로 만든다 — 시험 도구가 실제 앱처럼 $locale·$templateId 를
+    // 실으면서(7.1.3) 번역된 라벨로 그려진다(종전 도구는 키를 그대로 남겨 키로 쟀다).
+    for (const label of TAB_LABELS) {
+      expect(text).toContain(label);
     }
 
     // 활성 탭은 굵게 그린다 — 그 클래스를 가진 버튼이 정확히 하나여야 한다.
@@ -259,7 +259,7 @@ describe('클레임 신청내역 목록 — 렌더', () => {
       (el.className ?? '').includes('font-semibold')
     );
     expect(active버튼).toHaveLength(1);
-    expect(active버튼[0].textContent).toBe('claim.list.tab_return');
+    expect(active버튼[0].textContent).toBe('반품');
   });
 
   /**
@@ -283,18 +283,19 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     );
     active = utils;
 
+    // 서브탭 = 라벨(+ 건수 배지)만 담은 링크·단추 — 번역된 라벨로 찾는다
     const tabs = Array.from(container.querySelectorAll('a, button')).filter((el) =>
-      (el.textContent ?? '').includes('claim.list.tab_')
+      TAB_PATTERN.test((el.textContent ?? '').trim())
     );
 
-    const byLabel = (key: string) =>
-      tabs.find((el) => (el.textContent ?? '').includes(key))?.textContent ?? '';
+    const byLabel = (label: string) =>
+      tabs.find((el) => (el.textContent ?? '').trim().startsWith(label))?.textContent?.trim() ?? '';
 
-    expect(byLabel('claim.list.tab_exchange')).toContain('3');
-    expect(byLabel('claim.list.tab_refund')).toContain('2');
+    expect(byLabel('교환')).toContain('3');
+    expect(byLabel('환불')).toContain('2');
     // 0건 탭에는 숫자를 세우지 않는다.
-    expect(byLabel('claim.list.tab_return')).toBe('claim.list.tab_return');
-    expect(byLabel('claim.list.tab_cancel')).toBe('claim.list.tab_cancel');
+    expect(byLabel('반품')).toBe('반품');
+    expect(byLabel('취소')).toBe('취소');
   });
 
   /**
@@ -309,10 +310,10 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     active = utils;
 
     const tab = Array.from(container.querySelectorAll('a, button')).find((el) =>
-      (el.textContent ?? '').includes('claim.list.tab_exchange')
+      TAB_PATTERN.test((el.textContent ?? '').trim()) && (el.textContent ?? '').trim().startsWith('교환')
     );
 
-    expect(tab?.textContent).toBe('claim.list.tab_exchange');
+    expect(tab?.textContent).toBe('교환');
   });
 
   /**
@@ -327,7 +328,7 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     const active버튼 = Array.from(container.querySelectorAll('a, button')).filter((el) =>
       (el.className ?? '').includes('font-semibold')
     );
-    expect(active버튼[0].textContent).toBe('claim.list.tab_exchange');
+    expect(active버튼[0].textContent).toBe('교환');
   });
 
   /**
@@ -427,10 +428,10 @@ describe('클레임 신청내역 목록 — 렌더', () => {
 
     const text = container.textContent ?? '';
 
-    // 유형 분기 라벨은 `$t('...')` 형태라 하네스에서 키로 남는다 — 잴 것은 **어느 쪽 키가
+    // 유형 분기 라벨은 `$t('...')` 형태다(7.1.3 시험 도구부터 번역됨) — 잴 것은 **어느 쪽 문구가
     // 섰는가** 이고, 그것이 곧 유형 분기가 맞았다는 증거다.
-    expect(text).toContain('claim.list.round_trip_shipping_fee');
-    expect(text).not.toContain('claim.list.collection_shipping_fee');
+    expect(text).toContain('왕복 배송비');
+    expect(text).not.toContain('회수 배송비');
     expect(text).toContain('+6,000원');
     expect(text).toContain('추가 상품금액');
     expect(text).toContain('+3,000원');
@@ -451,9 +452,9 @@ describe('클레임 신청내역 목록 — 렌더', () => {
 
     const text = container.textContent ?? '';
 
-    expect(text).toContain('claim.list.collection_shipping_fee');
+    expect(text).toContain('회수 배송비');
     expect(text).toContain('+3,000원');
-    expect(text).not.toContain('claim.list.round_trip_shipping_fee');
+    expect(text).not.toContain('왕복 배송비');
     // 반품의 환불액은 환불신청서가 접수되기 전에는 도메인 어디에도 없다 — 화면이 추정치를
     // 세우면 실제 환불액과 다른 수가 목록에만 존재하게 된다.
     expect(text).not.toContain('환불액');
@@ -489,7 +490,7 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).not.toContain('$0.00');
     expect(text).not.toContain('¥0');
     expect(text).not.toContain('claim.list.total_charge');
-    expect(text).not.toContain('claim.list.collection_shipping_fee');
+    expect(text).not.toContain('회수 배송비');
     // 금액 열 자체(제목)는 남는다 — 열을 통째로 지우면 표가 어긋난다.
     expect(text).toContain('금액');
   });
@@ -592,7 +593,7 @@ describe('클레임 신청내역 목록 — 렌더', () => {
     expect(text).toContain('환불액');
     expect(text).toContain('−39,000원');
     expect(text).not.toContain('총 청구액');
-    expect(text).not.toContain('claim.list.collection_shipping_fee');
+    expect(text).not.toContain('회수 배송비');
   });
 
   /**

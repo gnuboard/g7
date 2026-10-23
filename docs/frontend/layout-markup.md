@@ -412,11 +412,12 @@ top-level 속성/자식: `handler`(태그명) `event`(`<on>`) `target` `if`(액�
 |---|---|---|
 | navigate | `<navigate>` | `path` `query`(자식 `<query>`) `:replace` `:mergeQuery` |
 | apiCall | `<api-call>` | `target`(=요청 URL) `method` 본문 `<body>` 쿼리 `<query>` |
-| setState | `<set-state>` | `target`(_local/_global) + 점표기 키맵 |
-| openModal/closeModal | `<open-modal>`/`<close-modal>` | `target`(modal id) |
+| setState | `<set-state>` | `target`(`global`/`local`, 생략 시 local) + 점표기 키맵. `target="_global"` 은 전역이 아니라 지역 상태에 써진다 — `set_state_underscore_global_target` lint 경고 |
+| openModal/closeModal | `<open-modal>`/`<close-modal>` | `<open-modal>` 은 `target`(modal id). `<close-modal>` 은 `target` 을 읽지 않고 맨 위 모달을 닫는다 |
 | toast | `<toast>` | `message` `type`(success/error/…) `duration` |
 | refetchDataSource | `<refetch-data-source>` | `dataSourceId` |
-| setLocale | `<set-locale>` | `locale` |
+| setLocale | `<set-locale>` | `target`(로케일, 예 `en`) — `locale` 속성은 `params.locale` 로 가서 엔진이 읽지 않는다 |
+| setError/showAlert | `<set-error>`/`<show-alert>` | `target`(메시지, `$t:` 지원) — 최상위 `target` 으로 구워진다(7.1.3) |
 
 > `<api-call>` 의 `target` 이 곧 요청 URL(엔드포인트)이다. `method` 는 params 로 전달. 핸들러 49종은 kebab↔camel 자동 변환(`<set-state>`↔setState). 확장/점 핸들러는 `<action handler="sirsoft-ecommerce.toggleArrayValue">`.
 >

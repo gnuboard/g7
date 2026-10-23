@@ -76,6 +76,7 @@ use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Storage\CoreStorageDriver;
+use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
 use App\Listeners\ExtensionCompatibilityAlertListener;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
@@ -206,19 +207,23 @@ class CoreServiceProvider extends ServiceProvider
      */
     private function registerExtensionAutoload(): void
     {
-        // 이미 진입점(index.php, artisan)에서 등록된 경우 스킵
-        if (defined('G7_EXTENSION_AUTOLOAD_REGISTERED')) {
-            return;
-        }
-
         $extensionAutoloadFile = base_path('bootstrap/cache/autoload-extensions.php');
 
         if (! file_exists($extensionAutoloadFile)) {
             return;
         }
 
-        $loader = require base_path('vendor/autoload.php');
+        // 진입점(index.php, artisan)이 이미 등록했어도 지문은 기억한다 — 확장 파일만 교체했을 때의 자기 복구
+        // (ExtensionManager::healStaleAutoload)가 이것을 기준으로 판정한다 (7.1.3)
         $extensionAutoloads = require $extensionAutoloadFile;
+        ExtensionManager::rememberRegisteredAutoload(is_array($extensionAutoloads) ? $extensionAutoloads : []);
+
+        // 이미 진입점(index.php, artisan)에서 등록된 경우 등록은 스킵
+        if (defined('G7_EXTENSION_AUTOLOAD_REGISTERED')) {
+            return;
+        }
+
+        $loader = require base_path('vendor/autoload.php');
 
         // PSR-4 네임스페이스 등록
         if (! empty($extensionAutoloads['psr4'])) {
@@ -383,6 +388,9 @@ class CoreServiceProvider extends ServiceProvider
      */
     private function registerExtensionManagers(): void
     {
+        // 생명주기 부분 실패 경고 수집기 — 요청·명령 단위로 하나 (결과 warnings·CLI 종료코드 1·관리자 결과 창)
+        $this->app->scoped(LifecycleWarnings::class);
+
         // 확장 매니저 등록 (모듈/플러그인 공통 기능)
         $this->app->singleton(ExtensionManager::class, function ($app) {
             return new ExtensionManager(
@@ -473,6 +481,15 @@ class CoreServiceProvider extends ServiceProvider
             Log::error('Database connection invalid: using a privileged database account or missing credentials. Skipping extension loading.');
 
             return;
+        }
+
+        // 확장 파일만 교체했으면(설치 절차 없이) 확장 오토로드 캐시가 낡는다 — 지문이 다르면 Composer 없이 다시 만든다 (7.1.3)
+        if (! $this->app->environment('testing')) {
+            try {
+                $this->app->make(ExtensionManager::class)->healStaleAutoload();
+            } catch (\Throwable $e) {
+                Log::warning('확장 오토로드 캐시 자기 복구 실패 — 다음 요청이 다시 시도합니다', ['error' => $e->getMessage()]);
+            }
         }
 
         // 콘솔 환경에서는 템플릿 로딩 건너뛰기 (성능 최적화)

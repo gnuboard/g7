@@ -205,6 +205,7 @@ return [
         'responsive_breakpoint_mix' => 'The portable preset is mixed with the mobile/tablet presets — overlapping ranges make behavior hard to predict.',
         'standalone_missing_global_host' => 'A standalone layout fires :handler but nothing reads its global state (:state) — nothing appears on screen. Extend a base layout or add a component that reads that state.',
         'switch_value_not_consumed' => '<switch value="…"> is not read by the engine — write the branch subject as <switch on="…"> so it reaches params.value.',
+        'set_state_underscore_global_target' => 'setState target="_global" writes to local state, not global — use target="global" for global state.',
         'action_param_misplaced_key' => 'The :key of a :handler action landed in params — :handler never reads that key, so it is silently ignored. Use data-if for conditions, <on event="…"> for triggers, and otherwise the argument name the handler actually reads.',
         'hoist_prop_not_supported_by_template' => ':component in the :template template does not declare :prop — anything authored with <:tag> is dropped instead of rendered.',
         'component_type_mismatch' => ':component is written as :written but the :template template declares it as :declared — check data-type (omitted means basic).',

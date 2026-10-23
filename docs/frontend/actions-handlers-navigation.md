@@ -333,7 +333,48 @@
 }
 ```
 
-합성 컴포넌트가 직접 `<a>` 를 그릴 때(사이드바·행 메뉴·페이지 번호·탭)는 `G7Core.navigation.isPlainLeftClick(event)` 가 참일 때만 `preventDefault()` 후 기존 콜백을 부르고, 목록 문맥이 필요한 주소는 `G7Core.navigation.mergeQueryIntoHref(href)` 로 렌더한다. 이렇게 렌더할 때 쿼리를 합치는 컴포넌트는 `G7Core.navigation.subscribeLocationSearch` 를 구독해(`useSyncExternalStore(subscribe, () => window.location.search)`) 주소가 바뀌면 다시 그린다 — 같은 화면에서 쿼리만 바뀌면(`navigate` `replace`·`replaceUrl`) props 가 같아 다시 그려지지 않으므로, 구독하지 않으면 가운데 클릭·새 탭·주소 복사가 바꾸기 전 쿼리로 열린다. 구독 API 가 없는 옛 엔진에서는 `popstate` 만 구독한다(engine-v1.82.1).
+합성 컴포넌트가 직접 `<a>` 를 그릴 때(사이드바·행 메뉴·페이지 번호·탭)는 `G7Core.navigation.isPlainLeftClick(event)` 가 참일 때만 `preventDefault()` 후 기존 콜백을 부르고, 목록 문맥이 필요한 주소는 `G7Core.navigation.mergeQueryIntoHref(href)` 로 렌더한다.
+
+#### 링크 컴포넌트는 코어 API 를 쓴다 (코어 7.1.3 · engine-v1.83.0)
+
+링크를 그리는 컴포넌트(A·페이지 번호·탭·메뉴)의 「주소 구독」·「내부 링크 판정」·「새 창 rel」은 코어가 준다. 템플릿은 이 셋을 직접 만들지 않는다 — 종전에는 템플릿마다 사본을 두다 판정이 갈라졌고(한 템플릿만 `https://이 사이트//다른호스트` 를 내부 링크로 봤다), 엔진이 바뀔 때마다 템플릿을 하나하나 고쳐야 했다.
+
+| 할 일 | 코어 API | 설명 |
+| --- | --- | --- |
+| 쿼리가 바뀌면 다시 그리기 | `G7Core.navigation.useLocationSearch(enabled)` | React 훅. 렌더할 때 현재 쿼리를 href 에 합치는 컴포넌트(`mergeQuery`·`pageHrefMergeQuery`)가 `enabled` 를 참으로 부른다. 같은 화면에서 쿼리만 바뀌면(`navigate` `replace`·`replaceUrl`) props 가 같아 다시 그려지지 않는데, 이 훅이 주소 검색부 변경(뒤로/앞으로 포함)을 구독해 다시 그린다. 구독하지 않으면 가운데 클릭·새 탭·주소 복사가 바꾸기 전 쿼리로 열린다. `enabled` 가 거짓이면 구독하지 않는다(렌더 비용 없음). 반환값은 현재 검색부(`?a=1`, 구독하지 않으면 `''`) |
+| 보통 클릭을 SPA 로 옮겨도 되는가 | `G7Core.navigation.resolveInternalHref(href)` | 같은 출처 내부 링크면 「경로?쿼리#해시」, 아니면 `null`. 엔진 `navigate` 와 같은 규칙이다 — 빈 값·`#…`·실행 스킴(`javascript:` 등)·다른 출처·`//host`·백슬래시 변형(`/\host`)·경로가 `//` 로 시작하는 같은 출처 주소는 `null` |
+| 새 창 링크의 rel | `G7Core.navigation.mergeRelForTarget(rel, target)` | `target` 이 `_blank` 면 `noopener`·`noreferrer` 중 빠진 것만 덧붙이고 넘겨받은 토큰은 남긴다(대소문자 무시). 새 창이 아니면 받은 값을 그대로(없으면 `undefined` — rel 을 달지 않는다) |
+
+훅은 컴포넌트 렌더 중에만 부른다(React 훅 규칙). 템플릿은 코어와 같은 React(`window.React`)를 쓰므로 코어 훅을 그대로 불러도 된다.
+
+**옛 코어(7.1.2 이하) 대체**: 이 API 가 없으면 짧은 대체로 동작만 유지한다 — 훅은 코어 `G7Core.navigation.subscribeLocationSearch`(7.1.2 부터, 뒤로/앞으로·같은 화면 쿼리 교체)가 있으면 그것으로 구독하고, 그마저 없는 코어에서만 `popstate` 를 구독한다(이때는 같은 화면 쿼리 교체를 따라가지 못한다). 7.1.2 코어에서 `popstate` 만 구독하면 7.1.2 가 고친 「검색어를 바꿔도 링크가 옛 쿼리를 가리킴」이 되살아난다. 내부 링크 판정은 `href.startsWith('/') && !href.startsWith('//')`, rel 은 `_blank` 일 때 `noopener noreferrer` 를 덧붙인다.
+
+```tsx
+const nav = (window as any).G7Core?.navigation;
+const React = (window as any).React;
+
+// 쿼리 구독 — 코어 훅이 없으면 코어 구독 함수(7.1.2), 그마저 없으면 popstate 로 구독하는 대체
+function useFallbackSearch(enabled: boolean): string {
+  const subscribe = React.useCallback(
+    (cb: () => void) => {
+      if (!enabled) return () => {};
+      if (typeof nav?.subscribeLocationSearch === 'function') return nav.subscribeLocationSearch(cb);
+      window.addEventListener('popstate', cb);
+      return () => window.removeEventListener('popstate', cb);
+    },
+    [enabled],
+  );
+  return React.useSyncExternalStore(subscribe, () => (enabled ? window.location.search : ''), () => '');
+}
+const useSearch: (enabled: boolean) => string = nav?.useLocationSearch ?? useFallbackSearch;
+
+const toInternal = (href: string): string | null =>
+  nav?.resolveInternalHref
+    ? nav.resolveInternalHref(href)
+    : href.startsWith('/') && !href.startsWith('//') ? href : null;
+```
+
+> 대체 훅을 고를 때 `nav?.useLocationSearch ?? …` 는 모듈 평가 때 한 번만 정한다 — 렌더마다 다른 훅을 부르면 훅 순서가 바뀐다.
 
 ### mergeQuery 옵션
 
@@ -852,7 +893,9 @@ replace: true는 같은 페이지 내에서만 사용
 
 | 필드 | 타입 | 기본값 | 설명 |
 |------|------|--------|------|
-| `path` | string | - | 새 창에서 열 경로 (필수) |
+| `path` | string | - | 열 경로 (필수). 생략하면 최상위 `target` 값을 경로로 쓴다 |
+| `query` | object | - | 경로 뒤에 붙일 쿼리 (빈 값은 제외) |
+| `target` | string | `"_blank"` | `"_self"` 이면 같은 탭 전체 이동(같은 출처 경로만), 그 밖의 값은 새 창 |
 | `bypassLeaveGuard` | boolean | false | `target: "_self"`(같은 탭 전체 이동)일 때 레이아웃 이탈 확인(브라우저 확인 창)을 이 이동에 한해 묻지 않는다 (engine-v1.82.0+) |
 
 ### 사용 사례

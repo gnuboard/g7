@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\LanguagePack;
 
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
 use Throwable;
@@ -18,6 +19,8 @@ use Throwable;
  */
 class UpdateLanguagePackCommand extends Command
 {
+    use ReportsLifecycleWarnings;
+
     /**
      * @var string
      */

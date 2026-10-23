@@ -99,7 +99,7 @@
 | 핸들러 | 필수 속성 | 선택 속성 |
 |--------|----------|----------|
 | `navigate` | `params.path` — 링크(`<a href>`) 클릭에서 시작한 액션이면 생략 가능: path·target 키가 없으면 클릭한 링크의 같은 출처 `href` 로 이동(engine-v1.80.1, [링크로 쓰는 법](actions-handlers-navigation.md#화면-이동을-링크로-쓰는-법-engine-v1801)) | `params.query`, `params.mergeQuery`, `params.replace`, `params.fallback` (engine-v1.40.0+, 미등록 경로 fallback, 기본 `openWindow` 같은 탭 `_self`), `params.fallbackPath` (engine-v1.80.1+, 이동 주소가 비었거나 거부될 때 갈 경로 — [fallbackPath 옵션](actions-handlers-navigation.md#fallbackpath-옵션-engine-v1801)) |
-| `openWindow` | `params.path` | - |
+| `openWindow` | `params.path` (또는 최상위 `target`) | `params.query`, `params.target` (`_blank` 기본/`_self`), `params.bypassLeaveGuard` |
 | `replaceUrl` | - | `params.path`, `params.query`, `params.mergeQuery` |
 | `apiCall` | `target` | `params.method`, `params.body`, `params.contentType`, `auth_required`, `onSuccess`, `onError` |
 | `setState` | `params.*` | `params.target` (global/local/isolated) |

@@ -13,4 +13,6 @@ return [
     'cache_file_written' => '훅 매핑 캐시 파일 생성 완료',
     'cache_listener_not_found' => '훅 캐시 생성: 리스너 클래스를 찾을 수 없습니다',
     'cache_listener_hooks_failed' => '훅 캐시 생성: getSubscribedHooks() 오류 — 항목 제외',
+    'cache_listener_interface_missing' => '훅 캐시 생성: 리스너가 HookListenerInterface 를 구현하지 않아 제외합니다',
+    'cache_stale_extension_changed' => '활성 확장의 파일이 바뀌어 훅 캐시가 낡았습니다 — 스캔 폴백 후 이 요청 끝에 다시 만듭니다',
 ];

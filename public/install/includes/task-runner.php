@@ -1430,7 +1430,11 @@ if (! function_exists('executeExtensionCommandSSE')) {
             }
         }
 
-        if ($returnCode !== 0 && ! $isAlreadyExists) {
+        // 생명주기 명령은 항목 일부가 실패해도 작업을 끝내고 종료코드 1 + 경고 표지를 낸다(코어 7.1.3).
+        // 표지가 있는 1 은 「완료(경고 포함)」 — 경고 표는 위 로그로 이미 보였다. 표지 없는 1 은 실패다.
+        $completedWithWarnings = $returnCode === 1 && str_contains($outputText, '[g7-lifecycle-warnings]');
+
+        if ($returnCode !== 0 && ! $isAlreadyExists && ! $completedWithWarnings) {
             $errorMessage = $outputText;
             logInstallationError(lang($errorMsgKey), new Exception($errorMessage));
 
@@ -1445,6 +1449,8 @@ if (! function_exists('executeExtensionCommandSSE')) {
 
         if ($isAlreadyExists) {
             sendSSEEvent('log', ['message' => lang('log_task_skipped', ['task' => $displayName])]);
+        } elseif ($completedWithWarnings) {
+            sendSSEEvent('log', ['message' => lang('log_task_completed_with_warnings', ['task' => $displayName])]);
         } else {
             sendSSEEvent('log', ['message' => lang('log_task_completed', ['task' => $displayName])]);
         }

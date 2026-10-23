@@ -5,7 +5,7 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.2-0066FF?style=flat-square" alt="version 1.1.2">
+  <img src="https://img.shields.io/badge/version-1.1.3-0066FF?style=flat-square" alt="version 1.1.3">
   <img src="https://img.shields.io/badge/type-%ED%85%9C%ED%94%8C%EB%A6%BF-555555?style=flat-square" alt="type 템플릿">
   <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.1-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.1">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
@@ -61,6 +61,10 @@ flowchart TD
 인증 화면(로그인/비밀번호 찾기·재설정)과 에러 화면은 의도적으로 `_admin_base` 를 상속하지
 않습니다 — 로그인 전이거나 정상 화면 렌더링 자체가 불가능한 상황이라 사이드바·헤더 같은
 "이미 로그인된 관리자" 전제의 UI 를 보여줄 수 없기 때문입니다.
+
+색 모드·사이드바 접힘·목록 필터·표시 열·보기 방식처럼 관리 화면이 쿠키 동의와 무관하게 쓰는 브라우저 저장
+항목은 `template.json` 의 `necessary_storage` 에 선언돼 있어, 개인정보 동의 플러그인을 쓰는 사이트에서도 동의
+전에 지워지지 않습니다(그누보드7 7.1.3 이상).
 <!-- @intent END -->
 
 ## 요구 사항

@@ -79,6 +79,9 @@ final class ActionHandlerManifest
     private const TARGET_TOP_LEVEL_HANDLERS = [
         'apiCall', 'openModal', 'closeModal', 'setLocale', 'login', 'loginTwoFactor', 'loginTwoFactorResend',
         'loginPasswordChange', 'loginPasswordChangePostpone', 'logout',
+        // 엔진이 최상위 action.target 만 읽는다 — params 로 구우면 setError 는 대상을 잃고 showAlert 는
+        // `target.startsWith` TypeError 가 난다(7.1.3, 번들 사용 0 의 잠재 결함)
+        'setError', 'showAlert',
     ];
 
     /**

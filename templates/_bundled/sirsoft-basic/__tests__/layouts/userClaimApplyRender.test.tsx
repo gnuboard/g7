@@ -1121,10 +1121,11 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     expect(rows).toHaveLength(15);
     expect(rows).not.toContain('substituted');
     expect(text).toContain('주문금액 비교');
-    // 열 라벨은 유형 분기 식(`$t(...)`) 이라 하네스에서는 키가 그대로 난다 — 취소 분기의 키가 골라졌는지를 잰다.
-    expect(text).toContain('claim.apply.comparison.col_before_cancel');
-    expect(text).toContain('claim.apply.comparison.col_after_cancel');
-    expect(text).not.toContain('col_before_refund');
+    // 열 라벨은 유형 분기 식(`$t(...)`) — 시험 도구가 실제 앱처럼 $locale·$templateId 를 실으면서(7.1.3) 번역된 라벨이 난다.
+    // 취소 분기의 라벨이 골라졌는지를 잰다.
+    expect(text).toContain('취소 전');
+    expect(text).toContain('취소 후');
+    expect(text).not.toContain('환불 전');
     expect(text).toContain('부가세');
     expect(text).toContain('5,636원');
     expect(text).toContain('3,091원');
@@ -1206,8 +1207,8 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     active = utils;
 
     const text = container.textContent ?? '';
-    expect(text).toContain('claim.apply.comparison.col_before_exchange');
-    expect(text).toContain('claim.apply.comparison.col_after_exchange');
+    expect(text).toContain('교환 전');
+    expect(text).toContain('교환 후');
     expect(container.querySelector('[data-row="substituted"]')).not.toBeNull();
     expect(text).toContain('블랙 / L');
     expect(text).toContain('29,000원 → 32,000원');
@@ -1331,9 +1332,9 @@ describe('클레임 신청서 — 금액·오류 자리 렌더', () => {
     const toggle = container.querySelector('[data-testid="claim-comparison-toggle"]');
     expect(toggle?.getAttribute('aria-expanded')).toBe('false');
     expect(toggle?.getAttribute('aria-controls')).toBe('claim-comparison-body');
-    // 토글 문구는 상태 분기 식이라 하네스에서는 키가 난다 — 접힘 상태에서 '펼치기' 쪽 키가 골라진다.
-    expect(toggle?.textContent).toContain('claim.apply.comparison.expand');
-    expect(toggle?.textContent).not.toContain('collapse');
+    // 토글 문구는 상태 분기 식(`$t(...)`) — 번역된 문구로 접힘 상태에서 '펼치기' 쪽이 골라졌는지 잰다(7.1.3 시험 도구).
+    expect(toggle?.textContent).toContain('펼치기');
+    expect(toggle?.textContent).not.toContain('접기');
     // 제목은 접혀 있어도 보인다 — 무엇이 접혀 있는지 알 수 있어야 한다.
     expect(container.textContent).toContain('주문금액 비교');
   });

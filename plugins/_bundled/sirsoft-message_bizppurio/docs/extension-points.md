@@ -70,7 +70,7 @@ HookManager::addAction(
 | `core.plugin_settings.after_save` | 설정을 저장하면 비즈뿌리오 인증 토큰을 무효화 — 계정 정보를 바꿨는데 옛 토큰으로 계속 발송하는 것을 막습니다 |
 | `core.plugin_settings.update_validation_rules` | **운영 모드로 전환할 때만** 필수값(아이디·비밀번호·API 키·발신번호) 검증을 추가. 검수 모드에서는 비어 있어도 저장되어야 합니다 |
 | `core.notification.filter_available_channels` · `channel_readiness` · `channel_enabled` · `channels` | 코어 알림 채널 계약 — 채널 노출·준비 상태·미저장=꺼짐, 그리고 모든 도메인 공통 채널 후보(`core.notification.channels`) |
-| `core.notification.filter_seed_definitions` · `filter_default_definitions` | 알림 설정 화면의 문자·알림톡 템플릿 행 — 코어·모든 모듈·플러그인이 알림 정의를 저장하기 직전 회원 대상 정의에 sms·alimtalk 템플릿을 더하고, [기본값 복원]도 같은 규칙으로 되돌립니다. 도메인별 언어팩 시딩 훅(`seed.{도메인}.notifications.translations`)은 구독하지 않습니다 — 새 모듈의 알림에도 행이 생기는 이유. 이 플러그인을 켜면 코어 시더와 코어의 활성 모듈·플러그인 알림 정의 재동기화를 불러 이미 저장된 정의에도 행을 만듭니다(권한·메뉴 무관, 운영자 수정 보존) |
+| `core.notification.filter_seed_definitions` · `filter_default_definitions` | 알림 설정 화면의 문자·알림톡 템플릿 행 — 코어·모든 모듈·플러그인이 알림 정의를 저장하기 직전 회원 대상 정의에 sms·alimtalk 템플릿을 더하고, [기본값 복원]도 같은 규칙으로 되돌립니다. 도메인별 언어팩 시딩 훅(`seed.{도메인}.notifications.translations`)은 구독하지 않습니다 — 새 모듈의 알림에도 행이 생기는 이유. 이 플러그인을 켜면 코어 시더와 코어의 활성 모듈·플러그인 알림 정의 재동기화를 불러 이미 저장된 정의에도 행을 만듭니다(권한·메뉴 무관, 운영자 수정 보존). 그중 한 단계가 실패해도 활성화는 성공하며, 실패는 코어 생명주기 경고(step `reseed`, 코어 7.1.3+)로 관리자 결과 창·API `data.warnings` 에 보고됩니다(옛 코어는 로그만) |
 | `sirsoft-message_bizppurio.notification.extract_data` | 잔액부족 관리자 알림의 본문 변수 채우기 (자기 훅) |
 
 **비회원 수신 번호**는 이 플러그인이 채우지 않습니다. 알림을 보내는 도메인이 extract_data 의 data 에

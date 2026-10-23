@@ -79,7 +79,7 @@
 | `sirsoft-ecommerce.cart.update_quantity_validation_rules` | filter | — | `src/Http/Requests/Public/UpdateCartQuantityRequest.php:37` |
 | `sirsoft-ecommerce.cash_receipt.cancel` | filter | — | `src/Services/CashReceiptService.php:215` |
 | `sirsoft-ecommerce.cash_receipt.issue` | filter | — | `src/Services/CashReceiptService.php:141` |
-| `sirsoft-ecommerce.cash_receipt.registered_providers` | filter | — | `src/Services/EcommerceSettingsService.php:1060` |
+| `sirsoft-ecommerce.cash_receipt.registered_providers` | filter | — | `src/Services/EcommerceSettingsService.php:1103` |
 | `sirsoft-ecommerce.category-image.after_delete` | action | — | `src/Services/CategoryImageService.php:252` 외 1곳 |
 | `sirsoft-ecommerce.category-image.after_reorder` | action | — | `src/Services/CategoryImageService.php:314` |
 | `sirsoft-ecommerce.category-image.after_update` | action | — | `src/Services/CategoryImageService.php:390` |
@@ -233,8 +233,8 @@
 | `sirsoft-ecommerce.coupon.user_available_validation_rules` | filter | — | `src/Http/Requests/User/UserCouponAvailableRequest.php:35` |
 | `sirsoft-ecommerce.coupon.user_downloadable_validation_rules` | filter | — | `src/Http/Requests/User/UserCouponDownloadableRequest.php:34` |
 | `sirsoft-ecommerce.coupon.user_list_validation_rules` | filter | — | `src/Http/Requests/User/UserCouponListRequest.php:35` |
-| `sirsoft-ecommerce.currency.after_apply_rates` | action | 환율 적용 후 | `src/Services/EcommerceSettingsService.php:1031` |
-| `sirsoft-ecommerce.currency.registered_rate_providers` | filter | 환율 제공자 목록 | `src/Services/EcommerceSettingsService.php:962` |
+| `sirsoft-ecommerce.currency.after_apply_rates` | action | 환율 적용 후 | `src/Services/EcommerceSettingsService.php:1074` |
+| `sirsoft-ecommerce.currency.registered_rate_providers` | filter | 환율 제공자 목록 | `src/Services/EcommerceSettingsService.php:1005` |
 | `sirsoft-ecommerce.extra_fee_template.after_bulk_create` | action | — | `src/Services/ExtraFeeTemplateService.php:301` |
 | `sirsoft-ecommerce.extra_fee_template.after_bulk_delete` | action | — | `src/Services/ExtraFeeTemplateService.php:227` |
 | `sirsoft-ecommerce.extra_fee_template.after_bulk_toggle_active` | action | — | `src/Services/ExtraFeeTemplateService.php:255` |
@@ -352,7 +352,7 @@
 | `sirsoft-ecommerce.payment.close_vbank` | filter | — | `src/Services/UnpaidVbankCloser.php:74` |
 | `sirsoft-ecommerce.payment.get_client_config` | filter | — | `src/Http/Controllers/Shop/PaymentConfigController.php:26` |
 | `sirsoft-ecommerce.payment.refund` | filter | — | `src/Services/RefundExecutionService.php:668` |
-| `sirsoft-ecommerce.payment.registered_pg_providers` | filter | — | `src/Services/EcommerceSettingsService.php:1044` 외 1곳 |
+| `sirsoft-ecommerce.payment.registered_pg_providers` | filter | — | `src/Services/EcommerceSettingsService.php:1087` 외 1곳 |
 | `sirsoft-ecommerce.payment.supports_partial_cancel` | filter | — | `src/Services/PaymentMethodResolver.php:72` |
 | `sirsoft-ecommerce.preset.after_create` | action | — | `src/Services/SearchPresetService.php:60` |
 | `sirsoft-ecommerce.preset.after_delete` | action | — | `src/Services/SearchPresetService.php:118` |
@@ -498,7 +498,7 @@
 | `sirsoft-ecommerce.sequence.after_generate` | action | — | `src/Services/SequenceService.php:57` 외 1곳 |
 | `sirsoft-ecommerce.sequence.before_generate` | action | — | `src/Services/SequenceService.php:44` |
 | `sirsoft-ecommerce.settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:168` |
-| `sirsoft-ecommerce.settings.filter_available_payment_methods` | filter | — | `src/Services/EcommerceSettingsService.php:949` |
+| `sirsoft-ecommerce.settings.filter_available_payment_methods` | filter | — | `src/Services/EcommerceSettingsService.php:992` |
 | `sirsoft-ecommerce.shipping.calculate_fee` | filter | — | `src/Services/OrderCalculationService.php:2212` |
 | `sirsoft-ecommerce.shipping_carrier.after_create` | action | — | `src/Services/ShippingCarrierService.php:156` |
 | `sirsoft-ecommerce.shipping_carrier.after_delete` | action | — | `src/Services/ShippingCarrierService.php:343` |
@@ -1083,6 +1083,18 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
 발화하지 않을 뿐이라, 게시판이나 편집기 플러그인이 없어도 이 모듈은 정상 동작하고 그 기능만
 비어 있습니다. 반대로 말하면 이 세 훅 이름이 상대 확장에서 바뀌면 **예외 없이 조용히** 연동이
 끊기므로, 상대 확장의 `docs/extension-points.md` 와 함께 확인해야 합니다.
+
+**쿠키 동의 연동 — `sirsoft-gdpr.necessary_storage.filter_provided_keys`**: 개인정보 동의 플러그인이 있으면
+`ProvideNecessaryStorageKeysListener` 가 쿠키 미동의 방문자에게도 필요한 이 모듈의 브라우저 저장 키를 제공합니다.
+이 플러그인도 manifest 의존이 아니며, 클래스를 참조하지 않고 훅 이름과 배열 모양만 씁니다.
+
+| 저장소 | 키 | 용도 |
+|---|---|---|
+| `localStorage` | `g7_cart_key` | 비회원 장바구니 식별 키 |
+| `localStorage` | `g7_order_*` | 관리자 주문 목록 표시 열(`g7_order_visible_columns_{관리자 uuid}`) — 1.3.2 부터 이 모듈이 제공 (예전에는 동의 플러그인 출하 목록에 있었고, 동의 플러그인 1.1.2 업그레이드가 운영자 목록에서 걷어냄) |
+| `sessionStorage` | `g7_guest_order_token` · `g7_guest_order_number` · `g7_guest_order_expires_at` | 비회원 주문 조회 토큰·주문번호·만료 시각 |
+
+키 이름은 사용자 화면 템플릿의 저장 핸들러와 같아야 합니다 — 한쪽만 바꾸면 그 키는 동의 전에 지워집니다.
 <!-- @intent END -->
 
 ### 회원 응답에 얹는 필드 — `core.user.filter_resource_data`

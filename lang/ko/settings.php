@@ -196,7 +196,7 @@ return [
 
         // 시스템 요구사항
         'system_requirements_failed' => '시스템 요구사항이 충족되지 않습니다:',
-        'no_extract_method_available' => '사용 가능한 아카이브 추출 방법이 없습니다. PHP zip 확장(ZipArchive) 또는 unzip 명령어(Linux) 중 하나가 필요합니다. 또는 --source 옵션으로 수동 업데이트할 수 있습니다.',
+        'no_extract_method_available' => '압축을 풀 수 없습니다. PHP zip 확장(ZipArchive)이 필요합니다. 또는 --source 옵션으로 수동 업데이트할 수 있습니다.',
         'manual_update_guide' => '수동 업데이트: GitHub에서 릴리스 ZIP을 다운로드하여 압축 해제 후, php artisan core:update --source=/압축해제/경로 명령어를 실행하세요.',
 
         // 추출 폴백 체인
@@ -207,7 +207,6 @@ return [
         'all_extract_methods_failed' => '모든 아카이브 추출 방법이 실패했습니다. --source 옵션으로 수동 업데이트를 시도하세요.',
         'release_not_found' => 'GitHub 에서 코어 :version 배포본을 찾지 못했습니다 — 그 버전 태그가 아직 없거나 GitHub 에 연결하지 못했습니다. --source 또는 --zip 옵션으로 배포본을 직접 지정하세요.',
         'extension_release_not_found' => 'GitHub 저장소 :repository 에서 :version 배포본을 찾지 못했습니다 — 그 버전 태그가 아직 없거나 GitHub 에 연결하지 못했습니다.',
-        'unzip_command_failed' => 'unzip 명령어 실행 실패 (종료 코드: :code). :output',
         'zip_file_not_found' => '지정된 ZIP 파일을 찾을 수 없습니다: :path',
         'source_vendor_missing' => '소스 디렉토리에 vendor가 없습니다. composer install이 실행되지 않았을 수 있습니다.',
         'composer_failed_with_output' => 'composer install 실행에 실패했습니다.:output',

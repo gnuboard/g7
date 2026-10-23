@@ -824,21 +824,7 @@ export class TemplateApp {
             logger.log('LayoutLoader initialized:', this.layoutLoader);
 
             // 3.5 ErrorPageHandler 초기화 (DataSourceManager 의존성 주입)
-            const errorDataSourceManager = new DataSourceManager({
-                onUnauthorized: () => {
-                    logger.warn('Unauthorized request in error page');
-                },
-            });
-
-            this.errorPageHandler = new ErrorPageHandler({
-                templateId: this.config.templateId,
-                layoutLoader: this.layoutLoader,
-                locale: this.config.locale,
-                debug: this.config.debug,
-                renderFunction: renderTemplate,
-                dataSourceManager: errorDataSourceManager,
-                globalState: this.globalState,
-            });
+            this.errorPageHandler = this.createErrorPageHandler();
 
             logger.log('ErrorPageHandler initialized with DataSourceManager');
 
@@ -1923,6 +1909,10 @@ export class TemplateApp {
                                     status: axiosError.response?.status || (axiosError as any).status,
                                 };
                                 logger.log(`Progressive data source error: ${source.id}`, dataSourceErrors[source.id]);
+
+                                // 성공 분기와 같이 이 소스·오류 기록의 영구 바인딩 캐시를 비운다 (@since engine-v1.83.0) — 같은 화면 쿼리 이동은
+                                // 앞 쪽 값을 이어 그려 그 값이 캐시에 남고, 실패해 null 이 돼도 단순 경로가 앞 쪽 값으로 그려졌다
+                                getState().bindingEngine?.invalidateCacheByKeys([source.id, '_dataSourceErrors']);
 
                                 // 에러가 발생해도 undefined가 아닌 에러 상태로 표시하여 blur 해제
                                 // _dataSourceErrors를 업데이트하여 컴포넌트에서 에러 상태 확인 가능
@@ -3858,6 +3848,8 @@ export class TemplateApp {
                 const locales = localesResult?.data?.locales;
                 if (Array.isArray(locales) && locales.length > 0) {
                     const currentAppConfig = this.globalState.appConfig ?? {};
+                    // `$locales` 는 `$` 루트라 단순 경로(`{{$locales.length}}`)가 영구 캐시에 남는다 — 새 목록으로 그리기 전에 비운다 (@since engine-v1.83.0)
+                    getState().bindingEngine?.invalidateCacheByKeys(['$locales', '$templateLocales']);
                     this.setGlobalState({
                         appConfig: { ...currentAppConfig, supportedLocales: locales },
                     });
@@ -4408,6 +4400,44 @@ export class TemplateApp {
     }
 
     /**
+     * 오류 화면 핸들러를 만든다.
+     *
+     * 상태를 생성 때 넘기지 않고 그릴 때마다 읽는 함수를 넘긴다 (@since engine-v1.83.0) — 전역 상태는 바꿀 때마다 새 객체라
+     * 생성 때 넘긴 참조는 곧 옛 값이 됐고(오류 화면의 `{{_global.*}}`), route·query·전역 헤더도 오류 화면에 닿지 않았다.
+     * 같은 화면에서 오류 화면을 연속으로 그릴 때 앞 오류 코드가 남지 않게 그리기 직전에 바인딩 캐시를 비운다.
+     *
+     * @returns 오류 화면 핸들러
+     */
+    private createErrorPageHandler(): ErrorPageHandler {
+        const errorDataSourceManager = new DataSourceManager({
+            onUnauthorized: () => {
+                logger.warn('Unauthorized request in error page');
+            },
+        });
+
+        return new ErrorPageHandler({
+            templateId: this.config.templateId,
+            layoutLoader: this.layoutLoader!,
+            locale: this.config.locale,
+            debug: this.config.debug,
+            renderFunction: renderTemplate,
+            dataSourceManager: errorDataSourceManager,
+            globalState: this.globalState,
+            getGlobalState: () => this.globalState,
+            getRouteContext: () => ({
+                route: { ...(this.currentRouteParams || {}), ...(this.currentRoutePath ? { path: this.currentRoutePath } : {}) },
+                query: parseQueryParams(this.currentQueryParams ?? new URLSearchParams()),
+            }),
+            getGlobalHeaders: () => this.currentGlobalHeaders,
+            clearBindingCache: () => {
+                const bindingEngine = getState().bindingEngine;
+                bindingEngine?.clearCache();
+                bindingEngine?.startRenderCycle();
+            },
+        });
+    }
+
+    /**
      * 전역 상태 반환
      */
     getGlobalState(): GlobalState {
@@ -4507,7 +4537,7 @@ export class TemplateApp {
      * @param options refetch 옵션 (sync: true면 startTransition 없이 즉시 렌더링)
      * @returns fetch된 데이터 또는 undefined
      */
-    async refetchDataSource(dataSourceId: string, options?: { sync?: boolean; globalStateOverride?: Record<string, any>; localStateOverride?: Record<string, any>; skipInitLocal?: boolean }): Promise<any> {
+    async refetchDataSource(dataSourceId: string, options?: { sync?: boolean; globalStateOverride?: Record<string, any>; localStateOverride?: Record<string, any>; isolatedStateOverride?: Record<string, any>; skipInitLocal?: boolean }): Promise<any> {
         // 데이터 소스 정의 찾기 (페이지 레벨 → 모달 레벨 순서로 검색)
         let dataSourceDef = this.currentDataSources.find((ds: any) => ds.id === dataSourceId);
 
@@ -4562,8 +4592,11 @@ export class TemplateApp {
             // 같은 대상 재조회·폴링)는 종전대로 앞 값을 두고 받는 동안 흐림으로 보인다.
             const refetchSeq = ++this.refetchSeq;
             this.refetchSeqBySource.set(dataSourceId, refetchSeq);
+            // 격리 상태 안에서 부른 다시 받기는 그 상태를 `{{_isolated.*}}` 로 요청 식에 싣는다 (@since engine-v1.83.0) — refetchDataSource
+            // 핸들러가 넘기던 값을 종전에는 받지 않아 버렸다
+            const isolatedState = options?.isolatedStateOverride;
             const requestPath = dataSourceManager.resolveRequestPath(
-                dataSourceDef, this.currentRouteParams, this.currentQueryParams, globalState, localState
+                dataSourceDef, this.currentRouteParams, this.currentQueryParams, globalState, localState, isolatedState
             );
             const previousPath = this.refetchPathBySource.get(dataSourceId);
             if (previousPath !== undefined && previousPath !== requestPath) {
@@ -4592,7 +4625,7 @@ export class TemplateApp {
                 // refetch: 오류 처리기가 「다시 받기 실패」를 가를 수 있게 문맥에 `error.refetch` 를 싣는다 (@since engine-v1.82.0) —
                 // 이 화면에서 이미 값을 받은 소스만 「다시 받기」다. 다시 받기로만 받는 소스(auto_fetch:false — 편집기 확장 본문·창 목록)의
                 // 첫 받기 실패는 처음 받기와 같이 다룬다(오류 화면으로 빈 폼 저장을 막는 레이아웃 계약을 지킨다)
-                { ignoreAutoFetch: true, refetch: (source: any) => this.hasReceivedOnScreen(source.id) }
+                { ignoreAutoFetch: true, refetch: (source: any) => this.hasReceivedOnScreen(source.id), ...(isolatedState ? { isolatedState } : {}) }
             );
 
             const result = results[0];
@@ -4778,6 +4811,10 @@ export class TemplateApp {
             this.currentFetchedData[dataSourceId] = data;
         }
 
+        // 이 소스의 영구 바인딩 캐시를 비운다 (@since engine-v1.83.0) — 단순 경로(`{{x.data.total}}`)는 경로 글자를 키로
+        // 30초 캐시에 남아, 화면 전환 없이 값만 바꾸면(글 보기 비밀번호 확인 → updateDataSource·appendDataSource) 옛 값으로 그려졌다
+        getState().bindingEngine?.invalidateCacheByKeys([dataSourceId]);
+
         // UI 리렌더링 트리거
         import('./template-engine').then(({ updateTemplateData }) => {
             updateTemplateData(
@@ -4871,6 +4908,10 @@ export class TemplateApp {
                 timestamp: Date.now(),
             });
         }
+
+        // 항목을 제자리에서 고쳤으므로 이 소스의 영구 바인딩 캐시를 비운다 — `{{x.data.0.name}}` 같은 스칼라 경로가 옛 값으로
+        // 남는다. 렌더를 건너뛰어도 다음 렌더가 새 값을 읽도록 비운다 (@since engine-v1.83.0)
+        getState().bindingEngine?.invalidateCacheByKeys([dataSourceId]);
 
         // 6. 변경 알림 (선택적 렌더링)
         if (!skipRender) {
@@ -5192,6 +5233,8 @@ export class TemplateApp {
             const updateData: Record<string, any> = {};
             const localInit: Record<string, any> = {};
             const sourceById = new Map(autoFetchDataSources.map((ds: any) => [ds.id, ds]));
+            // 이 호출로 오류 기록(`_dataSourceErrors`)이 바뀌었는지 — 다시 받기 실패·성공 분기와 같은 계약 (@since engine-v1.83.0)
+            let errorsChanged = false;
 
             for (const result of freshResults) {
                 const dataSourceDef = sourceById.get(result.id);
@@ -5211,10 +5254,35 @@ export class TemplateApp {
                     // 결과도 같은 계약으로 그 값을 심는다
                     this.processInitOptions([dataSourceDef], { [dataSourceId]: result.data }, localInit);
 
+                    // 앞서 실패해 남은 이 소스의 오류 기록을 지운다 — 마지막 값으로 버틴 실패는 새 성공이 아니므로 그대로 둔다
+                    if (result.kept !== 'last' && this.routeDataSourceErrors[dataSourceId] !== undefined) {
+                        delete this.routeDataSourceErrors[dataSourceId];
+                        errorsChanged = true;
+                    }
+
                     logger.log(`Data source refetched: ${dataSourceId}`);
                 } else if (result.state === 'error') {
                     logger.error(`Failed to refetch data source: ${dataSourceId}`, result.error);
+
+                    // refetchDataSource 실패 분기와 같은 계약으로 둔다 (@since engine-v1.83.0) — 값은 null(받기 끝 · 실패), 오류는
+                    // `_dataSourceErrors` 에 기록한다. 종전에는 로그만 남겨 옛 쿼리의 결과가 새 쿼리의 결과처럼 남았고 오류 표시도 없었다.
+                    // 같은 요청의 마지막 값·fallback 이 있으면 DataSourceManager 가 이미 성공으로 돌려주므로 여기 오는 것은 다른 요청이다.
+                    // 데이터 소스 errorHandling·onError 는 DataSourceManager 가 이미 실행했다.
+                    const failure = result.error as any;
+                    this.currentFetchedData[dataSourceId] = null;
+                    updateData[dataSourceId] = null;
+                    this.routeDataSourceErrors[dataSourceId] = {
+                        message: failure?.response?.data?.message || failure?.message || 'Unknown error',
+                        status: failure?.response?.status || failure?.status || result.errorCode,
+                    };
+                    errorsChanged = true;
                 }
+            }
+
+            if (errorsChanged) {
+                updateData._dataSourceErrors = Object.keys(this.routeDataSourceErrors).length > 0
+                    ? { ...this.routeDataSourceErrors }
+                    : undefined;
             }
 
             // BindingEngine 캐시 무효화
@@ -5611,7 +5679,8 @@ export class TemplateApp {
      * init 항목에서 등록을 기다릴 확장 핸들러 이름을 모은다.
      *
      * 최상위 `handler` 뿐 아니라 `actions`·`params.actions`·`conditions[].then`·`cases` 값·`onSuccess`·
-     * `onError`·`errorHandling` 값 안까지, `actionRef` 는 레이아웃 `named_actions` 를 따라 내려간다
+     * `onError`·`errorHandling` 값·`onLoad`(loadScript)·`params.callbackAction`(callExternal, @since engine-v1.83.0) 안까지,
+     * `actionRef` 는 레이아웃 `named_actions` 를 따라 내려간다
      * (순환 참조는 한 번만 본다). 이름은 문자열이고 `.` 이 있으며 `{{` 가 없는 것만 — 동적 핸들러 이름은
      * 실행 시점에야 정해지므로 기다릴 수 없다. `handler` 가 없거나 문자열이 아닌 항목은 건너뛴다.
      *
@@ -5657,6 +5726,18 @@ export class TemplateApp {
             visit(action.onError);
             if (action.errorHandling && typeof action.errorHandling === 'object') {
                 Object.values(action.errorHandling).forEach(visit);
+            }
+            // 엔진이 실행하는 나머지 중첩 키 — loadScript 의 onLoad, callExternal·callExternalEmbed 의 콜백 액션 (@since engine-v1.83.0)
+            visit(action.onLoad);
+            if (action.params?.callbackAction && typeof action.params.callbackAction === 'object') {
+                visit(action.params.callbackAction);
+            }
+            // navigate 의 미등록 경로 대체 동작 — 객체는 통째로, 문자열은 그 이름의 핸들러로 실행된다(resolveNavigateFallback)
+            const fallback = action.handler === 'navigate' ? action.params?.fallback : undefined;
+            if (typeof fallback === 'string') {
+                visit({ handler: fallback });
+            } else if (fallback && typeof fallback === 'object') {
+                visit(fallback);
             }
         };
 

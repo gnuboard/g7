@@ -141,6 +141,10 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 `seo-config.json` 도 확장점입니다 — 봇 요청에 서버가 화면을 렌더할 때 어떤 속성을 HTML 로
 내보낼지 이 파일이 정합니다. 새 컴포넌트가 텍스트를 담는 새 prop 을 쓰면 `text_props` 에
 추가해야 봇 화면에 그 글자가 나타납니다.
+
+`template.json` 의 `necessary_storage`(코어 7.1.3+)는 이 템플릿 화면이 쿠키 동의와 무관하게 쓰는 브라우저 저장
+키(`g7_color_scheme`)를 선언합니다 — 개인정보 동의 플러그인이 이 선언을 「확장 제공 항목」에 합쳐 동의 전에도
+지우지 않습니다. 화면이 새 필수 키를 쓰게 되면 여기에 추가합니다(선언하지 않은 키는 동의 전에 지워질 수 있다).
 <!-- @intent END -->
 
 ## 5. 수정 시 동반 의무
@@ -169,6 +173,8 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 링크 컴포넌트에 주소 구독 훅·내부 링크 판정·새 창 rel 규칙을 따로 구현 | `G7Core.navigation.useLocationSearch`·`resolveInternalHref`·`mergeRelForTarget` 를 부르고(engine-v1.83.0), 그 API 가 없는 옛 코어에만 짧은 대체를 둔다(내부 링크는 `/` 경로와 경로가 `//` 로 시작하지 않는 같은 출처 `http(s)://` 주소 — 7.1.2 템플릿과 같은 결과라 알림·메뉴의 전체 주소가 새 탭으로 열리지 않는다) | 템플릿마다 사본이 갈라져 엔진 수정을 템플릿마다 옮겨야 했고, 같은 출처 `//다른호스트` 주소를 내부 링크로 본 사본이 생겼다(7.1.3) |
+| 첨부 그림·다운로드 주소를 `isCrossOriginAssetUrl` 로만 판정 | `isDirectAssetUrl`(교차 출처 + `data:`·`blob:`) | `data:`·`blob:` 미리보기 주소를 인증 XHR 로 보내 `/api/data:…` 404 가 난다(7.1.3, sirsoft-admin_basic 판정 이식) |
 | `extends` 없는 독립 레이아웃에서 `toast`·`openModal` 사용 | `_user_base` 를 상속하거나, 독립 레이아웃이라면 `Toast`·모달 호스트 컴포넌트를 직접 마운트 | 호스트가 없으면 핸들러는 성공으로 기록되는데 화면에는 아무것도 나타나지 않는다 |
 | 상점 경로를 `/shop/...` 로 하드코딩 | `routes.json` 의 표현식 유지 (`route_path` · `no_route` 반영) | 운영자가 경로를 바꾸거나 루트에 두면 하드코딩한 링크만 조용히 깨진다 |
 | 목록 → 상세 → 목록 이동에서 `mergeQuery` 누락 | 목록 클러스터 내 모든 이동에 `"mergeQuery": true` | 검색어·페이지·필터가 사라져 사용자가 처음부터 다시 찾아야 한다 |
@@ -198,9 +204,9 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 311개 | `vitest.config.ts` |
-| Playwright | 32개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 118개 | `tests/scenarios` |
+| Vitest | 313개 | `vitest.config.ts` |
+| Playwright | 33개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 119개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

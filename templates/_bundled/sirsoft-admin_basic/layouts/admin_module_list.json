@@ -1124,6 +1124,20 @@
                                                 "handler": "openModal",
                                                 "target": "module_reactivate_language_packs_modal",
                                                 "if": "{{!!$args[0] && (response.data?.pending_language_packs ?? []).length > 0 && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.manage')}}"
+                                            },
+                                            {
+                                                "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
+                                                    "lifecycleWarningsOpen": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "lifecycle_warnings_modal",
+                                                "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
                                             }
                                         ],
                                         "onError": {
@@ -1511,6 +1525,10 @@
         {
             "comment": "코어 업데이트 안내 창. 자동 비활성 배너의 안내 링크가 연다 — **설정 화면 소유 조각을 빌려 쓴다**\n       (코어를 올리라는 안내는 확장 종류와 무관하게 같은 내용이라 사본을 두지 않았다).",
             "partial": "partials/admin_settings/_modal_core_update_guide.json"
+        },
+        {
+            "comment": "확장 작업이 「완료했지만 일부 항목이 실패」했을 때의 노란 경고 결과 창 — 성공 갈래가 응답 data.warnings 로 연다(코어 7.1.3).",
+            "partial": "partials/_modal_lifecycle_warnings.json"
         }
     ]
 }

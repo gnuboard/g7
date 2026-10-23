@@ -257,6 +257,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- | --- |
 | template | object | `{"identifier":"sirsoft-admin_basic","status":"active", …}` | 활성화된 템플릿 리소스 (TemplateResource 목록 필드 전체 — identifier/vendor/name/version/type/status/description/dependencies/dependencies_met/update_available/update_source/latest_version/file_version/github_url/github_changelog_url/is_pending/is_bundled/deactivated_reason/deactivated_at/incompatible_required_version/abilities). 업데이트의 판 전환이 끝나지 않은 확장이면 `version` 은 기록 판, `file_version` 은 파일 판이고 `update_available` 이 `true` 다 |
 | pending_language_packs | array | `[]` | 이 템플릿 재활성화로 함께 되살아날 수 있는 비활성 번들 언어팩 목록 (각 항목: id, identifier, locale, locale_native_name) |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -559,6 +560,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource + cascade 결과)._
 | language_pack_failures | array | `[]` | cascade 2단계에서 설치 실패한 동반 번들 언어팩 목록 (각 항목: identifier, reason). best-effort 이므로 실패해도 설치 자체는 성공 |
 | language_packs_awaiting_host | array | `[]` | 함께 고른 언어팩 중 이 확장이 아직 꺼져 있어 **꺼진 채 설치**된 것의 식별자 목록(실패 아님). 이 확장을 켤 때 함께 켜진다. 없으면 빈 배열 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 설치·레이아웃 갱신 응답에 실린다. 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -675,6 +677,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 설치·레이아웃 갱신 응답에 실린다. 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -786,6 +789,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 목록 응답 항�
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 설치·레이아웃 갱신 응답에 실린다. 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -1028,6 +1032,7 @@ _단건 응답: `data` 객체의 필드 (TemplateResource — 갱신 후 템플�
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -97408,6 +97413,7 @@ _단건 응답: `data` 객체의 필드 (업데이트 후 TemplateResource)._
 | incompatible_required_version | string\|null | `null` | 코어 버전 미충족 시 요구 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true,"can_edit_layouts":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 _업데이트할 내용이 없거나 템플릿 정보를 다시 읽지 못한 경우에는 리소스 대신 결과 요약(`success`, `from_version`, `to_version`, `message`)이 `data` 로 반환됩니다._
 

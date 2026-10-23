@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Extension\Support\LifecycleWarnings;
+
 /**
  * 훅 캐시를 **새 PHP 프로세스**에서 다시 굽는 헬퍼.
  *
@@ -42,6 +44,7 @@ class HookCacheFreshProcess
         fclose($pipes[1]);
         $exitCode = proc_close($process);
 
-        return ['ok' => $exitCode === 0, 'exit_code' => $exitCode, 'output' => trim($output)];
+        // 경고와 함께 끝난 생명주기 명령(종료코드 1 + 경고 표지)은 작업 자체는 끝난 것이다 (7.1.3)
+        return ['ok' => LifecycleWarnings::cliCompletedWithWarnings($exitCode, $output), 'exit_code' => $exitCode, 'output' => trim($output)];
     }
 }

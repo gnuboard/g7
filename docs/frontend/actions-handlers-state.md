@@ -404,6 +404,8 @@ setState 핸들러의 `params`에 `merge` 속성을 지정하여 상태 병합 �
 
 ### 전역 상태 변경 (target: "global")
 
+> 전역 대상은 **`"global"`** 하나다. `target="_global"` 은 전역으로 가지 않고 지역 상태(`_local`)에 써진다 — 컴파일러가 `set_state_underscore_global_target` lint 경고를 낸다. 지역은 `"local"`(또는 생략), 점 경로(`_local.form.name`)·부모 스코프(`$parent._global`·`$parent._local`)는 그 표기 그대로 쓴다.
+
 ```html
 <on type="change">
   <set-state target="global" selectedIds="{{$args[0]}}" searchQuery="{{$event.target.value}}"/>
@@ -588,6 +590,14 @@ isolatedState가 있는 컴포넌트 내에서 호출 시 → 격리된 상태�
 ## setError
 
 에러 상태를 설정합니다. `apiError` 상태 키에 저장됩니다.
+
+```html
+<on type="click">
+  <set-error target="{{error.response.message}}"/>
+</on>
+```
+
+> 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다. `target` 은 액션 최상위로 구워진다(7.1.3 — 그 전 컴파일러는 `params.target` 으로 구워 메시지를 잃었다).
 
 ```json
 {

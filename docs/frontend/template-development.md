@@ -238,7 +238,7 @@ powershell -Command "npm run test:run -- DataGrid"  # 특정 테스트 필터
 /src/handlers/
 ├── index.ts              # handlerMap export
 ├── setThemeHandler.ts    # 테마 관련 핸들러
-├── setLocaleHandler.ts   # 언어 관련 핸들러
+├── myLanguageHandler.ts  # 언어 설정 보조 핸들러(예시)
 └── ...
 ```
 
@@ -271,20 +271,21 @@ export async function setThemeHandler(
 ```typescript
 // handlers/index.ts
 import { setThemeHandler, initThemeHandler } from './setThemeHandler';
-import { setLocaleHandler, updateMyLanguageHandler } from './setLocaleHandler';
+import { updateMyLanguageHandler } from './myLanguageHandler';
 
 export const handlerMap = {
   // 테마 핸들러
   setTheme: setThemeHandler,
   initTheme: initThemeHandler,
 
-  // 언어 핸들러
-  setLocale: setLocaleHandler,
+  // 언어 보조 핸들러 (언어 변경 자체는 엔진 빌트인 setLocale 을 그대로 쓴다)
   updateMyLanguage: updateMyLanguageHandler,
 } as const;
 
 export type HandlerName = keyof typeof handlerMap;
 ```
+
+> `setLocale` 은 엔진 빌트인 핸들러다([template-handlers.md](template-handlers.md#엔진-빌트인-핸들러)). `handlerMap` 에 같은 이름을 등록하면 빌트인을 덮어써 언어 변경(번역 재로드·DB 저장)이 템플릿 구현으로 바뀌므로 등록하지 않는다. 그 밖의 엔진 빌트인 이름([actions.md](actions.md#내장-핸들러-목록) 표)도 템플릿 핸들러 이름으로 쓰지 않는다.
 
 ### 레이아웃 JSON에서 사용
 
@@ -462,6 +463,62 @@ templates/{템플릿-식별자}/custom/custom.css
 - 순서를 바꾸거나 일부만 싣고 싶으면 `custom/assets.json` 에 선언합니다.
 
 모듈·플러그인도 같은 규약을 씁니다. 상세: [module-assets.md](../extension/module-assets.md) "사용자 추가 에셋".
+
+## 템플릿 고유 CSS 와 기본 컴포넌트 클래스
+
+레이아웃에서 기본 컴포넌트의 `className` 을 줬는데 모양이 바뀌지 않는 원인은 대개 둘 중 하나다 — 컴포넌트가 고정으로 다는 배치 클래스가 남아 있거나, 템플릿 고유 클래스가 Tailwind 유틸리티에 진다. 두 경우 모두 아래 규칙으로 판단한다.
+
+### Tailwind v4 레이어 순서
+
+번들 템플릿은 Tailwind v4 를 쓰고, v4 는 CSS cascade layer(`@layer`)로 규칙을 묶는다. 우선순위는 **명시도보다 레이어가 먼저** 정한다.
+
+```text
+레이어 밖(unlayered) 규칙  >  @layer utilities  >  @layer components  >  @layer base
+```
+
+- `@layer components` 안의 템플릿 고유 클래스(`.btn`·`.select`·`.pagination-btn` 등)는 같은 요소에 붙은 유틸리티(`px-2`·`justify-start`)에 **명시도와 관계없이** 진다. 유틸리티로 덮을 수 있게 두려는 기본 외형은 이 레이어에 둔다.
+- 유틸리티를 이겨야 하는 템플릿 고유 규칙(예: 표 칸의 `px-6 py-4` 를 좁히는 변형 클래스)은 **`@layer` 밖**에 둔다 — 레이어 안에 두면 한 번도 적용되지 않는다.
+- 같은 레이어 안에서는 명시도·소스 순서로 정해진다. 유틸리티 둘이 같은 속성을 다투면(`justify-center` 와 `justify-start` 가 함께 붙음) 이기는 쪽은 클래스를 적은 순서가 아니라 빌드된 CSS 의 출력 순서다 — 그래서 기본 컴포넌트는 `mergeClasses` 로 한쪽을 지운다.
+
+### 기본 컴포넌트의 고정 배치 클래스
+
+번들 템플릿의 기본 컴포넌트는 아래 클래스를 늘 단다. 「병합 방식」이 `mergeClasses` 인 것만 레이아웃 `className` 의 같은 그룹 유틸리티가 고정 클래스를 **교체**한다. 덧붙이기인 것은 고정 클래스가 그대로 남는다.
+
+| 컴포넌트 | 템플릿 | 고정 클래스 | 병합 방식 |
+|------|------|------|------|
+| `Button` | sirsoft-basic | `inline-flex items-center justify-center` | `mergeClasses` |
+| `Button` | sirsoft-admin_basic | `button` (템플릿 고유 클래스 — `@layer components` 에서 `inline-flex items-center justify-center cursor-pointer`) | `mergeClasses` — 단 `button` 은 커스텀 클래스라 판정 대상이 아니고 늘 남는다 |
+| 링크 단추(`LinkButton`, 합성 컴포넌트 내부 도우미) | sirsoft-basic | `inline-flex items-center justify-center` (`Button` 과 같음) | `mergeClasses` |
+| `Pagination` 링크(`pageHref`) | sirsoft-basic | 각 쪽 링크에 `inline-flex items-center justify-center` | `mergeClasses` |
+| `Pagination` | sirsoft-admin_basic | 루트 `pagination`(`flex flex-wrap items-center justify-center gap-2`), 쪽 단추 `pagination-btn`·`pagination-btn-active`·링크는 `button` 추가 | 덧붙이기 (`pagination ${className}`) |
+| `IconButton` | sirsoft-admin_basic | `inline-flex items-center justify-center gap-2 font-medium rounded-lg border transition-colors focus:…` + 크기(`px-4 py-2 text-base` 등, 라벨 없으면 `w-10 h-10` 등) + 변형 색 | `mergeClasses` |
+| `SectionHeader` | sirsoft-admin_basic | `flex items-center justify-between` | `mergeClasses` |
+| `Select`(옵션 목록형 사용자 정의 드롭다운) | 두 템플릿 | `className` 에 배경 클래스가 없을 때만 `w-full px-4 py-2.5 bg-gray-100 … rounded-xl …` 를 앞에 붙임 — sirsoft-admin_basic 은 접두사 없는 `bg-` 만 배경으로 보고, sirsoft-basic 은 `dark:bg-`·`hover:bg-` 처럼 변형 접두사가 붙은 것까지 배경으로 본다 | 덧붙이기 (배경 클래스를 주면 기본 외형 전체를 빼고 `className` 만 씀 — sirsoft-basic 에서 `dark:bg-…` 만 줘도 기본 외형이 빠진다) |
+| `Select`(children 형 네이티브) | sirsoft-admin_basic | `select` (템플릿 고유 클래스, `@layer components`) | 덧붙이기 (`className` 에 `select` 가 이미 있으면 다시 붙이지 않음) |
+| `FileInput` | 두 템플릿 | 루트 `flex items-center gap-2`, 안쪽 「파일 선택」 단추는 고정 외형 | 덧붙이기 (루트만 `className` 을 받음) |
+
+### 덮는 법
+
+1. **레이아웃 `className` 에 같은 그룹 유틸리티를 준다** — 병합 방식이 `mergeClasses` 인 컴포넌트는 같은 충돌 그룹의 클래스를 교체한다. 예: `Button` 의 가운데 정렬을 왼쪽으로 → `className="justify-start"`(`justify-center` 가 지워진다). 판정하는 그룹·한계(축 유틸리티는 상위를 지우지 않음, 커스텀 클래스·v4 신규 유틸리티·확장 변형 접두사는 판정 안 함)는 [g7core-api.md 「mergeClasses」](g7core-api.md#지원-범위와-한계) 를 따른다.
+2. **템플릿 고유 클래스로 덮을 때는 그 규칙을 `@layer` 밖에 둔다** — 고정 클래스가 유틸리티(`justify-center`)라면 `@layer components` 안의 규칙은 지므로, 덮는 규칙은 레이어 밖에 적는다. 덧붙이기 방식 컴포넌트의 고정 유틸리티를 바꿀 때도 같다.
+
+```css
+/* ✅ 레이어 밖 — 유틸리티(justify-center)를 이긴다 */
+.toolbar-button {
+  justify-content: flex-start;
+}
+
+/* ❌ components 층 안 — 같은 요소의 justify-center(utilities 층)에 늘 진다 */
+@layer components {
+  .toolbar-button {
+    justify-content: flex-start;
+  }
+}
+```
+
+운영자가 덧붙이는 `custom/` CSS 는 템플릿 스타일보다 뒤에 실리지만 레이어 규칙은 같다 — 유틸리티를 덮으려면 레이어 밖에 적는다([위 절](#4-1-운영자가-cssjs-를-덧붙이는-자리-custom)).
+
+---
 
 ## 5. 템플릿 네이밍 규칙
 

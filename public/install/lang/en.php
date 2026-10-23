@@ -429,6 +429,7 @@ return [
     // Worker Log Messages (Task Progress)
     'log_task_in_progress' => ':task in progress...',
     'log_task_completed' => ':task completed',
+    'log_task_completed_with_warnings' => ':task completed — some items failed (see the warning table above)',
     'log_task_skipped' => ':task (already exists, skipped)',
     'manual_commands_guide' => '💡 You can run the following commands manually:',
     'log_separator' => '========================================',

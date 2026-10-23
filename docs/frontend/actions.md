@@ -433,10 +433,10 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `loginPasswordChange` | 로그인 비밀번호 변경 단계 완료 → 새 토큰 발급 (engine-v1.77.0+) | 인증 타입 (admin/user) | body (challenge_id, password, password_confirmation) |
 | `loginPasswordChangePostpone` | 로그인 비밀번호 변경 단계 연기 → 로그인 완료 (engine-v1.77.0+) | 인증 타입 (admin/user) | body (challenge_id) |
 | `logout` | 로그아웃 | - | - |
-| `setState` | 상태 변경 | - | target (global/local), 상태 값들 |
+| `setState` | 상태 변경 | - | target (`global`/`local`, 생략 시 local), 상태 값들. `_global` 은 전역이 아니다(지역 상태에 써진다 — 레이아웃 lint 경고) |
 | `setError` | 에러 상태 설정 | 에러 메시지 | - |
 | `openModal` | 모달 열기 | 모달 ID | - |
-| `closeModal` | 모달 닫기 | - | - |
+| `closeModal` | 모달 닫기 — 맨 위 모달 하나를 닫는다 | 무시됨 (모달 id 를 적어도 맨 위 모달을 닫는다) | - |
 | `showAlert` | 알림 표시 (alert) | 메시지 | - |
 | `toast` | 토스트 알림 표시 | - | type, message |
 | `switch` | 조건 분기 처리 | - | params.value, cases (케이스별 액션 정의, default 지원) |
@@ -448,31 +448,31 @@ init_actions에서 _local 저장 시 globalStateUpdater 경유 (componentContext
 | `reloadRoutes` (deprecated) | 라우트 다시 로드 — `reloadExtensions` 위임 | - | - |
 | `reloadTranslations` (deprecated) | 다국어 파일 다시 로드 — `reloadExtensions` 위임 | - | - |
 | `refresh` | 현재 페이지 전체 새로고침 | - | - |
-| `showErrorPage` | 에러 페이지 렌더링 | - | errorCode, target, containerId, layout |
-| `openWindow` | 새 창/탭 열기 | URL | features, name |
+| `showErrorPage` | 에러 페이지 렌더링 | - | errorCode, target (`content`/`full`), containerId |
+| `openWindow` | 새 창/탭 열기 | URL (`params.path` 가 있으면 그쪽 우선) | path, query, target (`_blank` 기본/`_self`), bypassLeaveGuard |
 | `redirect` | **같은 탭**으로 통째 이동 (SPA 라우팅 밖). 사이트 안의 절대 경로만 따라가며 외부 주소·실행 스킴은 첫 화면(`/`)으로 대체 | - | url, replace |
 | `replaceUrl` | refetch 없이 URL 만 치환 | - | path, query, mergeQuery |
-| `scrollIntoView` | 요소로 스크롤 | 대상 요소 ID | behavior, block |
-| `appendDataSource` | 데이터 소스에 항목 추가 | - | dataSourceId, items |
-| `updateDataSource` | 데이터 소스 항목 갱신 | - | dataSourceId, items |
+| `scrollIntoView` | 요소로 스크롤 | - | selector (CSS 선택자, 필수), behavior, block, inline, waitForElement, scrollContainer |
+| `appendDataSource` | 데이터 소스에 항목 추가 | - | dataSourceId, newData (배열), dataPath |
+| `updateDataSource` | 데이터 소스 값 교체 (refetch 없이) | - | dataSourceId, data, merge |
 | `updateProductField` | 상품 필드 갱신 (이커머스 작성 보조) | - | 필드 경로·값 |
 | `updateOptionField` | 상품 옵션 필드 갱신 | - | 필드 경로·값 |
 | `conditions` | 조건 목록 평가 후 분기 | - | conditions (else 키 없음) |
 | `suppress` | 에러 전파 차단 (무의미한 setState 대체) | - | - |
 | `startInterval` | 주기 실행 시작 | - | id, intervalMs, actions |
 | `stopInterval` | 주기 실행 중지 | - | id |
-| `saveToLocalStorage` | localStorage 저장 | 키 | value |
-| `loadFromLocalStorage` | localStorage 읽기 | 키 | resultTo |
-| `setLocale` | 앱 언어 변경 | - | locale |
-| `emitEvent` | 커스텀 이벤트 발화 | 이벤트명 | payload |
+| `saveToLocalStorage` | localStorage 저장 | - | key, value |
+| `loadFromLocalStorage` | localStorage 읽기 (`_local` 에 기록) | - | key, stateKey, defaultValue |
+| `setLocale` | 앱 언어 변경 | 로케일 (예 `en`) | - |
+| `emitEvent` | 커스텀 이벤트 발화 | - | event (이벤트명), data |
 | `refreshConsent` | 방문자 동의 스냅샷(`_global.consent`) 다시 읽기 — 사용자 템플릿 전용, 구독자(`consent:changed`)가 끝날 때까지(최대 3초) 기다린 뒤 다음 액션으로 진행 (engine-v1.78.0) | - | - |
-| `loadScript` | 외부 스크립트 로드 (src 화이트리스트) | src | id, async |
-| `callExternal` | 외부 SDK 함수 호출 | 함수 경로 | args |
-| `callExternalEmbed` | 외부 SDK 임베드 호출 | 함수 경로 | args, container |
-| `ensureIdentityVerified` | 본인인증 필요 여부 확인·유도 | - | purpose, channel |
-| `resolveIdentityChallenge` | 본인인증 챌린지 응답 처리 | - | challenge |
-| `reloadModuleHandlers` | 모듈 핸들러 번들 재로드 | - | moduleId |
-| `reloadPluginHandlers` | 플러그인 핸들러 번들 재로드 | - | pluginId |
+| `loadScript` | 외부 스크립트 로드 (src 화이트리스트) | - | src, id, async, defer |
+| `callExternal` | 외부 SDK 함수 호출 | - | constructor (전역 생성자 경로), args, method, methodArgs, callbackEvent, callbackSetState, callbackAction |
+| `callExternalEmbed` | 외부 SDK 임베드 호출 (엔진이 만든 레이어에 띄움) | - | constructor, args, layerClassName, callbackEvent, callbackSetState, callbackAction |
+| `ensureIdentityVerified` | 본인인증 필요 여부 확인·유도 | - | purpose, target (`{email, phone}`), policy_key, provider_id, render_hint |
+| `resolveIdentityChallenge` | 본인인증 챌린지 응답 처리 | - | result (`verified`/`pending`/`failed`/`cancelled`), token, providerData, pollUrl, pollIntervalMs, expiresAt, failureCode, reason |
+| `reloadModuleHandlers` | 모듈 핸들러 번들 재로드 | - | moduleInfo (모듈 정보 응답), action (`add`/`remove`) |
+| `reloadPluginHandlers` | 플러그인 핸들러 번들 재로드 | - | pluginInfo (플러그인 정보 응답), action (`add`/`remove`) |
 
 > **이 표는 전수다 (49종).** 코드상 SSoT 는 [`ActionHandlerManifest::CORE_HANDLERS`](../../app/Support/LayoutMarkup/ActionHandlerManifest.php) 이고, 엔진 실등록(`ActionDispatcher` switch 32 + `registerDefaultHandlers` 17)과 이름 집합이 양방향 일치한다. 핸들러를 추가하면 매니페스트와 이 표를 함께 갱신한다 — 두 집합의 일치는 계약 표면 커버리지 검사가 자동으로 대조한다.
 

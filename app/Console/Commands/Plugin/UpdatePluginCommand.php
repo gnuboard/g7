@@ -7,6 +7,7 @@ use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\RebuildsSearchIndex;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Exceptions\ExtensionUpdateFailedException;
@@ -21,6 +22,7 @@ class UpdatePluginCommand extends Command
     use HasUnifiedConfirm;
     use RebuildsSearchIndex;
     use RendersLayoutSyncResult;
+    use ReportsLifecycleWarnings;
     use ReportsStuckUpdateRecovery;
     use SelectsLayoutInstallSource;
 
@@ -203,7 +205,7 @@ class UpdatePluginCommand extends Command
 
             if ($updateResult['success']) {
                 $this->newLine();
-                $this->info('✅ '.__('plugins.commands.update.success', ['plugin' => $identifier]));
+                $this->info($this->lifecycleDoneIcon().' '.__('plugins.commands.update.success', ['plugin' => $identifier]));
                 $this->info('   '.__('plugins.commands.update.version_change', [
                     'from' => $updateResult['from_version'],
                     'to' => $updateResult['to_version'],

@@ -44,9 +44,14 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 `sirsoft-gdpr.necessary_storage.filter_provided_keys`(`Plugin::PROVIDED_NECESSARY_STORAGE_HOOK`)를
 소유하고, 확장은 `['localStorage'=>[], 'sessionStorage'=>[], 'cookie'=>[]]` 를 받아 자기 키를 덧붙여
 돌려줍니다. `Plugin::providedNecessaryStorage()` 가 판정·인라인 때마다 그 훅을 당겨(pull) 모으고
-형식 규칙(`NECESSARY_STORAGE_KEY_PATTERN`)을 통과한 항목만 받습니다. 설정에 저장하지 않으므로 확장을
+형식 규칙(`NECESSARY_STORAGE_KEY_PATTERN`)을 통과한 항목만 받습니다. PHP 리스너가 없는 템플릿은
+`template.json` 의 `necessary_storage` 로 선언하고, 코어 `TemplateManager::getActiveTemplatesNecessaryStorage()`
+(7.1.3+, 없는 옛 코어에서는 건너뜀)로 받아 같은 목록에 합칩니다. 제공 목록·잠금 목록은 계산값 키
+(`Plugin::getComputedSettingKeys()`, 코어 7.1.3+)라 설정에 저장하지 않으므로 확장을
 켜고 끄면 다음 요청부터 저절로 반영되고(비활성 확장의 리스너는 부팅 때 등록되지 않는다), 이 플러그인이
 없으면 훅이 발행되지 않을 뿐 제공 확장은 그대로 섭니다 — 이커머스 결제수단 등록과 같은 방식입니다.
+1.1.1 까지 설치 시점에 굳은 계산값과 운영자 목록의 `g7_order_*`(이커머스 1.3.2+ 가 직접 제공)는 1.1.2
+업그레이드가 걷어냅니다.
 
 그래서 **판정 목록은 하나**입니다. 서버(`CookieConsentMiddleware`)와 클라이언트 셋
 (`storageInterceptor` · `cookieInterceptor` · `functionalCleaner`)이 같은 설정을 같은 매칭 규칙
@@ -195,7 +200,7 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 49개 | `plugins/_bundled/sirsoft-gdpr/tests` |
+| PHPUnit | 50개 | `plugins/_bundled/sirsoft-gdpr/tests` |
 | Vitest | 37개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 42개 | `tests/scenarios` |

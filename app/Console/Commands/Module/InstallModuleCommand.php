@@ -5,6 +5,7 @@ namespace App\Console\Commands\Module;
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\RebuildsSearchIndex;
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\ModuleManager;
@@ -20,6 +21,7 @@ class InstallModuleCommand extends Command
 {
     use HasProgressBar;
     use RebuildsSearchIndex;
+    use ReportsLifecycleWarnings;
     use SelectsLayoutInstallSource;
 
     /**
@@ -121,7 +123,7 @@ class InstallModuleCommand extends Command
                 $menusCount = Menu::byExtension(ExtensionOwnerType::Module, $identifier)->count();
 
                 // 성공 메시지
-                $this->info('✅ '.__('modules.commands.install.success', ['module' => $identifier]));
+                $this->info($this->lifecycleDoneIcon().' '.__('modules.commands.install.success', ['module' => $identifier]));
                 $this->info('   - '.__('modules.commands.install.vendor', ['vendor' => $module->vendor]));
                 $this->info('   - '.__('modules.commands.install.version', ['version' => $module->version]));
                 $this->info('   - '.trans_choice('modules.commands.install.roles_created', $rolesCount));

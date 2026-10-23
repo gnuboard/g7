@@ -30,6 +30,9 @@ class ProvideNecessaryStorageKeysListener implements HookListenerInterface
         'localStorage' => [
             // 비회원 장바구니 식별 키
             'g7_cart_key',
+            // 관리자 주문 목록 표시 열(`g7_order_visible_columns_{관리자 uuid}`) — 관리자별 업무 설정이라 지워지면
+            // 새로고침마다 열 선택이 초기화된다. 예전에는 동의 플러그인 출하 목록에 하드코딩돼 있었다(1.3.2 부터 이 모듈이 제공).
+            'g7_order_*',
         ],
         'sessionStorage' => [
             // 비회원 주문 조회 토큰 (30분)

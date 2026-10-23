@@ -1,3 +1,4 @@
+// e2e:allow 학습용 숨김(hidden) 샘플 템플릿 — 운영 사이트에서 활성화되지 않아 브라우저 경로가 없다. 링크 판정·부트스트랩은 Vitest(__tests__/components/A.coreLinkApi·__tests__/bootstrap/initTemplate)로 잠그고, 같은 코어 링크 API 의 브라우저 확인은 tests/Playwright/specs/engine-713-binding-cache-links.spec.ts 가 맡는다
 /**
  * Gnuboard7 Hello User Template
  *
@@ -23,3 +24,10 @@ export { Img, type ImgProps } from './components/basic/Img';
 // 코어가 구현체를 찾는다. `MemoCard` 라는 이름 그대로 내보내지 않는 이유는 템플릿 자신의
 // 컴포넌트와 이름이 겹칠 수 있기 때문이다(번들 전역은 평면이다).
 export { HelloModuleMemoCard } from './components/overrides/gnuboard7-hello_module/MemoCard';
+
+// 템플릿 부트스트랩 (docs/frontend/template-development.md 「템플릿 부트스트랩 의무」)
+export { handlerMap, initTemplate } from './bootstrap';
+import { initTemplate } from './bootstrap';
+
+// 템플릿 초기화 자동 실행
+initTemplate();

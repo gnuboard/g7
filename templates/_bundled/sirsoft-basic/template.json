@@ -5,7 +5,7 @@
         "ko": "Basic",
         "en": "Basic"
     },
-    "version": "1.2.2",
+    "version": "1.2.3",
     "license": "MIT",
     "description": {
         "ko": "그누보드7 기본 사용자 템플릿",
@@ -32,6 +32,13 @@
         "plugins": {
             "sirsoft-daum_postcode": ">=1.0.0"
         }
+    },
+    "necessary_storage": {
+        "localStorage": [
+            "g7_color_scheme"
+        ],
+        "sessionStorage": [],
+        "cookie": []
     },
     "assets": {
         "css": [

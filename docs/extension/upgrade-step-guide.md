@@ -12,6 +12,8 @@
 5. 모든 분기에 upgrade.log 출력 — 로그 없음 = 디버깅 단서 없음
 6. beta.3+ 타깃 step 이 중간에 새 프로세스 재진입이 필요하면 `UpgradeHandoffException` throw (섹션 10.5)
 7. 7.0.0-beta.5+ 신규 step 은 `AbstractUpgradeStep` 상속 의무 + 카탈로그/변환/핫픽스를 `upgrades/data/{version}/` 으로 격리 (섹션 13)
+8. 확장 upgrade step 은 확장 자신의 새 저장소·서비스를 컨테이너에서 해석하지 않는다 — 업데이트 프로세스엔 옛 프로바이더만 등록됨 (원칙 5)
+9. step·데이터 마이그레이션 파일이 있는데 클래스가 없거나 인터페이스 미구현이면 업데이트 실패 (7.1.3+, 원칙 6)
 ```
 
 ---
@@ -137,6 +139,33 @@ upgrade step 은 동일 버전으로 재실행될 수 있다(`--force` 옵션). 
 - 테이블/컬럼 조작 전 `Schema::hasTable/hasColumn` 체크
 - 데이터 이관은 "이미 이관됨" 플래그로 skip 가능하게 설계
 
+### 원칙 5 — 확장 자신의 새 저장소·서비스를 해석하지 않는다
+
+모듈·플러그인 업데이트(경로 A)를 실행하는 프로세스에는 **부팅 때 등록된 옛 버전의 서비스 프로바이더** 만 있다. 새 버전 파일로 교체한 뒤에도 PHP 는 이미 로드한 프로바이더 클래스를 다시 읽을 수 없으므로, 새 버전 프로바이더가 추가한 바인딩(새 Repository 인터페이스 → 구현체, 새 Service 싱글턴 등)은 업그레이드 단계 실행 시점에 존재하지 않는다.
+
+- 금지: `app(VendorFooNewRepositoryInterface::class)`, `app(VendorFooNewService::class)` 처럼 **이번 버전에서 확장이 새로 바인딩한** 저장소·서비스를 해석
+- 허용: 코어 서비스·파사드 해석, `DB`/`Schema` 파사드로 직접 처리, 로컬 private 헬퍼
+- 새 바인딩이 필요한 후속 작업은 업그레이드 단계가 아니라 업데이트 뒤 다음 요청(새 프로바이더가 등록된 프로세스)에서 처리하도록 설계한다 — 예: 설정 저장 시 보정, 다음 활성화 때 재시드
+
+> 설치·활성화 경로는 다르다. 7.1.3 부터 설치·활성화·언어팩 시더 재실행 직전에 확장 프로바이더를 부팅과 같은 규칙으로 먼저 등록하므로, 설치 시더는 확장 자신의 저장소·서비스를 해석할 수 있다 — [모듈 개발 기초](module-basics.md) 참조.
+
+### 원칙 6 — 클래스를 쓸 수 없으면 업데이트 실패 (7.1.3+)
+
+아래 파일이 있는데 클래스를 쓸 수 없으면(클래스 없음 — 네임스페이스·클래스명 오타, 또는 요구 인터페이스·부모 미구현) 그 단계를 건너뛰지 않고 **업데이트를 실패로 끝낸다**. 이전에는 조용히 건너뛰어 데이터는 옛 형태인데 버전만 올라가는 상태가 생겼다.
+
+| 파일 | 요구 타입 | 실패 시 |
+| --- | --- | --- |
+| 코어 `upgrades/Upgrade_*.php` (업데이트 범위 안) | `UpgradeStepInterface` | `CoreUpdateOperationException` → 코어 업데이트 실패 경로(백업 복원) |
+| 확장 `upgrades/Upgrade_*.php` (업데이트 범위 안) | `UpgradeStepInterface` | `UpgradeStepClassMissingException` → 확장 업데이트 실패(범위 안 단계를 하나도 돌리기 전에) |
+| `upgrades/data/{version}/migrations/*.php` (코어·확장) | `DataMigration` 상속 | `UpgradeStepClassMissingException` → 업데이트 실패 |
+| 업데이트로 교체한 새 판 `module.php`·`plugin.php` (확장 진입 클래스) | `Modules\{Vendor}\{Name}\Module`·`Plugins\{Vendor}\{Name}\Plugin` | 버전을 기록하기 전에 업데이트 실패(`extensions.errors.entry_class_missing_on_update`) → 백업 복원·옛 버전 유지 |
+
+「업데이트 범위 안」은 시작 판 초과 ~ 목표 판 이하다. 이미 지난 판이나 아직 아닌 판의 단계 파일이 깨져 있어도 이번 업데이트는 막지 않는다 — 코어·확장이 같은 규칙이다(확장은 수집할 때 깨진 파일 자리에 표시만 두고, 범위로 고른 단계에 그 표시가 있을 때 실패한다).
+
+실패 메시지에 파일명과 기대한 클래스(FQCN)가 들어 있다. 파일명 접두 번호(`01_`)는 클래스명에서 빠지므로 클래스는 접두 없이 선언한다.
+
+위 표 밖의 클래스 누락은 업데이트를 막지 않고 **경고 로그** 만 남긴다 — 확장의 서비스 프로바이더·라우트 파일 누락, 업데이트가 아닌 경로(부팅·설치·번들 목록)의 확장 진입 클래스 누락, 훅 리스너의 인터페이스 미구현.
+
 ## 4. 허용/금지 패턴
 
 ### ❌ 금지 — 기존 클래스의 신규 메서드 호출
@@ -252,6 +281,8 @@ upgrade step PR 검토 시 아래 항목을 모두 확인:
 - [ ] 필요한 로직이 로컬 private 메서드로 작성되어 있는가?
 - [ ] 모든 return 분기에 upgrade.log 메시지가 있는가?
 - [ ] `--force` 재실행 시 안전한 멱등 동작인가?
+- [ ] (확장) 이번 버전에서 확장이 새로 바인딩한 저장소·서비스를 `app()` 으로 해석하지 않는가? (원칙 5)
+- [ ] step·데이터 마이그레이션 파일의 네임스페이스·클래스명이 파일과 일치하고 요구 인터페이스를 구현하는가? (원칙 6 — 어긋나면 업데이트 실패)
 - [ ] sudo 실행 환경에서 root 오염이 발생할 수 있는 파일 조작이 있다면 소유권 복원 로직이 포함되었는가?
 - [ ] 테스트 환경(`beta.N fresh` → `beta.N+1 update`) 에서 수동 검증을 통과했는가?
 
@@ -340,6 +371,7 @@ beta.1 의 `runComposerInstall(base_path())` 가 sudo 에서 vendor/ 를 root �
 - 단, `reloadModule`/`reloadPlugin` 이 `evalFreshModule` 로 **진입점 클래스만 재로드** (`app/Extension/ModuleManager.php` 의 `evalFreshModule`, `PluginManager.php` 의 `evalFreshPlugin` 참조)
 - 진입점 메서드(`getPermissions`/`getMenus` 등)는 재로드 덕분에 최신 정의 반환
 - 하지만 **그 외 App\* 클래스**(Helper, Service, Model)는 여전히 이전 버전 메모리
+- 서비스 컨테이너에도 **옛 버전 프로바이더의 바인딩만** 있다 — 새 버전이 추가한 저장소·서비스 바인딩은 해석할 수 없다 (원칙 5)
 - **적용 규율**: 섹션 3~5 의 모든 작성 규칙 적용. 로컬 private 헬퍼 우선, 기존 클래스의 신규 메서드 호출 금지
 
 ### 경로 B — 코어 upgrade step (beta.3 이후, 규율 완화)

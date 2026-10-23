@@ -5,6 +5,32 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.83.0] - 2026-10-23
+
+### Added
+
+- 공개 링크 API 3종 — 템플릿마다 사본으로 두던 링크 규칙을 코어가 제공한다(사본이 갈라져 엔진 수정을 템플릿마다 옮겨야 했고, sirsoft-admin_basic 사본은 같은 출처 `https://이 사이트//다른호스트` 를 내부 링크로 봤다). 템플릿은 코어와 같은 React 를 쓰므로 훅을 그대로 부른다 (navigationLinks.ts, G7CoreGlobals.ts)
+  - `G7Core.navigation.useLocationSearch(enabled)` — 렌더할 때 현재 쿼리를 href 에 합치는 링크의 주소 검색부 구독 훅(`useSyncExternalStore`, 구독하지 않을 때 같은 함수 참조 유지)
+  - `G7Core.navigation.resolveInternalHref(href)` — 같은 출처 내부 링크면 「경로?쿼리#해시」, 아니면 null. 엔진 navigate 의 같은 출처 판정(`navPolicy.toSameOriginNavPath`)과 하나다(`//host`·`/\host`·경로가 `//` 로 시작하는 같은 출처 주소·실행 스킴·다른 출처는 null)
+  - `G7Core.navigation.mergeRelForTarget(rel, target)` — `target="_blank"` 면 `noopener`·`noreferrer` 중 빠진 것만 덧붙이고 넘겨받은 토큰은 남긴다(세 갈래였던 템플릿 규칙을 sirsoft-basic 규칙으로 통일)
+- `refetchDataSource`(핸들러·`G7Core.dataSource.refetch`) 옵션 `isolatedStateOverride` — 격리 상태 안에서 부른 다시 받기가 그 상태를 요청 식 `{{_isolated.*}}` 에 싣는다. 디스패처가 넘기던 값을 받는 쪽이 버리고 있었다 (TemplateApp.ts `refetchDataSource`, DataSourceManager.ts `fetchDataSourcesWithResults`)
+
+### Fixed
+
+- `G7Core.dataSource.set`·`updateItem`·`updateData`(append) 뒤에 `{{x.data.total}}`·`{{x.data.0.name}}`·`{{x.data.length}}` 같은 단순 경로 props 가 최대 30초 앞 값으로 그려지던 문제. 정적 경로 영구 캐시를 그 데이터소스 키만 비운다(전체 비우기 아님) (TemplateApp.ts `setDataSource`·`updateDataSourceItem`)
+- progressive 받기 실패·같은 화면 쿼리 갱신(`updateQueryParams`) 실패에서 앞 쪽 값·오류 기록이 낡던 문제 — 실패 분기도 성공 분기처럼 그 소스·`_dataSourceErrors` 캐시를 비우고, 쿼리 갱신 실패는 다시 받기 실패(engine-v1.81.2)와 같이 null·오류 기록·데이터소스 errorHandling 을 처리한다. 뒤이은 성공은 오류 기록을 지운다 (TemplateApp.ts)
+- 언어팩 설치 직후 `{{$locales}}` 가 30초 동안 옛 목록이던 문제 — `reloadExtensionState` 가 `$locales`·`$templateLocales` 캐시를 비운다 (TemplateApp.ts `reloadExtensionState`)
+- 오류 화면(`showErrorPage`)이 생성 때 받은 `_global` 참조(옛 값)로 그려지고 `route`·`query` 가 없으며, 같은 화면에서 403 → 500 을 연이어 그리면 앞 오류 코드가 남던 문제. 오류 화면 처리기가 상태를 보관하지 않고 그릴 때마다 현재 `_global`·route·query·전역 헤더를 받고, 그리기 직전 바인딩 캐시를 비우며, 받은 객체 대신 복사본에 쓴다 (ErrorPageHandler.ts, TemplateApp.ts)
+- `sequence`·`parallel`·`conditions(then)`·`switch(cases)` 안이나 `onError` 갈래의 `showErrorPage` 가 오류 코드를 받지 못해 500 으로 그려지던 문제 — 오류 코드 주입이 중첩 핸들러 트리를 돈다 (types/ErrorHandling.ts `injectErrorCode`, error/ErrorHandlingResolver.ts)
+- 모달의 `$parent._global`·`$parent._computed` 가 모달을 연 시점 값으로 굳던 문제 — 모달 문맥 스택이 부모의 지금 값을 돌려준다 (ActionDispatcher.ts 모달 열기)
+- `remount` 를 두 번째부터 다시 마운트하지 않던 문제 — `G7Core.state.get()` 은 `_global` 자체인데 `._global._remountKeys` 를 읽어 카운터가 늘 1 이었다 (ActionDispatcher.ts)
+- `loadScript` 의 `onLoad`·`callExternal` 의 `params.callbackAction`·`navigate` 의 `params.fallback`(객체·확장 핸들러 이름) 안 확장 핸들러가 init 대기 목록에서 빠져 첫 진입에 `Unknown handler` 가 날 수 있던 문제 (TemplateApp.ts `collectNamespacedHandlers`)
+- 객체로 쓴 `params.callbackAction` 안의 `{{$event…}}` 가 디스패치 때 미리 풀려 undefined 가 되던 문제(잠재) — 콜백 액션은 원문으로 넘겨 콜백 시점에 푼다 (ActionDispatcher.ts `resolveParams`)
+- 디바운스 폼에서 칸을 친 직후 `G7Core.dispatch(navigate)`(관리자 사이드바·링크)로 다른 화면에 가면 새 화면 칸에 이전 화면 입력이 남던 문제(engine-v1.82.1 회귀 — 7.1.2 가 이동 전에 대기 디바운스를 반영하면서, 버려지던 대기 값이 「쓴 값」이 돼 engine-v1.81.2 다시 마운트 판정에서 빠졌다). 이동 전 반영으로 쓴 값도 새 화면에서 버린 값으로 다루고, 같은 경로의 쿼리만 바꾸는 이동은 반영하지 않는다(반영하면 다시 받은 데이터가 치던 입력을 덮었다 — 이탈 가드는 같은 경로를 묻지 않는다) (ActionDispatcher.ts `handleNavigate`·`isFlushingForNavigation`, DynamicRenderer.tsx 자동바인딩). 잠금: sirsoft-admin_basic `productFormRouteSwitchInputResidue.test.tsx` — 수정 전(7.1.2 HEAD 와 같은) 2 red → 19 green
+- `G7Core.style.mergeClasses` 가 지우면 안 되는 기본 클래스를 지우던 문제 — padding/margin 축(`px-2` 가 `p-4` 를 지움)·flex 방향/줄바꿈/크기·inset 변·border 변·overflow 축·`space-x-reverse`·`break-after`·`order` 정규식 오타, 같은 유형의 `gap-x/y`·`rounded-t/…`·`scale-x/y`·`translate-x/y`·`skew-x/y`·`overscroll-x/y`. 상위 유틸리티는 하위 축을 지우되 그 반대는 아니다(tailwind-merge 규칙). 번들 레이아웃 807개·mergeClasses 사용 조합 2,542개 정적 비교 결과 차이 0건 (helpers/StyleHelpers.ts)
+
+회귀 잠금(수정 전 엔진 = 7.1.2 HEAD 워크트리에서 fail-first, 7파일 43건 중 40 red · 3건은 대조군): `template-engine/__tests__/TemplateApp.bindingCacheInvalidation.test.tsx`(8 — 8 red) · `error/__tests__/ErrorHandlingResolver.nestedErrorCode.test.ts`(4 — 4 red) · `template-engine/__tests__/ActionDispatcher.stateReferences.test.ts`(5 — 3 red, 대조군 2) · `__tests__/TemplateApp.handlerTreeIsolatedRefetch.test.ts`(2 — 2 red) · `template-engine/__tests__/StyleHelpers.mergeClasses.test.ts`(10 — 9 red, 대조군 1) · `template-engine/__tests__/navigationLinks.coreLinkApi.test.tsx`(4 — 4 red) · 시험 도구 `template-engine/__tests__/utils/layoutTestUtils.appParity.test.tsx`(10 — 10 red, 레이아웃 시험 도구가 실제 앱과 같은 렌더 컨텍스트를 만든다)
+
 ## [engine-v1.82.1] - 2026-10-21
 
 ### Added

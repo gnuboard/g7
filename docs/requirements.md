@@ -78,7 +78,7 @@ FcgidOutputBufferSize 0
 | 필수 | `session` | 세션 관리 |
 | 필수 | `tokenizer` | PHP 토큰 파싱 |
 | 필수 | `xml` | XML 파서 |
-| 필수 | `zip` | 확장·언어팩·코어 업데이트 패키지의 압축 해제 |
+| 필수 | `zip` | 확장·언어팩·코어 업데이트 패키지의 압축 해제 — `unzip` 명령 폴백 없음(7.1.3) |
 | 선택 | `gd` | 이미지 처리 (썸네일, 리사이징) — `imagick` 과 택일 |
 | 선택 | `imagick` | 고급 이미지 처리 (ImageMagick) — `gd` 와 택일 |
 | 선택 | `exif` | 이미지 메타데이터 읽기 |

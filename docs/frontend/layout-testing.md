@@ -204,14 +204,40 @@ afterEach(() => {
 | 옵션 | 타입 | 설명 |
 |------|------|------|
 | `initialState` | `{ _local?: object, _global?: object }` | 초기 상태 |
-| `routeParams` | `Record<string, string>` | URL 파라미터 (route.id 등) |
+| `routeParams` | `Record<string, string>` | URL 파라미터 — 실제 앱처럼 `route.*` 와 컨텍스트 루트(`{{id}}`) 양쪽에 싣는다 |
+| `routePath` | `string` | 현재 경로 — `route.path` (기본 `/`) |
 | `queryParams` | `Record<string, string>` | 쿼리 파라미터 |
 | `auth` | `{ isAuthenticated, user?, authType? }` | 인증 상태 |
 | `translations` | `Record<string, any>` | 다국어 데이터 |
-| `locale` | `'ko' \| 'en'` | 현재 로케일 |
+| `locale` | `'ko' \| 'en'` | 현재 로케일 — `$locale` |
+| `locales` | `string[]` | 시스템 활성 언어 — `$locales` (기본 `['ko','en']`) |
+| `templateLocales` | `string[]` | 템플릿 지원 언어 — `$templateLocales` (기본 `['ko','en']`) |
 | `initialData` | `Record<string, any>` | 데이터소스 초기 데이터 |
 | `componentRegistry` | `ComponentRegistry` | 컴포넌트 레지스트리 |
-| `templateId` | `string` | 템플릿 ID |
+| `templateId` | `string` | 템플릿 ID — `$templateId` |
+| `includeModals` | `boolean` | 레이아웃 `modals` 를 실제 앱처럼 그린다(아래 「렌더 컨텍스트」) |
+
+#### 렌더 컨텍스트 — 실제 앱과 같다 (7.1.3)
+
+도구는 실제 앱(TemplateApp 의 첫 렌더 컨텍스트 + 템플릿 엔진 전역 변수)과 **같은 규칙**으로 데이터 컨텍스트를 만든다.
+종전 도구는 아래 항목이 빠지거나 달라, 시험은 통과하는데 실제 화면은 깨질 수 있었다.
+
+| 항목 | 도구가 싣는 것 |
+|------|------|
+| `_computed`·`_computedDefinitions` | 레이아웃 `computed` 를 실제 앱과 같은 공용 평가기로 계산(데이터소스·route·query·`_local`·`_global` 문맥). `getComputed(key)` 도 같은 값 |
+| `$locale`·`$locales`·`$templateLocales`·`$templateId` | 옵션 값(기본 `ko`·`['ko','en']`·`test-template`). 식 안의 `$t('…')` 도 번역되므로 **번역된 문장으로 단언**한다 |
+| `route`·경로 파라미터 | `route = { ...routeParams, path }` + 경로 파라미터를 컨텍스트 루트에도 펼침 |
+| `_isolatedInit` | 레이아웃·데이터소스 `initIsolated` |
+| `_dataSourceErrors` | 받기 실패를 `{ message, status }` 로 기록하고, 데이터소스 `errorHandling`(상태 코드별·`default`)·`onError` 를 실제 ActionDispatcher 로 실행 |
+| 응답 모양 | `mockApi(id, { response })` 의 `response` 가 곧 응답 본문 — 직접 모의·URL 모의 같은 규칙. 직접 모의도 `waitForDataSource` 가 받기로 친다 |
+| 데이터소스 `initLocal`·`initGlobal` | 실제 앱 처리 함수(`TemplateApp.processInitOptions`)로 적용 |
+| `_defines`·`_globalSetState`·`_global.layoutWarnings` | 레이아웃 `defines`·`warnings` |
+| `init_actions` | `setState` 흉내가 아니라 실제 ActionDispatcher 로 실행(`sequence`·`conditions` 등 포함) |
+| 토스트·모달 | 액션 `toast`·`openModal`·`closeModal` 은 엔진 내장 처리 — `getToasts()`·`getModalStack()` 이 `_global.toasts`·`_global.modalStack` 을 읽는다. `includeModals` 모달은 `ParentContextProvider` 안에서 `isOpen`(모달 스택 기준)·`onClose` 를 받아 그려진다 |
+| `G7Core.navigation` | 실제 링크 API(`useLocationSearch`·`resolveInternalHref`·`mergeRelForTarget` 등) — 템플릿의 실물 링크 컴포넌트(A 등)를 등록부에 얹어도 엔진과 같은 React 로 그려진다 |
+
+`triggerAction()` 은 렌더 데이터 컨텍스트 전체로 실행한다. 컴포넌트 문맥 없는 `setState`(local) 는 실제 앱처럼 `_global._local` 에
+쓰이고 도구의 `_local` 에도 반영된다.
 
 #### 반환 객체
 
@@ -422,6 +448,23 @@ it('iteration에서 각 행이 올바른 데이터를 참조한다', async () =>
 ```
 
 ### 토스트/모달 테스트
+
+레이아웃 액션(`toast`·`openModal`·`closeModal`)으로 띄운 것도 잡힌다 — 엔진 내장 처리가 쓰는 `_global.toasts`·`_global.modalStack` 을
+읽는다(7.1.3 전 도구는 액션으로 띄운 토스트·모달을 놓쳤다).
+
+```typescript
+it('저장 액션이 토스트를 띄우고 확인 모달을 연다', async () => {
+  await testUtils.render();
+
+  await testUtils.triggerAction({ type: 'click', handler: 'toast', params: { type: 'success', message: '저장됨' } });
+  await testUtils.triggerAction({ type: 'click', handler: 'openModal', target: 'confirm-modal' });
+
+  expect(testUtils.getToasts()).toContainEqual({ type: 'success', message: '저장됨' });
+  expect(testUtils.getModalStack()).toEqual(['confirm-modal']);
+
+  testUtils.cleanup();
+});
+```
 
 ```typescript
 it('토스트가 표시된다', async () => {

@@ -269,6 +269,7 @@ _단건 응답: `data` 객체의 필드 (`LanguagePackService::bulkActivate()` �
 | failed | array | `[{"id": 7, "reason": "not_found"}]` | 활성화에 실패한 항목 목록 (요소: `id`, `reason`) |
 | failed[].id | integer\|string | `7` | 실패한 항목의 요청 ID (요청 `ids` 원본 값) |
 | failed[].reason | string | `not_found` | 실패 사유. 대상 미존재 시 `not_found`, 그 외에는 발생한 예외 메시지 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -459,6 +460,7 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | updated_at | string\|null | `2026-07-05 10:41:24` | 최종 수정 일시 |
 | has_update | boolean | `false` | `latest_version > version` 여부 |
 | abilities | object | `{"can_activate":true,"can_deactivate":true,"can_uninstall":true}` | 현재 사용자가 이 언어팩에 수행 가능한 작업 불리언 맵 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -598,6 +600,7 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | updated_at | string\|null | `2026-07-05 10:41:24` | 최종 수정 일시 |
 | has_update | boolean | `false` | `latest_version > version` 여부 |
 | abilities | object | `{"can_activate":true,"can_deactivate":true,"can_uninstall":true}` | 현재 사용자가 이 언어팩에 수행 가능한 작업 불리언 맵 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -733,6 +736,7 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | updated_at | string\|null | `2026-07-05 10:41:24` | 최종 수정 일시 |
 | has_update | boolean | `false` | `latest_version > version` 여부 |
 | abilities | object | `{"can_activate":true,"can_deactivate":true,"can_uninstall":true}` | 현재 사용자가 이 언어팩에 수행 가능한 작업 불리언 맵 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -870,6 +874,7 @@ _단건 응답: `data` 객체의 필드 (설치된 언어팩 = `LanguagePackReso
 | updated_at | string\|null | `2026-07-05 10:41:24` | 최종 수정 일시 |
 | has_update | boolean | `false` | `latest_version > version` 여부 |
 | abilities | object | `{"can_activate":true,"can_deactivate":true,"can_uninstall":true}` | 현재 사용자가 이 언어팩에 수행 가능한 작업 불리언 맵 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -1289,6 +1294,7 @@ _단건 응답: `data` 객체의 필드 (활성화된 언어팩 = `LanguagePackR
 | updated_at | string\|null | `2026-07-08 10:41:24` | 최종 수정 일시 |
 | has_update | boolean | `false` | `latest_version > version` 여부 |
 | abilities | object | `{"can_activate":true,"can_deactivate":true,"can_uninstall":true}` | 현재 사용자가 이 언어팩에 수행 가능한 작업 불리언 맵 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -1630,6 +1636,7 @@ _단건 응답: `data` 객체의 필드 (업데이트된 언어팩 = `LanguagePa
 | updated_at | string\|null | `2026-07-09 09:12:00` | 최종 수정 일시 (업데이트 시각으로 갱신) |
 | has_update | boolean | `false` | `latest_version > version` 여부 (업데이트 직후 false) |
 | abilities | object | `{"can_activate":true,"can_deactivate":true,"can_uninstall":true}` | 현재 사용자가 이 언어팩에 수행 가능한 작업 불리언 맵 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 

@@ -196,7 +196,7 @@ return [
 
         // System requirements
         'system_requirements_failed' => 'System requirements are not met:',
-        'no_extract_method_available' => 'No archive extraction method available. Requires one of: PHP zip extension (ZipArchive) or unzip command (Linux). You can also use the --source option for manual update.',
+        'no_extract_method_available' => 'Cannot extract the archive. The PHP zip extension (ZipArchive) is required. You can also use the --source option for manual update.',
         'manual_update_guide' => 'Manual update: Download the release ZIP from GitHub, extract it, then run: php artisan core:update --source=/path/to/extracted',
 
         // Extraction fallback chain
@@ -207,7 +207,6 @@ return [
         'all_extract_methods_failed' => 'All archive extraction methods failed. Try manual update with --source option.',
         'release_not_found' => 'Could not find the core :version release on GitHub — the version tag does not exist yet or GitHub could not be reached. Specify the release yourself with --source or --zip.',
         'extension_release_not_found' => 'Could not find release :version in GitHub repository :repository — the version tag does not exist yet or GitHub could not be reached.',
-        'unzip_command_failed' => 'unzip command failed (exit code: :code). :output',
         'zip_file_not_found' => 'Specified ZIP file not found: :path',
         'source_vendor_missing' => 'No vendor directory in source. composer install may not have been executed.',
         'composer_failed_with_output' => 'composer install failed.:output',

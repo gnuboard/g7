@@ -516,6 +516,7 @@ class LayoutMarkupRoundTripCorpusTest extends LayoutMarkupTestCase
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/_identity_challenge_modal.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/_modal_changelog.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/_modal_license.g7.html',
+        'templates/_bundled/sirsoft-admin_basic/layouts/partials/_modal_lifecycle_warnings.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/_modal_notification_delete_all_confirm.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_datagrid.g7.html',
         'templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_activity_log_list/_partial_filter.g7.html',

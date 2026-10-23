@@ -257,6 +257,7 @@ _단건 응답: `data` 객체의 필드._
 | plugin | object | `{"identifier":"sirsoft-daum_postcode","status":"active", …}` | 활성화된 플러그인 리소스 (PluginResource — 목록 항목과 동일 필드 구성). 업데이트의 판 전환이 끝나지 않은 확장이면 `version` 은 기록 판, `file_version` 은 파일 판이고 `update_available` 이 `true` 다 |
 | pending_language_packs | array | `[]` | 이 플러그인 비활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록 (재활성화 대기 후보) |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -560,6 +561,7 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | language_pack_failures | array | `[]` | cascade 2단계(번들 언어팩 best-effort 설치) 에서 실패한 항목 목록 (성공 시 빈 배열) |
 | language_packs_awaiting_host | array | `[]` | 함께 고른 언어팩 중 이 확장이 아직 꺼져 있어 **꺼진 채 설치**된 것의 식별자 목록(실패 아님). 이 확장을 켤 때 함께 켜진다. 없으면 빈 배열 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 나머지 필드는 목록(`GET /api/admin/plugins`) 응답 항목과 동일합니다 (PluginResource 단일 정의).
 
@@ -670,6 +672,7 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | status | string | `inactive` | 설치 직후 상태 |
 | is_installed | boolean | `true` | 설치 여부 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자의 수행 가능 작업 맵 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 나머지 필드는 목록(`GET /api/admin/plugins`) 응답 항목과 동일합니다 (PluginResource 단일 정의).
 
@@ -776,6 +779,7 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 | is_installed | boolean | `true` | 설치 여부 |
 | github_url | string\|null | `https://github.com/gnuboard/g7-plugin-daum_postcode` | 설치 출처 GitHub 저장소 URL |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자의 수행 가능 작업 맵 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 나머지 필드는 목록(`GET /api/admin/plugins`) 응답 항목과 동일합니다 (PluginResource 단일 정의).
 
@@ -1130,6 +1134,7 @@ _단건 응답: `data` 객체의 필드._
 | deleted | integer | `0` | 파일에서 사라져 DB 에서도 삭제된 레이아웃 건수 |
 | unchanged | integer | `0` | 변경 없이 그대로 유지된 레이아웃 건수 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
 
@@ -2182,6 +2187,7 @@ _단건 응답: `data` 는 업데이트된 플러그인 리소스(PluginResource
 | latest_version | string\|null | `1.1.0` | 감지된 최신 배포 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자의 수행 가능 작업 맵 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 나머지 필드는 목록(`GET /api/admin/plugins`) 응답 항목과 동일합니다 (PluginResource 단일 정의). 업데이트할 내용이 없고 `force` 도 없는 경우에는 `{"success": false, "from_version": …, "to_version": …, "message": "업데이트할 내용이 없습니다."}` 형태가 `data` 로 반환됩니다.
 

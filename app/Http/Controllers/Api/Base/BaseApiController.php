@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Base;
 
+use App\Extension\Support\LifecycleWarnings;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -34,7 +35,7 @@ abstract class BaseApiController extends Controller
         int $statusCode = 200,
         array $messageParams = []
     ) {
-        return ResponseHelper::success($messageKey, $data, $statusCode, $messageParams, 'core');
+        return $this->withLifecycleWarnings(ResponseHelper::success($messageKey, $data, $statusCode, $messageParams, 'core'));
     }
 
     /**
@@ -70,7 +71,40 @@ abstract class BaseApiController extends Controller
         int $statusCode = 200,
         array $messageParams = []
     ) {
-        return ResponseHelper::successWithResource($messageKey, $resource, $statusCode, $messageParams, 'core');
+        return $this->withLifecycleWarnings(ResponseHelper::successWithResource($messageKey, $resource, $statusCode, $messageParams, 'core'));
+    }
+
+    /**
+     * 이 요청에서 확장 생명주기 작업이 남긴 부분 실패 경고를 `data.warnings` 로 싣습니다 (7.1.3).
+     *
+     * 설치·활성화·업데이트·레이아웃 갱신은 항목 하나가 실패해도 성공으로 끝난다. 그 실패를 화면이 노란 경고
+     * 결과로 보이도록 응답에 목록을 붙인다. 경고가 없으면 응답을 그대로 둔다(기존 키·모양 하위 호환).
+     *
+     * @param  JsonResponse  $response  성공 응답
+     * @return JsonResponse 경고를 실은 응답
+     */
+    private function withLifecycleWarnings(JsonResponse $response): JsonResponse
+    {
+        $warnings = LifecycleWarnings::current();
+        if ($warnings->isEmpty()) {
+            return $response;
+        }
+
+        $payload = $response->getData(true);
+        if (! is_array($payload)) {
+            return $response;
+        }
+
+        $data = $payload['data'] ?? [];
+        if (! is_array($data) || (array_is_list($data) && $data !== [])) {
+            // 목록 응답은 모양을 바꾸지 않는다 — 생명주기 응답은 객체(연관 배열)다
+            return $response;
+        }
+
+        $data['warnings'] = $warnings->all();
+        $payload['data'] = $data;
+
+        return $response->setData($payload);
     }
 
     /**

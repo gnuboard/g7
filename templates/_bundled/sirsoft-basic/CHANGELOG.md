@@ -4,6 +4,20 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.3] - 2026-10-23
+
+### Added
+
+- 이 템플릿이 쓰는 화면 테마 저장 키(`g7_color_scheme`)를 `template.json` 의 `necessary_storage` 로 선언합니다(코어 7.1.3 이상).
+
+### Changed
+
+- 링크(A)가 주소 구독·같은 사이트 링크 판정·새 창 `rel` 규칙을 코어 함수로 처리합니다. 코어 7.1.2 이하에서는 종전 방식으로 대신해 화면이 깨지지 않습니다.
+
+### Fixed
+
+- 파일 올리기와 이미지 갤러리에서 아직 올리지 않은 미리보기 이미지(`data:`·`blob:` 주소)를 서버로 요청해 404 가 나던 문제를 고쳤습니다. 이런 주소는 요청 없이 그대로 씁니다.
+
 ## [1.2.2] - 2026-10-22
 
 ### Fixed

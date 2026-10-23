@@ -164,6 +164,7 @@
 | `getDynamicRoleIdentifiers()` | `[]` | 런타임 생성 역할 식별자 — stale cleanup 보존 대상 |
 | `getDynamicMenuSlugs()` | `[]` | 런타임 생성 메뉴 slug — stale cleanup 보존 대상 |
 | `getConfig()` | `[]` | 설정 |
+| `getComputedSettingKeys()` | `[]` | 매번 계산하는 설정 키(도트 표기 가능) — 설치 때 설정 파일에 쓰지 않고, 저장 요청·기존 파일에서 빼고, 읽을 때 늘 `getConfigValues()` 의 실시간 값을 쓴다 (7.1.3+, [plugin-development — 계산값 키](plugin-development.md#계산값-키-getcomputedsettingkeys-713)) |
 | `getAdminMenus()` | `[]` | 관리자 메뉴 |
 | `getHookListeners()` | `[]` | 훅 리스너 |
 | `getDependencies()` | `[]` | 의존성 |
@@ -195,6 +196,57 @@ public function activate(): bool
 - 사유는 **이미 번역된 문장**이어야 한다 — 확장의 언어 파일 키는 코어가 해석할 수 없다.
 - 사유를 남기지 않고 `false` 만 돌려주면 코어가 일반 문구로 대체한다(동작은 그대로).
 - 같은 규칙이 플러그인(`AbstractPlugin`)에도 동일하게 적용된다.
+
+#### 부분 실패를 경고로 알리는 방법 (LifecycleWarnings, 7.1.3+)
+
+작업 전체를 실패시킬 정도는 아니지만 운영자가 알아야 하는 부분 실패(재시드 한 단계 실패, 선택 연동 실패 등)는
+로그만 남기지 말고 코어의 생명주기 경고 목록 `App\Extension\Support\LifecycleWarnings` 에 추가한다. 작업은 성공으로 끝나고,
+경고는 같은 요청(또는 명령) 안에서 모여 아래로 전달된다.
+
+| 경로 | 전달 형태 |
+|------|----------|
+| 관리자 API (설치·활성화·업데이트·레이아웃 갱신 등) | 성공 응답의 `data.warnings` — `[{step, target, message}]`, 경고가 없으면 키 자체가 없다 |
+| 관리자 화면 | 작업 결과 창에 노란 경고 목록 |
+| artisan 생명주기 명령(설치·활성화·비활성화·제거·업데이트·레이아웃 갱신) | 경고 표 + `[g7-lifecycle-warnings] count=N` 표지 + 종료코드 1 (표지 없는 1 은 실패 — 명령 자체가 실패로 끝나면 경고 표만 보이고 표지는 찍지 않는다) |
+| 코어 업데이트 명령(`core:update` 와 그 자식 명령) | 경고 표만 — 종료코드는 바꾸지 않는다(끝난 업데이트를 부모 명령·자동화 스크립트가 실패로 보지 않게) |
+
+```php
+use App\Extension\Support\LifecycleWarnings;
+
+public function activate(): bool
+{
+    try {
+        $this->reseedDefaults();
+    } catch (\Throwable $e) {
+        Log::warning('기본값 재시드 실패', ['error' => $e->getMessage()]);
+
+        // 7.1.3 미만 코어에는 클래스가 없다 — 가드해서 옛 코어에서는 로그만 남긴다
+        if (class_exists(LifecycleWarnings::class)) {
+            LifecycleWarnings::current()->add('reseed', $this->getIdentifier(), $e->getMessage());
+        }
+    }
+
+    return true;
+}
+```
+
+- `add(string $step, string $target, string $message)` — `step` 은 실패한 단계, `target` 은 대상(확장 식별자·파일명 등), `message` 는 **이미 번역된** 사유.
+- 확장의 `g7_version` 하한이 7.1.3 미만이면 `class_exists` 가드를 반드시 둔다(없으면 옛 코어에서 치명 오류).
+- 작업 자체를 거부해야 하면 경고가 아니라 `failWith()`(위 절)로 실패를 반환한다.
+
+#### 설치 시더 규칙 (7.1.3+)
+
+설치·활성화·언어팩 시더 재실행 직전에 코어가 **확장의 서비스 프로바이더를 부팅 때와 같은 규칙으로 먼저 등록**한다. 그래서 설치 시더에서 확장 자신의 저장소 인터페이스·서비스를 해석할 수 있다(예전에는 같은 요청에서 새로 복사된 확장의 프로바이더가 등록되지 않아 `BindingResolutionException` 이 났다). 반대로 업데이트의 업그레이드 단계에는 옛 버전 프로바이더만 있으므로 새 바인딩을 해석하지 않는다 — [업그레이드 스텝 작성 가이드](upgrade-step-guide.md) 원칙 5.
+
+| 상황 | 결과 |
+|------|------|
+| 시더가 예외를 던지거나 0 이 아닌 종료 코드 | **설치 실패** (`ExtensionSeederFailedException`, 메시지에 시더 클래스·원인) |
+| `getSeeders()` 에 선언한 시더 클래스가 없음 | **설치 실패** (원인: 클래스를 찾을 수 없음) |
+| `getSeeders()` 가 비어 glob 으로 찾은 `*Seeder.php` 의 추론 클래스명이 다름 | 그 파일만 건너뛰고 생명주기 경고 |
+
+- **새 설치가 실패하면** 이번 호출이 만든 것을 되돌린다 — 확장 행, 마이그레이션(이번에 실행한 것만), 권한·메뉴, 본인인증 정책, 알림 정의, 스토리지, 새로 만든 활성 디렉토리. 데이터 보존 제거 뒤 남아 있던 운영 데이터(이전 마이그레이션 기록·권한 등)는 지우지 않는다.
+- **`--force` 재설치가 실패하면** 이미 운영 데이터가 있으므로 아무것도 지우지 않는다.
+- 시더는 멱등으로 작성한다 — 실패 뒤 원인을 고쳐 다시 설치하면 처음부터 다시 돈다.
 
 #### 동적 권한/역할/메뉴 보존 규칙
 

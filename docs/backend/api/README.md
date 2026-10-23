@@ -75,6 +75,30 @@ Authorization: Bearer {YOUR_TOKEN}
 }
 ```
 
+#### 부분 실패 경고 (`data.warnings`, 7.1.3+)
+
+확장·언어팩의 설치·활성화·업데이트·레이아웃 갱신은 항목 하나(레이아웃 파일·시더 재실행·정리 단계 등)가 실패해도 작업을 성공으로 끝냅니다. 그런 부분 실패가 있었으면 성공 응답의 `data` 객체에 `warnings` 배열이 붙습니다. 경고가 없으면 키 자체가 없으므로(기존 응답 모양 유지) 소비처는 키 존재 여부로 판정합니다. `data` 가 목록인 응답에는 붙지 않습니다.
+
+```json
+{
+    "success": true,
+    "message": "모듈이 성공적으로 활성화되었습니다.",
+    "data": {
+        "module": { "identifier": "vendor-sample" },
+        "warnings": [
+            { "step": "layout_register", "target": "admin_index.g7.html", "message": "...", "level": "warning" }
+        ]
+    }
+}
+```
+
+| 키 | 설명 |
+| --- | --- |
+| `step` | 실패한 단계 (예: `layout_register`, `seeder`, `cleanup`, `hook_cache`) |
+| `target` | 실패한 대상 (파일명·확장 식별자·시더 클래스 등) |
+| `message` | 실패 사유 (현재 로케일). DB 예외면 접속 정보·SQL 문장을 뗀 사유만 담는다(원문은 서버 로그) |
+| `level` | `warning`(반영되지 않은 실패) 또는 `notice`(실패는 아닌 안내 — 예: 압축 경로 정규화). 안내만 있으면 관리자 결과 창은 「실패」 대신 안내 제목을 쓰고, artisan 명령은 종료코드·표지를 바꾸지 않는다 |
+
 ### 페이지네이션
 
 목록 엔드포인트는 `data.data[]` 에 항목 배열을, `data.pagination` 에 페이지 정보를 담습니다.
