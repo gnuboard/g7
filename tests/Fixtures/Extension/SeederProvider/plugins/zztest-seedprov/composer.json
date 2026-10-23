@@ -1,0 +1,15 @@
+{
+    "name": "plugins/zztest-seedprov",
+    "description": "Seeder provider test fixture plugin",
+    "type": "library",
+    "version": "1.0.0",
+    "autoload": {
+        "psr-4": {
+            "Plugins\\Zztest\\Seedprov\\": "src/",
+            "Plugins\\Zztest\\Seedprov\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "require": {
+        "php": "^8.2"
+    }
+}

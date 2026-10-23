@@ -109,6 +109,13 @@ _`getSettingsSchema()` 선언이 없습니다._
 `validateManagedExchangeRatesUnchanged()` 가 비교해 거절합니다. 따라서 화면 쪽에서 이 키를 다시
 싣거나, 서버 쪽에서 「키 없음」을 「변경」으로 판정하게 바꾸면 이 결함이 되살아납니다.
 
+**언어팩으로 보강한 통화·국가 이름은 저장하지 않습니다(1.3.2).** 설정을 읽을 때 통화
+(`language_currency.currencies[].name`)·배송 국가(`shipping.available_countries[].name`)의 이름은 모듈 자체
+언어(ko·en) 밖의 언어를 설치된 언어팩 번역으로 채워 내려갑니다. 화면은 받은 값을 그대로 저장 본문에 되돌려
+보내므로, 저장 때 `EcommerceSettingsService` 가 **ko·en 밖 언어이면서 지금 번역과 같은 값**을 보강분으로 보고
+뺍니다. 운영자가 번역과 다르게 적은 이름은 남깁니다. 보강분이 파일에 굳으면 언어팩을 끄거나 번역을 고쳐도
+옛 이름이 남기 때문이며, 읽기는 매번 다시 채웁니다(코어 계산값 키와 같은 유형의 문제).
+
 ### 설정 저장 요청의 계약 (`PUT …/admin/settings`)
 
 `StoreEcommerceSettingsRequest::SECTIONS` 상수(`basic_info` · `language_currency` · `seo` ·

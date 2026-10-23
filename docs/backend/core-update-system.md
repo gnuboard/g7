@@ -170,9 +170,10 @@ php artisan core:bundled-sources prune --force --include-modified  # 배포본�
 ### Step 4: 다운로드 및 추출
 
 ```text
-추출 전략 (폴백 체인):
-1. ZipArchive (PHP zip 확장) → class_exists(ZipArchive::class)
-2. unzip CLI 명령어 → ZipArchive 미사용 시 폴백
+추출 (SafeArchiveExtractor, 7.1.3+):
+- ZipArchive (PHP zip 확장) 필수 — 없으면 추출 실패. unzip 명령 폴백 없음 (7.1.3 에서 제거)
+- 항목 이름의 \ 를 / 로 정규화한 뒤, 압축 밖 경로(..)·절대 경로·드라이브·UNC·널 문자·심볼릭 링크
+  항목이 하나라도 있으면 아무것도 풀지 않고 전체 거부
 
 v접두사 자동 감지 (resolveGithubArchiveUrl):
 1. "v{version}" 태그로 HEAD 요청 시도 (예: v7.0.0-alpha.15)
@@ -740,7 +741,7 @@ config('app.version') = env('APP_VERSION', 'config/app.php 기본값')
 |--------|---------|------|
 | `checkForUpdates()` | `(): array` | GitHub API로 최신 릴리스 조회 |
 | `getChangelog()` | `(?string $from, ?string $to): array` | CHANGELOG.md 파싱, 버전 범위 필터 |
-| `checkSystemRequirements()` | `(): array` | 추출 도구 검증 (ZipArchive/unzip) |
+| `checkSystemRequirements()` | `(): array` | 추출 도구 검증 (ZipArchive — 7.1.3 부터 unzip 폴백 없음) |
 | `validatePendingPath()` | `(): array` | _pending 디렉토리 존재/권한 확인 |
 
 ### 다운로드 및 소스 준비
@@ -885,8 +886,8 @@ php artisan core:check-updates
 ### 시스템 요건 검증
 
 ```text
-- ZipArchive 또는 unzip 명령어 중 하나 이상 필요
-- 미충족 시 커맨드 실패 (EXIT 1) + 사용 가능 방법 목록 출력
+- ZipArchive (PHP zip 확장) 필요 — 7.1.3 부터 unzip 명령 폴백 없음
+- 미충족 시 커맨드 실패 (EXIT 1) + 안내 출력
 ```
 
 ### _pending 검증
@@ -955,7 +956,7 @@ URL: https://example.com/{secret}
 | 항목 | 코어 | 모듈/플러그인 | 템플릿 |
 |------|------|-------------|--------|
 | **소스** | GitHub releases (zipball) | GitHub 또는 _bundled | GitHub 또는 _bundled |
-| **추출** | 폴백 체인 (ZipArchive → unzip) | ExtensionPendingHelper | ExtensionPendingHelper |
+| **추출** | SafeArchiveExtractor (ZipArchive 필수, 위험 항목 전체 거부) | SafeArchiveExtractor (GitHub zip) / ExtensionPendingHelper | SafeArchiveExtractor (GitHub zip) / ExtensionPendingHelper |
 | **백업** | CoreBackupHelper (선택) | ExtensionBackupHelper (선택) | ExtensionBackupHelper (선택) |
 | **유지보수 모드** | 전체 앱 down (secret 토큰) | 없음 | 없음 |
 | **Composer** | MD5 비교 → 변경 시만 실행 | 확장별 독립 vendor/ | 해당 없음 |

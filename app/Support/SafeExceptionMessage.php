@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Extension\Exceptions\ExtensionSeederFailedException;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -25,7 +26,12 @@ final class SafeExceptionMessage
      */
     public static function for(\Throwable $e, array $context = []): string
     {
-        if (! self::isInternal($e) || config('app.debug')) {
+        // 시더 실패는 원인을 문구에 이어 붙인다 — 원인이 내부 예외면 그 상세만 일반 문구로 바꾸고, 실패한 시더 이름은 남긴다(7.1.3)
+        $seederFailure = $e instanceof ExtensionSeederFailedException;
+        $internal = self::isInternal($e)
+            || ($seederFailure && $e->getPrevious() !== null && self::isInternal($e->getPrevious()));
+
+        if (! $internal || config('app.debug')) {
             return $e->getMessage();
         }
 
@@ -35,6 +41,10 @@ final class SafeExceptionMessage
             'file' => $e->getFile(),
             'line' => $e->getLine(),
         ]);
+
+        if ($seederFailure) {
+            return __('extensions.errors.seeder_failed', ['seeder' => $e->seeder, 'message' => __('extensions.errors.internal_error')]);
+        }
 
         return __('extensions.errors.internal_error');
     }

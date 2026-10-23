@@ -349,6 +349,20 @@
                                             "handler": "openModal",
                                             "target": "plugin_reactivate_language_packs_modal",
                                             "if": "{{(response.data?.pending_language_packs ?? []).length > 0 && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.manage')}}"
+                                        },
+                                        {
+                                            "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
+                                                "lifecycleWarningsOpen": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "openModal",
+                                            "target": "lifecycle_warnings_modal",
+                                            "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
                                         }
                                     ],
                                     "onError": [

@@ -255,6 +255,25 @@ class ActionCompilerTest extends LayoutMarkupTestCase
     }
 
     /**
+     * setError·showAlert 의 target 은 top-level 이다 — 엔진이 action.target 만 읽는다 (7.1.3).
+     *
+     * params 로 구우면 setError 는 대상을 잃고 showAlert 는 `target.startsWith` TypeError 가 났다(번들 사용 0 의 잠재 결함).
+     *
+     * @effects handler_attributes_split_into_top_level_and_params
+     *
+     * @return void 반환값 없음
+     */
+    public function test_set_error_and_show_alert_target_is_top_level(): void
+    {
+        foreach (['<set-error target="formError"/>' => 'formError', '<show-alert target="$t:common.saved"/>' => '$t:common.saved'] as $tag => $target) {
+            $action = $this->compile('<div data-ref="d"><on type="click">'.$tag.'</on></div>')['actions'][0];
+
+            $this->assertSame($target, $action['target'] ?? null, $tag);
+            $this->assertArrayNotHasKey('target', $action['params'] ?? [], $tag);
+        }
+    }
+
+    /**
      * `key` 는 핸들러 인자가 아니라 트리거 한정자 — `<on>` 에 실리고, 핸들러의 `key` 는 params 로 간다.
      *
      * 둘을 한 자리에 두면 `params.key` 를 쓰는 핸들러(saveToLocalStorage)의 인자가 트리거 키로

@@ -4,6 +4,16 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [0.2.3] - 2026-10-23
+
+### Added
+
+- 템플릿 초기화(`initTemplate`)를 추가했습니다. 템플릿 핸들러 등록 자리가 생겨, 이 템플릿을 바탕으로 만드는 템플릿이 작성 규정대로 핸들러를 등록할 수 있습니다.
+
+### Changed
+
+- 링크(A)가 주소 구독·같은 사이트 링크 판정·새 창 `rel` 규칙을 코어 함수로 처리합니다. 새 창 링크의 `rel` 에 이미 적은 값은 남기고 빠진 `noopener`·`noreferrer` 만 덧붙입니다. 코어 7.1.2 이하에서는 종전 방식으로 대신합니다.
+
 ## [0.2.2] - 2026-10-22
 
 ### Fixed

@@ -1,0 +1,16 @@
+feature: 학습용 템플릿 최소 부트스트랩 initTemplate (7.1.3 D19)
+
+description: |
+  모든 템플릿은 initTemplate() 에서 템플릿 전용 핸들러를 엔진에 등록하고 본인인증 모달 launcher 를 등록하거나 코어 기본을
+  쓴다고 정해야 한다. gnuboard7-hello_admin_template 에는 이 함수가 없어 샘플을 본뜬 새 템플릿이 의무를 놓쳤다. 최소 구현은 빈 핸들러 맵을
+  등록하고(엔진이 늦으면 100ms 간격 재시도) 코어 기본 launcher 를 쓴다.
+
+axes:
+  dispatcher: [ready, late]
+
+effects:
+  - template_handlers_registered
+  - core_default_identity_launcher_kept
+
+test_files:
+  - templates/_bundled/gnuboard7-hello_admin_template/__tests__/bootstrap/initTemplate.test.ts

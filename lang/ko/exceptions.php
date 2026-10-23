@@ -204,6 +204,7 @@ return [
         'responsive_breakpoint_mix' => 'portable 프리셋과 mobile/tablet 프리셋을 함께 썼습니다 — 범위가 겹쳐 예측이 어렵습니다.',
         'standalone_missing_global_host' => '독립 레이아웃이 :handler 를 발화하지만 그 전역 상태(:state)를 받는 자리가 없습니다 — 화면에 나타나지 않습니다. extends 로 베이스 레이아웃을 상속하거나 그 상태를 받는 컴포넌트를 두세요.',
         'switch_value_not_consumed' => '<switch value="…"> 는 엔진이 읽지 않습니다 — 분기 대상은 <switch on="…"> 으로 적어야 params.value 로 전달됩니다.',
+        'set_state_underscore_global_target' => 'setState 의 target="_global" 은 전역이 아니라 지역 상태에 씁니다 — 전역 상태는 target="global" 로 적으세요.',
         'action_param_misplaced_key' => ':handler 액션의 :key 가 params 로 들어갔습니다 — :handler 는 이 키를 읽지 않으므로 조용히 무시됩니다. 조건은 data-if(액션 if), 이벤트는 <on event="…">, 그 밖에는 해당 핸들러가 실제로 읽는 인자명을 쓰세요.',
         'hoist_prop_not_supported_by_template' => ':template 템플릿의 :component 은 :prop 을 선언하지 않았습니다 — <:tag> 로 작성한 내용이 렌더되지 않고 사라집니다.',
         'component_type_mismatch' => ':component 의 종류를 :written 으로 적었지만 :template 템플릿은 :declared 로 선언합니다 — data-type 을 확인하세요(생략하면 basic).',

@@ -751,7 +751,7 @@ class ModuleService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'module.json', 'modules'
+                $file->getRealPath(), $extractPath, 'module.json', 'modules', $file->getClientOriginalName()
             );
 
             $manifest = $result['config'];
@@ -801,7 +801,7 @@ class ModuleService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'module.json', 'modules'
+                $file->getRealPath(), $extractPath, 'module.json', 'modules', $file->getClientOriginalName()
             );
 
             $this->ensureModuleNotInstalled($result['identifier']);

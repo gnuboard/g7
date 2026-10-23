@@ -64,6 +64,9 @@
                      강제 활성은 새로 고침을 하지 않으므로 창이 닫힐 때도 새로 고치지 않는다. -->
                 <set-state target="global" reactivateLanguagePacksData="{{(response.data?.pending_language_packs ?? [])}}" :reactivateLanguagePacksRefreshAfter="false"/>
                 <open-modal if="{{(response.data?.pending_language_packs ?? []).length &gt; 0 &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.language_packs.manage')}}" target="template_reactivate_language_packs_modal"/>
+                <!-- 일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다. -->
+                <set-state target="global" lifecycleWarnings="{{response?.data?.warnings ?? []}}" :lifecycleWarningsOpen="false"/>
+                <open-modal if="{{(response?.data?.warnings?.length ?? 0) &gt; 0}}" target="lifecycle_warnings_modal"/>
               </success>
               <fail>
                 <set-state target="global" :isForceActivating="false"/>

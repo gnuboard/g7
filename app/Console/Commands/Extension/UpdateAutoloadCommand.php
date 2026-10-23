@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Extension;
 
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Extension\ExtensionManager;
 use App\Extension\HookCacheManager;
 use App\Extension\ModuleManager;
@@ -10,6 +11,8 @@ use Illuminate\Console\Command;
 
 class UpdateAutoloadCommand extends Command
 {
+    use ReportsLifecycleWarnings;
+
     /**
      * The name and signature of the console command.
      *

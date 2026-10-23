@@ -777,6 +777,8 @@ public function addSources(array $sources): array
 
 ### HookListenerInterface 사용
 
+`getHookListeners()` 에 적은 클래스가 없거나 `HookListenerInterface` 를 구현하지 않으면 그 리스너는 등록되지 않고 경고 로그가 남는다. 7.1.3 부터는 리스너 일부가 실패한 확장을 훅 캐시(`bootstrap/cache/hooks.php`)에 넣지 않으므로(고친 뒤 다음 요청에서 다시 스캔), 캐시 생성 결과의 생명주기 경고에도 실린다. 확장 파일만 교체했을 때 훅 캐시가 다시 만들어지는 조건은 [확장 업데이트 시스템 — 파일만 교체했을 때](extension-update-system.md#파일만-교체했을-때-업데이트-명령-없이)를 본다.
+
 ```php
 <?php
 

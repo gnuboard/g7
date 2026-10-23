@@ -79,7 +79,7 @@ describe('L3 A — 링크 기본 동작', () => {
 
   // @scenario component=a
   // @effects new_tab_link_has_noopener
-  it('target="_blank" 링크에 noopener 가 없으면 noopener noreferrer 를 더하고 기존 rel 값은 지킨다(같은 창 링크는 그대로)', () => {
+  it('target="_blank" 링크는 noopener·noreferrer 중 빠진 것만 더하고 기존 rel 값은 지킨다(같은 창 링크는 그대로, 7.1.3 코어 규칙 통일)', () => {
     render(
       <>
         <A href="/admin/a" target="_blank">맨</A>
@@ -92,7 +92,8 @@ describe('L3 A — 링크 기본 동작', () => {
     const rel = (name: string) => (screen.getByRole('link', { name }).getAttribute('rel') ?? '').split(/\s+/).filter(Boolean).sort();
     expect(rel('맨')).toEqual(['noopener', 'noreferrer']);
     expect(rel('기존')).toEqual(['nofollow', 'noopener', 'noreferrer']);
-    expect(rel('이미')).toEqual(['noopener']);
+    // 7.1.3: 템플릿마다 갈렸던 rel 규칙을 코어 하나로 통일 — `noopener` 만 있어도 빠진 `noreferrer` 를 더한다
+    expect(rel('이미')).toEqual(['noopener', 'noreferrer']);
     expect(screen.getByRole('link', { name: '같은 창' }).hasAttribute('rel')).toBe(false);
     expect(rel('잠김')).toEqual(['noopener', 'noreferrer']);
   });

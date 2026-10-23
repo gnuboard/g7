@@ -4,6 +4,7 @@ namespace App\Console\Commands\Module;
 
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Extension\ModuleManager;
@@ -16,6 +17,7 @@ class UninstallModuleCommand extends Command
 {
     use HasProgressBar;
     use HasUnifiedConfirm;
+    use ReportsLifecycleWarnings;
 
     /**
      * The name and signature of the console command.
@@ -114,7 +116,7 @@ class UninstallModuleCommand extends Command
             }
 
             if ($result) {
-                $this->info('✅ '.__('modules.commands.uninstall.success', ['module' => $identifier]));
+                $this->info($this->lifecycleDoneIcon().' '.__('modules.commands.uninstall.success', ['module' => $identifier]));
                 $this->info('   - '.trans_choice('modules.commands.uninstall.roles_deleted', $rolesCount));
                 $this->info('   - '.trans_choice('modules.commands.uninstall.permissions_deleted', $permissionsCount));
                 $this->info('   - '.trans_choice('modules.commands.uninstall.menus_deleted', $menusCount));

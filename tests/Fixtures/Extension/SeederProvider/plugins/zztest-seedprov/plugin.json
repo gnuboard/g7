@@ -1,0 +1,20 @@
+{
+    "identifier": "zztest-seedprov",
+    "vendor": "zztest",
+    "name": {
+        "ko": "시더 프로바이더 시험 플러그인",
+        "en": "Seeder provider test plugin"
+    },
+    "version": "1.0.0",
+    "license": "MIT",
+    "description": {
+        "ko": "설치 시더가 프로바이더 저장소 바인딩을 해석하는지 확인하는 시험 픽스처",
+        "en": "Test fixture checking that install seeders can resolve provider repository bindings"
+    },
+    "g7_version": ">=7.0.0",
+    "hidden": true,
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    }
+}

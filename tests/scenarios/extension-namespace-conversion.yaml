@@ -1,0 +1,21 @@
+feature: 확장 디렉토리명·식별자 → PHP 네임스페이스 변환 규칙과 매니저·프로바이더 위임
+
+description: |
+  `sirsoft-daum_postcode` 처럼 하이픈(벤더·이름 구분)과 언더스코어(이름 안 단어 구분)가 섞인 디렉토리명을
+  `Sirsoft\DaumPostcode` 로 바꾸는 규칙은 ExtensionManager 한 곳이 정본이다. 매니저 3종·라우트 프로바이더 2종은
+  그 규칙에 위임하고, 확장 프로바이더 등록기 2종은 7.1.3 부터 공개 정적 resolveProviderClass() 로 같은 규칙을 쓴다
+  (설치 때 프로바이더 선등록이 부팅과 같은 클래스명을 해석하게). 식별자 형식 검사와 실제 설치 플러그인의 클래스 일치도 함께 잠근다.
+
+axes:
+  subject: [directory_name, identifier, manager_delegation, provider_delegation, identifier_validation, installed_plugin]
+
+effects:
+  - directory_name_converts_to_namespace
+  - identifier_converts_with_type_prefix
+  - managers_and_providers_share_conversion_rule
+  - valid_identifier_accepted
+  - invalid_identifier_rejected
+  - installed_plugin_namespace_matches_class
+
+test_files:
+  - tests/Unit/Extension/ExtensionManagerNamespaceTest.php

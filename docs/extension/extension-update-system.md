@@ -12,6 +12,7 @@
 5. 역할/권한/메뉴 동기화: user_overrides로 사용자 커스터마이징 보존 (개별 식별자 보호)
 6. 확장 수정/개발은 _bundled 에서만 (활성 디렉토리 직접 수정 금지 → {type}:update 로 반영)
 7. DB/설정 구조 변경 시 업그레이드 스텝 작성 필수 (필요 판단은 "업그레이드 스텝이 필요한 경우" 표)
+8. 파일만 교체했으면: 훅·오토로드 캐시는 자동 감지(7.1.3+), 레이아웃·config·라우트·정적 게시·캐시는 명령 실행 ("파일만 교체했을 때" 표)
 ```
 
 ---
@@ -166,12 +167,13 @@ GitHub 소스 업데이트 시 아카이브 URL 해석 → 다운로드 → 압�
 
 > **주의**: `zipball/{ref}` 엔드포인트는 태그 존재 여부와 무관하게 항상 302로 codeload 에 리다이렉트하기 때문에, 302 수신만으로는 태그 유효성을 판정할 수 없습니다. 반드시 `git/refs/tags/{tag}` 로 실재를 먼저 검증해야 합니다.
 
-**아카이브 추출 전략** (2단계 폴백):
+**아카이브 추출** (`SafeArchiveExtractor`, 7.1.3+):
 
-| 순서 | 방식 | 조건 |
-| ---------- | ---------- | ---------- |
-| 1 | `ZipArchive` (PHP zip 확장) | `class_exists(ZipArchive::class)` |
-| 2 | `unzip` CLI 명령어 | ZipArchive 미사용 시 폴백 |
+| 항목 | 동작 |
+| ---------- | ---------- |
+| 추출 방식 | `ZipArchive` (PHP zip 확장) **필수** — 없으면 추출 실패. `unzip` 명령 폴백 없음(7.1.3 에서 제거) |
+| 경로 정규화 | 항목 이름의 `\` 를 `/` 로 바꾼 뒤 판정 (Windows 에서 만든 zip 의 `dir\file.php` 항목 대응) |
+| 거부 항목 | `..` 로 압축 밖을 가리키는 경로, 절대 경로, 드라이브 문자(`C:`), UNC 경로, 널 문자, 심볼릭 링크 — **하나라도 있으면 아무것도 풀지 않고 전체 거부** |
 
 **GitHub 아카이브 디렉토리 구조**: GitHub zipball은 `owner-repo-hash/` 형태의 루트 디렉토리를 포함합니다. `ZipInstallHelper::findAndValidateManifest()`가 1단계 하위 디렉토리까지 자동 검색하여 매니페스트 파일을 찾습니다.
 
@@ -608,6 +610,24 @@ class Upgrade_2_0_0 implements UpgradeStepInterface
 전환점: _bundled에 최초 반영한 이후부터는 반드시 _bundled에서만 작업
 전환 후: 활성 디렉토리 직접 수정 금지 → 업데이트 프로세스만 사용
 ```
+
+### 파일만 교체했을 때 (업데이트 명령 없이)
+
+배포 도구·FTP 로 활성 디렉토리의 파일만 바꿨거나 `_bundled` 를 고친 뒤 업데이트 명령을 거치지 않으면 생명주기 후처리가 돌지 않는다. 캐시별로 자동 감지 여부가 다르다.
+
+| 대상 | 자동 감지 | 실행할 명령 |
+| ---------- | ---------- | ---------- |
+| 훅 캐시 (`bootstrap/cache/hooks.php`) | O (7.1.3+) — 활성 확장의 매니페스트·진입 파일(`module.php`/`plugin.php`)·`composer.json` 수정 시각 지문이 다르면 스캔으로 동작하고 다시 만든다 | 필요 시 `php artisan hooks:cache` |
+| 확장 오토로드 캐시 (`bootstrap/cache/autoload-extensions.php`) | O (7.1.3+) — 같은 지문으로 감지해 다시 만들고, 사라진 파일의 classmap 항목은 등록하지 않는다 | `php artisan extension:update-autoload` (**명시 실행 권장**) |
+| 레이아웃 (DB) | X | `php artisan module:refresh-layout {id}` · `plugin:refresh-layout {id}` · `template:refresh-layout {id}` |
+| config 캐시 | X | `php artisan config:clear` |
+| 라우트 캐시 | X | `php artisan route:clear` (라우트를 캐시해 운영하면 이어서 `php artisan route:cache`) |
+| 정적 게시 리소스 | X | `php artisan ext-static:publish` |
+| 애플리케이션 캐시 (설정·목록 등) | X | `php artisan cache:clear` |
+
+- 지문은 위 세 파일의 수정 시각만 본다. 이 세 파일을 건드리지 않은 변경(예: `src/` 아래 클래스 파일만 추가)은 감지하지 못하므로 `extension:update-autoload` 를 직접 실행한다.
+- 훅 캐시는 확장 활성화·비활성화 때도 다시 만든다(7.1.3+).
+- 마이그레이션·권한/메뉴 동기화·업그레이드 스텝은 위 명령으로 대신할 수 없다 — 버전을 올리고 `{type}:update` 로 반영하는 것이 원칙이다.
 
 ---
 

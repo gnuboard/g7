@@ -8,6 +8,7 @@ use App\Extension\Traits\CachesPluginStatus;
 use App\Support\InstallerContext;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
@@ -26,6 +27,8 @@ class PluginRouteServiceProvider extends ServiceProvider
 
     /**
      * 라우트 모델 바인딩, 패턴 필터 및 기타 라우트 구성을 정의합니다.
+     *
+     * @return void 반환값 없음
      */
     public function boot(): void
     {
@@ -38,6 +41,8 @@ class PluginRouteServiceProvider extends ServiceProvider
      * 플러그인의 라우트 파일들을 로드합니다.
      *
      * 활성화된 플러그인만 라우트를 등록합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function loadPluginRoutes(): void
     {
@@ -110,6 +115,12 @@ class PluginRouteServiceProvider extends ServiceProvider
             }
 
             if (! class_exists($pluginClass)) {
+                // 조용히 빠지면 라우트가 왜 없는지 알 수 없다 — 경고만 남기고 계속 (7.1.3)
+                Log::warning('[PluginRouteServiceProvider] plugin.php 는 있지만 플러그인 클래스를 찾을 수 없어 라우트를 등록하지 않았습니다', [
+                    'plugin' => $pluginName,
+                    'expected_class' => $pluginClass,
+                ]);
+
                 continue;
             }
 

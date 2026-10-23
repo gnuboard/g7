@@ -1,0 +1,26 @@
+feature: 확장 작업이 일부 항목 실패와 함께 끝나면 관리자 화면이 경고 결과 창을 연다 (코어 7.1.3)
+
+description: |
+  확장 설치·활성화·업데이트·레이아웃 갱신은 항목 하나가 실패해도 작업을 끝내고 응답 data.warnings 에
+  실패 목록(단계·대상·사유)을 싣는다. 종전에는 이 실패가 로그에만 남고 화면은 「완료」였다.
+  각 목록 화면의 성공 갈래가 목록을 _global.lifecycleWarnings 에 담고, 경고가 있을 때만 창을 연다.
+  창은 건수 요약을 보이고 목록은 접혀 있다가 「자세히 보기」로 펼친다.
+
+axes:
+  case:
+    - summary_with_count_and_collapsed_list
+    - toggle_expands_warning_rows
+    - notice_only_uses_notice_wording
+    - success_branches_open_only_with_warnings
+    - population_not_empty
+    - every_lifecycle_call_opens_warnings
+    - lifecycle_call_population_not_empty
+
+effects:
+  - lifecycle_warnings_modal_shows_failed_items
+  - lifecycle_warnings_modal_separates_notices_from_failures
+  - success_branch_opens_warnings_modal_only_when_warnings_exist
+  - every_lifecycle_api_success_opens_warnings_modal
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-lifecycle-warnings-modal.test.tsx

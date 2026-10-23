@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Support;
 
+use App\Extension\Exceptions\ExtensionSeederFailedException;
 use App\Support\SafeExceptionMessage;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
@@ -56,5 +57,35 @@ class SafeExceptionMessageTest extends TestCase
         config(['app.debug' => true]);
 
         $this->assertSame('SQLSTATE[HY000]: boom', SafeExceptionMessage::for(new \PDOException('SQLSTATE[HY000]: boom')));
+    }
+
+    /**
+     * 시더 실패는 운영 모드에서도 실패한 시더 이름을 남기고 원인 상세만 일반 문구로 바꾼다(계획 D2).
+     *
+     * 원인이 DB 예외(SQLSTATE)이든 서버 경로가 든 PHP 오류이든 시더 이름은 화면에 남고 내부 상세는 빠진다.
+     *
+     * @scenario case=seeder_failure_keeps_seeder_name
+     *
+     * @effects seeder_failure_shows_seeder_name_without_internal_detail
+     *
+     * @return void 반환값 없음
+     */
+    public function test_seeder_failure_keeps_seeder_name_and_masks_detail(): void
+    {
+        config(['app.debug' => false]);
+        Log::spy();
+
+        $seeder = 'Modules\\Acme\\Shop\\Database\\Seeders\\ShippingTypeSeeder';
+        $expected = __('extensions.errors.seeder_failed', ['seeder' => $seeder, 'message' => __('extensions.errors.internal_error')]);
+
+        $db = new \PDOException('SQLSTATE[42S22]: Column not found: 1054 Unknown column \'x\' (Host: db.internal)');
+        $this->assertSame($expected, SafeExceptionMessage::for(new ExtensionSeederFailedException($seeder, $db->getMessage(), $db)));
+
+        $php = new \TypeError('Argument #1 must be of type string, called in /srv/app/modules/acme-shop/x.php on line 3');
+        $this->assertSame($expected, SafeExceptionMessage::for(new ExtensionSeederFailedException($seeder, $php->getMessage(), $php)));
+
+        // 시더가 일부러 던진 사용자용 사유는 그대로
+        $domain = new ExtensionSeederFailedException($seeder, '기본 배송 유형 코드가 비어 있습니다');
+        $this->assertSame($domain->getMessage(), SafeExceptionMessage::for($domain));
     }
 }

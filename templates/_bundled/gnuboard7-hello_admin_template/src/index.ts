@@ -1,3 +1,4 @@
+// e2e:allow 학습용 숨김(hidden) 샘플 템플릿 — 운영 사이트에서 활성화되지 않아 브라우저 경로가 없다. 링크 판정·부트스트랩은 Vitest(__tests__/components/A.coreLinkApi·__tests__/bootstrap/initTemplate)로 잠그고, 같은 코어 링크 API 의 브라우저 확인은 tests/Playwright/specs/engine-713-binding-cache-links.spec.ts 가 맡는다
 /**
  * Gnuboard7 Hello Admin Template
  *
@@ -15,3 +16,10 @@ export * from './components/basic';
 import templateMetadata from '../template.json';
 
 export { templateMetadata };
+
+// 템플릿 부트스트랩 (docs/frontend/template-development.md 「템플릿 부트스트랩 의무」)
+export { handlerMap, initTemplate } from './bootstrap';
+import { initTemplate } from './bootstrap';
+
+// 템플릿 초기화 자동 실행
+initTemplate();

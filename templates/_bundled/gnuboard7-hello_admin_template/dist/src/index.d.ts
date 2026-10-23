@@ -10,3 +10,4 @@ import { default as templateMetadata } from '../template.json';
  */
 export * from './components/basic';
 export { templateMetadata };
+export { handlerMap, initTemplate } from './bootstrap';

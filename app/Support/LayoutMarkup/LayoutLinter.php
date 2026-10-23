@@ -136,6 +136,7 @@ final class LayoutLinter
         $this->lintResponsiveMix($json, $path, $warnings);
         $this->lintStandaloneGlobalHost($json, $rootKind, $path, $warnings);
         $this->lintSwitchValuePlacement($json, $path, $warnings);
+        $this->lintSetStateUnderscoreGlobal($json, $path, $warnings);
         $this->lintMisplacedActionParams($json, $path, $warnings);
         $this->lintUnsupportedHoistProps($json, $path, $warnings);
         $this->lintComponentTypeMismatch($json, $path, $warnings);
@@ -602,6 +603,27 @@ final class LayoutLinter
         foreach ($this->collectActions($json) as $action) {
             if (($action['handler'] ?? null) === 'switch' && array_key_exists('value', $action)) {
                 $warnings[] = new LintWarning(LayoutMarkupLintCode::SwitchValueNotConsumed, self::line($action), self::column($action), [], $path);
+            }
+        }
+    }
+
+    /**
+     * `setState` 의 `target="_global"` 을 경고합니다 — 엔진은 `"global"` 만 전역으로 보고 `_global` 은 지역 상태에 쓴다 (7.1.3).
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void 반환값 없음
+     */
+    private function lintSetStateUnderscoreGlobal(array $json, ?string $path, array &$warnings): void
+    {
+        foreach ($this->collectActions($json) as $action) {
+            if (($action['handler'] ?? null) !== 'setState') {
+                continue;
+            }
+            $target = $action['params']['target'] ?? $action['target'] ?? null;
+            if ($target === '_global') {
+                $warnings[] = new LintWarning(LayoutMarkupLintCode::SetStateUnderscoreGlobalTarget, self::line($action), self::column($action), [], $path);
             }
         }
     }

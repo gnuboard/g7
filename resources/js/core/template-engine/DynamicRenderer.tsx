@@ -4062,6 +4062,14 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
      * `<Component>` 를 다시 마운트한다. 차례가 0 이면 key 를 붙이지 않는다(종전과 같은 요소).
      */
     const autoBindingDroppedPendingRef = useRef<{ value: any } | null>(null);
+    /**
+     * 이 칸의 대기 쓰기가 「다른 화면으로 가는 navigate」 의 반영(`ActionDispatcher.isFlushingForNavigation`)으로 실행됐는지 (engine-v1.83.0).
+     *
+     * 7.1.2(engine-v1.82.1) 부터 navigate 가 이동 전에 대기 디바운스를 반영해, 버릴 대기 값이 「이미 쓴 값」 으로 바뀌었다 — 그 값은
+     * 아래 버림 기록 조건(타이머 대기 중)에 걸리지 않아 칸이 다시 마운트되지 않고 새 화면 칸에 이전 화면 입력이 남았다.
+     * 이 표식이 서 있는 대기 값은 타이머 대기 중과 똑같이 버림 기록을 남긴다. 새 예약·기록 때 내린다.
+     */
+    const autoBindingFlushedForNavRef = useRef(false);
     const autoBindingRemountSeqRef = useRef(0);
     // 커밋 효과가 이미 반영한 다시 마운트 판정의 기록 (engine-v1.81.2) — 같은 판정을 두 번 세지 않는다(autoBindingRemountDecisions 참조)
     const autoBindingAppliedRemountRecordRef = useRef<{ value: any } | null>(null);
@@ -4296,6 +4304,7 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       // onComplete 콜백: 상태 업데이트 완료 후 실행 (액션 핸들러 등)
       const debouncedStateUpdate = (newValue: any, onComplete?: () => void) => {
         if (debounceMs && debounceMs > 0) {
+          autoBindingFlushedForNavRef.current = false;
           // 기존 타이머 정리 (디스패처 예약이면 같은 키의 다음 debouncedCall 이 앞 타이머를 취소한다)
           if (autoBindingDebounceTimerRef.current && autoBindingDebounceTimerRef.current !== AUTOBINDING_DEBOUNCE_VIA_DISPATCHER) {
             clearTimeout(autoBindingDebounceTimerRef.current);
@@ -4324,6 +4333,8 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
               }
               return;
             }
+            // engine-v1.83.0: 다른 화면으로 가는 navigate 가 앞당긴 쓰기면 새 화면에서 버림 기록 대상으로 남긴다
+            autoBindingFlushedForNavRef.current = actionDispatcher?.isFlushingForNavigation?.() === true;
             performStateUpdate(newValue);
             autoBindingDebounceTimerRef.current = null;
             // 이 칸이 쓴 값 — 반영 전 렌더가 이 값을 보여도 「다시 쓰임」 이 아니다 (engine-v1.81.2, autoBindingPendingSeenRef 참조)
@@ -4480,10 +4491,12 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
           // 쓰기를 마친 대기 값은 확정 렌더 전까지 남아 있는데(위 runScheduledWrite 주석), 그 칸의 change 동작이 다른 경로로
           // 옮기면 여기서 보인다 — 이미 옛 경로에서 실행된 쓰기라 버리기만 한다(engine-v1.79.0 과 같음). 기록하면 입력 중인 칸이
           // 다시 마운트돼 포커스·조합이 끊긴다
-          if (autoBindingDebounceTimerRef.current !== null) {
+          // engine-v1.83.0: 다른 화면으로 가는 navigate 가 앞당겨 쓴 대기 값도 같다(autoBindingFlushedForNavRef)
+          if (autoBindingDebounceTimerRef.current !== null || autoBindingFlushedForNavRef.current) {
             autoBindingDroppedPendingRef.current = { value: autoBindingPendingValueRef.current };
             ensureCompositionTracker();
           }
+          autoBindingFlushedForNavRef.current = false;
           autoBindingPendingValueRef.current = undefined;
           autoBindingPendingSeenRef.current = null;
           // `_global` 칸의 표시용 대기 값(같은 입력)도 버린다 — 남기면 아래에서 그 값을 다시 보여 화면 ≠ 상태가 남는다 (engine-v1.81.2).

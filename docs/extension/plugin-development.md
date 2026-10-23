@@ -258,6 +258,7 @@ class Plugin implements PluginInterface
 | `getDynamicPermissionIdentifiers()` | `[]` | 런타임 생성 권한 식별자 — stale cleanup 보존 대상 |
 | `getDynamicRoleIdentifiers()` | `[]` | 런타임 생성 역할 식별자 — stale cleanup 보존 대상 |
 | `getDependencies()` | `[]` | 의존하는 모듈/플러그인 목록 |
+| `getComputedSettingKeys()` | `[]` | 매번 계산하는 설정 키 — 저장·설치 시드하지 않고 읽을 때 실시간 값 (7.1.3+, [계산값 키](#계산값-키-getcomputedsettingkeys-713)) |
 | `getHookListeners()` | `[]` | 훅 리스너 클래스 목록 |
 | `getMiddleware()` | `[]` | 확장 미들웨어 선언 (self-gate targets) — `{class, groups, timing?, targets}` ([middleware.md](../backend/middleware.md)) |
 | `getBenchmarkProfiles()` | `[]` | 성능 계측 대상 선언 (`g7:bench` 가 수집) — 목록/화면/쓰기/배치 4축 ([benchmark.md](../backend/benchmark.md)) |
@@ -594,13 +595,40 @@ class Plugin extends AbstractPlugin
 플러그인 설치 시 `initializePluginSettings()`에서 다음 순서로 기본값을 결정합니다:
 
 1. `defaults.json`의 `defaults` 섹션 (1순위)
-2. `getConfigValues()` 반환값 (하위 호환성)
-3. 빈 값이면 초기화 스킵
+2. `getConfigValues()` 반환값 중 **설정 스키마(`getSettingsSchema()`)에 있는 키만** (하위 호환성, 7.1.3+)
+3. 어느 경로든 계산값 키(`getComputedSettingKeys()`)는 빼고 쓴다 (7.1.3+)
+4. 빈 값이면 초기화 스킵
 
 ```text
 하위 호환성: defaults.json이 없는 기존 플러그인은 기존 동작을 유지합니다.
 ✅ 권장: 새 플러그인은 defaults.json + frontend_schema를 사용하세요.
 ```
+
+> 7.1.3 전에는 `defaults` 절이 없을 때 `getConfigValues()` 전체를 설정 파일에 썼다. 설치 시점의 고정 기본값·계산값이 파일에 굳어 이후 기본값 변경·실시간 값을 덮었다. 읽기는 늘 `getConfigValues()` 위에 저장값을 병합하므로, 스키마 밖 키는 파일에 없어도 기본값으로 읽힌다.
+
+### 계산값 키 (getComputedSettingKeys, 7.1.3+)
+
+`getConfigValues()` 가 요청마다 계산해 돌려주는 값(다른 확장의 훅 결과, 세션 쿠키 이름처럼 환경에서 읽는 값)은 저장하면 안 된다. 이런 키를 `getComputedSettingKeys()` 로 선언한다(`AbstractPlugin`·`AbstractModule` 공통, 기본 `[]`).
+
+```php
+public function getComputedSettingKeys(): array
+{
+    // 도트 표기 가능
+    return ['provided_keys', 'locked.cookie'];
+}
+```
+
+| 시점 | 코어 동작 |
+|------|----------|
+| 설치 | 설정 파일에 쓰지 않는다 |
+| 저장 | 저장 요청에서 빼고, 기존 파일에 남아 있던 값도 뺀다 |
+| 읽기 | 파일에 값이 남아 있어도 무시하고 늘 `getConfigValues()` 의 실시간 값을 쓴다 |
+
+선언하지 않으면 설치 시점의 값이 파일에 굳어 이후 실시간 값을 영원히 덮는다. 이미 굳은 값이 있는 사이트는 읽기에서 무시되지만, 파일을 정리하려면 업그레이드 스텝에서 해당 키를 지운다.
+
+### 설치 시더·부분 실패 경고 (7.1.3+)
+
+플러그인도 모듈과 같은 규칙을 따른다 — [모듈 개발 기초 — 설치 시더 규칙](module-basics.md#설치-시더-규칙-713) (프로바이더 선등록, 시더 실패 = 설치 실패·새 설치 되돌림), [부분 실패를 경고로 알리는 방법](module-basics.md#부분-실패를-경고로-알리는-방법-lifecyclewarnings-713) (`LifecycleWarnings` + `class_exists` 가드).
 
 ### 플러그인이 제공하는 훅 정의
 

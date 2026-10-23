@@ -4,6 +4,7 @@ namespace App\Console\Commands\Module;
 
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Models\Module;
 use App\Services\ModuleService;
 use Illuminate\Console\Command;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Log;
 class RefreshModuleLayoutCommand extends Command
 {
     use RendersLayoutSyncResult;
+    use ReportsLifecycleWarnings;
     use SelectsLayoutInstallSource;
 
     /**
@@ -89,7 +91,7 @@ class RefreshModuleLayoutCommand extends Command
         $result = $this->moduleService->refreshModuleLayouts($identifier);
 
         if ($result) {
-            $this->info('✅ '.__('modules.commands.refresh_layout.success', ['module' => $identifier]));
+            $this->info($this->lifecycleDoneIcon().' '.__('modules.commands.refresh_layout.success', ['module' => $identifier]));
             $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
             Log::info('모듈 레이아웃 갱신 완료', ['module' => $identifier]);
 
@@ -122,13 +124,14 @@ class RefreshModuleLayoutCommand extends Command
         $failCount = 0;
 
         foreach ($modules as $moduleIdentifier) {
+            $itemMark = $this->lifecycleMark();
             $this->line('  '.__('modules.commands.refresh_layout.item_refreshing', ['identifier' => $moduleIdentifier]));
 
             try {
                 $result = $this->moduleService->refreshModuleLayouts($moduleIdentifier);
 
                 if ($result) {
-                    $this->info('  ✅ '.__('modules.commands.refresh_layout.item_done', ['identifier' => $moduleIdentifier]));
+                    $this->info('  '.$this->lifecycleDoneIcon($itemMark).' '.__('modules.commands.refresh_layout.item_done', ['identifier' => $moduleIdentifier]));
                     $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
                     $successCount++;
                 } else {
@@ -142,7 +145,7 @@ class RefreshModuleLayoutCommand extends Command
         }
 
         $this->newLine();
-        $this->info('✅ '.__('modules.commands.refresh_layout.summary', ['success' => $successCount, 'failed' => $failCount]));
+        $this->info($this->lifecycleDoneIcon().' '.__('modules.commands.refresh_layout.summary', ['success' => $successCount, 'failed' => $failCount]));
 
         Log::info('모듈 레이아웃 일괄 갱신 완료', [
             'success' => $successCount,
