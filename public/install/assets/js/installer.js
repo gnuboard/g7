@@ -3756,10 +3756,35 @@
         }
     }
 
+    // 화면에 붙이기를 기다리는 로그 메시지 큐
+    let pendingLogMessages = [];
+    let logFlushScheduled = false;
+
     /**
      * 로그 메시지 추가
+     *
+     * 모듈 설치처럼 작업 종료 시점에 수천 줄이 한꺼번에 도착하면, 줄마다 DOM 추가와
+     * scrollHeight 읽기(강제 레이아웃)·부드러운 스크롤 시작이 반복되어 브라우저가 멈춘다.
+     * 메시지는 큐에 모아 두고 프레임당 한 번만 붙이고 스크롤한다.
      */
     function addLogMessage(message) {
+        pendingLogMessages.push(message);
+
+        if (logFlushScheduled) return;
+        logFlushScheduled = true;
+        requestAnimationFrame(flushLogMessages);
+    }
+
+    /**
+     * 큐에 쌓인 로그 메시지를 한 번에 화면에 붙인다
+     */
+    function flushLogMessages() {
+        logFlushScheduled = false;
+
+        const messages = pendingLogMessages;
+        pendingLogMessages = [];
+        if (messages.length === 0) return;
+
         const logDiv = document.getElementById('install-log');
         if (!logDiv) return;
 
@@ -3769,10 +3794,14 @@
             placeholder.remove();
         }
 
-        const logEntry = document.createElement('div');
-        logEntry.className = 'log-entry';
-        logEntry.textContent = message;
-        logDiv.appendChild(logEntry);
+        const fragment = document.createDocumentFragment();
+        messages.forEach(message => {
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = message;
+            fragment.appendChild(logEntry);
+        });
+        logDiv.appendChild(fragment);
 
         // 자동 스크롤
         logDiv.scrollTop = logDiv.scrollHeight;
@@ -3799,7 +3828,8 @@
         }
 
 
-        // 로그 메시지 추가
+        // 로그 메시지 추가 (한 번에 붙여 레이아웃 계산을 1회로 줄인다)
+        const fragment = document.createDocumentFragment();
         logs.forEach(log => {
             const logEntry = document.createElement('div');
             logEntry.className = 'log-entry';
@@ -3813,8 +3843,9 @@
                 logEntry.textContent = JSON.stringify(log);
             }
 
-            logDiv.appendChild(logEntry);
+            fragment.appendChild(logEntry);
         });
+        logDiv.appendChild(fragment);
 
         // 자동 스크롤
         logDiv.scrollTop = logDiv.scrollHeight;
@@ -4254,6 +4285,9 @@
             installToggleIcon.classList.add('hidden');
         }
         if (logDiv) {
+            // 아직 큐에 남은 이전 로그를 먼저 붙여 구분선 앞뒤 순서를 지킨다
+            flushLogMessages();
+
             // 기존 로그 유지, 플레이스홀더만 제거
             const placeholder = logDiv.querySelector('.log-placeholder');
             if (placeholder) {
