@@ -1084,6 +1084,7 @@ export class DataSourceManager {
     queryParams: URLSearchParams | Record<string, any> = {},
     globalState?: Record<string, any>,
     localState?: Record<string, any>,
+    isolatedState?: Record<string, any>,
   ): string {
     let endpoint: string = source.endpoint ?? '';
     if (endpoint.includes('{{')) {
@@ -1096,6 +1097,9 @@ export class DataSourceManager {
       }
       if (localState) {
         context._local = localState;
+      }
+      if (isolatedState) {
+        context._isolated = isolatedState;
       }
       try {
         endpoint = resolveExpressionString(endpoint, context, { skipCache: true });
@@ -1434,7 +1438,7 @@ export class DataSourceManager {
     queryParams: URLSearchParams = new URLSearchParams(),
     globalState?: Record<string, any>,
     localState?: Record<string, any>,
-    options?: { ignoreAutoFetch?: boolean; refetch?: boolean | ((source: DataSource) => boolean) },
+    options?: { ignoreAutoFetch?: boolean; refetch?: boolean | ((source: DataSource) => boolean); isolatedState?: Record<string, any> },
   ): Promise<DataSourceResult[]> {
     const routeGeneration = this.currentRouteGeneration();
     // 이 화면에서 이미 받은 소스를 다시 받는 호출인지 — 오류 처리기 문맥 `error.refetch` 로 싣는다 (engine-v1.82.0).
@@ -1469,7 +1473,7 @@ export class DataSourceManager {
     const results = await Promise.all(
       targetSources.map(async (source): Promise<DataSourceResult> => {
         try {
-          const data = await this.fetchDataSource(source, routeParams, queryParams, globalState, localState);
+          const data = await this.fetchDataSource(source, routeParams, queryParams, globalState, localState, options?.isolatedState);
           this.dataCache.set(source.id, { data, timestamp: Date.now() });
           this.rememberSuccess(source, data, routeParams, queryParams, globalState, localState);
 
@@ -1782,10 +1786,11 @@ export class DataSourceManager {
     queryParams: URLSearchParams,
     globalState?: Record<string, any>,
     localState?: Record<string, any>,
+    isolatedState?: Record<string, any>,
   ): Promise<any> {
     switch (source.type) {
       case 'api':
-        return this.fetchApiDataSource(source, routeParams, queryParams, globalState, localState);
+        return this.fetchApiDataSource(source, routeParams, queryParams, globalState, localState, isolatedState);
       case 'static':
         return source.data;
       case 'route_params':
@@ -1805,6 +1810,7 @@ export class DataSourceManager {
    * @param queryParams 쿼리 파라미터
    * @param globalState _global 상태 (선택적)
    * @param localState _local 상태 (선택적, params 표현식에서 _local 접근 지원)
+   * @param isolatedState _isolated 상태 (선택적, 격리 상태 안 다시 받기의 식에서 접근, @since engine-v1.83.0)
    * @returns 데이터
    */
   private async fetchApiDataSource(
@@ -1813,6 +1819,7 @@ export class DataSourceManager {
     queryParams: URLSearchParams,
     globalState?: Record<string, any>,
     localState?: Record<string, any>,
+    isolatedState?: Record<string, any>,
   ): Promise<any> {
     // 샘플 모드 분기 — 편집기 부팅 시에만 옵션이 주입됨.
     // 일반 렌더 모드는 옵션 미주입이므로 이 분기에 진입하지 않아 기존 fetch 경로 100% 보존.
@@ -1843,6 +1850,11 @@ export class DataSourceManager {
     // sequence 내 setState local 후 refetchDataSource에서 {{_local.xxx}} 접근 지원
     if (localState) {
       expressionContext._local = localState;
+    }
+
+    // isolatedState가 전달된 경우 _isolated로 추가 (refetchDataSource 의 isolatedStateOverride, @since engine-v1.83.0)
+    if (isolatedState) {
+      expressionContext._isolated = isolatedState;
     }
 
     // endpoint의 {{...}} 표현식 치환 (RenderHelpers의 범용 함수 사용)

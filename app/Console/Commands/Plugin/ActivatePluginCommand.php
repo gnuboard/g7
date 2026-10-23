@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Plugin;
 
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Console\Commands\Traits\RestoresHostLanguagePacks;
 use App\Contracts\Repositories\PluginRepositoryInterface;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 class ActivatePluginCommand extends Command
 {
     use RendersLayoutSyncResult;
+    use ReportsLifecycleWarnings;
     use ReportsStuckUpdateRecovery;
     use RestoresHostLanguagePacks;
 
@@ -107,7 +109,7 @@ class ActivatePluginCommand extends Command
             }
 
             if ($result['success']) {
-                $this->info('✅ '.__('plugins.commands.activate.success', ['plugin' => $identifier]));
+                $this->info($this->lifecycleDoneIcon().' '.__('plugins.commands.activate.success', ['plugin' => $identifier]));
                 $this->info('   - '.trans_choice('plugins.commands.activate.layouts_registered', (int) ($result['layouts_registered'] ?? 0)));
                 $this->renderLayoutIncludeWarnings($result['layout_warnings'] ?? []);
                 $this->restoreHostLanguagePacks('plugin', $identifier, 'plugins');

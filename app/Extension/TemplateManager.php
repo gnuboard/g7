@@ -30,6 +30,7 @@ use App\Extension\Helpers\StuckUpdateRecovery;
 use App\Extension\Layout\DTO\LayoutSyncEntry;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\Layout\LayoutSyncReport;
+use App\Extension\Support\LifecycleWarnings;
 use App\Providers\CoreServiceProvider;
 use App\Services\LayoutExtensionService;
 use App\Services\LayoutService;
@@ -441,6 +442,93 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
+     * 템플릿 필수 저장 키 선언 항목 형식 — 개인정보 동의 플러그인의 운영자 항목 규칙과 같다(끝 `*` 는 앞부분 매칭).
+     */
+    public const NECESSARY_STORAGE_KEY_PATTERN = '/^[A-Za-z0-9_.:@+\-]+\*?$/';
+
+    /**
+     * 템플릿 필수 저장 키 선언의 저장소 종류.
+     */
+    public const NECESSARY_STORAGE_SCOPES = ['localStorage', 'sessionStorage', 'cookie'];
+
+    /**
+     * 활성 사용자·관리자 템플릿이 template.json `necessary_storage` 로 선언한 필수 브라우저 저장 키의 합집합 (7.1.3)
+     *
+     * 쿠키 동의 플러그인은 동의 전 「필수」 목록 밖의 저장 키를 지운다. 확장이 키를 필수로 올리는 통로는 PHP 필터 훅
+     * 하나라 PHP 리스너가 없는 템플릿은 등록할 수 없었다. 템플릿은 template.json 에 선언하고, 동의 플러그인이 이 함수의
+     * 결과를 제공 목록에 더한다(코어는 동의 플러그인을 모른다 — 의존 방향 유지). 형식이 틀린 항목은 무시한다.
+     *
+     * @return array{localStorage: array<int, string>, sessionStorage: array<int, string>, cookie: array<int, string>}
+     */
+    public function getActiveTemplatesNecessaryStorage(): array
+    {
+        $merged = array_fill_keys(self::NECESSARY_STORAGE_SCOPES, []);
+
+        foreach (['user', 'admin'] as $type) {
+            foreach (self::getActiveTemplateIdentifiersByType($type) as $identifier) {
+                $manifestPath = $this->templatesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'template.json';
+                $manifest = is_file($manifestPath) ? json_decode((string) file_get_contents($manifestPath), true) : null;
+                $declared = self::normalizeNecessaryStorage(is_array($manifest) ? ($manifest['necessary_storage'] ?? null) : null, $identifier);
+
+                foreach (self::NECESSARY_STORAGE_SCOPES as $scope) {
+                    $merged[$scope] = array_values(array_unique([...$merged[$scope], ...$declared[$scope]]));
+                }
+            }
+        }
+
+        return $merged;
+    }
+
+    /**
+     * template.json `necessary_storage` 선언을 검사해 형식이 맞는 항목만 돌려줍니다.
+     *
+     * @param  mixed  $declared  선언값 (`{localStorage: [], sessionStorage: [], cookie: []}`)
+     * @param  string  $identifier  템플릿 식별자 (로그용)
+     * @param  bool  $reportWarnings  설치처럼 운영자에게 알릴 작업이면 true — 생명주기 경고 목록에도 남긴다
+     * @return array{localStorage: array<int, string>, sessionStorage: array<int, string>, cookie: array<int, string>}
+     */
+    public static function normalizeNecessaryStorage(mixed $declared, string $identifier, bool $reportWarnings = false): array
+    {
+        $result = array_fill_keys(self::NECESSARY_STORAGE_SCOPES, []);
+        if ($declared === null) {
+            return $result;
+        }
+
+        $invalid = [];
+        if (! is_array($declared)) {
+            $invalid[] = 'necessary_storage';
+        } else {
+            foreach ($declared as $scope => $items) {
+                if (! in_array($scope, self::NECESSARY_STORAGE_SCOPES, true) || ! is_array($items)) {
+                    $invalid[] = (string) $scope;
+
+                    continue;
+                }
+                foreach ($items as $item) {
+                    if (is_string($item) && strlen($item) <= 128 && preg_match(self::NECESSARY_STORAGE_KEY_PATTERN, $item) === 1) {
+                        $result[$scope][] = $item;
+                    } else {
+                        $invalid[] = $scope.':'.(is_scalar($item) ? (string) $item : gettype($item));
+                    }
+                }
+                $result[$scope] = array_values(array_unique($result[$scope]));
+            }
+        }
+
+        if ($invalid !== []) {
+            Log::warning('template.json necessary_storage 의 형식이 틀린 항목을 무시합니다', [
+                'template' => $identifier,
+                'invalid' => $invalid,
+            ]);
+            if ($reportWarnings) {
+                LifecycleWarnings::current()->add('necessary_storage', $identifier, implode(', ', $invalid));
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * 활성화된 템플릿을 반환합니다.
      *
      * @param  string  $type  템플릿 타입 ('admin' 또는 'user')
@@ -516,6 +604,9 @@ class TemplateManager implements TemplateManagerInterface
 
                 // SEO 설정 검증 (설치 전 seo-config.json 유효성 검사)
                 $this->validateSeoConfig($templateName);
+
+                // 필수 저장 키 선언(template.json necessary_storage) 형식 검사 — 틀린 항목은 무시하고 경고로만 알린다(설치는 막지 않음, 7.1.3)
+                self::normalizeNecessaryStorage($template['necessary_storage'] ?? null, $templateName, reportWarnings: true);
 
                 // 레이아웃 검증 (설치 전 모든 레이아웃 파일 유효성 검사) — 7.0 JSON 의 깨진 조각 참조는 경고로 모은다 (#712)
                 $this->lastLayoutWarnings = [];
@@ -736,6 +827,7 @@ class TemplateManager implements TemplateManagerInterface
                 $this->refreshTemplateLayouts($templateName, true);
             } catch (\Throwable $e) {
                 Log::error('템플릿 활성화 중 레이아웃 갱신 실패', ['template' => $templateName, 'error' => $e->getMessage()]);
+                LifecycleWarnings::current()->add('layout_refresh', $templateName, $e->getMessage());
             }
 
             // 활성 모듈/플러그인의 레이아웃을 새 템플릿에 **먼저** 등록한다 — 아래 조각 등록의 적용 필터(C10)가 호스트
@@ -1786,6 +1878,7 @@ class TemplateManager implements TemplateManagerInterface
                     'file' => $validatedLayout['file'],
                     'error' => $e->getMessage(),
                 ]);
+                LifecycleWarnings::current()->add('layout_register', basename((string) $validatedLayout['file']), $e->getMessage());
             }
         }
     }
@@ -1867,6 +1960,7 @@ class TemplateManager implements TemplateManagerInterface
                     'module' => $moduleIdentifier,
                     'error' => $e->getMessage(),
                 ]);
+                LifecycleWarnings::current()->add('layout_override_register', $moduleIdentifier, $e->getMessage());
 
                 continue;
             }
@@ -1926,6 +2020,7 @@ class TemplateManager implements TemplateManagerInterface
                         'module' => $moduleIdentifier,
                         'error' => $e->getMessage(),
                     ]);
+                    LifecycleWarnings::current()->add('layout_override_register', basename((string) $validatedLayout['file']), $e->getMessage());
                 }
             }
         }
@@ -2366,7 +2461,7 @@ class TemplateManager implements TemplateManagerInterface
         if (! File::exists($layoutsPath)) {
             Log::info(__('templates.info.no_layouts_directory'), ['template' => $identifier]);
 
-            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'extensions_refreshed' => 0, 'layout_sync' => $report->toArray(), 'layout_warnings' => []];
+            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'extensions_refreshed' => 0, 'layout_sync' => $report->toArray(), 'layout_warnings' => [], 'warnings' => LifecycleWarnings::current()->all()];
         }
 
         // 레이아웃 검증 — 7.0 JSON 의 깨진 조각 참조는 빈 자리로 등록하고 경고로 모은다 (#712)
@@ -2415,6 +2510,7 @@ class TemplateManager implements TemplateManagerInterface
                     'file' => $validatedLayout['file'],
                     'error' => $e->getMessage(),
                 ]);
+                LifecycleWarnings::current()->add('layout_refresh', basename((string) $validatedLayout['file']), $e->getMessage());
             }
         }
 
@@ -2472,6 +2568,7 @@ class TemplateManager implements TemplateManagerInterface
             'extensions_refreshed' => $extensionStats['registered'] ?? 0,
             'layout_sync' => $report->toArray(),
             'layout_warnings' => $this->takeLastLayoutWarnings(),
+            'warnings' => LifecycleWarnings::current()->all(),
         ];
     }
 
@@ -2557,6 +2654,7 @@ class TemplateManager implements TemplateManagerInterface
                         'module' => $moduleIdentifier,
                         'error' => $e->getMessage(),
                     ]);
+                    LifecycleWarnings::current()->add('layout_extension_override_register', basename((string) $file), $e->getMessage());
                 }
             }
         }
@@ -3474,6 +3572,7 @@ class TemplateManager implements TemplateManagerInterface
                     $this->layoutExtensionService->registerAllActiveExtensionsToTemplate($record->id);
                 } catch (\Throwable $e) {
                     Log::error('템플릿 업데이트 뒤 확장 조각 재등록 실패', ['template' => $identifier, 'error' => $e->getMessage()]);
+                    LifecycleWarnings::current()->add('layout_extension_reregister', $identifier, $e->getMessage());
                 }
             } elseif ($backupPath !== null) {
                 // 꺼 둔 채 업데이트(D11) — 켤 때(activateTemplate) 병합할 수 있게 이전 판 원본을 미리 저장한다.
@@ -3537,6 +3636,7 @@ class TemplateManager implements TemplateManagerInterface
                 'layout_source' => self::normalizeLayoutInstallSource(config('template.layout_markup.install_source')),
                 'layout_sync' => $layoutSync,
                 'layout_warnings' => $layoutWarnings,
+                'warnings' => LifecycleWarnings::current()->all(),
                 'dependency_warnings' => $dependencyWarnings,
                 'message' => DependencyVersionWarnings::appendToMessage(__('templates.update_success', [
                     'template' => $identifier,

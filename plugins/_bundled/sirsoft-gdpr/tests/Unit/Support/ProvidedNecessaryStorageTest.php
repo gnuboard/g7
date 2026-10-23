@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Gdpr\Tests\Unit\Support;
 
 use App\Extension\HookManager;
+use App\Extension\TemplateManager;
 use Plugins\Sirsoft\Gdpr\Plugin;
 use Plugins\Sirsoft\Gdpr\Support\NecessaryAllowlist;
 use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
@@ -41,6 +42,45 @@ class ProvidedNecessaryStorageTest extends PluginTestCase
         $this->saved = HookManager::getFilters()[Plugin::PROVIDED_NECESSARY_STORAGE_HOOK] ?? [];
         HookManager::clearFilter(Plugin::PROVIDED_NECESSARY_STORAGE_HOOK);
         $this->forgetMemo();
+
+        // 활성 템플릿의 template.json 선언(코어 7.1.3)은 설치본 상태에 따라 달라진다 — 훅 계약만 보도록 비운다
+        $this->bindTemplateDeclarations(['localStorage' => [], 'sessionStorage' => [], 'cookie' => []]);
+    }
+
+    /**
+     * 활성 템플릿의 필수 저장 키 선언을 정해 둡니다 (TemplateManager 대역).
+     *
+     * @param  array<string, array<int, string>>  $declared  저장소 종류 => 키 목록
+     * @return void 반환값 없음
+     */
+    private function bindTemplateDeclarations(array $declared): void
+    {
+        $templates = \Mockery::mock(TemplateManager::class)->makePartial();
+        $templates->shouldReceive('getActiveTemplatesNecessaryStorage')->andReturn($declared);
+        $this->app->instance(TemplateManager::class, $templates);
+    }
+
+    /**
+     * 활성 템플릿이 template.json 으로 선언한 키가 제공 목록에 합쳐지고, 형식이 틀린 항목은 버린다 (1.1.2).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario scope=sessionStorage, notation=wildcard, locked=operator_item, settings_state=populated, request=valid_item
+     *
+     * @effects template_declarations_merged_into_provided
+     */
+    public function test_template_declarations_are_merged_into_provided(): void
+    {
+        $this->bindTemplateDeclarations([
+            'localStorage' => ['g7_color_scheme', '*'],
+            'sessionStorage' => ['g7_dismissed_warnings'],
+            'cookie' => [],
+        ]);
+
+        $provided = Plugin::providedNecessaryStorage();
+
+        $this->assertSame(['g7_color_scheme'], $provided['localStorage'], '`*` 단독은 게이트를 열므로 버린다');
+        $this->assertSame(['g7_dismissed_warnings'], $provided['sessionStorage']);
     }
 
     /**

@@ -1,0 +1,17 @@
+feature: 봇(SEO) HTML 링크 추출이 엔진과 같은 중첩 액션 트리를 따라간다 (7.1.3)
+
+description: |
+  ComponentHtmlMapper::extractLinkAction 이 click 액션의 sequence 한 단계만 봐서 parallel·conditions(then)·switch(cases)·
+  중첩 sequence 안의 navigate 와 path 를 최상위 target 에 둔 navigate 를 봇 HTML 링크로 그리지 못했다. 엔진(ErrorHandling
+  injectErrorCode)과 같은 중첩 키를 재귀로 따라가고, replace: true 는 종전대로 제외한다.
+
+axes:
+  nesting: [nested_tree, top_level_target, replace_navigate]
+
+effects:
+  - nested_navigate_becomes_bot_link
+  - top_level_target_becomes_bot_link
+  - replace_navigate_stays_button
+
+test_files:
+  - tests/Unit/Seo/ComponentHtmlMapperNestedLinkActionTest.php

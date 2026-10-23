@@ -1,0 +1,15 @@
+feature: 번들·대기 확장의 진입 파일은 있는데 클래스를 찾을 수 없으면 경고를 남긴다 (7.1.3)
+
+description: |
+  미설치 확장 상세 조회(tryLoadModuleInstance·tryLoadPluginInstance)는 `_bundled`·`_pending` 의 진입 파일을 읽는다.
+  네임스페이스 오타로 기대 클래스가 선언되지 않으면 예전에는 로그 없이 null 을 돌려줘, 그 확장이 관리자 확장 목록에서
+  이유 없이 빠졌다. 이제 확장 식별자·기대 클래스명을 담은 warning 을 남긴다(예외 갈래는 종전부터 warning).
+
+axes:
+  ext_type: [module, plugin]
+
+effects:
+  - bundled_entry_class_missing_logs_warning
+
+test_files:
+  - tests/Unit/Extension/BundledMetaClassMissingWarningTest.php

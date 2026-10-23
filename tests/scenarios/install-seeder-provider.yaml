@@ -1,0 +1,27 @@
+feature: 확장 설치 시더가 프로바이더 저장소 바인딩을 해석하고, 시더 실패는 설치 실패·되돌림이 된다 (7.1.3)
+
+description: |
+  코어의 확장 프로바이더 등록기는 부팅 때 이미 있는 디렉터리만 훑는다. 새 설치는 같은 프로세스에서 디렉터리를 복사한 뒤
+  시더를 돌리므로 프로바이더 `$repositories` 바인딩이 없어 시더가 실패했고, 그 예외를 로그만 남기고 삼켜 설치가 「성공」했다.
+  ExtensionProviderRegistrar 가 설치·활성화·언어팩 시더 재실행 직전에 부팅 때와 같은 규칙으로 프로바이더를 선등록한다.
+  시더 실패·선언된 시더 클래스 없음은 ExtensionSeederFailedException 으로 설치를 실패로 끝내고, 새 설치면 이번 호출이 만든
+  행·테이블·권한·설정·활성 디렉터리를 되돌린다. 강제 재설치(호출 전 DB 행 있음)는 아무것도 지우지 않는다.
+
+axes:
+  extension_type: [module, plugin]
+  seeder_outcome: [ok, throw, missing_class]
+  prior_install: [none, installed]
+
+exclusions:
+  - { seeder_outcome: ok, prior_install: installed, reason: "강제 재설치 성공은 기존 설치 시험(ExtensionLifecycleHookContractTest 의 force 업데이트·재설치 경로)이 덮는다" }
+  - { seeder_outcome: missing_class, prior_install: installed, reason: "선언 시더 클래스 없음은 시더 실행 전 같은 예외 경로 — 재설치 보존 판정은 throw 칸이 덮는다" }
+
+effects:
+  - seeder_resolves_provider_repository_binding
+  - seeder_failure_fails_install_with_seeder_name
+  - failed_fresh_install_leaves_nothing
+  - missing_declared_seeder_class_fails_install
+  - failed_forced_reinstall_preserves_existing_data
+
+test_files:
+  - tests/Feature/Extension/InstallSeederProviderTest.php

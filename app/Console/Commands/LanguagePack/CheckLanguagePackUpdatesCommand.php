@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands\LanguagePack;
 
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
+use App\Extension\Support\LifecycleWarnings;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -14,6 +16,8 @@ use Throwable;
  */
 class CheckLanguagePackUpdatesCommand extends Command
 {
+    use ReportsLifecycleWarnings;
+
     /**
      * @var string
      */
@@ -56,6 +60,7 @@ class CheckLanguagePackUpdatesCommand extends Command
             foreach ($result['details'] as $entry) {
                 if ($entry['error']) {
                     $this->warn('  '.__('language_packs.commands.check_updates.entry_failed', ['identifier' => $entry['identifier'], 'error' => $entry['error']]));
+                    LifecycleWarnings::current()->add('language_pack_check_updates', (string) $entry['identifier'], (string) $entry['error']);
 
                     continue;
                 }

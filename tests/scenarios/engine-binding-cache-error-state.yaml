@@ -1,0 +1,34 @@
+feature: 화면 전환 없는 데이터 갱신의 바인딩 캐시·오류 화면 상태·상태 참조·핸들러 트리 순회 (7.1.3, engine-v1.83.0)
+
+description: |
+  7.1.2 는 화면 전환 때 바인딩 영구 캐시를 비웠지만, 화면 전환이 없는 경로(데이터 소스 직접 갱신·progressive 받기 실패·
+  쿼리 갱신 실패·확장 상태 다시 읽기·같은 화면 오류 화면 연속)는 단순 경로 바인딩이 30초 동안 옛 값이었다. 오류 화면
+  핸들러는 생성 때 받은 전역 상태 참조를 보관해 옛 값을 그렸고, 오류 처리 묶음 안 showErrorPage 는 오류 코드 없이 500 을
+  그렸다. 모달 $parent 의 _global·_computed 는 연 시점 사본이었고, remount 는 두 번째부터 다시 마운트하지 않았다.
+
+axes:
+  path: [dataSource_set, dataSource_updateItem, dataSource_updateData, progressive_failure, query_update_failure, reload_extension_state, error_page, error_handler_tree, modal_parent_context, remount, callback_action, handler_tree, isolated_refetch]
+
+effects:
+  - simple_path_follows_datasource_set            # G7Core.dataSource.set 직후 단순 경로 바인딩이 새 값(E1)
+  - simple_path_follows_datasource_update_item    # G7Core.dataSource.updateItem 직후 x.0.name 꼴 경로가 새 값(E2)
+  - simple_path_follows_datasource_append         # G7Core.dataSource.updateData(append) 직후 length 가 새 값(E3)
+  - progressive_failure_clears_simple_path        # progressive 받기 실패 시 앞 쪽 값이 단순 경로에 남지 않고 오류 기록이 보인다(E4)
+  - query_update_failure_recorded                 # updateQueryParams 다시 받기 실패는 null·_dataSourceErrors 기록(E5)
+  - query_update_success_clears_error             # 실패 뒤 같은 소스가 다시 성공하면 오류 기록을 지운다(E5)
+  - locales_follow_reload_extension_state         # reloadExtensionState 뒤 $locales 가 새 목록(E6)
+  - error_page_uses_latest_state_and_code         # 오류 화면은 그릴 때의 _global·route 를 싣고, 연속으로 그려도 새 오류 코드(E7)
+  - nested_show_error_page_gets_code              # sequence·parallel·conditions·switch 안 showErrorPage 가 오류 코드를 받는다(E8)
+  - on_error_show_error_page_gets_code            # onError 갈래의 showErrorPage 가 실제 오류 코드를 받는다(E9)
+  - modal_parent_global_and_computed_follow_parent # 모달 $parent._global·_computed 가 부모의 지금 값(E10)
+  - remount_key_increments_each_time              # remount 를 거듭하면 key 가 매번 는다(E11)
+  - namespaced_handlers_collected_from_onload_and_callback # init 대기 목록이 onLoad·params.callbackAction 안 확장 핸들러를 모은다(E12)
+  - namespaced_handlers_collected_from_navigate_fallback # init 대기 목록이 navigate params.fallback(객체·확장 핸들러 이름) 안 확장 핸들러를 모은다(E12)
+  - callback_action_object_resolved_at_callback_time # 객체 callbackAction 은 원문으로 넘겨 콜백 시점에 푼다(E13)
+  - isolated_state_reaches_refetch_request        # refetchDataSource 의 격리 상태가 요청 식 {{_isolated.*}} 에 닿는다(E14)
+
+test_files:
+  - resources/js/core/template-engine/__tests__/TemplateApp.bindingCacheInvalidation.test.tsx
+  - resources/js/core/error/__tests__/ErrorHandlingResolver.nestedErrorCode.test.ts
+  - resources/js/core/template-engine/__tests__/ActionDispatcher.stateReferences.test.ts
+  - resources/js/core/__tests__/TemplateApp.handlerTreeIsolatedRefetch.test.ts

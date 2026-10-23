@@ -37,6 +37,12 @@ return [
         'not_auto_deactivated' => '이 확장은 코어 버전 호환성 문제로 자동 비활성화된 상태가 아닙니다.',
         'hidden_extension' => '내부용(hidden) 확장은 사용자 노출 대상이 아닙니다.',
         'internal_error' => '서버 내부 오류가 발생했습니다. 자세한 내용은 서버 로그를 확인하세요.',
+        'seeder_failed' => '기본 데이터 생성(:seeder)에 실패해 설치를 취소했습니다: :message',
+        'seeder_class_not_found' => '시더 클래스를 찾을 수 없습니다',
+        'upgrade_step_class_missing' => '업그레이드 단계 :file 의 클래스 :class 를 찾을 수 없어 업데이트를 중단했습니다',
+        'upgrade_step_interface_missing' => '업그레이드 단계 :file 의 클래스 :class 가 :interface 를 구현하지 않아 업데이트를 중단했습니다',
+        'entry_class_missing_on_update' => '새 버전 :file 의 클래스 :class 를 찾을 수 없어 업데이트를 중단했습니다',
+        'unsafe_archive_entry' => '압축 파일에 허용되지 않는 경로가 있습니다: :entry',
     ],
 
     'warnings' => [
@@ -47,6 +53,15 @@ return [
         'dependency_not_installed' => ':identifier :required 버전이 필요한데 설치되어 있지 않습니다',
         'dependency_inactive' => ':identifier 확장이 꺼져 있습니다(필요 버전 :required)',
         'dependency_summary' => '단, 의존 확장이 요구 조건에 못 미칩니다 — :list. 해당 확장도 업데이트하거나 켜세요.',
+        'archive_backslash_normalized' => '역슬래시(\\) 경로 :count개를 / 로 정규화해 풀었습니다',
+        'seeder_class_name_mismatch' => '시더 파일 :file 은 있지만 추론한 클래스 :class 를 찾을 수 없어 건너뛰었습니다',
+        'storage_cleanup_incomplete' => '확장 저장 폴더를 모두 지우지 못했습니다 — 서버 파일 권한을 확인한 뒤 남은 파일을 직접 지우세요',
+        'completed_with_warnings' => '⚠️ 완료했지만 일부 항목이 실패했습니다 (경고 :count건)',
+        'completed_with_notices' => 'ℹ️ 완료했습니다 — 확인할 안내 :count건',
+        'column_step' => '단계',
+        'column_target' => '대상',
+        'column_message' => '사유',
+        'composer_install_failed' => 'Composer 의존성 설치에 실패했습니다 — 확장 폴더에서 composer install 을 수동으로 실행하세요',
     ],
 
     'alerts' => [

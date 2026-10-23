@@ -71,7 +71,7 @@ import {
 import { isAllowedScriptSrc, getTrustedScriptHosts } from '../support/scriptSrcPolicy';
 import { isLocaleSwitching, stashForLocaleSwitch, takeLocaleSwitchHandoff } from './localeSwitchHandoff';
 import { getSiteLocale, pickLocalized } from '../support/localeTag';
-import { isPlainLeftClick, mergeQueryIntoHref, subscribeLocationSearch, type LinkClickLike } from './navigationLinks';
+import { isPlainLeftClick, mergeQueryIntoHref, mergeRelForTarget, resolveInternalHref, subscribeLocationSearch, useLocationSearch, type LinkClickLike } from './navigationLinks';
 import { configureLeaveGuard, isLeaveGuarded } from '../routing/LeaveGuard';
 import {
   notifyAssetFailure,
@@ -2744,7 +2744,7 @@ function initDataSourceAPI(G7Core: any): void {
      * @param options 옵션
      * @returns refetch 결과 데이터
      */
-    refetch: async (dataSourceId: string, options?: { skipCache?: boolean; sync?: boolean }) => {
+    refetch: async (dataSourceId: string, options?: { skipCache?: boolean; sync?: boolean; globalStateOverride?: Record<string, any>; localStateOverride?: Record<string, any>; isolatedStateOverride?: Record<string, any> }) => {
       const templateApp = (window as any).__templateApp;
       if (templateApp?.refetchDataSource) {
         return templateApp.refetchDataSource(dataSourceId, options);
@@ -3248,6 +3248,25 @@ function initNavigationAPI(G7Core: any, deps: G7CoreDependencies): void {
     mergeQueryIntoHref: (href: string): string => mergeQueryIntoHref(href),
     /** 주소 검색부가 바뀔 수 있는 순간(뒤로/앞으로·같은 화면 쿼리 교체) 구독 — mergeQuery 링크 다시 그리기용 @since engine-v1.82.1 */
     subscribeLocationSearch: (callback: () => void): (() => void) => subscribeLocationSearch(callback),
+    /**
+     * 주소 검색부 구독 React 훅 — 렌더할 때 현재 쿼리를 href 에 합치는 링크가 부른다(`enabled` 가 거짓이면 구독하지 않음).
+     * 템플릿은 코어와 같은 React 를 쓰므로 이 훅을 그대로 부른다. 컴포넌트 렌더 중에만 부른다(훅 규칙).
+     *
+     * @since engine-v1.83.0
+     */
+    useLocationSearch,
+    /**
+     * 링크 href 가 이 사이트 안 주소면 「경로?쿼리#해시」, 아니면 null — 링크 컴포넌트의 SPA 이동 판정 하나(엔진 navigate 와 같은 규칙).
+     *
+     * @since engine-v1.83.0
+     */
+    resolveInternalHref: (href: unknown): string | null => resolveInternalHref(href),
+    /**
+     * 새 창(`target="_blank"`) 링크의 rel — `noopener`·`noreferrer` 중 빠진 것만 덧붙이고 넘겨받은 토큰은 남긴다.
+     *
+     * @since engine-v1.83.0
+     */
+    mergeRelForTarget: (rel?: string | null, target?: string | null): string | undefined => mergeRelForTarget(rel, target),
     /**
      * 지금 경로 전환 세대를 돌려줍니다 — 경로 전환이 시작될 때마다 1 씩 는다(같은 주소로 다시 들어와도 는다).
      *

@@ -7,10 +7,11 @@ description: |
   남긴다. 디버그 모드와 확장이 일부러 던진 사용자용 사유는 종전대로 보인다.
 
 axes:
-  case: [production_masks_db_exception, debug_keeps_raw_detail, domain_reason_kept]
+  case: [production_masks_db_exception, debug_keeps_raw_detail, domain_reason_kept, seeder_failure_keeps_seeder_name]
 
 effects:
   - extension_failure_hides_internal_detail
+  - seeder_failure_shows_seeder_name_without_internal_detail
 
 notes:
   - 작업(설치·활성화·비활성화·제거)과 확장 종류(모듈·플러그인·템플릿·언어팩)는 축이 아니라 한 시험 안에서 모두 돈다.

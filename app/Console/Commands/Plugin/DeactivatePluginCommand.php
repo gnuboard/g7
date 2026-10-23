@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Log;
 
 class DeactivatePluginCommand extends Command
 {
+    use ReportsLifecycleWarnings;
+
     /**
      * The name and signature of the console command.
      */
@@ -103,7 +106,7 @@ class DeactivatePluginCommand extends Command
             }
 
             if ($result['success']) {
-                $this->info('✅ '.__('plugins.commands.deactivate.success', ['plugin' => $identifier]));
+                $this->info($this->lifecycleDoneIcon().' '.__('plugins.commands.deactivate.success', ['plugin' => $identifier]));
                 $this->info('   - '.trans_choice('plugins.commands.deactivate.layouts_deleted', (int) ($result['layouts_deleted'] ?? 0)));
                 $this->warn('⚠️  '.__('plugins.commands.deactivate.warning'));
                 Log::info(__('plugins.commands.deactivate.success', ['plugin' => $identifier]));

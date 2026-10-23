@@ -10,6 +10,7 @@ use App\Exceptions\CoreUpdateOperationException;
 use App\Exceptions\UpgradeHandoffException;
 use App\Extension\AbstractUpgradeStep;
 use App\Extension\CoreVersionChecker;
+use App\Extension\Exceptions\UpgradeStepClassMissingException;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
@@ -17,6 +18,8 @@ use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionRoleSyncHelper;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\GithubHelper;
+use App\Extension\Helpers\SafeArchiveExtractor;
+use App\Extension\Support\LifecycleWarnings;
 use App\Extension\UpgradeContext;
 use App\Extension\Vendor\EnvironmentDetector;
 use App\Extension\Vendor\VendorInstallContext;
@@ -546,11 +549,8 @@ class CoreUpdateService
     /**
      * GitHub에서 아카이브를 다운로드하여 _pending에 압축 해제합니다.
      *
-     * 추출 폴백 체인:
-     * 1. zipball + ZipArchive (PHP zip 확장)
-     * 2. zipball + unzip 명령어 (Linux만)
-     * 3. tarball + PharData (PHP 내장)
-     * 4. 모두 실패 시 에러
+     * 추출: zipball + ZipArchive(PHP zip 확장, 필수) + 안전 해제(SafeArchiveExtractor).
+     * unzip 명령 폴백은 항목 이름 검사를 거치지 않아 7.1.3 에서 제거했다. 실패하면 에러.
      *
      * @param  string  $version  다운로드할 버전
      * @param  \Closure|null  $onProgress  진행 콜백
@@ -573,7 +573,7 @@ class CoreUpdateService
         $token = (string) (config('app.update.github_token') ?? '');
         $extractDir = $pendingPath.DIRECTORY_SEPARATOR.'extracted';
 
-        // 폴백 체인: zipball(ZipArchive → unzip) → tarball(PharData)
+        // 추출 전략: zipball(ZipArchive + 안전 해제)
         $strategies = $this->buildExtractionStrategies();
         $lastError = null;
         $resolvedAny = false;
@@ -678,14 +678,8 @@ class CoreUpdateService
             ];
         }
 
-        // 2단계: unzip 명령어 (Linux만)
-        if (PHP_OS_FAMILY !== 'Windows' && $this->isUnzipAvailable()) {
-            $strategies[] = [
-                'archive_type' => 'zipball',
-                'method' => 'extractWithUnzip',
-                'label' => 'unzip',
-            ];
-        }
+        // unzip 명령어 폴백은 두지 않는다 — 항목 이름 검사(역슬래시 정규화·압축 밖 경로 거부)를
+        // 거치지 않고 심볼릭 링크까지 풀기 때문이다. ZipArchive(zip 확장)는 필수 요구사항이다.
 
         return $strategies;
     }
@@ -699,47 +693,12 @@ class CoreUpdateService
      */
     protected function extractWithZipArchive(string $zipPath, string $extractDir): void
     {
-        $zip = new \ZipArchive;
-        if ($zip->open($zipPath) !== true) {
+        if (! class_exists(\ZipArchive::class)) {
             throw new CoreUpdateOperationException('settings.core_update.zip_extract_failed');
         }
 
-        $zip->extractTo($extractDir);
-        $zip->close();
-    }
-
-    /**
-     * 시스템 unzip 명령어를 사용하여 ZIP 파일을 압축 해제합니다.
-     *
-     * @param  string  $zipPath  ZIP 파일 경로
-     * @param  string  $extractDir  추출 대상 디렉토리
-     * @return void 반환값 없음
-     */
-    protected function extractWithUnzip(string $zipPath, string $extractDir): void
-    {
-        $escapedZip = escapeshellarg($zipPath);
-        $escapedDir = escapeshellarg($extractDir);
-
-        exec("unzip -o {$escapedZip} -d {$escapedDir} 2>&1", $output, $exitCode);
-
-        if ($exitCode !== 0) {
-            throw new CoreUpdateOperationException('settings.core_update.unzip_command_failed', [
-                'code' => $exitCode,
-                'output' => implode("\n", array_slice($output, -5)),
-            ]);
-        }
-    }
-
-    /**
-     * 시스템에 unzip 명령어가 사용 가능한지 확인합니다.
-     *
-     * @return bool unzip 명령을 쓸 수 있으면 true
-     */
-    protected function isUnzipAvailable(): bool
-    {
-        exec('which unzip 2>/dev/null', $output, $exitCode);
-
-        return $exitCode === 0;
+        // 역슬래시 경로 정규화 + 압축 밖 경로·심볼릭 링크 거부
+        SafeArchiveExtractor::extractZip($zipPath, $extractDir);
     }
 
     /**
@@ -1699,12 +1658,14 @@ class CoreUpdateService
             $this->syncCoreRolesAndPermissions();
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: 권한 재동기화 실패', ['error' => $e->getMessage()]);
+            LifecycleWarnings::current()->add('core_resync', 'permissions', $e->getMessage());
         }
 
         try {
             $this->syncCoreMenus();
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: 메뉴 재동기화 실패', ['error' => $e->getMessage()]);
+            LifecycleWarnings::current()->add('core_resync', 'menus', $e->getMessage());
         }
 
         try {
@@ -1713,6 +1674,7 @@ class CoreUpdateService
             }
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: 알림 정의 재시딩 실패', ['error' => $e->getMessage()]);
+            LifecycleWarnings::current()->add('core_resync', 'notification_definitions', $e->getMessage());
         }
 
         try {
@@ -1721,6 +1683,7 @@ class CoreUpdateService
             }
         } catch (\Throwable $e) {
             Log::channel('upgrade')->warning('reloadCoreConfigAndResync: IDV 정책 재시딩 실패', ['error' => $e->getMessage()]);
+            LifecycleWarnings::current()->add('core_resync', 'identity_policies', $e->getMessage());
         }
 
         // 본인인증 메시지는 7.1.0 부터 알림 정의(category=identity)로 선언되어 위 NotificationDefinitionSeeder 가
@@ -1871,6 +1834,18 @@ class CoreUpdateService
             if ($included) {
                 require_once $file->getPathname();
                 $className = "App\\Upgrades\\{$filename}";
+
+                // 범위 안 단계 파일이 있는데 클래스가 없거나 인터페이스 미구현이면 업데이트 실패
+                // (7.1.3 — 예전엔 조용히 건너뛰어 데이터는 옛 형태인데 버전만 올라갔다)
+                try {
+                    UpgradeStepClassMissingException::assertUsable($file->getPathname(), $className, UpgradeStepInterface::class);
+                } catch (UpgradeStepClassMissingException $e) {
+                    throw new CoreUpdateOperationException(
+                        $e->interface === null ? 'extensions.errors.upgrade_step_class_missing' : 'extensions.errors.upgrade_step_interface_missing',
+                        ['file' => $e->stepFile, 'class' => $e->class, 'interface' => (string) $e->interface],
+                        $e,
+                    );
+                }
 
                 if (class_exists($className)) {
                     $instance = new $className;

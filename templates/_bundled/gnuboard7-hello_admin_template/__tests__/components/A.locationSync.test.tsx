@@ -37,17 +37,33 @@ const replaceQuery = (path: string) => {
     });
 };
 
+/** 구독하지 않는 링크의 subscribe·snapshot (코어 훅과 같은 고정 참조) */
+const noSubscribe = (): (() => void) => () => {};
+const noSnapshot = (): string => '';
+const readSearch = (): string => window.location.search;
+
 describe('A (gnuboard7-hello_admin_template) — 같은 화면 쿼리 교체 뒤 mergeQuery href', () => {
     let subscribeSpy: ReturnType<typeof vi.fn>;
+    let coreUseLocationSearch: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
         subscribeSpy = vi.fn((cb: () => void) => engineSubscribeLocationSearch(cb));
+        // 코어 `useLocationSearch`(engine-v1.83.0)와 같은 규칙 — 시험에서는 엔진과 템플릿의 React 사본이 달라 엔진 훅을
+        // 그대로 부를 수 없어, 같은 구독(엔진 subscribeLocationSearch)을 템플릿 React 로 세운다. 실물 환경은 같은 React 다.
+        coreUseLocationSearch = vi.fn((enabled: boolean) =>
+            React.useSyncExternalStore(
+                enabled ? subscribeSpy : noSubscribe,
+                enabled ? readSearch : noSnapshot,
+                noSnapshot,
+            ),
+        );
         (window as any).G7Core = {
             dispatch: vi.fn(),
             navigation: {
                 isPlainLeftClick: engineIsPlainLeftClick,
                 mergeQueryIntoHref: engineMergeQueryIntoHref,
                 subscribeLocationSearch: subscribeSpy,
+                useLocationSearch: coreUseLocationSearch,
             },
         };
         window.history.replaceState(null, '', '/admin/memos?page=2');
@@ -98,6 +114,7 @@ describe('A (gnuboard7-hello_admin_template) — 같은 화면 쿼리 교체 뒤
      */
     it('구독 API 가 없는 옛 엔진에서도 그려지고, 뒤로/앞으로(popstate)에는 새 쿼리를 합친다', () => {
         delete (window as any).G7Core.navigation.subscribeLocationSearch;
+        delete (window as any).G7Core.navigation.useLocationSearch;
         render(<Frozen><A href="/admin/memos/5" mergeQuery>메모</A></Frozen>);
         const link = () => screen.getByRole('link', { name: '메모' });
         expect(link().getAttribute('href')).toBe('/admin/memos/5?page=2');

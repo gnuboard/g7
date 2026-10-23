@@ -3,6 +3,7 @@
 namespace App\Extension;
 
 use App\Contracts\Extension\UpgradeStepInterface;
+use App\Extension\Exceptions\UpgradeStepClassMissingException;
 use App\Extension\Upgrade\DataMigration;
 use App\Extension\Upgrade\DataSnapshot;
 use ReflectionClass;
@@ -34,6 +35,9 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
      * data/{currentStep}/manifest.json 을 로드 + Applier 동적 로드.
      *
      * 카탈로그 변동이 없는 스텝은 manifest 파일 없이 자동 빈 스냅샷 반환.
+     *
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트 (현재 단계 버전)
+     * @return DataSnapshot 카탈로그 스냅샷 (manifest 없으면 빈 스냅샷)
      */
     protected function dataSnapshot(UpgradeContext $context): DataSnapshot
     {
@@ -48,6 +52,7 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
      * prefix 는 정규식 `^\d{2,}_` 로 클래스명 매핑 시 제거되며, 클래스명 자체는 prefix 없이
      * 선언한다 (PHP 식별자 제약). 파일 정렬 결과가 실행 순서 — 명시적 순서가 필요하면 prefix 사용.
      *
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트 (현재 단계 버전)
      * @return array<int, DataMigration>
      */
     protected function dataMigrations(UpgradeContext $context): array
@@ -69,9 +74,9 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
             $className = preg_replace('/^\d{2,}_/', '', $baseName);
             $fqcn = $namespace.'\\'.$className;
 
-            if (class_exists($fqcn) && is_subclass_of($fqcn, DataMigration::class)) {
-                $migrations[] = new $fqcn;
-            }
+            // 파일이 있는데 클래스가 없거나 DataMigration 미구현이면 업데이트 실패 (7.1.3 — 예전엔 조용히 건너뜀)
+            UpgradeStepClassMissingException::assertUsable($file, $fqcn, DataMigration::class);
+            $migrations[] = new $fqcn;
         }
 
         return $migrations;
@@ -84,6 +89,9 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
      * 미래에 *모든 버전 공통* 인 부수 작업이 필요하면 override.
      *
      * default: no-op.
+     *
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
+     * @return void 반환값 없음
      */
     protected function postRun(UpgradeContext $context): void {}
 
@@ -91,6 +99,9 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
      * 업그레이드 스텝 실행 — 순서: dataSnapshot → dataMigrations → postRun.
      *
      * 본 메서드는 final — 하위 클래스가 순서 무력화 못 함.
+     *
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트
+     * @return void 반환값 없음
      */
     final public function run(UpgradeContext $context): void
     {
@@ -126,6 +137,9 @@ abstract class AbstractUpgradeStep implements UpgradeStepInterface
 
     /**
      * data/{currentStep}/ 절대 경로 계산. 스텝 파일 위치 기반 — 코어/확장 무관.
+     *
+     * @param  UpgradeContext  $context  업그레이드 컨텍스트 (현재 단계 버전)
+     * @return string data/{currentStep} 절대 경로
      */
     protected function dataDir(UpgradeContext $context): string
     {

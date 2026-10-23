@@ -429,6 +429,7 @@ return [
     // Worker 로그 메시지 (작업 진행)
     'log_task_in_progress' => ':task 작업 중...',
     'log_task_completed' => ':task 작업 완료',
+    'log_task_completed_with_warnings' => ':task 작업 완료 — 일부 항목이 실패했습니다(위 경고 표 참고)',
     'log_task_skipped' => ':task (이미 존재하여 건너뜀)',
     'manual_commands_guide' => '💡 아래 명령어를 수동으로 실행할 수 있습니다:',
     'log_separator' => '========================================',

@@ -195,8 +195,8 @@ describe('비회원 주문상세 클레임 섹션 — 기본 서브탭 (서버�
       .filter((b) => b.className.includes('border-gray-900'))
       // 라벨만 본다 — 탭에는 건수 배지(#599 후속 F12)가 함께 실려 textContent 끝에 숫자가 붙는다.
       .map((b) => (b.querySelector('span')?.textContent ?? b.textContent ?? '').trim());
-    // 탭 라벨은 표현식 안 $t() 라 하네스가 키를 그대로 남긴다 — 활성 판정만 본다
-    expect(active).toEqual(['claim.list.tab_return']);
+    // 탭 라벨은 표현식 안 $t() — 시험 도구가 실제 앱처럼 $locale·$templateId 를 실으면서(7.1.3) 번역된 라벨이 보인다
+    expect(active).toEqual(['반품']);
 
     test.cleanup();
   });

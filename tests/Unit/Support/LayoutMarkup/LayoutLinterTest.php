@@ -498,6 +498,57 @@ class LayoutLinterTest extends LayoutMarkupTestCase
         $this->assertNoLint(LayoutMarkupLintCode::SwitchValueNotConsumed, $json);
     }
 
+    /**
+     * `setState` 의 `target="_global"` 은 엔진이 지역 상태에 쓰므로 경고한다 (7.1.3).
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects set_state_underscore_global_target_is_warned
+     *
+     * @return void 반환값 없음
+     */
+    public function test_set_state_underscore_global_target_warns(): void
+    {
+        foreach ([['target' => '_global'], ['params' => ['target' => '_global']]] as $placement) {
+            $json = [
+                'layout_name' => 'x',
+                'components' => [[
+                    'type' => 'basic',
+                    'name' => 'Div',
+                    'actions' => [['event' => 'onClick', 'handler' => 'setState'] + $placement + ['params' => ['x' => 1]]],
+                ]],
+            ];
+
+            $this->assertHasLint(LayoutMarkupLintCode::SetStateUnderscoreGlobalTarget, $json);
+        }
+    }
+
+    /**
+     * `target="global"` 과 `resultTo` 의 `_global` 은 경고하지 않는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects set_state_global_target_and_result_to_underscore_global_do_not_warn
+     *
+     * @return void 반환값 없음
+     */
+    public function test_set_state_global_target_and_result_to_do_not_warn(): void
+    {
+        $json = [
+            'layout_name' => 'x',
+            'components' => [[
+                'type' => 'basic',
+                'name' => 'Div',
+                'actions' => [
+                    ['event' => 'onClick', 'handler' => 'setState', 'params' => ['target' => 'global', 'x' => 1]],
+                    ['event' => 'onClick', 'handler' => 'apiCall', 'target' => '/api/x', 'resultTo' => ['target' => '_global', 'key' => 'y']],
+                ],
+            ]],
+        ];
+
+        $this->assertNoLint(LayoutMarkupLintCode::SetStateUnderscoreGlobalTarget, $json);
+    }
+
     // ---------------------------------------------------------------------
     // ⑦ 액션 params 오배치 키 (S23 축 A)
     // ---------------------------------------------------------------------
