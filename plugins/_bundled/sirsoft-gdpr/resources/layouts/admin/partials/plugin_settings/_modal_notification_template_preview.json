@@ -25,7 +25,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "gdpr-form-label"
                             },
                             "text": "$t:sirsoft-gdpr.notification_definitions.preview_modal.rendered_subject"
                         },
@@ -33,7 +33,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-primary text-sm bg-gray-50 dark:bg-gray-900 rounded-md p-3 border border-gray-200 dark:border-gray-700"
+                                "className": "gdpr-text-primary gdpr:text-sm gdpr:bg-gray-50 gdpr:dark:bg-gray-900 gdpr:rounded-md gdpr:p-3 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700"
                             },
                             "text": "{{_global.gdpr_notification_template_form_modal?.preview?.subject ?? ''}}"
                         }
@@ -47,7 +47,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "gdpr-form-label"
                             },
                             "text": "$t:sirsoft-gdpr.notification_definitions.preview_modal.rendered_body"
                         },
@@ -57,7 +57,7 @@
                             "props": {
                                 "content": "{{_global.gdpr_notification_template_form_modal?.preview?.body ?? ''}}",
                                 "isHtml": true,
-                                "className": "text-sm max-w-none bg-white dark:bg-gray-900 rounded-md p-4 border border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto"
+                                "className": "gdpr:text-sm gdpr:max-w-none gdpr:bg-white gdpr:dark:bg-gray-900 gdpr:rounded-md gdpr:p-4 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:max-h-[400px] gdpr:overflow-y-auto"
                             }
                         }
                     ]
@@ -66,7 +66,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end border-t border-gray-200 dark:border-gray-700"
+                        "className": "gdpr:flex gdpr:justify-end gdpr:border-t gdpr:border-gray-200 gdpr:dark:border-gray-700"
                     },
                     "children": [
                         {
@@ -82,7 +82,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                "className": "gdpr-text-body gdpr:px-4 gdpr:py-2 gdpr:rounded-md gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:transition-colors"
                             },
                             "text": "$t:sirsoft-gdpr.notification_definitions.preview_modal.btn_close"
                         }

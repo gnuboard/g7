@@ -9,14 +9,14 @@
     "name": "Div",
     "if": "{{(form_data?.data?.parent_id || query?.parent_id) && form_meta?.data?.parent_post?.id}}",
     "props": {
-        "className": "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-6"
+        "className": "board:bg-white board:dark:bg-gray-700 board:border board:border-gray-200 board:dark:border-gray-600 board:rounded-lg board:p-4 board:mb-6"
     },
     "children": [
         {
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-center gap-2 mb-3"
+                "className": "board-flex-center board:gap-2 board:mb-3"
             },
             "children": [
                 {
@@ -24,14 +24,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "reply",
-                        "className": "text-base text-blue-600 dark:text-blue-400"
+                        "className": "board:text-base board:text-blue-600 board:dark:text-blue-400"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-primary text-sm font-semibold"
+                        "className": "board-text-primary board:text-sm board:font-semibold"
                     },
                     "text": "$t:sirsoft-board.admin.posts.form.reply_to"
                 },
@@ -40,7 +40,7 @@
                     "name": "Span",
                     "if": "{{form_meta?.data?.parent_post?.is_notice}}",
                     "props": {
-                        "className": "text-xs board-tone-danger inline-flex items-center px-2 py-0.5 rounded font-medium bg-red-100 dark:bg-red-900"
+                        "className": "board:text-xs board-tone-danger board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:font-medium board:bg-red-100 board:dark:bg-red-900"
                     },
                     "text": "$t:sirsoft-board.admin.posts.notice"
                 },
@@ -49,7 +49,7 @@
                     "name": "Span",
                     "if": "{{form_meta?.data?.parent_post?.is_secret}}",
                     "props": {
-                        "className": "text-xs board-tone-warning inline-flex items-center px-2 py-0.5 rounded font-medium bg-yellow-100 dark:bg-yellow-900"
+                        "className": "board:text-xs board-tone-warning board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:font-medium board:bg-yellow-100 board:dark:bg-yellow-900"
                     },
                     "text": "$t:sirsoft-board.admin.posts.secret"
                 }
@@ -59,14 +59,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-center gap-2 mb-2"
+                "className": "board-flex-center board:gap-2 board:mb-2"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H4",
                     "props": {
-                        "className": "section-heading-md"
+                        "className": "board-section-heading-md"
                     },
                     "text": "{{form_meta?.data?.parent_post?.title}}"
                 },
@@ -76,7 +76,7 @@
                     "props": {
                         "href": "/admin/board/{{route.slug}}/{{form_meta?.data?.parent_post?.id}}",
                         "title": "$t:sirsoft-board.admin.posts.form.view_original",
-                        "className": "text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                        "className": "board:text-blue-600 board:dark:text-blue-400 board:hover:text-blue-700 board:dark:hover:text-blue-300 board:transition-colors"
                     },
                     "children": [
                         {
@@ -84,7 +84,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "arrow-up-right-from-square",
-                                "className": "text-sm"
+                                "className": "board:text-sm"
                             }
                         }
                     ]
@@ -95,7 +95,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-center gap-2 text-tertiary mb-3"
+                "className": "board-flex-center board:gap-2 board-text-tertiary board:mb-3"
             },
             "children": [
                 {
@@ -120,7 +120,7 @@
             "name": "Div",
             "if": "{{form_meta?.data?.parent_post?.content}}",
             "props": {
-                "className": "bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded p-3"
+                "className": "board:bg-gray-50 board:dark:bg-gray-800 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded board:p-3"
             },
             "children": [
                 {
@@ -129,7 +129,7 @@
                     "props": {
                         "content": "{{form_meta?.data?.parent_post?.content}}",
                         "isHtml": "{{(form_meta?.data?.parent_post?.content_mode ?? 'text') === 'html'}}",
-                        "className": "{{_local.parentPostExpanded ? '' : 'line-clamp-3'}} text-sm text-gray-600 dark:text-gray-300 mb-2"
+                        "className": "{{_local.parentPostExpanded ? '' : 'board:line-clamp-3'}} board:text-sm board:text-gray-600 board:dark:text-gray-300 board:mb-2"
                     },
                     "default": [
                         {
@@ -138,7 +138,7 @@
                             "props": {
                                 "content": "{{form_meta?.data?.parent_post?.content}}",
                                 "isHtml": "{{(form_meta?.data?.parent_post?.content_mode ?? 'text') === 'html'}}",
-                                "className": "{{_local.parentPostExpanded ? '' : 'line-clamp-3'}} text-sm text-gray-600 dark:text-gray-300 mb-2"
+                                "className": "{{_local.parentPostExpanded ? '' : 'board:line-clamp-3'}} board:text-sm board:text-gray-600 board:dark:text-gray-300 board:mb-2"
                             }
                         }
                     ]
@@ -160,7 +160,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors gap-1"
+                        "className": "board-flex-center board:text-xs board:text-blue-600 board:dark:text-blue-400 board:hover:text-blue-700 board:dark:hover:text-blue-300 board:font-medium board:transition-colors board:gap-1"
                     },
                     "children": [
                         {
@@ -173,7 +173,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "{{_local.parentPostExpanded ? 'chevron-up' : 'chevron-down'}}",
-                                "className": "text-xs"
+                                "className": "board:text-xs"
                             }
                         }
                     ]

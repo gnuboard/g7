@@ -103,6 +103,7 @@
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
 | `dist/js/plugin.iife.js` | 빌드 산출물 (커밋 대상) |
 | `dist/vendor/ckeditor5/43.3.1` | 동봉 제3자 자산 (자체 제공) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
@@ -111,7 +112,13 @@
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-두 항목의 성격이 다릅니다.
+화면 스타일 `dist/css/plugin.css`(앞글자 `ckeditor`)는 설정·업로드 관리 화면의 클래스(`ckeditor:` 접두 유틸리티,
+`ckeditor-*` 의미 클래스)와 다국어 편집기 탭(`ckeditor-locale-tab*`)·아이콘(`ckeditor-icon--globe`·`--check`, CSS 마스크)을
+싣습니다. CKEditor 라이브러리 DOM(`.ck-*`·`.ck-content`)을 보정하는 규칙은 라이브러리가 정한 이름이라 앞글자를 붙일 수
+없으므로 계속 핸들러가 `<style>` 로 주입합니다. 다크 모드는 템플릿의 `.dark` 가 아니라 코어가 다는
+`<html data-g7-color-scheme="dark">` 표식을 봅니다.
+
+아래 두 항목의 성격이 다릅니다.
 
 | 경로 | 성격 |
 |---|---|

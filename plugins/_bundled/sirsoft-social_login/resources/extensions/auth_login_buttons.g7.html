@@ -7,11 +7,11 @@
     <p class="text-sm text-amber-800 dark:text-amber-200">$t:sirsoft-social_login.notices.reconsent</p>
     <a data-ref="social_login_reconsent_link" href="{{((socialProviders?.data ?? []).find(p => p.key === query.provider)?.start_url ?? '') + '?reconsent=1' + (typeof query.redirect === 'string' &amp;&amp; query.redirect.startsWith('/') &amp;&amp; !query.redirect.startsWith('/', 1) &amp;&amp; !query.redirect.startsWith('\\', 1) ? '&amp;redirect=' + encodeURIComponent(query.redirect) : '')}}" class="mt-3 inline-flex items-center justify-center w-full px-4 py-3 sm:py-2 text-sm font-medium rounded-lg bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-gray-900">$t:sirsoft-social_login.buttons.reconsent_with|provider={{(socialProviders?.data ?? []).find(p => p.key === query.provider)?.label ?? ''}}</a>
   </div>
-  <div data-ref="social_login_buttons_section" data-if="{{(socialProviders?.data ?? []).length > 0}}" class="mt-6">
-    <div class="flex items-center gap-3 mb-4">
-      <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"/>
-      <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-social_login.divider.or</span>
-      <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"/>
+  <div data-ref="social_login_buttons_section" data-if="{{(socialProviders?.data ?? []).length > 0}}" class="sl:mt-6">
+    <div class="sl:flex sl:items-center sl:gap-3 sl:mb-4">
+      <div class="sl:flex-1 sl:h-px sl:bg-gray-200 sl:dark:bg-gray-700"/>
+      <span class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.divider.or</span>
+      <div class="sl:flex-1 sl:h-px sl:bg-gray-200 sl:dark:bg-gray-700"/>
     </div>
     <sirsoft-social_login.provider-buttons data-type="composite" data-ref="social_login_provider_buttons" providers="{{socialProviders?.data ?? []}}" intent="login" redirect="{{query.redirect ?? '/'}}"/>
   </div>

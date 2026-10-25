@@ -10,6 +10,7 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\View\Composers\Traits\CollectsActiveExtensionMeta;
 use App\Http\View\Composers\Traits\CollectsCustomAssets;
 use App\Http\View\Composers\Traits\CollectsExtensionAssets;
+use App\Http\View\Composers\Traits\CollectsExtensionCssContract;
 use App\Http\View\Composers\Traits\CollectsTemplateExternals;
 use App\Http\View\Composers\Traits\CollectsTemplateStylesheets;
 use App\Services\FrontendConfigService;
@@ -29,6 +30,7 @@ class UserTemplateComposer
     use CollectsActiveExtensionMeta;
     use CollectsCustomAssets;
     use CollectsExtensionAssets;
+    use CollectsExtensionCssContract;
     use CollectsTemplateExternals;
     use CollectsTemplateStylesheets;
 
@@ -114,6 +116,10 @@ class UserTemplateComposer
         // 템플릿이 선언하고 산출물이 있는 CSS 만 링크한다 — CSS 없는 템플릿에 없는 파일 요청을 남기지 않는다
         $view->with('templateStylesheets', $this->collectTemplateStylesheets($activeTemplate));
         $view->with('customAssets', $this->collectCustomAssets($activeTemplate));
+        // 확장 CSS 자기 공급 계약 — 템플릿 다크 방식 선언(중립 표식용)과 확장 CSS 덮기 파일
+        $view->with('colorScheme', $this->collectColorScheme($activeTemplate));
+        $view->with('extensionCssOverrides', $this->collectExtensionCssOverrides($activeTemplate, $extensionCacheVersion));
+        $view->with('extensionClassPrefixes', $this->collectExtensionClassPrefixes());
         $view->with('customAssetsDisabled', $this->customAssetsDisabledByRequest());
         $view->with('trustedScriptHosts', $trustedScriptHosts);
         // 전역 상태 공개 계약 — G7Core.stateContracts 가 읽는다 (#639)

@@ -744,7 +744,7 @@ describe('productFormLayouts', () => {
             // 판매가 셀 하단 미리보기 블록: currencyCol 을 반복하는 Span 의 수직 래퍼
             const preview = findNodeById(productOptionsPartial, 'option_currency_preview_{{optIdx}}');
             expect(preview).not.toBeNull();
-            expect(preview.props.className).toContain('flex flex-col');
+            expect(preview.props.className).toContain('ecommerce:flex ecommerce:flex-col');
             const previewSpan = asArray(preview?.children)[0];
             expect(previewSpan?.iteration?.source).toContain('currencyColumns');
             // 환산값은 formatted(읽기전용 표기)를 그대로 출력한다 (입력 Input 아님)
@@ -785,7 +785,7 @@ describe('productFormLayouts', () => {
             );
             expect(headerRow).toBeDefined();
             // 회귀 가드: base flex/gap 없이 sm: 프리픽스만 있으면 좁은 폭에서 0 간격
-            expect(headerRow.props.className).toContain('flex flex-col gap-4');
+            expect(headerRow.props.className).toContain('ecommerce:flex ecommerce:flex-col ecommerce:gap-4');
         });
     });
 

@@ -10,7 +10,7 @@
             "name": "A",
             "props": {
                 "href": "/admin/boards",
-                "className": "flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+                "className": "board:flex board:items-center board:flex-col board:justify-center board:gap-1 board:w-16 board:h-16 board:md:w-20 board:md:h-20 board:text-[10px] board:md:text-xs board:font-medium board:rounded-xl board:bg-slate-100 board:dark:bg-slate-700 board:text-slate-600 board:dark:text-slate-300 board:hover:bg-slate-700 board:hover:text-white board:dark:hover:bg-slate-200 board:dark:hover:text-slate-800 board:hover:-translate-y-0.5 board:focus:outline-none board:focus:ring-2 board:focus:ring-slate-400 board:dark:focus:ring-slate-500 board:transition-all board:duration-200"
             },
             "children": [
                 {
@@ -18,14 +18,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "clipboard-list",
-                        "className": "text-lg md:text-xl"
+                        "className": "board:text-lg board:md:text-xl"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-center leading-tight"
+                        "className": "board:text-center board:leading-tight"
                     },
                     "text": "$t:sirsoft-board.admin.dashboard.quick_menu.boards"
                 }
@@ -40,7 +40,7 @@
             "name": "A",
             "props": {
                 "href": "/admin/boards/reports",
-                "className": "flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+                "className": "board:flex board:items-center board:flex-col board:justify-center board:gap-1 board:w-16 board:h-16 board:md:w-20 board:md:h-20 board:text-[10px] board:md:text-xs board:font-medium board:rounded-xl board:bg-slate-100 board:dark:bg-slate-700 board:text-slate-600 board:dark:text-slate-300 board:hover:bg-slate-700 board:hover:text-white board:dark:hover:bg-slate-200 board:dark:hover:text-slate-800 board:hover:-translate-y-0.5 board:focus:outline-none board:focus:ring-2 board:focus:ring-slate-400 board:dark:focus:ring-slate-500 board:transition-all board:duration-200"
             },
             "children": [
                 {
@@ -48,14 +48,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "flag",
-                        "className": "text-lg md:text-xl"
+                        "className": "board:text-lg board:md:text-xl"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-center leading-tight"
+                        "className": "board:text-center board:leading-tight"
                     },
                     "text": "$t:sirsoft-board.admin.dashboard.quick_menu.reports"
                 }

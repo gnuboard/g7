@@ -73,6 +73,19 @@
 
 - 확장 개발자용: 알림 변수 값에 언어별 값(`['ko' => '회사 계정', 'en' => 'Company account']`)을 줄 수 있습니다. 메일·사이트 알림·확장 채널이 받는 사람 언어의 값을 씁니다(없으면 사이트 기본 언어 → 영어 순). 자체 템플릿을 쓰는 채널 드라이버는 `getDataFor($notifiable)` 로 같은 값을 받습니다.
 
+#### 확장 개발자 — 핸들러·이벤트 소유권
+
+- 확장·템플릿이 액션 핸들러를 등록하면서 다른 주인의 이름을 덮으면 브라우저 콘솔에 `[G7]` 경고가 나옵니다(engine-v1.86.0). 엔진이 직접 처리하는 이름(`navigate`·`setState`·`toast` 등 — 등록해도 호출되지 않음), 엔진 기본 핸들러(`refresh`·`refetchDataSource` 등), 다른 확장·템플릿이 이미 등록한 이름, 다른 주인의 접두어(예: 플러그인이 `sirsoft-basic.x` 를 등록)가 대상입니다. 등록 동작은 종전과 같습니다(마지막 등록이 이김). 자기 핸들러는 `{자기 식별자}.` 접두어로 등록하고 `registerHandler(name, fn, { source: 식별자 })` 로 등록자를 밝히세요 — 규칙은 확장 개발 문서 「핸들러 등록」에 정리했습니다.
+- `G7Core.componentEvent.off(name, callback)` 으로 자기 구독만 해제할 수 있습니다(engine-v1.86.0).
+
+#### 확장 개발자 — 확장 CSS 자기 공급
+
+- 다크 모드 중립 표식을 추가했습니다. 템플릿이 `template.json` 의 `features.color_scheme` 으로 다크 방식(`{ "strategy": "ancestor-class", "selector": ".dark" }`·`{ "strategy": "media-query" }`·`{ "strategy": "none" }`)을 선언하면, 코어가 `<html data-g7-color-scheme="dark|light">` 를 달고 테마가 바뀔 때마다 따라 바꿉니다(engine-v1.86.0). 확장 CSS 는 템플릿의 다크 방식을 몰라도 이 표식만 보면 됩니다. 현재 값은 `G7Core.colorScheme.get()` 으로 읽고, 레이아웃 편집기 프리뷰 프레임은 프리뷰 테마를, 검색엔진용 화면은 `light` 를 답니다. 선언하지 않은 템플릿은 `none`(늘 라이트)으로 봅니다 — 다크 모드가 있는 직접 만든 템플릿은 선언을 더하세요. 번들 템플릿 `sirsoft-basic`·`sirsoft-admin_basic` 은 `ancestor-class` + `.dark` 를 선언했습니다(2026-10-22 결정 9).
+- 템플릿의 확장 CSS 덮기를 추가했습니다. 템플릿이 `template.json` 의 `extension_css_overrides`(`target`·`targetVersion`·`path`)로 확장별 CSS 파일을 선언하면, 대상 확장이 활성이고 버전이 맞을 때만 모든 확장 CSS 뒤·운영자 추가 자산 앞에 싣습니다. 버전이 맞지 않으면 빼고(정보 로그) 확장 원래 모양으로 돌아옵니다. 컴포넌트 대체(`overrides`)와 같은 관례이며, 검색엔진용 화면도 같은 순서로 싣습니다(2026-10-22 결정 15).
+- 확장 CSS 클래스 앞글자 선언 `assets.css.namespace` 를 추가했습니다(`module.json`·`plugin.json`). 형식은 `^[a-z][a-z0-9]*(-[a-z0-9]+)*$` 이고, 손으로 쓴 CSS 는 `{namespace}-…`, Tailwind 같은 접두 빌드는 영문 소문자만 남긴 `{letters}:…` 를 씁니다. `assets.css` 를 선언한 확장은 namespace 도 선언하며, 다른 확장과 겹칠 수 없습니다. 그누보드7 번들 확장은 CSS 선택자가 자기 앞글자만 쓰는지, 화면이 쓰는 클래스가 자기 CSS 에 실제로 있는지를 소스 단계에서 검사합니다(2026-10-22 결정 10·11). 규약 전문은 확장 개발 문서 「확장 CSS 자기 공급 규약」에 정리했습니다.
+- 확장 레이아웃의 클래스를 자기 앞글자 클래스로 옮기고 필요한 CSS 를 만들어 주는 변환 도구와, 전환 전후 화면 스타일을 비교하는 지문 도구를 `scripts/extension-css/` 에 두었습니다(2026-10-22 결정 13).
+- 확장 앞글자 해석 `G7Core.style.splitExtensionClassPrefix(token)` 을 추가했습니다. `ecommerce:md:hidden` 을 `{ prefix: "ecommerce:", rest: "md:hidden" }` 으로 나눠, className 을 Tailwind 이름으로 읽는 템플릿 컴포넌트가 확장 클래스를 앞글자 없는 클래스와 같은 뜻으로 다룰 수 있습니다. 앞글자 목록은 활성 확장의 namespace 로 서버가 계산합니다(engine-v1.86.0).
+
 ### Changed
 
 #### 개발자 화면·외부 화면
@@ -96,6 +109,14 @@
 
 - 예약 작업 실행 후 훅 `core.schedule.after_run` 이 실패한 실행에서도 발행됩니다(결과는 이력의 상태로 구분). 실패만 다루려면 새 훅 `core.schedule.run_failed` 를 구독합니다. 큐 관리 화면의 재시도·삭제·정리 전후 훅(`core.queue_job.*`)과 허용 Job 클래스 필터 `core.schedule.filter_allowed_job_classes` 도 추가했습니다.
 - 확장의 `getSchedules()` 를 옛 형식(`name` 없음)에서 새 형식으로 바꾸면, 옛 형식이 명령에서 만들던 자동 이름의 스케줄을 새 `name` 으로 이어받습니다. 코어를 먼저 7.2.0 으로 올린 뒤 확장을 나중에 업데이트해도 그 사이 운영자가 바꾼 주기·사용 여부와 실행 이력이 남습니다(명령 문자열이 같을 때).
+- `G7Core.websocket.subscribe()` 가 구독마다 고유 키(`채널:이벤트#번호`)를 돌려줍니다(engine-v1.86.0). 그 키로 `unsubscribe()` 하면 자기 구독만 끊기고, 같은 채널·이벤트를 듣는 다른 화면·확장은 계속 받습니다. `leaveChannel(channel)` 은 채널명이 정확히 같은 구독만 정리합니다.
+- 템플릿 핸들러는 등록자를 템플릿 식별자로 밝혀 등록합니다(engine-v1.86.0). 엔진 기본 핸들러는 등록자 `engine` 입니다.
+- 확장 화면의 스타일은 확장이 자기 CSS 로 싣습니다. 템플릿 CSS 의 클래스(Tailwind 유틸리티·`input`·`section-heading-md` 같은 의미 클래스)에 기대지 않으므로, 템플릿이 어떤 CSS 라이브러리를 쓰든 확장 화면 모양이 같습니다. 그누보드7 은 Tailwind 를 전제하지 않습니다(2026-10-22 결정 7·8·14).
+- 레이아웃 편집기 프리뷰가 사용자 템플릿 CSS 의 층을 벗겨 층 없이 싣던 것을, 층 이름을 프리뷰 층(`g7-preview`) 하나로 모아 싣도록 바꿨습니다. 관리자 화면 머리가 `@layer g7-preview, g7-extension;` 을 선언해 프리뷰에서도 확장 CSS 의미 칸이 템플릿 초기화 규칙을 이깁니다(사용자 화면과 같은 우선순위).
+- 확장 CSS 의 우선순위를 세 칸으로 나눴습니다. 사용자·관리자·검색엔진용 화면의 `<head>` 가 템플릿 CSS 바로 뒤에 `@layer g7-extension;` 을 선언해 ① 확장 의미 클래스(`@layer g7-extension`)는 템플릿의 층 규칙보다 위·층 없는 규칙보다 아래, ② 확장 유틸리티는 층 없이 템플릿 뒤, ③ 템플릿의 확장 CSS 덮기 파일은 모든 확장 CSS 뒤에 옵니다(2026-10-22 결정 15).
+- namespace 를 선언한 확장의 CSS 는 서빙할 때 `g7-extension`·`properties` 층만 남기고 나머지 층 래퍼(빌드 도구가 만든 `theme`·`utilities` 등)와 층 순서 선언을 걷어 냅니다. 확장 병합 번들(`/api/{modules|plugins}/bundle.css`)과 개별 자산 서빙이 같은 처리를 합니다. namespace 를 선언하지 않은 확장 CSS 는 종전대로 내보냅니다.
+- 관리자 템플릿 교체 계약에서 「스타일 클래스」 항목을 뺐습니다. 확장 관리자 화면이 템플릿의 의미 클래스를 쓰지 않으므로 새 관리자 템플릿은 그 클래스를 갖출 필요가 없고, 대신 선택 계약으로 「확장 CSS 덮기」를 둘 수 있습니다.
+- 템플릿을 불러올 때 `template.json` 의 `features.color_scheme`(방식이 세 값 밖이거나 `ancestor-class` 에 `selector` 없음)과 `extension_css_overrides`(배열 아님, `target`·`dist/` 아래 `path` 없음, 해석할 수 없는 `targetVersion`, 같은 `target` 중복) 형식을 검사합니다. 틀리면 필수 필드가 빠진 것과 같이 그 템플릿을 불러오지 않고 오류 로그를 남깁니다.
 
 #### 외부 인증 로그인(소셜 로그인 등)
 
@@ -110,7 +131,17 @@
 - 로그인 실패로 계정이 잠기는 순간 그 회원의 다른 기기 로그인도 모두 끊습니다.
 - 확장이 회원 저장 필터로 최고관리자 지정을 바꾸지 못하게 막고 경고를 남깁니다.
 
+### Deprecated
+
+- 콜백 없이 부르는 `G7Core.componentEvent.off(name)` 과 `componentEvent.clear()` 는 폐지 예정입니다. 다른 화면·확장의 구독까지 지우므로 지금은 경고를 내고 종전대로 지웁니다. 구독할 때 받은 해제 함수나 `off(name, callback)` 을 쓰세요(engine-v1.86.0).
+- `G7Core.websocket.unsubscribe()` 에 `채널:이벤트`(번호 없는 키)를 넘기는 사용은 폐지 예정입니다. 지금은 그 채널·이벤트의 구독을 모두 끊고 경고를 냅니다. `subscribe()` 가 돌려준 키를 넘기세요(engine-v1.86.0).
+
 ### Fixed
+
+#### 템플릿 엔진
+
+- 같은 채널·이벤트를 두 화면·확장이 실시간(WebSocket) 구독하면 두 번째 구독이 소식을 받지 못하고, 한쪽이 구독을 끊으면 다른 쪽도 끊기던 문제를 고쳤습니다(engine-v1.86.0).
+- 언어를 바꾼 뒤 같은 이름의 핸들러를 템플릿 대신 플러그인 것이 쓰던 문제를 고쳤습니다. 언어 전환 뒤에도 처음 접속할 때와 같은 순서(모듈 → 플러그인 → 템플릿)로 다시 등록합니다(engine-v1.86.0).
 
 #### 사이트맵
 

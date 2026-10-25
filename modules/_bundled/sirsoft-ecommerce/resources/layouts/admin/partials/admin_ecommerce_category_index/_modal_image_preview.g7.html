@@ -6,15 +6,15 @@
 <partial description="Category Image Preview Modal">
   <modal data-type="composite" data-ref="modal_image_preview" title="$t:sirsoft-ecommerce.admin.category.modal.image_preview.title" width="90vw">
     <footer>
-      <button type="button" class="btn btn-outline">
+      <button type="button" class="ecommerce-btn ecommerce-btn-outline">
         <on type="click">
           <close-modal target="modal_image_preview"/>
         </on>
         $t:sirsoft-ecommerce.admin.category.modal.image_preview.close
       </button>
     </footer>
-    <div class="flex-center w-full justify-center bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden">
-      <img src="{{_global.imagePreview.imageUrl}}" alt="{{_global.imagePreview.imageAlt}}" class="max-w-full max-h-[70vh] object-contain"/>
+    <div class="ecommerce-flex-center ecommerce:w-full ecommerce:justify-center ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:overflow-hidden">
+      <img src="{{_global.imagePreview.imageUrl}}" alt="{{_global.imagePreview.imageAlt}}" class="ecommerce:max-w-full ecommerce:max-h-[70vh] ecommerce:object-contain"/>
     </div>
   </modal>
 </partial>

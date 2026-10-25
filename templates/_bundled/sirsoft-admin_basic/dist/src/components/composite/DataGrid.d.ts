@@ -289,7 +289,9 @@ export interface DataGridProps {
      * 엔진은 원문 그대로 넘기고(components.json skipBindingKeys) DataGrid 가 행마다 푼다.
      * 예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`
      *
-     * 선택 행 강조(`bg-blue-50`)보다 먼저 놓여 선택 상태가 덮어쓴다.
+     * 선택 행 강조보다 먼저 놓여 선택 상태가 덮어쓴다. 다만 확장 앞글자가 붙은 배경 클래스는 층 밖이라
+     * 선택 강조를 늘 이기므로, 식 안의 `$selected`(그 행이 선택됐는지)로 선택 색을 직접 고른다
+     * (예: `{{row.row_type === 'notice' ? ($selected ? '<선택 배경>' : '<기본 배경>') : ''}}`, 실제 예는 docs/frontend/component-props.md).
      */
     rowClassName?: string;
     /**

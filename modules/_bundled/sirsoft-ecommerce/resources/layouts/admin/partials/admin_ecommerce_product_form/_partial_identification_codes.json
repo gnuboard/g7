@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card-accordion"
+        "className": "ecommerce-admin-card-accordion"
     },
     "children": [
         {
@@ -27,7 +27,7 @@
             ],
             "props": {
                 "type": "button",
-                "className": "flex w-full justify-start text-left card-header",
+                "className": "ecommerce:flex ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-card-header",
                 "aria-expanded": "{{_local.ui.identificationExpanded !== false}}"
             },
             "children": [
@@ -36,14 +36,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "barcode",
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product.sections.identification"
                 },
@@ -52,7 +52,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.identificationExpanded !== false ? 'rotate-180' : ''}}"
+                        "className": "ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.identificationExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
                     }
                 }
             ]
@@ -63,7 +63,7 @@
             "name": "Div",
             "if": "{{_local.ui.identificationExpanded !== false}}",
             "props": {
-                "className": "row-stack"
+                "className": "ecommerce-row-stack"
             },
             "children": [
                 {
@@ -73,12 +73,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "grid grid-cols-1 gap-4"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"
                             }
                         }
                     },
                     "props": {
-                        "className": "grid grid-cols-2 gap-6"
+                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-6"
                     },
                     "children": [
                         {
@@ -86,14 +86,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "children": [
                                         {
@@ -105,7 +105,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-required"
+                                                "className": "ecommerce-text-required"
                                             },
                                             "text": "*"
                                         }
@@ -128,7 +128,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "product_code",
-                                        "className": "input",
+                                        "className": "ecommerce-input",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.product_code.placeholder",
                                         "disabled": "{{!!route?.itemCode || _computed.isReadOnly}}"
                                     }
@@ -140,14 +140,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.fields.sku"
                                 },
@@ -168,7 +168,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "sku",
-                                        "className": "{{_local.errors?.sku ? 'input input-error' : 'input'}}",
+                                        "className": "{{_local.errors?.sku ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.placeholders.sku",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
@@ -178,7 +178,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.sku}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.sku?.[0]}}"
                                 }
@@ -189,14 +189,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.label"
                                 },
@@ -217,7 +217,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "barcode",
-                                        "className": "{{_local.errors?.barcode ? 'input input-error' : 'input'}}",
+                                        "className": "{{_local.errors?.barcode ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.placeholder",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
@@ -227,7 +227,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.barcode}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.barcode?.[0]}}"
                                 }
@@ -238,14 +238,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.label"
                                 },
@@ -266,7 +266,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "hs_code",
-                                        "className": "{{_local.errors?.hs_code ? 'input input-error' : 'input'}}",
+                                        "className": "{{_local.errors?.hs_code ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.placeholder",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
@@ -276,7 +276,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.hs_code}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.hs_code?.[0]}}"
                                 }

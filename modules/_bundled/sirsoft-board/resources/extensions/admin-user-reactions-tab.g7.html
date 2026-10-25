@@ -20,46 +20,46 @@
     </props>
   </inject>
   <inject target-id="extension_tab_content" position="append_child">
-    <div data-ref="ext_board_reactions_content" data-if="{{!!user?.data?.board_reactions}}" id="ext_board_reactions" class="scroll-mt-32">
-      <div data-ref="section_board_reactions" class="admin-card">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <icon name="heart" class="text-xl text-gray-600 dark:text-gray-400"/>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.reactions.title</h3>
+    <div data-ref="ext_board_reactions_content" data-if="{{!!user?.data?.board_reactions}}" id="ext_board_reactions" class="board:scroll-mt-32">
+      <div data-ref="section_board_reactions" class="board-admin-card">
+        <div class="board:flex board:items-center board:justify-between board:mb-4">
+          <div class="board:flex board:items-center board:gap-2">
+            <icon name="heart" class="board:text-xl board:text-gray-600 board:dark:text-gray-400"/>
+            <h3 class="board:text-lg board:font-semibold board:text-gray-900 board:dark:text-white">$t:sirsoft-board.admin.users.reactions.title</h3>
           </div>
           <extension-badge data-type="composite" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
         </div>
-        <div class="grid grid-cols-3 gap-4 mb-4">
-          <div data-ref="field_reaction_count" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-board.admin.users.reactions.count</span>
-            <span class="block text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.reactions.count_unit|count={{user?.data?.board_reactions?.count ?? 0}}</span>
+        <div class="board:grid board:grid-cols-3 board:gap-4 board:mb-4">
+          <div data-ref="field_reaction_count" class="board:p-3 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg">
+            <span class="board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:mb-1">$t:sirsoft-board.admin.users.reactions.count</span>
+            <span class="board:block board:text-lg board:font-semibold board:text-gray-900 board:dark:text-white">$t:sirsoft-board.admin.users.reactions.count_unit|count={{user?.data?.board_reactions?.count ?? 0}}</span>
           </div>
           <!-- 글과 댓글을 갈라 보여준다 — 총계만으로는 어느 쪽에 남은 반응인지 알 수 없어 정리 대상을 좁힐 수 없다 -->
-          <div data-ref="field_reaction_breakdown" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-board.admin.users.reactions.breakdown</span>
-            <span class="block text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.reactions.breakdown_unit|post={{user?.data?.board_reactions?.post_count ?? 0}}|comment={{user?.data?.board_reactions?.comment_count ?? 0}}</span>
+          <div data-ref="field_reaction_breakdown" class="board:p-3 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg">
+            <span class="board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:mb-1">$t:sirsoft-board.admin.users.reactions.breakdown</span>
+            <span class="board:block board:text-lg board:font-semibold board:text-gray-900 board:dark:text-white">$t:sirsoft-board.admin.users.reactions.breakdown_unit|post={{user?.data?.board_reactions?.post_count ?? 0}}|comment={{user?.data?.board_reactions?.comment_count ?? 0}}</span>
           </div>
-          <div data-ref="field_latest_reacted_at" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-board.admin.users.reactions.latest_reacted_at</span>
-            <span class="block text-lg font-semibold text-gray-900 dark:text-white">{{user?.data?.board_reactions?.latest_reacted_at ?? '-'}}</span>
+          <div data-ref="field_latest_reacted_at" class="board:p-3 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg">
+            <span class="board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:mb-1">$t:sirsoft-board.admin.users.reactions.latest_reacted_at</span>
+            <span class="board:block board:text-lg board:font-semibold board:text-gray-900 board:dark:text-white">{{user?.data?.board_reactions?.latest_reacted_at ?? '-'}}</span>
           </div>
         </div>
         <!-- 0건이면 링크를 숨긴다 — 눌러 봐야 빈 목록이고, 그 사실은 위 숫자가 이미 말한다 -->
-        <p data-if="{{(user?.data?.board_reactions?.count ?? 0) === 0}}" class="flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-500 dark:text-gray-400">
-          <icon name="circle-info" class="text-base flex-shrink-0"/>
+        <p data-if="{{(user?.data?.board_reactions?.count ?? 0) === 0}}" class="board:flex board:items-center board:gap-2 board:p-4 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg board:text-sm board:text-gray-500 board:dark:text-gray-400">
+          <icon name="circle-info" class="board:text-base board:flex-shrink-0"/>
           <span>$t:sirsoft-board.admin.users.reactions.none</span>
         </p>
         <!--
           주소는 `href` 가 갖는다 — 가운데 클릭·Ctrl+클릭·우클릭 「새 탭에서 열기」가 그 주소로 연다.
           보통 클릭은 아래 `navigate` 가 같은 화면 안에서 옮긴다(링크의 기본 이동은 엔진이 막는다).
         -->
-        <a href="/admin/boards/reactions?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_reactions" data-testid="user-reactions-link" data-if="{{(user?.data?.board_reactions?.count ?? 0) > 0}}" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+        <a href="/admin/boards/reactions?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_reactions" data-testid="user-reactions-link" data-if="{{(user?.data?.board_reactions?.count ?? 0) > 0}}" class="board:inline-flex board:items-center board:gap-1.5 board:px-3 board:py-2 board:text-sm board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:cursor-pointer">
           <on type="click">
             <navigate path="/admin/boards/reactions">
               <query user_uuid="{{user?.data?.uuid ?? ''}}"/>
             </navigate>
           </on>
-          <icon name="list" class="text-base"/>
+          <icon name="list" class="board:text-base"/>
           <span>$t:sirsoft-board.admin.users.reactions.view_list</span>
         </a>
       </div>

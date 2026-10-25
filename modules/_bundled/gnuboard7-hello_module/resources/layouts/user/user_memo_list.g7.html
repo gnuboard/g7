@@ -17,17 +17,15 @@
     </fallback>
   </data-source>
   <slot name="content">
-    <div data-ref="user_memo_wrapper" class="max-w-3xl mx-auto p-6">
-      <!-- 사용자 화면은 어느 사용자 템플릿에서나 있는 유틸리티 클래스로 쓴다(관리자 템플릿의 의미 클래스는 사용자 템플릿에 정의가 없다). -->
-      <h1 data-ref="user_memo_title" class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:gnuboard7-hello_module.user.memos.index.title</h1>
+    <!-- 클래스는 모두 이 모듈 CSS(resources/css/main.css)의 hellomodule-* 다. 템플릿 CSS·Tailwind 에 기대지 않으므로 어느 사용자 템플릿에서나 같은 짜임으로 그려진다. -->
+    <div data-ref="user_memo_wrapper" class="hellomodule-page">
+      <h1 data-ref="user_memo_title" class="hellomodule-page__title">$t:gnuboard7-hello_module.user.memos.index.title</h1>
       <!-- 메모가 0건이면 빈 화면 대신 안내 문구를 보인다 -->
-      <span data-ref="user_memo_empty" data-if="{{memos !== undefined &amp;&amp; ((memos?.data?.data ?? []).length === 0)}}" class="block py-8 text-center text-sm text-gray-500 dark:text-gray-400">$t:gnuboard7-hello_module.user.memos.index.empty</span>
-      <!-- 반복은 카드에 둔다 — 묶음(space-y-3)에 두면 메모마다 묶음이 새로 생겨 카드 사이 간격이 사라진다. -->
-      <div data-ref="user_memo_items" class="space-y-3">
-        <div data-ref="user_memo_item_{{idx}}" data-each="memo, idx in {{memos?.data?.data ?? []}}" class="p-4 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{memo.title ?? ''}}</h2>
-          <span class="block mt-2 text-sm text-gray-600 dark:text-gray-300">{{memo.content ?? ''}}</span>
-        </div>
+      <span data-ref="user_memo_empty" data-if="{{memos !== undefined &amp;&amp; ((memos?.data?.data ?? []).length === 0)}}" class="hellomodule-empty">$t:gnuboard7-hello_module.user.memos.index.empty</span>
+      <!-- 반복은 카드에 둔다 — 묶음(hellomodule-list)에 두면 메모마다 묶음이 새로 생겨 카드 사이 간격이 사라진다. -->
+      <div data-ref="user_memo_items" class="hellomodule-list">
+        <!-- 메모 한 건은 이 모듈이 제공하는 MemoCard 로 그린다. 템플릿이 이 컴포넌트를 대체하면(Hello 사용자 템플릿) 레이아웃을 고치지 않아도 그 판본이 그려진다. -->
+        <gnuboard7-hello_module.memo-card data-type="composite" data-ref="user_memo_item_{{idx}}" data-each="memo, idx in {{memos?.data?.data ?? []}}" title="{{memo.title ?? ''}}" body="{{memo.content ?? ''}}"/>
       </div>
     </div>
   </slot>

@@ -7,11 +7,11 @@
   <permissions><permission>sirsoft-gdpr.privacy.view</permission></permissions>
   <transition-overlay><wait-for>gdprNoticeLog</wait-for></transition-overlay>
   <slot name="content">
-    <div class="admin-page-content">
+    <div class="gdpr-admin-page-content">
       <page-header data-type="composite" title="$t:sirsoft-gdpr.annual_notice.log_title" description="$t:sirsoft-gdpr.annual_notice.log_description" backPath="/admin/plugins/sirsoft-gdpr/settings"/>
-      <div class="flex-between my-4">
+      <div class="gdpr-flex-between gdpr:my-4">
         <span>$t:sirsoft-gdpr.annual_notice.total|count={{gdprNoticeLog?.data?.pagination?.total ?? 0}}</span>
-        <button type="button" class="btn btn-secondary">
+        <button type="button" class="gdpr-btn gdpr-btn-secondary">
           <on type="click"><refetch-data-source dataSourceId="gdprNoticeLog"/></on>
           <span>$t:common.refresh</span>
         </button>

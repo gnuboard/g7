@@ -24,7 +24,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-label"
+                                "className": "ecommerce-text-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_message|count={{(_global.bulkConfirmData?.selectedItems || []).length}}"
                         },
@@ -32,7 +32,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "p-3 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-2"
+                                "className": "ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:rounded-lg ecommerce:space-y-2"
                             },
                             "children": [
                                 {
@@ -40,14 +40,14 @@
                                     "name": "Div",
                                     "if": "{{_global.bulkConfirmData?.orderStatus}}",
                                     "props": {
-                                        "className": "flex-center text-sm"
+                                        "className": "ecommerce-flex-center ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-500 dark:text-gray-400 w-28 flex-shrink-0"
+                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_status_label"
                                         },
@@ -55,7 +55,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "font-semibold text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{({'pending_order':'$t:sirsoft-ecommerce.admin.order.status.waiting','pending_payment':'$t:sirsoft-ecommerce.admin.order.status.payment_pending','payment_complete':'$t:sirsoft-ecommerce.admin.order.status.payment_complete','shipping_hold':'$t:sirsoft-ecommerce.admin.order.status.shipping_hold','preparing':'$t:sirsoft-ecommerce.admin.order.status.preparing','shipping_ready':'$t:sirsoft-ecommerce.admin.order.status.shipping_ready','shipping':'$t:sirsoft-ecommerce.admin.order.status.shipping','delivered':'$t:sirsoft-ecommerce.admin.order.status.delivered','cancelled':'$t:sirsoft-ecommerce.admin.order.status.cancelled','confirmed':'$t:sirsoft-ecommerce.admin.order.status.confirmed'})[_global.bulkConfirmData.orderStatus] ?? _global.bulkConfirmData.orderStatus}}"
                                         }
@@ -66,14 +66,14 @@
                                     "name": "Div",
                                     "if": "{{_global.bulkConfirmData?.courierId}}",
                                     "props": {
-                                        "className": "flex-center text-sm"
+                                        "className": "ecommerce-flex-center ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-500 dark:text-gray-400 w-28 flex-shrink-0"
+                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_carrier_label"
                                         },
@@ -81,7 +81,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "font-semibold text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{(active_carriers?.data ?? []).find(c => String(c.value) === String(_global.bulkConfirmData.courierId))?.label ?? _global.bulkConfirmData.courierId}}"
                                         }
@@ -92,14 +92,14 @@
                                     "name": "Div",
                                     "if": "{{_global.bulkConfirmData?.trackingNumber}}",
                                     "props": {
-                                        "className": "flex-center text-sm"
+                                        "className": "ecommerce-flex-center ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-500 dark:text-gray-400 w-28 flex-shrink-0"
+                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-28 ecommerce:flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_tracking_label"
                                         },
@@ -107,7 +107,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "font-semibold text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{_global.bulkConfirmData.trackingNumber}}"
                                         }
@@ -118,7 +118,7 @@
                                     "name": "P",
                                     "if": "{{!_global.bulkConfirmData?.orderStatus && !_global.bulkConfirmData?.courierId && !_global.bulkConfirmData?.trackingNumber}}",
                                     "props": {
-                                        "className": "text-sm text-yellow-700 dark:text-yellow-400"
+                                        "className": "ecommerce:text-sm ecommerce:text-yellow-700 ecommerce:dark:text-yellow-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.order.bulk.confirm_no_changes"
                                 },
@@ -127,7 +127,7 @@
                                     "name": "P",
                                     "if": "{{(_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') && (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)}}",
                                     "props": {
-                                        "className": "text-sm text-red-600 dark:text-red-400"
+                                        "className": "ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.order.bulk.carrier_required"
                                 }
@@ -140,7 +140,7 @@
                             "name": "Div",
                             "if": "{{_global.manualPaidPreviewLoading === true}}",
                             "props": {
-                                "className": "flex-center gap-2 text-hint mt-3"
+                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce-text-hint ecommerce:mt-3"
                             },
                             "children": [
                                 {
@@ -148,7 +148,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "animate-spin",
+                                        "className": "ecommerce:animate-spin",
                                         "size": "sm"
                                     }
                                 },
@@ -165,7 +165,7 @@
                             "name": "P",
                             "if": "{{!!_global.manualPaidPreviewError}}",
                             "props": {
-                                "className": "text-sm text-red-600 dark:text-red-400 mt-3"
+                                "className": "ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:mt-3"
                             },
                             "text": "{{_global.manualPaidPreviewError}}"
                         },
@@ -175,7 +175,7 @@
                             "name": "Div",
                             "if": "{{_global.manualPaidPreviewLoading !== true && _global.manualPaidPreview?.summary?.any_applicable === true}}",
                             "props": {
-                                "className": "mt-3 rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-3"
+                                "className": "ecommerce:mt-3 ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:p-3 ecommerce:space-y-3"
                             },
                             "children": [
                                 {
@@ -186,7 +186,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-sm font-semibold text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-sm ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.title"
                                         },
@@ -194,7 +194,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-hint"
+                                                "className": "ecommerce-text-hint"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.description|count={{_global.manualPaidPreview?.summary?.affected_order_count ?? 0}}"
                                         }
@@ -207,14 +207,14 @@
                                     "name": "Div",
                                     "if": "{{(_global.manualPaidPreview?.summary?.restoration?.applicable_count ?? 0) > 0}}",
                                     "props": {
-                                        "className": "space-y-1"
+                                        "className": "ecommerce:space-y-1"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-body font-medium"
+                                                "className": "ecommerce-text-body ecommerce:font-medium"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_label|count={{_global.manualPaidPreview?.summary?.restoration?.applicable_count ?? 0}}|quantity={{_global.manualPaidPreview?.summary?.restoration?.revived_quantity ?? 0}}"
                                         },
@@ -222,7 +222,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-hint"
+                                                "className": "ecommerce-text-hint"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_hint"
                                         },
@@ -232,7 +232,7 @@
                                             "name": "P",
                                             "if": "{{(_global.manualPaidPreview?.summary?.restoration?.coupon_conflict_order_numbers ?? []).length > 0}}",
                                             "props": {
-                                                "className": "text-xs text-red-600 dark:text-red-400"
+                                                "className": "ecommerce:text-xs ecommerce:text-red-600 ecommerce:dark:text-red-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_coupon_conflict|order_numbers={{(_global.manualPaidPreview?.summary?.restoration?.coupon_conflict_order_numbers ?? []).join(', ')}}"
                                         },
@@ -242,7 +242,7 @@
                                             "name": "P",
                                             "if": "{{(_global.manualPaidPreview?.summary?.restoration?.legacy_snapshot_count ?? 0) > 0}}",
                                             "props": {
-                                                "className": "text-xs text-amber-700 dark:text-amber-400"
+                                                "className": "ecommerce:text-xs ecommerce:text-amber-700 ecommerce:dark:text-amber-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.restoration_legacy_snapshot|count={{_global.manualPaidPreview?.summary?.restoration?.legacy_snapshot_count ?? 0}}"
                                         }
@@ -254,7 +254,7 @@
                                     "name": "Label",
                                     "if": "{{(_global.manualPaidPreview?.summary?.stock_deduction?.applicable_count ?? 0) > 0 }}",
                                     "props": {
-                                        "className": "flex items-start gap-2 cursor-pointer select-none"
+                                        "className": "ecommerce:flex ecommerce:items-start ecommerce:gap-2 ecommerce:cursor-pointer ecommerce:select-none"
                                     },
                                     "children": [
                                         {
@@ -274,7 +274,7 @@
                                             "props": {
                                                 "type": "checkbox",
                                                 "name": "apply_stock_deduction",
-                                                "className": "checkbox mt-0.5",
+                                                "className": "ecommerce-checkbox ecommerce:mt-0.5",
                                                 "checked": "{{_global.manualPaidOptions?.apply_stock_deduction !== false}}"
                                             }
                                         },
@@ -282,14 +282,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-1"
+                                                "className": "ecommerce:flex-1"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-body font-medium block"
+                                                        "className": "ecommerce-text-body ecommerce:font-medium ecommerce:block"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.stock_label|count={{_global.manualPaidPreview?.summary?.stock_deduction?.applicable_count ?? 0}}"
                                                 },
@@ -297,7 +297,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-hint block"
+                                                        "className": "ecommerce-text-hint ecommerce:block"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.stock_hint"
                                                 },
@@ -306,7 +306,7 @@
                                                     "name": "Span",
                                                     "if": "{{_global.manualPaidOptions?.apply_stock_deduction === false}}",
                                                     "props": {
-                                                        "className": "text-xs text-amber-700 dark:text-amber-400 block mt-1"
+                                                        "className": "ecommerce:text-xs ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:block ecommerce:mt-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.stock_off_warning"
                                                 }
@@ -320,7 +320,7 @@
                                     "name": "Label",
                                     "if": "{{(_global.manualPaidPreview?.summary?.mileage_deduction?.applicable_count ?? 0) > 0 }}",
                                     "props": {
-                                        "className": "flex items-start gap-2 cursor-pointer select-none"
+                                        "className": "ecommerce:flex ecommerce:items-start ecommerce:gap-2 ecommerce:cursor-pointer ecommerce:select-none"
                                     },
                                     "children": [
                                         {
@@ -340,7 +340,7 @@
                                             "props": {
                                                 "type": "checkbox",
                                                 "name": "apply_mileage_deduction",
-                                                "className": "checkbox mt-0.5",
+                                                "className": "ecommerce-checkbox ecommerce:mt-0.5",
                                                 "checked": "{{_global.manualPaidOptions?.apply_mileage_deduction !== false}}"
                                             }
                                         },
@@ -348,14 +348,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-1"
+                                                "className": "ecommerce:flex-1"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-body font-medium block"
+                                                        "className": "ecommerce-text-body ecommerce:font-medium ecommerce:block"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_label|count={{_global.manualPaidPreview?.summary?.mileage_deduction?.applicable_count ?? 0}}|amount={{_global.manualPaidPreview?.summary?.mileage_deduction?.total_amount_formatted ?? '-'}}"
                                                 },
@@ -363,7 +363,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-hint block"
+                                                        "className": "ecommerce-text-hint ecommerce:block"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_hint"
                                                 },
@@ -373,7 +373,7 @@
                                                     "name": "Span",
                                                     "if": "{{_global.manualPaidOptions?.apply_mileage_deduction !== false && (_global.manualPaidPreview?.summary?.mileage_deduction?.short_order_numbers ?? []).length > 0}}",
                                                     "props": {
-                                                        "className": "text-xs text-red-600 dark:text-red-400 block mt-1"
+                                                        "className": "ecommerce:text-xs ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:block ecommerce:mt-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_short_warning|order_numbers={{(_global.manualPaidPreview?.summary?.mileage_deduction?.short_order_numbers ?? []).join(', ')}}"
                                                 },
@@ -382,7 +382,7 @@
                                                     "name": "Span",
                                                     "if": "{{_global.manualPaidOptions?.apply_mileage_deduction === false}}",
                                                     "props": {
-                                                        "className": "text-xs text-amber-700 dark:text-amber-400 block mt-1"
+                                                        "className": "ecommerce:text-xs ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:block ecommerce:mt-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.mileage_off_warning"
                                                 }
@@ -396,7 +396,7 @@
                                     "name": "Label",
                                     "if": "{{(_global.manualPaidPreview?.summary?.paid_amount_record?.applicable_count ?? 0) > 0 }}",
                                     "props": {
-                                        "className": "flex items-start gap-2 cursor-pointer select-none"
+                                        "className": "ecommerce:flex ecommerce:items-start ecommerce:gap-2 ecommerce:cursor-pointer ecommerce:select-none"
                                     },
                                     "children": [
                                         {
@@ -416,7 +416,7 @@
                                             "props": {
                                                 "type": "checkbox",
                                                 "name": "record_paid_amount",
-                                                "className": "checkbox mt-0.5",
+                                                "className": "ecommerce-checkbox ecommerce:mt-0.5",
                                                 "checked": "{{_global.manualPaidOptions?.record_paid_amount !== false}}"
                                             }
                                         },
@@ -424,14 +424,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-1"
+                                                "className": "ecommerce:flex-1"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-body font-medium block"
+                                                        "className": "ecommerce-text-body ecommerce:font-medium ecommerce:block"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.record_label|count={{_global.manualPaidPreview?.summary?.paid_amount_record?.applicable_count ?? 0}}|amount={{_global.manualPaidPreview?.summary?.paid_amount_record?.total_amount_formatted ?? '-'}}"
                                                 },
@@ -439,7 +439,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-hint block"
+                                                        "className": "ecommerce-text-hint ecommerce:block"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.record_hint"
                                                 },
@@ -448,7 +448,7 @@
                                                     "name": "Span",
                                                     "if": "{{_global.manualPaidOptions?.record_paid_amount === false}}",
                                                     "props": {
-                                                        "className": "text-xs text-amber-700 dark:text-amber-400 block mt-1"
+                                                        "className": "ecommerce:text-xs ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:block ecommerce:mt-1"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.record_off_warning"
                                                 }
@@ -463,7 +463,7 @@
                                     "name": "P",
                                     "if": "{{(_global.manualPaidPreview?.summary?.paid_amount_record?.auto_sync_count ?? 0) > 0}}",
                                     "props": {
-                                        "className": "text-hint"
+                                        "className": "ecommerce-text-hint"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.auto_sync_note|count={{_global.manualPaidPreview?.summary?.paid_amount_record?.auto_sync_count ?? 0}}"
                                 },
@@ -474,7 +474,7 @@
                                     "name": "P",
                                     "if": "{{(_global.manualPaidPreview?.summary?.never_paid_count ?? 0) > 0}}",
                                     "props": {
-                                        "className": "text-xs text-amber-700 dark:text-amber-400"
+                                        "className": "ecommerce:text-xs ecommerce:text-amber-700 ecommerce:dark:text-amber-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.never_paid_note|count={{_global.manualPaidPreview?.summary?.never_paid_count ?? 0}}"
                                 },
@@ -485,7 +485,7 @@
                                     "name": "P",
                                     "if": "{{(_global.manualPaidPreview?.summary?.warnings?.pg_already_cancelled ?? []).length > 0}}",
                                     "props": {
-                                        "className": "text-xs text-amber-700 dark:text-amber-400"
+                                        "className": "ecommerce:text-xs ecommerce:text-amber-700 ecommerce:dark:text-amber-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.order.manual_paid.warning.pg_already_cancelled_orders|order_numbers={{(_global.manualPaidPreview?.summary?.warnings?.pg_already_cancelled ?? []).join(', ')}}"
                                 }
@@ -499,7 +499,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "ecommerce-modal-footer-buttons"
             },
             "children": [
                 {
@@ -513,7 +513,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{_global.isProcessing}}"
                     },
                     "children": [
@@ -569,7 +569,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{(!_global.bulkConfirmData?.orderStatus && !_global.bulkConfirmData?.courierId && !_global.bulkConfirmData?.trackingNumber) || ((_global.bulkConfirmData?.orderStatus === 'shipping_ready' || _global.bulkConfirmData?.orderStatus === 'shipping') && (!_global.bulkConfirmData?.courierId || !_global.bulkConfirmData?.trackingNumber)) || _global.manualPaidPreviewLoading === true || !!_global.manualPaidPreviewError || (_global.manualPaidPreview?.summary?.restoration?.coupon_conflict_order_numbers ?? []).length > 0 || _global.isProcessing}}"
                     },
                     "children": [
@@ -579,7 +579,7 @@
                             "if": "{{_global.isProcessing}}",
                             "props": {
                                 "name": "spinner",
-                                "className": "spinner-sm"
+                                "className": "ecommerce-spinner-sm"
                             }
                         },
                         {

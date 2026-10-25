@@ -16,14 +16,14 @@
             "name": "Div",
             "if": "{{_computed.identityPoliciesNoReadPermission}}",
             "props": {
-                "className": "admin-card"
+                "className": "ecommerce-admin-card"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex gap-2 text-tertiary"
+                        "className": "ecommerce:flex ecommerce:gap-2 ecommerce-text-tertiary"
                     },
                     "children": [
                         {
@@ -32,7 +32,7 @@
                             "props": {
                                 "name": "lock",
                                 "size": "sm",
-                                "className": "mt-0.5 flex-shrink-0"
+                                "className": "ecommerce:mt-0.5 ecommerce:flex-shrink-0"
                             }
                         },
                         {
@@ -50,7 +50,7 @@
             "name": "Div",
             "if": "{{!_computed.identityPoliciesNoReadPermission}}",
             "props": {
-                "className": "admin-card"
+                "className": "ecommerce-admin-card"
             },
             "children": [
                 {
@@ -60,7 +60,7 @@
                     "name": "Div",
                     "if": "{{ecommerceIdentityPolicies?.data?.abilities?.can_update === false}}",
                     "props": {
-                        "className": "alert-warning mb-4"
+                        "className": "ecommerce-alert-warning ecommerce:mb-4"
                     },
                     "children": [
                         {
@@ -69,14 +69,14 @@
                             "props": {
                                 "name": "lock",
                                 "size": "lg",
-                                "className": "text-yellow-700 dark:text-yellow-400 flex-shrink-0"
+                                "className": "ecommerce:text-yellow-700 ecommerce:dark:text-yellow-400 ecommerce:flex-shrink-0"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ecommerce-tone-warning-soft text-xs"
+                                "className": "ecommerce-tone-warning-soft ecommerce:text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.identity.read_only_notice"
                         }
@@ -86,7 +86,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "card-description"
+                        "className": "ecommerce-card-description"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.identity.purposes_section_description"
                 },
@@ -95,7 +95,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:md:flex-row ecommerce:md:items-center ecommerce:md:justify-between ecommerce:mb-6"
                     },
                     "children": [
                         {
@@ -106,7 +106,7 @@
                                     "type": "basic",
                                     "name": "H3",
                                     "props": {
-                                        "className": "section-title"
+                                        "className": "ecommerce-section-title"
                                     },
                                     "text": "$t:admin.identity.policies.page_title"
                                 },
@@ -114,7 +114,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-label-subtle"
+                                        "className": "ecommerce-text-label-subtle"
                                     },
                                     "text": "$t:admin.identity.policies.page_description"
                                 }
@@ -178,7 +178,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 dark:disabled:hover:bg-indigo-500",
+                                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-indigo-600 ecommerce:hover:bg-indigo-700 ecommerce:dark:bg-indigo-500 ecommerce:dark:hover:bg-indigo-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:transition-colors ecommerce:whitespace-nowrap ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:disabled:hover:bg-indigo-600 ecommerce:dark:disabled:hover:bg-indigo-500",
                                         "disabled": "{{ecommerceIdentityPolicies?.data?.abilities?.can_create !== true}}"
                                     },
                                     "children": [
@@ -198,14 +198,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "mb-6 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
+                        "className": "ecommerce:mb-6 ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H4",
                             "props": {
-                                "className": "text-primary text-sm font-semibold mb-2"
+                                "className": "ecommerce-text-primary ecommerce:text-sm ecommerce:font-semibold ecommerce:mb-2"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.identity.purposes_section_title"
                         },
@@ -213,7 +213,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex flex-wrap gap-2"
+                                "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2"
                             },
                             "children": [
                                 {
@@ -224,7 +224,7 @@
                                         "item_var": "purpose"
                                     },
                                     "props": {
-                                        "className": "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300",
+                                        "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-2.5 ecommerce:py-1 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-300",
                                         "title": "{{(purpose.description ?? '') + ((purpose.allowed_channels ?? []).length > 0 ? ' [' + (purpose.allowed_channels ?? []).join(', ') + ']' : '')}}"
                                     },
                                     "children": [
@@ -232,7 +232,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "font-mono text-[10px] text-indigo-600 dark:text-indigo-400"
+                                                "className": "ecommerce:font-mono ecommerce:text-[10px] ecommerce:text-indigo-600 ecommerce:dark:text-indigo-400"
                                             },
                                             "text": "{{purpose.id}}"
                                         },
@@ -248,7 +248,7 @@
                                     "name": "Span",
                                     "if": "{{ecommerceIdentityPurposes !== undefined && ((ecommerceIdentityPurposes?.data ?? []).filter(p => p.source_identifier === 'sirsoft-ecommerce').length === 0)}}",
                                     "props": {
-                                        "className": "text-tertiary italic"
+                                        "className": "ecommerce-text-tertiary ecommerce:italic"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.identity.purposes_empty"
                                 }
@@ -261,7 +261,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2 md:flex-row md:items-center"
+                        "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-6 ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:md:flex-row ecommerce:md:items-center"
                     },
                     "children": [
                         {
@@ -298,7 +298,7 @@
                                 "aria-label": "$t:admin.identity.policies.col.scope",
                                 "autoBinding": false,
                                 "value": "{{query.scope ?? ''}}",
-                                "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
+                                "className": "ecommerce:w-full ecommerce:md:w-40 ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-sm",
                                 "options": [
                                     {
                                         "value": "",
@@ -364,7 +364,7 @@
                                 "autoBinding": false,
                                 "value": "{{_local.identityPolicySearch ?? query.search ?? ''}}",
                                 "placeholder": "$t:admin.identity.policies.search_placeholder",
-                                "className": "input md:flex-1 md:min-w-[200px]"
+                                "className": "ecommerce-input ecommerce:md:flex-1 ecommerce:md:min-w-[200px]"
                             }
                         },
                         {
@@ -397,7 +397,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
+                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100"
                             },
                             "children": [
                                 {
@@ -445,7 +445,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -462,7 +462,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "admin-card"
+                        "className": "ecommerce-admin-card"
                     },
                     "children": [
                         {
@@ -475,21 +475,21 @@
                                 }
                             },
                             "props": {
-                                "className": "overflow-x-auto"
+                                "className": "ecommerce:overflow-x-auto"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Table",
                                     "props": {
-                                        "className": "w-full text-sm"
+                                        "className": "ecommerce:w-full ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Thead",
                                             "props": {
-                                                "className": "bg-gray-50 dark:bg-gray-700/50"
+                                                "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/50"
                                             },
                                             "children": [
                                                 {
@@ -500,7 +500,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.key"
                                                         },
@@ -508,7 +508,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.scope"
                                                         },
@@ -516,7 +516,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.target"
                                                         },
@@ -524,7 +524,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.purpose"
                                                         },
@@ -532,7 +532,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.grace_minutes"
                                                         },
@@ -540,7 +540,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-right ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.priority"
                                                         },
@@ -548,7 +548,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.enabled"
                                                         },
@@ -556,7 +556,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.source_type"
                                                         },
@@ -564,7 +564,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-right ecommerce:text-xs ecommerce:font-semibold ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "$t:common.actions"
                                                         }
@@ -584,14 +584,14 @@
                                                         "item_var": "policy"
                                                     },
                                                     "props": {
-                                                        "className": "border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                                                        "className": "ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700/30"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:font-mono ecommerce:text-xs"
                                                             },
                                                             "text": "{{policy.key ?? ''}}"
                                                         },
@@ -599,7 +599,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
                                                         },
@@ -607,7 +607,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs truncate max-w-xs"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:font-mono ecommerce:text-xs ecommerce:truncate ecommerce:max-w-xs"
                                                             },
                                                             "text": "{{policy.target ?? ''}}"
                                                         },
@@ -615,7 +615,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "{{(ecommerceIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}"
                                                         },
@@ -623,7 +623,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 text-right"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:text-right"
                                                             },
                                                             "text": "{{policy.grace_minutes ?? 0}}"
                                                         },
@@ -631,7 +631,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 text-right tabular-nums"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:text-right ecommerce:tabular-nums"
                                                             },
                                                             "text": "{{policy.priority ?? 100}}"
                                                         },
@@ -639,7 +639,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2"
                                                             },
                                                             "children": [
                                                                 {
@@ -709,14 +709,14 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 ecommerce-tone-info-soft' : 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 ecommerce-tone-warning-soft'}}"
+                                                                        "className": "{{policy.source_type === 'admin' ? 'ecommerce:inline-block ecommerce:whitespace-nowrap ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-blue-100 ecommerce:dark:bg-blue-900 ecommerce-tone-info-soft' : 'ecommerce:inline-block ecommerce:whitespace-nowrap ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-yellow-100 ecommerce:dark:bg-yellow-900 ecommerce-tone-warning-soft'}}"
                                                                     },
                                                                     "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
                                                                 }
@@ -726,7 +726,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-right whitespace-nowrap"
+                                                                "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-right ecommerce:whitespace-nowrap"
                                                             },
                                                             "children": [
                                                                 {
@@ -784,7 +784,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600",
+                                                                        "className": "ecommerce:text-sm ecommerce:px-3 ecommerce:py-1.5 ecommerce:rounded-md ecommerce:bg-indigo-600 ecommerce:text-white ecommerce:hover:bg-indigo-700 ecommerce:dark:bg-indigo-500 ecommerce:dark:hover:bg-indigo-600 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:disabled:hover:bg-indigo-600",
                                                                         "disabled": "{{policy.abilities?.can_update !== true}}"
                                                                     },
                                                                     "text": "$t:common.edit"
@@ -815,7 +815,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "ml-2 text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                                                        "className": "ecommerce:ml-2 ecommerce:text-sm ecommerce:px-3 ecommerce:py-1.5 ecommerce:rounded-md ecommerce:border ecommerce:border-red-300 ecommerce:dark:border-red-600 ecommerce:text-red-700 ecommerce:dark:text-red-400 ecommerce:hover:bg-red-50 ecommerce:dark:hover:bg-red-900/30 ecommerce:transition-colors"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -846,7 +846,7 @@
                                 }
                             },
                             "props": {
-                                "className": "divider-list"
+                                "className": "ecommerce-divider-list"
                             },
                             "children": [
                                 {
@@ -857,28 +857,28 @@
                                         "item_var": "policy"
                                     },
                                     "props": {
-                                        "className": "p-4"
+                                        "className": "ecommerce:p-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-start justify-between gap-3"
+                                                "className": "ecommerce-flex-start ecommerce:justify-between ecommerce:gap-3"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-1 min-w-0"
+                                                        "className": "ecommerce:flex-1 ecommerce:min-w-0"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "text-primary font-mono text-xs break-all"
+                                                                "className": "ecommerce-text-primary ecommerce:font-mono ecommerce:text-xs ecommerce:break-all ecommerce-break-all"
                                                             },
                                                             "text": "{{policy.key ?? ''}}"
                                                         },
@@ -886,7 +886,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "form-hint"
+                                                                "className": "ecommerce-form-hint"
                                                             },
                                                             "children": [
                                                                 {
@@ -898,7 +898,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "mx-1.5 text-gray-500 dark:text-gray-400"
+                                                                        "className": "ecommerce:mx-1.5 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                                     },
                                                                     "text": "·"
                                                                 },
@@ -906,7 +906,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "font-mono break-all"
+                                                                        "className": "ecommerce:font-mono ecommerce:break-all ecommerce-break-all"
                                                                     },
                                                                     "text": "{{policy.target ?? ''}}"
                                                                 }
@@ -918,7 +918,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 ecommerce-tone-info-soft flex-shrink-0' : 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 ecommerce-tone-warning-soft flex-shrink-0'}}"
+                                                        "className": "{{policy.source_type === 'admin' ? 'ecommerce:inline-block ecommerce:whitespace-nowrap ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-blue-100 ecommerce:dark:bg-blue-900 ecommerce-tone-info-soft ecommerce:flex-shrink-0' : 'ecommerce:inline-block ecommerce:whitespace-nowrap ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-yellow-100 ecommerce:dark:bg-yellow-900 ecommerce-tone-warning-soft ecommerce:flex-shrink-0'}}"
                                                     },
                                                     "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
                                                 }
@@ -928,14 +928,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-between gap-3"
+                                                "className": "ecommerce-flex-between ecommerce:gap-3"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-tertiary"
+                                                        "className": "ecommerce-text-tertiary"
                                                     },
                                                     "children": [
                                                         {
@@ -947,7 +947,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "mx-1.5 text-gray-500 dark:text-gray-400"
+                                                                "className": "ecommerce:mx-1.5 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                             },
                                                             "text": "·"
                                                         },
@@ -960,7 +960,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "ml-1 font-medium text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:ml-1 ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "{{policy.grace_minutes ?? 0}}"
                                                         },
@@ -968,7 +968,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "mx-1.5 text-gray-500 dark:text-gray-400"
+                                                                "className": "ecommerce:mx-1.5 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                             },
                                                             "text": "·"
                                                         },
@@ -981,7 +981,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "ml-1 font-medium text-gray-700 dark:text-gray-300 tabular-nums"
+                                                                "className": "ecommerce:ml-1 ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:tabular-nums"
                                                             },
                                                             "text": "{{policy.priority ?? 100}}"
                                                         }
@@ -1054,7 +1054,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center justify-end gap-2"
+                                                "className": "ecommerce-flex-center ecommerce:justify-end ecommerce:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -1112,7 +1112,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600",
+                                                        "className": "ecommerce:text-sm ecommerce:px-3 ecommerce:py-1.5 ecommerce:rounded-md ecommerce:bg-indigo-600 ecommerce:text-white ecommerce:hover:bg-indigo-700 ecommerce:dark:bg-indigo-500 ecommerce:dark:hover:bg-indigo-600 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:disabled:hover:bg-indigo-600",
                                                         "disabled": "{{policy.abilities?.can_update !== true}}"
                                                     },
                                                     "text": "$t:common.edit"
@@ -1143,7 +1143,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                                        "className": "ecommerce:text-sm ecommerce:px-3 ecommerce:py-1.5 ecommerce:rounded-md ecommerce:border ecommerce:border-red-300 ecommerce:dark:border-red-600 ecommerce:text-red-700 ecommerce:dark:text-red-400 ecommerce:hover:bg-red-50 ecommerce:dark:hover:bg-red-900/30 ecommerce:transition-colors"
                                                     },
                                                     "children": [
                                                         {
@@ -1164,7 +1164,7 @@
                             "name": "Div",
                             "if": "{{ecommerceIdentityPolicies !== undefined && ((ecommerceIdentityPolicies?.data?.data ?? []).length === 0)}}",
                             "props": {
-                                "className": "py-10 text-center text-label-subtle"
+                                "className": "ecommerce:py-10 ecommerce:text-center ecommerce-text-label-subtle"
                             },
                             "text": "$t:admin.identity.policies.empty"
                         },
@@ -1173,14 +1173,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "footer-buttons-between"
+                                "className": "ecommerce-footer-buttons-between"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-tertiary"
+                                        "className": "ecommerce-text-tertiary"
                                     },
                                     "text": "$t:admin.identity.policies.pagination_summary|total={{ecommerceIdentityPolicies?.data?.meta?.total ?? 0}}|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? '-'}}"
                                 },
@@ -1188,7 +1188,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-1"
+                                        "className": "ecommerce-flex-center ecommerce:gap-1"
                                     },
                                     "children": [
                                         {
@@ -1222,7 +1222,7 @@
                                                 "href": "/admin/ecommerce/settings?tab=identity_policies&page={{Math.max(1, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}",
                                                 "mergeQuery": true,
                                                 "disabled": "{{(ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}",
-                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
+                                                "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:aria-disabled:opacity-50 ecommerce:aria-disabled:cursor-not-allowed"
                                             },
                                             "children": [
                                                 {
@@ -1236,7 +1236,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
+                                                "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-200"
                                             },
                                             "text": "$t:admin.identity.policies.page_indicator|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? '-'}}"
                                         },
@@ -1271,7 +1271,7 @@
                                                 "href": "/admin/ecommerce/settings?tab=identity_policies&page={{ecommerceIdentityPolicies?.data?.meta?.last_page ? Math.min(ecommerceIdentityPolicies?.data?.meta?.last_page, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}",
                                                 "mergeQuery": true,
                                                 "disabled": "{{ecommerceIdentityPolicies?.data?.meta?.last_page ? ((ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) >= ecommerceIdentityPolicies?.data?.meta?.last_page) : (ecommerceIdentityPolicies?.data?.meta?.has_more_pages !== true)}}",
-                                                "className": "px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
+                                                "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:aria-disabled:opacity-50 ecommerce:aria-disabled:cursor-not-allowed"
                                             },
                                             "children": [
                                                 {

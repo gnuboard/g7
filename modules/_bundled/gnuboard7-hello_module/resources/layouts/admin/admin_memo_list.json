@@ -4,7 +4,7 @@
     "layout_name": "admin_memo_list",
     "extends": "_admin_base",
     "meta": {
-        "_e2e_allow": "e2e:allow 다크 모드 대비 클래스(dark:bg-blue-500/dark:hover:bg-blue-600) 추가만으로 동작 변화 없음. 클래스가 실제 CSS 로 생성되는지는 빌드 산출물에서 확인. 샘플 모듈 전용 화면이라 Playwright spec 부재.",
+        "_e2e_allow": "e2e:allow 클래스를 모듈 자기 CSS(hellomodule-*)로 바꾼 것뿐이라 동작 변화 없음. 클래스가 실제 CSS 에 있는지는 빌드 산출물(dist/css/module.css)에서 확인. 샘플 모듈 전용 화면이라 Playwright spec 부재.",
         "title": "$t:gnuboard7-hello_module.admin.memos.index.title",
         "description": "$t:gnuboard7-hello_module.admin.memos.index.description"
     },
@@ -41,11 +41,12 @@
     "slots": {
         "content": [
             {
+                "comment": "클래스는 모두 이 모듈 CSS(resources/css/main.css)의 hellomodule-* 다. 관리자 템플릿의 의미 클래스에 기대지 않는다.",
                 "id": "memo_list_wrapper",
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "hellomodule-admin-page"
                 },
                 "children": [
                     {
@@ -53,7 +54,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-between mb-6"
+                            "className": "hellomodule-toolbar"
                         },
                         "children": [
                             {
@@ -61,7 +62,7 @@
                                 "type": "basic",
                                 "name": "H1",
                                 "props": {
-                                    "className": "text-page-heading"
+                                    "className": "hellomodule-page__title"
                                 },
                                 "text": "$t:gnuboard7-hello_module.admin.memos.index.title"
                             },
@@ -83,7 +84,7 @@
                                 "props": {
                                     "href": "/admin/memos/create",
                                     "mergeQuery": true,
-                                    "className": "button px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors aria-disabled:opacity-50 aria-disabled:cursor-not-allowed",
+                                    "className": "hellomodule-button hellomodule-button--primary",
                                     "disabled": "{{memos?.data?.abilities?.can_create !== true}}",
                                     "title": "{{memos?.data?.abilities?.can_create === true ? '' : '$t:gnuboard7-hello_module.admin.memos.index.create_no_permission'}}"
                                 },
@@ -104,17 +105,17 @@
                         "name": "P",
                         "if": "{{memos !== undefined && ((memos?.data?.data ?? []).length === 0)}}",
                         "props": {
-                            "className": "py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                            "className": "hellomodule-empty"
                         },
                         "text": "$t:gnuboard7-hello_module.admin.memos.index.empty"
                     },
                     {
-                        "comment": "반복은 카드에 둔다 — 묶음(row-stack)에 두면 메모마다 자식 하나뿐인 묶음이 생기고, row-stack 은 첫·마지막 자식의 위아래 여백을 0 으로 두어 카드가 간격 없이 붙는다(사용자 메모 목록과 같은 결함군).",
+                        "comment": "반복은 카드에 둔다 — 묶음에 두면 메모마다 자식 하나뿐인 묶음이 생기고, 카드가 간격 없이 붙는다(사용자 메모 목록과 같은 결함군). 카드 사이 간격은 묶음(hellomodule-list)이 준다.",
                         "id": "memo_items",
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "space-y-3"
+                            "className": "hellomodule-list"
                         },
                         "children": [
                             {
@@ -127,14 +128,14 @@
                                     "index_var": "idx"
                                 },
                                 "props": {
-                                    "className": "p-4 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700"
+                                    "className": "hellomodule-card"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H2",
                                         "props": {
-                                            "className": "section-heading"
+                                            "className": "hellomodule-card__title"
                                         },
                                         "text": "{{memo.title ?? ''}}"
                                     },
@@ -142,7 +143,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "mt-2 text-sm text-gray-600 dark:text-gray-300"
+                                            "className": "hellomodule-card__body"
                                         },
                                         "text": "{{memo.content ?? ''}}"
                                     }

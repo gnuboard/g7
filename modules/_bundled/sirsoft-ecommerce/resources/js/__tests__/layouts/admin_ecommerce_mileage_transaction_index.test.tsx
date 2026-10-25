@@ -224,7 +224,7 @@ describe('마일리지 내역 메인 레이아웃', () => {
     expect(content.props.className).toContain('p-6');
     expect(content.props.className).not.toContain('sm:p-6 lg:p-8');
     const header = findFirst(content, (n) => n.id === 'page_header');
-    expect(header.props.className).toBe('page-header');
+    expect(header.props.className).toBe('ecommerce-page-header');
     expect(findFirst(header, (n) => String(n.props?.className).includes('page-title'))).toBeTruthy();
     expect(findFirst(header, (n) => String(n.props?.className).includes('page-description'))).toBeTruthy();
   });
@@ -255,7 +255,7 @@ describe('마일리지 내역 메인 레이아웃', () => {
    */
   it('수동 버튼이 인라인 Tailwind 대신 btn 공통 유틸을 사용한다', () => {
     const btn = findFirst(mainLayout.slots.content[0], (n) => n.id === 'manual_action_button');
-    expect(btn.props.className).toContain('btn btn-primary');
+    expect(btn.props.className).toContain('ecommerce-btn ecommerce-btn-primary');
   });
 });
 
@@ -893,8 +893,8 @@ describe('수동 지급/차감 모달 (_modal_manual_transaction.json)', () => {
     expect(jsonOf(banner)).toContain('Object.entries(_global.mileageManual?.errors?.errors');
     // ② 필드 강조 (amount/memo/user_id className 조건부 input-error)
     const json = jsonOf(modalManual);
-    expect(json).toContain("errors?.errors?.amount ? 'input flex-1 input-error");
-    expect(json).toContain("errors?.errors?.memo ? 'input w-full input-error");
+    expect(json).toContain("errors?.errors?.amount ? 'ecommerce-input ecommerce:flex-1 ecommerce-input-error");
+    expect(json).toContain("errors?.errors?.memo ? 'ecommerce-input ecommerce:w-full ecommerce-input-error");
     // ③ 필드 하단 인라인 메시지
     const amountMsg = findFirst(modalManual, (n) =>
       n.name === 'Span' && n.if && String(n.if).includes('errors?.errors?.amount')
@@ -1025,7 +1025,7 @@ describe('유효기간 연장 모달 (_modal_extend_expiry.json)', () => {
     const banner = findFirst(modalExtend, (n) => n.id === 'extend_error_banner');
     expect(banner.if).toContain('mileageExtend?.errors');
     const json = jsonOf(modalExtend);
-    expect(json).toContain("errors?.errors?.days ? 'input w-24 text-center input-error");
+    expect(json).toContain("errors?.errors?.days ? 'ecommerce-input ecommerce:w-24 ecommerce:text-center ecommerce-input-error");
     const daysMsg = findFirst(modalExtend, (n) => n.name === 'Span' && n.if && String(n.if).includes('errors?.errors?.days'));
     expect(daysMsg).toBeTruthy();
     const submit = findFirst(modalExtend, (n) => n.id === 'extend_submit_button');

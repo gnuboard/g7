@@ -1,60 +1,60 @@
 <!-- 상품 폼 — 식별코드 구획. 상품코드·SKU·바코드·HS코드처럼 상품을 가리키는 값들을 모았다.
   상품코드는 등록 때만 넣을 수 있고 수정에서는 잠긴다 — 이미 나간 주문·정산이 그 값을 가리키기 때문이다. -->
 <partial description="Product Form - Identification Codes Section">
-  <div data-ref="identification" class="admin-card-accordion">
-    <button type="button" class="flex w-full justify-start text-left card-header" aria-expanded="{{_local.ui.identificationExpanded !== false}}">
+  <div data-ref="identification" class="ecommerce-admin-card-accordion">
+    <button type="button" class="ecommerce:flex ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-card-header" aria-expanded="{{_local.ui.identificationExpanded !== false}}">
       <on type="click">
         <!-- 구획 접기/펼치기 -->
         <set-state target="local" ui.identificationExpanded="{{!_local.ui.identificationExpanded}}"/>
       </on>
-      <icon name="barcode" class="text-gray-500 dark:text-gray-400"/>
-      <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.identification</span>
-      <icon name="chevron-down" class="admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.identificationExpanded !== false ? 'rotate-180' : ''}}"/>
+      <icon name="barcode" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+      <span class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.product.sections.identification</span>
+      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.identificationExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
     </button>
-    <div data-ref="identification_body" data-if="{{_local.ui.identificationExpanded !== false}}" class="row-stack">
-      <div data-ref="identification_grid" class="grid grid-cols-2 gap-6">
-        <responsive on="portable" class="grid grid-cols-1 gap-4"/>
-        <div data-ref="field_product_code" class="form-group">
-          <label class="form-label">
+    <div data-ref="identification_body" data-if="{{_local.ui.identificationExpanded !== false}}" class="ecommerce-row-stack">
+      <div data-ref="identification_grid" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-6">
+        <responsive on="portable" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"/>
+        <div data-ref="field_product_code" class="ecommerce-form-group">
+          <label class="ecommerce-form-label">
             <span>$t:sirsoft-ecommerce.admin.product.create.identification_codes.product_code.label</span>
-            <span class="text-required">*</span>
+            <span class="ecommerce-text-required">*</span>
           </label>
           <!-- 상품코드 — 운영자가 정하는 대표 코드. 등록에서만 열려 있다 -->
-          <input type="text" name="product_code" class="input" placeholder="$t:sirsoft-ecommerce.admin.product.create.identification_codes.product_code.placeholder" disabled="{{!!route?.itemCode || _computed.isReadOnly}}">
+          <input type="text" name="product_code" class="ecommerce-input" placeholder="$t:sirsoft-ecommerce.admin.product.create.identification_codes.product_code.placeholder" disabled="{{!!route?.itemCode || _computed.isReadOnly}}">
             <on type="change">
               <set-state target="local" :hasChanges="true"/>
             </on>
           </input>
         </div>
-        <div data-ref="field_sku" class="form-group">
-          <label class="form-label">$t:sirsoft-ecommerce.admin.product.fields.sku</label>
+        <div data-ref="field_sku" class="ecommerce-form-group">
+          <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.product.fields.sku</label>
           <!-- SKU — 창고·물류에서 쓰는 재고 단위 코드 -->
-          <input type="text" name="sku" class="{{_local.errors?.sku ? 'input input-error' : 'input'}}" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.sku" disabled="{{_computed.isReadOnly}}">
+          <input type="text" name="sku" class="{{_local.errors?.sku ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}" placeholder="$t:sirsoft-ecommerce.admin.product.placeholders.sku" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <set-state target="local" :hasChanges="true"/>
             </on>
           </input>
-          <span data-if="{{_local.errors?.sku}}" class="form-error-xs mt-1">{{_local.errors?.sku?.[0]}}</span>
+          <span data-if="{{_local.errors?.sku}}" class="ecommerce-form-error-xs ecommerce:mt-1">{{_local.errors?.sku?.[0]}}</span>
         </div>
-        <div data-ref="field_barcode" class="form-group">
-          <label class="form-label">$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.label</label>
+        <div data-ref="field_barcode" class="ecommerce-form-group">
+          <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.label</label>
           <!-- 바코드 — 매장 스캔용. 상품마다 고유해야 해서 복사 시 따라오지 않는다 -->
-          <input type="text" name="barcode" class="{{_local.errors?.barcode ? 'input input-error' : 'input'}}" placeholder="$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.placeholder" disabled="{{_computed.isReadOnly}}">
+          <input type="text" name="barcode" class="{{_local.errors?.barcode ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}" placeholder="$t:sirsoft-ecommerce.admin.product.create.identification_codes.barcode.placeholder" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <set-state target="local" :hasChanges="true"/>
             </on>
           </input>
-          <span data-if="{{_local.errors?.barcode}}" class="form-error-xs mt-1">{{_local.errors?.barcode?.[0]}}</span>
+          <span data-if="{{_local.errors?.barcode}}" class="ecommerce-form-error-xs ecommerce:mt-1">{{_local.errors?.barcode?.[0]}}</span>
         </div>
-        <div data-ref="field_hs_code" class="form-group">
-          <label class="form-label">$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.label</label>
+        <div data-ref="field_hs_code" class="ecommerce-form-group">
+          <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.label</label>
           <!-- HS코드 — 해외배송 통관 신고에 쓴다 -->
-          <input type="text" name="hs_code" class="{{_local.errors?.hs_code ? 'input input-error' : 'input'}}" placeholder="$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.placeholder" disabled="{{_computed.isReadOnly}}">
+          <input type="text" name="hs_code" class="{{_local.errors?.hs_code ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}" placeholder="$t:sirsoft-ecommerce.admin.product.create.identification_codes.hs_code.placeholder" disabled="{{_computed.isReadOnly}}">
             <on type="change">
               <set-state target="local" :hasChanges="true"/>
             </on>
           </input>
-          <span data-if="{{_local.errors?.hs_code}}" class="form-error-xs mt-1">{{_local.errors?.hs_code?.[0]}}</span>
+          <span data-if="{{_local.errors?.hs_code}}" class="ecommerce-form-error-xs ecommerce:mt-1">{{_local.errors?.hs_code?.[0]}}</span>
         </div>
       </div>
     </div>

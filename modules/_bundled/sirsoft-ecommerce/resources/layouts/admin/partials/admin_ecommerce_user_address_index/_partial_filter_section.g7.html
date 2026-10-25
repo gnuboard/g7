@@ -12,13 +12,13 @@
 
   입력 중인 값은 `_local.filter` 에 모이고 조회는 URL 로 나간다(셸의 `searchUserAddresses`). -->
 <partial description="User Address List - Filter Section">
-  <div data-ref="filter_card" data-key="filter" class="admin-card">
-    <div data-ref="search_row" class="flex-center flex-wrap gap-2 mb-4">
-      <responsive on="portable" class="row-stack gap-2 mb-4"/>
-      <div data-ref="search_row_line1" class="flex-center gap-2 flex-1 min-w-[280px]">
-        <responsive on="portable" class="flex-center gap-2 w-full"/>
-        <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="w-32" value="{{_local.filter.searchField || 'all'}}">
-          <responsive on="portable" class="w-24"/>
+  <div data-ref="filter_card" data-key="filter" class="ecommerce-admin-card">
+    <div data-ref="search_row" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:mb-4">
+      <responsive on="portable" class="ecommerce-row-stack ecommerce:gap-2 ecommerce:mb-4"/>
+      <div data-ref="search_row_line1" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-1 ecommerce:min-w-[280px]">
+        <responsive on="portable" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:w-full"/>
+        <select data-ref="search_field_select" name="searchField" aria-label="$t:common.search_field" class="ecommerce:w-32" value="{{_local.filter.searchField || 'all'}}">
+          <responsive on="portable" class="ecommerce:w-24"/>
           <options>
             <option value="all">$t:common.all</option>
             <option value="recipient">$t:sirsoft-ecommerce.admin.user_addresses.search_fields.recipient</option>
@@ -30,8 +30,8 @@
             <set-state target="_local" filter.searchField="{{$event.target.value}}"/>
           </on>
         </select>
-        <input type="text" name="searchKeyword" class="input flex-1 min-w-[200px]" placeholder="$t:sirsoft-ecommerce.admin.user_addresses.search.placeholder" value="{{_local.filter.searchKeyword || ''}}">
-          <responsive on="portable" class="input flex-1"/>
+        <input type="text" name="searchKeyword" class="ecommerce-input ecommerce:flex-1 ecommerce:min-w-[200px]" placeholder="$t:sirsoft-ecommerce.admin.user_addresses.search.placeholder" value="{{_local.filter.searchKeyword || ''}}">
+          <responsive on="portable" class="ecommerce-input ecommerce:flex-1"/>
           <on type="change">
             <!-- 타이핑은 담기만 한다 — 실제 조회는 Enter 나 검색 버튼이다. -->
             <set-state target="_local" filter.searchKeyword="{{$event.target.value}}"/>
@@ -41,10 +41,10 @@
           </on>
         </input>
       </div>
-      <div data-ref="search_row_line2" class="flex-center gap-2 ml-auto">
-        <responsive on="portable" class="w-full"/>
+      <div data-ref="search_row_line2" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:ml-auto">
+        <responsive on="portable" class="ecommerce:w-full"/>
         <column-selector data-type="composite" data-ref="column_selector" id="admin_user_address_list_columns" visibleColumns="{{_local.visibleColumns}}" triggerLabel="$t:sirsoft-ecommerce.admin.user_addresses.search.column_select" menuTitle="$t:common.column_selector_title" menuDescription="$t:common.column_selector_description" position="right">
-          <responsive on="portable" class="w-full" triggerClassName="w-full justify-center" labelClassName="inline"/>
+          <responsive on="portable" class="ecommerce:w-full" triggerClassName="ecommerce:w-full ecommerce:justify-center" labelClassName="ecommerce:inline"/>
           <prop name="columns">
             <item field="created_at" header="$t:sirsoft-ecommerce.admin.user_addresses.columns.created_at"/>
             <item field="member" header="$t:sirsoft-ecommerce.admin.user_addresses.columns.member"/>
@@ -66,12 +66,12 @@
         </column-selector>
       </div>
     </div>
-    <div data-ref="filter_rows" class="filter-grid">
-      <div data-ref="member_filter_row" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
-        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.user_addresses.filter.member</span>
-        <div class="flex-center flex-wrap gap-2 flex-1">
-          <searchable-dropdown data-type="composite" data-ref="member_filter_dropdown" aria-label="$t:sirsoft-ecommerce.admin.user_addresses.filter.member" :multiple="true" options="{{(_local.memberSearchResultsKeyword ?? null) === (_local.memberSearchKeyword ?? '').trim() ? (_local.memberSearchResults ?? []) : []}}" value="{{_local.filter.memberUuids ?? []}}" triggerLabel="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_select" selectedCountLabel="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_selected_count" searchPlaceholder="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_search_initial" class="w-64">
+    <div data-ref="filter_rows" class="ecommerce-filter-grid">
+      <div data-ref="member_filter_row" class="ecommerce-filter-row">
+        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.user_addresses.filter.member</span>
+        <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:flex-1">
+          <searchable-dropdown data-type="composite" data-ref="member_filter_dropdown" aria-label="$t:sirsoft-ecommerce.admin.user_addresses.filter.member" :multiple="true" options="{{(_local.memberSearchResultsKeyword ?? null) === (_local.memberSearchKeyword ?? '').trim() ? (_local.memberSearchResults ?? []) : []}}" value="{{_local.filter.memberUuids ?? []}}" triggerLabel="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_select" selectedCountLabel="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_selected_count" searchPlaceholder="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_search_placeholder" noResultsText="$t:common.no_results" initialText="$t:sirsoft-ecommerce.admin.user_addresses.filter.member_search_initial" class="ecommerce:w-64">
             <on event="onSearch">
               <!-- 응답을 그대로 쓰지 않고 `{value,label,description}` 으로 접는다 — 드롭다운이 그 세 키만 읽는다.
                    실패하면 이전 결과를 남기지 않고 비운다(방금 친 검색어와 맞지 않는 목록이 붙어 있게 된다).
@@ -99,42 +99,42 @@
               <set-state target="_local" filter.memberUuids="{{$args[0] ?? []}}" filter.memberOptions="{{[...(_local.filter?.memberOptions ?? []), ...(_local.memberSearchResults ?? [])].filter((o, i, arr) => arr.findIndex(x => x.value === o.value) === i &amp;&amp; ($args[0] ?? []).includes(o.value))}}"/>
             </on>
           </searchable-dropdown>
-          <div data-ref="member_filter_chips" data-if="{{(_local.filter?.memberOptions ?? []).length > 0}}" class="flex-center flex-wrap gap-1">
-            <div data-each="member, memberIndex in {{_local.filter?.memberOptions ?? []}}" class="flex-center gap-1 px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full">
+          <div data-ref="member_filter_chips" data-if="{{(_local.filter?.memberOptions ?? []).length > 0}}" class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-1">
+            <div data-each="member, memberIndex in {{_local.filter?.memberOptions ?? []}}" class="ecommerce-flex-center ecommerce:gap-1 ecommerce:px-2 ecommerce:py-0.5 ecommerce:text-xs ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-full">
               <span>{{member.label}}</span>
-              <button type="button" class="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" aria-label="$t:sirsoft-ecommerce.common.remove">
+              <button type="button" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:text-gray-600 ecommerce:dark:hover:text-gray-200" aria-label="$t:sirsoft-ecommerce.common.remove">
                 <on type="click">
                   <!-- 칩 하나만 뗀다 — 두 칸(uuid·이름표)을 같은 손짓으로 함께 줄여야 어긋나지 않는다 -->
                   <set-state target="_local" filter.memberUuids="{{(_local.filter?.memberUuids ?? []).filter(v => v !== member.value)}}" filter.memberOptions="{{(_local.filter?.memberOptions ?? []).filter(o => o.value !== member.value)}}"/>
                 </on>
-                <icon name="xmark" class="text-xs"/>
+                <icon name="xmark" class="ecommerce:text-xs"/>
               </button>
             </div>
           </div>
         </div>
       </div>
-      <div data-ref="created_at_filter_row" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
-        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.user_addresses.filter.created_at</span>
-        <div class="flex-center flex-wrap gap-2">
-          <div class="flex-center gap-2">
-            <icon name="calendar" class="text-base text-gray-500 dark:text-gray-500"/>
-            <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.user_addresses.filter.created_at')}}" type="date" name="startDate" value="{{_local.filter.startDate || ''}}" class="input w-36">
+      <div data-ref="created_at_filter_row" class="ecommerce-filter-row">
+        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.user_addresses.filter.created_at</span>
+        <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
+          <div class="ecommerce-flex-center ecommerce:gap-2">
+            <icon name="calendar" class="ecommerce:text-base ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
+            <input aria-label="$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.user_addresses.filter.created_at')}}" type="date" name="startDate" value="{{_local.filter.startDate || ''}}" class="ecommerce-input ecommerce:w-36">
               <on type="change">
                 <!-- 등록일 시작. 직접 고르면 빠른 기간 버튼의 선택 표시를 지운다 — 남겨 두면 버튼과 실제 범위가 갈린다. -->
                 <set-state target="_local" filter.startDate="{{$event.target.value}}" filter.dateQuick=""/>
               </on>
             </input>
-            <span class="text-gray-500 dark:text-gray-400">~</span>
-            <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.user_addresses.filter.created_at')}}" type="date" name="endDate" value="{{_local.filter.endDate || ''}}" class="input w-36">
+            <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+            <input aria-label="$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.user_addresses.filter.created_at')}}" type="date" name="endDate" value="{{_local.filter.endDate || ''}}" class="ecommerce-input ecommerce:w-36">
               <on type="change">
                 <!-- 등록일 종료. 시작일과 같은 이유로 빠른 기간 표시를 지운다. -->
                 <set-state target="_local" filter.endDate="{{$event.target.value}}" filter.dateQuick=""/>
               </on>
             </input>
           </div>
-          <div class="flex-center flex-wrap gap-1">
-            <button type="button" class="{{_local.filter.dateQuick === 'today' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'today'}}">
+          <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-1">
+            <button type="button" class="{{_local.filter.dateQuick === 'today' ? 'ecommerce-btn-date ecommerce-active' : 'ecommerce-btn-date ecommerce:cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'today'}}">
               <on type="click">
                 <!-- 빠른 기간. 날짜 계산은 핸들러가 하고 결과를 $prev 로 받아 담는다 — 표현식에 날짜 산술을 두지 않는다. 오늘. -->
                 <sequence>
@@ -144,7 +144,7 @@
               </on>
               $t:sirsoft-ecommerce.common.date.today
             </button>
-            <button type="button" class="{{_local.filter.dateQuick === 'week' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'week'}}">
+            <button type="button" class="{{_local.filter.dateQuick === 'week' ? 'ecommerce-btn-date ecommerce-active' : 'ecommerce-btn-date ecommerce:cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === 'week'}}">
               <on type="click">
                 <!-- 1주일. 눌린 표시는 dateQuick 이 정하고, 날짜 칸을 직접 고치면 그 표시가 지워진다. -->
                 <sequence>
@@ -154,7 +154,7 @@
               </on>
               $t:sirsoft-ecommerce.common.date.week
             </button>
-            <button type="button" class="{{_local.filter.dateQuick === '3months' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === '3months'}}">
+            <button type="button" class="{{_local.filter.dateQuick === '3months' ? 'ecommerce-btn-date ecommerce-active' : 'ecommerce-btn-date ecommerce:cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === '3months'}}">
               <on type="click">
                 <!-- 3개월. -->
                 <sequence>
@@ -164,7 +164,7 @@
               </on>
               $t:sirsoft-ecommerce.common.date.3months
             </button>
-            <button type="button" class="{{_local.filter.dateQuick === '1year' ? 'btn-date active' : 'btn-date cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === '1year'}}">
+            <button type="button" class="{{_local.filter.dateQuick === '1year' ? 'ecommerce-btn-date ecommerce-active' : 'ecommerce-btn-date ecommerce:cursor-pointer'}}" aria-pressed="{{_local.filter.dateQuick === '1year'}}">
               <on type="click">
                 <!-- 1년. 배송지는 한 번 담아 두면 오래 남는 데이터라 긴 구간을 함께 둔다. -->
                 <sequence>
@@ -177,51 +177,51 @@
           </div>
         </div>
       </div>
-      <div data-ref="is_default_filter_row" class="filter-row">
-        <responsive on="portable" class="filter-row flex-col items-start"/>
-        <span class="filter-label w-28">$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default</span>
-        <div class="flex-center flex-wrap gap-2">
-          <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" :autoBinding="false" name="isDefault" value="all" checked="{{(_local.filter.isDefault || 'all') === 'all'}}" class="radio">
+      <div data-ref="is_default_filter_row" class="ecommerce-filter-row">
+        <responsive on="portable" class="ecommerce-filter-row ecommerce:flex-col ecommerce:items-start"/>
+        <span class="ecommerce-filter-label ecommerce:w-28">$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default</span>
+        <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2">
+          <label class="ecommerce-flex-center ecommerce:gap-1 ecommerce:cursor-pointer">
+            <input type="radio" :autoBinding="false" name="isDefault" value="all" checked="{{(_local.filter.isDefault || 'all') === 'all'}}" class="ecommerce-radio">
               <on type="change">
                 <!-- 기본 배송지 여부 — 전체. 하나만 고르는 값이라 "전체" 도 값(`all`)이다. -->
                 <set-state target="_local" filter.isDefault="all"/>
               </on>
             </input>
-            <span class="text-body">$t:common.all</span>
+            <span class="ecommerce-text-body">$t:common.all</span>
           </label>
-          <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" :autoBinding="false" name="isDefault" value="1" checked="{{_local.filter.isDefault === '1'}}" class="radio">
+          <label class="ecommerce-flex-center ecommerce:gap-1 ecommerce:cursor-pointer">
+            <input type="radio" :autoBinding="false" name="isDefault" value="1" checked="{{_local.filter.isDefault === '1'}}" class="ecommerce-radio">
               <on type="change">
                 <!-- 기본 배송지만. 회원마다 한 건이므로 「회원 수만큼」 이 나온다. -->
                 <set-state target="_local" filter.isDefault="1"/>
               </on>
             </input>
-            <span class="text-body">$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default_only</span>
+            <span class="ecommerce-text-body">$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default_only</span>
           </label>
-          <label class="flex-center gap-1 cursor-pointer">
-            <input type="radio" :autoBinding="false" name="isDefault" value="0" checked="{{_local.filter.isDefault === '0'}}" class="radio">
+          <label class="ecommerce-flex-center ecommerce:gap-1 ecommerce:cursor-pointer">
+            <input type="radio" :autoBinding="false" name="isDefault" value="0" checked="{{_local.filter.isDefault === '0'}}" class="ecommerce-radio">
               <on type="change">
                 <!-- 기본 제외. 정리 대상을 고를 때 쓰는 갈래다 — 기본 배송지는 지우면 회원이 다시 골라야 한다. -->
                 <set-state target="_local" filter.isDefault="0"/>
               </on>
             </input>
-            <span class="text-body">$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default_except</span>
+            <span class="ecommerce-text-body">$t:sirsoft-ecommerce.admin.user_addresses.filter.is_default_except</span>
           </label>
         </div>
       </div>
     </div>
-    <div data-ref="filter_actions" class="flex-center justify-center gap-2 border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-      <responsive on="portable" class="flex gap-2 w-full border-t border-gray-200 dark:border-gray-700 pt-4 mt-4"/>
-      <button data-ref="search_button" type="button" class="btn btn-primary">
-        <responsive on="portable" class="btn btn-primary flex-1"/>
+    <div data-ref="filter_actions" class="ecommerce-flex-center ecommerce:justify-center ecommerce:gap-2 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4 ecommerce:mt-4">
+      <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:w-full ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4 ecommerce:mt-4"/>
+      <button data-ref="search_button" type="button" class="ecommerce-btn ecommerce-btn-primary">
+        <responsive on="portable" class="ecommerce-btn ecommerce-btn-primary ecommerce:flex-1"/>
         <on type="click">
           <action-ref name="searchUserAddresses"/>
         </on>
         $t:sirsoft-ecommerce.admin.user_addresses.filter.search
       </button>
-      <button data-ref="reset_button" type="button" class="btn btn-outline">
-        <responsive on="portable" class="btn btn-outline flex-1"/>
+      <button data-ref="reset_button" type="button" class="ecommerce-btn ecommerce-btn-outline">
+        <responsive on="portable" class="ecommerce-btn ecommerce-btn-outline ecommerce:flex-1"/>
         <on type="click">
           <action-ref name="resetUserAddressFilters"/>
         </on>

@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "board-admin-card"
     },
     "children": [
         {
@@ -16,7 +16,7 @@
             "type": "basic",
             "name": "H3",
             "props": {
-                "className": "card-title"
+                "className": "board-card-title"
             },
             "text": "$t:sirsoft-board.admin.form.tabs.post"
         },
@@ -25,7 +25,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "row-stack"
+                "className": "board-row-stack"
             },
             "children": [
                 {
@@ -33,7 +33,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid-2col"
+                        "className": "board-grid-2col"
                     },
                     "children": [
                         {
@@ -49,7 +49,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "board-form-label"
                                     },
                                     "children": [
                                         {
@@ -77,7 +77,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.min_title_length.hint|min={{board_config?.data?.limits?.min_title_length_min ?? 0}}|max={{board_config?.data?.limits?.min_title_length_max ?? 200}}"
                                 },
@@ -86,7 +86,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.min_title_length}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "board-form-error-xs board:mt-1"
                                     },
                                     "text": "{{_local.errors?.min_title_length?.[0] ?? ''}}"
                                 }
@@ -105,7 +105,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "board-form-label"
                                     },
                                     "children": [
                                         {
@@ -133,7 +133,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.max_title_length.hint|min={{board_config?.data?.limits?.max_title_length_min ?? 1}}|max={{board_config?.data?.limits?.max_title_length_max ?? 200}}"
                                 },
@@ -142,7 +142,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.max_title_length}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "board-form-error-xs board:mt-1"
                                     },
                                     "text": "{{_local.errors?.max_title_length?.[0] ?? ''}}"
                                 }
@@ -155,7 +155,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid-2col"
+                        "className": "board-grid-2col"
                     },
                     "children": [
                         {
@@ -171,7 +171,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "board-form-label"
                                     },
                                     "children": [
                                         {
@@ -199,7 +199,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.min_content_length.hint|min={{board_config?.data?.limits?.min_content_length_min ?? 0}}|max={{board_config?.data?.limits?.min_content_length_max ?? 10000}}"
                                 },
@@ -208,7 +208,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.min_content_length}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "board-form-error-xs board:mt-1"
                                     },
                                     "text": "{{_local.errors?.min_content_length?.[0] ?? ''}}"
                                 }
@@ -227,7 +227,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "board-form-label"
                                     },
                                     "children": [
                                         {
@@ -255,7 +255,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.max_content_length.hint|min={{board_config?.data?.limits?.max_content_length_min ?? 1}}|max={{board_config?.data?.limits?.max_content_length_max ?? 50000}}"
                                 },
@@ -264,7 +264,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.max_content_length}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "board-form-error-xs board:mt-1"
                                     },
                                     "text": "{{_local.errors?.max_content_length?.[0] ?? ''}}"
                                 }
@@ -285,7 +285,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "board-form-label"
                             },
                             "children": [
                                 {
@@ -311,7 +311,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "board-form-hint"
                             },
                             "text": "$t:sirsoft-board.admin.form.fields.blocked_keywords.description"
                         },
@@ -320,7 +320,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.blocked_keywords}}",
                             "props": {
-                                "className": "form-error-xs mt-1"
+                                "className": "board-form-error-xs board:mt-1"
                             },
                             "text": "{{_local.errors?.blocked_keywords?.[0] ?? ''}}"
                         }
@@ -339,7 +339,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "board-form-label"
                             },
                             "children": [
                                 {
@@ -367,7 +367,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "board-form-hint"
                             },
                             "text": "$t:sirsoft-board.admin.form.fields.new_display_hours.hint"
                         },
@@ -376,7 +376,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.new_display_hours}}",
                             "props": {
-                                "className": "form-error-xs mt-1"
+                                "className": "board-form-error-xs board:mt-1"
                             },
                             "text": "{{_local.errors?.new_display_hours?.[0] ?? ''}}"
                         }
@@ -387,21 +387,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-start justify-between"
+                        "className": "board-flex-start board:justify-between"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-1"
+                                "className": "board:flex-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-heading"
+                                        "className": "board-text-heading"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.use_reply"
                                 },
@@ -409,7 +409,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.descriptions.use_reply"
                                 }
@@ -421,7 +421,7 @@
                             "props": {
                                 "name": "use_reply",
                                 "disabled": "{{_computed.isReadOnly}}",
-                                "className": "flex-shrink-0 ml-4"
+                                "className": "board:flex-shrink-0 board:ml-4"
                             }
                         }
                     ]
@@ -440,7 +440,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "board-form-label"
                             },
                             "children": [
                                 {
@@ -468,7 +468,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "board-form-hint"
                             },
                             "text": "$t:sirsoft-board.admin.form.fields.max_reply_depth.hint|min={{board_config?.data?.limits?.max_reply_depth_min ?? 1}}|max={{board_config?.data?.limits?.max_reply_depth_max ?? 10}}"
                         },
@@ -477,7 +477,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.max_reply_depth}}",
                             "props": {
-                                "className": "form-error-xs mt-1"
+                                "className": "board-form-error-xs board:mt-1"
                             },
                             "text": "{{_local.errors?.max_reply_depth?.[0] ?? ''}}"
                         }
@@ -497,7 +497,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "board-form-label"
                             },
                             "children": [
                                 {
@@ -532,7 +532,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "board-form-hint"
                             },
                             "text": "$t:sirsoft-board.admin.form.fields.reply_delete_policy.hint"
                         },
@@ -541,7 +541,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.reply_delete_policy}}",
                             "props": {
-                                "className": "form-error-xs mt-1"
+                                "className": "board-form-error-xs board:mt-1"
                             },
                             "text": "{{_local.errors?.reply_delete_policy?.[0] ?? ''}}"
                         }
@@ -561,7 +561,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "board-form-label"
                             },
                             "children": [
                                 {
@@ -604,7 +604,7 @@
                             "name": "P",
                             "if": "{{(_local.form.secret_reply_visibility ?? 'thread_path') === 'thread_path'}}",
                             "props": {
-                                "className": "form-hint"
+                                "className": "board-form-hint"
                             },
                             "text": "$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.thread_path"
                         },
@@ -614,7 +614,7 @@
                             "name": "P",
                             "if": "{{_local.form.secret_reply_visibility === 'descendants_only'}}",
                             "props": {
-                                "className": "form-hint"
+                                "className": "board-form-hint"
                             },
                             "text": "$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.descendants_only"
                         },
@@ -624,7 +624,7 @@
                             "name": "P",
                             "if": "{{_local.form.secret_reply_visibility === 'per_post'}}",
                             "props": {
-                                "className": "form-hint"
+                                "className": "board-form-hint"
                             },
                             "text": "$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.per_post"
                         },
@@ -633,7 +633,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.secret_reply_visibility}}",
                             "props": {
-                                "className": "form-error-xs mt-1"
+                                "className": "board-form-error-xs board:mt-1"
                             },
                             "text": "{{_local.errors?.secret_reply_visibility?.[0] ?? ''}}"
                         }
@@ -644,21 +644,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-start justify-between"
+                        "className": "board-flex-start board:justify-between"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-1"
+                                "className": "board:flex-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-heading"
+                                        "className": "board-text-heading"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.use_comment"
                                 },
@@ -666,7 +666,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.descriptions.use_comment"
                                 }
@@ -678,7 +678,7 @@
                             "props": {
                                 "name": "use_comment",
                                 "disabled": "{{_computed.isReadOnly}}",
-                                "className": "flex-shrink-0 ml-4"
+                                "className": "board:flex-shrink-0 board:ml-4"
                             }
                         }
                     ]
@@ -689,7 +689,7 @@
                     "name": "Div",
                     "if": "{{_local.form.use_comment}}",
                     "props": {
-                        "className": "grid-2col"
+                        "className": "board-grid-2col"
                     },
                     "children": [
                         {
@@ -705,7 +705,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "board-form-label"
                                     },
                                     "children": [
                                         {
@@ -733,7 +733,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.min_comment_length.hint|min={{board_config?.data?.limits?.min_comment_length_min ?? 0}}|max={{board_config?.data?.limits?.min_comment_length_max ?? 1000}}"
                                 },
@@ -742,7 +742,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.min_comment_length}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "board-form-error-xs board:mt-1"
                                     },
                                     "text": "{{_local.errors?.min_comment_length?.[0] ?? ''}}"
                                 }
@@ -761,7 +761,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "board-form-label"
                                     },
                                     "children": [
                                         {
@@ -789,7 +789,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.max_comment_length.hint|min={{board_config?.data?.limits?.max_comment_length_min ?? 1}}|max={{board_config?.data?.limits?.max_comment_length_max ?? 1000}}"
                                 },
@@ -798,7 +798,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.max_comment_length}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "board-form-error-xs board:mt-1"
                                     },
                                     "text": "{{_local.errors?.max_comment_length?.[0] ?? ''}}"
                                 }
@@ -820,7 +820,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "board-form-label"
                             },
                             "children": [
                                 {
@@ -848,7 +848,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "board-form-hint"
                             },
                             "text": "$t:sirsoft-board.admin.form.fields.max_comment_depth.hint|min={{board_config?.data?.limits?.max_comment_depth_min ?? 0}}|max={{board_config?.data?.limits?.max_comment_depth_max ?? 10}}"
                         },
@@ -857,7 +857,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.max_comment_depth}}",
                             "props": {
-                                "className": "form-error-xs mt-1"
+                                "className": "board-form-error-xs board:mt-1"
                             },
                             "text": "{{_local.errors?.max_comment_depth?.[0] ?? ''}}"
                         }
@@ -877,7 +877,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "board-form-label"
                             },
                             "children": [
                                 {
@@ -894,7 +894,7 @@
                             "props": {
                                 "name": "comment_order",
                                 "disabled": "{{_computed.isReadOnly}}",
-                                "className": "w-full",
+                                "className": "board:w-full",
                                 "options": [
                                     {
                                         "value": "ASC",
@@ -914,21 +914,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-start justify-between"
+                        "className": "board-flex-start board:justify-between"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-1"
+                                "className": "board:flex-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-heading"
+                                        "className": "board-text-heading"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.use_file_upload.label"
                                 },
@@ -936,7 +936,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.use_file_upload.description"
                                 }
@@ -948,7 +948,7 @@
                             "props": {
                                 "name": "use_file_upload",
                                 "disabled": "{{_computed.isReadOnly}}",
-                                "className": "flex-shrink-0 ml-4"
+                                "className": "board:flex-shrink-0 board:ml-4"
                             }
                         }
                     ]
@@ -959,7 +959,7 @@
                     "name": "Div",
                     "if": "{{_local.form.use_file_upload}}",
                     "props": {
-                        "className": "grid-2col"
+                        "className": "board-grid-2col"
                     },
                     "children": [
                         {
@@ -975,7 +975,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "board-form-label"
                                     },
                                     "children": [
                                         {
@@ -1003,7 +1003,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.max_file_count.hint|count={{board_config?.data?.limits?.max_file_count_max ?? 20}}|min={{board_config?.data?.limits?.max_file_count_min ?? 1}}|max={{board_config?.data?.limits?.max_file_count_max ?? 20}}"
                                 },
@@ -1012,7 +1012,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.max_file_count}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "board-form-error-xs board:mt-1"
                                     },
                                     "text": "{{_local.errors?.max_file_count?.[0] ?? ''}}"
                                 }
@@ -1031,7 +1031,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "board-form-label"
                                     },
                                     "children": [
                                         {
@@ -1060,7 +1060,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.fields.max_file_size.hint|maxMB={{board_config?.data?.limits?.max_file_size_max ?? 200}}"
                                 },
@@ -1069,7 +1069,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.max_file_size}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "board-form-error-xs board:mt-1"
                                     },
                                     "text": "{{_local.errors?.max_file_size?.[0] ?? ''}}"
                                 }
@@ -1091,7 +1091,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "board-form-label"
                             },
                             "children": [
                                 {
@@ -1117,7 +1117,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "board-form-hint"
                             },
                             "text": "$t:sirsoft-board.admin.form.fields.allowed_extensions.description"
                         },
@@ -1127,7 +1127,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.allowed_extensions}}",
                             "props": {
-                                "className": "form-error-xs mt-1"
+                                "className": "board-form-error-xs board:mt-1"
                             },
                             "text": "{{_local.errors?.allowed_extensions?.[0] ?? ''}}"
                         }

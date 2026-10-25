@@ -144,13 +144,19 @@ describe.each([
     beforeEach(() => {
         registry = createMockComponentRegistryWithBasics();
         registry.register('basic', 'Icon', ({ className }: { className?: string }) => React.createElement('i', { className, 'aria-hidden': 'true' }));
-        // 테스트 렌더는 모듈 핸들러를 싣지 않는다 — 운영처럼 `sirsoft-ecommerce.` 접두로 함께 등록한다.
-        // 시험 도구가 렌더마다 한 번 부르는 전역 상태 갱신기 연결(setGlobalStateUpdater) 때 등록한다 — 7.1.3 전 도구는
-        // 죽은 코드였던 `toast` 사용자 핸들러 등록에 걸었는데, 도구가 엔진 내장 toast 를 쓰게 되면서 그 호출이 없어졌다.
-        const original = ActionDispatcher.prototype.setGlobalStateUpdater;
-        vi.spyOn(ActionDispatcher.prototype, 'setGlobalStateUpdater').mockImplementation(function (this: any, updater: any) {
-            original.call(this, updater);
-            Object.entries(handlerMap).forEach(([n, h]) => this.registerHandler(`sirsoft-ecommerce.${n}`, h as any));
+        // 테스트 렌더는 모듈 핸들러를 싣지 않는다 — 운영처럼 `sirsoft-ecommerce.` 접두·등록자로 함께 등록한다.
+        // 디스패처마다 첫 등록(생성자의 엔진 기본 핸들러 등록) 때 한 번 싣는다. 종전에는 테스트 유틸의 `toast` 등록을
+        // 신호로 삼았는데, 그 등록은 엔진이 직접 처리하는 이름이라 호출되지 않는 죽은 코드여서 engine-v1.86.0 에서 지워졌다.
+        const original = ActionDispatcher.prototype.registerHandler;
+        const loaded = new WeakSet<object>();
+        vi.spyOn(ActionDispatcher.prototype, 'registerHandler').mockImplementation(function (this: any, handlerName: string, handler: any, options?: any) {
+            original.call(this, handlerName, handler, options);
+            if (!loaded.has(this)) {
+                loaded.add(this);
+                Object.entries(handlerMap).forEach(([n, h]) =>
+                    original.call(this, `sirsoft-ecommerce.${n}`, h as any, { category: 'module', source: 'sirsoft-ecommerce' }),
+                );
+            }
         });
     });
 

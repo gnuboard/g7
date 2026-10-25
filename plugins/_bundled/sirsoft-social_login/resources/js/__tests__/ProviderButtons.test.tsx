@@ -12,6 +12,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /** 버튼 스타일시트에서 선택자 하나의 선언을 꺼낸다(정확히 그 선택자만 가진 규칙). */
+/** 사이트 다크 — 템플릿 종류와 무관한 중립 표식(`<html data-g7-color-scheme="dark">`) 규격. 「다크 안의 라이트」는 제외한다 */
+const SITE_DARK = ':is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"]))';
+
 const cssRule = (css: string, selector: string): Record<string, string> | null => {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = css.match(new RegExp(`(?:^|\\})\\s*${escaped}\\s*\\{([^}]*)\\}`));
@@ -158,11 +161,11 @@ describe('ProviderButtons', () => {
    * @scenario theme=light|dark
    * @effects google_dark_follows_site_theme
    */
-  it('Google 버튼 다크는 사이트 다크(html.dark)만 따르고 운영체제 설정을 따르지 않는다', () => {
-    const css = readFileSync(resolve(__dirname, '../../css/buttons.css'), 'utf8');
+  it('Google 버튼 다크는 사이트 다크(중립 표식)만 따르고 운영체제 설정을 따르지 않는다', () => {
+    const css = readFileSync(resolve(__dirname, '../../css/main.css'), 'utf8');
 
     expect(cssRule(css, '.sl-button--google')).toEqual({ 'background-color': '#ffffff', 'border-color': '#747775', color: '#1f1f1f' });
-    expect(cssRule(css, '.dark .sl-button--google')).toEqual({ 'background-color': '#131314', 'border-color': '#8e918f', color: '#e3e3e3' });
+    expect(cssRule(css, `.sl-button--google${SITE_DARK}`)).toEqual({ 'background-color': '#131314', 'border-color': '#8e918f', color: '#e3e3e3' });
     expect(css).not.toMatch(/prefers-color-scheme/);
   });
 });

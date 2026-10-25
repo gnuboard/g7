@@ -92,7 +92,7 @@ describe('우편번호 환경설정 — 의미 클래스 위치', () => {
         for (const field of fields) {
             expect({ id: field.id, className: field.props?.className }).toEqual({
                 id: field.id,
-                className: 'grid-3col-responsive',
+                className: 'daumpostcode-grid-3col-responsive',
             });
         }
     });
@@ -101,10 +101,10 @@ describe('우편번호 환경설정 — 의미 클래스 위치', () => {
     // @effects postcode_settings_semantic_classes_on_their_rows
     it('저장 오류 목록 줄은 옅은 오류색을 쓰고, 3열 그리드는 입력 칸 줄에만 쓴다', () => {
         const item = nodes.find((n) => n.name === 'Li' && n.text === '{{message}}');
-        expect(item?.props?.className).toBe('text-error-soft');
+        expect(item?.props?.className).toBe('daumpostcode-text-error-soft');
 
         const misplaced = nodes.filter(
-            (n) => n.props?.className === 'grid-3col-responsive' && !(typeof n.id === 'string' && n.id.startsWith('field_')),
+            (n) => n.props?.className === 'daumpostcode-grid-3col-responsive' && !(typeof n.id === 'string' && n.id.startsWith('field_')),
         );
         expect(misplaced.map((n) => n.name ?? n.id)).toEqual([]);
     });

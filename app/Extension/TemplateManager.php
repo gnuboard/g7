@@ -39,6 +39,8 @@ use App\Support\BootDeferredLog;
 use App\Support\ExtensionIntegrations;
 use App\Support\LocalizedValue;
 use App\Support\StateContracts;
+use App\Support\Template\ColorSchemeDeclaration;
+use App\Support\Template\ExtensionCssOverrideResolver;
 use Composer\Semver\Semver;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -420,6 +422,17 @@ class TemplateManager implements TemplateManagerInterface
         // type 값 검증
         if (! in_array($data['type'], ['admin', 'user'])) {
             Log::error("Invalid type '{$data['type']}' in template.json for {$templateName}. Must be 'admin' or 'user'");
+
+            return false;
+        }
+
+        // 확장 CSS 계약 — 다크 방식 선언과 확장 CSS 덮기 파일 선언의 형식
+        $contractErrors = array_merge(
+            ColorSchemeDeclaration::validationErrors($data),
+            (new ExtensionCssOverrideResolver)->validationErrors($data),
+        );
+        if ($contractErrors !== []) {
+            Log::error("Invalid extension CSS contract in template.json for {$templateName}", ['errors' => $contractErrors]);
 
             return false;
         }

@@ -327,8 +327,13 @@ export const Select: React.FC<SelectProps> = ({
   // variant 접두사가 붙은 유틸(disabled:bg-, dark:bg-, hover:bg- 등)은 베이스 외형이 아니므로
   // hasCustomStyle/hasTextColor 판정에서 제외한다. 베이스 토큰만으로 커스텀 외형 여부를 판단해야
   // 호출처가 disabled:bg-gray-100 만 추가했을 때 기본 크기 클래스(w-full px-4 py-2.5)가 유실되지 않는다.
+  // 확장이 자기 CSS 로 준 접두 빌드 클래스(`ecommerce:bg-white`)는 앞글자를 떼고 같은 뜻으로 읽는다 —
+  // 앞글자는 변형이 아니다(코어 G7Core.style.splitExtensionClassPrefix, engine-v1.86.0).
+  const bareToken = (t: string): string =>
+    (window as any).G7Core?.style?.splitExtensionClassPrefix?.(t)?.rest ?? t;
   const baseTokens = (className ?? '')
     .split(/\s+/)
+    .map(bareToken)
     .filter((t) => t && !t.includes(':')) // variant 접두사(`disabled:`, `dark:`, `hover:` 등) 토큰 제외
     .join(' ');
   const hasCustomStyle = baseTokens.includes('bg-');
@@ -349,8 +354,21 @@ export const Select: React.FC<SelectProps> = ({
   // 바깥 상자로 올려 준다 — 나머지 외형은 종전대로 버튼이 받는다.
   const widthClass = (className ?? '')
     .split(/\s+/)
-    .filter((t) => /^(?:sm:|md:|lg:|xl:)?(?:w-|min-w-|max-w-|flex-1|grow)/.test(t))
+    .filter((t) => /^(?:sm:|md:|lg:|xl:)?(?:w-|min-w-|max-w-|flex-1|grow)/.test(bareToken(t)))
     .join(' ');
+
+  // 버튼에 `w-full` 이 있으면 확장 앞글자가 붙은 변형 없는 폭(`ecommerce:w-40`)은 버튼에서 뺀다 —
+  // 폭은 바깥 상자가 이미 쥐었다. 앞글자 없는 `w-40` 은 템플릿 CSS 안에서 `w-full` 에 졌지만,
+  // 확장 CSS 는 템플릿 층 밖이라 `w-full` 을 이겨 버튼이 고정 폭으로 굳는다(issue816 지문 비교).
+  const buttonTokens = baseButtonClass.split(/\s+/).filter(Boolean);
+  const buttonFillsBox = buttonTokens.some((t) => bareToken(t) === 'w-full');
+  const isPrefixedFixedWidth = (t: string): boolean => {
+    const split = (window as any).G7Core?.style?.splitExtensionClassPrefix?.(t);
+    return !!split?.prefix && /^w-/.test(split.rest) && split.rest !== 'w-full';
+  };
+  const buttonClass = buttonFillsBox
+    ? buttonTokens.filter((t) => !isPrefixedFixedWidth(t)).join(' ')
+    : baseButtonClass;
 
   return (
     <Div ref={containerRef} className={`relative ${widthClass}`.trim()} {...rootDomProps}>
@@ -364,7 +382,7 @@ export const Select: React.FC<SelectProps> = ({
         type="button"
         onClick={handleToggle}
         disabled={disabled}
-        className={`${baseButtonClass} flex items-center justify-between gap-2 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
+        className={`${buttonClass} flex items-center justify-between gap-2 text-left cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-labelledby={buttonLabelledBy}

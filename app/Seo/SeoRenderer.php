@@ -14,6 +14,7 @@ use App\Services\SettingsService;
 use App\Services\TemplateService;
 use App\Support\AssetUrl;
 use App\Support\LayoutEmptyObjects;
+use App\Support\Template\ExtensionCssOverrideResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -516,6 +517,9 @@ class SeoRenderer implements SeoRendererInterface
             $templateIdentifier
         );
         $allStylesheets = array_merge($templateCssUrls, $configStylesheets);
+        // 확장 CSS — 확장 화면 스타일은 확장이 자기 CSS 로 공급한다. 템플릿 CSS 뒤(의미 클래스 층 선언 뒤)에
+        // 모듈 번들 → 플러그인 번들 → 템플릿의 확장 CSS 덮기 파일 순서로 싣는다(사용자 화면과 같은 순서).
+        $extensionStylesheets = $this->getExtensionCssUrls($templateIdentifier);
 
         $viewData = [
             'locale' => $locale,
@@ -535,6 +539,9 @@ class SeoRenderer implements SeoRendererInterface
             'googleVerification' => $meta['googleVerification'],
             'naverVerification' => $meta['naverVerification'],
             'stylesheets' => $allStylesheets,
+            'extensionStylesheets' => $extensionStylesheets,
+            // 봇 화면은 라이트로 그린다 — 확장 CSS 는 이 중립 표식만 본다
+            'colorScheme' => 'light',
             'extraHeadTags' => '',
             'extraBodyEnd' => '',
             'generatorTag' => g7_meta_generator_tag(),
@@ -777,6 +784,46 @@ class SeoRenderer implements SeoRendererInterface
     protected function templateRootPath(string $identifier): string
     {
         return base_path("templates/{$identifier}");
+    }
+
+    /**
+     * 확장 CSS URL 목록을 반환합니다 — 모듈 번들 → 플러그인 번들 → 템플릿 확장 CSS 덮기 파일.
+     *
+     * 정적 게시본 경로는 쓰지 않는다 — 이 URL 은 캐시 버전이 키에 없는 SEO 캐시 HTML 에 박제되고,
+     * 정적 디렉토리는 GC 로 사라질 수 있다(`getTemplateCssUrls` 와 같은 이유). 버전 쿼리도 붙이지 않는다.
+     *
+     * @param  string  $templateIdentifier  템플릿 식별자
+     * @return array<int, string> URL 목록
+     */
+    private function getExtensionCssUrls(string $templateIdentifier): array
+    {
+        $urls = [];
+        $versions = [];
+
+        try {
+            foreach ([['modules', $this->moduleManager->getActiveModules()], ['plugins', $this->pluginManager->getActivePlugins()]] as [$type, $extensions]) {
+                $hasCss = false;
+                foreach ($extensions as $extension) {
+                    $versions[$extension->getIdentifier()] = (string) $extension->getVersion();
+                    $hasCss = $hasCss || ! empty($extension->getAssets()['css'] ?? null);
+                }
+                if ($hasCss) {
+                    $urls[] = AssetUrl::extensionBundle($type, 'css', allowStatic: false);
+                }
+            }
+
+            $root = $this->templateRootPath($templateIdentifier);
+            $manifest = is_file($root.'/template.json') ? json_decode((string) file_get_contents($root.'/template.json'), true) : null;
+            if (is_array($manifest)) {
+                foreach ((new ExtensionCssOverrideResolver)->resolve($templateIdentifier, $manifest, $root, $versions) as $override) {
+                    $urls[] = AssetUrl::templateAsset($templateIdentifier, $override['path'], allowStatic: false);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('SEO extension CSS collection failed: '.$e->getMessage());
+        }
+
+        return $urls;
     }
 
     /**

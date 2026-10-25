@@ -5,6 +5,7 @@
     "priority": 100,
     "components": [
         {
+            "comment": "audit:allow extension-class-self-contained ck-content 는 CKEditor 라이브러리 본문 CSS 가 거는 이름이다 — 라이브러리 DOM 규약이라 확장이 이름을 정하지 않는다",
             "type": "composite",
             "name": "HtmlContent",
             "props": {
@@ -26,7 +27,7 @@
                 ]
             },
             "props": {
-                "className": "hidden"
+                "className": "ckeditor:hidden ckeditor-hidden"
             }
         }
     ]

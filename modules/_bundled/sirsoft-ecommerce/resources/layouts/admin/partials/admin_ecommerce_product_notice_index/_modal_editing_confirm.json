@@ -20,14 +20,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-start gap-3"
+                        "className": "ecommerce-flex-start ecommerce:gap-3"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-shrink-0 mt-0.5"
+                                "className": "ecommerce:flex-shrink-0 ecommerce:mt-0.5"
                             },
                             "children": [
                                 {
@@ -35,7 +35,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "triangle-exclamation",
-                                        "className": "text-xl text-amber-600 dark:text-amber-400"
+                                        "className": "ecommerce:text-xl ecommerce:text-amber-600 ecommerce:dark:text-amber-400"
                                     }
                                 }
                             ]
@@ -44,14 +44,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-1"
+                                "className": "ecommerce:flex-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-primary text-base mb-2"
+                                        "className": "ecommerce-text-primary ecommerce:text-base ecommerce:mb-2"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.message"
                                 },
@@ -59,7 +59,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-label"
+                                        "className": "ecommerce-text-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product_notice_template.modals.editing.confirm_message"
                                 }
@@ -73,7 +73,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "ecommerce-modal-footer-buttons"
             },
             "children": [
                 {
@@ -87,7 +87,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                     },
                     "children": [
                         {
@@ -145,7 +145,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700"
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700"
                     },
                     "children": [
                         {

@@ -331,11 +331,11 @@ describe('admin_dashboard_community.json - community 슬롯 주입', () => {
 
         const cls = statusBadge.props.className;
         // 신고현황 페이지와 동일한 5색 + 기본 회색 매핑
-        expect(cls).toContain("bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"); // pending
-        expect(cls).toContain("bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"); // review
-        expect(cls).toContain("bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"); // rejected
-        expect(cls).toContain("bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"); // suspended
-        expect(cls).toContain("bg-gray-600 text-white dark:bg-gray-600 dark:text-gray-100"); // deleted
+        expect(cls).toContain("board:bg-yellow-100 board:text-yellow-800 board:dark:bg-yellow-900 board:dark:text-yellow-200"); // pending
+        expect(cls).toContain("board:bg-blue-100 board:text-blue-800 board:dark:bg-blue-900 board:dark:text-blue-200"); // review
+        expect(cls).toContain("board:bg-purple-100 board:text-purple-800 board:dark:bg-purple-900 board:dark:text-purple-200"); // rejected
+        expect(cls).toContain("board:bg-red-100 board:text-red-800 board:dark:bg-red-900 board:dark:text-red-200"); // suspended
+        expect(cls).toContain("board:bg-gray-600 board:text-white board:dark:bg-gray-600 board:dark:text-gray-100"); // deleted
 
         // 기존 대상상태(target_status) 분기 흔적이 남아 있지 않아야 한다 (회귀 가드)
         expect(cls).not.toContain('target_status');

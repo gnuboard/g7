@@ -39,24 +39,24 @@
     </set-state>
   </init>
   <slot name="content">
-    <div data-ref="board_reactions_content" class="admin-page-content-fluid">
-      <responsive on="portable" class="admin-page-content-fluid-compact"/>
+    <div data-ref="board_reactions_content" class="board-admin-page-content-fluid">
+      <responsive on="portable" class="board-admin-page-content-fluid-compact"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.reactions.page_title" description="$t:sirsoft-board.admin.reactions.page_description">
-        <button data-ref="refresh_button" type="button" class="btn-icon" aria-label="$t:sirsoft-board.admin.reactions.refresh">
+        <button data-ref="refresh_button" type="button" class="board-btn-icon" aria-label="$t:sirsoft-board.admin.reactions.refresh">
           <on type="click">
             <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지/검색/필터를 유지한다 -->
             <navigate path="/admin/boards/reactions" :mergeQuery="true">
               <query/>
             </navigate>
           </on>
-          <icon name="arrows-rotate" class="text-xl"/>
+          <icon name="arrows-rotate" class="board:text-xl"/>
         </button>
       </page-header>
       <!-- 회원 필터 배너 — 회원 상세에서 건너온 상태라는 것을 화면이 말해 주지 않으면, 운영자는 전체 목록을 보고 있다고 믿고 건수를 읽는다 -->
-      <div data-ref="member_filter_banner" data-testid="admin-reaction-member-banner" data-if="{{!!(query.user_id || query.user_uuid)}}" class="admin-card flex-center gap-2">
-        <icon name="circle-info" class="text-base text-blue-600 dark:text-blue-400 flex-shrink-0"/>
-        <span class="text-body flex-1">$t:sirsoft-board.admin.reactions.filters.member_filter_notice</span>
-        <button type="button" data-ref="member_filter_clear" data-testid="admin-reaction-member-banner-clear" class="px-3 py-1.5 bg-white dark:bg-gray-800 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">
+      <div data-ref="member_filter_banner" data-testid="admin-reaction-member-banner" data-if="{{!!(query.user_id || query.user_uuid)}}" class="board-admin-card board-flex-center board:gap-2">
+        <icon name="circle-info" class="board:text-base board:text-blue-600 board:dark:text-blue-400 board:flex-shrink-0"/>
+        <span class="board-text-body board:flex-1">$t:sirsoft-board.admin.reactions.filters.member_filter_notice</span>
+        <button type="button" data-ref="member_filter_clear" data-testid="admin-reaction-member-banner-clear" class="board:px-3 board:py-1.5 board:bg-white board:dark:bg-gray-800 board-text-body board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:text-sm board:font-medium">
           <on type="click">
             <!-- 회원 필터만 떼고 검색어·기간은 유지한다 — 배너가 말하는 것이 회원 한정뿐이므로 그것만 되돌린다.
                  쪽수를 건드리는 이동이라 목록을 다시 세우는 셈이다 — 표 본문만 대기 표시로 덮고 이력에는 쌓지 않는다(쪽 이동·정렬과 같은 규칙) -->
@@ -72,10 +72,10 @@
         잠가 둔다. 고를 것이 있다는 사실 자체를 먼저 알려야 하고, 골랐다 풀 때마다 줄이
         생겼다 사라지면 그 아래 표가 위아래로 흔들린다. 노출 여부는 권한으로 가른다
         (형제 화면 회원 목록과 같은 규칙). -->
-      <div data-ref="bulk_actions_area" data-if="{{reactions?.data?.abilities?.can_manage === true}}" class="bulk-actions-bar">
-        <span data-ref="selected_count" class="text-body font-medium">$t:sirsoft-board.admin.reactions.selected_count|count={{(_global.selectedIds || []).length}}</span>
-        <div data-ref="bulk_buttons" class="flex gap-2 ml-auto">
-          <button type="button" data-ref="bulk_delete" data-testid="admin-reaction-bulk-delete" class="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors" disabled="{{reactions?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}">
+      <div data-ref="bulk_actions_area" data-if="{{reactions?.data?.abilities?.can_manage === true}}" class="board-bulk-actions-bar">
+        <span data-ref="selected_count" class="board-text-body board:font-medium">$t:sirsoft-board.admin.reactions.selected_count|count={{(_global.selectedIds || []).length}}</span>
+        <div data-ref="bulk_buttons" class="board:flex board:gap-2 board:ml-auto">
+          <button type="button" data-ref="bulk_delete" data-testid="admin-reaction-bulk-delete" class="board:px-3 board:py-1.5 board:bg-red-600 board:text-white board:rounded board:hover:bg-red-700 board:dark:bg-red-600 board:dark:hover:bg-red-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed board:text-sm board:font-medium board:transition-colors" disabled="{{reactions?.data?.abilities?.can_manage !== true || !_global.selectedIds || _global.selectedIds.length === 0}}">
             <on type="click">
               <!-- 선택 삭제 — 확인 모달로 넘긴다. 삭제 권한이 없으면 버튼 자체가 잠겨 있어 여기까지 오지 않는다 -->
               <open-modal target="admin_reaction_bulk_delete_modal"/>
@@ -86,8 +86,8 @@
       </div>
       <!-- 건수 줄 — 형제 관리자 목록 11곳이 표 바로 위에 총 건수를 세운다. 필터를 걸었을 때
         「지금 몇 건이 남았는가」를 표를 세지 않고 알 수 있어야 한다. -->
-      <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
-        <span class="text-label">$t:sirsoft-board.admin.reactions.total_count|count={{reactions?.data?.pagination?.total ?? 0}}</span>
+      <div data-ref="table_header_bar" class="board-flex-between board:flex-wrap board:gap-3 board:mb-4">
+        <span class="board-text-label">$t:sirsoft-board.admin.reactions.total_count|count={{reactions?.data?.pagination?.total ?? 0}}</span>
       </div>
       <data-grid :pageHrefMergeQuery="true" pageHref="/admin/boards/reactions?page={page}" data-type="composite" data-ref="reactions_data_grid" rowLabelField="target_title" :data-blur-until-loaded="true" data="{{reactions?.data?.data}}" :sortable="true" sortField="created_at" sortDirection="{{query.sort_order || 'desc'}}" :pagination="true" :alwaysShowPagination="true" :pageSize="20" :serverSidePagination="true" serverCurrentPage="{{reactions?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{reactions?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{reactions?.data?.pagination?.has_more_pages ?? false}}" selectable="{{reactions?.data?.abilities?.can_manage === true}}" selectionScope="page" selectedIds="{{_global.selectedIds || []}}" idField="id" :showColumnSelector="false" :responsiveBreakpoint="768" :showFirstLast="true" emptyMessage="{{reactions === undefined ? '' : (reactions === null ? $t('sirsoft-board.common.list_load_failed') : $t('sirsoft-board.admin.reactions.table_empty'))}}" actionsColumnHeader="$t:common.actions" selectedCountText="">
         <column field="created_at" header="$t:sirsoft-board.admin.reactions.columns.reacted_at" :sortable="true">
@@ -95,13 +95,13 @@
             <!-- 반응 시각은 «언제 눌렀나» 를 초까지 밝힌다 — 「2시간 전」 같은 상대 표기는 지울 대상을
                  고를 때 두 반응의 선후를 가리지 못한다. 값은 UTC 로 저장돼 있고 `created_at` 이
                  회원 표시 시간대로 환산된 절대 시각이다(`reacted_at` 은 상대 표기라 쓰지 않는다). -->
-            <span class="text-sm text-gray-900 dark:text-white whitespace-nowrap">{{row.created_at}}</span>
+            <span class="board:text-sm board:text-gray-900 board:dark:text-white board:whitespace-nowrap">{{row.created_at}}</span>
           </cell>
         </column>
         <column field="member" :sortable="false" header="$t:sirsoft-board.admin.reactions.columns.member">
           <cell>
-            <div class="flex flex-col">
-              <div class="flex-center gap-2">
+            <div class="board:flex board:flex-col">
+              <div class="board-flex-center board:gap-2">
                 <action-menu data-type="composite" data-if="{{!!row.member?.uuid}}" position="right">
                   <prop name="items">
                     <item href="/admin/users/{{row.member?.uuid}}" target="_blank" id="view_member" label="$t:sirsoft-board.admin.reactions.cell.view_member" iconName="user"/>
@@ -119,38 +119,38 @@
                       </case>
                     </switch>
                   </on>
-                  <span class="text-heading cursor-pointer hover:underline">{{row.member?.name}}</span>
+                  <span class="board-text-heading board:cursor-pointer board:hover:underline">{{row.member?.name}}</span>
                 </action-menu>
-                <span data-if="{{!row.member?.uuid}}" class="text-heading">{{row.member?.name}}</span>
+                <span data-if="{{!row.member?.uuid}}" class="board-text-heading">{{row.member?.name}}</span>
                 <badge data-type="composite" data-if="{{row.member?.is_withdrawn}}" color="gray" size="sm">$t:sirsoft-board.admin.reactions.badges.withdrawn</badge>
               </div>
-              <span data-if="{{row.member?.email}}" class="text-tertiary">({{row.member?.email}})</span>
+              <span data-if="{{row.member?.email}}" class="board-text-tertiary">({{row.member?.email}})</span>
             </div>
           </cell>
         </column>
-        <column field="target_title" :sortable="false" header="$t:sirsoft-board.admin.reactions.columns.target" cellClassName="max-w-xs">
+        <column field="target_title" :sortable="false" header="$t:sirsoft-board.admin.reactions.columns.target" cellClassName="board:max-w-xs">
           <cell>
-            <div class="flex flex-col gap-1">
-              <div class="flex-center gap-2">
+            <div class="board:flex board:flex-col board:gap-1">
+              <div class="board-flex-center board:gap-2">
                 <badge data-type="composite" color="{{row.target_type === 'comment' ? 'purple' : 'blue'}}" size="sm">{{row.target_type_label}}</badge>
-                <a href="/admin/board/{{row.board?.slug}}/post/{{row.post_id}}" data-if="{{!row.is_target_deleted &amp;&amp; !!row.board}}" class="font-medium truncate cursor-pointer hover:underline">
+                <a href="/admin/board/{{row.board?.slug}}/post/{{row.post_id}}" data-if="{{!row.is_target_deleted &amp;&amp; !!row.board}}" class="board:font-medium board:truncate board:cursor-pointer board:hover:underline">
                   <on type="click">
                     <!-- 살아 있는 대상이고 게시판도 남아 있을 때만 원글로 건너뛴다 — 삭제된 대상·게시판 삭제 행은 갈 곳이 없다 -->
                     <navigate/>
                   </on>
                   {{row.target_title}}
                 </a>
-                <span data-if="{{row.is_target_deleted || !row.board}}" class="font-medium truncate line-through text-gray-500 dark:text-gray-400">{{row.target_title}}</span>
+                <span data-if="{{row.is_target_deleted || !row.board}}" class="board:font-medium board:truncate board:line-through board:text-gray-500 board:dark:text-gray-400">{{row.target_title}}</span>
               </div>
               <!-- 댓글 반응은 어느 댓글이었는지가 제목만으로는 드러나지 않아 발췌를 함께 싣는다 -->
-              <span data-if="{{!!row.target_excerpt}}" class="text-tertiary truncate">{{row.target_excerpt}}</span>
+              <span data-if="{{!!row.target_excerpt}}" class="board-text-tertiary board:truncate">{{row.target_excerpt}}</span>
             </div>
           </cell>
         </column>
         <column field="board" :sortable="false" header="$t:sirsoft-board.admin.reactions.columns.board_name">
           <cell>
-            <div class="flex-center gap-2 flex-wrap">
-              <span data-if="{{!!row.board}}" class="text-sm">{{row.board?.name}}</span>
+            <div class="board-flex-center board:gap-2 board:flex-wrap">
+              <span data-if="{{!!row.board}}" class="board:text-sm">{{row.board?.name}}</span>
               <badge data-type="composite" data-if="{{!row.board}}" color="gray" size="sm">$t:sirsoft-board.admin.reactions.badges.board_deleted</badge>
               <badge data-type="composite" data-if="{{row.board &amp;&amp; (!row.board.use_reaction || !row.board.is_active)}}" color="yellow" size="sm">$t:sirsoft-board.admin.reactions.badges.reaction_off</badge>
             </div>
@@ -158,18 +158,18 @@
         </column>
         <column field="reaction_type" :sortable="false" header="$t:sirsoft-board.admin.reactions.columns.reaction_type">
           <cell>
-            <div class="flex-center gap-2">
-              <img data-if="{{!!row.reaction_type?.icon_url}}" src="{{row.reaction_type?.icon_url}}" alt="" class="w-5 h-5 object-contain"/>
+            <div class="board-flex-center board:gap-2">
+              <img data-if="{{!!row.reaction_type?.icon_url}}" src="{{row.reaction_type?.icon_url}}" alt="" class="board:w-5 board:h-5 board:object-contain"/>
               <icon data-if="{{!row.reaction_type?.icon_url}}" name="{{row.reaction_type?.icon_name ?? 'fa-thumbs-up'}}" size="sm"/>
-              <span class="text-sm">{{row.reaction_type?.name ?? ''}}</span>
+              <span class="board:text-sm">{{row.reaction_type?.name ?? ''}}</span>
               <badge data-type="composite" data-if="{{row.reaction_type &amp;&amp; row.reaction_type.is_active === false}}" color="gray" size="sm">$t:sirsoft-board.admin.reactions.badges.type_inactive</badge>
             </div>
           </cell>
         </column>
         <column field="target_status" :sortable="false" header="$t:sirsoft-board.admin.reactions.columns.target_status">
           <cell>
-            <div class="flex-center gap-2">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{row.target_status === 'published' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : row.target_status === 'blinded' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : row.target_status === 'deleted' ? 'bg-gray-600 text-white dark:bg-gray-600 dark:text-gray-100' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}">{{row.target_status_label}}</span>
+            <div class="board-flex-center board:gap-2">
+              <span class="board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium {{row.target_status === 'published' ? 'board:bg-green-100 board:text-green-800 board:dark:bg-green-900 board:dark:text-green-200' : row.target_status === 'blinded' ? 'board:bg-orange-100 board:text-orange-800 board:dark:bg-orange-900 board:dark:text-orange-200' : row.target_status === 'deleted' ? 'board:bg-gray-600 board:text-white board:dark:bg-gray-600 board:dark:text-gray-100' : 'board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200'}}">{{row.target_status_label}}</span>
               <badge data-type="composite" data-if="{{row.is_target_deleted}}" color="red" size="sm">$t:sirsoft-board.admin.reactions.badges.deleted_target</badge>
             </div>
           </cell>
@@ -221,7 +221,7 @@
           </switch>
         </on>
       </data-grid>
-      <div data-ref="pagination_info" class="mt-4 text-label text-center">
+      <div data-ref="pagination_info" class="board:mt-4 board-text-label board:text-center">
         <span>$t:sirsoft-board.admin.reactions.pagination_info|total={{reactions?.data?.pagination?.total ?? 0}}|from={{reactions?.data?.pagination?.from ?? 0}}|to={{reactions?.data?.pagination?.to ?? 0}}</span>
       </div>
     </div>
@@ -230,17 +230,17 @@
     <!-- 단건 삭제 확인 — 지우는 것은 「그 회원이 누른 표시」이지 글이나 댓글이 아니다. 그 사실을 본문이 분명히 말한다 -->
     <modal data-type="composite" data-ref="admin_reaction_delete_modal" title="$t:sirsoft-board.admin.reactions.modals.delete_title" size="sm">
       <meta editor_label="$t:sirsoft-board.admin.reactions.modals.delete_editor_label"/>
-      <div class="py-2">
-        <p class="text-body">$t:sirsoft-board.admin.reactions.modals.delete_confirm</p>
+      <div class="board:py-2">
+        <p class="board-text-body">$t:sirsoft-board.admin.reactions.modals.delete_confirm</p>
       </div>
-      <div class="modal-footer-buttons">
-        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      <div class="board-modal-footer-buttons">
+        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button type="button" data-testid="admin-reaction-delete-confirm" class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reactionDeleteLoading}}">
+        <button type="button" data-testid="admin-reaction-delete-confirm" class="board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-700 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{_global.reactionDeleteLoading}}">
           <on type="click">
             <!-- 확인 버튼을 먼저 잠근다 — 응답이 늦는 사이 두 번 눌리면 같은 삭제가 겹친다 -->
             <set-state target="global" :reactionDeleteLoading="true"/>
@@ -263,8 +263,8 @@
             </api-call>
           </on>
           <span data-if="{{!_global.reactionDeleteLoading}}">$t:common.confirm</span>
-          <span data-if="{{_global.reactionDeleteLoading}}" class="flex-center gap-2">
-            <icon name="spinner" class="spinner-sm"/>
+          <span data-if="{{_global.reactionDeleteLoading}}" class="board-flex-center board:gap-2">
+            <icon name="spinner" class="board-spinner-sm"/>
             <span>$t:sirsoft-board.admin.reactions.modals.processing</span>
           </span>
         </button>
@@ -275,17 +275,17 @@
     <!-- 선택 삭제 확인 — 건수를 본문에 싣고, 회원 쪽 목록에서도 사라진다는 것을 알린다 -->
     <modal data-type="composite" data-ref="admin_reaction_bulk_delete_modal" data-testid="admin-reaction-bulk-delete-modal" title="$t:sirsoft-board.admin.reactions.modals.bulk_delete_title" size="sm">
       <meta editor_label="$t:sirsoft-board.admin.reactions.modals.bulk_delete_editor_label"/>
-      <div class="py-2">
-        <p class="text-body">$t:sirsoft-board.admin.reactions.modals.bulk_delete_confirm|count={{(_global.selectedIds || []).length}}</p>
+      <div class="board:py-2">
+        <p class="board-text-body">$t:sirsoft-board.admin.reactions.modals.bulk_delete_confirm|count={{(_global.selectedIds || []).length}}</p>
       </div>
-      <div class="modal-footer-buttons">
-        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      <div class="board-modal-footer-buttons">
+        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button type="button" data-testid="admin-reaction-bulk-delete-confirm" class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reactionBulkDeleteLoading}}">
+        <button type="button" data-testid="admin-reaction-bulk-delete-confirm" class="board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-700 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{_global.reactionBulkDeleteLoading}}">
           <on type="click">
             <!-- 실행 ①  처리 중 표시를 켠다 — 여러 건을 한 번에 지우므로 응답이 늦고, 그 사이 두 번 눌리면 같은 요청이 겹친다 -->
             <set-state target="global" :reactionBulkDeleteLoading="true"/>
@@ -307,8 +307,8 @@
             </api-call>
           </on>
           <span data-if="{{!_global.reactionBulkDeleteLoading}}">$t:common.confirm</span>
-          <span data-if="{{_global.reactionBulkDeleteLoading}}" class="flex-center gap-2">
-            <icon name="spinner" class="spinner-sm"/>
+          <span data-if="{{_global.reactionBulkDeleteLoading}}" class="board-flex-center board:gap-2">
+            <icon name="spinner" class="board-spinner-sm"/>
             <span>$t:sirsoft-board.admin.reactions.modals.processing</span>
           </span>
         </button>
@@ -318,11 +318,11 @@
   <modal>
     <!-- 삭제 실패를 알리는 창 — 서버 문구를 그대로 싣고, 없으면 공통 문구로 떨어진다 -->
     <modal data-type="composite" data-ref="error_modal" title="$t:common.error" size="sm">
-      <div class="py-2">
-        <p class="text-gray-700 dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
+      <div class="board:py-2">
+        <p class="board:text-gray-700 board:dark:text-gray-300">{{_global.errorMessage || $t:common.error_occurred}}</p>
       </div>
-      <div class="flex justify-end mt-6">
-        <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
+      <div class="board:flex board:justify-end board:mt-6">
+        <button type="button" class="board:px-4 board:py-2 board:bg-gray-900 board:dark:bg-gray-100 board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-200">
           <on type="click">
             <close-modal/>
           </on>

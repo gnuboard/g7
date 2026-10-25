@@ -71,25 +71,25 @@
     <wait-for>templates</wait-for>
   </transition-overlay>
   <slot name="content">
-    <div data-ref="notice_page_content" class="admin-page-content">
-      <responsive on="portable" class="admin-page-content-compact"/>
-      <div data-ref="page_header" class="flex-start justify-between gap-4 mb-6">
-        <responsive on="portable" class="row-stack mb-6"/>
+    <div data-ref="notice_page_content" class="ecommerce-admin-page-content">
+      <responsive on="portable" class="ecommerce-admin-page-content-compact"/>
+      <div data-ref="page_header" class="ecommerce-flex-start ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-6">
+        <responsive on="portable" class="ecommerce-row-stack ecommerce:mb-6"/>
         <div data-ref="page_header_left">
-          <h1 class="page-title mb-1">$t:sirsoft-ecommerce.admin.product_notice_template.title</h1>
-          <p class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.product_notice_template.description</p>
+          <h1 class="ecommerce-page-title ecommerce:mb-1">$t:sirsoft-ecommerce.admin.product_notice_template.title</h1>
+          <p class="ecommerce-text-secondary ecommerce:text-sm">$t:sirsoft-ecommerce.admin.product_notice_template.description</p>
         </div>
-        <div data-ref="page_header_actions" class="flex-center gap-2 flex-shrink-0">
-          <button type="button" data-ref="refresh_button" class="btn-icon" aria-label="$t:sirsoft-ecommerce.common.refresh">
+        <div data-ref="page_header_actions" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-shrink-0">
+          <button type="button" data-ref="refresh_button" class="ecommerce-btn-icon" aria-label="$t:sirsoft-ecommerce.common.refresh">
             <on type="click">
               <!-- 검색어와 쌓인 스크롤 페이지를 함께 떨어뜨린다 — 소스만 다시 태우면 이어 붙인 목록이 남는다 -->
               <navigate path="/admin/ecommerce/product-notices" :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
-            <icon data-ref="refresh_icon" name="refresh" class="text-xl"/>
+            <icon data-ref="refresh_icon" name="refresh" class="ecommerce:text-xl"/>
           </button>
-          <button type="button" data-ref="add_template_button" disabled="{{templates?.data?.abilities?.can_create !== true}}" class="flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <button type="button" data-ref="add_template_button" disabled="{{templates?.data?.abilities?.can_create !== true}}" class="ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
             <on type="click">
               <!-- 오른쪽 패널을 등록 모드로 전환. 빈 폼에 항목 한 줄을 미리 넣어 두는 것은 항목이 0개인 템플릿은 저장할 수 없기 때문이다 -->
               <sequence>
@@ -109,12 +109,12 @@
                 </set-state>
               </sequence>
             </on>
-            <icon name="plus" class="text-base"/>
+            <icon name="plus" class="ecommerce:text-base"/>
             <span>$t:sirsoft-ecommerce.admin.product_notice_template.list.add</span>
           </button>
         </div>
       </div>
-      <div data-ref="panel_layout" :data-blur-until-loaded="true" class="grid-cols-1-lg-3">
+      <div data-ref="panel_layout" :data-blur-until-loaded="true" class="ecommerce-grid-cols-1-lg-3">
         <include src="partials/admin_ecommerce_product_notice_index/_panel_list.g7.html"/>
         <include src="partials/admin_ecommerce_product_notice_index/_panel_detail.g7.html"/>
       </div>

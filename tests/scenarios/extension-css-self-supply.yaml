@@ -1,0 +1,98 @@
+feature: 확장 CSS 자기 공급 — 층 평탄화·덮기 파일·다크 중립 표식·접두 클래스 (#816 S2)
+
+description: |
+  확장 화면이 템플릿 CSS 라이브러리에 기대지 않고 자기 CSS 로 보이도록 하는 코어 계약을 잠근다.
+  서빙 시 층 평탄화(g7-extension·properties 만 남김), 템플릿 확장 CSS 덮기 파일의 호환 판정과 로드 순서,
+  template.json features.color_scheme 선언 검증과 <html data-g7-color-scheme> 표식(편집기 프리뷰 프레임 포함),
+  확장 접두 빌드 클래스(ecommerce:px-2)의 앞글자 해석, 번들 manifest 의 CSS 자산·namespace 선언.
+  시험 하나가 시나리오 하나다 — case 값은 파일 접두어 + 시험 순번이다(이미 다른 매니페스트 표기를 단 시험은 그대로 둔다).
+
+axes:
+  case:
+    # tests/Unit/Support/CssLayerFlattenerTest.php — 남길 층(g7-extension 등)만 래퍼째 두고 나머지 층 래퍼·순서 선언을 걷는다(주석 속 @layer 무시)
+    - layer_flatten_c01
+    - layer_flatten_c02
+    - layer_flatten_c03
+    - layer_flatten_c04
+    - layer_flatten_c05
+    - layer_flatten_c06
+    - layer_flatten_c07
+    - layer_flatten_c08
+    - layer_flatten_c09
+    - layer_flatten_c10
+    - layer_flatten_c11
+    - layer_flatten_c12
+    # tests/Unit/Support/Template/ExtensionCssOverrideResolverTest.php — 대상 활성·버전 호환만 포함, 비호환 제외, 중복 target 오류
+    - css_override_c01
+    - css_override_c02
+    - css_override_c03
+    - css_override_c04
+    - css_override_c05
+    - css_override_c06
+    - css_override_c07
+    # tests/Unit/Support/Template/ColorSchemeDeclarationTest.php — features.color_scheme 세 전략 선언 검증·정규화
+    - color_decl_c01
+    - color_decl_c02
+    - color_decl_c03
+    # resources/js/core/theme/__tests__/ColorSchemeSignal.test.ts — <html data-g7-color-scheme> 이 템플릿 다크 방식을 따라 갱신
+    - color_signal_c01
+    - color_signal_c02
+    - color_signal_c03
+    - color_signal_c04
+    - color_signal_c05
+    - color_signal_c06
+    - color_signal_c07
+    - color_signal_c08
+    # resources/js/core/template-engine/layout-editor/__tests__/components/PreviewCanvas.colorSchemeSignal.test.tsx — 편집기 프리뷰 프레임이 프리뷰 테마를 같은 표식으로 단다
+    - preview_scheme_c01
+    # resources/js/core/__tests__/ModuleAssetLoader.extensionCssOverrides.test.ts — 덮기 파일을 확장 번들 CSS 뒤·운영자 추가 자산 앞에 붙임
+    - override_load_c01
+    - override_load_c02
+    - override_load_c03
+    - override_load_c04
+    # resources/js/core/template-engine/helpers/__tests__/StyleHelpers.extensionPrefix.test.ts — 확장 앞글자를 떼고 Tailwind 이름으로 해석(md:·hover: 는 변형)
+    - class_prefix_c01
+    - class_prefix_c02
+    - class_prefix_c03
+    - class_prefix_c04
+    # tests/Unit/Extension/BundledManifestAssetDeclarationTest.php — 번들 확장 manifest 의 자산 선언이 실제 파일을 가리키고 CSS 확장은 고유 namespace 선언
+    - manifest_asset_c01
+    - manifest_asset_c02
+    - manifest_asset_c03
+    # tests/Unit/Services/ExtensionBundleServiceTest.php — 번들 병합 서비스의 기타 계약(이미 표기한 시험 제외)
+    - bundle_service_c01
+    - bundle_service_c02
+    - bundle_service_c03
+    # tests/Unit/Seo/SeoRendererExtensionCssTest.php — 검색엔진용 화면에 확장 CSS 를 사용자 화면과 같은 순서로 싣는다
+    - seo_css_c01
+    - seo_css_c02
+    - seo_css_c03
+
+effects:
+  - extension_css_layers_flattened_keeping_named_layers   # 남길 층(g7-extension 등)만 래퍼째 두고 나머지 층 래퍼·순서 선언을 걷는다(주석 속 @layer 무시)
+  - template_css_override_resolved_by_compatibility   # 대상 활성·버전 호환만 포함, 비호환 제외, 중복 target 오류
+  - color_scheme_declaration_validated   # features.color_scheme 세 전략 선언 검증·정규화
+  - html_color_scheme_marker_follows_template   # <html data-g7-color-scheme> 이 템플릿 다크 방식을 따라 갱신
+  - preview_frame_carries_preview_scheme_marker   # 편집기 프리뷰 프레임이 프리뷰 테마를 같은 표식으로 단다
+  - css_overrides_loaded_after_bundles_before_custom   # 덮기 파일을 확장 번들 CSS 뒤·운영자 추가 자산 앞에 붙임
+  - extension_class_prefix_read_as_template_class   # 확장 앞글자를 떼고 Tailwind 이름으로 해석(md:·hover: 는 변형)
+  - bundled_manifest_css_assets_declared   # 번들 확장 manifest 의 자산 선언이 실제 파일을 가리키고 CSS 확장은 고유 namespace 선언
+  - extension_bundle_service_contract   # 번들 병합 서비스의 기타 계약(이미 표기한 시험 제외)
+  - seo_render_loads_extension_css_in_user_order   # SEO 렌더: 라이트 표식·템플릿 CSS 뒤 층 선언·모듈→플러그인→호환 덮기 파일
+  # ExtensionBundleServiceTest 가 이미 표기하던 효과 — 어느 소유 매니페스트에도 선언이 없던 것을 여기서 선언한다
+  - extension_css_bundle_flattens_layers_for_namespaced_extensions   # namespace 를 선언한 확장 CSS 는 병합 시 층 평탄화
+  - extension_css_bundle_keeps_layers_for_undeclared_extensions      # namespace 미선언 확장 CSS 는 층을 그대로 둔다
+  - clear_bundles_preserves_current_version                          # 번들 비우기가 현재 판 파일은 남긴다
+  - cleanup_removes_stale_atomic_write_temp_files                    # 원자적 쓰기 임시 파일 잔재를 정리한다
+
+test_files:
+  - tests/Unit/Support/CssLayerFlattenerTest.php
+  - tests/Unit/Support/Template/ExtensionCssOverrideResolverTest.php
+  - tests/Unit/Support/Template/ColorSchemeDeclarationTest.php
+  - resources/js/core/theme/__tests__/ColorSchemeSignal.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/PreviewCanvas.colorSchemeSignal.test.tsx
+  - resources/js/core/__tests__/ModuleAssetLoader.extensionCssOverrides.test.ts
+  - resources/js/core/template-engine/helpers/__tests__/StyleHelpers.extensionPrefix.test.ts
+  - tests/Unit/Extension/BundledManifestAssetDeclarationTest.php
+  - tests/Unit/Services/ExtensionBundleServiceTest.php
+  - tests/Unit/Seo/SeoRendererExtensionCssTest.php

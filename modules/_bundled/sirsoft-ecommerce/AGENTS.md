@@ -308,7 +308,7 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 - [ ] 업그레이드 스텝·데이터 마이그레이션이 설정 파일을 새로 쓰면(`File::put`) 바로 뒤에 `FilePermissionHelper::inheritOwnershipFromParent($path)` — `sudo` 코어 업데이트 안에서 root 로 실행되어 그 파일이 root 소유로 남으면 이후 웹 프로세스의 설정 저장이 영구 실패한다. 번들 확장 `upgrades/**` 전수를 파일시스템에서 파생해 검사하는 패리티 테스트가 누락을 잡는다
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-ecommerce` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`ecommerce:` 유틸리티·`ecommerce-*`)를 쓰면 `module:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 금액 계산 경로를 건드렸다면 여섯 소비 지점(상품 상세·장바구니·체크아웃·주문 생성·결제 검증·부분 취소)에 같은 결과가 도달하는지 확인
@@ -421,26 +421,28 @@ cd modules/_bundled/sirsoft-ecommerce && npm run test:e2e -- specs/<대상>.spec
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
 
-## 확장 조각의 CSS 클래스 규약
+## 화면 클래스 규약 — 이 모듈이 자기 CSS 를 싣는다
 
-resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
-클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+관리자 레이아웃과 `resources/extensions/` 조각은 **템플릿 CSS 에 기대지 않는다.** 모든 클래스는 이
+모듈 앞글자를 쓰고, 규칙은 이 모듈의 `dist/css/module.css` 에 실재한다(manifest `assets.css.namespace: ecommerce`).
+조각은 다른 패키지(관리자·사용자 템플릿) 화면 안에서 그려지지만 같은 규칙이 그대로 적용된다.
 
-두 가지를 지킨다.
+1. **배치·색 유틸리티는 `ecommerce:` 접두 Tailwind 로 쓴다**(`ecommerce:flex ecommerce:dark:bg-gray-800`).
+   Tailwind 는 이 모듈의 작성 도구일 뿐이고(preflight 없음), `resources/css/main.css` 맨 앞 생성 블록이
+   `resources/{layouts,extensions,js}` 를 훑어 쓰인 클래스만 만든다. 새 클래스를 쓰면
+   `php artisan module:build sirsoft-ecommerce --production` 으로 CSS 를 다시 만들고 update 한다 — 빌드하지 않으면
+   그 스타일만 조용히 빠진다. 앞글자 없는 `flex` 를 쓰면 정적 검사가 막는다.
+2. **템플릿 의미 클래스는 `ecommerce-*` 사본을 쓴다**(`ecommerce-btn`·`ecommerce-input`·`ecommerce-card`).
+   정의는 `resources/css/g7-extension.generated.css`(생성 파일, 손으로 고치지 않는다)의 가장 낮은 칸
+   `@layer g7-extension` 에 있어 템플릿이 같은 이름을 덮을 수 있다. 템플릿 의미 클래스를 새로 가져오려면
+   원래 이름으로 적은 뒤 `node scripts/extension-css/convert-layout-classes.mjs modules/_bundled/sirsoft-ecommerce` 를
+   다시 돌린다(같은 입력이면 결과가 같다).
+3. **이 모듈 고유의 의미 색·국기는 손 CSS 다** — `resources/css/main.css` 의 생성 블록 아래.
+   - 의미 색 `ecommerce-tone-*`: `@layer g7-extension` 안. 색만 맡는다.
+   - 국기 `ecommerce-flag ecommerce-flag-{소문자 국가 코드}`(4:3), 정사각은 `ecommerce-flag--square` 를 더한다.
+     그림은 `dist/vendor/flag-icons/7.2.3/`(MIT)에 동봉한 두 글자 국가 코드 SVG 다. 템플릿의 국기 라이브러리 클래스(`fi`)는 쓰지 않는다.
+4. **다크 모드는 `ecommerce:dark:` 변형이나 중립 표식(`[data-g7-color-scheme="dark"]`)으로 쓴다.** 템플릿 표지
+   `.dark` 를 손 CSS 선택자에 쓰지 않는다.
 
-1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
-   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
-   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
-   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
-   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
-   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
-
-2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
-   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
-   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
-   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
-
-이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
-열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
-떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
-정적 검사가 대조한다.
+정적 검사가 레이아웃·조각의 클래스 앞글자와 `dist/css` 실재를, CSS 선택자의 앞글자와 `.dark` 사용을 대조한다.
+규약 전문은 `docs/extension/module-assets.md` 「확장 CSS 자기 공급 규약」이다.

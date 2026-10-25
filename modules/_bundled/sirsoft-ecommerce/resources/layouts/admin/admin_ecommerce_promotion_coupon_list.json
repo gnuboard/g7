@@ -316,7 +316,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "ecommerce-admin-page-content"
                 },
                 "children": [
                     {
@@ -352,7 +352,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-between mb-6"
+                            "className": "ecommerce-flex-between ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -363,7 +363,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "ecommerce-page-title"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.title"
                                     },
@@ -371,7 +371,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-label-subtle mt-1"
+                                            "className": "ecommerce-text-label-subtle ecommerce:mt-1"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.description"
                                     }
@@ -394,7 +394,7 @@
                                 "props": {
                                     "href": "/admin/ecommerce/promotion-coupon-create",
                                     "mergeQuery": true,
-                                    "className": "button btn btn-primary aria-disabled:opacity-50 aria-disabled:cursor-not-allowed",
+                                    "className": "ecommerce-button ecommerce-btn ecommerce-btn-primary ecommerce:aria-disabled:opacity-50 ecommerce:aria-disabled:cursor-not-allowed",
                                     "disabled": "{{coupons?.data?.abilities?.can_create !== true}}"
                                 },
                                 "children": [
@@ -403,7 +403,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "plus",
-                                            "className": "text-base mr-2"
+                                            "className": "ecommerce:text-base ecommerce:mr-2"
                                         }
                                     },
                                     {

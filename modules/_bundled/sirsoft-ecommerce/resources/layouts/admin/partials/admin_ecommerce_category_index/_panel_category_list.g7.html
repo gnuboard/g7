@@ -5,15 +5,15 @@
   거부하면 되돌릴 방법이 재조회뿐이기 때문이다.
   드래그 가능 여부와 토글 잠금은 서버 권한(`abilities.can_update`)이 정한다. -->
 <partial description="Category List Panel - Hierarchical Tree with Drag &amp; Drop">
-  <div data-ref="category_list_panel" class="admin-card col-span-1-lg flex flex-col">
-    <div data-ref="category_list_header" class="px-4 panel-header flex-between">
-      <div class="flex-center gap-2">
-        <icon name="folder" class="text-xl text-gray-700 dark:text-gray-300"/>
-        <h3 class="text-heading">$t:sirsoft-ecommerce.admin.category.tree.title</h3>
+  <div data-ref="category_list_panel" class="ecommerce-admin-card ecommerce-col-span-1-lg ecommerce:flex ecommerce:flex-col">
+    <div data-ref="category_list_header" class="ecommerce:px-4 ecommerce-panel-header ecommerce-flex-between">
+      <div class="ecommerce-flex-center ecommerce:gap-2">
+        <icon name="folder" class="ecommerce:text-xl ecommerce:text-gray-700 ecommerce:dark:text-gray-300"/>
+        <h3 class="ecommerce-text-heading">$t:sirsoft-ecommerce.admin.category.tree.title</h3>
       </div>
     </div>
     <div>
-      <sortable-menu-list data-type="composite" data-ref="sortable_category_list" itemHref="/admin/ecommerce/categories?id={{row.id}}&amp;mode=view" :itemHrefMergeQuery="true" data-if="{{(categories?.data?.data?.length ?? 0) > 0}}" items="{{categories?.data?.data ?? []}}" selectedId="{{_global.selectedCategoryId}}" enableDrag="{{categories?.data?.abilities?.can_update === true}}" toggleDisabled="{{categories?.data?.abilities?.can_update !== true}}" class="p-2 max-h-[calc(90vh-140px)] overflow-y-auto" itemClassName="py-1 px-3 mb-1 rounded-lg border" itemSelectedClassName="bg-blue-50 dark:bg-blue-900/30 border-blue-500" itemDefaultClassName="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600" childrenContainerClassName="bg-gray-50 dark:bg-gray-900/50">
+      <sortable-menu-list data-type="composite" data-ref="sortable_category_list" itemHref="/admin/ecommerce/categories?id={{row.id}}&amp;mode=view" :itemHrefMergeQuery="true" data-if="{{(categories?.data?.data?.length ?? 0) > 0}}" items="{{categories?.data?.data ?? []}}" selectedId="{{_global.selectedCategoryId}}" enableDrag="{{categories?.data?.abilities?.can_update === true}}" toggleDisabled="{{categories?.data?.abilities?.can_update !== true}}" class="ecommerce:p-2 ecommerce:max-h-[calc(90vh-140px)] ecommerce:overflow-y-auto" itemClassName="ecommerce:py-1 ecommerce:px-3 ecommerce:mb-1 ecommerce:rounded-lg ecommerce:border" itemSelectedClassName="ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/30 ecommerce:border-blue-500" itemDefaultClassName="ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:hover:border-gray-300 ecommerce:dark:hover:border-gray-600" childrenContainerClassName="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900/50">
         <on type="action" event="onSelect">
           <!-- 분류 선택 — 트리가 들고 있는 행 전체를 전역에 옮긴다. 오른쪽 보기 패널은 이 값만 읽고
             상세를 따로 부르지 않는다.
@@ -80,9 +80,9 @@
         </on>
       </sortable-menu-list>
     </div>
-    <div data-ref="empty_category_state" data-if="{{categories !== undefined &amp;&amp; ((categories?.data?.data?.length ?? 0) === 0)}}" class="flex-center flex-1 justify-center gap-3 px-4">
-      <icon name="folder" class="text-xl text-gray-500 dark:text-gray-500"/>
-      <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.category.tree.empty</p>
+    <div data-ref="empty_category_state" data-if="{{categories !== undefined &amp;&amp; ((categories?.data?.data?.length ?? 0) === 0)}}" class="ecommerce-flex-center ecommerce:flex-1 ecommerce:justify-center ecommerce:gap-3 ecommerce:px-4">
+      <icon name="folder" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
+      <p class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.category.tree.empty</p>
     </div>
   </div>
 </partial>

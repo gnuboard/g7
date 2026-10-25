@@ -45,6 +45,9 @@ import { registerSirsoftAdminBasicIdentityLauncher } from './handlers/identityLa
 // 레이아웃 편집기 커스텀 위젯(icon-picker 등) 등록
 import { registerSirsoftAdminBasicEditorWidgets } from './layout-editor/registerEditorWidgets';
 
+/** 템플릿 식별자 — 핸들러 등록자 표기 (template.json 의 identifier 와 같다) */
+const TEMPLATE_IDENTIFIER = 'sirsoft-admin_basic';
+
 // handlerMap을 전역으로 노출 (로케일 변경 시 재등록용)
 if (typeof window !== 'undefined') {
   (window as any).G7TemplateHandlers = handlerMap;
@@ -73,9 +76,10 @@ export function initTemplate(): void {
       const actionDispatcher = (window as any).G7Core?.getActionDispatcher?.();
 
       if (actionDispatcher) {
-        // handlerMap의 모든 핸들러를 자동으로 등록
+        // handlerMap의 모든 핸들러를 자동으로 등록 — 등록자를 이 템플릿 식별자로 표시한다(코어 재등록과 같은 표기).
+        // 다른 주인의 이름을 덮으면 엔진이 [G7] 경고로 드러낸다 (engine-v1.86.0)
         Object.entries(handlerMap).forEach(([name, handler]) => {
-          actionDispatcher.registerHandler(name, handler);
+          actionDispatcher.registerHandler(name, handler, { category: 'custom', source: TEMPLATE_IDENTIFIER });
         });
 
         logger.log(`${Object.keys(handlerMap).length} custom handler(s) registered:`, Object.keys(handlerMap));

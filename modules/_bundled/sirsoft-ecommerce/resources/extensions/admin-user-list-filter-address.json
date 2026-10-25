@@ -11,19 +11,19 @@
             "responsive": {
                 "portable": {
                     "props": {
-                        "className": "flex flex-col gap-2 items-start"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:items-start"
                     }
                 }
             },
             "props": {
-                "className": "flex flex-col gap-2 md:flex-row md:items-center"
+                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:md:flex-row ecommerce:md:items-center"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 md:mb-0 shrink-0 md:flex md:items-center"
+                        "className": "ecommerce:block ecommerce:mb-2 ecommerce:w-32 ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:md:mb-0 ecommerce:shrink-0 ecommerce:md:flex ecommerce:md:items-center"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.user_filter.shipping_country"
                 },
@@ -31,7 +31,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center flex-wrap gap-3"
+                        "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-3"
                     },
                     "children": [
                         {
@@ -63,7 +63,7 @@
                             ],
                             "props": {
                                 "name": "ecommerceShippingCountry",
-                                "className": "w-40",
+                                "className": "ecommerce:w-40",
                                 "aria-label": "$t:sirsoft-ecommerce.admin.user_filter.shipping_country",
                                 "disabled": "{{(_local.userFilterExtraQuery || []).includes('sirsoft-ecommerce.has_address=0')}}",
                                 "value": "{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-ecommerce.shipping_country=')) || '').slice('sirsoft-ecommerce.shipping_country='.length)}}",
@@ -74,7 +74,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.user_filter.has_address"
                         },
@@ -82,7 +82,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "flex items-center gap-1 cursor-pointer"
+                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce:cursor-pointer"
                             },
                             "children": [
                                 {
@@ -117,14 +117,14 @@
                                         "name": "ecommerceHasAddress",
                                         "value": "",
                                         "checked": "{{!(_local.userFilterExtraQuery || []).some(e => e.startsWith('sirsoft-ecommerce.has_address='))}}",
-                                        "className": "radio"
+                                        "className": "ecommerce-radio"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                     },
                                     "text": "$t:common.all"
                                 }
@@ -134,7 +134,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "flex items-center gap-1 cursor-pointer"
+                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce:cursor-pointer"
                             },
                             "children": [
                                 {
@@ -169,14 +169,14 @@
                                         "name": "ecommerceHasAddress",
                                         "value": "1",
                                         "checked": "{{(_local.userFilterExtraQuery || []).includes('sirsoft-ecommerce.has_address=1')}}",
-                                        "className": "radio"
+                                        "className": "ecommerce-radio"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.user_filter.has_address_yes"
                                 }
@@ -186,7 +186,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "flex items-center gap-1 cursor-pointer"
+                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce:cursor-pointer"
                             },
                             "children": [
                                 {
@@ -221,14 +221,14 @@
                                         "name": "ecommerceHasAddress",
                                         "value": "0",
                                         "checked": "{{(_local.userFilterExtraQuery || []).includes('sirsoft-ecommerce.has_address=0')}}",
-                                        "className": "radio"
+                                        "className": "ecommerce-radio"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.user_filter.has_address_no"
                                 }

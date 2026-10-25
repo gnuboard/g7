@@ -230,14 +230,14 @@
     <set-state target="_local" notificationDefinitionCurrentPage="{{+(query.page || 1)}}"/>
   </init>
   <slot name="content">
-    <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+    <div data-ref="settings_content" data-key="form" data-track-changes class="ecommerce-admin-page-content-responsive">
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
-      <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
-        <icon name="fas fa-lock" class="text-yellow-700 dark:text-yellow-400"/>
-        <span class="ecommerce-tone-warning-soft text-xs">$t:sirsoft-ecommerce.common.read_only_notice</span>
+      <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="ecommerce-alert-warning">
+        <icon name="fas fa-lock" class="ecommerce:text-yellow-700 ecommerce:dark:text-yellow-400"/>
+        <span class="ecommerce-tone-warning-soft ecommerce:text-xs">$t:sirsoft-ecommerce.common.read_only_notice</span>
       </div>
       <!-- className 은 sticky-tab-nav-responsive 를 쓴다 — 이 화면의 콘텐츠 래퍼가 admin-page-content-responsive(p-4 sm:p-6 lg:p-8) 라 뷰포트마다 좌우 패딩이 다르기 때문. 고정 24px 를 가정하는 sticky-tab-nav(-mx-6 px-6)를 쓰면 폰(p-4=16px)에서 좌우로 8px 씩 과다 bleed 되어 콘텐츠 영역을 넘친다. -->
-      <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}}" variant="default" class="sticky-tab-nav-responsive">
+      <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeEcommerceSettingsTab || query.tab || 'basic_info'}}" variant="default" class="ecommerce-sticky-tab-nav-responsive">
         <prop name="tabs">
           <item id="basic_info" href="/admin/ecommerce/settings?tab=basic_info" label="$t:sirsoft-ecommerce.admin.settings.tabs.basic_info"/>
           <item id="language_currency" href="/admin/ecommerce/settings?tab=language_currency" label="$t:sirsoft-ecommerce.admin.settings.tabs.language_currency"/>
@@ -270,7 +270,7 @@
           </conditions>
         </on>
       </tab-navigation>
-      <div data-ref="ecommerce_settings_tab_content" class="tab-content">
+      <div data-ref="ecommerce_settings_tab_content" class="ecommerce-tab-content">
         <on listen="sirsoft-ecommerce:settings-switch-tab">
           <!-- 탭 전환의 단일 처리처 — 탭 줄(변경 없음)과 확인 창 [이동] 이 이 이벤트만 보낸다. 정리 목록은 여기 한 곳(새 인라인 폼이 생기면 여기에만 더한다). 페이지 [저장] 가드는 인라인 추가 폼 플래그를 탭과 무관하게 읽으므로, 남겨 두면 폼을 연 채 다른 탭으로 간 운영자는 어느 탭에서도 저장하지 못한다(S10 17차). 각 폼의 '취소' 가 비우는 범위(플래그 + 입력 버퍼 + 그 폼의 오류)와 「변경 있음」·오류를 비운다. 이 받기는 페이지 문맥이라 target=local 이 페이지 폼 렌더러 상태에 닿는다(모달 문맥의 local 은 닿지 않아 옮긴 뒤 첫 입력에 옛 값이 되살아났다 — 실측 C7) -->
           <sequence>
@@ -282,14 +282,14 @@
             </navigate>
           </sequence>
         </on>
-        <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
-          <div class="flex gap-3">
-            <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+        <div data-ref="validation_error" data-if="{{_local.errors}}" class="ecommerce-alert-danger">
+          <div class="ecommerce:flex ecommerce:gap-3">
+            <icon name="triangle-exclamation" class="ecommerce:text-xl ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"/>
             <div>
-              <h3 class="ecommerce-tone-error-strong text-sm font-medium">$t:sirsoft-ecommerce.admin.settings.validation_error</h3>
-              <p data-if="{{typeof _local.errors === 'string'}}" class="ecommerce-tone-error-soft mt-2 text-sm">{{_local.errors}}</p>
-              <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-                <li class="ecommerce-tone-error-soft text-sm">{{message}}</li>
+              <h3 class="ecommerce-tone-error-strong ecommerce:text-sm ecommerce:font-medium">$t:sirsoft-ecommerce.admin.settings.validation_error</h3>
+              <p data-if="{{typeof _local.errors === 'string'}}" class="ecommerce-tone-error-soft ecommerce:mt-2 ecommerce:text-sm">{{_local.errors}}</p>
+              <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="ecommerce:mt-2 ecommerce:list-disc ecommerce:list-inside ecommerce:space-y-1">
+                <li class="ecommerce-tone-error-soft ecommerce:text-sm">{{message}}</li>
               </ul>
             </div>
           </div>
@@ -307,14 +307,14 @@
         <include src="partials/admin_ecommerce_settings/_tab_privacy_retention.g7.html"/>
         <include src="partials/admin_ecommerce_settings/_tab_schedules.g7.html"/>
       </div>
-      <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <a href="/admin" data-ref="cancel_button" class="btn btn-secondary">
+      <div data-ref="footer_buttons" class="ecommerce-sticky-footer-buttons">
+        <a href="/admin" data-ref="cancel_button" class="ecommerce-btn ecommerce-btn-secondary">
           <on type="click">
             <navigate :bypassLeaveGuard="true"/>
           </on>
           <span>$t:common.cancel</span>
         </a>
-        <button type="button" data-ref="save_button" data-testid="ecommerce-settings-save" disabled="{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5">
+        <button type="button" data-ref="save_button" data-testid="ecommerce-settings-save" disabled="{{_computed.isReadOnly || !_local.hasChanges || _local.isSaving}}" class="ecommerce-btn ecommerce-btn-primary ecommerce-flex-center ecommerce:gap-1.5">
           <on type="click">
             <!-- 저장 — 보낼 몸통을 현재 탭 몫으로 좁힌다. 전 탭을 한꺼번에 보내면 보고 있지도 않은 탭의
               값까지 덮어쓰기 때문이고, 서버도 `_tab` 으로 검증 범위를 가른다(문의 설정은 여러 탭에
@@ -345,7 +345,7 @@
               </api-call>
             </sequence>
           </on>
-          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="ecommerce-spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:common.save</span>
           <span data-if="{{_local.isSaving}}">$t:common.saving</span>
         </button>

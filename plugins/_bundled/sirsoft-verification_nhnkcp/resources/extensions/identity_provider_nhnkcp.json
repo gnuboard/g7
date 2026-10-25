@@ -10,7 +10,7 @@
             "name": "Div",
             "if": "{{_global.identityChallenge?.provider_id === 'nhnkcp' && !(_global.identityChallenge?.providerInProgress)}}",
             "props": {
-                "className": "space-y-4"
+                "className": "verificationnhnkcp:space-y-4"
             },
             "children": [
                 {
@@ -18,14 +18,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center flex-col text-center space-y-2 pt-2"
+                        "className": "verificationnhnkcp:flex verificationnhnkcp:items-center verificationnhnkcp:flex-col verificationnhnkcp:text-center verificationnhnkcp:space-y-2 verificationnhnkcp:pt-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "inline-flex items-center justify-center w-14 h-14 bg-blue-100 dark:bg-blue-900/40 rounded-full"
+                                "className": "verificationnhnkcp:inline-flex verificationnhnkcp:items-center verificationnhnkcp:justify-center verificationnhnkcp:w-14 verificationnhnkcp:h-14 verificationnhnkcp:bg-blue-100 verificationnhnkcp:dark:bg-blue-900/40 verificationnhnkcp:rounded-full"
                             },
                             "children": [
                                 {
@@ -33,7 +33,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "mobile-screen",
-                                        "className": "text-2xl text-blue-600 dark:text-blue-400"
+                                        "className": "verificationnhnkcp:text-2xl verificationnhnkcp:leading-none verificationnhnkcp:text-blue-600 verificationnhnkcp:dark:text-blue-400"
                                     }
                                 }
                             ]
@@ -44,7 +44,7 @@
                             "name": "H3",
                             "if": "{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}",
                             "props": {
-                                "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                "className": "verificationnhnkcp:text-base verificationnhnkcp:font-semibold verificationnhnkcp:text-gray-900 verificationnhnkcp:dark:text-white"
                             },
                             "text": "$t:sirsoft-verification_nhnkcp.modal.adult_title"
                         },
@@ -54,7 +54,7 @@
                             "name": "H3",
                             "if": "{{_global.identityChallenge?.purpose !== 'nhnkcp.adult_verification'}}",
                             "props": {
-                                "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                "className": "verificationnhnkcp:text-base verificationnhnkcp:font-semibold verificationnhnkcp:text-gray-900 verificationnhnkcp:dark:text-white"
                             },
                             "text": "$t:sirsoft-verification_nhnkcp.modal.title"
                         },
@@ -64,7 +64,7 @@
                             "name": "P",
                             "if": "{{_global.identityChallenge?.purpose === 'nhnkcp.adult_verification'}}",
                             "props": {
-                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                "className": "verificationnhnkcp:text-sm verificationnhnkcp:text-gray-600 verificationnhnkcp:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-verification_nhnkcp.modal.adult_description"
                         },
@@ -76,12 +76,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-sm text-gray-600 dark:text-gray-400 hidden"
+                                        "className": "verificationnhnkcp:text-sm verificationnhnkcp:text-gray-600 verificationnhnkcp:dark:text-gray-400 verificationnhnkcp:hidden verification-nhnkcp-hidden"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                "className": "verificationnhnkcp:text-sm verificationnhnkcp:text-gray-600 verificationnhnkcp:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-verification_nhnkcp.modal.description"
                         },
@@ -92,12 +92,12 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                        "className": "verificationnhnkcp:text-sm verificationnhnkcp:text-gray-600 verificationnhnkcp:dark:text-gray-400"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "text-sm text-gray-600 dark:text-gray-400 hidden"
+                                "className": "verificationnhnkcp:text-sm verificationnhnkcp:text-gray-600 verificationnhnkcp:dark:text-gray-400 verificationnhnkcp:hidden verification-nhnkcp-hidden"
                             },
                             "text": "$t:sirsoft-verification_nhnkcp.modal.mobile_description"
                         }
@@ -115,7 +115,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-semibold transition-colors"
+                        "className": "verificationnhnkcp:w-full verificationnhnkcp:inline-flex verificationnhnkcp:items-center verificationnhnkcp:justify-center verificationnhnkcp:gap-2 verificationnhnkcp:px-4 verificationnhnkcp:py-3 verificationnhnkcp:bg-blue-600 verificationnhnkcp:dark:bg-blue-600 verificationnhnkcp:text-white verificationnhnkcp:rounded-lg verificationnhnkcp:hover:bg-blue-700 verificationnhnkcp:dark:hover:bg-blue-700 verificationnhnkcp:font-semibold verificationnhnkcp:transition-colors"
                     },
                     "children": [
                         {
@@ -128,7 +128,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "arrow-right",
-                                "className": "text-sm"
+                                "className": "verificationnhnkcp:text-sm verificationnhnkcp:leading-none"
                             }
                         }
                     ]
@@ -139,7 +139,7 @@
                     "name": "Div",
                     "if": "{{_global.identityChallenge?.public_payload?.is_test_mode === true}}",
                     "props": {
-                        "className": "p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-500 dark:text-gray-400 text-center"
+                        "className": "verificationnhnkcp:p-2 verificationnhnkcp:bg-gray-50 verificationnhnkcp:dark:bg-gray-800 verificationnhnkcp:border verificationnhnkcp:border-gray-200 verificationnhnkcp:dark:border-gray-700 verificationnhnkcp:rounded verificationnhnkcp:text-xs verificationnhnkcp:text-gray-500 verificationnhnkcp:dark:text-gray-400 verificationnhnkcp:text-center"
                     },
                     "children": [
                         {
@@ -157,7 +157,7 @@
             "name": "Div",
             "if": "{{_global.identityChallenge?.provider_id === 'nhnkcp' && (_global.identityChallenge?.providerInProgress)}}",
             "props": {
-                "className": "flex items-center flex-col text-center space-y-4 py-6",
+                "className": "verificationnhnkcp:flex verificationnhnkcp:items-center verificationnhnkcp:flex-col verificationnhnkcp:text-center verificationnhnkcp:space-y-4 verificationnhnkcp:py-6",
                 "role": "status",
                 "aria-live": "polite"
             },
@@ -167,14 +167,15 @@
                     "name": "Icon",
                     "props": {
                         "name": "spinner",
-                        "className": "fa-spin text-3xl text-blue-600 dark:text-blue-400"
+                        "spin": true,
+                        "className": "verificationnhnkcp:text-3xl verificationnhnkcp:leading-none verificationnhnkcp:text-blue-600 verificationnhnkcp:dark:text-blue-400"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                        "className": "verificationnhnkcp:text-sm verificationnhnkcp:font-medium verificationnhnkcp:text-gray-900 verificationnhnkcp:dark:text-white"
                     },
                     "text": "$t:sirsoft-verification_nhnkcp.modal.in_progress.title"
                 },
@@ -182,14 +183,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-yellow-700 dark:text-yellow-300"
+                        "className": "verificationnhnkcp:p-3 verificationnhnkcp:bg-amber-50 verificationnhnkcp:dark:bg-amber-900/20 verificationnhnkcp:border verificationnhnkcp:border-amber-200 verificationnhnkcp:dark:border-amber-800 verificationnhnkcp:rounded verificationnhnkcp:text-xs verificationnhnkcp:text-yellow-700 verificationnhnkcp:dark:text-yellow-300"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "inline-flex items-start gap-1.5"
+                                "className": "verificationnhnkcp:inline-flex verificationnhnkcp:items-start verificationnhnkcp:gap-1.5"
                             },
                             "children": [
                                 {
@@ -197,7 +198,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "circle-info",
-                                        "className": "mt-0.5"
+                                        "className": "verificationnhnkcp:mt-0.5"
                                     }
                                 },
                                 {

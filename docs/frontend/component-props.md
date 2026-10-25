@@ -473,7 +473,7 @@ export interface DataGridProps {
 
   // 행 액션 메뉴
   rowActions?: ActionMenuItem[];    // 행별 액션 메뉴 항목 (항목 href → 링크, 행마다 평가)
-  rowClassName?: string;            // 데이터 행에 덧붙일 CSS 클래스 (행 표현식 가능)
+  rowClassName?: string;            // 데이터 행에 덧붙일 CSS 클래스 (행 표현식 가능, 식 안에서 $selected = 그 행 선택 여부)
 
   // SubRow Props (engine-v1.6.0+)
   subRowChildren?: ComponentDefinition[];  // 서브 행 컴포넌트 배열
@@ -567,7 +567,7 @@ export interface DataGridProps {
 
 | Props | 타입 | 필수 | 기본값 | 설명 |
 |-------|------|------|--------|------|
-| `rowClassName` | `string` | ❌ | `''` | 데이터 행에 덧붙일 CSS 클래스. 행 유형을 배경색으로 구분할 때 쓰며, 마크업에서 행 표현식을 넘기면 엔진은 원문 그대로 넘기고(components.json `skipBindingKeys`) DataGrid 가 행마다 엔진 바인딩 해석기로 푼다 (예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`). 선택 행 강조보다 먼저 놓여 선택 상태가 덮어쓴다 |
+| `rowClassName` | `string` | ❌ | `''` | 데이터 행에 덧붙일 CSS 클래스. 행 유형을 배경색으로 구분할 때 쓰며, 마크업에서 행 표현식을 넘기면 엔진은 원문 그대로 넘기고(components.json `skipBindingKeys`) DataGrid 가 행마다 엔진 바인딩 해석기로 푼다 (예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`). 선택 행 강조보다 먼저 놓여 선택 상태가 덮어쓴다. 식 안에서 `$selected`(그 행이 선택됐는지 — 표 보기 행만, 카드 보기는 선택 강조 색이 없어 늘 거짓)를 읽을 수 있다 — 확장 앞글자 클래스는 선택 강조를 늘 이기므로 선택 색을 직접 고를 때 쓴다(예: `{{row.row_type === 'notice' ? ($selected ? 'board:bg-blue-50/50' : 'board:bg-blue-50') : ''}}`) |
 | `subRowChildren` | `ComponentDefinition[]` | ❌ | - | 서브 행에 렌더링할 컴포넌트 배열 |
 | `subRowCondition` | `string` | ❌ | - | 서브 행 표시 조건 (예: `"{{row.status !== 'free'}}"`) |
 | `subRowClassName` | `string` | ❌ | - | 서브 행 CSS 클래스 |

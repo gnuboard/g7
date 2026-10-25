@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.2] - 2026-10-25
+
+### Changed
+
+- 화면 스타일을 확장 자체 CSS 로 제공합니다 — 템플릿의 CSS 라이브러리와 무관하게 표시됩니다(화면 모양은 그대로입니다). 다크 모드는 템플릿이 선언한 다크 방식을 따릅니다.
+- 코어 7.2.0 이상이 필요합니다(`g7_version >=7.2.0`).
+
 ## [1.1.1] - 2026-10-21
 
 ### Changed

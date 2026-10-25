@@ -300,15 +300,15 @@ describe('사용자 화면 확장 조각', () => {
    */
   it('가입·기존 계정 모달의 작은 동작 단추는 휴대폰 폭에서 손가락 크기(44px 이상)로 커지고 넓은 화면에서는 그대로다', () => {
     const buttons = flatten(load('auth_register_social_modals').modals)
-      .filter((n) => n.name === 'Button' && /(^|\s)px-3(\s|$)/.test(String(n.props?.className ?? '')));
+      .filter((n) => n.name === 'Button' && /(^|\s)sl:px-3(\s|$)/.test(String(n.props?.className ?? '')));
 
     // 모집단: 인증번호 받기·확인, 비밀번호 확인, 기존 계정 인증번호 받기·확인, 새 계정으로 가입, 취소
     expect(buttons.length).toBeGreaterThanOrEqual(7);
     for (const b of buttons) {
       const cls = String(b.props.className);
-      expect(cls, b.props?.['data-ref'] ?? cls).toMatch(/(^|\s)py-3(\s|$)/);
-      expect(cls, b.props?.['data-ref'] ?? cls).toMatch(/(^|\s)sm:py-2(\s|$)/);
-      expect(cls, b.props?.['data-ref'] ?? cls).not.toMatch(/(^|\s)py-2(\s|$)/);
+      expect(cls, b.props?.['data-ref'] ?? cls).toMatch(/(^|\s)sl:py-3(\s|$)/);
+      expect(cls, b.props?.['data-ref'] ?? cls).toMatch(/(^|\s)sl:sm:py-2(\s|$)/);
+      expect(cls, b.props?.['data-ref'] ?? cls).not.toMatch(/(^|\s)sl:py-2(\s|$)/);
     }
   });
 

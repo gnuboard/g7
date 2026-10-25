@@ -131,7 +131,7 @@ Cache 에 stash(`inicis:pending_record:{key}`) → 회원가입 완료 → `core
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-verification_kginicis` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`verificationkginicis:` 유틸리티·`verification-kginicis-*`)를 쓰면 `plugin:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] PII 컬럼(이름·생년월일·성별·CI/DI 등)을 다루는 코드 변경 시 GDPR 삭제/탈퇴 정리 리스너(`CleanInicisRecordOnUserDelete`/`CleanInicisRecordOnUserWithdraw`)가 여전히 그 컬럼을 정리하는지 확인
@@ -157,9 +157,9 @@ Cache 에 stash(`inicis:pending_record:{key}`) → 회원가입 완료 → `core
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 25개 | `plugins/_bundled/sirsoft-verification_kginicis/tests` |
-| Vitest | 18개 | `vitest.config.ts` |
+| Vitest | 17개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 20개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 19개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -194,26 +194,26 @@ cd plugins/_bundled/sirsoft-verification_kginicis && npm run test:e2e -- specs/<
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
 
-## 확장 조각의 CSS 클래스 규약
+## 화면 클래스 규약 — 이 플러그인이 자기 CSS 를 싣는다
 
-resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
-클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+환경설정 레이아웃과 `resources/extensions/` 조각(본인인증 설정의 공급자 카드, 마이페이지 본인인증 카드 — 다른 패키지 화면 안에서 그려지는 것)은 **템플릿 CSS 에 기대지 않는다.** 모든 클래스는 이 플러그인 앞글자를 쓰고, 규칙은 이 플러그인의
+`dist/css/plugin.css` 에 실재한다(manifest `assets.css.namespace: verification-kginicis`). 템플릿이 어떤 CSS 라이브러리를 쓰든 같은 모양으로 보인다.
 
-두 가지를 지킨다.
+1. **배치·색 유틸리티는 `verificationkginicis:` 접두 Tailwind 로 쓴다**(`verificationkginicis:flex verificationkginicis:dark:text-gray-400`).
+   Tailwind 는 이 플러그인의 작성 도구일 뿐이고(preflight 없음), `resources/css/main.css` 맨 앞 생성 블록이
+   `resources/{layouts,extensions,js}` 와 `src`(PHP 가 내보내는 클래스)를 훑어 쓰인 클래스만 만든다. 새 클래스를 쓰면
+   `php artisan plugin:build sirsoft-verification_kginicis --production` 으로 CSS 를 다시 만들고 update 한다 — 빌드하지 않으면
+   그 스타일만 조용히 빠진다. 앞글자 없는 `flex` 를 쓰면 정적 검사가 막는다.
+2. **템플릿 의미 클래스는 `verification-kginicis-*` 사본을 쓴다**(`verification-kginicis-btn`·`verification-kginicis-form-label`·`verification-kginicis-section-heading-md`).
+   정의는 `resources/css/g7-extension.generated.css`(생성 파일, 손으로 고치지 않는다)의 가장 낮은 칸
+   `@layer g7-extension` 에 있어 템플릿이 같은 이름을 덮을 수 있다. 템플릿 의미 클래스를 새로 가져오려면
+   원래 이름으로 적은 뒤 `node scripts/extension-css/convert-layout-classes.mjs plugins/_bundled/sirsoft-verification_kginicis` 를
+   다시 돌린다(같은 입력이면 결과가 같다).
+3. **이 플러그인 고유의 의미 색과 상태 짝은 손 CSS 다** — `resources/css/main.css` 의 생성 블록 아래.
+   의미 글자색 `verification-kginicis-tone-*` 은 `@layer g7-extension` 안에 두고(색만 맡는다), 포커스 짝은 층 없이 둔다.
+4. **다크 모드는 `verificationkginicis:dark:` 변형이나 중립 표식(`[data-g7-color-scheme="dark"]`)으로 쓴다.** 템플릿 표지
+   `.dark` 를 손 CSS 선택자에 쓰지 않는다.
+5. **아이콘에 글자 크기 유틸리티(`verificationkginicis:text-xl` 등)를 주면 `verificationkginicis:leading-none` 을 함께 준다** — 아이콘 글꼴 CSS 의
+   줄 높이(1)와 같게 맞춘다. 입력칸(`<input>`)에는 글자색 의미 클래스를 주지 않는다 — 템플릿 입력 컴포넌트가 자기 색을 정한다.
 
-1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
-   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
-   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
-   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
-   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
-   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
-
-2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
-   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
-   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
-   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
-
-이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
-열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
-떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
-정적 검사가 대조한다.
+규약 전체는 [확장 CSS 자기 공급 규약](../../../docs/extension/module-assets.md#확장-css-자기-공급-규약), 변환 도구는 `scripts/extension-css/README.md`.

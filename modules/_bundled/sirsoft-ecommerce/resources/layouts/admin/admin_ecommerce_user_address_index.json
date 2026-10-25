@@ -205,7 +205,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "ecommerce-admin-page-content"
                 },
                 "children": [
                     {
@@ -213,7 +213,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-between mb-6"
+                            "className": "ecommerce-flex-between ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -224,7 +224,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "ecommerce-page-title"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.user_addresses.title"
                                     },
@@ -232,7 +232,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-label-subtle mt-1"
+                                            "className": "ecommerce-text-label-subtle ecommerce:mt-1"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.user_addresses.description"
                                     }

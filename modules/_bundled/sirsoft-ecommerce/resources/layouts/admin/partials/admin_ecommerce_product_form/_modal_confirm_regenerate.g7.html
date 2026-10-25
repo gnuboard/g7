@@ -3,23 +3,23 @@
 <partial description="Product Form - Confirm Regenerate Options Modal">
   <modal data-type="composite" data-ref="modal_confirm_regenerate" title="$t:sirsoft-ecommerce.admin.product.create.modal.confirm.title" size="sm">
     <div>
-      <div class="alert-warning">
-        <icon name="triangle-exclamation" class="text-xl text-amber-600 shrink-0 mt-0.5"/>
+      <div class="ecommerce-alert-warning">
+        <icon name="triangle-exclamation" class="ecommerce:text-xl ecommerce:text-amber-600 ecommerce:shrink-0 ecommerce:mt-0.5"/>
         <div>
           <div>
-            <p class="text-sm font-medium ecommerce-tone-warning-soft">$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options</p>
-            <p class="ecommerce-tone-warning-soft text-xs">$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options_note</p>
+            <p class="ecommerce:text-sm ecommerce:font-medium ecommerce-tone-warning-soft">$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options</p>
+            <p class="ecommerce-tone-warning-soft ecommerce:text-xs">$t:sirsoft-ecommerce.admin.product.create.modal.confirm.regenerate_options_note</p>
           </div>
         </div>
       </div>
-      <div class="flex justify-end gap-3">
-        <button type="button" class="btn btn-outline">
+      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-3">
+        <button type="button" class="ecommerce-btn ecommerce-btn-outline">
           <on type="click">
             <close-modal/>
           </on>
           $t:sirsoft-ecommerce.common.cancel
         </button>
-        <button type="button" class="btn btn-warning">
+        <button type="button" class="ecommerce-btn ecommerce-btn-warning">
           <on type="click">
             <!-- 창을 먼저 닫고 재생성한다 — 조합이 많으면 만드는 동안 화면이 멈춘 것처럼 보이기 때문이다. 확인을 이미 받았으므로 핸들러의 재확인은 건너뛴다 -->
             <sequence>

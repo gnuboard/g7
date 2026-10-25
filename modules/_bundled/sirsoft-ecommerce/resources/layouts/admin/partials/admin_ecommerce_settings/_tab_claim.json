@@ -56,7 +56,7 @@
             "props": {
                 "activeTabId": "{{['return', 'refund'].includes(_local.claimReasonTab ?? query.sub_tab) ? (_local.claimReasonTab ?? query.sub_tab) : 'exchange'}}",
                 "variant": "underline",
-                "className": "mb-4",
+                "className": "ecommerce:mb-4",
                 "tabs": [
                     {
                         "id": "exchange",

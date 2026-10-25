@@ -2,19 +2,19 @@
   올린다(저장하지 않고 나간 파일이 서버에 남는 것을 막는다). 신규 진입은 아직 상품 id 가 없어
   임시키로 묶어 올리고, 수정 진입은 상품 아래로 바로 올린다 — 업로드 주소가 그래서 갈린다. -->
 <partial description="Product Form - Image Upload Section">
-  <div data-ref="images" class="admin-card-accordion">
-    <button type="button" class="flex w-full justify-start text-left card-header" aria-expanded="{{_local.ui.imagesExpanded !== false}}">
+  <div data-ref="images" class="ecommerce-admin-card-accordion">
+    <button type="button" class="ecommerce:flex ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-card-header" aria-expanded="{{_local.ui.imagesExpanded !== false}}">
       <on type="click">
         <!-- 구획 접기/펼치기. 접힐 때 숨기기만 하고 걷어내지 않는 것은(`hidden`) 업로더가 사라지면 고른 파일이 함께 날아가기 때문이다 -->
         <set-state target="local" ui.imagesExpanded="{{!_local.ui.imagesExpanded}}"/>
       </on>
-      <icon name="images" class="text-gray-500 dark:text-gray-400"/>
-      <span class="card-title">$t:sirsoft-ecommerce.admin.product.sections.images</span>
-      <span class="text-label-subtle ml-2">({{((_local.form.images ?? []).length + (_local.ui.pendingImageCount ?? 0) + (_local.ui.uploadedImageCount ?? 0))}}/20)</span>
-      <icon name="chevron-down" class="admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.imagesExpanded !== false ? 'rotate-180' : ''}}"/>
+      <icon name="images" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
+      <span class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.product.sections.images</span>
+      <span class="ecommerce-text-label-subtle ecommerce:ml-2">({{((_local.form.images ?? []).length + (_local.ui.pendingImageCount ?? 0) + (_local.ui.uploadedImageCount ?? 0))}}/20)</span>
+      <icon name="chevron-down" class="ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.imagesExpanded !== false ? 'ecommerce:rotate-180' : ''}}"/>
     </button>
-    <div data-ref="images_body" class="row-stack {{_local.ui.imagesExpanded === false ? 'hidden' : ''}}">
-      <div data-ref="images_uploader_wrapper" class="{{_local.errors?.images ? 'border border-red-500 dark:border-red-500 rounded-lg p-1' : ''}}">
+    <div data-ref="images_body" class="ecommerce-row-stack {{_local.ui.imagesExpanded === false ? 'ecommerce:hidden ecommerce-hidden' : ''}}">
+      <div data-ref="images_uploader_wrapper" class="{{_local.errors?.images ? 'ecommerce:border ecommerce:border-red-500 ecommerce:dark:border-red-500 ecommerce:rounded-lg ecommerce:p-1' : ''}}">
         <file-uploader data-type="composite" data-ref="images_uploader" collection="main" :maxFiles="20" maxSize="{{_global.settings?.upload?.max_file_size ?? 10}}" accept=".jpg,.jpeg,.png,.gif,.webp" initialFiles="{{product?.data?.images ?? copy_source?.data?.images ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:product_images" :confirmBeforeRemove="true" :enablePrimarySelection="true" primaryFileId="{{_local.form.thumbnail_hash}}" uploadParams="{{product?.data?.id ? {} : { temp_key: _local.ui.imageTempKey }}}" disabled="{{_computed.isReadOnly}}">
           <prop name="imageCompression">
             <field name="maxSizeMB" :value="1"/>
@@ -57,8 +57,8 @@
           </on>
         </file-uploader>
       </div>
-      <span data-if="{{_local.errors?.images}}" class="form-error-xs mt-1">{{_local.errors?.images?.[0]}}</span>
-      <div class="text-tertiary space-y-1">
+      <span data-if="{{_local.errors?.images}}" class="ecommerce-form-error-xs ecommerce:mt-1">{{_local.errors?.images?.[0]}}</span>
+      <div class="ecommerce-text-tertiary ecommerce:space-y-1">
         <p>$t:sirsoft-ecommerce.admin.product.images.drag_hint</p>
         <p>$t:sirsoft-ecommerce.admin.product.images.thumbnail_hint</p>
         <p>$t:sirsoft-ecommerce.admin.product.images.format_hint</p>

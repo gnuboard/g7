@@ -5,14 +5,14 @@
 <partial description="Product Index - Preset Management Modal">
   <modal data-type="composite" data-ref="modal_preset_manage" title="$t:sirsoft-ecommerce.admin.product.modal.preset_manage.title" size="md">
     <!-- 받기 실패 안내 — 실패하면 엔진은 이 데이터소스를 null 로 둔다. 실패한 채 「저장된 프리셋이 없습니다」를 보이면 프리셋이 지워진 줄 안다 -->
-    <p data-ref="preset_load_failed" data-if="{{presets === null}}" role="alert" class="py-8 text-center text-sm text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
+    <p data-ref="preset_load_failed" data-if="{{presets === null}}" role="alert" class="ecommerce:py-8 ecommerce:text-center ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
     <!-- 빈 안내는 받은 뒤 0건일 때만 — 받는 중(값 없음)·실패에는 띄우지 않는다 -->
-    <div data-ref="preset_empty_message" data-if="{{presets !== undefined &amp;&amp; presets !== null &amp;&amp; (!presets.data || presets.data.length === 0)}}" class="text-center py-8 text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.modal.preset_manage.empty</div>
-    <div data-ref="preset_list" data-if="{{presets.data &amp;&amp; presets.data.length > 0}}" class="stack-tight">
-      <div data-ref="preset_item_dynamic_{{presetIdx}}" data-each="presetItem, presetIdx in presets.data" class="flex-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <span class="text-heading">{{presetItem.name}}</span>
-        <div class="flex-center gap-2">
-          <button data-ref="preset_rename_button_{{presetIdx}}" type="button" class="btn-icon disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}" aria-label="$t:common.edit">
+    <div data-ref="preset_empty_message" data-if="{{presets !== undefined &amp;&amp; presets !== null &amp;&amp; (!presets.data || presets.data.length === 0)}}" class="ecommerce:text-center ecommerce:py-8 ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.product.modal.preset_manage.empty</div>
+    <div data-ref="preset_list" data-if="{{presets.data &amp;&amp; presets.data.length > 0}}" class="ecommerce-stack-tight">
+      <div data-ref="preset_item_dynamic_{{presetIdx}}" data-each="presetItem, presetIdx in presets.data" class="ecommerce-flex-between ecommerce:p-3 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg">
+        <span class="ecommerce-text-heading">{{presetItem.name}}</span>
+        <div class="ecommerce-flex-center ecommerce:gap-2">
+          <button data-ref="preset_rename_button_{{presetIdx}}" type="button" class="ecommerce-btn-icon ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}" aria-label="$t:common.edit">
             <on type="click">
               <!-- 이름 바꾸기. 반복 변수 `presetItem` 은 이 목록 안에서만 살아 있으므로, 열릴 창이 읽을 수 있도록 값을 `_global` 로 옮겨 담고 연다. -->
               <sequence>
@@ -20,9 +20,9 @@
                 <open-modal target="modal_preset_edit"/>
               </sequence>
             </on>
-            <icon name="fa-solid fa-pen" class="text-base"/>
+            <icon name="fa-solid fa-pen" class="ecommerce:text-base"/>
           </button>
-          <button data-ref="preset_delete_button_{{presetIdx}}" type="button" class="btn-icon text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}" aria-label="$t:common.delete">
+          <button data-ref="preset_delete_button_{{presetIdx}}" type="button" class="ecommerce-btn-icon ecommerce:text-red-700 ecommerce:dark:text-red-400 ecommerce:hover:bg-red-50 ecommerce:dark:hover:bg-red-900/20 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}" aria-label="$t:common.delete">
             <on type="click">
               <!-- 삭제. 확인 창이 이름을 문장에 넣어 보여 주는데 그 창은 프리셋 목록을 따로 조회하지 않으므로, id 만이 아니라 이름도 함께 넘긴다. -->
               <sequence>
@@ -30,13 +30,13 @@
                 <open-modal target="modal_preset_delete_confirm"/>
               </sequence>
             </on>
-            <icon name="fa-solid fa-trash" class="text-base"/>
+            <icon name="fa-solid fa-trash" class="ecommerce:text-base"/>
           </button>
         </div>
       </div>
     </div>
-    <div data-ref="preset_footer" class="mt-4">
-      <button data-ref="preset_save_new_button" type="button" class="btn btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}">
+    <div data-ref="preset_footer" class="ecommerce:mt-4">
+      <button data-ref="preset_save_new_button" type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce:w-full ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{products?.data?.abilities?.can_update !== true}}">
         <on type="click">
           <open-modal target="modal_preset_save"/>
         </on>

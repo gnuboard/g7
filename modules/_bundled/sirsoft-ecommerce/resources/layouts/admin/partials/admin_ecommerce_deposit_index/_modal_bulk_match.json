@@ -22,7 +22,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "btn btn-outline"
+                    "className": "ecommerce-btn ecommerce-btn-outline"
                 },
                 "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.cancel"
             },
@@ -37,7 +37,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "btn btn-primary"
+                    "className": "ecommerce-btn ecommerce-btn-primary"
                 },
                 "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.save"
             }
@@ -49,7 +49,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "text-secondary text-sm mb-4 space-y-1"
+                "className": "ecommerce-text-secondary ecommerce:text-sm ecommerce:mb-4 ecommerce:space-y-1"
             },
             "children": [
                 {
@@ -79,7 +79,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "stack-tight"
+                                "className": "ecommerce-stack-tight"
                             },
                             "children": [
                                 {
@@ -87,21 +87,21 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                                        "className": "ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-between mb-2"
+                                                "className": "ecommerce-flex-between ecommerce:mb-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-primary font-medium"
+                                                        "className": "ecommerce-text-primary ecommerce:font-medium"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                                 },
@@ -109,7 +109,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-blue-600 dark:text-blue-400 font-semibold"
+                                                        "className": "ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:font-semibold"
                                                     },
                                                     "text": "\\49,000"
                                                 }
@@ -119,7 +119,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "text-secondary text-sm mb-3"
+                                                "className": "ecommerce-text-secondary ecommerce:text-sm ecommerce:mb-3"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.sample.fmt.bank_time|bank=$t:sirsoft-ecommerce.admin.sample.banks.kakaobank|time=11:25"
                                         },
@@ -127,7 +127,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "relative mb-2"
+                                                "className": "ecommerce:relative ecommerce:mb-2"
                                             },
                                             "children": [
                                                 {
@@ -137,7 +137,7 @@
                                                         "type": "text",
                                                         "aria-label": "$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.park_minsu|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
                                                         "value": "ORD20251118-0003",
-                                                        "className": "input pr-8"
+                                                        "className": "ecommerce-input ecommerce:pr-8"
                                                     }
                                                 },
                                                 {
@@ -146,7 +146,7 @@
                                                     "props": {
                                                         "aria-label": "$t:common.close",
                                                         "type": "button",
-                                                        "className": "absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+                                                        "className": "ecommerce:absolute ecommerce:right-2 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300"
                                                     },
                                                     "children": [
                                                         {
@@ -154,7 +154,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "x",
-                                                                "className": "text-base"
+                                                                "className": "ecommerce:text-base"
                                                             }
                                                         }
                                                     ]
@@ -165,7 +165,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-between text-sm mb-2"
+                                                "className": "ecommerce-flex-between ecommerce:text-sm ecommerce:mb-2"
                                             },
                                             "children": [
                                                 {
@@ -176,7 +176,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-label"
+                                                                "className": "ecommerce-text-label"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.orderer"
                                                         },
@@ -184,7 +184,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-primary ml-1"
+                                                                "className": "ecommerce-text-primary ecommerce:ml-1"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                                         }
@@ -198,7 +198,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-label"
+                                                                "className": "ecommerce-text-label"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_amount"
                                                         },
@@ -206,7 +206,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-red-600 dark:text-red-400 ml-1"
+                                                                "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:ml-1"
                                                             },
                                                             "text": "\\250,000"
                                                         }
@@ -218,7 +218,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg p-2 text-sm flex items-center gap-1"
+                                                "className": "ecommerce:bg-red-50 ecommerce:dark:bg-red-900/20 ecommerce:text-red-700 ecommerce:dark:text-red-400 ecommerce:rounded-lg ecommerce:p-2 ecommerce:text-sm ecommerce:flex ecommerce:items-center ecommerce:gap-1"
                                             },
                                             "children": [
                                                 {
@@ -226,7 +226,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "triangle-exclamation",
-                                                        "className": "text-base"
+                                                        "className": "ecommerce:text-base"
                                                     }
                                                 },
                                                 {
@@ -243,21 +243,21 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                                        "className": "ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-between mb-2"
+                                                "className": "ecommerce-flex-between ecommerce:mb-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-primary font-medium"
+                                                        "className": "ecommerce-text-primary ecommerce:font-medium"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.sample.people.choi_jieun"
                                                 },
@@ -265,7 +265,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-blue-600 dark:text-blue-400 font-semibold"
+                                                        "className": "ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:font-semibold"
                                                     },
                                                     "text": "\\120,000"
                                                 }
@@ -275,7 +275,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "text-secondary text-sm mb-3"
+                                                "className": "ecommerce-text-secondary ecommerce:text-sm ecommerce:mb-3"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.sample.fmt.bank_time|bank=$t:sirsoft-ecommerce.admin.sample.banks.shinhan|time=10:15"
                                         },
@@ -286,7 +286,7 @@
                                                 "type": "text",
                                                 "aria-label": "$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.choi_jieun|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder",
-                                                "className": "input"
+                                                "className": "ecommerce-input"
                                             }
                                         }
                                     ]
@@ -297,7 +297,7 @@
                 }
             },
             "props": {
-                "className": "overflow-x-auto"
+                "className": "ecommerce:overflow-x-auto"
             },
             "children": [
                 {
@@ -305,14 +305,14 @@
                     "type": "basic",
                     "name": "Table",
                     "props": {
-                        "className": "w-full text-sm"
+                        "className": "ecommerce:w-full ecommerce:text-sm"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Thead",
                             "props": {
-                                "className": "bg-gray-50 dark:bg-gray-800"
+                                "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"
                             },
                             "children": [
                                 {
@@ -323,7 +323,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-table-header px-4 py-3 text-left"
+                                                "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.depositor_name"
                                         },
@@ -331,7 +331,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-table-header px-4 py-3 text-right"
+                                                "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-right"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.amount"
                                         },
@@ -339,7 +339,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-table-header px-4 py-3 text-left"
+                                                "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.bank_account"
                                         },
@@ -347,7 +347,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-table-header px-4 py-3 text-left"
+                                                "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.deposit_time"
                                         },
@@ -355,7 +355,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-table-header px-4 py-3 text-left"
+                                                "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number"
                                         }
@@ -367,7 +367,7 @@
                             "type": "basic",
                             "name": "Tbody",
                             "props": {
-                                "className": "divider-list bg-white dark:bg-gray-900"
+                                "className": "ecommerce-divider-list ecommerce:bg-white ecommerce:dark:bg-gray-900"
                             },
                             "children": [
                                 {
@@ -378,7 +378,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-4 text-primary font-medium"
+                                                "className": "ecommerce:px-4 ecommerce:py-4 ecommerce-text-primary ecommerce:font-medium"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                         },
@@ -386,7 +386,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-4 text-right text-blue-600 dark:text-blue-400 font-semibold"
+                                                "className": "ecommerce:px-4 ecommerce:py-4 ecommerce:text-right ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:font-semibold"
                                             },
                                             "text": "\\49,000"
                                         },
@@ -394,14 +394,14 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-4"
+                                                "className": "ecommerce:px-4 ecommerce:py-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-primary"
+                                                        "className": "ecommerce-text-primary"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.sample.banks.kakaobank"
                                                 },
@@ -409,7 +409,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-secondary text-xs"
+                                                        "className": "ecommerce-text-secondary ecommerce:text-xs"
                                                     },
                                                     "text": "789-012-3456"
                                                 }
@@ -419,14 +419,14 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-4"
+                                                "className": "ecommerce:px-4 ecommerce:py-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-primary"
+                                                        "className": "ecommerce-text-primary"
                                                     },
                                                     "text": "2024. 01. 27."
                                                 },
@@ -434,7 +434,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-secondary text-xs"
+                                                        "className": "ecommerce-text-secondary ecommerce:text-xs"
                                                     },
                                                     "text": "11:25"
                                                 }
@@ -444,14 +444,14 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-4"
+                                                "className": "ecommerce:px-4 ecommerce:py-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "relative mb-2"
+                                                        "className": "ecommerce:relative ecommerce:mb-2"
                                                     },
                                                     "children": [
                                                         {
@@ -461,7 +461,7 @@
                                                                 "type": "text",
                                                                 "aria-label": "$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.park_minsu|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
                                                                 "value": "ORD20251118-0003",
-                                                                "className": "input pr-8"
+                                                                "className": "ecommerce-input ecommerce:pr-8"
                                                             }
                                                         },
                                                         {
@@ -470,7 +470,7 @@
                                                             "props": {
                                                                 "aria-label": "$t:common.close",
                                                                 "type": "button",
-                                                                "className": "absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+                                                                "className": "ecommerce:absolute ecommerce:right-2 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce:text-gray-500 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-gray-300"
                                                             },
                                                             "children": [
                                                                 {
@@ -478,7 +478,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "x",
-                                                                        "className": "text-base"
+                                                                        "className": "ecommerce:text-base"
                                                                     }
                                                                 }
                                                             ]
@@ -489,21 +489,21 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-between text-sm"
+                                                        "className": "ecommerce-flex-between ecommerce:text-sm"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-secondary"
+                                                                "className": "ecommerce-text-secondary"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-label"
+                                                                        "className": "ecommerce-text-label"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.orderer"
                                                                 },
@@ -511,7 +511,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-primary ml-1"
+                                                                        "className": "ecommerce-text-primary ecommerce:ml-1"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                                                 }
@@ -525,7 +525,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-label"
+                                                                        "className": "ecommerce-text-label"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_amount"
                                                                 },
@@ -533,7 +533,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-required"
+                                                                        "className": "ecommerce-text-required"
                                                                     },
                                                                     "text": "\\250,000"
                                                                 },
@@ -541,7 +541,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-red-600 dark:text-red-400 ml-2 inline-flex items-center gap-1"
+                                                                        "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:ml-2 ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -549,7 +549,7 @@
                                                                             "name": "Icon",
                                                                             "props": {
                                                                                 "name": "triangle-exclamation",
-                                                                                "className": "text-sm"
+                                                                                "className": "ecommerce:text-sm"
                                                                             }
                                                                         },
                                                                         {
@@ -575,7 +575,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-4 text-primary font-medium"
+                                                "className": "ecommerce:px-4 ecommerce:py-4 ecommerce-text-primary ecommerce:font-medium"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.sample.people.kang_haerin"
                                         },
@@ -583,7 +583,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-4 text-right text-blue-600 dark:text-blue-400 font-semibold"
+                                                "className": "ecommerce:px-4 ecommerce:py-4 ecommerce:text-right ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:font-semibold"
                                             },
                                             "text": "\\250,000"
                                         },
@@ -591,14 +591,14 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-4"
+                                                "className": "ecommerce:px-4 ecommerce:py-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-primary"
+                                                        "className": "ecommerce-text-primary"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.sample.banks.tossbank"
                                                 },
@@ -606,7 +606,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-secondary text-xs"
+                                                        "className": "ecommerce-text-secondary ecommerce:text-xs"
                                                     },
                                                     "text": "100-200-3000"
                                                 }
@@ -616,14 +616,14 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-4"
+                                                "className": "ecommerce:px-4 ecommerce:py-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-primary"
+                                                        "className": "ecommerce-text-primary"
                                                     },
                                                     "text": "2024. 01. 26."
                                                 },
@@ -631,7 +631,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-secondary text-xs"
+                                                        "className": "ecommerce-text-secondary ecommerce:text-xs"
                                                     },
                                                     "text": "09:30"
                                                 }
@@ -641,7 +641,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-4"
+                                                "className": "ecommerce:px-4 ecommerce:py-4"
                                             },
                                             "children": [
                                                 {
@@ -651,7 +651,7 @@
                                                         "type": "text",
                                                         "aria-label": "$t:common.row_cell|row=$t:sirsoft-ecommerce.admin.sample.people.kang_haerin|column={{$t('sirsoft-ecommerce.admin.deposit.modal.bulk_match.columns.order_number')}}",
                                                         "placeholder": "$t:sirsoft-ecommerce.admin.deposit.modal.bulk_match.order_number_placeholder",
-                                                        "className": "input"
+                                                        "className": "ecommerce-input"
                                                     }
                                                 }
                                             ]

@@ -1640,9 +1640,9 @@ describe('shippingPolicyFormLayouts', () => {
         it('편집/삭제 버튼에 disabled:opacity-50 disabled:cursor-not-allowed 클래스', () => {
             const json = JSON.stringify(extraFeeTemplateModal);
             // pencil(편집) 버튼 disabled 스타일
-            expect(json).toContain('btn-icon text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed');
+            expect(json).toContain('ecommerce-btn-icon ecommerce:text-blue-600 ecommerce:hover:text-blue-700 ecommerce:dark:text-blue-400 ecommerce:dark:hover:text-blue-300 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed');
             // trash(삭제) 버튼 disabled 스타일
-            expect(json).toContain('btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed');
+            expect(json).toContain('ecommerce-btn-icon ecommerce:text-red-500 ecommerce:hover:text-red-700 ecommerce:dark:text-red-400 ecommerce:dark:hover:text-red-300 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed');
         });
 
         /**

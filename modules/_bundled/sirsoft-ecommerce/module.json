@@ -28,7 +28,8 @@
         },
         "css": {
             "entry": "resources/css/main.css",
-            "output": "dist/css/module.css"
+            "output": "dist/css/module.css",
+            "namespace": "ecommerce"
         },
         "handlers": true,
         "static": "resources/assets/"

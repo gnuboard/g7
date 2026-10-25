@@ -1,6 +1,6 @@
 # 관리자 템플릿 교체 계약
 
-> **목적**: 관리자 템플릿(`type: admin`)을 새로 만들거나 교체할 때, 번들 모듈·플러그인의 관리자 화면이 그 템플릿에 기대는 것(컴포넌트·공용 문구 키·스타일 클래스·조각이 붙는 자리)을 한곳에 정리한다.
+> **목적**: 관리자 템플릿(`type: admin`)을 새로 만들거나 교체할 때, 번들 모듈·플러그인의 관리자 화면이 그 템플릿에 기대는 것(컴포넌트·공용 문구 키·조각이 붙는 자리)과, 템플릿이 선택해서 줄 수 있는 확장 CSS 덮기를 한곳에 정리한다.
 
 ---
 
@@ -8,10 +8,11 @@
 
 ```text
 1. 확장의 관리자 화면은 템플릿 레이아웃이 아니라 «템플릿이 주는 부품» 위에 그려진다 — 부품이 없으면 그 부분만 조용히 빠진다
-2. 필수 계약 4종: 컴포넌트(68종) · 공용 문구 키(common.*·admin.* 137개) · 스타일 클래스 · 조각 앵커(확장점 13 + 앵커 id 7)
+2. 필수 계약 3종: 컴포넌트(68종) · 공용 문구 키(common.*·admin.* 137개) · 조각 앵커(확장점 13 + 앵커 id 7). 선택: 확장 CSS 덮기
 3. 기준 구현은 sirsoft-admin_basic — 이 표의 모든 항목을 갖춘다
 4. 학습용 gnuboard7-hello_admin_template 은 이 계약을 채우지 않는다(알려진 제한) — 번들 확장 관리자 화면 운영용이 아니다
 5. 계약 밖에서 확장이 템플릿에 기대는 것을 새로 만들면 그 확장의 문서와 이 표를 함께 고친다
+6. 스타일 클래스는 계약이 아니다 — 확장 화면 스타일은 확장이 자기 CSS 로 싣는다(7.2.0+)
 ```
 
 ---
@@ -29,7 +30,7 @@
 
 모듈·플러그인의 관리자 화면(`resources/layouts/admin/**`)과 조각(`resources/extensions/**`)은 활성 관리자 템플릿에 등록되어
 그 템플릿의 컴포넌트로 그려진다. 템플릿에 없는 컴포넌트 이름은 렌더되지 않고, 없는 문구 키는 키 문자열이 그대로 보이며,
-없는 스타일 클래스는 규칙이 없어 배치·색이 사라진다. 어느 경우도 오류로 막히지 않으므로, 템플릿을 교체한 운영자는
+없는 조각 자리에는 조각이 붙지 않는다. 어느 경우도 오류로 막히지 않으므로, 템플릿을 교체한 운영자는
 「일부 화면이 이상하다」로만 겪는다. 아래 표는 2026-10-09 기준 번들 확장 22종의 관리자 화면·조각 393개를 실측한 결과다.
 
 ## 필수 계약 표
@@ -38,8 +39,10 @@
 | --- | --- | --- | --- |
 | 컴포넌트 | 68종 | `components.json`, `src/components/**` | 그 노드가 그려지지 않는다(자식까지 함께 사라짐) |
 | 공용 문구 키 | `common.*`·`admin.*` 137개 | `lang/{ko,en}.json` → `lang/partial/{ko,en}/{common,admin}.json` (+ 언어팩 `frontend/`) | 버튼·제목에 키 문자열이 그대로 보인다 |
-| 스타일 클래스 | 레이아웃 의미 클래스(아래 묶음) | `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` | 배치·여백·색 규칙이 없어 화면이 무너진다 |
 | 조각 앵커 | 확장점 13 · 앵커 id 7 | `layouts/**` | 그 자리에 붙는 확장 조각이 등록 단계에서 빠진다 |
+| 확장 CSS 덮기 **(선택)** | 확장별 CSS 파일 | `template.json` 의 `extension_css_overrides` | 빠져도 화면은 무너지지 않는다 — 확장 화면이 확장 원래 모양으로 그려진다 |
+
+**스타일 클래스는 계약에서 빠졌다(7.2.0).** 종전에는 확장 레이아웃이 템플릿의 `@layer components` 의미 클래스(`admin-card`·`btn`·`input` 등)로 배치를 정해, 새 관리자 템플릿이 그 클래스를 모두 정의해야 했다. 이제 확장 화면의 스타일은 확장이 자기 CSS 에 자기 앞글자 클래스로 싣는다 — 템플릿이 어떤 CSS 라이브러리를 쓰든, CSS 를 거의 두지 않든 확장 화면 모양은 같다. 규약: [module-assets.md 「확장 CSS 자기 공급 규약」](module-assets.md#확장-css-자기-공급-규약).
 
 ### 컴포넌트 (68종)
 
@@ -59,26 +62,6 @@
 
 정확한 키 목록은 `templates/_bundled/sirsoft-admin_basic/lang/partial/ko/common.json`·`admin.json` 이다. 새 템플릿은 이 두 묶음을 같은 키 구조로
 제공해야 하며, 일본어 등 추가 언어는 그 템플릿의 언어팩이 같은 키를 채운다.
-
-### 스타일 클래스
-
-확장 레이아웃은 템플릿의 `@layer components` 의미 클래스로 배치를 정한다. 묶음별 대표는 다음과 같다.
-
-| 묶음 | 대표 클래스 |
-| --- | --- |
-| 페이지 골격 | `admin-page-content`(+`-compact`·`-fluid`·`-responsive` 변형) · `page-header` · `page-title` · `page-description` · `page-actions` |
-| 카드·섹션 | `admin-card` · `card-title` · `card-description` · `section-heading` · `section-heading-md` · `panel-header-row` |
-| 배치 | `flex-between` · `flex-center` · `flex-start` · `grid-2col-responsive` · `grid-3col-responsive` · `row-stack` · `stack-tight` |
-| 폼 | `form-label` · `form-hint` · `form-error` · `input` · `input-readonly` · `select-composite` · `textarea` · `text-required` |
-| 버튼 | `btn` · `btn-primary` · `btn-secondary` · `btn-danger` · `btn-outline` · `btn-ghost` · `btn-icon` · `btn-sm` |
-| 하단 고정 | `sticky-footer-buttons` · `sticky-footer-buttons-between` · `modal-footer-buttons` |
-| 글자 | `text-heading` · `text-body` · `text-label` · `text-hint` · `text-secondary` · `text-tertiary` |
-| 상태 상자 | `alert-info` · `alert-warning` · `alert-danger` · `text-error-strong` · `text-error-soft`(저장 오류 상자) |
-| 배지·탭 | `badge`·`badge-*` · `tab-nav-default` · `sticky-tab-nav` · `tab-content` |
-
-뜻이 있는 색(경고·성공·위험·안내 글자색)은 이 계약에 넣지 않는다. 확장이 자기 CSS 에 접두 클래스로 싣는다 —
-[module-assets.md 「확장 화면의 의미 색은 확장 CSS 가 싣는다」](module-assets.md#확장-화면의-의미-색은-확장-css-가-싣는다).
-번들 확장 일부가 아직 템플릿의 `text-*-soft` 를 쓰고 있으며 7.1.x 에서 옮긴다.
 
 ### 조각 앵커
 
@@ -102,6 +85,21 @@
 모듈이 자기 화면 안에 둔 확장점(예: 이커머스 주문 목록의 결제수단 배지 자리, 게시판 설정의 문의 게시판 자리)은 그 모듈이
 제공하므로 템플릿의 계약이 아니다. 확장점 전체 목록은 [layout-extensions.md](layout-extensions.md) 를 본다.
 
+### 확장 CSS 덮기 (선택)
+
+관리자 템플릿이 확장 관리자 화면을 자기 모양(색·테두리·글자)에 맞추고 싶으면 확장 CSS 를 고치지 않고 확장별 **덮기 파일**을 선언한다.
+
+```json
+"extension_css_overrides": [
+    { "target": "sirsoft-board", "targetVersion": "^1.3", "path": "dist/css/overrides/sirsoft-board.css" }
+]
+```
+
+- 대상 확장이 활성이고 버전이 맞을 때만 실리며, 맞지 않으면 빠져 확장 원래 모양으로 돌아온다.
+- 확장 CSS 뒤에 실려 확장의 의미 규칙(`@layer g7-extension`)과 배치 규칙을 덮는다. 대상 확장의 클래스만 쓴다.
+- 다크 모드가 있는 템플릿은 `features.color_scheme` 도 선언한다. 선언하지 않으면 확장 화면은 늘 라이트로 그려진다.
+- 형식·판정·로드 순서: [module-assets.md 「템플릿 확장 CSS 덮기」](module-assets.md#템플릿-확장-css-덮기), 선언 검증: [template-basics.md](template-basics.md#확장-css-덮기-파일-extension_css_overrides)
+
 ## 알려진 제한: 학습용 관리자 템플릿
 
 `gnuboard7-hello_admin_template` 은 관리자 템플릿의 **최소 구성을 보여주는 학습용 샘플**이다([sample-extensions.md](sample-extensions.md)).
@@ -114,9 +112,8 @@
 
 1. 위 [컴포넌트](#컴포넌트-68종) 목록을 템플릿 `components.json` 과 대조해 빠진 이름이 없는지 본다.
 2. `lang/ko.json`·`lang/en.json` 에 `common`·`admin` 묶음이 `sirsoft-admin_basic` 과 같은 키 구조로 있는지 본다.
-3. 템플릿 CSS 빌드가 위 스타일 클래스를 생성하는지 본다(템플릿 빌드는 자기 레이아웃만 훑으므로, 확장만 쓰는 클래스는
-   `@layer components` 에 직접 정의해야 한다).
-4. 조각 앵커 표의 확장점·id 가 같은 화면에 있는지 본다.
+3. 조각 앵커 표의 확장점·id 가 같은 화면에 있는지 본다.
+4. 다크 모드가 있으면 `template.json` 에 `features.color_scheme` 을 선언했는지 본다. 확장 화면을 자기 모양으로 바꾸려면 확장 CSS 덮기 파일을 선언한다(선택).
 5. 번들 확장을 켠 상태로 템플릿을 활성화하고, 회원 상세·환경설정 알림 탭·대시보드·플러그인 설정 화면을 브라우저로 열어
    빈 자리와 키 문자열이 없는지 확인한다.
 
@@ -124,5 +121,5 @@
 
 - [template-basics.md](template-basics.md) — 템플릿 타입·메타데이터
 - [layout-extensions.md](layout-extensions.md) — 확장점·조각 등록
-- [module-assets.md](module-assets.md) — 확장 자기 CSS
+- [module-assets.md](module-assets.md#확장-css-자기-공급-규약) — 확장 자기 CSS·템플릿 확장 CSS 덮기
 - [sample-extensions.md](sample-extensions.md) — 학습용 샘플 확장

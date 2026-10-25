@@ -8,14 +8,14 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card col-span-2-lg"
+        "className": "ecommerce-admin-card ecommerce-col-span-2-lg"
     },
     "children": [
         {
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "row-stack"
+                "className": "ecommerce-row-stack"
             },
             "children": [
                 {
@@ -27,7 +27,7 @@
                         "icon": "folder-tree",
                         "title": "$t:sirsoft-ecommerce.admin.category.empty.title",
                         "description": "$t:sirsoft-ecommerce.admin.category.empty.description",
-                        "className": "py-16"
+                        "className": "ecommerce:py-16"
                     }
                 },
                 {

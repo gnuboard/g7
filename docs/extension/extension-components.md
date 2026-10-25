@@ -10,16 +10,20 @@
 3. 오버라이드(남의 것 대체) 권한은 템플릿 전용 — 확장은 components/overrides/ 를 둘 수 없다
 4. 확장이 자기 것의 템플릿 전용 판본을 내려면 components/for/{템플릿식별자}/ + forTemplate 선언
 5. 판본 선택·오버라이드 승패는 코어가 판정 — 확장은 선언만 한다
+6. 핸들러·이미지·폰트·JS 는 대체 대상이 아니다 — 대체 단위는 레이아웃·컴포넌트, 스타일은 템플릿의 확장 CSS 덮기 파일
+7. 스타일은 확장이 자기 CSS 로 싣는다 — 템플릿 CSS 에 기대지 않는다(assets.css.namespace 앞글자)
 ```
 
 ## 목차
 
 - [세 개념](#세-개념)
+- [핸들러·이미지·폰트·JS 는 대체 대상이 아니다](#핸들러이미지폰트js-는-대체-대상이-아니다)
 - [① 제공 — 확장이 컴포넌트를 낸다](#-제공--확장이-컴포넌트를-낸다)
+- [스타일 — 확장이 자기 CSS 를 싣는다](#스타일--확장이-자기-css-를-싣는다)
 - [② 오버라이드 — 템플릿이 확장 컴포넌트를 대체한다](#-오버라이드--템플릿이-확장-컴포넌트를-대체한다)
 - [③ 템플릿 전용 판본 — 확장이 자기 것을 그 템플릿에서만 다르게](#-템플릿-전용-판본--확장이-자기-것을-그-템플릿에서만-다르게)
 - [작성자 관점](#작성자-관점)
-- [편집기 팔레트](#편집기-팔레트)
+- [편집기](#편집기)
 - [샘플](#샘플)
 
 ## 세 개념
@@ -35,6 +39,18 @@
 대체 권한이 템플릿에만 있는 것은 레이아웃 오버라이드와 같은 규약이다 — `override_target` 은 `source_type=template` 일 때만 성립한다. 확장이 남의 것을 대체하기 시작하면 서로 덮어쓰는 교착이 생기고, 그 승자 규칙에는 선례가 없다.
 
 `for` 를 `override` 라 부르지 않는 이유: 그 낱말은 코드베이스에서 이미 세 가지 뜻(사용자 수정 기록 / 템플릿→확장 레이아웃 대체 / 스펙 키 덮어쓰기)으로 쓰인다. 네 번째를 얹으면 이름 자체가 혼동의 원인이 된다.
+
+### 핸들러·이미지·폰트·JS 는 대체 대상이 아니다
+
+세 개념은 컴포넌트에만 있다. 다음은 **만들지 않는다**(2026-10-22 결정 1).
+
+| 만들지 않는 것 | 화면을 다르게 하려면 |
+|---|---|
+| 템플릿이 확장의 액션 핸들러를 대체 | 레이아웃·컴포넌트를 대체한다 |
+| 확장이 템플릿마다 다른 핸들러 판본을 냄 | 컴포넌트 템플릿 전용 판본(③)을 쓴다 |
+| 템플릿이 확장의 이미지·폰트·JS 를 대체 | 스타일은 [템플릿의 확장 CSS 덮기 파일](module-assets.md#템플릿-확장-css-덮기)로 바꾼다 |
+
+근거: 핸들러와 자산은 확장의 **동작**이다. 템플릿마다 갈아끼울 수 있으면 같은 액션이 템플릿에 따라 다른 일을 해 확장이 자기 동작을 보장할 수 없고, 화면의 차이는 이미 레이아웃·컴포넌트 대체와 CSS 덮기가 맡는다. 핸들러 이름이 겹치는 것은 대체가 아니라 실수로 보고 경고·정적 검사로 드러낸다 — [핸들러 이름 규칙과 소유권](module-assets.md#핸들러-이름-규칙과-소유권).
 
 ## ① 제공 — 확장이 컴포넌트를 낸다
 
@@ -99,6 +115,24 @@ initModule();
 엔트리는 `resources/js/index.ts`, 산출물은 IIFE 번들이며 `module.json`/`plugin.json` 의 `assets.js` 에 선언한다. React 는 반드시 external 로 둔다 — 번들이 자기 React 사본을 품으면 훅 호출이 다른 인스턴스에 걸려 "Invalid hook call" 로 죽는다.
 
 `module:build` / `plugin:build` 가 컴포넌트 소스를 스캔해 `components.json` 을 만든다. 컴포넌트의 `{이름}Props` 선언에서 prop 메타(타입·필수 여부·설명)를 추출하므로, 편집기 자동 컨트롤을 원하면 props 를 인터페이스로 선언한다.
+
+### 스타일 — 확장이 자기 CSS 를 싣는다
+
+확장 컴포넌트의 클래스는 **확장 자기 CSS 에 정의된 자기 앞글자 클래스**만 쓴다. 템플릿 CSS 는 템플릿이 자기 소스만 훑어 만들므로 확장 컴포넌트(TSX)의 클래스를 모른다. 템플릿 CSS 에 기대면 그 클래스가 우연히 생성된 템플릿에서만 그려지고, CSS 라이브러리가 다른 템플릿에서는 모양이 통째로 사라진다(2026-10-22 결정 7·8).
+
+```tsx
+// namespace "hellomodule" — module.json assets.css.namespace
+<div className={highlighted ? 'hellomodule-card hellomodule-card--highlighted' : 'hellomodule-card'} {...editorAttrs}>
+    <h3 className="hellomodule-card__title">{title}</h3>
+</div>
+```
+
+- 앞글자는 manifest `assets.css.namespace` 로 선언한다. 손으로 쓴 CSS 는 `{namespace}-…`, Tailwind 같은 접두 빌드는 `{letters}:…` 다.
+- 색·테두리 같은 의미 규칙은 `@layer g7-extension` 안에, 배치는 층 밖에 둔다. 다크는 `.dark` 대신 `<html data-g7-color-scheme>` 중립 표식으로 쓴다.
+- 템플릿 전용 판본(③)도 같은 확장 CSS 를 쓴다. 템플릿이 모양을 바꾸려면 컴포넌트 대체(②) 대신 [확장 CSS 덮기 파일](module-assets.md#템플릿-확장-css-덮기)만으로도 된다. 템플릿 대체본(②)은 템플릿 소유이므로 템플릿 자기 CSS 를 쓴다.
+- 핸들러가 실행 중에 붙이는 클래스(`classList.add` 등)도 같은 규칙이다.
+
+규약 전문(세 칸 우선순위·다크 규격·작성 예시·정적 검사): [module-assets.md 「확장 CSS 자기 공급 규약」](module-assets.md#확장-css-자기-공급-규약)
 
 ## ② 오버라이드 — 템플릿이 확장 컴포넌트를 대체한다
 
@@ -295,7 +329,7 @@ prop 컨트롤은 `components.json` 의 `props` 선언에서 나오고, 그 선�
 ## 관련 문서
 
 - [module-basics.md](module-basics.md) — 모듈 디렉토리 구조
-- [module-assets.md](module-assets.md) — 확장 번들 로딩
+- [module-assets.md](module-assets.md) — 확장 번들 로딩, [확장 CSS 자기 공급 규약](module-assets.md#확장-css-자기-공급-규약)
 - [template-basics.md](template-basics.md) — 템플릿 컴포넌트
 - [editor-spec.md](editor-spec.md) — 편집기 팔레트 선언
 - [../frontend/components.md](../frontend/components.md) — 컴포넌트 작성 규칙

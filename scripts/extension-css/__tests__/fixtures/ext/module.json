@@ -1,0 +1,11 @@
+{
+    "identifier": "fixture-demo",
+    "version": "0.1.0",
+    "assets": {
+        "css": {
+            "entry": "resources/css/main.css",
+            "output": "dist/css/module.css",
+            "namespace": "pay-demo"
+        }
+    }
+}

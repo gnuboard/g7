@@ -21,48 +21,48 @@
     <wait-for>post</wait-for>
   </transition-overlay>
   <slot name="content">
-    <div data-ref="post_detail_wrapper" :data-blur-until-loaded="true" class="admin-page-content-fluid">
-      <responsive on="portable" class="admin-page-content-fluid-compact"/>
+    <div data-ref="post_detail_wrapper" :data-blur-until-loaded="true" class="board-admin-page-content-fluid">
+      <responsive on="portable" class="board-admin-page-content-fluid-compact"/>
       <page-header data-type="composite" data-ref="page_header" title="{{post?.data?.board?.name}} $t:sirsoft-board.admin.posts.detail.title" description="{{post?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board">
-        <a data-ref="view_user_page_link" href="/board/{{route.slug}}/{{route?.id}}" target="_blank" rel="noopener noreferrer" title="$t:sirsoft-board.admin.posts.actions.view_user_page" class="flex-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
+        <a data-ref="view_user_page_link" href="/board/{{route.slug}}/{{route?.id}}" target="_blank" rel="noopener noreferrer" title="$t:sirsoft-board.admin.posts.actions.view_user_page" class="board-flex-center board:gap-2 board:px-3 board:py-2 board:text-sm board:font-medium board:text-gray-600 board:dark:text-gray-300 board:bg-gray-100 board:dark:bg-gray-700 board:rounded-lg board:hover:bg-gray-200 board:dark:hover:bg-gray-600 board:transition-colors board:no-underline">
           <icon name="external-link" size="sm"/>
           <span>$t:sirsoft-board.admin.posts.actions.view_user_page</span>
         </a>
-        <button type="button" aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="refresh_button" class="btn-icon">
+        <button type="button" aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="refresh_button" class="board-btn-icon">
           <on type="click">
             <!-- 같은 글로 다시 진입해 본문·댓글을 새로 읽는다 — `mergeQuery=true` 라 목록에서 달고 온 query(돌아갈 목록의 페이지·검색 조건)를 그대로 유지한다 -->
             <navigate path="/admin/board/{{route.slug}}/post/{{route?.id}}" :mergeQuery="true">
               <query/>
             </navigate>
           </on>
-          <icon name="refresh" class="text-xl"/>
+          <icon name="refresh" class="board:text-xl"/>
         </button>
-        <a href="/admin/board/{{route.slug}}" :mergeQuery="true" data-ref="back_button" class="button flex-center gap-2 btn btn-secondary">
+        <a href="/admin/board/{{route.slug}}" :mergeQuery="true" data-ref="back_button" class="board-button board-flex-center board:gap-2 board-btn board-btn-secondary">
           <on type="click">
             <!-- 글 목록으로. 보던 검색·필터·페이지를 이고 간다 — 글 하나를 처리하고 목록으로 돌아가는 왕복이 이 화면의 기본 동선이다 -->
             <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
-          <icon name="arrow-left" class="text-base"/>
+          <icon name="arrow-left" class="board:text-base"/>
           <span>$t:common.back</span>
         </a>
       </page-header>
       <div data-ref="post_card">
-        <div class="admin-card">
-          <div class="row-stack">
+        <div class="board-admin-card">
+          <div class="board-row-stack">
             <include src="partials/admin_board_post_detail/_post_card_content.g7.html"/>
           </div>
         </div>
       </div>
       <div data-ref="replies_section" data-if="{{(post?.data?.reply_count ?? 0) > 0}}">
-        <div data-ref="replies_header" class="flex-center gap-2 mb-4">
-          <icon name="comments" class="text-xl text-blue-600 dark:text-blue-400"/>
-          <h3 class="section-heading">$t:sirsoft-board.admin.posts.detail.replies_title|count={{post?.data?.reply_count ?? 0}}</h3>
+        <div data-ref="replies_header" class="board-flex-center board:gap-2 board:mb-4">
+          <icon name="comments" class="board:text-xl board:text-blue-600 board:dark:text-blue-400"/>
+          <h3 class="board-section-heading">$t:sirsoft-board.admin.posts.detail.replies_title|count={{post?.data?.reply_count ?? 0}}</h3>
         </div>
         <div data-ref="replies_list_{{itemIdx}}" data-each="item, itemIdx in post?.data?.replies ?? []">
-          <div class="admin-card">
-            <div class="row-stack">
+          <div class="board-admin-card">
+            <div class="board-row-stack">
               <include src="partials/admin_board_post_detail/_reply_card_content.g7.html"/>
             </div>
           </div>
@@ -74,18 +74,18 @@
     <!-- 삭제 확인 — 글·답글·댓글 셋을 겸한다. 제목·문구·경고는 대상 종류로 갈리고, 댓글은 지운 뒤 이 화면에 머물지만 글은 목록으로 답글은 원글로 빠져나간다(지운 자리에 남을 수 없으므로) -->
     <modal data-type="composite" data-ref="delete_modal" title="{{_global.modal_data?.type === 'comment' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_comment') : _global.modal_data?.type === 'reply' ? $t('sirsoft-board.admin.posts.detail.delete_modal.title_reply') : $t('sirsoft-board.admin.posts.detail.delete_modal.title_post')}}" size="sm">
       <meta description="Universal Delete Modal (Post/Reply/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.delete_editor_label"/>
-      <div class="py-2">
-        <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_post'}}</p>
-        <p data-if="{{_global.modal_data?.type !== 'post'}}" class="text-label-subtle">{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}</p>
+      <div class="board:py-2">
+        <p class="board:text-gray-700 board:dark:text-gray-300 board:mb-4">{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_post'}}</p>
+        <p data-if="{{_global.modal_data?.type !== 'post'}}" class="board-text-label-subtle">{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}</p>
       </div>
-      <div class="modal-footer-buttons">
-        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      <div class="board-modal-footer-buttons">
+        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:sirsoft-board.common.cancel</span>
         </button>
-        <button type="button" class="px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.deleteModalLoading}}">
+        <button type="button" class="board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-600 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{_global.deleteModalLoading}}">
           <on type="click">
             <!-- 삭제 실행 — 엔드포인트가 댓글이냐 글이냐로 갈린다. 지운 뒤 갈 곳도 갈린다: 댓글은 이 화면을 다시 읽고, 글·답글은 각각 목록·원글로 빠져나간다 -->
             <sequence>
@@ -117,19 +117,19 @@
     <!-- 신고 접수 — 관리자가 대신 신고를 올리는 자리라, 이 동작이 사용자 신고와 같은 파이프라인을 탄다는 것을 상단 경고로 먼저 알린다. 사유 종류는 그 게시판이 정의한 목록에서만 고른다 -->
     <modal data-type="composite" data-ref="report_modal" title="{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.report_modal.title_comment' : '$t:sirsoft-board.admin.posts.detail.report_modal.title'}}" size="medium">
       <meta description="Universal Report Modal (Post/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.report_editor_label"/>
-      <div class="py-2">
-        <div class="alert-warning">
-          <p class="text-xs board-tone-warning">$t:sirsoft-board.admin.posts.detail.report_modal.warning_notice</p>
+      <div class="board:py-2">
+        <div class="board-alert-warning">
+          <p class="board:text-xs board-tone-warning">$t:sirsoft-board.admin.posts.detail.report_modal.warning_notice</p>
         </div>
-        <div data-if="{{_global.modal_data?.type === 'comment'}}" class="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <p class="text-body">
-            <span class="font-medium">$t:sirsoft-board.admin.posts.detail.report_modal.report_target</span>
+        <div data-if="{{_global.modal_data?.type === 'comment'}}" class="board:mb-4 board:p-3 board:bg-gray-50 board:dark:bg-gray-800 board:rounded-lg">
+          <p class="board-text-body">
+            <span class="board:font-medium">$t:sirsoft-board.admin.posts.detail.report_modal.report_target</span>
             <span>$t:sirsoft-board.admin.posts.detail.report_modal.comment_by_author|author={{_global.modal_data?.author || $t('sirsoft-board.admin.posts.unknown_author')}}</span>
           </p>
         </div>
-        <div class="mb-4">
-          <label class="form-label">$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_label</label>
-          <select class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
+        <div class="board:mb-4">
+          <label class="board-form-label">$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_label</label>
+          <select class="board:w-full board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800">
             <on type="change">
               <!-- 고른 사유 종류를 지역 상태에 둔다 — 아래 제출 버튼이 «비었는가」를 이 값으로 판단하므로 폼 자동 바인딩에 맡기지 않고 명시로 잡는다 -->
               <set-state target="local" report_reason_type="{{$event.target.value}}"/>
@@ -138,9 +138,9 @@
             <option data-each="type, idx in post?.data?.board?.report_types ?? []" value="{{type.value}}">{{type.label}}</option>
           </select>
         </div>
-        <div class="mb-4">
-          <label class="form-label">$t:sirsoft-board.admin.posts.detail.report_modal.reason_detail_label</label>
-          <textarea class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" :rows="4" placeholder="$t:sirsoft-board.admin.posts.detail.report_modal.reason_placeholder">
+        <div class="board:mb-4">
+          <label class="board-form-label">$t:sirsoft-board.admin.posts.detail.report_modal.reason_detail_label</label>
+          <textarea class="board:w-full board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:focus:ring-2 board:focus:ring-blue-500 board:dark:focus:ring-blue-400" :rows="4" placeholder="$t:sirsoft-board.admin.posts.detail.report_modal.reason_placeholder">
             <on type="input">
               <!-- 상세 사유는 타이핑마다(`input`) 담는다 — `change` 로 두면 입력만 하고 포커스를 옮기지 않은 채 제출할 때 빈 값으로 걸린다 -->
               <set-state target="local" report_reason="{{$event.target.value}}"/>
@@ -148,14 +148,14 @@
           </textarea>
         </div>
       </div>
-      <div class="modal-footer-buttons">
-        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      <div class="board-modal-footer-buttons">
+        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button type="button" class="px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.reportSubmitting}}">
+        <button type="button" class="board:px-4 board:py-2 board:bg-yellow-700 board:dark:bg-yellow-700 board:text-white board:rounded-lg board:hover:bg-yellow-800 board:dark:hover:bg-yellow-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{_global.reportSubmitting}}">
           <on type="click">
             <!-- 제출 — 검증을 서버에 맡기지 않고 여기서 두 단계로 거른다(사유 종류 → 상세 사유). 네 액션이 모두 같은 `if` 식을 다시 적는 이유는 액션 배열에 조기 반환이 없어서다: 앞 토스트가 떠도 뒤 액션은 그대로 이어지므로 저마다 자기 조건을 들고 있어야 한다 -->
             <sequence>
@@ -178,7 +178,7 @@
               </api-call>
             </sequence>
           </on>
-          <icon data-if="{{_global.reportSubmitting}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{_global.reportSubmitting}}" name="spinner" class="board-spinner-sm"/>
           <span>{{_global.reportSubmitting ? '$t:common.loading' : '$t:sirsoft-board.admin.posts.detail.report_modal.submit'}}</span>
         </button>
       </div>
@@ -188,27 +188,27 @@
     <!-- 블라인드 처리 — 지우는 것이 아니라 가리는 것이라 사유는 선택 입력이다. 대상(글·댓글)은 삭제 모달과 달리 `_global.blind_modal_data` 라는 자기 키를 쓴다 — 삭제 모달과 열린 채로 겹칠 수 있어 같은 키를 나눠 쓰면 대상이 섞인다 -->
     <modal data-type="composite" data-ref="blind_modal" title="{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_title' : '$t:sirsoft-board.admin.posts.modals.blind_title'}}" size="medium">
       <meta description="Blind Modal (Post/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.blind_editor_label"/>
-      <div class="py-2">
-        <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.blind_confirm'}}</p>
-        <label class="form-label">
+      <div class="board:py-2">
+        <p class="board:text-gray-700 board:dark:text-gray-300 board:mb-4">{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.blind_confirm'}}</p>
+        <label class="board-form-label">
           <span>$t:sirsoft-board.admin.posts.modals.blind_reason_label</span>
-          <span class="text-gray-500 dark:text-gray-400 ml-1">$t:sirsoft-board.common.optional</span>
+          <span class="board:text-gray-500 board:dark:text-gray-400 board:ml-1">$t:sirsoft-board.common.optional</span>
         </label>
-        <textarea id="blind_reason" :rows="3" placeholder="$t:sirsoft-board.admin.posts.modals.blind_reason_placeholder" class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+        <textarea id="blind_reason" :rows="3" placeholder="$t:sirsoft-board.admin.posts.modals.blind_reason_placeholder" class="board:w-full board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:focus:ring-2 board:focus:ring-blue-500 board:dark:focus:ring-blue-400">
           <on type="change">
             <!-- 블라인드 사유를 전역에 둔다 — 아래 실행 버튼이 이 값을 요청 본문에 실어 보내고, 모달은 별도 컨텍스트라 지역 상태로는 건너오지 않는다 -->
             <set-state target="global" blindReason="{{$event.target.value}}"/>
           </on>
         </textarea>
       </div>
-      <div class="modal-footer-buttons">
-        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      <div class="board-modal-footer-buttons">
+        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button type="button" class="px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.blindModalLoading}}">
+        <button type="button" class="board:px-4 board:py-2 board:bg-yellow-700 board:dark:bg-yellow-700 board:text-white board:rounded-lg board:hover:bg-yellow-800 board:dark:hover:bg-yellow-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{_global.blindModalLoading}}">
           <on type="click">
             <!-- 블라인드 실행 — 글은 남고 표시만 가려지므로 삭제와 달리 화면을 떠나지 않고 이 자리에서 다시 읽는다(가려진 상태가 그 자리에 그대로 보여야 한다) -->
             <sequence>
@@ -237,17 +237,17 @@
     <!-- 블라인드 해제 — 되돌리는 동작이라 사유 입력이 없고 확인 한 줄로 끝난다. 대상 키(`_global.restore_modal_data`)를 따로 두는 이유는 블라인드 모달과 같다 -->
     <modal data-type="composite" data-ref="restore_modal" title="{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_title' : '$t:sirsoft-board.admin.posts.modals.restore_title'}}" size="sm">
       <meta description="Restore Modal (Post/Comment)" editor_label="$t:sirsoft-board.admin.posts.modals.restore_editor_label"/>
-      <div class="py-2">
-        <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.restore_confirm'}}</p>
+      <div class="board:py-2">
+        <p class="board:text-gray-700 board:dark:text-gray-300 board:mb-4">{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.restore_confirm'}}</p>
       </div>
-      <div class="modal-footer-buttons">
-        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+      <div class="board-modal-footer-buttons">
+        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
           <on type="click">
             <close-modal/>
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button type="button" class="px-4 py-2 bg-green-700 dark:bg-green-700 text-white rounded-lg hover:bg-green-800 dark:hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.restoreModalLoading}}">
+        <button type="button" class="board:px-4 board:py-2 board:bg-green-700 board:dark:bg-green-700 board:text-white board:rounded-lg board:hover:bg-green-800 board:dark:hover:bg-green-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{_global.restoreModalLoading}}">
           <on type="click">
             <!-- 해제 실행 — 블라인드와 대칭이고 보내는 본문이 없다(사유가 필요한 쪽은 가리는 동작뿐이다) -->
             <sequence>

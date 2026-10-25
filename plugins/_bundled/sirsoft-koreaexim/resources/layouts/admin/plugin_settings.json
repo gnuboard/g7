@@ -205,7 +205,7 @@
                 "dataKey": "form",
                 "trackChanges": true,
                 "props": {
-                    "className": "admin-page-content-responsive"
+                    "className": "koreaexim-admin-page-content-responsive"
                 },
                 "children": [
                     {
@@ -229,7 +229,7 @@
                                 ],
                                 "props": {
                                     "href": "/admin/plugins",
-                                    "className": "button btn btn-secondary whitespace-nowrap",
+                                    "className": "koreaexim-button koreaexim-btn koreaexim-btn-secondary koreaexim:whitespace-nowrap",
                                     "aria-label": "$t:admin.plugins.back_to_list"
                                 },
                                 "children": [
@@ -284,7 +284,7 @@
                         "props": {
                             "activeTabId": "{{_computed.activeTab}}",
                             "variant": "default",
-                            "className": "sticky-tab-nav-responsive",
+                            "className": "koreaexim-sticky-tab-nav-responsive",
                             "tabs": [
                                 {
                                     "href": "/admin/plugins/sirsoft-koreaexim/settings?tab=settings",
@@ -307,7 +307,7 @@
                         "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
                         "props": {
                             "role": "status",
-                            "className": "alert-warning mb-4"
+                            "className": "koreaexim-alert-warning koreaexim:mb-4"
                         },
                         "children": [
                             {
@@ -315,14 +315,14 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "lock",
-                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                    "className": "koreaexim:text-xl koreaexim:leading-none koreaexim:text-amber-600 koreaexim:dark:text-amber-400 koreaexim:flex-shrink-0"
                                 }
                             },
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-xs text-yellow-700 dark:text-yellow-300"
+                                    "className": "koreaexim:text-xs koreaexim:text-yellow-700 koreaexim:dark:text-yellow-300"
                                 },
                                 "text": "$t:sirsoft-koreaexim.plugin_read_only"
                             }
@@ -335,7 +335,7 @@
                         "if": "{{_computed.isReadOnly && !!koreaeximStatus?.data}}",
                         "props": {
                             "role": "status",
-                            "className": "alert-info mb-4"
+                            "className": "koreaexim-alert-info koreaexim:mb-4"
                         },
                         "text": "$t:sirsoft-koreaexim.read_only"
                     },
@@ -346,7 +346,7 @@
                         "if": "{{_local.koreaeximSettingsForbidden === true}}",
                         "props": {
                             "role": "status",
-                            "className": "alert-warning mb-4"
+                            "className": "koreaexim-alert-warning koreaexim:mb-4"
                         },
                         "text": "$t:sirsoft-koreaexim.settings_forbidden"
                     },
@@ -355,7 +355,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "tab-content"
+                            "className": "koreaexim-tab-content"
                         },
                         "children": [
                             {
@@ -371,7 +371,7 @@
                         "name": "Div",
                         "if": "{{_computed.activeTab === 'settings'}}",
                         "props": {
-                            "className": "sticky-footer-buttons"
+                            "className": "koreaexim-sticky-footer-buttons"
                         },
                         "children": [
                             {
@@ -389,7 +389,7 @@
                                 ],
                                 "props": {
                                     "href": "/admin/plugins",
-                                    "className": "button btn btn-secondary"
+                                    "className": "koreaexim-button koreaexim-btn koreaexim-btn-secondary"
                                 },
                                 "children": [
                                     {
@@ -478,7 +478,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{_computed.isSettingsReadOnly || !_local.hasChanges || _local.isSaving}}",
-                                    "className": "btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "koreaexim-btn koreaexim-btn-primary koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed"
                                 },
                                 "children": [
                                     {

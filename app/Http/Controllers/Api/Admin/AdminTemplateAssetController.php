@@ -9,6 +9,7 @@ use App\Services\ExtensionStaticCacheService;
 use App\Services\PermissionService;
 use App\Services\TemplateService;
 use App\Support\AssetUrl;
+use App\Support\CssLayerFlattener;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -31,6 +32,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class AdminTemplateAssetController extends AdminBaseController
 {
+    /** 편집기 프리뷰 CSS 를 담는 층 — 관리자 화면 머리(`admin.blade.php`)가 `g7-extension` 앞에 순서를 선언한다 */
+    public const PREVIEW_LAYER = 'g7-preview';
+
     /**
      * 편집기 자산 서빙 컨트롤러를 만든다.
      *
@@ -319,101 +323,27 @@ class AdminTemplateAssetController extends AdminBaseController
     }
 
     /**
-     * CSS 의 `@layer NAME { ... }` 블록 래퍼를 제거해 내부 규칙을 unlayered 로 평탄화한다.
+     * CSS 의 `@layer NAME { ... }` 층 이름을 프리뷰 층 `g7-preview` 하나로 모은다.
      *
      * Tailwind v4 는 규칙을 `@layer theme/base/components/utilities` 로 감싼다. 편집기
      * 프리뷰 CSS 와 어드민 호스트 CSS 가 같은 레이어 이름을 쓰면 cross-build 레이어 우선순위
-     * 충돌로 프리뷰 규칙이 적용되지 않을 수 있다. 편집기 CSS 는 프리뷰 전용 + 마지막 로드라
-     * 권위를 가져야 하므로, 레이어 블록 래퍼만 벗겨 내부 규칙을 unlayered 로 만든다(unlayered >
-     * layered). 규칙 자체와 소스 순서는 보존하므로 파일 내 cascade 는 불변.
+     * 충돌로 프리뷰 규칙이 적용되지 않을 수 있다. 그래서 프리뷰의 층 이름을 관리자 화면에 없는 이름 하나로
+     * 합친다. 규칙 자체와 소스 순서는 보존하므로 파일 내 cascade 는 불변.
      *
-     * 중괄호 균형 스캐너로 `@layer <names> {` 의 짝 `}` 만 찾아 제거한다(정규식은 중첩 중괄호를
-     * 안전히 매칭 못 함). `@layer <names>;`(선언만, 블록 없음)은 그대로 둔다(레이어 순서 선언).
+     * 층 래퍼를 벗겨 층 없는 규칙으로 두면 템플릿 초기화(`*{border:0 solid}`·`h1{font-size:inherit}`)가 확장 CSS 의
+     * 의미 칸(`@layer g7-extension`)까지 이겨 프리뷰의 확장 화면 테두리·제목 크기가 사라진다(issue816 실측:
+     * 메모 카드 테두리 1px→0, 제목 24px→13px). 관리자 화면 머리가 템플릿 CSS 뒤에
+     * `@layer g7-preview, g7-extension;` 으로 순서를 정하므로, 이 층은 어드민 호스트의 층 규칙보다 위·확장 의미
+     * 칸보다 아래에 놓인다. 층 밖에 있던 템플릿 규칙은 층 밖에 그대로 남아, 사용자 화면처럼 확장 의미 칸을 이긴다.
+     * 순서 선언(`@layer a, b;`)은 지운다 — 남기면 관리자 화면에 없는 이름이 확장 의미 칸 뒤에 새 층으로 생긴다.
      *
      * @param  string  $css  치환 완료된 CSS
-     * @return string 레이어 래퍼가 제거된 CSS
+     * @return string 층 이름을 프리뷰 층으로 모은 CSS
      */
     private function flattenCssLayers(string $css): string
     {
-        // 중첩 `@layer` 대비 — 더 이상 블록 오프너가 없을 때까지 반복(최대 8회, 폭주 방지).
-        for ($pass = 0; $pass < 8; $pass++) {
-            if (! preg_match('/@layer\s+[^;{]*\{/', $css)) {
-                break;
-            }
-            $css = $this->flattenCssLayersOnce($css);
-        }
-
-        return $css;
-    }
-
-    /**
-     * `@layer NAME { ... }` 블록 래퍼 1패스 제거(중괄호 균형 스캔). flattenCssLayers 가 반복 호출.
-     *
-     * @param  string  $css  CSS
-     * @return string 1패스 평탄화 결과
-     */
-    private function flattenCssLayersOnce(string $css): string
-    {
-        $out = '';
-        $len = strlen($css);
-        $i = 0;
-        // `@layer` 다음에 이름 목록 + `{` 가 오는 블록 오프너를 찾는다.
-        while ($i < $len) {
-            // `@layer` 리터럴 탐색
-            $at = strpos($css, '@layer', $i);
-            if ($at === false) {
-                $out .= substr($css, $i);
-                break;
-            }
-            // `@layer` 앞부분 그대로 출력
-            $out .= substr($css, $i, $at - $i);
-
-            // `@layer` 뒤 ~ 다음 `{` 또는 `;` 까지 — 이름 목록.
-            $j = $at + 6; // strlen('@layer')
-            $brace = strpos($css, '{', $j);
-            $semi = strpos($css, ';', $j);
-
-            // 블록 없는 선언(`@layer a, b;`)이면 `;` 가 먼저 — 그대로 보존.
-            if ($semi !== false && ($brace === false || $semi < $brace)) {
-                $out .= substr($css, $at, $semi - $at + 1);
-                $i = $semi + 1;
-
-                continue;
-            }
-
-            if ($brace === false) {
-                // 형식 이상 — 남은 전체 출력 후 종료(폴백).
-                $out .= substr($css, $at);
-                break;
-            }
-
-            // `@layer <names> {` 블록 — 오프너(`@layer ... {`)는 버리고 내부를 평탄화.
-            // 짝 `}` 를 중괄호 균형으로 찾는다.
-            $depth = 1;
-            $k = $brace + 1;
-            while ($k < $len && $depth > 0) {
-                $ch = $css[$k];
-                if ($ch === '{') {
-                    $depth++;
-                } elseif ($ch === '}') {
-                    $depth--;
-                    if ($depth === 0) {
-                        break;
-                    }
-                }
-                $k++;
-            }
-            if ($depth !== 0) {
-                // 짝 불일치 — 평탄화 포기, 원문 그대로 출력 후 종료(안전 폴백).
-                $out .= substr($css, $at);
-                break;
-            }
-            // 내부 내용(오프너 `{` 다음 ~ 짝 `}` 직전)만 채택 — 레이어 래퍼 제거.
-            $out .= substr($css, $brace + 1, $k - ($brace + 1));
-            $i = $k + 1; // 짝 `}` 다음부터 계속
-        }
-
-        return $out;
+        // 층 스캔은 확장 CSS 서빙과 같은 구현을 쓴다(주석·문자열·이스케이프를 건너뛴다).
+        return CssLayerFlattener::mergeInto($css, self::PREVIEW_LAYER);
     }
 
     /**

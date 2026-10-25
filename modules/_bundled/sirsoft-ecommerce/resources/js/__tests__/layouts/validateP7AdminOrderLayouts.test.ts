@@ -310,7 +310,7 @@ describe('선행 audit 신호 — 손댄 김에 정리', () => {
 
         expect(inputs.length).toBeGreaterThanOrEqual(2);
         for (const input of inputs) {
-            expect(String(input.props.className).split(/\s+/)).toContain('input');
+            expect(String(input.props.className).split(/\s+/)).toContain('ecommerce-input');
         }
     });
 

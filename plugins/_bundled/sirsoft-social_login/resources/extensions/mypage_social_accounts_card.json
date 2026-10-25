@@ -48,14 +48,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "space-y-4"
+                        "className": "sl:space-y-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-social_login.mypage.unlink_confirm|provider={{_global.socialLoginUnlinkTarget?.label ?? ''}}"
                         },
@@ -66,7 +66,7 @@
                             "name": "P",
                             "if": "{{_global.socialLoginUnlinkIsLast === true}}",
                             "props": {
-                                "className": "p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-300",
+                                "className": "sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:text-sm sl:text-yellow-800 sl:dark:text-yellow-300",
                                 "role": "alert"
                             },
                             "text": "$t:sirsoft-social_login.mypage.unlink_last_warning"
@@ -75,7 +75,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex gap-2"
+                                "className": "sl:flex sl:gap-2"
                             },
                             "children": [
                                 {
@@ -89,7 +89,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                                        "className": "sl:flex-1 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer"
                                     },
                                     "text": "$t:common.cancel"
                                 },
@@ -163,7 +163,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "flex-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm cursor-pointer disabled:opacity-50",
+                                        "className": "sl:flex-1 sl:px-3 sl:py-2 sl:bg-red-600 sl:text-white sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50",
                                         "disabled": "{{_global.socialLoginUnlinking}}"
                                     },
                                     "text": "$t:sirsoft-social_login.mypage.unlink"
@@ -188,26 +188,26 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+                                "className": "sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-gray-200 sl:dark:border-gray-700 sl:p-4"
                             }
                         }
                     },
                     "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+                        "className": "sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-gray-200 sl:dark:border-gray-700 sl:p-6"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+                                "className": "sl:mb-4 sl:pb-3 sl:border-b sl:border-gray-200 sl:dark:border-gray-700"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "H2",
                                     "props": {
-                                        "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                        "className": "sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white"
                                     },
                                     "text": "$t:sirsoft-social_login.mypage.title"
                                 }
@@ -220,14 +220,14 @@
                             "name": "Div",
                             "if": "{{socialAccounts?.data?.has_password === false}}",
                             "props": {
-                                "className": "mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex flex-col gap-2 sm:flex-row sm:items-center"
+                                "className": "sl:mb-4 sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:flex sl:flex-col sl:gap-2 sl:sm:flex-row sl:sm:items-center"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "flex-1 text-sm text-blue-700 dark:text-blue-300"
+                                        "className": "sl:flex-1 sl:text-sm sl:text-blue-700 sl:dark:text-blue-300"
                                     },
                                     "text": "$t:sirsoft-social_login.mypage.no_password"
                                 },
@@ -245,7 +245,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "shrink-0 px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer"
+                                        "className": "sl:shrink-0 sl:px-3 sl:py-1.5 sl:text-xs sl:bg-blue-600 sl:text-white sl:rounded sl:hover:bg-blue-700 sl:cursor-pointer"
                                     },
                                     "text": "$t:sirsoft-social_login.mypage.set_password"
                                 }
@@ -257,7 +257,7 @@
                             "name": "P",
                             "if": "{{(socialAccounts?.data?.accounts ?? []).length === 0}}",
                             "props": {
-                                "className": "py-4 text-sm text-gray-500 dark:text-gray-400"
+                                "className": "sl:py-4 sl:text-sm sl:text-gray-500 sl:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-social_login.mypage.empty"
                         },
@@ -267,7 +267,7 @@
                             "name": "Ul",
                             "if": "{{(socialAccounts?.data?.accounts ?? []).length > 0}}",
                             "props": {
-                                "className": "divide-y divide-gray-200 dark:divide-gray-700"
+                                "className": "sl:divide-y sl:divide-gray-200 sl:dark:divide-gray-700"
                             },
                             "children": [
                                 {
@@ -279,7 +279,7 @@
                                     },
                                     "dataKey": "{{account.provider_key}}",
                                     "props": {
-                                        "className": "py-3 flex items-center gap-3"
+                                        "className": "sl:py-3 sl:flex sl:items-center sl:gap-3"
                                     },
                                     "children": [
                                         {
@@ -295,14 +295,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-1 min-w-0"
+                                                "className": "sl:flex-1 sl:min-w-0"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                        "className": "sl:text-sm sl:font-medium sl:text-gray-900 sl:dark:text-white"
                                                     },
                                                     "text": "{{account.label}}"
                                                 },
@@ -310,7 +310,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 truncate"
+                                                        "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:truncate"
                                                     },
                                                     "text": "{{account.email ?? ''}}"
                                                 },
@@ -318,7 +318,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-gray-400 dark:text-gray-500"
+                                                        "className": "sl:text-xs sl:text-gray-400 sl:dark:text-gray-500"
                                                     },
                                                     "children": [
                                                         {
@@ -364,7 +364,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "shrink-0 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                                "className": "sl:shrink-0 sl:px-3 sl:py-1.5 sl:text-xs sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:text-gray-700 sl:dark:text-gray-300 sl:rounded sl:hover:bg-gray-50 sl:dark:hover:bg-gray-700 sl:cursor-pointer"
                                             },
                                             "text": "$t:sirsoft-social_login.mypage.unlink"
                                         }
@@ -379,7 +379,7 @@
                             "name": "Div",
                             "if": "{{_global.socialLoginUnlinkLastMethod === true}}",
                             "props": {
-                                "className": "mt-3 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 flex flex-col gap-2 sm:flex-row sm:items-center",
+                                "className": "sl:mt-3 sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:flex sl:flex-col sl:gap-2 sl:sm:flex-row sl:sm:items-center",
                                 "role": "alert"
                             },
                             "children": [
@@ -387,7 +387,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "flex-1 text-sm text-yellow-800 dark:text-yellow-300"
+                                        "className": "sl:flex-1 sl:text-sm sl:text-yellow-800 sl:dark:text-yellow-300"
                                     },
                                     "text": "$t:sirsoft-social_login.mypage.last_method"
                                 },
@@ -406,7 +406,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "shrink-0 px-3 py-1.5 text-xs bg-yellow-600 text-white rounded hover:bg-yellow-700 cursor-pointer"
+                                        "className": "sl:shrink-0 sl:px-3 sl:py-1.5 sl:text-xs sl:bg-yellow-600 sl:text-white sl:rounded sl:hover:bg-yellow-700 sl:cursor-pointer"
                                     },
                                     "text": "$t:sirsoft-social_login.mypage.set_password"
                                 }
@@ -417,7 +417,7 @@
                             "name": "P",
                             "if": "{{!!_global.socialLoginUnlinkError && _global.socialLoginUnlinkLastMethod !== true}}",
                             "props": {
-                                "className": "mt-3 text-sm text-red-600 dark:text-red-400",
+                                "className": "sl:mt-3 sl:text-sm sl:text-red-600 sl:dark:text-red-400",
                                 "role": "alert"
                             },
                             "text": "{{_global.socialLoginUnlinkError ?? ''}}"
@@ -429,14 +429,14 @@
                             "name": "Div",
                             "if": "{{(socialAccounts?.data?.available ?? []).length > 0}}",
                             "props": {
-                                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+                                "className": "sl:mt-4 sl:pt-4 sl:border-t sl:border-gray-200 sl:dark:border-gray-700"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "mb-3 text-sm text-gray-600 dark:text-gray-400"
+                                        "className": "sl:mb-3 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-social_login.mypage.available"
                                 },

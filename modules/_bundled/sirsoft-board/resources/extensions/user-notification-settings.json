@@ -28,7 +28,7 @@
                     "name": "Div",
                     "props": {
                         "id": "ext_notification",
-                        "className": "scroll-mt-32 mt-6"
+                        "className": "board:scroll-mt-32 board:mt-6"
                     },
                     "children": [
                         {
@@ -36,21 +36,21 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "admin-card"
+                                "className": "board-admin-card"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-between mb-4"
+                                        "className": "board-flex-between board:mb-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-2"
+                                                "className": "board:flex board:items-center board:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -58,14 +58,14 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "bell",
-                                                        "className": "text-gray-600 dark:text-gray-400 text-xl"
+                                                        "className": "board:text-gray-600 board:dark:text-gray-400 board:text-xl"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "H3",
                                                     "props": {
-                                                        "className": "section-heading"
+                                                        "className": "board-section-heading"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.form.sections.notification_settings"
                                                 }
@@ -86,7 +86,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "grid-2col-responsive"
+                                        "className": "board-grid-2col-responsive"
                                     },
                                     "children": [
                                         {
@@ -98,7 +98,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex items-center gap-2 cursor-pointer"
+                                                        "className": "board:flex board:items-center board:gap-2 board:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -120,14 +120,14 @@
                                                                 "name": "notify_post_complete",
                                                                 "checked": "{{_local.form?.notify_post_complete ?? false}}",
                                                                 "autoBinding": false,
-                                                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                                                                "className": "board:w-4 board:h-4 board:text-blue-600 board:border-gray-300 board:dark:border-gray-600 board:rounded board:focus:ring-blue-500"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                                "className": "board:text-sm board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.users.form.notifications.post_complete"
                                                         }
@@ -144,7 +144,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex items-center gap-2 cursor-pointer"
+                                                        "className": "board:flex board:items-center board:gap-2 board:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -166,14 +166,14 @@
                                                                 "name": "notify_post_reply",
                                                                 "checked": "{{_local.form?.notify_post_reply ?? false}}",
                                                                 "autoBinding": false,
-                                                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                                                                "className": "board:w-4 board:h-4 board:text-blue-600 board:border-gray-300 board:dark:border-gray-600 board:rounded board:focus:ring-blue-500"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                                "className": "board:text-sm board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.users.form.notifications.post_reply"
                                                         }
@@ -190,7 +190,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex items-center gap-2 cursor-pointer"
+                                                        "className": "board:flex board:items-center board:gap-2 board:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -212,14 +212,14 @@
                                                                 "name": "notify_comment",
                                                                 "checked": "{{_local.form?.notify_comment ?? false}}",
                                                                 "autoBinding": false,
-                                                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                                                                "className": "board:w-4 board:h-4 board:text-blue-600 board:border-gray-300 board:dark:border-gray-600 board:rounded board:focus:ring-blue-500"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                                "className": "board:text-sm board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.users.form.notifications.comment"
                                                         }
@@ -236,7 +236,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex items-center gap-2 cursor-pointer"
+                                                        "className": "board:flex board:items-center board:gap-2 board:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -258,14 +258,14 @@
                                                                 "name": "notify_reply_comment",
                                                                 "checked": "{{_local.form?.notify_reply_comment ?? false}}",
                                                                 "autoBinding": false,
-                                                                "className": "w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500"
+                                                                "className": "board:w-4 board:h-4 board:text-blue-600 board:border-gray-300 board:dark:border-gray-600 board:rounded board:focus:ring-blue-500"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                                "className": "board:text-sm board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.users.form.notifications.reply_comment"
                                                         }

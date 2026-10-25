@@ -30,7 +30,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "ecommerce-admin-page-content"
                 },
                 "children": [
                     {
@@ -38,14 +38,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mb-6"
+                            "className": "ecommerce:mb-6"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-3 mb-1"
+                                    "className": "ecommerce-flex-center ecommerce:gap-3 ecommerce:mb-1"
                                 },
                                 "children": [
                                     {
@@ -53,14 +53,14 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "file-excel",
-                                            "className": "text-xl icon-muted text-gray-500 dark:text-gray-400"
+                                            "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "ecommerce-page-title"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.title"
                                     }
@@ -70,7 +70,7 @@
                                 "type": "basic",
                                 "name": "P",
                                 "props": {
-                                    "className": "page-description"
+                                    "className": "ecommerce-page-description"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.description"
                             }
@@ -81,7 +81,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card mb-6"
+                            "className": "ecommerce-admin-card ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -89,7 +89,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center flex-wrap gap-3 mb-6"
+                                    "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-6"
                                 },
                                 "children": [
                                     {
@@ -97,7 +97,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "select-custom w-32"
+                                            "className": "ecommerce-select-custom ecommerce:w-32"
                                         },
                                         "children": [
                                             {
@@ -105,7 +105,7 @@
                                                 "name": "Button",
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "select-trigger"
+                                                    "className": "ecommerce-select-trigger"
                                                 },
                                                 "children": [
                                                     {
@@ -118,7 +118,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "chevron-down",
-                                                            "className": "select-trigger-icon text-gray-500 dark:text-gray-400"
+                                                            "className": "ecommerce-select-trigger-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                         }
                                                     }
                                                 ]
@@ -143,7 +143,7 @@
                                         "props": {
                                             "type": "text",
                                             "placeholder": "$t:sirsoft-ecommerce.admin.excel_download.search.placeholder",
-                                            "className": "input flex-1 min-w-64",
+                                            "className": "ecommerce-input ecommerce:flex-1 ecommerce:min-w-64",
                                             "value": "{{_local.searchKeyword}}"
                                         }
                                     },
@@ -169,7 +169,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-outline"
+                                            "className": "ecommerce-btn ecommerce-btn-outline"
                                         },
                                         "children": [
                                             {
@@ -177,7 +177,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "arrows-rotate",
-                                                    "className": "text-base"
+                                                    "className": "ecommerce:text-base"
                                                 }
                                             },
                                             {
@@ -194,14 +194,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center flex-wrap gap-3 mb-4"
+                                    "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-label w-16"
+                                            "className": "ecommerce-text-label ecommerce:w-16"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.filter.status"
                                     },
@@ -221,7 +221,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "{{_local.statusFilter === '' ? 'badge-status cursor-pointer bg-gray-200 text-gray-700 ring-1 ring-gray-400 dark:ring-gray-500 dark:bg-gray-700 dark:text-gray-300' : 'badge-status cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}}",
+                                            "className": "{{_local.statusFilter === '' ? 'ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-200 ecommerce:text-gray-700 ecommerce:ring-1 ecommerce:ring-gray-400 ecommerce:dark:ring-gray-500 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300' : 'ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:hover:bg-gray-200 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:hover:bg-gray-700'}}",
                                             "aria-pressed": "{{_local.statusFilter === ''}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.filter.all"
@@ -242,7 +242,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "{{_local.statusFilter === 'completed' ? 'badge-status badge-status-success cursor-pointer ring-1 ring-green-400 dark:ring-green-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}}",
+                                            "className": "{{_local.statusFilter === 'completed' ? 'ecommerce-badge-status ecommerce-badge-status-success ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-green-400 ecommerce:dark:ring-green-500' : 'ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:hover:bg-gray-200 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:hover:bg-gray-700'}}",
                                             "aria-pressed": "{{_local.statusFilter === 'completed'}}"
                                         },
                                         "children": [
@@ -251,7 +251,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "check-circle",
-                                                    "className": "text-xs"
+                                                    "className": "ecommerce:text-xs"
                                                 }
                                             },
                                             {
@@ -277,7 +277,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "{{_local.statusFilter === 'processing' ? 'badge-status badge-status-processing cursor-pointer ring-1 ring-blue-400 dark:ring-blue-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}}",
+                                            "className": "{{_local.statusFilter === 'processing' ? 'ecommerce-badge-status ecommerce-badge-status-processing ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-blue-400 ecommerce:dark:ring-blue-500' : 'ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:hover:bg-gray-200 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:hover:bg-gray-700'}}",
                                             "aria-pressed": "{{_local.statusFilter === 'processing'}}"
                                         },
                                         "children": [
@@ -286,7 +286,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "spinner",
-                                                    "className": "text-xs"
+                                                    "className": "ecommerce:text-xs"
                                                 }
                                             },
                                             {
@@ -312,7 +312,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "{{_local.statusFilter === 'failed' ? 'badge-status badge-status-error cursor-pointer ring-1 ring-red-400 dark:ring-red-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}}",
+                                            "className": "{{_local.statusFilter === 'failed' ? 'ecommerce-badge-status ecommerce-badge-status-error ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-red-400 ecommerce:dark:ring-red-500' : 'ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:hover:bg-gray-200 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:hover:bg-gray-700'}}",
                                             "aria-pressed": "{{_local.statusFilter === 'failed'}}"
                                         },
                                         "children": [
@@ -321,7 +321,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "circle-exclamation",
-                                                    "className": "text-xs"
+                                                    "className": "ecommerce:text-xs"
                                                 }
                                             },
                                             {
@@ -347,7 +347,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "{{_local.statusFilter === 'expired' ? 'badge-status badge-status-expired cursor-pointer ring-1 ring-gray-400 dark:ring-gray-500' : 'badge-status cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}}",
+                                            "className": "{{_local.statusFilter === 'expired' ? 'ecommerce-badge-status ecommerce-badge-status-expired ecommerce:cursor-pointer ecommerce:ring-1 ecommerce:ring-gray-400 ecommerce:dark:ring-gray-500' : 'ecommerce-badge-status ecommerce:cursor-pointer ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:hover:bg-gray-200 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:hover:bg-gray-700'}}",
                                             "aria-pressed": "{{_local.statusFilter === 'expired'}}"
                                         },
                                         "children": [
@@ -356,7 +356,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "file-text",
-                                                    "className": "text-xs"
+                                                    "className": "ecommerce:text-xs"
                                                 }
                                             },
                                             {
@@ -373,14 +373,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center flex-wrap gap-3 mb-4"
+                                    "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-label w-16"
+                                            "className": "ecommerce-text-label ecommerce:w-16"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.filter.category"
                                     },
@@ -401,7 +401,7 @@
                                         "props": {
                                             "name": "categoryFilter",
                                             "aria-label": "$t:sirsoft-ecommerce.admin.excel_download.filter.category",
-                                            "className": "w-40",
+                                            "className": "ecommerce:w-40",
                                             "value": "{{_local.categoryFilter}}",
                                             "options": [
                                                 {
@@ -434,14 +434,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center flex-wrap gap-3"
+                                    "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-label w-16"
+                                            "className": "ecommerce-text-label ecommerce:w-16"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.filter.date_search"
                                     },
@@ -451,7 +451,7 @@
                                         "props": {
                                             "name": "dateType",
                                             "aria-label": "$t:sirsoft-ecommerce.admin.excel_download.filter.date_search",
-                                            "className": "w-32",
+                                            "className": "ecommerce:w-32",
                                             "value": "{{_local.dateType}}",
                                             "options": [
                                                 {
@@ -466,14 +466,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center flex-wrap gap-2"
+                                            "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "ecommerce-flex-center ecommerce:gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -481,7 +481,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
+                                                            "className": "ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                         }
                                                     },
                                                     {
@@ -502,7 +502,7 @@
                                                             "type": "date",
                                                             "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.excel_download.filter.date_search')}}",
                                                             "placeholder": "$t:sirsoft-ecommerce.admin.excel_download.filter.start_date",
-                                                            "className": "input w-36",
+                                                            "className": "ecommerce-input ecommerce:w-36",
                                                             "value": "{{_local.startDate}}"
                                                         }
                                                     }
@@ -512,7 +512,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-muted"
+                                                    "className": "ecommerce-text-muted"
                                                 },
                                                 "text": "~"
                                             },
@@ -520,7 +520,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "ecommerce-flex-center ecommerce:gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -528,7 +528,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "calendar",
-                                                            "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
+                                                            "className": "ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                         }
                                                     },
                                                     {
@@ -549,7 +549,7 @@
                                                             "type": "date",
                                                             "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.excel_download.filter.date_search')}}",
                                                             "placeholder": "$t:sirsoft-ecommerce.admin.excel_download.filter.end_date",
-                                                            "className": "input w-36",
+                                                            "className": "ecommerce-input ecommerce:w-36",
                                                             "value": "{{_local.endDate}}"
                                                         }
                                                     }
@@ -566,7 +566,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card"
+                            "className": "ecommerce-admin-card"
                         },
                         "children": [
                             {
@@ -574,14 +574,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-between flex-wrap gap-4 mb-6"
+                                    "className": "ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-4 ecommerce:mb-6"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-secondary"
+                                            "className": "ecommerce-text-secondary"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.table.total_count|count=11"
                                     },
@@ -589,7 +589,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-3"
+                                            "className": "ecommerce-flex-center ecommerce:gap-3"
                                         },
                                         "children": [
                                             {
@@ -598,7 +598,7 @@
                                                 "props": {
                                                     "name": "sortBy",
                                                     "aria-label": "$t:common.sort_order",
-                                                    "className": "w-44",
+                                                    "className": "ecommerce:w-44",
                                                     "value": "{{_local.sortBy}}",
                                                     "options": [
                                                         {
@@ -625,7 +625,7 @@
                                                 "props": {
                                                     "name": "perPage",
                                                     "aria-label": "$t:common.per_page",
-                                                    "className": "w-24",
+                                                    "className": "ecommerce:w-24",
                                                     "value": "{{_local.perPage}}",
                                                     "options": [
                                                         {
@@ -663,21 +663,21 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "admin-card"
+                                                            "className": "ecommerce-admin-card"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex items-start justify-between mb-3"
+                                                                    "className": "ecommerce:flex ecommerce:items-start ecommerce:justify-between ecommerce:mb-3"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-primary font-medium"
+                                                                            "className": "ecommerce-text-primary ecommerce:font-medium"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition"
                                                                     },
@@ -685,7 +685,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "badge-status badge-status-success"
+                                                                            "className": "ecommerce-badge-status ecommerce-badge-status-success"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -693,7 +693,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "check-circle",
-                                                                                    "className": "text-xs"
+                                                                                    "className": "ecommerce:text-xs"
                                                                                 }
                                                                             },
                                                                             {
@@ -709,7 +709,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-sm text-secondary mb-3"
+                                                                    "className": "ecommerce:text-sm ecommerce-text-secondary ecommerce:mb-3"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.category_options.product"
                                                             },
@@ -717,21 +717,21 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "space-y-2 text-sm"
+                                                                    "className": "ecommerce:space-y-2 ecommerce:text-sm"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date"
                                                                             },
@@ -739,7 +739,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "2025-10-27 14:20:00"
                                                                             }
@@ -749,14 +749,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date"
                                                                             },
@@ -764,7 +764,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "2025-10-27 14:30:00"
                                                                             }
@@ -774,14 +774,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count"
                                                                             },
@@ -789,7 +789,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.fmt.times|count=3"
                                                                             }
@@ -799,14 +799,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date"
                                                                             },
@@ -814,7 +814,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "2025-11-03 14:30:00"
                                                                             }
@@ -824,14 +824,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator"
                                                                             },
@@ -839,7 +839,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.people.admin"
                                                                             }
@@ -851,7 +851,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "mt-4 flex justify-center"
+                                                                    "className": "ecommerce:mt-4 ecommerce:flex ecommerce:justify-center"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -859,7 +859,7 @@
                                                                         "name": "Button",
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "btn btn-primary w-full"
+                                                                            "className": "ecommerce-btn ecommerce-btn-primary ecommerce:w-full"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.actions.download"
                                                                     }
@@ -871,21 +871,21 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "admin-card"
+                                                            "className": "ecommerce-admin-card"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex items-start justify-between mb-3"
+                                                                    "className": "ecommerce:flex ecommerce:items-start ecommerce:justify-between ecommerce:mb-3"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-primary font-medium"
+                                                                            "className": "ecommerce-text-primary ecommerce:font-medium"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition"
                                                                     },
@@ -893,7 +893,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "badge-status badge-status-processing"
+                                                                            "className": "ecommerce-badge-status ecommerce-badge-status-processing"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -901,7 +901,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "spinner",
-                                                                                    "className": "text-xs animate-spin"
+                                                                                    "className": "ecommerce:text-xs ecommerce:animate-spin"
                                                                                 }
                                                                             },
                                                                             {
@@ -917,7 +917,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-sm text-secondary mb-3"
+                                                                    "className": "ecommerce:text-sm ecommerce-text-secondary ecommerce:mb-3"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.category_options.visit"
                                                             },
@@ -925,21 +925,21 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "space-y-2 text-sm"
+                                                                    "className": "ecommerce:space-y-2 ecommerce:text-sm"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date"
                                                                             },
@@ -947,7 +947,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "2025-10-27 12:00:00"
                                                                             }
@@ -957,14 +957,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date"
                                                                             },
@@ -972,7 +972,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "-"
                                                                             }
@@ -982,14 +982,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count"
                                                                             },
@@ -997,7 +997,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "-"
                                                                             }
@@ -1007,14 +1007,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date"
                                                                             },
@@ -1022,7 +1022,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "2025-11-03 12:00:00"
                                                                             }
@@ -1032,14 +1032,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator"
                                                                             },
@@ -1047,7 +1047,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                                                             }
@@ -1061,21 +1061,21 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "admin-card"
+                                                            "className": "ecommerce-admin-card"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex items-start justify-between mb-3"
+                                                                    "className": "ecommerce:flex ecommerce:items-start ecommerce:justify-between ecommerce:mb-3"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-primary font-medium"
+                                                                            "className": "ecommerce-text-primary ecommerce:font-medium"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition"
                                                                     },
@@ -1083,7 +1083,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "badge-status badge-status-error"
+                                                                            "className": "ecommerce-badge-status ecommerce-badge-status-error"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -1091,7 +1091,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "circle-exclamation",
-                                                                                    "className": "text-xs"
+                                                                                    "className": "ecommerce:text-xs"
                                                                                 }
                                                                             },
                                                                             {
@@ -1107,7 +1107,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-sm text-secondary mb-3"
+                                                                    "className": "ecommerce:text-sm ecommerce-text-secondary ecommerce:mb-3"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.category_options.order"
                                                             },
@@ -1115,21 +1115,21 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "space-y-2 text-sm"
+                                                                    "className": "ecommerce:space-y-2 ecommerce:text-sm"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date"
                                                                             },
@@ -1137,7 +1137,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "2025-10-25 11:30:00"
                                                                             }
@@ -1147,14 +1147,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date"
                                                                             },
@@ -1162,7 +1162,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "-"
                                                                             }
@@ -1172,14 +1172,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count"
                                                                             },
@@ -1187,7 +1187,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "-"
                                                                             }
@@ -1197,14 +1197,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date"
                                                                             },
@@ -1212,7 +1212,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "2025-11-01 11:30:00"
                                                                             }
@@ -1222,14 +1222,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator"
                                                                             },
@@ -1237,7 +1237,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu"
                                                                             }
@@ -1251,21 +1251,21 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "admin-card"
+                                                            "className": "ecommerce-admin-card"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex items-start justify-between mb-3"
+                                                                    "className": "ecommerce:flex ecommerce:items-start ecommerce:justify-between ecommerce:mb-3"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-primary font-medium"
+                                                                            "className": "ecommerce-text-primary ecommerce:font-medium"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.sample.misc.selected_products"
                                                                     },
@@ -1273,7 +1273,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "badge-status badge-status-expired"
+                                                                            "className": "ecommerce-badge-status ecommerce-badge-status-expired"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -1281,7 +1281,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "file-text",
-                                                                                    "className": "text-xs"
+                                                                                    "className": "ecommerce:text-xs"
                                                                                 }
                                                                             },
                                                                             {
@@ -1297,7 +1297,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-sm text-secondary mb-3"
+                                                                    "className": "ecommerce:text-sm ecommerce-text-secondary ecommerce:mb-3"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.category_options.product"
                                                             },
@@ -1305,21 +1305,21 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "space-y-2 text-sm"
+                                                                    "className": "ecommerce:space-y-2 ecommerce:text-sm"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date"
                                                                             },
@@ -1327,7 +1327,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "2025-10-20 09:45:00"
                                                                             }
@@ -1337,14 +1337,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date"
                                                                             },
@@ -1352,7 +1352,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "2025-10-20 10:00:00"
                                                                             }
@@ -1362,14 +1362,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count"
                                                                             },
@@ -1377,7 +1377,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "-"
                                                                             }
@@ -1387,14 +1387,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date"
                                                                             },
@@ -1402,7 +1402,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-secondary"
+                                                                                    "className": "ecommerce-text-secondary"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.status.expired"
                                                                             }
@@ -1412,14 +1412,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex justify-between"
+                                                                            "className": "ecommerce:flex ecommerce:justify-between"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle"
+                                                                                    "className": "ecommerce-text-label-subtle"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator"
                                                                             },
@@ -1427,7 +1427,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary"
+                                                                                    "className": "ecommerce-text-primary"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                                                             }
@@ -1439,14 +1439,14 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "mt-4 text-center"
+                                                                    "className": "ecommerce:mt-4 ecommerce:text-center"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-secondary"
+                                                                            "className": "ecommerce-text-secondary"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.status.expired"
                                                                     }
@@ -1460,7 +1460,7 @@
                                     }
                                 },
                                 "props": {
-                                    "className": "overflow-x-auto"
+                                    "className": "ecommerce:overflow-x-auto"
                                 },
                                 "children": [
                                     {
@@ -1468,7 +1468,7 @@
                                         "type": "basic",
                                         "name": "Table",
                                         "props": {
-                                            "className": "w-full"
+                                            "className": "ecommerce:w-full"
                                         },
                                         "children": [
                                             {
@@ -1479,14 +1479,14 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-200 dark:border-gray-700"
+                                                            "className": "ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "text-table-header py-3 px-4 text-left w-16"
+                                                                    "className": "ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-left ecommerce:w-16"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.no"
                                                             },
@@ -1494,7 +1494,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "text-table-header py-3 px-4 text-left w-24"
+                                                                    "className": "ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-left ecommerce:w-24"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.category"
                                                             },
@@ -1502,7 +1502,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "text-table-header py-3 px-4 text-left"
+                                                                    "className": "ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-left"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.file_content"
                                                             },
@@ -1510,7 +1510,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "text-table-header py-3 px-4 text-center w-24"
+                                                                    "className": "ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-24"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.status"
                                                             },
@@ -1518,7 +1518,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "text-table-header py-3 px-4 text-center w-36"
+                                                                    "className": "ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-36"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.request_date"
                                                             },
@@ -1526,7 +1526,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "text-table-header py-3 px-4 text-center w-36"
+                                                                    "className": "ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-36"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.created_date"
                                                             },
@@ -1534,7 +1534,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "text-table-header py-3 px-4 text-center w-28"
+                                                                    "className": "ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-28"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.creator"
                                                             },
@@ -1542,7 +1542,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "text-table-header py-3 px-4 text-center w-24"
+                                                                    "className": "ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-24"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.download"
                                                             },
@@ -1550,7 +1550,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "text-table-header py-3 px-4 text-center w-28"
+                                                                    "className": "ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-28"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.download_count"
                                                             },
@@ -1558,7 +1558,7 @@
                                                                 "type": "basic",
                                                                 "name": "Th",
                                                                 "props": {
-                                                                    "className": "text-table-header py-3 px-4 text-center w-36"
+                                                                    "className": "ecommerce-text-table-header ecommerce:py-3 ecommerce:px-4 ecommerce:text-center ecommerce:w-36"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.table.columns.expire_date"
                                                             }
@@ -1574,14 +1574,14 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                            "className": "ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-primary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary"
                                                                 },
                                                                 "text": "1"
                                                             },
@@ -1589,7 +1589,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-secondary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.category_options.product"
                                                             },
@@ -1597,7 +1597,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-primary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition"
                                                             },
@@ -1605,14 +1605,14 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "badge-status badge-status-success"
+                                                                            "className": "ecommerce-badge-status ecommerce-badge-status-success"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -1620,7 +1620,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "check-circle",
-                                                                                    "className": "text-xs"
+                                                                                    "className": "ecommerce:text-xs"
                                                                                 }
                                                                             },
                                                                             {
@@ -1636,7 +1636,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "2025-10-27\n14:20:00"
                                                             },
@@ -1644,7 +1644,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "2025-10-27\n14:30:00"
                                                             },
@@ -1652,28 +1652,28 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "relative inline-block"
+                                                                            "className": "ecommerce:relative ecommerce:inline-block"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Div",
                                                                                 "props": {
-                                                                                    "className": "text-sm"
+                                                                                    "className": "ecommerce:text-sm"
                                                                                 },
                                                                                 "children": [
                                                                                     {
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-primary font-medium"
+                                                                                            "className": "ecommerce-text-primary ecommerce:font-medium"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.sample.people.admin"
                                                                                     },
@@ -1681,7 +1681,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Div",
                                                                                         "props": {
-                                                                                            "className": "text-tertiary"
+                                                                                            "className": "ecommerce-text-tertiary"
                                                                                         },
                                                                                         "text": "(admin)"
                                                                                     }
@@ -1695,7 +1695,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1703,7 +1703,7 @@
                                                                         "name": "Button",
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "btn btn-primary btn-sm"
+                                                                            "className": "ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.actions.download"
                                                                     }
@@ -1713,7 +1713,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1768,7 +1768,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "btn btn-outline btn-sm"
+                                                                            "className": "ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.sample.fmt.times|count=3"
                                                                     }
@@ -1778,7 +1778,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "2025-11-03\n14:30:00"
                                                             }
@@ -1788,14 +1788,14 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                            "className": "ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-primary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary"
                                                                 },
                                                                 "text": "2"
                                                             },
@@ -1803,7 +1803,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-secondary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.category_options.order"
                                                             },
@@ -1811,7 +1811,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-primary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.misc.selected_orders"
                                                             },
@@ -1819,14 +1819,14 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "badge-status badge-status-success"
+                                                                            "className": "ecommerce-badge-status ecommerce-badge-status-success"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -1834,7 +1834,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "check-circle",
-                                                                                    "className": "text-xs"
+                                                                                    "className": "ecommerce:text-xs"
                                                                                 }
                                                                             },
                                                                             {
@@ -1850,7 +1850,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "2025-10-27\n13:00:00"
                                                             },
@@ -1858,7 +1858,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "2025-10-27\n13:15:00"
                                                             },
@@ -1866,28 +1866,28 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "relative inline-block"
+                                                                            "className": "ecommerce:relative ecommerce:inline-block"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Div",
                                                                                 "props": {
-                                                                                    "className": "text-sm"
+                                                                                    "className": "ecommerce:text-sm"
                                                                                 },
                                                                                 "children": [
                                                                                     {
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-primary font-medium"
+                                                                                            "className": "ecommerce-text-primary ecommerce:font-medium"
                                                                                         },
                                                                                         "text": "$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu"
                                                                                     },
@@ -1895,7 +1895,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Div",
                                                                                         "props": {
-                                                                                            "className": "text-tertiary"
+                                                                                            "className": "ecommerce-text-tertiary"
                                                                                         },
                                                                                         "text": "(kimcs)"
                                                                                     }
@@ -1909,7 +1909,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1917,7 +1917,7 @@
                                                                         "name": "Button",
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "btn btn-primary btn-sm"
+                                                                            "className": "ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.actions.download"
                                                                     }
@@ -1927,7 +1927,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1935,7 +1935,7 @@
                                                                         "name": "Button",
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "btn btn-outline btn-sm"
+                                                                            "className": "ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.sample.fmt.times|count=5"
                                                                     }
@@ -1945,7 +1945,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "2025-11-03\n13:15:00"
                                                             }
@@ -1955,14 +1955,14 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                            "className": "ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-primary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary"
                                                                 },
                                                                 "text": "3"
                                                             },
@@ -1970,7 +1970,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-secondary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.category_options.visit"
                                                             },
@@ -1978,7 +1978,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-primary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition"
                                                             },
@@ -1986,14 +1986,14 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "badge-status badge-status-processing"
+                                                                            "className": "ecommerce-badge-status ecommerce-badge-status-processing"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -2001,7 +2001,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "spinner",
-                                                                                    "className": "text-xs animate-spin"
+                                                                                    "className": "ecommerce:text-xs ecommerce:animate-spin"
                                                                                 }
                                                                             },
                                                                             {
@@ -2017,7 +2017,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "2025-10-27\n12:00:00"
                                                             },
@@ -2025,7 +2025,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "-"
                                                             },
@@ -2033,21 +2033,21 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "text-sm"
+                                                                            "className": "ecommerce:text-sm"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary font-medium"
+                                                                                    "className": "ecommerce-text-primary ecommerce:font-medium"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                                                             },
@@ -2055,7 +2055,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Div",
                                                                                 "props": {
-                                                                                    "className": "text-tertiary"
+                                                                                    "className": "ecommerce-text-tertiary"
                                                                                 },
                                                                                 "text": "(leeyh)"
                                                                             }
@@ -2067,7 +2067,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce-text-secondary"
                                                                 },
                                                                 "text": "-"
                                                             },
@@ -2075,7 +2075,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce-text-secondary"
                                                                 },
                                                                 "text": "-"
                                                             },
@@ -2083,7 +2083,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "2025-11-03\n12:00:00"
                                                             }
@@ -2093,14 +2093,14 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                            "className": "ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-primary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary"
                                                                 },
                                                                 "text": "4"
                                                             },
@@ -2108,7 +2108,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-secondary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.category_options.order"
                                                             },
@@ -2116,7 +2116,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-primary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.misc.current_search_condition"
                                                             },
@@ -2124,14 +2124,14 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "badge-status badge-status-error"
+                                                                            "className": "ecommerce-badge-status ecommerce-badge-status-error"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -2139,7 +2139,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "circle-exclamation",
-                                                                                    "className": "text-xs"
+                                                                                    "className": "ecommerce:text-xs"
                                                                                 }
                                                                             },
                                                                             {
@@ -2155,7 +2155,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "2025-10-25\n11:30:00"
                                                             },
@@ -2163,7 +2163,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "-"
                                                             },
@@ -2171,21 +2171,21 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "text-sm"
+                                                                            "className": "ecommerce:text-sm"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary font-medium"
+                                                                                    "className": "ecommerce-text-primary ecommerce:font-medium"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu"
                                                                             },
@@ -2193,7 +2193,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Div",
                                                                                 "props": {
-                                                                                    "className": "text-tertiary"
+                                                                                    "className": "ecommerce-text-tertiary"
                                                                                 },
                                                                                 "text": "(kimcs)"
                                                                             }
@@ -2205,7 +2205,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce-text-secondary"
                                                                 },
                                                                 "text": "-"
                                                             },
@@ -2213,7 +2213,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce-text-secondary"
                                                                 },
                                                                 "text": "-"
                                                             },
@@ -2221,7 +2221,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "2025-11-01\n11:30:00"
                                                             }
@@ -2231,14 +2231,14 @@
                                                         "type": "basic",
                                                         "name": "Tr",
                                                         "props": {
-                                                            "className": "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                            "className": "ecommerce:border-b ecommerce:border-gray-100 ecommerce:dark:border-gray-700 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-primary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary"
                                                                 },
                                                                 "text": "5"
                                                             },
@@ -2246,7 +2246,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-secondary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.excel_download.category_options.product"
                                                             },
@@ -2254,7 +2254,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "py-4 px-4 text-sm text-primary"
+                                                                    "className": "ecommerce:py-4 ecommerce:px-4 ecommerce:text-sm ecommerce-text-primary"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.misc.selected_products"
                                                             },
@@ -2262,14 +2262,14 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "badge-status badge-status-expired"
+                                                                            "className": "ecommerce-badge-status ecommerce-badge-status-expired"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -2277,7 +2277,7 @@
                                                                                 "name": "Icon",
                                                                                 "props": {
                                                                                     "name": "file-text",
-                                                                                    "className": "text-xs"
+                                                                                    "className": "ecommerce:text-xs"
                                                                                 }
                                                                             },
                                                                             {
@@ -2293,7 +2293,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "2025-10-20\n09:45:00"
                                                             },
@@ -2301,7 +2301,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "2025-10-20\n10:00:00"
                                                             },
@@ -2309,21 +2309,21 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "text-sm"
+                                                                            "className": "ecommerce:text-sm"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary font-medium"
+                                                                                    "className": "ecommerce-text-primary ecommerce:font-medium"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                                                             },
@@ -2331,7 +2331,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Div",
                                                                                 "props": {
-                                                                                    "className": "text-tertiary"
+                                                                                    "className": "ecommerce-text-tertiary"
                                                                                 },
                                                                                 "text": "(leeyh)"
                                                                             }
@@ -2343,14 +2343,14 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell"
+                                                                    "className": "ecommerce-empty-state-cell"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-secondary"
+                                                                            "className": "ecommerce-text-secondary"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.excel_download.status.expired"
                                                                     }
@@ -2360,7 +2360,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce-text-secondary"
                                                                 },
                                                                 "text": "-"
                                                             },
@@ -2368,7 +2368,7 @@
                                                                 "type": "basic",
                                                                 "name": "Td",
                                                                 "props": {
-                                                                    "className": "empty-state-cell text-sm text-secondary"
+                                                                    "className": "ecommerce-empty-state-cell ecommerce:text-sm ecommerce-text-secondary"
                                                                 },
                                                                 "text": "2025-10-27\n10:00:00"
                                                             }
@@ -2385,14 +2385,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex justify-center mt-6"
+                                    "className": "ecommerce:flex ecommerce:justify-center ecommerce:mt-6"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "pagination"
+                                            "className": "ecommerce-pagination"
                                         },
                                         "children": [
                                             {
@@ -2401,7 +2401,7 @@
                                                 "props": {
                                                     "aria-label": "$t:common.first_page",
                                                     "type": "button",
-                                                    "className": "pagination-btn",
+                                                    "className": "ecommerce-pagination-btn",
                                                     "disabled": true
                                                 },
                                                 "children": [
@@ -2410,7 +2410,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "angles-left",
-                                                            "className": "text-base"
+                                                            "className": "ecommerce:text-base"
                                                         }
                                                     }
                                                 ]
@@ -2421,7 +2421,7 @@
                                                 "props": {
                                                     "aria-label": "$t:common.prev_page",
                                                     "type": "button",
-                                                    "className": "pagination-btn",
+                                                    "className": "ecommerce-pagination-btn",
                                                     "disabled": true
                                                 },
                                                 "children": [
@@ -2430,7 +2430,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "chevron-left",
-                                                            "className": "text-base"
+                                                            "className": "ecommerce:text-base"
                                                         }
                                                     }
                                                 ]
@@ -2440,7 +2440,7 @@
                                                 "name": "Button",
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "pagination-btn active"
+                                                    "className": "ecommerce-pagination-btn ecommerce-active"
                                                 },
                                                 "text": "1"
                                             },
@@ -2449,7 +2449,7 @@
                                                 "name": "Button",
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "pagination-btn"
+                                                    "className": "ecommerce-pagination-btn"
                                                 },
                                                 "text": "2"
                                             },
@@ -2459,7 +2459,7 @@
                                                 "props": {
                                                     "aria-label": "$t:common.next_page",
                                                     "type": "button",
-                                                    "className": "pagination-btn"
+                                                    "className": "ecommerce-pagination-btn"
                                                 },
                                                 "children": [
                                                     {
@@ -2467,7 +2467,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "chevron-right",
-                                                            "className": "text-base"
+                                                            "className": "ecommerce:text-base"
                                                         }
                                                     }
                                                 ]
@@ -2478,7 +2478,7 @@
                                                 "props": {
                                                     "aria-label": "$t:common.last_page",
                                                     "type": "button",
-                                                    "className": "pagination-btn"
+                                                    "className": "ecommerce-pagination-btn"
                                                 },
                                                 "children": [
                                                     {
@@ -2486,7 +2486,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "angles-right",
-                                                            "className": "text-base"
+                                                            "className": "ecommerce:text-base"
                                                         }
                                                     }
                                                 ]

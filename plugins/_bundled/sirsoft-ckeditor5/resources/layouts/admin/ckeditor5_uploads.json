@@ -138,7 +138,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "ckeditor-admin-page-content"
                 },
                 "children": [
                     {
@@ -146,7 +146,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-between mb-6"
+                            "className": "ckeditor-flex-between ckeditor:mb-6"
                         },
                         "children": [
                             {
@@ -157,7 +157,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "ckeditor-page-title"
                                         },
                                         "text": "$t:sirsoft-ckeditor5.admin.uploads.title"
                                     },
@@ -165,7 +165,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-label-subtle mt-1"
+                                            "className": "ckeditor-text-label-subtle ckeditor:mt-1"
                                         },
                                         "text": "$t:sirsoft-ckeditor5.admin.uploads.description"
                                     }
@@ -175,7 +175,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2"
+                                    "className": "ckeditor-flex-center ckeditor:gap-2"
                                 },
                                 "children": [
                                     {
@@ -191,7 +191,7 @@
                                         ],
                                         "props": {
                                             "href": "/admin/plugins/sirsoft-ckeditor5/settings",
-                                            "className": "button btn btn-secondary aria-disabled:opacity-50 aria-disabled:cursor-not-allowed",
+                                            "className": "ckeditor-button ckeditor-btn ckeditor-btn-secondary ckeditor:aria-disabled:opacity-50 ckeditor:aria-disabled:cursor-not-allowed",
                                             "disabled": "{{ckeditor5Uploads?.data?.abilities?.can_open_settings !== true}}"
                                         },
                                         "children": [
@@ -217,7 +217,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn-icon",
+                                            "className": "ckeditor-btn-icon",
                                             "title": "$t:sirsoft-ckeditor5.admin.uploads.refresh"
                                         },
                                         "children": [
@@ -225,8 +225,8 @@
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "fa-solid fa-arrows-rotate",
-                                                    "className": "text-xl"
+                                                    "name": "arrows-rotate",
+                                                    "className": "ckeditor:text-xl ckeditor:leading-none"
                                                 }
                                             }
                                         ]
@@ -240,14 +240,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mb-6 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
+                            "className": "ckeditor:mb-6 ckeditor:p-4 ckeditor:rounded-xl ckeditor:bg-blue-50 ckeditor:dark:bg-blue-900/20 ckeditor:border ckeditor:border-blue-200 ckeditor:dark:border-blue-800"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "P",
                                 "props": {
-                                    "className": "text-sm text-blue-800 dark:text-blue-200"
+                                    "className": "ckeditor:text-sm ckeditor:text-blue-800 ckeditor:dark:text-blue-200"
                                 },
                                 "text": "$t:sirsoft-ckeditor5.admin.uploads.reference_notice"
                             }
@@ -259,14 +259,14 @@
                         "name": "Div",
                         "if": "{{ckeditor5Uploads?.data?.meta?.scan_limited === true}}",
                         "props": {
-                            "className": "mb-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800"
+                            "className": "ckeditor:mb-6 ckeditor:p-4 ckeditor:rounded-xl ckeditor:bg-amber-50 ckeditor:dark:bg-amber-900/20 ckeditor:border ckeditor:border-amber-200 ckeditor:dark:border-amber-800"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "P",
                                 "props": {
-                                    "className": "text-sm text-amber-800 dark:text-amber-200"
+                                    "className": "ckeditor:text-sm ckeditor:text-amber-800 ckeditor:dark:text-amber-200"
                                 },
                                 "text": "$t:sirsoft-ckeditor5.admin.uploads.scan_limited_notice|count={{ckeditor5Uploads?.data?.meta?.scan_window ?? 500}}"
                             }
@@ -277,7 +277,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card mb-6"
+                            "className": "ckeditor-admin-card ckeditor:mb-6"
                         },
                         "children": [
                             {
@@ -285,22 +285,22 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center flex-wrap gap-2"
+                                    "className": "ckeditor-flex-center ckeditor:flex-wrap ckeditor:gap-2"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "relative flex-1"
+                                            "className": "ckeditor:relative ckeditor:flex-1"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Icon",
                                                 "props": {
-                                                    "name": "fa-solid fa-search",
-                                                    "className": "absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"
+                                                    "name": "search",
+                                                    "className": "ckeditor:absolute ckeditor:left-3 ckeditor:top-1/2 ckeditor:-translate-y-1/2 ckeditor:text-gray-500 ckeditor:dark:text-gray-400 ckeditor:text-sm ckeditor:leading-none ckeditor:pointer-events-none"
                                                 }
                                             },
                                             {
@@ -326,7 +326,7 @@
                                                     "name": "search",
                                                     "type": "text",
                                                     "placeholder": "$t:sirsoft-ckeditor5.admin.uploads.filter.search_placeholder",
-                                                    "className": "input pl-10",
+                                                    "className": "ckeditor-input ckeditor:pl-10",
                                                     "value": "{{_local.filter.search || ''}}"
                                                 }
                                             }
@@ -391,7 +391,7 @@
                                         "props": {
                                             "name": "date_from",
                                             "type": "date",
-                                            "className": "input w-40",
+                                            "className": "ckeditor-input ckeditor:w-40",
                                             "title": "$t:sirsoft-ckeditor5.admin.uploads.filter.date_from",
                                             "value": "{{_local.filter.dateFrom || ''}}"
                                         }
@@ -413,7 +413,7 @@
                                         "props": {
                                             "name": "date_to",
                                             "type": "date",
-                                            "className": "input w-40",
+                                            "className": "ckeditor-input ckeditor:w-40",
                                             "title": "$t:sirsoft-ckeditor5.admin.uploads.filter.date_to",
                                             "value": "{{_local.filter.dateTo || ''}}"
                                         }
@@ -429,7 +429,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-primary"
+                                            "className": "ckeditor-btn ckeditor-btn-primary"
                                         },
                                         "children": [
                                             {
@@ -447,7 +447,7 @@
                                 "name": "Div",
                                 "if": "{{!!(query.search || query.referenced || query.date_from || query.date_to)}}",
                                 "props": {
-                                    "className": "flex justify-end mt-2"
+                                    "className": "ckeditor:flex ckeditor:justify-end ckeditor:mt-2"
                                 },
                                 "children": [
                                     {
@@ -461,7 +461,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "text-tertiary hover:text-gray-700 dark:hover:text-gray-200 underline"
+                                            "className": "ckeditor-text-tertiary ckeditor:hover:text-gray-700 ckeditor:dark:hover:text-gray-200 ckeditor:underline"
                                         },
                                         "text": "$t:sirsoft-ckeditor5.admin.uploads.filter.clear"
                                     }
@@ -475,14 +475,14 @@
                         "name": "Div",
                         "if": "{{ckeditor5Uploads?.data?.abilities?.can_delete === true && (_global.selectedIds_ckeditor5_uploads?.length ?? 0) > 0}}",
                         "props": {
-                            "className": "flex-between mb-4 p-3 rounded-xl bg-gray-100 dark:bg-gray-800"
+                            "className": "ckeditor-flex-between ckeditor:mb-4 ckeditor:p-3 ckeditor:rounded-xl ckeditor:bg-gray-100 ckeditor:dark:bg-gray-800"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-body"
+                                    "className": "ckeditor-text-body"
                                 },
                                 "text": "$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.selected|count={{_global.selectedIds_ckeditor5_uploads?.length ?? 0}}"
                             },
@@ -498,7 +498,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800"
+                                    "className": "ckeditor-flex-center ckeditor:gap-2 ckeditor:px-4 ckeditor:py-2 ckeditor:bg-red-600 ckeditor:dark:bg-red-700 ckeditor:text-white ckeditor:rounded-lg ckeditor:hover:bg-red-700 ckeditor:dark:hover:bg-red-800"
                                 },
                                 "children": [
                                     {
@@ -624,7 +624,7 @@
                                                 "src": "{{row.download_url}}",
                                                 "alt": "{{row.original_name ?? ''}}",
                                                 "loading": "lazy",
-                                                "className": "w-16 h-16 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                                                "className": "ckeditor:w-16 ckeditor:h-16 ckeditor:object-cover ckeditor:rounded-lg ckeditor:border ckeditor:border-gray-200 ckeditor:dark:border-gray-700"
                                             }
                                         }
                                     ]
@@ -643,7 +643,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block text-heading line-clamp-1"
+                                                        "className": "ckeditor:block ckeditor-text-heading ckeditor:line-clamp-1"
                                                     },
                                                     "text": "{{row.original_name ?? '-'}}"
                                                 },
@@ -651,7 +651,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block text-tertiary font-mono"
+                                                        "className": "ckeditor:block ckeditor-text-tertiary ckeditor:font-mono"
                                                     },
                                                     "text": "{{row.hash ?? ''}}"
                                                 }
@@ -669,7 +669,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label whitespace-nowrap"
+                                                "className": "ckeditor-text-label ckeditor:whitespace-nowrap"
                                             },
                                             "text": "{{Math.round((row.file_size ?? 0) / 1024).toLocaleString()}} KB"
                                         }
@@ -685,7 +685,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body"
+                                                "className": "ckeditor-text-body"
                                             },
                                             "text": "{{row.uploader_name ?? '-'}}"
                                         }
@@ -701,7 +701,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label whitespace-nowrap"
+                                                "className": "ckeditor-text-label ckeditor:whitespace-nowrap"
                                             },
                                             "text": "{{row.created_at ?? '-'}}"
                                         }
@@ -718,7 +718,7 @@
                                             "name": "Span",
                                             "if": "{{row.referenced === true}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                                "className": "ckeditor:inline-flex ckeditor:items-center ckeditor:px-2 ckeditor:py-0.5 ckeditor:rounded-full ckeditor:text-xs ckeditor:font-medium ckeditor:bg-green-100 ckeditor:text-green-800 ckeditor:dark:bg-green-900/30 ckeditor:dark:text-green-300"
                                             },
                                             "text": "$t:sirsoft-ckeditor5.admin.uploads.badge.referenced"
                                         },
@@ -727,7 +727,7 @@
                                             "name": "Span",
                                             "if": "{{row.referenced !== true}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                                                "className": "ckeditor:inline-flex ckeditor:items-center ckeditor:px-2 ckeditor:py-0.5 ckeditor:rounded-full ckeditor:text-xs ckeditor:font-medium ckeditor:bg-amber-100 ckeditor:text-amber-800 ckeditor:dark:bg-amber-900/30 ckeditor:dark:text-amber-300"
                                             },
                                             "text": "$t:sirsoft-ckeditor5.admin.uploads.badge.unreferenced"
                                         }
@@ -755,14 +755,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "py-2"
+                        "className": "ckeditor:py-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-700 dark:text-gray-300"
+                                "className": "ckeditor:text-gray-700 ckeditor:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-ckeditor5.admin.uploads.delete.confirm_message"
                         }
@@ -772,7 +772,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "modal-footer-buttons"
+                        "className": "ckeditor-modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -786,7 +786,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary",
+                                "className": "ckeditor-btn ckeditor-btn-secondary",
                                 "disabled": "{{_global.isDeletingUpload}}"
                             },
                             "children": [
@@ -888,7 +888,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "ckeditor-flex-center ckeditor:gap-2 ckeditor:px-4 ckeditor:py-2 ckeditor:bg-red-600 ckeditor:dark:bg-red-700 ckeditor:text-white ckeditor:rounded-lg ckeditor:hover:bg-red-700 ckeditor:dark:hover:bg-red-800 ckeditor:disabled:opacity-50 ckeditor:disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeletingUpload}}"
                             },
                             "children": [
@@ -920,14 +920,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "py-2"
+                        "className": "ckeditor:py-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-700 dark:text-gray-300"
+                                "className": "ckeditor:text-gray-700 ckeditor:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-ckeditor5.admin.uploads.bulk_delete.confirm_message|count={{_global.selectedIds_ckeditor5_uploads?.length ?? 0}}"
                         }
@@ -937,7 +937,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "modal-footer-buttons"
+                        "className": "ckeditor-modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -951,7 +951,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary",
+                                "className": "ckeditor-btn ckeditor-btn-secondary",
                                 "disabled": "{{_global.isDeletingUpload}}"
                             },
                             "children": [
@@ -1057,7 +1057,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "ckeditor-flex-center ckeditor:gap-2 ckeditor:px-4 ckeditor:py-2 ckeditor:bg-red-600 ckeditor:dark:bg-red-700 ckeditor:text-white ckeditor:rounded-lg ckeditor:hover:bg-red-700 ckeditor:dark:hover:bg-red-800 ckeditor:disabled:opacity-50 ckeditor:disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isDeletingUpload}}"
                             },
                             "children": [

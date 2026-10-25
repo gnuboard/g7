@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card-accordion"
+        "className": "ecommerce-admin-card-accordion"
     },
     "children": [
         {
@@ -27,7 +27,7 @@
             ],
             "props": {
                 "type": "button",
-                "className": "flex w-full justify-start text-left card-header",
+                "className": "ecommerce:flex ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-card-header",
                 "aria-expanded": "{{_local.ui.shoppingIntegrationExpanded !== false}}"
             },
             "children": [
@@ -36,14 +36,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "share-alt",
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product.sections.shopping_integration"
                 },
@@ -52,7 +52,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.shoppingIntegrationExpanded !== false ? 'rotate-180' : ''}}"
+                        "className": "ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.shoppingIntegrationExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
                     }
                 }
             ]
@@ -63,7 +63,7 @@
             "name": "Div",
             "if": "{{_local.ui.shoppingIntegrationExpanded !== false}}",
             "props": {
-                "className": "row-stack"
+                "className": "ecommerce-row-stack"
             },
             "children": [
                 {
@@ -71,7 +71,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-label-subtle"
+                        "className": "ecommerce-text-label-subtle"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.description"
                 },
@@ -80,7 +80,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "toggle-group"
+                        "className": "ecommerce-toggle-group"
                     },
                     "children": [
                         {
@@ -90,33 +90,33 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "row-stack p-4 bg-gray-50 dark:bg-gray-800"
+                                        "className": "ecommerce-row-stack ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "flex-between p-4 bg-gray-50 dark:bg-gray-800"
+                                "className": "ecommerce-flex-between ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-3"
+                                        "className": "ecommerce-flex-center ecommerce:gap-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center w-8 h-8 bg-green-700 dark:bg-green-700 rounded-lg justify-center"
+                                                "className": "ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:bg-green-700 ecommerce:dark:bg-green-700 ecommerce:rounded-lg ecommerce:justify-center"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-white font-bold text-sm"
+                                                        "className": "ecommerce:text-white ecommerce:font-bold ecommerce:text-sm"
                                                     },
                                                     "text": "N"
                                                 }
@@ -126,7 +126,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary font-medium"
+                                                "className": "ecommerce-text-primary ecommerce:font-medium"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.naver.title"
                                         }
@@ -138,12 +138,12 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "flex-between w-full"
+                                                "className": "ecommerce-flex-between ecommerce:w-full"
                                             }
                                         }
                                     },
                                     "props": {
-                                        "className": "flex-center gap-4"
+                                        "className": "ecommerce-flex-center ecommerce:gap-4"
                                     },
                                     "children": [
                                         {
@@ -174,7 +174,7 @@
                                                 "name": "naver_enabled",
                                                 "aria-label": "$t:sirsoft-ecommerce.admin.product.shopping_integration.naver.title",
                                                 "value": "{{_local.form.shopping_integrations?.naver?.enabled ?? 'disabled'}}",
-                                                "className": "w-28",
+                                                "className": "ecommerce:w-28",
                                                 "options": [
                                                     {
                                                         "value": "disabled",
@@ -199,7 +199,7 @@
                                             ],
                                             "props": {
                                                 "href": "/admin/ecommerce/integrations/naver",
-                                                "className": "button btn btn-ghost btn-sm"
+                                                "className": "ecommerce-button ecommerce-btn ecommerce-btn-ghost ecommerce-btn-sm"
                                             },
                                             "children": [
                                                 {
@@ -207,7 +207,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "cog",
-                                                        "className": "text-base mr-1"
+                                                        "className": "ecommerce:text-base ecommerce:mr-1"
                                                     }
                                                 },
                                                 {
@@ -227,7 +227,7 @@
                             "name": "Div",
                             "if": "{{_local.form.shopping_integrations?.naver?.enabled === 'enabled'}}",
                             "props": {
-                                "className": "p-4 border-t border-gray-200 dark:border-gray-700"
+                                "className": "ecommerce:p-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                             },
                             "children": [
                                 {
@@ -242,7 +242,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "form-label"
+                                                        "className": "ecommerce-form-label"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.sync_interval"
                                                 }
@@ -253,7 +253,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex flex-wrap gap-2"
+                                                "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -282,7 +282,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{(_local.form.shopping_integrations?.naver?.sync_interval ?? 'manual') === 'manual' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{(_local.form.shopping_integrations?.naver?.sync_interval ?? 'manual') === 'manual' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.manual"
                                                 },
@@ -312,7 +312,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === 'realtime' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === 'realtime' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.realtime"
                                                 },
@@ -342,7 +342,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === '1h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === '1h' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1h"
                                                 },
@@ -372,7 +372,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === '6h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === '6h' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.6h"
                                                 },
@@ -402,7 +402,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === '1d' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{_local.form.shopping_integrations?.naver?.sync_interval === '1d' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1d"
                                                 }
@@ -414,7 +414,7 @@
                                             "name": "Div",
                                             "if": "{{_local.form.shopping_integrations?.naver?.last_synced_at}}",
                                             "props": {
-                                                "className": "flex-center gap-2 text-tertiary"
+                                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce-text-tertiary"
                                             },
                                             "children": [
                                                 {
@@ -422,7 +422,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "clock",
-                                                        "className": "text-xs"
+                                                        "className": "ecommerce:text-xs"
                                                     }
                                                 },
                                                 {
@@ -448,7 +448,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "toggle-group"
+                        "className": "ecommerce-toggle-group"
                     },
                     "children": [
                         {
@@ -458,33 +458,33 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "row-stack p-4 bg-gray-50 dark:bg-gray-800"
+                                        "className": "ecommerce-row-stack ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "flex-between p-4 bg-gray-50 dark:bg-gray-800"
+                                "className": "ecommerce-flex-between ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-3"
+                                        "className": "ecommerce-flex-center ecommerce:gap-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center w-8 h-8 bg-blue-600 dark:bg-blue-600 rounded-lg justify-center"
+                                                "className": "ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:rounded-lg ecommerce:justify-center"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-white font-bold text-sm"
+                                                        "className": "ecommerce:text-white ecommerce:font-bold ecommerce:text-sm"
                                                     },
                                                     "text": "f"
                                                 }
@@ -494,7 +494,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary font-medium"
+                                                "className": "ecommerce-text-primary ecommerce:font-medium"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.facebook.title"
                                         }
@@ -506,12 +506,12 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "flex-between w-full"
+                                                "className": "ecommerce-flex-between ecommerce:w-full"
                                             }
                                         }
                                     },
                                     "props": {
-                                        "className": "flex-center gap-4"
+                                        "className": "ecommerce-flex-center ecommerce:gap-4"
                                     },
                                     "children": [
                                         {
@@ -542,7 +542,7 @@
                                                 "name": "facebook_enabled",
                                                 "aria-label": "$t:sirsoft-ecommerce.admin.product.shopping_integration.facebook.title",
                                                 "value": "{{_local.form.shopping_integrations?.facebook?.enabled ?? 'disabled'}}",
-                                                "className": "w-28",
+                                                "className": "ecommerce:w-28",
                                                 "options": [
                                                     {
                                                         "value": "disabled",
@@ -567,7 +567,7 @@
                                             ],
                                             "props": {
                                                 "href": "/admin/ecommerce/integrations/facebook",
-                                                "className": "button btn btn-ghost btn-sm"
+                                                "className": "ecommerce-button ecommerce-btn ecommerce-btn-ghost ecommerce-btn-sm"
                                             },
                                             "children": [
                                                 {
@@ -575,7 +575,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "cog",
-                                                        "className": "text-base mr-1"
+                                                        "className": "ecommerce:text-base ecommerce:mr-1"
                                                     }
                                                 },
                                                 {
@@ -595,7 +595,7 @@
                             "name": "Div",
                             "if": "{{_local.form.shopping_integrations?.facebook?.enabled === 'enabled'}}",
                             "props": {
-                                "className": "p-4 border-t border-gray-200 dark:border-gray-700"
+                                "className": "ecommerce:p-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                             },
                             "children": [
                                 {
@@ -610,7 +610,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "form-label"
+                                                        "className": "ecommerce-form-label"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.sync_interval"
                                                 }
@@ -621,7 +621,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex flex-wrap gap-2"
+                                                "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -650,7 +650,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{(_local.form.shopping_integrations?.facebook?.sync_interval ?? 'manual') === 'manual' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{(_local.form.shopping_integrations?.facebook?.sync_interval ?? 'manual') === 'manual' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.manual"
                                                 },
@@ -680,7 +680,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === 'realtime' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === 'realtime' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.realtime"
                                                 },
@@ -710,7 +710,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === '1h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === '1h' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1h"
                                                 },
@@ -740,7 +740,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === '6h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === '6h' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.6h"
                                                 },
@@ -770,7 +770,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === '1d' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{_local.form.shopping_integrations?.facebook?.sync_interval === '1d' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1d"
                                                 }
@@ -782,7 +782,7 @@
                                             "name": "Div",
                                             "if": "{{_local.form.shopping_integrations?.facebook?.last_synced_at}}",
                                             "props": {
-                                                "className": "flex-center gap-2 text-tertiary"
+                                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce-text-tertiary"
                                             },
                                             "children": [
                                                 {
@@ -790,7 +790,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "clock",
-                                                        "className": "text-xs"
+                                                        "className": "ecommerce:text-xs"
                                                     }
                                                 },
                                                 {
@@ -816,7 +816,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "toggle-group"
+                        "className": "ecommerce-toggle-group"
                     },
                     "children": [
                         {
@@ -826,33 +826,33 @@
                             "responsive": {
                                 "portable": {
                                     "props": {
-                                        "className": "row-stack p-4 bg-gray-50 dark:bg-gray-800"
+                                        "className": "ecommerce-row-stack ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"
                                     }
                                 }
                             },
                             "props": {
-                                "className": "flex-between p-4 bg-gray-50 dark:bg-gray-800"
+                                "className": "ecommerce-flex-between ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-3"
+                                        "className": "ecommerce-flex-center ecommerce:gap-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center w-8 h-8 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg justify-center"
+                                                "className": "ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:justify-center"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-300 font-bold text-sm"
+                                                        "className": "ecommerce:text-red-600 ecommerce:dark:text-red-300 ecommerce:font-bold ecommerce:text-sm"
                                                     },
                                                     "text": "G"
                                                 }
@@ -862,7 +862,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary font-medium"
+                                                "className": "ecommerce-text-primary ecommerce:font-medium"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.google.title"
                                         }
@@ -874,12 +874,12 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "flex-between w-full"
+                                                "className": "ecommerce-flex-between ecommerce:w-full"
                                             }
                                         }
                                     },
                                     "props": {
-                                        "className": "flex-center gap-4"
+                                        "className": "ecommerce-flex-center ecommerce:gap-4"
                                     },
                                     "children": [
                                         {
@@ -910,7 +910,7 @@
                                                 "name": "google_enabled",
                                                 "aria-label": "$t:sirsoft-ecommerce.admin.product.shopping_integration.google.title",
                                                 "value": "{{_local.form.shopping_integrations?.google?.enabled ?? 'disabled'}}",
-                                                "className": "w-28",
+                                                "className": "ecommerce:w-28",
                                                 "options": [
                                                     {
                                                         "value": "disabled",
@@ -935,7 +935,7 @@
                                             ],
                                             "props": {
                                                 "href": "/admin/ecommerce/integrations/google",
-                                                "className": "button btn btn-ghost btn-sm"
+                                                "className": "ecommerce-button ecommerce-btn ecommerce-btn-ghost ecommerce-btn-sm"
                                             },
                                             "children": [
                                                 {
@@ -943,7 +943,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "cog",
-                                                        "className": "text-base mr-1"
+                                                        "className": "ecommerce:text-base ecommerce:mr-1"
                                                     }
                                                 },
                                                 {
@@ -963,7 +963,7 @@
                             "name": "Div",
                             "if": "{{_local.form.shopping_integrations?.google?.enabled === 'enabled'}}",
                             "props": {
-                                "className": "p-4 border-t border-gray-200 dark:border-gray-700"
+                                "className": "ecommerce:p-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                             },
                             "children": [
                                 {
@@ -978,7 +978,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "form-label"
+                                                        "className": "ecommerce-form-label"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.sync_interval"
                                                 }
@@ -989,7 +989,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex flex-wrap gap-2"
+                                                "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -1018,7 +1018,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{(_local.form.shopping_integrations?.google?.sync_interval ?? 'manual') === 'manual' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{(_local.form.shopping_integrations?.google?.sync_interval ?? 'manual') === 'manual' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.manual"
                                                 },
@@ -1048,7 +1048,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === 'realtime' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === 'realtime' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.realtime"
                                                 },
@@ -1078,7 +1078,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === '1h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === '1h' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1h"
                                                 },
@@ -1108,7 +1108,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === '6h' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === '6h' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.6h"
                                                 },
@@ -1138,7 +1138,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === '1d' ? 'btn btn-primary btn-sm' : 'btn btn-outline btn-sm'}}"
+                                                        "className": "{{_local.form.shopping_integrations?.google?.sync_interval === '1d' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.intervals.1d"
                                                 }
@@ -1150,7 +1150,7 @@
                                             "name": "Div",
                                             "if": "{{_local.form.shopping_integrations?.google?.last_synced_at}}",
                                             "props": {
-                                                "className": "flex-center gap-2 text-tertiary"
+                                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce-text-tertiary"
                                             },
                                             "children": [
                                                 {
@@ -1158,7 +1158,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "clock",
-                                                        "className": "text-xs"
+                                                        "className": "ecommerce:text-xs"
                                                     }
                                                 },
                                                 {
@@ -1184,7 +1184,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg"
+                        "className": "ecommerce-flex-start ecommerce:gap-2 ecommerce:p-3 ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:rounded-lg"
                     },
                     "children": [
                         {
@@ -1192,14 +1192,14 @@
                             "name": "Icon",
                             "props": {
                                 "name": "info-circle",
-                                "className": "text-base text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0"
+                                "className": "ecommerce:text-base ecommerce:text-blue-500 ecommerce:dark:text-blue-400 ecommerce:mt-0.5 ecommerce:flex-shrink-0"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "ecommerce-tone-info-soft text-xs"
+                                "className": "ecommerce-tone-info-soft ecommerce:text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.shopping_integration.note"
                         }

@@ -18,14 +18,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-3"
+                "className": "board:space-y-3"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-body"
+                        "className": "board-text-body"
                     },
                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.confirm_desc"
                 },
@@ -34,21 +34,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "p-3 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-2"
+                        "className": "board:p-3 board:bg-gray-100 board:dark:bg-gray-700 board:rounded-lg board:space-y-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2"
+                                "className": "board-flex-center board:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle"
+                                        "className": "board-text-label-subtle"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.count_label"
                                 },
@@ -68,7 +68,7 @@
                                     "name": "Span",
                                     "if": "{{!_global.privacyRun?.loading && _global.privacyRun?.preview}}",
                                     "props": {
-                                        "className": "text-primary font-medium tabular-nums"
+                                        "className": "board-text-primary board:font-medium board:tabular-nums"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.count_value|count={{_global.privacyRun?.preview?.count ?? 0}}"
                                 }
@@ -80,14 +80,14 @@
                             "name": "Div",
                             "if": "{{['anonymize', 'delete', 'erase_ip'].includes(_global.privacyRun?.preview?.mode ?? '')}}",
                             "props": {
-                                "className": "flex-center gap-2"
+                                "className": "board-flex-center board:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle"
+                                        "className": "board-text-label-subtle"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.mode_label"
                                 },
@@ -95,7 +95,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-primary font-medium"
+                                        "className": "board-text-primary board:font-medium"
                                     },
                                     "text": "{{$t('sirsoft-board.admin.settings.privacy_retention.manual_run.modes.' + (_global.privacyRun?.preview?.mode ?? 'anonymize'))}}"
                                 }
@@ -109,7 +109,7 @@
                     "name": "P",
                     "if": "{{_global.privacyRun?.preview && _global.privacyRun?.preview?.enabled === false}}",
                     "props": {
-                        "className": "alert-info"
+                        "className": "board-alert-info"
                     },
                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.disabled_notice"
                 },
@@ -119,7 +119,7 @@
                     "name": "P",
                     "if": "{{_global.privacyRun?.preview?.mode === 'delete'}}",
                     "props": {
-                        "className": "text-error-soft"
+                        "className": "board-text-error-soft"
                     },
                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.delete_warning"
                 },
@@ -127,7 +127,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-error-soft"
+                        "className": "board-text-error-soft"
                     },
                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.irreversible"
                 },
@@ -135,7 +135,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-hint"
+                        "className": "board-text-hint"
                     },
                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.queue_hint"
                 }
@@ -145,7 +145,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "board-modal-footer-buttons"
             },
             "children": [
                 {
@@ -173,7 +173,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-secondary",
+                        "className": "board-btn board-btn-secondary",
                         "disabled": "{{_global.privacyRun?.submitting}}"
                     },
                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.cancel"
@@ -263,7 +263,7 @@
                     "props": {
                         "type": "button",
                         "lockRepeatClick": true,
-                        "className": "btn btn-danger flex-center gap-2",
+                        "className": "board-btn board-btn-danger board-flex-center board:gap-2",
                         "disabled": "{{!_global.privacyRun?.preview || _global.privacyRun?.loading || _global.privacyRun?.submitting}}"
                     },
                     "children": [
@@ -273,7 +273,7 @@
                             "if": "{{_global.privacyRun?.submitting}}",
                             "props": {
                                 "name": "spinner",
-                                "className": "spinner-sm"
+                                "className": "board-spinner-sm"
                             }
                         },
                         {

@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card-accordion"
+        "className": "ecommerce-admin-card-accordion"
     },
     "children": [
         {
@@ -27,7 +27,7 @@
             ],
             "props": {
                 "type": "button",
-                "className": "flex w-full justify-start text-left card-header",
+                "className": "ecommerce:flex ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-card-header",
                 "aria-expanded": "{{_local.ui.imagesExpanded !== false}}"
             },
             "children": [
@@ -36,14 +36,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "images",
-                        "className": "text-gray-500 dark:text-gray-400"
+                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product.sections.images"
                 },
@@ -51,7 +51,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-label-subtle ml-2"
+                        "className": "ecommerce-text-label-subtle ecommerce:ml-2"
                     },
                     "text": "({{((_local.form.images ?? []).length + (_local.ui.pendingImageCount ?? 0) + (_local.ui.uploadedImageCount ?? 0))}}/20)"
                 },
@@ -60,7 +60,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "chevron-down",
-                        "className": "admin-card-accordion-icon text-gray-500 dark:text-gray-400 transition-transform duration-200 {{_local.ui.imagesExpanded !== false ? 'rotate-180' : ''}}"
+                        "className": "ecommerce-admin-card-accordion-icon ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:transition-transform ecommerce:duration-200 {{_local.ui.imagesExpanded !== false ? 'ecommerce:rotate-180' : ''}}"
                     }
                 }
             ]
@@ -70,7 +70,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "row-stack {{_local.ui.imagesExpanded === false ? 'hidden' : ''}}"
+                "className": "ecommerce-row-stack {{_local.ui.imagesExpanded === false ? 'ecommerce:hidden ecommerce-hidden' : ''}}"
             },
             "children": [
                 {
@@ -78,7 +78,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "{{_local.errors?.images ? 'border border-red-500 dark:border-red-500 rounded-lg p-1' : ''}}"
+                        "className": "{{_local.errors?.images ? 'ecommerce:border ecommerce:border-red-500 ecommerce:dark:border-red-500 ecommerce:rounded-lg ecommerce:p-1' : ''}}"
                     },
                     "children": [
                         {
@@ -198,7 +198,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.images}}",
                     "props": {
-                        "className": "form-error-xs mt-1"
+                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                     },
                     "text": "{{_local.errors?.images?.[0]}}"
                 },
@@ -206,7 +206,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "text-tertiary space-y-1"
+                        "className": "ecommerce-text-tertiary ecommerce:space-y-1"
                     },
                     "children": [
                         {

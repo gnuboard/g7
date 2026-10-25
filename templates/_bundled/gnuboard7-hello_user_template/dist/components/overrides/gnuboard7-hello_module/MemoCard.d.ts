@@ -7,7 +7,7 @@ export interface HelloModuleMemoCardProps {
     /** 강조 표시 여부 */
     highlighted?: boolean;
     /**
-     * 왼쪽 강조선 색 (이 템플릿 판본에만 있는 prop)
+     * 왼쪽 강조선 색 — CSS 색 값(예: `#f59e0b`). 이 템플릿 판본에만 있는 prop.
      *
      * 대체본은 원본의 props 를 모두 받되 자기 것을 더 둘 수 있다. 원본을 쓰는 다른 템플릿에는
      * 이 prop 이 없으므로, 이것을 쓰는 레이아웃은 이 템플릿 전용이 된다.
@@ -42,5 +42,8 @@ export interface HelloModuleMemoCardProps {
  * 대상 확장의 버전 제약은 매니페스트(`components.json` 의 `overrides[].targetVersion`)에
  * 선언한다. 대상이 그 제약을 벗어나면 이 대체본은 폐기되고 **원본이 자리를 지킨다** — 화면이
  * 조용히 사라지지 않는 것이 그 규약의 요점이다.
+ *
+ * 모양은 이 템플릿의 순수 CSS(`src/styles/main.css` 의 `hello-memo-card*`)가 정한다. 대체본은 템플릿 소유라
+ * 모양도 템플릿이 싣는다 — 모듈 CSS 클래스나 Tailwind 에 기대지 않는다.
  */
 export declare const HelloModuleMemoCard: React.FC<HelloModuleMemoCardProps>;

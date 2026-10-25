@@ -498,7 +498,7 @@ describe('관리자 회원 표면 확장', () => {
     const row = { social_providers: [{ key: 'kakao', brand: 'kakao', label: '카카오' }, { key: 'mock_kakao', brand: 'kakao', label: '모의 kakao' }] };
     expect(evaluate(cell.props.title, { row })).toBe('카카오, 모의 kakao');
     const names = cell.children.find((c: any) => c.name === 'Span');
-    expect(names.props.className).toBe('sr-only');
+    expect(names.props.className).toBe('sl:sr-only');
     expect(evaluate(names.text, { row })).toBe('카카오, 모의 kakao');
   });
 });

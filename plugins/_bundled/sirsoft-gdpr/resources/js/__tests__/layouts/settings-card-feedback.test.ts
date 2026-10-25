@@ -108,7 +108,7 @@ describe('알림 템플릿 카드 — 권한 없음·불러오기 실패를 「�
 });
 
 describe('통지문 서문 — 언어별 오류를 칸 아래에 보인다', () => {
-    const error = find((n) => typeof n.text === 'string' && n.text.includes("'annual_notice.introduction'") && n.props?.className === 'form-error');
+    const error = find((n) => typeof n.text === 'string' && n.text.includes("'annual_notice.introduction'") && n.props?.className === 'gdpr-form-error');
 
     /**
      * @scenario case=introduction_error

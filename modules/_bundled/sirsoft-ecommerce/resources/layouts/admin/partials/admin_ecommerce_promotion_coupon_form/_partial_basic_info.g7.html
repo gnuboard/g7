@@ -4,9 +4,9 @@
   값은 이 조각의 지역 상태가 아니라 **부모 폼의 `_local.form`** 에 쌓인다 — 저장은 화면 하단
   한 곳에서 한 번에 하고, 조각들은 같은 그릇을 나눠 쓴다. -->
 <partial>
-  <div data-ref="basic_info_section" class="admin-card">
-    <h2 class="card-title">$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.basic_info</h2>
-    <div class="space-y-5">
+  <div data-ref="basic_info_section" class="ecommerce-admin-card">
+    <h2 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.basic_info</h2>
+    <div class="ecommerce:space-y-5">
       <!-- 적용대상 RadioGroup -->
       <form-field data-type="composite" data-ref="field_target_type" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.target_type" :required="true" error="{{_local.errors?.target_type?.[0] ?? ''}}">
         <radio-group data-type="composite" name="target_type" :inline="true">
@@ -53,9 +53,9 @@
         </radio-group>
       </form-field>
       <!-- 직접발급 선택 시: 발급 위치 안내 (쿠폰 목록의 직접발급 버튼) -->
-      <div data-ref="direct_issue_guide" data-if="{{_local.form?.issue_method === 'direct'}}" class="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
-        <icon name="info" size="sm" class="text-blue-500 dark:text-blue-400 flex-shrink-0"/>
-        <span class="text-sm text-blue-700 dark:text-blue-300">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.direct_issue_guide</span>
+      <div data-ref="direct_issue_guide" data-if="{{_local.form?.issue_method === 'direct'}}" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:border ecommerce:border-blue-100 ecommerce:dark:border-blue-800">
+        <icon name="info" size="sm" class="ecommerce:text-blue-500 ecommerce:dark:text-blue-400 ecommerce:flex-shrink-0"/>
+        <span class="ecommerce:text-sm ecommerce:text-blue-700 ecommerce:dark:text-blue-300">$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.direct_issue_guide</span>
       </div>
       <!-- 쿠폰명 -->
       <form-field data-type="composite" data-ref="field_coupon_name" label="$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.coupon_name" :required="true" error="{{_local.errors?.name?.[0] ?? ''}}">

@@ -4,32 +4,32 @@
   같은 이름의 창이 주문 목록 화면(`admin_ecommerce_order_list`)에도 있고 그쪽이 배선된 정본이다. -->
 <partial description="Search Preset Management Modal">
   <modal data-type="composite" data-ref="modal_preset_manage" title="$t:sirsoft-ecommerce.admin.order.modal.preset_manage.title" size="sm">
-    <p class="text-secondary text-sm mb-6">$t:sirsoft-ecommerce.admin.order.modal.preset_manage.description</p>
+    <p class="ecommerce-text-secondary ecommerce:text-sm ecommerce:mb-6">$t:sirsoft-ecommerce.admin.order.modal.preset_manage.description</p>
     <div>
-      <div class="flex-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.order.preset.today_payment</span>
-        <div class="flex-center gap-2">
-          <button aria-label="$t:common.edit" type="button" class="btn btn-icon btn-ghost">
-            <icon name="edit" class="text-base"/>
+      <div class="ecommerce-flex-between ecommerce:p-4 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg">
+        <span class="ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.order.preset.today_payment</span>
+        <div class="ecommerce-flex-center ecommerce:gap-2">
+          <button aria-label="$t:common.edit" type="button" class="ecommerce-btn ecommerce-btn-icon ecommerce-btn-ghost">
+            <icon name="edit" class="ecommerce:text-base"/>
           </button>
-          <button aria-label="$t:common.delete" type="button" class="btn btn-icon btn-ghost">
-            <icon name="trash-can" class="text-base"/>
+          <button aria-label="$t:common.delete" type="button" class="ecommerce-btn ecommerce-btn-icon ecommerce-btn-ghost">
+            <icon name="trash-can" class="ecommerce:text-base"/>
           </button>
         </div>
       </div>
-      <div class="flex-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <span class="text-primary font-medium">$t:sirsoft-ecommerce.admin.order.preset.bank_pending</span>
-        <div class="flex-center gap-2">
-          <button aria-label="$t:common.edit" type="button" class="btn btn-icon btn-ghost">
-            <icon name="edit" class="text-base"/>
+      <div class="ecommerce-flex-between ecommerce:p-4 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg">
+        <span class="ecommerce-text-primary ecommerce:font-medium">$t:sirsoft-ecommerce.admin.order.preset.bank_pending</span>
+        <div class="ecommerce-flex-center ecommerce:gap-2">
+          <button aria-label="$t:common.edit" type="button" class="ecommerce-btn ecommerce-btn-icon ecommerce-btn-ghost">
+            <icon name="edit" class="ecommerce:text-base"/>
           </button>
-          <button aria-label="$t:common.delete" type="button" class="btn btn-icon btn-ghost">
-            <icon name="trash-can" class="text-base"/>
+          <button aria-label="$t:common.delete" type="button" class="ecommerce-btn ecommerce-btn-icon ecommerce-btn-ghost">
+            <icon name="trash-can" class="ecommerce:text-base"/>
           </button>
         </div>
       </div>
     </div>
-    <button type="button" class="btn btn-primary w-full mt-4">
+    <button type="button" class="ecommerce-btn ecommerce-btn-primary ecommerce:w-full ecommerce:mt-4">
       <on type="click">
         <close-modal/>
       </on>

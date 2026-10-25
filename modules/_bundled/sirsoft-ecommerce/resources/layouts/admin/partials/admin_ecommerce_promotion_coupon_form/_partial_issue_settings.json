@@ -7,14 +7,14 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "ecommerce-admin-card"
     },
     "children": [
         {
             "type": "basic",
             "name": "H2",
             "props": {
-                "className": "card-title"
+                "className": "ecommerce-card-title"
             },
             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.issue_settings"
         },
@@ -22,7 +22,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-5"
+                "className": "ecommerce:space-y-5"
             },
             "children": [
                 {
@@ -98,7 +98,7 @@
                                             "name": "Div",
                                             "if": "{{_local.issue_quantity_type === 'limited'}}",
                                             "props": {
-                                                "className": "flex-center gap-2"
+                                                "className": "ecommerce-flex-center ecommerce:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -108,7 +108,7 @@
                                                         "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_quantity",
                                                         "type": "number",
                                                         "name": "total_quantity",
-                                                        "className": "input w-32",
+                                                        "className": "ecommerce-input ecommerce:w-32",
                                                         "min": 1
                                                     }
                                                 },
@@ -116,7 +116,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-label"
+                                                        "className": "ecommerce-text-label"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_quantity"
                                                 }
@@ -204,12 +204,12 @@
                                             "responsive": {
                                                 "portable": {
                                                     "props": {
-                                                        "className": "flex-center flex-wrap gap-2"
+                                                        "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2"
                                                     }
                                                 }
                                             },
                                             "props": {
-                                                "className": "flex-center gap-2"
+                                                "className": "ecommerce-flex-center ecommerce:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -221,7 +221,7 @@
                                                                 "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}",
                                                                 "type": "datetime-local",
                                                                 "name": "issue_from",
-                                                                "className": "input w-full"
+                                                                "className": "ecommerce-input ecommerce:w-full"
                                                             }
                                                         }
                                                     },
@@ -229,14 +229,14 @@
                                                         "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}",
                                                         "type": "datetime-local",
                                                         "name": "issue_from",
-                                                        "className": "input w-52"
+                                                        "className": "ecommerce-input ecommerce:w-52"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-label-subtle"
+                                                        "className": "ecommerce-text-label-subtle"
                                                     },
                                                     "text": "~"
                                                 },
@@ -249,7 +249,7 @@
                                                                 "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}",
                                                                 "type": "datetime-local",
                                                                 "name": "issue_to",
-                                                                "className": "input w-full"
+                                                                "className": "ecommerce-input ecommerce:w-full"
                                                             }
                                                         }
                                                     },
@@ -257,7 +257,7 @@
                                                         "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.promotion_coupon.form.field.issue_period')}}",
                                                         "type": "datetime-local",
                                                         "name": "issue_to",
-                                                        "className": "input w-52"
+                                                        "className": "ecommerce-input ecommerce:w-52"
                                                     }
                                                 }
                                             ]
@@ -341,14 +341,14 @@
                                             "name": "Div",
                                             "if": "{{_local.reissue_type === 'limited'}}",
                                             "props": {
-                                                "className": "flex-center gap-2"
+                                                "className": "ecommerce-flex-center ecommerce:gap-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-label"
+                                                        "className": "ecommerce-text-label"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.per_user"
                                                 },
@@ -359,7 +359,7 @@
                                                         "type": "number",
                                                         "name": "per_user_limit",
                                                         "aria-label": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.field.per_user_limit_label",
-                                                        "className": "input w-24",
+                                                        "className": "ecommerce-input ecommerce:w-24",
                                                         "min": 1
                                                     }
                                                 },
@@ -367,7 +367,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-label"
+                                                        "className": "ecommerce-text-label"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.unit_times"
                                                 }

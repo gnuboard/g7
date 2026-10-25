@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "card-stack"
+        "className": "board-card-stack"
     },
     "children": [
         {
@@ -16,7 +16,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "card-stack-item"
+                "className": "board-card-stack-item"
             },
             "children": [
                 {
@@ -35,21 +35,21 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-between mb-3"
+                                        "className": "board-flex-between board:mb-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-2"
+                                                "className": "board-flex-center board:gap-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "H2",
                                                     "props": {
-                                                        "className": "text-primary text-lg font-bold"
+                                                        "className": "board-text-primary board:text-lg board:font-bold"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.reports.detail.report_info_title"
                                                 },
@@ -58,7 +58,7 @@
                                                     "name": "Span",
                                                     "if": "{{report_detail?.data}}",
                                                     "props": {
-                                                        "className": "{{report_detail?.data?.target_type === 'comment' ? 'inline-flex items-center px-3 py-1.5 rounded text-xs font-bold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 'inline-flex items-center px-3 py-1.5 rounded text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'}}"
+                                                        "className": "{{report_detail?.data?.target_type === 'comment' ? 'board:inline-flex board:items-center board:px-3 board:py-1.5 board:rounded board:text-xs board:font-bold board:bg-yellow-100 board:text-yellow-800 board:dark:bg-yellow-900 board:dark:text-yellow-200' : 'board:inline-flex board:items-center board:px-3 board:py-1.5 board:rounded board:text-xs board:font-bold board:bg-blue-100 board:text-blue-800 board:dark:bg-blue-900 board:dark:text-blue-200'}}"
                                                     },
                                                     "text": "$t:sirsoft-board.enums.report_type.{{report_detail?.data?.target_type}}"
                                                 }
@@ -70,14 +70,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center flex-wrap gap-x-4 gap-y-2 text-label bg-gray-50 dark:bg-gray-900 rounded-lg px-3 py-3"
+                                        "className": "board-flex-center board:flex-wrap board:gap-x-4 board:gap-y-2 board-text-label board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg board:px-3 board:py-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center text-primary gap-1.5"
+                                                "className": "board-flex-center board-text-primary board:gap-1.5"
                                             },
                                             "children": [
                                                 {
@@ -85,14 +85,14 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "chart-bar",
-                                                        "className": "text-base"
+                                                        "className": "board:text-base"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-bold"
+                                                        "className": "board:font-bold"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.reports.detail.report_summary_label"
                                                 },
@@ -100,7 +100,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs"
+                                                        "className": "board:text-xs"
                                                     },
                                                     "text": "{{report_detail?.data?.reason_summary ?? '-'}}"
                                                 }
@@ -110,14 +110,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "w-px h-4 bg-gray-300 dark:bg-gray-600"
+                                                "className": "board:w-px board:h-4 board:bg-gray-300 board:dark:bg-gray-600"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center text-primary gap-1.5"
+                                                "className": "board-flex-center board-text-primary board:gap-1.5"
                                             },
                                             "children": [
                                                 {
@@ -125,14 +125,14 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "calendar",
-                                                        "className": "text-base"
+                                                        "className": "board:text-base"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-bold"
+                                                        "className": "board:font-bold"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.reports.detail.first_reported_at_label"
                                                 },
@@ -140,7 +140,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs"
+                                                        "className": "board:text-xs"
                                                     },
                                                     "text": "{{report_detail?.data?.first_reported_at ?? '-'}}"
                                                 }
@@ -150,7 +150,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "w-px h-4 bg-gray-300 dark:bg-gray-600"
+                                                "className": "board:w-px board:h-4 board:bg-gray-300 board:dark:bg-gray-600"
                                             }
                                         },
                                         {
@@ -159,7 +159,7 @@
                                             "name": "Div",
                                             "if": "{{report_detail?.data?.target_status}}",
                                             "props": {
-                                                "className": "flex-center text-primary gap-1.5"
+                                                "className": "board-flex-center board-text-primary board:gap-1.5"
                                             },
                                             "children": [
                                                 {
@@ -167,14 +167,14 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "circle-info",
-                                                        "className": "text-base"
+                                                        "className": "board:text-base"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-bold"
+                                                        "className": "board:font-bold"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.reports.detail.target_status_label"
                                                 },
@@ -182,7 +182,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs {{report_detail?.data?.target_status === 'published' ? 'text-green-700 dark:text-green-400' : report_detail?.data?.target_status === 'blinded' ? 'text-orange-700 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'}}"
+                                                        "className": "board:text-xs {{report_detail?.data?.target_status === 'published' ? 'board:text-green-700 board:dark:text-green-400' : report_detail?.data?.target_status === 'blinded' ? 'board:text-orange-700 board:dark:text-orange-400' : 'board:text-gray-500 board:dark:text-gray-400'}}"
                                                     },
                                                     "text": "{{report_detail?.data?.target_status_label ?? report_detail?.data?.target_status ?? '-'}}"
                                                 },
@@ -191,7 +191,7 @@
                                                     "name": "Span",
                                                     "if": "{{report_detail?.data?.target_status === 'blinded' && report_detail?.data?.blind_trigger_type_label}}",
                                                     "props": {
-                                                        "className": "text-tertiary"
+                                                        "className": "board-text-tertiary"
                                                     },
                                                     "text": "({{report_detail?.data?.blind_trigger_type_label}})"
                                                 }
@@ -208,7 +208,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid grid-cols-1 lg:grid-cols-2 gap-4"
+                        "className": "board:grid board:grid-cols-1 board:lg:grid-cols-2 board:gap-4"
                     },
                     "children": [
                         {
@@ -220,7 +220,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-tertiary block font-medium mb-1"
+                                        "className": "board-text-tertiary board:block board:font-medium board:mb-1"
                                     },
                                     "text": "{{report_detail?.data?.target_type === 'post' ? '$t:sirsoft-board.admin.reports.detail.content_author_label' : '$t:sirsoft-board.admin.reports.detail.comment_author_label'}}"
                                 },
@@ -264,7 +264,7 @@
                                     "name": "Span",
                                     "if": "{{!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest) && !(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.uuid : report_detail?.data?.comment?.author?.uuid)}}",
                                     "props": {
-                                        "className": "text-heading"
+                                        "className": "board-text-heading"
                                     },
                                     "text": "{{(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name) ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
                                 },
@@ -274,14 +274,14 @@
                                     "name": "Div",
                                     "if": "{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest}}",
                                     "props": {
-                                        "className": "flex-center gap-2"
+                                        "className": "board-flex-center board:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-heading"
+                                                "className": "board-text-heading"
                                             },
                                             "text": "{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name}}"
                                         },
@@ -301,7 +301,7 @@
                                     "name": "Span",
                                     "if": "{{(report_detail?.data?.target_type === 'post' && report_detail?.data?.post?.author?.email) || (report_detail?.data?.target_type === 'comment' && report_detail?.data?.comment?.author?.email)}}",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.email : report_detail?.data?.comment?.author?.email}}"
                                 }
@@ -316,7 +316,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-label-subtle block font-medium mb-1"
+                                        "className": "board-text-label-subtle board:block board:font-medium board:mb-1"
                                     },
                                     "text": "$t:sirsoft-board.admin.reports.detail.board_label"
                                 },
@@ -332,14 +332,14 @@
                                     ],
                                     "props": {
                                         "href": "/admin/board/{{report_detail?.data?.board?.slug}}",
-                                        "className": "inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group"
+                                        "className": "board:inline-flex board:items-center board:gap-1.5 board:text-sm board:font-medium board:text-blue-600 board:dark:text-blue-400 board:hover:text-blue-700 board:dark:hover:text-blue-300 board:cursor-pointer board:transition-colors board:group"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "border-b border-transparent board-link-underline transition-all"
+                                                "className": "board:border-b board:border-transparent board-link-underline board:transition-all"
                                             },
                                             "text": "{{report_detail?.data?.board?.name}}"
                                         },
@@ -348,7 +348,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "arrow-up-right-from-square",
-                                                "className": "text-xs"
+                                                "className": "board:text-xs"
                                             }
                                         }
                                     ]
@@ -358,7 +358,7 @@
                                     "name": "Span",
                                     "if": "{{report_detail !== undefined && report_detail !== null && (!report_detail?.data?.board?.slug)}}",
                                     "props": {
-                                        "className": "inline-flex items-center gap-1.5 text-label-subtle"
+                                        "className": "board:inline-flex board:items-center board:gap-1.5 board-text-label-subtle"
                                     },
                                     "children": [
                                         {
@@ -370,7 +370,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs board-muted-note"
+                                                "className": "board:text-xs board-muted-note"
                                             },
                                             "text": "($t:sirsoft-board.admin.reports.detail.board_deleted)"
                                         }
@@ -388,7 +388,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-label-subtle block font-medium mb-1"
+                                        "className": "board-text-label-subtle board:block board:font-medium board:mb-1"
                                     },
                                     "text": "$t:sirsoft-board.admin.reports.detail.post_title_label"
                                 },
@@ -404,14 +404,14 @@
                                     ],
                                     "props": {
                                         "href": "/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}",
-                                        "className": "inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group"
+                                        "className": "board:inline-flex board:items-center board:gap-1.5 board:text-sm board:font-semibold board:text-blue-600 board:dark:text-blue-400 board:hover:text-blue-700 board:dark:hover:text-blue-300 board:cursor-pointer board:transition-colors board:group"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "border-b border-transparent board-link-underline transition-all"
+                                                "className": "board:border-b board:border-transparent board-link-underline board:transition-all"
                                             },
                                             "text": "{{report_detail?.data?.post?.title}}"
                                         },
@@ -420,7 +420,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "arrow-up-right-from-square",
-                                                "className": "text-xs board-external-icon transition-all"
+                                                "className": "board:text-xs board-external-icon board:transition-all"
                                             }
                                         }
                                     ]
@@ -430,7 +430,7 @@
                                     "name": "Span",
                                     "if": "{{!report_detail?.data?.board?.slug || !report_detail?.data?.post?.id}}",
                                     "props": {
-                                        "className": "text-primary text-sm"
+                                        "className": "board-text-primary board:text-sm"
                                     },
                                     "text": "{{report_detail?.data?.post?.title}}"
                                 }
@@ -446,7 +446,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-label-subtle block font-medium mb-1"
+                                        "className": "board-text-label-subtle board:block board:font-medium board:mb-1"
                                     },
                                     "text": "$t:sirsoft-board.admin.reports.detail.title_label"
                                 },
@@ -462,14 +462,14 @@
                                     ],
                                     "props": {
                                         "href": "/admin/board/{{report_detail?.data?.board?.slug}}/post/{{report_detail?.data?.post?.id}}",
-                                        "className": "inline-flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors group"
+                                        "className": "board:inline-flex board:items-center board:gap-1.5 board:text-sm board:font-semibold board:text-blue-600 board:dark:text-blue-400 board:hover:text-blue-700 board:dark:hover:text-blue-300 board:cursor-pointer board:transition-colors board:group"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "border-b border-transparent board-link-underline transition-all"
+                                                "className": "board:border-b board:border-transparent board-link-underline board:transition-all"
                                             },
                                             "text": "{{report_detail?.data?.post?.title}}"
                                         },
@@ -478,7 +478,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "arrow-up-right-from-square",
-                                                "className": "text-xs board-external-icon transition-all"
+                                                "className": "board:text-xs board-external-icon board:transition-all"
                                             }
                                         }
                                     ]
@@ -488,7 +488,7 @@
                                     "name": "Span",
                                     "if": "{{!report_detail?.data?.board?.slug || !report_detail?.data?.post?.id}}",
                                     "props": {
-                                        "className": "text-primary text-sm"
+                                        "className": "board-text-primary board:text-sm"
                                     },
                                     "text": "{{report_detail?.data?.post?.title}}"
                                 }
@@ -503,7 +503,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-label-subtle block font-medium mb-1"
+                                        "className": "board-text-label-subtle board:block board:font-medium board:mb-1"
                                     },
                                     "text": "{{report_detail?.data?.target_type === 'post' ? '$t:sirsoft-board.admin.reports.detail.post_created_at_label' : '$t:sirsoft-board.admin.reports.detail.comment_created_at_label'}}"
                                 },
@@ -511,7 +511,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "text-primary flex-center gap-2 text-sm"
+                                        "className": "board-text-primary board-flex-center board:gap-2 board:text-sm"
                                     },
                                     "children": [
                                         {
@@ -519,7 +519,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "clock",
-                                                "className": "text-base text-gray-500 dark:text-gray-400"
+                                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400"
                                             }
                                         },
                                         {
@@ -538,14 +538,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "pt-4 mt-4 border-t border-gray-200 dark:border-gray-700"
+                        "className": "board:pt-4 board:mt-4 board:border-t board:border-gray-200 board:dark:border-gray-700"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "text-label-subtle block font-medium mb-2"
+                                "className": "board-text-label-subtle board:block board:font-medium board:mb-2"
                             },
                             "text": "$t:sirsoft-board.admin.reports.detail.reported_content_label"
                         },
@@ -553,7 +553,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "bg-gray-50 dark:bg-gray-900 rounded-lg p-4"
+                                "className": "board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg board:p-4"
                             },
                             "children": [
                                 {
@@ -563,7 +563,7 @@
                                     "props": {
                                         "content": "{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.content : report_detail?.data?.comment?.content}}",
                                         "isHtml": "{{report_detail?.data?.target_type === 'post' && (report_detail?.data?.post?.content_mode ?? 'text') === 'html'}}",
-                                        "className": "text-sm text-gray-900 dark:text-gray-100"
+                                        "className": "board:text-sm board:text-gray-900 board:dark:text-gray-100"
                                     },
                                     "default": [
                                         {
@@ -572,7 +572,7 @@
                                             "props": {
                                                 "content": "{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.content : report_detail?.data?.comment?.content}}",
                                                 "isHtml": "{{report_detail?.data?.target_type === 'post' && (report_detail?.data?.post?.content_mode ?? 'text') === 'html'}}",
-                                                "className": "text-sm text-gray-900 dark:text-gray-100"
+                                                "className": "board:text-sm board:text-gray-900 board:dark:text-gray-100"
                                             }
                                         }
                                     ]
@@ -588,7 +588,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "card-stack-item"
+                "className": "board-card-stack-item"
             },
             "children": [
                 {
@@ -596,14 +596,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center gap-2 mb-4"
+                        "className": "board-flex-center board:gap-2 board:mb-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H2",
                             "props": {
-                                "className": "text-primary text-lg font-bold"
+                                "className": "board-text-primary board:text-lg board:font-bold"
                             },
                             "text": "$t:sirsoft-board.admin.reports.detail.reports_title"
                         },
@@ -612,7 +612,7 @@
                             "name": "Span",
                             "if": "{{report_detail?.data}}",
                             "props": {
-                                "className": "inline-flex items-center px-3 py-1.5 rounded text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                "className": "board:inline-flex board:items-center board:px-3 board:py-1.5 board:rounded board:text-xs board:font-bold board:bg-red-100 board:text-red-800 board:dark:bg-red-900 board:dark:text-red-200"
                             },
                             "text": "$t:sirsoft-board.admin.reports.detail.report_count_with_unit|count={{reporters_list?.data?.pagination?.total ?? report_detail?.data?.report_count ?? 0}}"
                         }
@@ -622,7 +622,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "board-row-stack"
                     },
                     "children": [
                         {
@@ -644,7 +644,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "admin-card"
+                                        "className": "board-admin-card"
                                     },
                                     "children": [
                                         {
@@ -652,7 +652,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "grid-2col lg:grid-cols-5"
+                                                "className": "board-grid-2col board:lg:grid-cols-5"
                                             },
                                             "children": [
                                                 {
@@ -664,7 +664,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-tertiary block font-medium mb-1"
+                                                                "className": "board-text-tertiary board:block board:font-medium board:mb-1"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.reports.detail.reporter_label"
                                                         },
@@ -707,7 +707,7 @@
                                                             "name": "Span",
                                                             "if": "{{!reporter.reporter?.uuid}}",
                                                             "props": {
-                                                                "className": "text-label-subtle"
+                                                                "className": "board-text-label-subtle"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.reports.detail.deleted_user"
                                                         },
@@ -716,7 +716,7 @@
                                                             "name": "Span",
                                                             "if": "{{reporter.reporter?.email}}",
                                                             "props": {
-                                                                "className": "form-hint"
+                                                                "className": "board-form-hint"
                                                             },
                                                             "text": "{{reporter.reporter?.email}}"
                                                         }
@@ -731,7 +731,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-tertiary block font-medium mb-1"
+                                                                "className": "board-text-tertiary board:block board:font-medium board:mb-1"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.reports.detail.reported_at_label"
                                                         },
@@ -739,7 +739,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-primary text-sm"
+                                                                "className": "board-text-primary board:text-sm"
                                                             },
                                                             "text": "{{reporter.reported_at}}"
                                                         }
@@ -754,7 +754,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-tertiary block font-medium mb-1"
+                                                                "className": "board-text-tertiary board:block board:font-medium board:mb-1"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.reports.detail.reason_type_label"
                                                         },
@@ -762,7 +762,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                                                "className": "board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-red-100 board:text-red-800 board:dark:bg-red-900 board:dark:text-red-200"
                                                             },
                                                             "text": "$t:sirsoft-board.enums.report_reason_type.{{reporter.reason_type}}"
                                                         }
@@ -773,14 +773,14 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "md:col-span-2"
+                                                        "className": "board:md:col-span-2"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-tertiary block font-medium mb-1"
+                                                                "className": "board-text-tertiary board:block board:font-medium board:mb-1"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.reports.detail.reason_detail_label"
                                                         },
@@ -788,7 +788,7 @@
                                                             "type": "basic",
                                                             "name": "P",
                                                             "props": {
-                                                                "className": "text-body line-clamp-3"
+                                                                "className": "board-text-body board:line-clamp-3"
                                                             },
                                                             "text": "{{reporter.reason_detail}}"
                                                         }
@@ -839,7 +839,7 @@
                                 "currentPage": "{{reporters_list?.data?.pagination?.current_page ?? 1}}",
                                 "totalPages": "{{reporters_list?.data?.pagination?.last_page ?? null}}",
                                 "hasMorePages": "{{reporters_list?.data?.pagination?.has_more_pages ?? false}}",
-                                "className": "mt-4 justify-end"
+                                "className": "board:mt-4 board:justify-end"
                             }
                         }
                     ]

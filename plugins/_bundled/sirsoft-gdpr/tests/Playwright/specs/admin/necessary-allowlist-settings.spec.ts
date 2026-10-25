@@ -185,5 +185,5 @@ test('형식 위반 항목은 422 로 거부되고 그 카드에 에러가 표�
   // 에러 키는 `necessary_storage_allowlist.cookie.{index}` 형태여야 그 카드에 붙는다.
   const card = page.locator('#necessary_storage_card_cookie');
   await expect(card).toHaveClass(/border-red-500/, { timeout: 10_000 });
-  await expect(card.locator('.form-error')).toBeVisible();
+  await expect(card.locator('.gdpr-form-error')).toBeVisible();
 });

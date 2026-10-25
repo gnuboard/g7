@@ -28,7 +28,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "text-center py-4"
+                        "className": "paynhnkcp:text-center paynhnkcp:py-4"
                     },
                     "children": [
                         {
@@ -36,14 +36,14 @@
                             "name": "Icon",
                             "props": {
                                 "name": "exclamation-circle",
-                                "className": "text-red-500 text-4xl mb-4"
+                                "className": "paynhnkcp:text-red-500 paynhnkcp:text-4xl paynhnkcp:leading-none paynhnkcp:mb-4"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-700 dark:text-gray-300"
+                                "className": "paynhnkcp:text-gray-700 paynhnkcp:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-pay_nhnkcp.payment_error.message"
                         },
@@ -52,7 +52,7 @@
                             "name": "P",
                             "if": "{{_local.paymentErrorMessage}}",
                             "props": {
-                                "className": "text-sm text-red-600 dark:text-red-400 mt-2"
+                                "className": "paynhnkcp:text-sm paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400 paynhnkcp:mt-2"
                             },
                             "text": "{{_local.paymentErrorMessage}}"
                         }
@@ -62,7 +62,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-center mt-6"
+                        "className": "paynhnkcp:flex paynhnkcp:justify-center paynhnkcp:mt-6"
                     },
                     "children": [
                         {
@@ -89,7 +89,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                                "className": "paynhnkcp:px-6 paynhnkcp:py-2 paynhnkcp:bg-blue-600 paynhnkcp:text-white paynhnkcp:rounded-lg paynhnkcp:font-medium paynhnkcp:hover:bg-blue-700 paynhnkcp:transition-colors"
                             },
                             "text": "$t:common.confirm"
                         }

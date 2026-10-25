@@ -1,0 +1,58 @@
+feature: 이커머스 환경설정 SEO 탭 레이아웃 구조
+
+description: |
+  _tab_seo 레이아웃 구조 — 코어로 옮긴 메인화면 SEO·UA 섹션 제거, 카테고리·검색·상품 메타 카드 아코디언,
+  입력 바인딩과 다국어 키. 시험 하나가 시나리오 하나다.
+
+axes:
+  case:
+    # modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/ecommerceSettingsSeoTab.test.tsx — SEO 탭의 섹션·카드·입력 바인딩 구조
+    - seo_tab_c01
+    - seo_tab_c02
+    - seo_tab_c03
+    - seo_tab_c04
+    - seo_tab_c05
+    - seo_tab_c06
+    - seo_tab_c07
+    - seo_tab_c08
+    - seo_tab_c09
+    - seo_tab_c10
+    - seo_tab_c11
+    - seo_tab_c12
+    - seo_tab_c13
+    - seo_tab_c14
+    - seo_tab_c15
+    - seo_tab_c16
+    - seo_tab_c17
+    - seo_tab_c18
+    - seo_tab_c19
+    - seo_tab_c20
+    - seo_tab_c21
+    - seo_tab_c22
+    - seo_tab_c23
+    - seo_tab_c24
+    - seo_tab_c25
+    - seo_tab_c26
+    - seo_tab_c27
+    - seo_tab_c28
+    - seo_tab_c29
+    - seo_tab_c30
+    - seo_tab_c31
+    - seo_tab_c32
+    - seo_tab_c33
+    - seo_tab_c34
+    - seo_tab_c35
+    - seo_tab_c36
+    - seo_tab_c37
+    - seo_tab_c38
+    - seo_tab_c39
+    - seo_tab_c40
+    - seo_tab_c41
+    - seo_tab_c42
+    - seo_tab_c43
+
+effects:
+  - seo_tab_layout_structure_holds   # SEO 탭의 섹션·카드·입력 바인딩 구조
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/ecommerceSettingsSeoTab.test.tsx

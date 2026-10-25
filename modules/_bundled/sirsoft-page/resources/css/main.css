@@ -1,48 +1,71 @@
+/* g7-extension-css:start — convert-layout-classes.mjs 가 생성·갱신하는 블록. 손으로 고치지 않는다. */
+@import "tailwindcss/theme.css" layer(theme) prefix(page);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(page) source(none);
+@import "./g7-extension.generated.css";
+@source "../layouts";
+@source "../extensions";
+@source "../js";
+@source "../../src";
+@theme {
+  --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-50: #fefce8;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+@custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
+/* g7-extension-css:end */
+
 /**
- * sirsoft-page 화면 스타일 — 관리자 페이지 화면에만 있는 호버·다크 짝
+ * sirsoft-page 모듈 손 CSS — 위 생성 블록 아래에 둔다.
  *
- * 관리자 템플릿은 자기 레이아웃만 훑어 Tailwind 규칙을 만들므로, 이 모듈 레이아웃에만 있는 유틸리티
- * (`dark:hover:bg-blue-900/40` 등)는 규칙이 생성되지 않아 화면에서 조용히 빠졌다. 그런 자리는 이 파일에
- * `page-` 접두 클래스로 직접 둔다(docs/extension/module-assets.md 「확장 화면의 의미 색은 확장 CSS 가 싣는다」).
- *
- * - 이 파일은 템플릿의 `@layer utilities` 밖에 실린다 — 같은 속성의 템플릿 유틸리티보다 항상 앞선다.
- * - 다크 모드: 관리자 템플릿은 `<html class="dark">` 로 전환하므로 `.dark` 조상 선택자로 짝을 둔다.
- * - 색은 템플릿 테마 변수를 먼저 쓰고, 없으면 Tailwind 4 기본 팔레트(oklch) 값으로 떨어진다.
+ * 이 모듈 화면의 클래스는 모두 자기 앞글자를 쓴다(docs/extension/module-assets.md 「확장 CSS 자기 공급 규약」).
+ * - 레이아웃 유틸리티는 `page:` 접두 Tailwind 빌드가 만든다(위 블록). 템플릿 CSS 라이브러리에 기대지 않는다.
+ * - 템플릿 의미 클래스는 `page-*` 이름으로 복사해 가장 낮은 칸(`@layer g7-extension`)에 싣는다(g7-extension.generated.css).
+ * - 다크 모드는 템플릿 클래스(`.dark`)가 아니라 코어가 다는 중립 표식(`data-g7-color-scheme`)을 본다.
+ * - 아래 호버·다크 짝은 층 없이 두어 같은 요소의 접두 유틸리티와 특이도로 겨룬다(유틸리티보다 특이도가 높다).
+ * - 색 값은 관리자 템플릿 기본 팔레트와 같다.
  */
 
 /* 첨부 다운로드 아이콘 — 첨부 행에 마우스를 올리면 다크 모드에서도 파란색 (페이지 상세) */
-.dark .group:hover .page-attachment-icon {
-    color: var(--color-blue-400, oklch(70.7% 0.165 254.624)); /* blue-400 */
+.page\:group:hover .page-attachment-icon:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(70.7% 0.165 254.624); /* blue-400 */
 }
 
 /* 옅은 파란 버튼 — 다크 모드 호버 배경 (페이지 상세의 버전 미리보기 버튼) */
-.dark .page-soft-button:hover {
-    background-color: color-mix(in oklab, var(--color-blue-900, oklch(37.9% 0.146 265.522)) 40%, transparent); /* blue-900/40 */
+.page-soft-button:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background-color: color-mix(in oklab, oklch(37.9% 0.146 265.522) 40%, transparent); /* blue-900/40 */
 }
 
-/* 경고 글자색 — 관리자 템플릿 의미 클래스(text-warning-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃이 정한다 */
-.page-tone-warning {
-    color: var(--color-yellow-700, oklch(55.4% 0.135 66.442)); /* yellow-700 */
-}
-
-.dark .page-tone-warning {
-    color: var(--color-yellow-300, oklch(90.5% 0.182 98.111)); /* yellow-300 */
-}
-
-/* 위험 글자색 — 관리자 템플릿 의미 클래스(text-danger-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃이 정한다 */
-.page-tone-danger {
-    color: var(--color-red-700, oklch(50.5% 0.213 27.518)); /* red-700 */
-}
-
-.dark .page-tone-danger {
-    color: var(--color-red-300, oklch(80.8% 0.114 19.571)); /* red-300 */
-}
-
-/* 안내 글자색 — 관리자 템플릿 의미 클래스(text-info-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃이 정한다 */
-.page-tone-info {
-    color: var(--color-blue-700, oklch(48.8% 0.243 264.376)); /* blue-700 */
-}
-
-.dark .page-tone-info {
-    color: var(--color-blue-300, oklch(80.9% 0.105 251.813)); /* blue-300 */
+/*
+ * 의미 색 — 이 모듈 화면이 쓰는 접두 의미 색 클래스.
+ *
+ * - 색만 맡는다. 크기·굵기는 레이아웃이 유틸리티로 함께 단다.
+ * - 의미 클래스 칸(`@layer g7-extension`)에 둔다 — 템플릿이 같은 이름을 덮을 수 있다. 생성 파일 뒤에 실려 같은 칸의
+ *   복사된 의미 클래스와 같은 요소에 걸리면 이 색이 앞선다.
+ * - 색 값은 관리자 템플릿 의미 클래스(`text-warning-soft`·`text-danger-soft`·`text-info-soft`)와 같다(라이트 / 다크).
+ */
+@layer g7-extension {
+    .page-tone-warning { color: oklch(55.4% 0.135 66.442); } /* yellow-700 */
+    .page-tone-warning:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { color: oklch(90.5% 0.182 98.111); } /* yellow-300 */
+    .page-tone-danger { color: oklch(50.5% 0.213 27.518); } /* red-700 */
+    .page-tone-danger:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { color: oklch(80.8% 0.114 19.571); } /* red-300 */
+    .page-tone-info { color: oklch(48.8% 0.243 264.376); } /* blue-700 */
+    .page-tone-info:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { color: oklch(80.9% 0.105 251.813); } /* blue-300 */
 }

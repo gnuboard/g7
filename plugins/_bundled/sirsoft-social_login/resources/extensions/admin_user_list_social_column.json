@@ -19,7 +19,7 @@
                                     "name": "Div",
                                     "if": "{{(row.social_providers ?? []).length > 0}}",
                                     "props": {
-                                        "className": "flex items-center gap-1",
+                                        "className": "sl:flex sl:items-center sl:gap-1",
                                         "title": "{{(row.social_providers ?? []).map(sp => sp.label).join(', ')}}"
                                     },
                                     "children": [
@@ -27,7 +27,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "sr-only"
+                                                "className": "sl:sr-only"
                                             },
                                             "text": "{{(row.social_providers ?? []).map(sp => sp.label).join(', ')}}"
                                         },
@@ -50,7 +50,7 @@
                                     "name": "Span",
                                     "if": "{{(row.social_providers ?? []).length === 0}}",
                                     "props": {
-                                        "className": "text-gray-400 dark:text-gray-500"
+                                        "className": "sl:text-gray-400 sl:dark:text-gray-500"
                                     },
                                     "text": "-"
                                 }

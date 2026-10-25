@@ -22,7 +22,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "btn btn-outline"
+                    "className": "ecommerce-btn ecommerce-btn-outline"
                 },
                 "text": "$t:sirsoft-ecommerce.common.cancel"
             },
@@ -46,7 +46,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "btn btn-primary"
+                    "className": "ecommerce-btn ecommerce-btn-primary"
                 },
                 "text": "$t:sirsoft-ecommerce.admin.common_info.modal.content_mode_change.confirm"
             }
@@ -57,7 +57,7 @@
             "type": "basic",
             "name": "P",
             "props": {
-                "className": "text-body"
+                "className": "ecommerce-text-body"
             },
             "text": "$t:sirsoft-ecommerce.admin.common_info.modal.content_mode_change.message"
         }

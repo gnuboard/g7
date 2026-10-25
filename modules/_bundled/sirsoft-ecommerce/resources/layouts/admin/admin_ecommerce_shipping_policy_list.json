@@ -150,7 +150,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "ecommerce-admin-page-content"
                 },
                 "children": [
                     {
@@ -158,7 +158,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-between mb-6"
+                            "className": "ecommerce-flex-between ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -169,7 +169,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "ecommerce-page-title"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.shipping_policy.title"
                                     },
@@ -177,7 +177,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-label-subtle mt-1"
+                                            "className": "ecommerce-text-label-subtle ecommerce:mt-1"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.shipping_policy.description"
                                     }
@@ -200,7 +200,7 @@
                                 "props": {
                                     "href": "/admin/ecommerce/shipping-policies/create",
                                     "mergeQuery": true,
-                                    "className": "button btn btn-primary aria-disabled:opacity-50 aria-disabled:cursor-not-allowed",
+                                    "className": "ecommerce-button ecommerce-btn ecommerce-btn-primary ecommerce:aria-disabled:opacity-50 ecommerce:aria-disabled:cursor-not-allowed",
                                     "disabled": "{{shipping_policies?.data?.abilities?.can_create !== true}}"
                                 },
                                 "children": [
@@ -229,7 +229,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6"
+                            "className": "ecommerce:mt-6"
                         },
                         "children": [
                             {
@@ -240,14 +240,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-between flex-wrap gap-3 mb-4"
+                                    "className": "ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-label"
+                                            "className": "ecommerce-text-label"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.shipping_policy.pagination.total|count={{shipping_policies?.data?.pagination?.total || 0}}"
                                     },
@@ -255,7 +255,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-3"
+                                            "className": "ecommerce-flex-center ecommerce:gap-3"
                                         },
                                         "children": [
                                             {
@@ -282,7 +282,7 @@
                                                 "props": {
                                                     "name": "sortBy",
                                                     "aria-label": "$t:common.sort_order",
-                                                    "className": "w-32 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "className": "ecommerce:w-32 ecommerce:px-3 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:text-sm",
                                                     "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}",
                                                     "options": [
                                                         {
@@ -331,7 +331,7 @@
                                                 "props": {
                                                     "name": "perPage",
                                                     "aria-label": "$t:common.per_page",
-                                                    "className": "w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "className": "ecommerce:w-20 ecommerce:px-3 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:text-sm",
                                                     "value": "{{query.per_page || '20'}}",
                                                     "options": [
                                                         {

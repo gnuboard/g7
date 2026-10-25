@@ -19,14 +19,14 @@
             "name": "Div",
             "blur_until_loaded": "{{$parent._local.isSaving}}",
             "props": {
-                "className": "flex flex-col max-h-[70vh]"
+                "className": "board:flex board:flex-col board:max-h-[70vh]"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-1 overflow-y-auto space-y-5 pr-1"
+                        "className": "board:flex-1 board:overflow-y-auto board:space-y-5 board:pr-1"
                     },
                     "children": [
                         {
@@ -35,14 +35,14 @@
                             "name": "Div",
                             "if": "{{$parent._local.templateErrors}}",
                             "props": {
-                                "className": "alert-danger items-start"
+                                "className": "board-alert-danger board:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-start gap-3"
+                                        "className": "board:flex board:items-start board:gap-3"
                                     },
                                     "children": [
                                         {
@@ -50,7 +50,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "triangle-exclamation",
-                                                "className": "text-sm leading-5 text-red-600 dark:text-red-400 flex-shrink-0"
+                                                "className": "board:text-sm board:leading-5 board:text-red-600 board:dark:text-red-400 board:flex-shrink-0"
                                             }
                                         },
                                         {
@@ -61,7 +61,7 @@
                                                     "type": "basic",
                                                     "name": "H3",
                                                     "props": {
-                                                        "className": "text-error-strong"
+                                                        "className": "board-text-error-strong"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.mail_templates.edit_modal.validation_error"
                                                 },
@@ -74,14 +74,14 @@
                                                         "item_var": "errMsg"
                                                     },
                                                     "props": {
-                                                        "className": "mt-2 list-disc list-inside space-y-1"
+                                                        "className": "board:mt-2 board:list-disc board:list-inside board:space-y-1"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Li",
                                                             "props": {
-                                                                "className": "text-error-soft"
+                                                                "className": "board-text-error-soft"
                                                             },
                                                             "text": "{{errMsg}}"
                                                         }
@@ -97,14 +97,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 mb-2"
+                                "className": "board-flex-center board:gap-2 board:mb-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle font-medium"
+                                        "className": "board-text-label-subtle board:font-medium"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.mail_templates.edit_modal.type_label"
                                 },
@@ -112,7 +112,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-primary text-sm font-semibold"
+                                        "className": "board-text-primary board:text-sm board:font-semibold"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.mail_templates.types.{{$parent._local.editingTemplate?.type ?? ''}}"
                                 },
@@ -120,7 +120,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                        "className": "board-text-body board:font-mono board:px-1.5 board:py-0.5 board:bg-gray-100 board:dark:bg-gray-700 board:rounded"
                                     },
                                     "text": "{{$parent._local.editingTemplate?.type ?? ''}}"
                                 }
@@ -130,7 +130,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex border-b border-gray-200 dark:border-gray-700"
+                                "className": "board:flex board:border-b board:border-gray-200 board:dark:border-gray-700"
                             },
                             "children": [
                                 {
@@ -149,7 +149,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{($parent._local.editLang ?? $locale) === 'ko' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
+                                        "className": "{{($parent._local.editLang ?? $locale) === 'ko' ? 'board:border-b-2 board:border-indigo-500 board:text-indigo-600 board:dark:text-indigo-400' : 'board:text-gray-500 board:dark:text-gray-400 board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2 board:text-sm board:font-medium board:focus:outline-none"
                                     },
                                     "text": "한국어"
                                 },
@@ -169,7 +169,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{($parent._local.editLang ?? $locale) === 'en' ? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
+                                        "className": "{{($parent._local.editLang ?? $locale) === 'en' ? 'board:border-b-2 board:border-indigo-500 board:text-indigo-600 board:dark:text-indigo-400' : 'board:text-gray-500 board:dark:text-gray-400 board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2 board:text-sm board:font-medium board:focus:outline-none"
                                     },
                                     "text": "English"
                                 }
@@ -189,7 +189,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "children": [
                                                 {
@@ -201,7 +201,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-required"
+                                                        "className": "board-text-required"
                                                     },
                                                     "text": "*"
                                                 }
@@ -224,7 +224,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "value": "{{$parent._local.editingTemplate?.subject?.ko ?? ''}}",
-                                                "className": "{{$parent._local.templateErrors?.['subject.ko'] ? 'input-error' : ''}}",
+                                                "className": "{{$parent._local.templateErrors?.['subject.ko'] ? 'board-input-error' : ''}}",
                                                 "disabled": "{{$parent._computed.isReadOnly}}"
                                             }
                                         },
@@ -233,7 +233,7 @@
                                             "name": "Span",
                                             "if": "{{$parent._local.templateErrors?.['subject.ko']}}",
                                             "props": {
-                                                "className": "form-error-xs"
+                                                "className": "board-form-error-xs"
                                             },
                                             "text": "{{$parent._local.templateErrors?.['subject.ko']?.[0] ?? ''}}"
                                         }
@@ -255,7 +255,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.mail_templates.edit_modal.subject"
                                         },
@@ -276,7 +276,7 @@
                                             "props": {
                                                 "type": "text",
                                                 "value": "{{$parent._local.editingTemplate?.subject?.en ?? ''}}",
-                                                "className": "{{$parent._local.templateErrors?.['subject.en'] ? 'input-error' : ''}}",
+                                                "className": "{{$parent._local.templateErrors?.['subject.en'] ? 'board-input-error' : ''}}",
                                                 "disabled": "{{$parent._computed.isReadOnly}}"
                                             }
                                         },
@@ -285,7 +285,7 @@
                                             "name": "Span",
                                             "if": "{{$parent._local.templateErrors?.['subject.en']}}",
                                             "props": {
-                                                "className": "form-error-xs"
+                                                "className": "board-form-error-xs"
                                             },
                                             "text": "{{$parent._local.templateErrors?.['subject.en']?.[0] ?? ''}}"
                                         }
@@ -307,7 +307,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "children": [
                                                 {
@@ -319,7 +319,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-required"
+                                                        "className": "board-text-required"
                                                     },
                                                     "text": "*"
                                                 }
@@ -343,7 +343,7 @@
                                                 "content": "{{$parent._local.editingTemplate?.body?.ko ?? ''}}",
                                                 "isHtml": true,
                                                 "showHtmlModeToggle": false,
-                                                "className": "{{$parent._local.templateErrors?.['body.ko'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}",
+                                                "className": "{{$parent._local.templateErrors?.['body.ko'] ? 'board:min-h-[200px] board:border board:border-red-500 board:rounded-md' : 'board:min-h-[200px]'}}",
                                                 "disabled": "{{$parent._computed.isReadOnly}}"
                                             }
                                         },
@@ -352,7 +352,7 @@
                                             "name": "Span",
                                             "if": "{{$parent._local.templateErrors?.['body.ko']}}",
                                             "props": {
-                                                "className": "form-error-xs"
+                                                "className": "board-form-error-xs"
                                             },
                                             "text": "{{$parent._local.templateErrors?.['body.ko']?.[0] ?? ''}}"
                                         }
@@ -374,7 +374,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.mail_templates.edit_modal.body"
                                         },
@@ -396,7 +396,7 @@
                                                 "content": "{{$parent._local.editingTemplate?.body?.en ?? ''}}",
                                                 "isHtml": true,
                                                 "showHtmlModeToggle": false,
-                                                "className": "{{$parent._local.templateErrors?.['body.en'] ? 'min-h-[200px] border border-red-500 rounded-md' : 'min-h-[200px]'}}",
+                                                "className": "{{$parent._local.templateErrors?.['body.en'] ? 'board:min-h-[200px] board:border board:border-red-500 board:rounded-md' : 'board:min-h-[200px]'}}",
                                                 "disabled": "{{$parent._computed.isReadOnly}}"
                                             }
                                         },
@@ -405,7 +405,7 @@
                                             "name": "Span",
                                             "if": "{{$parent._local.templateErrors?.['body.en']}}",
                                             "props": {
-                                                "className": "form-error-xs"
+                                                "className": "board-form-error-xs"
                                             },
                                             "text": "{{$parent._local.templateErrors?.['body.en']?.[0] ?? ''}}"
                                         }
@@ -418,7 +418,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-3"
+                                "className": "board-flex-center board:gap-3"
                             },
                             "children": [
                                 {
@@ -445,7 +445,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body"
+                                        "className": "board-text-body"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.mail_templates.edit_modal.is_active_label"
                                 }
@@ -457,14 +457,14 @@
                             "name": "Div",
                             "if": "{{($parent._local.editingTemplate?.variables ?? []).length > 0}}",
                             "props": {
-                                "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4"
+                                "className": "board:bg-gray-50 board:dark:bg-gray-900 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-md board:p-4"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "H4",
                                     "props": {
-                                        "className": "text-body font-medium mb-2"
+                                        "className": "board-text-body board:font-medium board:mb-2"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.mail_templates.edit_modal.variables_title"
                                 },
@@ -472,7 +472,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex flex-wrap gap-2"
+                                        "className": "board:flex board:flex-wrap board:gap-2"
                                     },
                                     "children": [
                                         {
@@ -484,7 +484,7 @@
                                                 "index_var": "vi"
                                             },
                                             "props": {
-                                                "className": "inline-flex items-center gap-1 text-xs px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300"
+                                                "className": "board:inline-flex board:items-center board:gap-1 board:text-xs board:px-2 board:py-1 board:bg-white board:dark:bg-gray-800 board:border board:border-gray-200 board:dark:border-gray-600 board:rounded board:text-gray-700 board:dark:text-gray-300"
                                             },
                                             "children": [
                                                 {
@@ -515,14 +515,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "modal-footer-buttons items-center px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg sticky bottom-0"
+                        "className": "board-modal-footer-buttons board:items-center board:px-4 board:py-3 board:bg-gray-50 board:dark:bg-gray-800 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg board:sticky board:bottom-0"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex gap-2"
+                                "className": "board:flex board:gap-2"
                             },
                             "children": [
                                 {
@@ -538,7 +538,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "board-text-body board:px-4 board:py-2 board:rounded-md board:border board:border-gray-300 board:dark:border-gray-600 board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                         "disabled": "{{$parent._local.isSaving ?? false}}"
                                     },
                                     "text": "$t:common.cancel"
@@ -623,7 +623,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "board-flex-center board:gap-2 board:text-sm board:px-4 board:py-2 board:rounded-md board:bg-indigo-600 board:text-white board:hover:bg-indigo-700 board:dark:bg-indigo-500 board:dark:hover:bg-indigo-600 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                         "disabled": "{{$parent._computed.isReadOnly || $parent._local.isSaving ?? false}}"
                                     },
                                     "children": [
@@ -633,7 +633,7 @@
                                             "if": "{{$parent._local.isSaving}}",
                                             "props": {
                                                 "name": "spinner",
-                                                "className": "animate-spin",
+                                                "className": "board:animate-spin",
                                                 "size": "sm"
                                             }
                                         },

@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "ecommerce-admin-card"
     },
     "children": [
         {
@@ -16,14 +16,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-center gap-2 mb-4"
+                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H3",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.main_banner.list.title"
                 },
@@ -31,7 +31,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "badge"
+                        "className": "ecommerce-badge"
                     },
                     "text": "7"
                 }
@@ -42,7 +42,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-center gap-2 mb-4"
+                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4"
             },
             "children": [
                 {
@@ -61,7 +61,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "{{_local.activeTab === 'all' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}}"
+                        "className": "{{_local.activeTab === 'all' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm'}}"
                     },
                     "children": [
                         {
@@ -73,7 +73,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ml-1"
+                                "className": "ecommerce:ml-1"
                             },
                             "text": "7"
                         }
@@ -95,7 +95,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "{{_local.activeTab === 'active' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}}"
+                        "className": "{{_local.activeTab === 'active' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm'}}"
                     },
                     "children": [
                         {
@@ -107,7 +107,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ml-1"
+                                "className": "ecommerce:ml-1"
                             },
                             "text": "4"
                         }
@@ -129,7 +129,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "{{_local.activeTab === 'inactive' ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm'}}"
+                        "className": "{{_local.activeTab === 'inactive' ? 'ecommerce-btn ecommerce-btn-primary ecommerce-btn-sm' : 'ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm'}}"
                     },
                     "children": [
                         {
@@ -141,7 +141,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ml-1"
+                                "className": "ecommerce:ml-1"
                             },
                             "text": "3"
                         }
@@ -159,14 +159,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "{{_local.selectedBannerId === 'banner_1' ? 'drag-item ring-2 ring-blue-500' : 'drag-item'}}"
+                        "className": "{{_local.selectedBannerId === 'banner_1' ? 'ecommerce-drag-item ecommerce:ring-2 ecommerce:ring-blue-500' : 'ecommerce-drag-item'}}"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "drag-handle text-gray-500 dark:text-gray-400"
+                                "className": "ecommerce-drag-handle ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                             },
                             "children": [
                                 {
@@ -174,7 +174,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "grip-vertical",
-                                        "className": "text-base"
+                                        "className": "ecommerce:text-base"
                                     }
                                 }
                             ]
@@ -183,7 +183,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "w-16 h-10 rounded bg-gradient-to-r from-orange-400 to-red-400 flex-shrink-0"
+                                "className": "ecommerce:w-16 ecommerce:h-10 ecommerce:rounded ecommerce:bg-gradient-to-r ecommerce:from-orange-400 ecommerce:to-red-400 ecommerce:flex-shrink-0"
                             }
                         },
                         {
@@ -203,7 +203,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "block text-left flex-1 min-w-0 cursor-pointer",
+                                "className": "ecommerce:block ecommerce:text-left ecommerce:flex-1 ecommerce:min-w-0 ecommerce:cursor-pointer",
                                 "aria-pressed": "{{_local.selectedBannerId === 'banner_1'}}"
                             },
                             "children": [
@@ -211,7 +211,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "block text-sm font-medium text-primary truncate"
+                                        "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce-text-primary ecommerce:truncate"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.sample.banners.winter_sale"
                                 },
@@ -219,7 +219,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "block text-xs text-secondary"
+                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-secondary"
                                     },
                                     "text": "2025-01-01 ~ 2025-12-31"
                                 }
@@ -241,7 +241,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "toggle active",
+                                "className": "ecommerce-toggle ecommerce-active",
                                 "role": "switch",
                                 "aria-checked": "{{!!_local.bannerStatus?.banner_1}}",
                                 "aria-label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.status"
@@ -251,14 +251,14 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "toggle-track"
+                                        "className": "ecommerce-toggle-track"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "toggle-handle"
+                                        "className": "ecommerce-toggle-handle"
                                     }
                                 }
                             ]
@@ -270,14 +270,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "{{_local.selectedBannerId === 'banner_2' ? 'drag-item ring-2 ring-blue-500' : 'drag-item'}}"
+                        "className": "{{_local.selectedBannerId === 'banner_2' ? 'ecommerce-drag-item ecommerce:ring-2 ecommerce:ring-blue-500' : 'ecommerce-drag-item'}}"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "drag-handle text-gray-500 dark:text-gray-400"
+                                "className": "ecommerce-drag-handle ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                             },
                             "children": [
                                 {
@@ -285,7 +285,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "grip-vertical",
-                                        "className": "text-base"
+                                        "className": "ecommerce:text-base"
                                     }
                                 }
                             ]
@@ -294,14 +294,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center w-16 h-10 rounded bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0"
+                                "className": "ecommerce-flex-center ecommerce:w-16 ecommerce:h-10 ecommerce:rounded ecommerce:bg-gray-200 ecommerce:dark:bg-gray-700 ecommerce:justify-center ecommerce:flex-shrink-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-secondary text-xl font-bold"
+                                        "className": "ecommerce-text-secondary ecommerce:text-xl ecommerce:font-bold"
                                     },
                                     "text": "SALE"
                                 }
@@ -324,7 +324,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "block text-left flex-1 min-w-0 cursor-pointer",
+                                "className": "ecommerce:block ecommerce:text-left ecommerce:flex-1 ecommerce:min-w-0 ecommerce:cursor-pointer",
                                 "aria-pressed": "{{_local.selectedBannerId === 'banner_2'}}"
                             },
                             "children": [
@@ -332,14 +332,14 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "flex-center gap-2"
+                                        "className": "ecommerce-flex-center ecommerce:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "block text-sm font-medium text-primary truncate"
+                                                "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce-text-primary ecommerce:truncate"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.sample.banners.spring_semester"
                                         },
@@ -347,7 +347,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "badge badge-gray text-xs flex-shrink-0"
+                                                "className": "ecommerce-badge ecommerce-badge-gray ecommerce:text-xs ecommerce:flex-shrink-0"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.main_banner.list.status_ended"
                                         }
@@ -357,7 +357,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "block text-xs text-secondary"
+                                        "className": "ecommerce:block ecommerce:text-xs ecommerce-text-secondary"
                                     },
                                     "text": "2025-03-01 ~ 2025-03-31"
                                 }
@@ -379,7 +379,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "toggle",
+                                "className": "ecommerce-toggle",
                                 "role": "switch",
                                 "aria-checked": "{{!!_local.bannerStatus?.banner_2}}",
                                 "aria-label": "$t:sirsoft-ecommerce.admin.main_banner.detail.field.status"
@@ -389,14 +389,14 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "toggle-track"
+                                        "className": "ecommerce-toggle-track"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "toggle-handle"
+                                        "className": "ecommerce-toggle-handle"
                                     }
                                 }
                             ]

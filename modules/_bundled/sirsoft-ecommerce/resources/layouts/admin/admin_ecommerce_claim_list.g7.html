@@ -147,56 +147,56 @@
     </action>
   </init>
   <slot name="content">
-    <div data-ref="claim_list_content" class="admin-page-content">
-      <div data-ref="page_header" class="page-header">
-        <div class="flex-center gap-3">
+    <div data-ref="claim_list_content" class="ecommerce-admin-page-content">
+      <div data-ref="page_header" class="ecommerce-page-header">
+        <div class="ecommerce-flex-center ecommerce:gap-3">
           <!-- 모바일 뒤로가기 -->
-          <button aria-label="$t:common.back" data-ref="mb_001_back_button" type="button" class="btn btn-ghost btn-icon hidden">
-            <responsive on="portable" class="btn btn-ghost btn-icon flex"/>
+          <button aria-label="$t:common.back" data-ref="mb_001_back_button" type="button" class="ecommerce-btn ecommerce-btn-ghost ecommerce-btn-icon ecommerce:hidden ecommerce-hidden">
+            <responsive on="portable" class="ecommerce-btn ecommerce-btn-ghost ecommerce-btn-icon ecommerce:flex"/>
             <on type="click">
               <!-- 브라우저 히스토리 뒤로가기 — navigate 는 path 를 주소로 해석하므로 "back" 을 주면 /back 으로 이동한다 -->
               <navigate-back/>
             </on>
-            <icon name="arrow-left" class="text-xl"/>
+            <icon name="arrow-left" class="ecommerce:text-xl"/>
           </button>
           <div>
-            <h1 data-ref="h_002_page_title" class="page-title">$t:sirsoft-ecommerce.admin.claim.title</h1>
-            <p data-ref="h_003_page_description" class="page-description">$t:sirsoft-ecommerce.admin.claim.description</p>
+            <h1 data-ref="h_002_page_title" class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.claim.title</h1>
+            <p data-ref="h_003_page_description" class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.claim.description</p>
           </div>
         </div>
-        <div class="page-actions">
-          <button aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="h_004_refresh_button" type="button" class="btn btn-icon">
+        <div class="ecommerce-page-actions">
+          <button aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="h_004_refresh_button" type="button" class="ecommerce-btn ecommerce-btn-icon">
             <on type="click">
               <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 유형 서브탭과 걸어둔 필터를 유지한다. -->
               <navigate path="/admin/ecommerce/claims" :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
-            <icon name="arrows-rotate" class="text-xl"/>
+            <icon name="arrows-rotate" class="ecommerce:text-xl"/>
           </button>
         </div>
       </div>
       <!-- 모바일 상단 액션 (검색 편집 / 프리셋 관리) -->
-      <div data-ref="mobile_top_actions" class="hidden">
-        <responsive on="portable" class="flex gap-2 mb-3"/>
+      <div data-ref="mobile_top_actions" class="ecommerce:hidden ecommerce-hidden">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:mb-3"/>
         <!-- 검색 편집 모드 토글. 켤 때는 상세 필터도 함께 펼친다 — 기본 표시 여부를 고르는 체크박스가 필터 행마다 붙어 있어, 접힌 상세 영역의 필터는 펼쳐야 기본 영역으로 끌어올릴 수 있다. -->
-        <button data-ref="mb_010_search_edit_button" type="button" class="btn btn-outline flex-1">
+        <button data-ref="mb_010_search_edit_button" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:flex-1">
           <on type="click">
             <set-state target="_local" isEditMode="{{!_local.isEditMode}}" showDetailFilter="{{!_local.isEditMode ? true : _local.showDetailFilter}}"/>
           </on>
-          <icon name="sliders" class="text-base"/>
+          <icon name="sliders" class="ecommerce:text-base"/>
           <span>$t:sirsoft-ecommerce.admin.claim.search.edit_search</span>
         </button>
-        <button data-ref="mb_011_preset_manage_button" type="button" class="btn btn-outline flex-1">
+        <button data-ref="mb_011_preset_manage_button" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:flex-1">
           <on type="click">
             <open-modal target="modal_claim_preset_manage"/>
           </on>
-          <icon name="bookmark" class="text-base"/>
+          <icon name="bookmark" class="ecommerce:text-base"/>
           <span>$t:sirsoft-ecommerce.admin.claim.search.preset_manage</span>
         </button>
       </div>
       <!-- 유형 서브탭. 건수 뱃지는 응답의 `counts` 를 그대로 그린다 — 유형 공통 필터(기간·검색·회원구분)만 반영된 값이라 "그 탭으로 넘어가면 몇 건이 보이는가" 를 답한다. -->
-      <tab-navigation data-type="composite" data-ref="claim_type_subtabs" activeTabId="{{query.type ?? 'exchange'}}" variant="default" class="mb-4">
+      <tab-navigation data-type="composite" data-ref="claim_type_subtabs" activeTabId="{{query.type ?? 'exchange'}}" variant="default" class="ecommerce:mb-4">
         <prop name="tabs">
           <item id="exchange" href="/admin/ecommerce/claims?type=exchange" label="$t:sirsoft-ecommerce.admin.claim.subtab.exchange" badge="{{claims?.data?.counts?.exchange ?? 0}}"/>
           <item id="return" href="/admin/ecommerce/claims?type=return" label="$t:sirsoft-ecommerce.admin.claim.subtab.return" badge="{{claims?.data?.counts?.return ?? 0}}"/>
@@ -215,7 +215,7 @@
         </on>
       </tab-navigation>
       <include src="partials/admin_ecommerce_claim_list/_partial_filter_section.g7.html"/>
-      <div data-ref="claim_data_table_section" class="mt-6">
+      <div data-ref="claim_data_table_section" class="ecommerce:mt-6">
         <include src="partials/admin_ecommerce_claim_list/_partial_bulk_action_section.g7.html"/>
         <include src="partials/admin_ecommerce_claim_list/_partial_claim_datagrid.g7.html"/>
       </div>

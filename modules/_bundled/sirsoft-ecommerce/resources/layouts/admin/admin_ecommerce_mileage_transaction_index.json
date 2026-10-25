@@ -233,7 +233,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "ecommerce:p-6 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:min-h-screen"
                 },
                 "children": [
                     {
@@ -241,7 +241,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "page-header"
+                            "className": "ecommerce-page-header"
                         },
                         "children": [
                             {
@@ -253,7 +253,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "ecommerce-page-title"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.title"
                                     },
@@ -261,7 +261,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "page-description"
+                                            "className": "ecommerce-page-description"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.description"
                                     }
@@ -272,7 +272,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "page-actions"
+                                    "className": "ecommerce-page-actions"
                                 },
                                 "children": [
                                     {
@@ -321,7 +321,7 @@
                                         "props": {
                                             "type": "button",
                                             "disabled": "{{transactions?.data?.abilities?.can_manage !== true}}",
-                                            "className": "btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                            "className": "ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
                                         },
                                         "children": [
                                             {
@@ -351,14 +351,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3"
+                            "className": "ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700/50 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:p-3 ecommerce:mb-4 ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-between ecommerce:gap-3"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                    "className": "ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-nowrap"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}"
                             },
@@ -400,7 +400,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}",
-                                    "className": "px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
                                 },
                                 "children": [
                                     {
@@ -504,7 +504,7 @@
                                         ],
                                         "props": {
                                             "aria-label": "$t:common.per_page",
-                                            "className": "w-32 text-sm",
+                                            "className": "ecommerce:w-32 ecommerce:text-sm",
                                             "value": "{{query.per_page || '20'}}",
                                             "options": [
                                                 {

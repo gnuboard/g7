@@ -114,11 +114,11 @@ function applyReadOnly(fields: string[], readOnly: boolean): void {
         inputs.forEach((input) => {
             input.readOnly = readOnly;
 
-            // readOnly 상태에 따른 시각적 피드백 (선택적)
+            // readOnly 상태 표시 — 플러그인 CSS 의 daumpostcode-readonly(검색으로만 채우는 칸: 옅은 회색 바탕 + 기본 커서)
             if (readOnly) {
-                input.classList.add('readonly');
+                input.classList.add('daumpostcode-readonly');
             } else {
-                input.classList.remove('readonly');
+                input.classList.remove('daumpostcode-readonly');
             }
 
             logger.log(`[setFieldReadOnly] Set readOnly=${readOnly} on input[name="${fieldName}"]`);

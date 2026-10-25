@@ -53,7 +53,7 @@ export function buildLocaleTabContent(tab: HTMLElement, locale: string, isDefaul
     tab.replaceChildren();
 
     const icon = document.createElement('i');
-    icon.className = 'fas fa-globe ck5-lang-icon';
+    icon.className = 'ckeditor-icon ckeditor-icon--globe ckeditor-lang-icon';
     tab.appendChild(icon);
 
     const label = document.createElement('span');
@@ -62,7 +62,7 @@ export function buildLocaleTabContent(tab: HTMLElement, locale: string, isDefaul
 
     if (isDefault) {
         const required = document.createElement('span');
-        required.className = 'ck5-required';
+        required.className = 'ckeditor-required';
         required.textContent = '*';
         tab.appendChild(required);
     }

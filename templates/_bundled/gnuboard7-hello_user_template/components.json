@@ -140,7 +140,7 @@
     "overrides": [
         {
             "target": "gnuboard7-hello_module",
-            "targetVersion": "^0.2",
+            "targetVersion": "^0.3",
             "name": "MemoCard",
             "exportName": "HelloModuleMemoCard",
             "type": "composite",
@@ -165,7 +165,7 @@
                 "accent": {
                     "type": "string",
                     "required": false,
-                    "description": "왼쪽 강조선 색 (이 템플릿 판본 전용 prop)"
+                    "description": "왼쪽 강조선 색 — CSS 색 값(예: #f59e0b). 이 템플릿 판본 전용 prop"
                 },
                 "className": {
                     "type": "string",

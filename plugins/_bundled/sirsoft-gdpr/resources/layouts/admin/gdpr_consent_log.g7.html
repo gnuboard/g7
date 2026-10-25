@@ -76,25 +76,25 @@
     </set-state>
   </init>
   <slot name="content">
-    <div data-ref="gdpr_consent_log_content" class="admin-page-content">
-      <div data-ref="page_header" class="flex-between mb-6">
+    <div data-ref="gdpr_consent_log_content" class="gdpr-admin-page-content">
+      <div data-ref="page_header" class="gdpr-flex-between gdpr:mb-6">
         <div>
-          <h1 class="page-title">$t:sirsoft-gdpr.admin.consent_log.title</h1>
-          <p class="text-label-subtle mt-1">$t:sirsoft-gdpr.admin.consent_log.description</p>
+          <h1 class="gdpr-page-title">$t:sirsoft-gdpr.admin.consent_log.title</h1>
+          <p class="gdpr-text-label-subtle gdpr:mt-1">$t:sirsoft-gdpr.admin.consent_log.description</p>
         </div>
-        <div class="flex-center gap-2">
-          <button data-ref="refresh_button" type="button" class="btn-icon" title="$t:sirsoft-gdpr.admin.consent_log.refresh">
+        <div class="gdpr-flex-center gdpr:gap-2">
+          <button data-ref="refresh_button" type="button" class="gdpr-btn-icon" title="$t:sirsoft-gdpr.admin.consent_log.refresh">
             <on type="click">
               <refetch-data-source dataSourceId="gdprConsentLog"/>
             </on>
-            <icon name="fa-solid fa-arrows-rotate" class="text-xl"/>
+            <icon name="arrows-rotate" class="gdpr:text-xl gdpr:leading-none"/>
           </button>
         </div>
       </div>
-      <div data-ref="filter_section" class="admin-card mb-6">
-        <div data-ref="search_row" class="mb-4">
-          <div class="flex-center gap-2">
-            <select name="searchType" aria-label="$t:common.search_field" class="w-36 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-body font-medium focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400" value="{{_local.filter.searchType || 'email'}}">
+      <div data-ref="filter_section" class="gdpr-admin-card gdpr:mb-6">
+        <div data-ref="search_row" class="gdpr:mb-4">
+          <div class="gdpr-flex-center gdpr:gap-2">
+            <select name="searchType" aria-label="$t:common.search_field" class="gdpr:w-36 gdpr:px-4 gdpr:py-2.5 gdpr:bg-gray-100 gdpr:dark:bg-gray-700 gdpr:border-0 gdpr:rounded-xl gdpr:text-sm gdpr:text-gray-700 gdpr:dark:text-gray-200 gdpr:font-medium gdpr:focus:ring-2 gdpr:focus:ring-blue-500 gdpr:dark:focus:ring-blue-400" value="{{_local.filter.searchType || 'email'}}">
               <options>
                 <option value="email">$t:sirsoft-gdpr.admin.consent_log.search_type.email</option>
                 <option value="session_id">$t:sirsoft-gdpr.admin.consent_log.search_type.session_id</option>
@@ -104,9 +104,9 @@
                 <set-state target="local" filter.searchType="{{$event.target.value}}"/>
               </on>
             </select>
-            <div class="relative flex-1">
-              <icon name="fa-solid fa-search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 text-sm pointer-events-none"/>
-              <input name="search" type="text" placeholder="$t:sirsoft-gdpr.admin.consent_log.search_placeholder" class="input pl-10" value="{{_local.filter.search || ''}}">
+            <div class="gdpr:relative gdpr:flex-1">
+              <icon name="search" class="gdpr:absolute gdpr:left-3 gdpr:top-1/2 gdpr:-translate-y-1/2 gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:text-sm gdpr:leading-none gdpr:pointer-events-none"/>
+              <input name="search" type="text" placeholder="$t:sirsoft-gdpr.admin.consent_log.search_placeholder" class="gdpr-input gdpr:pl-10" value="{{_local.filter.search || ''}}">
                 <on type="change">
                   <!-- 검색어 입력 — Enter 로 검색 액션이 실행된다 -->
                   <set-state target="local" filter.search="{{$event.target.value}}"/>
@@ -116,7 +116,7 @@
                 </on>
               </input>
             </div>
-            <button type="button" class="px-4 py-2.5 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white text-sm font-medium rounded-xl">
+            <button type="button" class="gdpr:px-4 gdpr:py-2.5 gdpr:bg-blue-600 gdpr:dark:bg-blue-600 gdpr:hover:bg-blue-700 gdpr:dark:hover:bg-blue-700 gdpr:text-white gdpr:text-sm gdpr:font-medium gdpr:rounded-xl">
               <on type="click">
                 <action-ref name="searchConsentLogs"/>
               </on>
@@ -124,12 +124,12 @@
             </button>
           </div>
         </div>
-        <div data-ref="filter_grid" class="filter-grid">
-          <div data-ref="consent_key_filter" class="filter-row">
-            <span class="filter-label w-32">$t:sirsoft-gdpr.admin.consent_log.filter.consent_key_label</span>
-            <div class="flex-center flex-wrap gap-2">
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{!_local.filter.consentKeys || _local.filter.consentKeys.length === 0}}">
+        <div data-ref="filter_grid" class="gdpr-filter-grid">
+          <div data-ref="consent_key_filter" class="gdpr-filter-row">
+            <span class="gdpr-filter-label gdpr:w-32">$t:sirsoft-gdpr.admin.consent_log.filter.consent_key_label</span>
+            <div class="gdpr-flex-center gdpr:flex-wrap gdpr:gap-2">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{!_local.filter.consentKeys || _local.filter.consentKeys.length === 0}}">
                   <on type="change">
                     <!-- 동의 항목 필터 전체 해제 — 빈 배열이 곧 「전체」다(별도 플래그를 두지 않는다). 필터를 바꾸면 곧바로 검색까지 태운다 -->
                     <sequence>
@@ -138,10 +138,10 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.filter.option_all</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.admin.consent_log.filter.option_all</span>
               </label>
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{(_local.filter.consentKeys || []).includes('cookie_necessary')}}">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.consentKeys || []).includes('cookie_necessary')}}">
                   <on type="change">
                     <!-- 동의 항목 개별 선택 — 체크 상태에 따라 배열에서 넣고 빼고 바로 검색한다 -->
                     <sequence>
@@ -150,10 +150,10 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.consent.category_cookie_necessary</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.consent.category_cookie_necessary</span>
               </label>
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{(_local.filter.consentKeys || []).includes('cookie_functional')}}">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.consentKeys || []).includes('cookie_functional')}}">
                   <on type="change">
                     <!-- 동의 항목 개별 선택 (위와 같은 형태의 다음 항목) -->
                     <sequence>
@@ -162,10 +162,10 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.consent.category_cookie_functional</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.consent.category_cookie_functional</span>
               </label>
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{(_local.filter.consentKeys || []).includes('cookie_analytics')}}">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.consentKeys || []).includes('cookie_analytics')}}">
                   <on type="change">
                     <!-- 동의 항목 개별 선택 (위와 같은 형태의 다음 항목) -->
                     <sequence>
@@ -174,10 +174,10 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.consent.category_cookie_analytics</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.consent.category_cookie_analytics</span>
               </label>
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{(_local.filter.consentKeys || []).includes('cookie_marketing')}}">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.consentKeys || []).includes('cookie_marketing')}}">
                   <on type="change">
                     <!-- 동의 항목 개별 선택 (위와 같은 형태의 마지막 항목) -->
                     <sequence>
@@ -186,15 +186,15 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.consent.category_cookie_marketing</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.consent.category_cookie_marketing</span>
               </label>
             </div>
           </div>
-          <div data-ref="action_filter" class="filter-row">
-            <span class="filter-label w-32">$t:sirsoft-gdpr.admin.consent_log.filter.action_label</span>
-            <div class="flex-center flex-wrap gap-2">
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{!_local.filter.actions || _local.filter.actions.length === 0}}">
+          <div data-ref="action_filter" class="gdpr-filter-row">
+            <span class="gdpr-filter-label gdpr:w-32">$t:sirsoft-gdpr.admin.consent_log.filter.action_label</span>
+            <div class="gdpr-flex-center gdpr:flex-wrap gdpr:gap-2">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{!_local.filter.actions || _local.filter.actions.length === 0}}">
                   <on type="change">
                     <!-- 동작 필터 전체 해제 — 동의 항목 쪽과 같은 규칙(빈 배열 = 전체) -->
                     <sequence>
@@ -203,10 +203,10 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.filter.option_all</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.admin.consent_log.filter.option_all</span>
               </label>
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{(_local.filter.actions || []).includes('granted')}}">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.actions || []).includes('granted')}}">
                   <on type="change">
                     <!-- 동작 개별 선택 — 체크 상태에 따라 배열에서 넣고 빼고 바로 검색한다 -->
                     <sequence>
@@ -215,10 +215,10 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.action.granted</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.admin.consent_log.action.granted</span>
               </label>
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{(_local.filter.actions || []).includes('revoked')}}">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.actions || []).includes('revoked')}}">
                   <on type="change">
                     <!-- 동작 개별 선택 (위와 같은 형태의 다음 항목) -->
                     <sequence>
@@ -227,11 +227,11 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.action.revoked</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.admin.consent_log.action.revoked</span>
               </label>
               <!-- 거부 필터 (이슈 #430) — action=rejected 행만 조회. 백엔드 actions[] whereIn 이 rejected 를 자동 지원하므로 백엔드 무수정. -->
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{(_local.filter.actions || []).includes('rejected')}}">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.actions || []).includes('rejected')}}">
                   <on type="change">
                     <!-- 거부 이력 필터. 체크를 켜고 끌 때마다 목록을 다시 부른다. 값을 배열에서 빼고 다시 넣는 식으로 쓰는 것은 같은 값이 두 번 들어가는 것을 막기 위해서다 -->
                     <sequence>
@@ -240,15 +240,15 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.action.rejected</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.admin.consent_log.action.rejected</span>
               </label>
             </div>
           </div>
-          <div data-ref="source_filter" class="filter-row">
-            <span class="filter-label w-32">$t:sirsoft-gdpr.admin.consent_log.filter.source_label</span>
-            <div class="flex-center flex-wrap gap-2">
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{!_local.filter.sources || _local.filter.sources.length === 0}}">
+          <div data-ref="source_filter" class="gdpr-filter-row">
+            <span class="gdpr-filter-label gdpr:w-32">$t:sirsoft-gdpr.admin.consent_log.filter.source_label</span>
+            <div class="gdpr-flex-center gdpr:flex-wrap gdpr:gap-2">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{!_local.filter.sources || _local.filter.sources.length === 0}}">
                   <on type="change">
                     <!-- 수집 경로 필터 전체 해제 — 위 둘과 같은 규칙(빈 배열 = 전체) -->
                     <sequence>
@@ -257,10 +257,10 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.filter.option_all</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.admin.consent_log.filter.option_all</span>
               </label>
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{(_local.filter.sources || []).includes('banner')}}">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.sources || []).includes('banner')}}">
                   <on type="change">
                     <!-- 수집 경로 개별 선택 — 체크 상태에 따라 배열에서 넣고 빼고 바로 검색한다 -->
                     <sequence>
@@ -269,10 +269,10 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.source.banner</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.admin.consent_log.source.banner</span>
               </label>
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{(_local.filter.sources || []).includes('preference_center')}}">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.sources || []).includes('preference_center')}}">
                   <on type="change">
                     <!-- 수집 경로 개별 선택 (위와 같은 형태의 다음 항목) -->
                     <sequence>
@@ -281,10 +281,10 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.source.preference_center</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.admin.consent_log.source.preference_center</span>
               </label>
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{(_local.filter.sources || []).includes('mypage')}}">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.sources || []).includes('mypage')}}">
                   <on type="change">
                     <!-- 수집 경로 개별 선택 (위와 같은 형태의 마지막 항목) -->
                     <sequence>
@@ -293,10 +293,10 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.source.mypage</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.admin.consent_log.source.mypage</span>
               </label>
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{(_local.filter.sources || []).includes('register')}}">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.sources || []).includes('register')}}">
                   <on type="change">
                     <!-- 가입 시점에 받은 동의만 추린다. 유입 경로별로 동의를 나눠 보는 것이 이 필터 묶음의 목적이다 -->
                     <sequence>
@@ -305,10 +305,10 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.source.register</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.admin.consent_log.source.register</span>
               </label>
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{(_local.filter.sources || []).includes('mypage_renew_all')}}">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.sources || []).includes('mypage_renew_all')}}">
                   <on type="change">
                     <!-- 마이페이지에서 전체 재동의를 눌러 들어온 동의만 추린다. 정책 버전을 새로 발행한 뒤 재동의가 실제로 걷혔는지 확인할 때 쓴다 -->
                     <sequence>
@@ -317,10 +317,10 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.source.mypage_renew_all</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.admin.consent_log.source.mypage_renew_all</span>
               </label>
-              <label class="inline-clickable">
-                <input type="checkbox" class="checkbox" checked="{{(_local.filter.sources || []).includes('withdraw')}}">
+              <label class="gdpr-inline-clickable">
+                <input type="checkbox" class="gdpr-checkbox" checked="{{(_local.filter.sources || []).includes('withdraw')}}">
                   <on type="change">
                     <!-- 회원탈퇴로 자동 철회된 기록만 추린다. 사람이 누른 철회와 시스템이 남긴 철회를 갈라 봐야 탈퇴 정리가 실제로 돌았는지 확인할 수 있다 — 이 출처가 필터에 없으면 그 기록은 어떤 조합으로도 골라낼 수 없었다. -->
                     <sequence>
@@ -329,12 +329,12 @@
                     </sequence>
                   </on>
                 </input>
-                <span class="text-label">$t:sirsoft-gdpr.admin.consent_log.source.withdraw</span>
+                <span class="gdpr-text-label">$t:sirsoft-gdpr.admin.consent_log.source.withdraw</span>
               </label>
             </div>
           </div>
-          <div data-ref="clear_filters_row" data-if="{{!!(query.email || query.session_id || query['consent_keys[]'] || query['actions[]'] || query['sources[]'])}}" class="flex justify-end mt-2">
-            <button type="button" class="text-tertiary hover:text-gray-700 dark:hover:text-gray-200 underline">
+          <div data-ref="clear_filters_row" data-if="{{!!(query.email || query.session_id || query['consent_keys[]'] || query['actions[]'] || query['sources[]'])}}" class="gdpr:flex gdpr:justify-end gdpr:mt-2">
+            <button type="button" class="gdpr-text-tertiary gdpr:hover:text-gray-700 gdpr:dark:hover:text-gray-200 gdpr:underline">
               <on type="click">
                 <action-ref name="clearFilters"/>
               </on>
@@ -346,24 +346,24 @@
       <data-grid :pageHrefMergeQuery="true" pageHref="/admin/plugins/sirsoft-gdpr/consent-log?page={page}" data-type="composite" data-ref="gdpr_consent_log_datagrid" data="{{gdprConsentLog?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{gdprConsentLog?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{gdprConsentLog?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{gdprConsentLog?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" :expandable="true" emptyMessage="{{gdprConsentLog === undefined ? '' : $t('sirsoft-gdpr.admin.consent_log.empty')}}">
         <blur-until-loaded sources="gdprConsentLog"/>
         <expand>
-          <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-3">
-            <div class="grid-2col-responsive">
+          <div class="gdpr:p-4 gdpr:bg-gray-50 gdpr:dark:bg-gray-900 gdpr:space-y-3">
+            <div class="gdpr-grid-2col-responsive">
               <div>
-                <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">$t:sirsoft-gdpr.admin.consent_log.detail.session_id_label</span>
-                <span class="block text-xs font-mono text-gray-700 dark:text-gray-300 break-all mt-0.5">{{row.session_id ?? '-'}}</span>
+                <span class="gdpr:block gdpr:text-xs gdpr:font-semibold gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:uppercase gdpr:tracking-wide">$t:sirsoft-gdpr.admin.consent_log.detail.session_id_label</span>
+                <span class="gdpr:block gdpr:text-xs gdpr:font-mono gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:break-all gdpr-break-all gdpr:mt-0.5">{{row.session_id ?? '-'}}</span>
               </div>
               <div>
-                <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">$t:sirsoft-gdpr.admin.consent_log.detail.user_agent_label</span>
-                <span class="block text-xs text-gray-700 dark:text-gray-300 break-all mt-0.5">{{row.user_agent ?? '-'}}</span>
+                <span class="gdpr:block gdpr:text-xs gdpr:font-semibold gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:uppercase gdpr:tracking-wide">$t:sirsoft-gdpr.admin.consent_log.detail.user_agent_label</span>
+                <span class="gdpr:block gdpr:text-xs gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:break-all gdpr-break-all gdpr:mt-0.5">{{row.user_agent ?? '-'}}</span>
               </div>
-              <div data-if="{{(row.categories_snapshot?.length ?? 0) > 0}}" class="md:col-span-2">
-                <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">$t:sirsoft-gdpr.admin.consent_log.detail.categories_label</span>
-                <span class="block text-tertiary mb-2">$t:sirsoft-gdpr.admin.consent_log.detail.categories_hint</span>
-                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded divide-y divide-gray-200 dark:divide-gray-700">
-                  <div data-each="snapshot_item in row.categories_snapshot" class="flex-between gap-3 px-3 py-2 text-xs">
-                    <span class="text-gray-700 dark:text-gray-300">{{$t(snapshot_item.label_key) ?? snapshot_item.key}}</span>
-                    <span data-if="{{snapshot_item.granted}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900 dark:text-green-300">$t:sirsoft-gdpr.admin.consent_log.detail.snapshot_granted</span>
-                    <span data-if="{{!snapshot_item.granted}}" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.admin.consent_log.detail.snapshot_revoked</span>
+              <div data-if="{{(row.categories_snapshot?.length ?? 0) > 0}}" class="gdpr:md:col-span-2">
+                <span class="gdpr:block gdpr:text-xs gdpr:font-semibold gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:uppercase gdpr:tracking-wide gdpr:mb-1">$t:sirsoft-gdpr.admin.consent_log.detail.categories_label</span>
+                <span class="gdpr:block gdpr-text-tertiary gdpr:mb-2">$t:sirsoft-gdpr.admin.consent_log.detail.categories_hint</span>
+                <div class="gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:rounded gdpr:divide-y gdpr:divide-gray-200 gdpr:dark:divide-gray-700">
+                  <div data-each="snapshot_item in row.categories_snapshot" class="gdpr-flex-between gdpr:gap-3 gdpr:px-3 gdpr:py-2 gdpr:text-xs">
+                    <span class="gdpr:text-gray-700 gdpr:dark:text-gray-300">{{$t(snapshot_item.label_key) ?? snapshot_item.key}}</span>
+                    <span data-if="{{snapshot_item.granted}}" class="gdpr:inline-flex gdpr:items-center gdpr:px-2 gdpr:py-0.5 gdpr:rounded gdpr:text-xs gdpr:font-medium gdpr:bg-green-50 gdpr:text-green-700 gdpr:dark:bg-green-900 gdpr:dark:text-green-300">$t:sirsoft-gdpr.admin.consent_log.detail.snapshot_granted</span>
+                    <span data-if="{{!snapshot_item.granted}}" class="gdpr:inline-flex gdpr:items-center gdpr:px-2 gdpr:py-0.5 gdpr:rounded gdpr:text-xs gdpr:font-medium gdpr:bg-gray-100 gdpr:text-gray-600 gdpr:dark:bg-gray-700 gdpr:dark:text-gray-300">$t:sirsoft-gdpr.admin.consent_log.detail.snapshot_revoked</span>
                   </div>
                 </div>
               </div>
@@ -372,34 +372,34 @@
         </expand>
         <column field="created_at" header="$t:sirsoft-gdpr.admin.consent_log.col.created_at" :sortable="false" width="170px">
           <cell>
-            <span class="text-label whitespace-nowrap">{{row.created_at ?? '-'}}</span>
+            <span class="gdpr-text-label gdpr:whitespace-nowrap">{{row.created_at ?? '-'}}</span>
           </cell>
         </column>
         <column field="subject" header="$t:sirsoft-gdpr.admin.consent_log.col.subject" :sortable="false" width="260px">
           <cell>
             <!-- 회원 row 의 이름·이메일 클릭 시 회원 상세 페이지로 이동 (검토 #26). DPO 가 이상 패턴 발견 시 즉시 회원 상세 조회 가능. 게스트 row 는 user_id 가 없어 분기가 다름. -->
-            <a href="/admin/users/{{row.user.uuid}}" data-if="{{!!row.user_id}}" title="$t:sirsoft-gdpr.admin.consent_log.view_member_tooltip" class="button inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 hover:underline cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+            <a href="/admin/users/{{row.user.uuid}}" data-if="{{!!row.user_id}}" title="$t:sirsoft-gdpr.admin.consent_log.view_member_tooltip" class="gdpr-button gdpr:inline-flex gdpr:items-center gdpr:px-2 gdpr:py-0.5 gdpr:rounded-full gdpr:text-xs gdpr:font-medium gdpr:bg-blue-100 gdpr:text-blue-800 gdpr:dark:bg-blue-900/30 gdpr:dark:text-blue-300 gdpr:hover:bg-blue-200 gdpr:dark:hover:bg-blue-900/50 gdpr:hover:underline gdpr:cursor-pointer gdpr:focus:outline-none gdpr:focus:ring-2 gdpr:focus:ring-blue-500 gdpr:dark:focus:ring-blue-400">
               <on type="click">
                 <navigate/>
               </on>
               <span>{{(row.user?.name ?? '') + ' (' + (row.user?.email ?? '') + ')'}}</span>
             </a>
-            <span data-if="{{!row.user_id}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-mono">{{$t('sirsoft-gdpr.admin.consent_log.guest_label') + ' ' + (row.session_id ? row.session_id.substring(0, 8) + '…' : '-')}}</span>
+            <span data-if="{{!row.user_id}}" class="gdpr:inline-flex gdpr:items-center gdpr:px-2 gdpr:py-0.5 gdpr:rounded-full gdpr:text-xs gdpr:font-medium gdpr:bg-gray-100 gdpr:text-gray-700 gdpr:dark:bg-gray-700 gdpr:dark:text-gray-300 gdpr:font-mono">{{$t('sirsoft-gdpr.admin.consent_log.guest_label') + ' ' + (row.session_id ? row.session_id.substring(0, 8) + '…' : '-')}}</span>
           </cell>
         </column>
         <column field="consent_key" header="$t:sirsoft-gdpr.admin.consent_log.col.consent_key" :sortable="false" width="120px">
           <cell>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">{{$t('sirsoft-gdpr.consent.category_' + (row.consent_key ?? 'cookie_necessary'))}}</span>
+            <span class="gdpr:inline-flex gdpr:items-center gdpr:px-2 gdpr:py-0.5 gdpr:rounded-full gdpr:text-xs gdpr:font-medium gdpr:bg-indigo-100 gdpr:text-indigo-800 gdpr:dark:bg-indigo-900/30 gdpr:dark:text-indigo-300">{{$t('sirsoft-gdpr.consent.category_' + (row.consent_key ?? 'cookie_necessary'))}}</span>
           </cell>
         </column>
         <column field="action" header="$t:sirsoft-gdpr.admin.consent_log.col.action" :sortable="false" width="100px">
           <cell>
-            <span class="{{row.action === 'granted' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : (row.action === 'rejected' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : (row.action === 'revoked' ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'))}}">{{$t('sirsoft-gdpr.admin.consent_log.action.' + (row.action ?? 'granted'))}}</span>
+            <span class="{{row.action === 'granted' ? 'gdpr:inline-flex gdpr:items-center gdpr:px-2 gdpr:py-0.5 gdpr:rounded-full gdpr:text-xs gdpr:font-medium gdpr:bg-green-100 gdpr:text-green-800 gdpr:dark:bg-green-900/30 gdpr:dark:text-green-300' : (row.action === 'rejected' ? 'gdpr:inline-flex gdpr:items-center gdpr:px-2 gdpr:py-0.5 gdpr:rounded-full gdpr:text-xs gdpr:font-medium gdpr:bg-amber-100 gdpr:text-amber-800 gdpr:dark:bg-amber-900/30 gdpr:dark:text-amber-300' : (row.action === 'revoked' ? 'gdpr:inline-flex gdpr:items-center gdpr:px-2 gdpr:py-0.5 gdpr:rounded-full gdpr:text-xs gdpr:font-medium gdpr:bg-red-100 gdpr:text-red-800 gdpr:dark:bg-red-900/30 gdpr:dark:text-red-300' : 'gdpr:inline-flex gdpr:items-center gdpr:px-2 gdpr:py-0.5 gdpr:rounded-full gdpr:text-xs gdpr:font-medium gdpr:bg-gray-100 gdpr:text-gray-700 gdpr:dark:bg-gray-700 gdpr:dark:text-gray-300'))}}">{{$t('sirsoft-gdpr.admin.consent_log.action.' + (row.action ?? 'granted'))}}</span>
           </cell>
         </column>
         <column field="source" header="$t:sirsoft-gdpr.admin.consent_log.col.source" :sortable="false" width="130px">
           <cell>
-            <span class="text-body">{{row.source ? $t('sirsoft-gdpr.admin.consent_log.source.' + row.source) : '-'}}</span>
+            <span class="gdpr-text-body">{{row.source ? $t('sirsoft-gdpr.admin.consent_log.source.' + row.source) : '-'}}</span>
           </cell>
         </column>
         <column field="policy_version" header="$t:sirsoft-gdpr.admin.consent_log.col.policy_version" :sortable="false" width="150px">
@@ -423,7 +423,7 @@
         </column>
         <column field="ip_address" header="$t:sirsoft-gdpr.admin.consent_log.col.ip" :sortable="false" width="130px">
           <cell>
-            <span class="text-xs font-mono text-gray-600 dark:text-gray-400">{{row.ip_address ?? '-'}}</span>
+            <span class="gdpr:text-xs gdpr:font-mono gdpr:text-gray-600 gdpr:dark:text-gray-400">{{row.ip_address ?? '-'}}</span>
           </cell>
         </column>
         <on type="change" event="onPageChange">

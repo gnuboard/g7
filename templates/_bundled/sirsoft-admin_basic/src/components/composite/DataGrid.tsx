@@ -1,3 +1,4 @@
+// e2e:allow 행 클래스 식에 선택 여부($selected)를 더한 표시 변경 — Vitest(DataGrid.rowClassName)와 게시판 글 목록 브라우저 계산값 실측(라이트·다크 선택·hover, #816)으로 잠근다.
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import type { EditorAttrs } from '../../types';
 import { Table } from '../basic/Table';
@@ -457,7 +458,9 @@ export interface DataGridProps {
    * 엔진은 원문 그대로 넘기고(components.json skipBindingKeys) DataGrid 가 행마다 푼다.
    * 예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`
    *
-   * 선택 행 강조(`bg-blue-50`)보다 먼저 놓여 선택 상태가 덮어쓴다.
+   * 선택 행 강조보다 먼저 놓여 선택 상태가 덮어쓴다. 다만 확장 앞글자가 붙은 배경 클래스는 층 밖이라
+   * 선택 강조를 늘 이기므로, 식 안의 `$selected`(그 행이 선택됐는지)로 선택 색을 직접 고른다
+   * (예: `{{row.row_type === 'notice' ? ($selected ? '<선택 배경>' : '<기본 배경>') : ''}}`, 실제 예는 docs/frontend/component-props.md).
    */
   rowClassName?: string;
 
@@ -590,12 +593,14 @@ const evaluateSubRowCondition = (condition: string | undefined, row: any): boole
  * 엔진이 컴포넌트 props 를 그릴 때 이 식을 row 없이 미리 풀면 빈 문자열이 되므로, components.json 의
  * skipBindingKeys 로 원문을 받아 여기서 엔진의 바인딩 해석기(`G7Core.getDataBindingEngine`)로 푼다 —
  * subRowCondition 이 엔진 판정에 위임하는 것과 같은 방식이다. 식이 없는 고정 문자열은 그대로 쓴다.
+ * 식은 `$selected` 로 그 행의 선택 여부를 읽을 수 있다(확장 앞글자 배경이 선택 강조를 이기는 것을 피하려고, #816).
  *
  * @param rowClassName 행 클래스 문자열 또는 행 표현식
  * @param row 현재 행 데이터
+ * @param selected 그 행이 선택됐는지
  * @returns 그 행에 붙일 클래스
  */
-const resolveRowClassName = (rowClassName: string | undefined, row: any): string => {
+const resolveRowClassName = (rowClassName: string | undefined, row: any, selected = false): string => {
   if (!rowClassName) return '';
   if (!rowClassName.includes('{{')) return rowClassName;
 
@@ -606,7 +611,7 @@ const resolveRowClassName = (rowClassName: string | undefined, row: any): string
   }
 
   try {
-    const resolved = engine.resolveBindings(rowClassName, { row, item: row, $item: row }, { skipCache: true });
+    const resolved = engine.resolveBindings(rowClassName, { row, item: row, $item: row, $selected: selected }, { skipCache: true });
     return typeof resolved === 'string' ? resolved : '';
   } catch (error) {
     logger.warn('행 클래스 해석 실패:', error);
@@ -1409,6 +1414,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
     const expanded = isRowExpanded(rowId);
     // 표 보기의 tr 과 같은 행 클래스(rowClassName)를 카드에도 붙인다 — 좁은 화면 카드 보기에서 공지·답글 카드의
     // 배경 구분이 사라지던 것(7.1.0 실측). 행 클래스가 배경을 주면 기본 흰 배경을 빼 덮이지 않게 한다.
+    // 카드 보기는 선택 강조 색이 없으므로(선택은 체크박스로만 보인다) `$selected` 를 넘기지 않는다.
     const rowCls = resolveRowClassName(rowClassName, row);
     const cardBg = /(^|\s)bg-/.test(rowCls) ? '' : 'bg-white dark:bg-gray-800';
 
@@ -1760,7 +1766,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                     <Tr
                       className={`${
                         onRowClick ? 'cursor-pointer' : ''
-                      } ${resolveRowClassName(rowClassName, row)} hover:bg-gray-50 dark:hover:bg-gray-700/30 ${
+                      } ${resolveRowClassName(rowClassName, row, selectedIds.includes(row[idField]))} hover:bg-gray-50 dark:hover:bg-gray-700/30 ${
                         selectedIds.includes(row[idField]) ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''
                       } ${subRowClassName && rowIndex > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''}`}
                       onClick={() => onRowClick?.(row)}

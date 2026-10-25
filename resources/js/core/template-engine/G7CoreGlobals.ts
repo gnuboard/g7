@@ -52,6 +52,8 @@ import {
   conditionalClass,
   joinClasses,
 } from './helpers';
+// 확장 앞글자 해석은 StyleHelpers 에서 직접 가져온다(helpers 색인을 목록으로 모킹하는 테스트와 무관하게)
+import { splitExtensionClassPrefix } from './helpers/StyleHelpers';
 import type { SlotContextValue } from './SlotContext';
 import {
   useControllableState,
@@ -844,18 +846,58 @@ function initComponentEventSystem(G7Core: any): void {
       return results;
     },
     /**
-     * 특정 이벤트의 모든 리스너를 제거합니다.
+     * 이벤트 구독을 해제합니다.
+     *
+     * - `off(eventName, callback)`: 그 콜백만 지운다 — 같은 이벤트의 다른 구독자는 그대로 받는다.
+     * - `off(eventName)`: 그 이벤트의 구독을 **전부** 지운다. 다른 컴포넌트·확장의 구독까지 끊기므로
+     *   구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.86.0).
+     *
+     * @deprecated 콜백 없는 `off(eventName)` 은 폐지 예정이다. `on()` 이 돌려준 해제 함수나
+     *   `off(eventName, callback)` 을 쓴다. 콜백 있는 형태는 폐지 대상이 아니다.
      * @param eventName 이벤트명
+     * @param callback 지울 콜백 (`on` 에 넘긴 것과 같은 참조)
      */
-    off: (eventName: string) => {
+    off: (eventName: string, callback?: (data?: any) => void | Promise<any>) => {
+      const listeners = componentEventListeners.get(eventName);
+
+      if (callback) {
+        if (listeners?.delete(callback)) {
+          if (listeners.size === 0) {
+            componentEventListeners.delete(eventName);
+          }
+          // DevTools 추적 — 구독 1건 해제
+          devTools.trackEventUnsubscribe(eventName);
+        }
+        return;
+      }
+
+      const removed = listeners?.size ?? 0;
+      if (removed > 0) {
+        console.warn(
+          `[G7] componentEvent.off("${eventName}") 가 콜백 없이 호출되어 구독 ${removed}개를 모두 지웠습니다. ` +
+            '다른 컴포넌트·확장의 구독도 함께 끊깁니다 — 구독할 때 받은 해제 함수나 off(name, callback) 을 쓰세요.'
+        );
+      }
       componentEventListeners.delete(eventName);
       // DevTools 추적
       devTools.trackEventOff(eventName);
     },
     /**
      * 모든 이벤트 리스너를 제거합니다.
+     *
+     * 다른 컴포넌트·확장의 구독까지 끊으므로 구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.86.0).
      */
     clear: () => {
+      let removed = 0;
+      componentEventListeners.forEach((set) => {
+        removed += set.size;
+      });
+      if (removed > 0) {
+        console.warn(
+          `[G7] componentEvent.clear() 가 모든 이벤트의 구독 ${removed}개를 지웠습니다. ` +
+            '다른 컴포넌트·확장의 구독도 함께 끊깁니다 — 자기 구독은 해제 함수나 off(name, callback) 으로 지우세요.'
+        );
+      }
       componentEventListeners.clear();
       // DevTools 추적
       devTools.trackEventClear();
@@ -3101,6 +3143,18 @@ function initStyleAPI(G7Core: any): void {
      * ```
      */
     mergeClasses,
+    /**
+     * 확장 CSS 접두 빌드 앞글자(`ecommerce:`)를 떼어 `{ prefix, rest }` 로 돌려줍니다.
+     * className 을 Tailwind 이름으로 해석하는 템플릿 컴포넌트가 확장이 준 클래스를 읽을 때 씁니다.
+     *
+     * @example
+     * ```typescript
+     * G7Core.style.splitExtensionClassPrefix('ecommerce:w-44') // { prefix: 'ecommerce:', rest: 'w-44' }
+     * G7Core.style.splitExtensionClassPrefix('md:w-44')        // { prefix: '', rest: 'md:w-44' }
+     * ```
+     * @since engine-v1.83.0
+     */
+    splitExtensionClassPrefix,
     /**
      * 조건에 따라 클래스를 적용합니다.
      *

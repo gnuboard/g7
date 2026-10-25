@@ -18,7 +18,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
+                "className": "ecommerce:flex ecommerce:flex-col ecommerce:max-h-[calc(90vh-140px)] ecommerce:-my-4"
             },
             "children": [
                 {
@@ -26,7 +26,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-1 overflow-y-auto space-y-4 px-4 py-4 pr-2"
+                        "className": "ecommerce:flex-1 ecommerce:overflow-y-auto ecommerce:space-y-4 ecommerce:px-4 ecommerce:py-4 ecommerce:pr-2"
                     },
                     "children": [
                         {
@@ -34,14 +34,14 @@
                             "name": "Div",
                             "if": "{{_global.identity_policy_form_modal?.errors}}",
                             "props": {
-                                "className": "alert-danger"
+                                "className": "ecommerce-alert-danger"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex gap-2"
+                                        "className": "ecommerce:flex ecommerce:gap-2"
                                     },
                                     "children": [
                                         {
@@ -49,21 +49,21 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "triangle-exclamation",
-                                                "className": "text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                                "className": "ecommerce:text-xl ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-1"
+                                                "className": "ecommerce:flex-1"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "ecommerce-tone-error-strong text-sm font-medium"
+                                                        "className": "ecommerce-tone-error-strong ecommerce:text-sm ecommerce:font-medium"
                                                     },
                                                     "text": "{{_global.identity_policy_form_modal?.errors?.message ?? '$t:common.validation_error'}}"
                                                 },
@@ -76,14 +76,14 @@
                                                         "item_var": "msg"
                                                     },
                                                     "props": {
-                                                        "className": "mt-1 list-disc list-inside space-y-0.5"
+                                                        "className": "ecommerce:mt-1 ecommerce:list-disc ecommerce:list-inside ecommerce:space-y-0.5"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Li",
                                                             "props": {
-                                                                "className": "ecommerce-tone-error-soft text-xs"
+                                                                "className": "ecommerce-tone-error-soft ecommerce:text-xs"
                                                             },
                                                             "text": "{{msg}}"
                                                         }
@@ -103,7 +103,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:admin.identity.policies.form.key"
                                 },
@@ -125,7 +125,7 @@
                                         "type": "text",
                                         "value": "{{_global.identity_policy_form_modal?.form?.key ?? ''}}",
                                         "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
-                                        "className": "{{_global.identity_policy_form_modal?.errors?.errors?.key ? 'input-error font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900'}}"
+                                        "className": "{{_global.identity_policy_form_modal?.errors?.errors?.key ? 'ecommerce-input-error ecommerce:font-mono ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900' : 'ecommerce:font-mono ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900'}}"
                                     }
                                 },
                                 {
@@ -133,7 +133,7 @@
                                     "name": "Span",
                                     "if": "{{_global.identity_policy_form_modal?.errors?.errors?.key}}",
                                     "props": {
-                                        "className": "form-error"
+                                        "className": "ecommerce-form-error"
                                     },
                                     "text": "{{_global.identity_policy_form_modal?.errors?.errors?.key?.[0] ?? ''}}"
                                 }
@@ -143,7 +143,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "grid-2col-responsive"
+                                "className": "ecommerce-grid-2col-responsive"
                             },
                             "children": [
                                 {
@@ -154,7 +154,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:admin.identity.policies.form.scope"
                                         },
@@ -175,7 +175,7 @@
                                             "props": {
                                                 "value": "{{_global.identity_policy_form_modal?.form?.scope ?? 'route'}}",
                                                 "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
-                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.scope ? 'input-error disabled:bg-gray-100 dark:disabled:bg-gray-900' : ' disabled:bg-gray-100 dark:disabled:bg-gray-900'}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.scope ? 'ecommerce:border-red-500 ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900' : ' ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900'}}",
                                                 "options": [
                                                     {
                                                         "value": "route",
@@ -197,7 +197,7 @@
                                             "name": "Span",
                                             "if": "{{_global.identity_policy_form_modal?.errors?.errors?.scope}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "ecommerce-form-error"
                                             },
                                             "text": "{{_global.identity_policy_form_modal?.errors?.errors?.scope?.[0] ?? ''}}"
                                         }
@@ -211,7 +211,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:admin.identity.policies.form.target"
                                         },
@@ -233,7 +233,7 @@
                                                 "type": "text",
                                                 "value": "{{_global.identity_policy_form_modal?.form?.target ?? ''}}",
                                                 "disabled": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
-                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.target ? 'input-error font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900' : 'font-mono disabled:bg-gray-100 dark:disabled:bg-gray-900'}}"
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.target ? 'ecommerce-input-error ecommerce:font-mono ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900' : 'ecommerce:font-mono ecommerce:disabled:bg-gray-100 ecommerce:dark:disabled:bg-gray-900'}}"
                                             }
                                         },
                                         {
@@ -241,7 +241,7 @@
                                             "name": "Span",
                                             "if": "{{_global.identity_policy_form_modal?.errors?.errors?.target}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "ecommerce-form-error"
                                             },
                                             "text": "{{_global.identity_policy_form_modal?.errors?.errors?.target?.[0] ?? ''}}"
                                         }
@@ -253,7 +253,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "grid-2col-responsive"
+                                "className": "ecommerce-grid-2col-responsive"
                             },
                             "children": [
                                 {
@@ -264,7 +264,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:admin.identity.policies.form.purpose"
                                         },
@@ -284,7 +284,7 @@
                                             ],
                                             "props": {
                                                 "value": "{{_global.identity_policy_form_modal?.form?.purpose ?? 'sensitive_action'}}",
-                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.purpose ? 'input-error' : ''}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.purpose ? 'ecommerce:border-red-500' : ''}}",
                                                 "options": "{{(ecommerceIdentityPurposes?.data ?? []).map(function(p) { return {value: p.id, label: p.label ?? p.id}; })}}"
                                             }
                                         },
@@ -293,7 +293,7 @@
                                             "name": "Span",
                                             "if": "{{_global.identity_policy_form_modal?.errors?.errors?.purpose}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "ecommerce-form-error"
                                             },
                                             "text": "{{_global.identity_policy_form_modal?.errors?.errors?.purpose?.[0] ?? ''}}"
                                         }
@@ -307,7 +307,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:admin.identity.policies.form.provider_id"
                                         },
@@ -339,7 +339,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "grid-2col-responsive"
+                                "className": "ecommerce-grid-2col-responsive"
                             },
                             "children": [
                                 {
@@ -350,7 +350,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:admin.identity.policies.form.grace_minutes"
                                         },
@@ -373,7 +373,7 @@
                                                 "value": "{{_global.identity_policy_form_modal?.form?.grace_minutes ?? 0}}",
                                                 "min": 0,
                                                 "max": 1440,
-                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes ? 'input-error' : ''}}"
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes ? 'ecommerce-input-error' : ''}}"
                                             }
                                         },
                                         {
@@ -381,7 +381,7 @@
                                             "name": "Span",
                                             "if": "{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "ecommerce-form-error"
                                             },
                                             "text": "{{_global.identity_policy_form_modal?.errors?.errors?.grace_minutes?.[0] ?? ''}}"
                                         }
@@ -395,7 +395,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:admin.identity.policies.form.applies_to"
                                         },
@@ -415,7 +415,7 @@
                                             ],
                                             "props": {
                                                 "value": "{{_global.identity_policy_form_modal?.form?.applies_to ?? 'both'}}",
-                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.applies_to ? 'input-error' : ''}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.applies_to ? 'ecommerce:border-red-500' : ''}}",
                                                 "options": [
                                                     {
                                                         "value": "self",
@@ -437,7 +437,7 @@
                                             "name": "Span",
                                             "if": "{{_global.identity_policy_form_modal?.errors?.errors?.applies_to}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "ecommerce-form-error"
                                             },
                                             "text": "{{_global.identity_policy_form_modal?.errors?.errors?.applies_to?.[0] ?? ''}}"
                                         }
@@ -453,7 +453,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:admin.identity.policies.form.priority"
                                 },
@@ -476,14 +476,14 @@
                                         "value": "{{_global.identity_policy_form_modal?.form?.priority ?? 100}}",
                                         "min": 0,
                                         "max": 65535,
-                                        "className": "{{_global.identity_policy_form_modal?.errors?.errors?.priority ? 'input-error' : ''}}"
+                                        "className": "{{_global.identity_policy_form_modal?.errors?.errors?.priority ? 'ecommerce-input-error' : ''}}"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-hint mt-1"
+                                        "className": "ecommerce-text-hint ecommerce:mt-1"
                                     },
                                     "text": "$t:admin.identity.policies.form.priority_desc"
                                 },
@@ -492,7 +492,7 @@
                                     "name": "Span",
                                     "if": "{{_global.identity_policy_form_modal?.errors?.errors?.priority}}",
                                     "props": {
-                                        "className": "form-error"
+                                        "className": "ecommerce-form-error"
                                     },
                                     "text": "{{_global.identity_policy_form_modal?.errors?.errors?.priority?.[0] ?? ''}}"
                                 }
@@ -502,7 +502,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "grid-2col-responsive"
+                                "className": "ecommerce-grid-2col-responsive"
                             },
                             "children": [
                                 {
@@ -513,7 +513,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:admin.identity.policies.form.fail_mode"
                                         },
@@ -533,7 +533,7 @@
                                             ],
                                             "props": {
                                                 "value": "{{_global.identity_policy_form_modal?.form?.fail_mode ?? 'block'}}",
-                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode ? 'input-error' : ''}}",
+                                                "className": "{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode ? 'ecommerce:border-red-500' : ''}}",
                                                 "options": [
                                                     {
                                                         "value": "block",
@@ -551,7 +551,7 @@
                                             "name": "Span",
                                             "if": "{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "ecommerce-form-error"
                                             },
                                             "text": "{{_global.identity_policy_form_modal?.errors?.errors?.fail_mode?.[0] ?? ''}}"
                                         }
@@ -561,14 +561,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-end justify-between gap-2 pb-2"
+                                        "className": "ecommerce:flex ecommerce:items-end ecommerce:justify-between ecommerce:gap-2 ecommerce:pb-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:admin.identity.policies.form.enabled"
                                         },
@@ -604,7 +604,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:admin.identity.policies.form.signup_stage"
                                 },
@@ -645,7 +645,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-hint mt-1"
+                                        "className": "ecommerce-text-hint ecommerce:mt-1"
                                     },
                                     "text": "$t:admin.identity.policies.form.signup_stage_desc"
                                 }
@@ -656,7 +656,7 @@
                             "name": "Div",
                             "if": "{{!_global.identity_policy_form_modal?.isNew && _global.identity_policy_form_modal?.form?.source_type !== 'admin'}}",
                             "props": {
-                                "className": "alert-warning ecommerce-tone-warning-soft text-xs"
+                                "className": "ecommerce-alert-warning ecommerce-tone-warning-soft ecommerce:text-xs"
                             },
                             "text": "$t:admin.identity.policies.form.declared_policy_notice"
                         }
@@ -667,7 +667,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center justify-end gap-2 px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800"
+                        "className": "ecommerce-flex-center ecommerce:justify-end ecommerce:gap-2 ecommerce:px-4 ecommerce:py-3 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:flex-shrink-0 ecommerce:bg-white ecommerce:dark:bg-gray-800"
                     },
                     "children": [
                         {
@@ -683,7 +683,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{_global.identity_policy_form_modal?.isSaving ?? false}}",
-                                "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
                             },
                             "children": [
                                 {
@@ -773,7 +773,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{_global.identity_policy_form_modal?.isSaving || ecommerceIdentityPolicies?.data?.abilities?.can_update !== true}}",
-                                "className": "flex-center gap-2 px-4 py-2 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg"
+                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-indigo-600 ecommerce:dark:bg-indigo-500 ecommerce:hover:bg-indigo-700 ecommerce:dark:hover:bg-indigo-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:text-white ecommerce:rounded-lg"
                             },
                             "children": [
                                 {
@@ -782,7 +782,7 @@
                                     "if": "{{_global.identity_policy_form_modal?.isSaving}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "animate-spin",
+                                        "className": "ecommerce:animate-spin",
                                         "size": "sm"
                                     }
                                 },

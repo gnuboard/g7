@@ -888,10 +888,14 @@ const unsubscribe = G7Core.componentEvent.on('eventName', (data) => {
 // 이벤트 발생
 await G7Core.componentEvent.emit('eventName', { key: 'value' });
 
-// 리스너 제거
-G7Core.componentEvent.off('eventName');
-G7Core.componentEvent.clear();  // 모든 리스너 제거
+// 구독 해제 — on() 이 돌려준 해제 함수 (권장)
+unsubscribe();
+
+// 또는 콜백 참조로 그 구독만 해제 (engine-v1.86.0)
+G7Core.componentEvent.off('eventName', callback);
 ```
+
+콜백 없는 `off('eventName')`·`clear()` 는 다른 컴포넌트·확장의 구독까지 지우므로 폐지 예정이며, 구독이 있으면 경고를 냅니다 — [G7Core.componentEvent](g7core-api-advanced.md#컴포넌트-이벤트-g7corecomponentevent) 참조.
 
 ---
 

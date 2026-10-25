@@ -28,6 +28,8 @@ const root = fragment.injections[0].components[0];
 const [trigger, panel, backdrop] = root.children;
 
 describe('관리자 통화 주입 조각 — portable 칩 전환', () => {
+  // @scenario case=currency_portable_c01
+  // @effects admin_currency_fragment_portable_chips
   it('데스크톱 기본 경로는 absolute 드롭다운을 유지한다 (회귀 방지)', () => {
     expect(root.props.className).toContain('relative');
     expect(root.props.className).not.toContain('w-full');
@@ -38,6 +40,8 @@ describe('관리자 통화 주입 조각 — portable 칩 전환', () => {
     expect(panel.if).toBe('{{_local.showCurrencyDropdown}}');
   });
 
+  // @scenario case=currency_portable_c02
+  // @effects admin_currency_fragment_portable_chips
   it('portable 에서 루트가 w-full 이 되고 hidden 게이트 표현식이 보존된다', () => {
     const cls = root.responsive.portable.props.className;
     expect(cls).toContain('w-full');
@@ -46,6 +50,8 @@ describe('관리자 통화 주입 조각 — portable 칩 전환', () => {
     expect(cls).toContain('international_shipping_enabled');
   });
 
+  // @scenario case=currency_portable_c03
+  // @effects admin_currency_fragment_portable_chips
   it('portable 트리거는 아코디언 행이 되고 접힘 상태 요약(통화·배송국가)을 노출한다', () => {
     expect(trigger.name).toBe('Button');
 
@@ -62,9 +68,11 @@ describe('관리자 통화 주입 조각 — portable 칩 전환', () => {
     expect(summary).toContain('preferredCurrency');
     expect(summary).toContain('preferredShippingCountry');
     expect(summary).toContain('chevron-down');
-    expect(summary).toContain("{{_local.showCurrencyDropdown ? 'rotate-180' : ''}}");
+    expect(summary).toContain("{{_local.showCurrencyDropdown ? 'ecommerce:rotate-180' : ''}}");
   });
 
+  // @scenario case=currency_portable_c04
+  // @effects admin_currency_fragment_portable_chips
   it('portable 패널도 _local.showCurrencyDropdown 으로 게이트된다 (기본 접힘)', () => {
     const p = panel.responsive.portable;
     // 핵심: `{{true}}` 로 강제하면 드로어에서 항상 펼쳐져 아코디언이 성립하지 않는다.
@@ -77,11 +85,15 @@ describe('관리자 통화 주입 조각 — portable 칩 전환', () => {
     expect(p.props.role).toBe('listbox');
   });
 
+  // @scenario case=currency_portable_c05
+  // @effects admin_currency_fragment_portable_chips
   it('portable 백드롭은 렌더되지 않는다 (fixed inset-0 이 드로어 전체 클릭을 가로챈다)', () => {
     expect(backdrop.props.className).toContain('fixed');
     expect(backdrop.responsive.portable.if).toBe('{{false}}');
   });
 
+  // @scenario case=currency_portable_c06
+  // @effects admin_currency_fragment_portable_chips
   it('칩 래퍼는 정적이고 iteration 은 그 자식에 걸린다', () => {
     // 엔진은 iteration 을 가진 노드를 항목 수만큼 복제한다. flex 컨테이너에 걸면
     // 컨테이너가 복제되어 칩이 세로로 쌓인다.
@@ -106,6 +118,8 @@ describe('관리자 통화 주입 조각 — portable 칩 전환', () => {
     }
   });
 
+  // @scenario case=currency_portable_c07
+  // @effects admin_currency_fragment_portable_chips
   it('portable 옵션은 rounded-full 칩이고 체크 아이콘은 숨는다', () => {
     const currencyWrapper = panel.children.find(
       (c: any) => c.responsive?.portable?.props?.className?.includes('flex-wrap'),
@@ -124,6 +138,8 @@ describe('관리자 통화 주입 조각 — portable 칩 전환', () => {
     expect(check.responsive.portable.if).toBe('{{false}}');
   });
 
+  // @scenario case=currency_portable_c08
+  // @effects admin_currency_fragment_portable_chips
   it('portable 패널은 드로어 안에서 카드 크롬을 벗는다 (언어 칩과 줄바꿈 정렬)', () => {
     const cls = panel.responsive.portable.props.className;
     // 크롬을 남기면 드로어 패딩 안에 패딩이 중첩되어 칩 가용폭이 줄고 언어 칩과 어긋난다.

@@ -9,14 +9,14 @@
     "name": "Div",
     "if": "{{_computed.activeCountrySetting}}",
     "props": {
-        "className": "admin-card"
+        "className": "ecommerce-admin-card"
     },
     "children": [
         {
             "type": "basic",
             "name": "H2",
             "props": {
-                "className": "card-title"
+                "className": "ecommerce-card-title"
             },
             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_charge"
         },
@@ -25,7 +25,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "row-stack"
+                "className": "ecommerce-row-stack"
             },
             "children": [
                 {
@@ -41,7 +41,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "children": [
                                         {
@@ -53,7 +53,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-required"
+                                                "className": "ecommerce-text-required"
                                             },
                                             "text": "*"
                                         }
@@ -74,7 +74,7 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.charge_policy'] ? 'input input-error w-full' : 'input w-full'}}",
+                                        "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.charge_policy'] ? 'ecommerce:h-9 ecommerce:border-red-500 ecommerce:w-full' : 'ecommerce:h-9 ecommerce:w-full'}}",
                                         "value": "{{_computed.activeCountrySetting?.charge_policy ?? 'fixed'}}",
                                         "options": "{{_computed.chargePolicyOptions ?? []}}",
                                         "disabled": "{{_computed.isReadOnly}}"
@@ -85,7 +85,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.charge_policy']}}",
                                     "props": {
-                                        "className": "form-error-xs"
+                                        "className": "ecommerce-form-error-xs"
                                     },
                                     "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.charge_policy'] ?? [])[0] ?? ''}}"
                                 }
@@ -107,7 +107,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.base_fee"
                                 },
@@ -115,7 +115,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "relative"
+                                        "className": "ecommerce:relative"
                                     },
                                     "children": [
                                         {
@@ -135,7 +135,7 @@
                                             ],
                                             "props": {
                                                 "type": "number",
-                                                "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.base_fee'] ? 'input input-error pr-12' : 'input pr-12'}}",
+                                                "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.base_fee'] ? 'ecommerce-input ecommerce-input-error ecommerce:pr-12' : 'ecommerce-input ecommerce:pr-12'}}",
                                                 "value": "{{_computed.activeCountrySetting?.base_fee ?? 0}}",
                                                 "min": 0,
                                                 "step": 100,
@@ -146,7 +146,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "absolute right-3 top-1/2 -translate-y-1/2 text-label-subtle"
+                                                "className": "ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-text-label-subtle"
                                             },
                                             "text": "{{_computed.defaultCurrencyCode}}"
                                         }
@@ -157,7 +157,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.base_fee']}}",
                                     "props": {
-                                        "className": "form-error-xs"
+                                        "className": "ecommerce-form-error-xs"
                                     },
                                     "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.base_fee'] ?? [])[0] ?? ''}}"
                                 }
@@ -179,7 +179,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.free_threshold"
                                 },
@@ -187,7 +187,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "relative"
+                                        "className": "ecommerce:relative"
                                     },
                                     "children": [
                                         {
@@ -207,7 +207,7 @@
                                             ],
                                             "props": {
                                                 "type": "number",
-                                                "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.free_threshold'] ? 'input input-error pr-12' : 'input pr-12'}}",
+                                                "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.free_threshold'] ? 'ecommerce-input ecommerce-input-error ecommerce:pr-12' : 'ecommerce-input ecommerce:pr-12'}}",
                                                 "value": "{{_computed.activeCountrySetting?.free_threshold ?? ''}}",
                                                 "min": 0,
                                                 "step": 1000,
@@ -219,7 +219,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "absolute right-3 top-1/2 -translate-y-1/2 text-label-subtle"
+                                                "className": "ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-text-label-subtle"
                                             },
                                             "text": "{{_computed.defaultCurrencyCode}}"
                                         }
@@ -229,7 +229,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-tertiary"
+                                        "className": "ecommerce-text-tertiary"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.free_threshold_hint"
                                 },
@@ -238,7 +238,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.free_threshold']}}",
                                     "props": {
-                                        "className": "form-error-xs"
+                                        "className": "ecommerce-form-error-xs"
                                     },
                                     "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.free_threshold'] ?? [])[0] ?? ''}}"
                                 }
@@ -260,7 +260,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.per_unit_value"
                                 },
@@ -269,7 +269,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center gap-2"
+                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2"
                                     },
                                     "children": [
                                         {
@@ -288,7 +288,7 @@
                                             ],
                                             "props": {
                                                 "type": "number",
-                                                "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value'] ? 'input input-error' : 'input'}}",
+                                                "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
                                                 "value": "{{_computed.activeCountrySetting?.ranges?.unit_value ?? ''}}",
                                                 "min": 0.01,
                                                 "step": 0.01,
@@ -300,7 +300,7 @@
                                             "name": "Span",
                                             "if": "{{!!_computed.perUnitLabel}}",
                                             "props": {
-                                                "className": "text-tertiary whitespace-nowrap"
+                                                "className": "ecommerce-text-tertiary ecommerce:whitespace-nowrap"
                                             },
                                             "text": "{{_computed.perUnitLabel ?? ''}}"
                                         }
@@ -311,7 +311,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value']}}",
                                     "props": {
-                                        "className": "form-error-xs"
+                                        "className": "ecommerce-form-error-xs"
                                     },
                                     "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.ranges.unit_value'] ?? [])[0] ?? ''}}"
                                 },
@@ -319,7 +319,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-tertiary"
+                                        "className": "ecommerce-text-tertiary"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.per_unit_hint"
                                 }
@@ -337,14 +337,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-between"
+                                "className": "ecommerce-flex-between"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_tiers"
                                 },
@@ -363,7 +363,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn btn-sm btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-secondary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "children": [
@@ -372,7 +372,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "plus",
-                                                "className": "text-xs mr-1"
+                                                "className": "ecommerce:text-xs ecommerce:mr-1"
                                             }
                                         },
                                         {
@@ -390,14 +390,14 @@
                             "name": "Div",
                             "if": "{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length > 0}}",
                             "props": {
-                                "className": "table-container"
+                                "className": "ecommerce-table-container"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Table",
                                     "props": {
-                                        "className": "table"
+                                        "className": "ecommerce:table ecommerce-table"
                                     },
                                     "children": [
                                         {
@@ -427,7 +427,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "w-16"
+                                                                "className": "ecommerce:w-16"
                                                             }
                                                         }
                                                     ]
@@ -459,7 +459,7 @@
                                                                     "props": {
                                                                         "type": "number",
                                                                         "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: tierIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_min')}}",
-                                                                        "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'input input-error bg-gray-100 dark:bg-gray-700' : 'input bg-gray-100 dark:bg-gray-700'}}",
+                                                                        "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ? 'ecommerce-input ecommerce-input-error ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700' : 'ecommerce-input ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700'}}",
                                                                         "value": "{{tier.min ?? ''}}",
                                                                         "readOnly": true,
                                                                         "tabIndex": -1,
@@ -472,7 +472,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min}}",
                                                                     "props": {
-                                                                        "className": "form-error-xs"
+                                                                        "className": "ecommerce-form-error-xs"
                                                                     },
                                                                     "text": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.min ?? ''}}"
                                                                 }
@@ -502,7 +502,7 @@
                                                                     "props": {
                                                                         "type": "number",
                                                                         "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: tierIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_max')}}",
-                                                                        "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max ? 'input input-error' : 'input'}}",
+                                                                        "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
                                                                         "value": "{{tier.max ?? ''}}",
                                                                         "min": 0,
                                                                         "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.range_unlimited",
@@ -514,7 +514,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max}}",
                                                                     "props": {
-                                                                        "className": "form-error-xs"
+                                                                        "className": "ecommerce-form-error-xs"
                                                                     },
                                                                     "text": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.max ?? ''}}"
                                                                 }
@@ -544,7 +544,7 @@
                                                                     "props": {
                                                                         "type": "number",
                                                                         "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: tierIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.shipping_policy.form.range_fee')}}",
-                                                                        "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ? 'input input-error' : 'input'}}",
+                                                                        "className": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
                                                                         "value": "{{tier.fee ?? ''}}",
                                                                         "min": 0,
                                                                         "step": 100,
@@ -556,7 +556,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee}}",
                                                                     "props": {
-                                                                        "className": "form-error-xs"
+                                                                        "className": "ecommerce-form-error-xs"
                                                                     },
                                                                     "text": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[tierIdx]?.fee ?? ''}}"
                                                                 }
@@ -583,7 +583,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "btn-icon ecommerce-tone-error",
+                                                                        "className": "ecommerce-btn-icon ecommerce-tone-error",
                                                                         "aria-label": "$t:common.delete"
                                                                     },
                                                                     "children": [
@@ -592,7 +592,7 @@
                                                                             "name": "Icon",
                                                                             "props": {
                                                                                 "name": "trash",
-                                                                                "className": "text-sm"
+                                                                                "className": "ecommerce:text-sm"
                                                                             }
                                                                         }
                                                                     ]
@@ -612,7 +612,7 @@
                             "name": "Div",
                             "if": "{{(_computed.activeCountrySetting?.ranges?.tiers ?? []).length === 0}}",
                             "props": {
-                                "className": "text-center text-sm text-gray-500 dark:text-gray-400 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg"
+                                "className": "ecommerce:text-center ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:border ecommerce:border-dashed ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg"
                             },
                             "children": [
                                 {
@@ -625,7 +625,7 @@
                                     "name": "Span",
                                     "if": "{{!!_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max}}",
                                     "props": {
-                                        "className": "form-error-xs block"
+                                        "className": "ecommerce-form-error-xs ecommerce:block"
                                     },
                                     "text": "{{_local.rangeErrors?.[_computed.activeCountryCode]?.[0]?.max ?? ''}}"
                                 }
@@ -639,14 +639,14 @@
                     "name": "Div",
                     "if": "{{_local.showApiSettings}}",
                     "props": {
-                        "className": "space-y-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                        "className": "ecommerce:space-y-4 ecommerce:p-4 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800/50"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "text-body font-semibold mb-2"
+                                "className": "ecommerce-text-body ecommerce:font-semibold ecommerce:mb-2"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_settings"
                         },
@@ -663,7 +663,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_endpoint"
                                         },
@@ -684,7 +684,7 @@
                                             ],
                                             "props": {
                                                 "type": "url",
-                                                "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint'] ? 'input input-error font-mono' : 'input font-mono'}}",
+                                                "className": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint'] ? 'ecommerce-input ecommerce-input-error ecommerce:font-mono' : 'ecommerce-input ecommerce:font-mono'}}",
                                                 "value": "{{_computed.activeCountrySetting?.api_endpoint ?? ''}}",
                                                 "placeholder": "https://api.example.com/shipping/calculate",
                                                 "disabled": "{{_computed.isReadOnly}}"
@@ -695,7 +695,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint']}}",
                                             "props": {
-                                                "className": "form-error-xs"
+                                                "className": "ecommerce-form-error-xs"
                                             },
                                             "text": "{{(_local.errors?.['country_settings.' + (_local.activeCountryTab ?? 0) + '.api_endpoint'] ?? [])[0] ?? ''}}"
                                         }
@@ -708,7 +708,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "grid grid-cols-1 sm:grid-cols-2 gap-4"
+                                "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:gap-4"
                             },
                             "children": [
                                 {
@@ -719,7 +719,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_http_method"
                                         },
@@ -738,7 +738,7 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "input w-full",
+                                                "className": "ecommerce:h-9 ecommerce:w-full",
                                                 "value": "{{_computed.activeCountrySetting?.api_config?.http_method ?? 'POST'}}",
                                                 "options": "{{_computed.apiHttpMethodOptions ?? []}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
@@ -754,7 +754,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_auth_type"
                                         },
@@ -773,7 +773,7 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "input w-full",
+                                                "className": "ecommerce:h-9 ecommerce:w-full",
                                                 "value": "{{_computed.activeCountrySetting?.api_config?.auth_type ?? 'none'}}",
                                                 "options": "{{_computed.apiAuthTypeOptions ?? []}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
@@ -793,7 +793,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_auth_header_name"
                                 },
@@ -814,7 +814,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "input font-mono",
+                                        "className": "ecommerce-input ecommerce:font-mono",
                                         "value": "{{_computed.activeCountrySetting?.api_config?.auth_header_name ?? ''}}",
                                         "placeholder": "X-Api-Key",
                                         "disabled": "{{_computed.isReadOnly}}"
@@ -832,7 +832,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_auth_token"
                                 },
@@ -853,7 +853,7 @@
                                     ],
                                     "props": {
                                         "type": "password",
-                                        "className": "input font-mono",
+                                        "className": "ecommerce-input ecommerce:font-mono",
                                         "value": "{{_computed.activeCountrySetting?.api_config?.auth_token ?? ''}}",
                                         "placeholder": "{{_computed.activeCountrySetting?.api_config?.has_auth_token ? '••••••••' : ''}}",
                                         "disabled": "{{_computed.isReadOnly}}"
@@ -863,7 +863,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-tertiary"
+                                        "className": "ecommerce-text-tertiary"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_auth_token_hint"
                                 }
@@ -878,7 +878,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_request_fields"
                                 },
@@ -887,7 +887,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "grid grid-cols-1 sm:grid-cols-2 gap-2"
+                                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:gap-2"
                                     },
                                     "children": [
                                         {
@@ -899,7 +899,7 @@
                                                 "index_var": "fieldOptionIdx"
                                             },
                                             "props": {
-                                                "className": "flex-center gap-2 cursor-pointer text-sm"
+                                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer ecommerce:text-sm"
                                             },
                                             "children": [
                                                 {
@@ -917,7 +917,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "checkbox",
-                                                        "className": "checkbox",
+                                                        "className": "ecommerce-checkbox",
                                                         "checked": "{{(_computed.activeCountrySetting?.api_request_fields ?? []).includes(fieldOption.value)}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
@@ -937,14 +937,14 @@
                                     "name": "Div",
                                     "if": "{{(_computed.activeCountrySetting?.api_request_fields ?? []).length > 0}}",
                                     "props": {
-                                        "className": "space-y-2 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700"
+                                        "className": "ecommerce:space-y-2 ecommerce:mt-2 ecommerce:pt-2 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-tertiary block"
+                                                "className": "ecommerce-text-tertiary ecommerce:block"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_field_map_hint"
                                         },
@@ -957,14 +957,14 @@
                                                 "index_var": "mapOptionIdx"
                                             },
                                             "props": {
-                                                "className": "grid grid-cols-2 gap-2 items-center"
+                                                "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-2 ecommerce:items-center"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-secondary"
+                                                        "className": "ecommerce:text-sm ecommerce-text-secondary"
                                                     },
                                                     "text": "{{mapOption.label}}"
                                                 },
@@ -986,7 +986,7 @@
                                                     "props": {
                                                         "type": "text",
                                                         "aria-label": "{{mapOption.label}}",
-                                                        "className": "input text-sm font-mono",
+                                                        "className": "ecommerce-input ecommerce:text-sm ecommerce:font-mono",
                                                         "value": "{{_computed.activeCountrySetting?.api_config?.field_map?.[mapOption.value] ?? ''}}",
                                                         "placeholder": "{{mapOption.value}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
@@ -1000,7 +1000,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-tertiary"
+                                        "className": "ecommerce-text-tertiary"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_request_fields_hint"
                                 },
@@ -1011,7 +1011,7 @@
                                     "name": "Span",
                                     "if": "{{Object.keys(_local.errors ?? {}).filter(k => k.indexOf('country_settings.' + (_local.activeCountryTab ?? 0) + '.api_request_fields') === 0).length > 0}}",
                                     "props": {
-                                        "className": "form-error-xs"
+                                        "className": "ecommerce-form-error-xs"
                                     },
                                     "text": "{{Object.keys(_local.errors ?? {}).filter(k => k.indexOf('country_settings.' + (_local.activeCountryTab ?? 0) + '.api_request_fields') === 0).map(k => ((_local.errors ?? {})[k] ?? [])[0]).filter(m => !!m)[0] ?? ''}}"
                                 }
@@ -1026,7 +1026,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_type"
                                 },
@@ -1045,7 +1045,7 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "input w-full",
+                                        "className": "ecommerce:h-9 ecommerce:w-full",
                                         "value": "{{_computed.activeCountrySetting?.api_config?.response_type ?? 'json'}}",
                                         "options": "{{_computed.apiResponseTypeOptions ?? []}}",
                                         "disabled": "{{_computed.isReadOnly}}"
@@ -1067,7 +1067,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_path"
                                         },
@@ -1088,7 +1088,7 @@
                                             ],
                                             "props": {
                                                 "type": "text",
-                                                "className": "input font-mono",
+                                                "className": "ecommerce-input ecommerce:font-mono",
                                                 "value": "{{_computed.activeCountrySetting?.api_config?.response_path ?? ''}}",
                                                 "placeholder": "data.shipping.fee",
                                                 "disabled": "{{_computed.isReadOnly}}"
@@ -1098,7 +1098,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-tertiary"
+                                                "className": "ecommerce-text-tertiary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_path_hint"
                                         }
@@ -1120,7 +1120,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_fee_field"
                                         },
@@ -1141,7 +1141,7 @@
                                             ],
                                             "props": {
                                                 "type": "text",
-                                                "className": "input font-mono",
+                                                "className": "ecommerce-input ecommerce:font-mono",
                                                 "value": "{{_computed.activeCountrySetting?.api_response_fee_field ?? ''}}",
                                                 "placeholder": "shipping_fee",
                                                 "disabled": "{{_computed.isReadOnly}}"
@@ -1151,7 +1151,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-tertiary"
+                                                "className": "ecommerce-text-tertiary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_response_fee_field_hint"
                                         }
@@ -1164,7 +1164,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2"
+                                "className": "ecommerce:pt-3 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:space-y-2"
                             },
                             "children": [
                                 {
@@ -1181,7 +1181,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn btn-secondary btn-sm",
+                                        "className": "ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm",
                                         "disabled": "{{_computed.isReadOnly || _computed.lacksUpdate || !_computed.activeCountrySetting?.api_endpoint || _global.apiTestLoading}}"
                                     },
                                     "children": [
@@ -1198,7 +1198,7 @@
                                     "name": "Div",
                                     "if": "{{!!_global.apiTestResult}}",
                                     "props": {
-                                        "className": "text-xs space-y-2 p-3 rounded-md bg-gray-100 dark:bg-gray-900 font-mono overflow-auto"
+                                        "className": "ecommerce:text-xs ecommerce:space-y-2 ecommerce:p-3 ecommerce:rounded-md ecommerce:bg-gray-100 ecommerce:dark:bg-gray-900 ecommerce:font-mono ecommerce:overflow-auto"
                                     },
                                     "children": [
                                         {
@@ -1207,7 +1207,7 @@
                                             "name": "Div",
                                             "if": "{{_global.apiTestResult?.extracted_fee !== null && _global.apiTestResult?.extracted_fee !== undefined}}",
                                             "props": {
-                                                "className": "text-green-800 dark:text-green-400 font-semibold"
+                                                "className": "ecommerce:text-green-800 ecommerce:dark:text-green-400 ecommerce:font-semibold"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_extracted|fee={{_global.apiTestResult?.extracted_fee_formatted ?? _global.apiTestResult?.extracted_fee ?? '-'}}"
                                         },
@@ -1216,7 +1216,7 @@
                                             "name": "Div",
                                             "if": "{{(_global.apiTestResult?.extracted_fee === null || _global.apiTestResult?.extracted_fee === undefined) && !!_global.apiTestResult?.response}}",
                                             "props": {
-                                                "className": "text-amber-700 dark:text-amber-400 font-semibold"
+                                                "className": "ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:font-semibold"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_no_fee"
                                         },
@@ -1225,7 +1225,7 @@
                                             "name": "Div",
                                             "if": "{{!_global.apiTestResult?.response}}",
                                             "props": {
-                                                "className": "text-red-700 dark:text-red-400 font-semibold"
+                                                "className": "ecommerce:text-red-700 ecommerce:dark:text-red-400 ecommerce:font-semibold"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_failed"
                                         },
@@ -1234,7 +1234,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "text-secondary break-all"
+                                                "className": "ecommerce-text-secondary ecommerce:break-all ecommerce-break-all"
                                             },
                                             "text": "{{_global.apiTestResult?.request?.method ?? ''}} {{_global.apiTestResult?.request?.endpoint ?? ''}}"
                                         },
@@ -1248,7 +1248,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-tertiary"
+                                                        "className": "ecommerce-text-tertiary"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_request_body"
                                                 },
@@ -1256,7 +1256,7 @@
                                                     "type": "basic",
                                                     "name": "Pre",
                                                     "props": {
-                                                        "className": "whitespace-pre-wrap break-all text-secondary mt-1"
+                                                        "className": "ecommerce:whitespace-pre-wrap ecommerce:break-all ecommerce-break-all ecommerce-text-secondary ecommerce:mt-1"
                                                     },
                                                     "text": "{{_global.apiTestResult?.request?.body ?? ''}}"
                                                 }
@@ -1272,7 +1272,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-tertiary"
+                                                        "className": "ecommerce-text-tertiary"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.api_test_response|status={{_global.apiTestResult?.response?.status ?? '-'}}"
                                                 },
@@ -1280,7 +1280,7 @@
                                                     "type": "basic",
                                                     "name": "Pre",
                                                     "props": {
-                                                        "className": "whitespace-pre-wrap break-all text-secondary mt-1"
+                                                        "className": "ecommerce:whitespace-pre-wrap ecommerce:break-all ecommerce-break-all ecommerce-text-secondary ecommerce:mt-1"
                                                     },
                                                     "text": "{{_global.apiTestResult?.response?.body ?? ''}}"
                                                 }
@@ -1292,7 +1292,7 @@
                                             "name": "Div",
                                             "if": "{{!!_global.apiTestResult?.error}}",
                                             "props": {
-                                                "className": "text-red-700 dark:text-red-400 break-all"
+                                                "className": "ecommerce:text-red-700 ecommerce:dark:text-red-400 ecommerce:break-all ecommerce-break-all"
                                             },
                                             "text": "{{_global.apiTestResult?.error ?? ''}}"
                                         }

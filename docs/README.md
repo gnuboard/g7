@@ -52,7 +52,7 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 | 12 | [액션 핸들러 - 핸들러별 상세 사용법](frontend/actions-handlers.md) | navigate: 페이지 이동 (path, query, mergeQuery 옵션) |
 | 13 | [전역 상태 관리](frontend/state-management.md) | 전역 상태: _global.속성명 (앱 전체 공유, 페이지 이동 시 유지) |
 | 14 | [데이터 소스](frontend/data-sources.md) | data_sources 배열에 API 정의: id, endpoint, method |
-| 15 | [다크 모드 지원](frontend/dark-mode.md) | Tailwind dark: variant 사용 |
+| 15 | [다크 모드 지원](frontend/dark-mode.md) | Tailwind dark: variant 사용 (확장 CSS 는 `data-g7-color-scheme` 중립 표식) |
 
 sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templates/_bundled/sirsoft-admin_basic/docs/components.md](../templates/_bundled/sirsoft-admin_basic/docs/components.md) 를 참고하세요.
 
@@ -87,6 +87,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | 3 | [모듈 레이아웃 시스템](extension/module-layouts.md) | modules/_bundled/vendor-module/resources/layouts/ |
 | 4 | [모듈 다국어 시스템](extension/module-i18n.md) | 백엔드: /lang/{locale}/*.php |
 | 5 | [훅 시스템](extension/hooks.md) | Action 훅: doAction() |
+| 6 | [확장 CSS 자기 공급 규약](extension/module-assets.md#확장-css-자기-공급-규약) | 화면 스타일은 자기 CSS — `assets.css.namespace` 앞글자, `@layer g7-extension` 의미 칸, 다크는 `data-g7-color-scheme` 표식 |
 
 ### 테스트 작성
 

@@ -16,7 +16,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex flex-col gap-4 pt-2"
+                "className": "board:flex board:flex-col board:gap-4 board:pt-2"
             },
             "children": [
                 {
@@ -24,7 +24,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "alert-warning"
+                        "className": "board-alert-warning"
                     },
                     "children": [
                         {
@@ -32,7 +32,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "triangle-exclamation",
-                                "className": "text-amber-600 dark:text-amber-400 flex-shrink-0",
+                                "className": "board:text-amber-600 board:dark:text-amber-400 board:flex-shrink-0",
                                 "size": "sm"
                             }
                         },
@@ -40,7 +40,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs board-tone-warning"
+                                "className": "board:text-xs board-tone-warning"
                             },
                             "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.message"
                         }
@@ -52,7 +52,7 @@
                     "name": "Div",
                     "if": "{{(function() { const fields = _global.bulkApplySnapshot?.fields ?? []; return fields.some(f => f.includes('.') || f === 'manager'); })()}}",
                     "props": {
-                        "className": "alert-info"
+                        "className": "board-alert-info"
                     },
                     "children": [
                         {
@@ -60,7 +60,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "circle-info",
-                                "className": "text-blue-600 dark:text-blue-400 flex-shrink-0",
+                                "className": "board:text-blue-600 board:dark:text-blue-400 board:flex-shrink-0",
                                 "size": "sm"
                             }
                         },
@@ -68,7 +68,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs board-tone-info"
+                                "className": "board:text-xs board-tone-info"
                             },
                             "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.permission_notice"
                         }
@@ -79,14 +79,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "toggle-group"
+                        "className": "board-toggle-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex-center gap-2"
+                                "className": "board:px-4 board:py-2.5 board:bg-gray-50 board:dark:bg-gray-700/50 board:border-b board:border-gray-200 board:dark:border-gray-700 board-flex-center board:gap-2"
                             },
                             "children": [
                                 {
@@ -95,14 +95,14 @@
                                     "props": {
                                         "name": "list-check",
                                         "size": "sm",
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "board:text-gray-500 board:dark:text-gray-400"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body font-medium"
+                                        "className": "board-text-body board:font-medium"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.selected_fields"
                                 },
@@ -110,7 +110,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "inline-flex items-center justify-center min-w-5 h-5 px-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-full"
+                                        "className": "board:inline-flex board:items-center board:justify-center board:min-w-5 board:h-5 board:px-1.5 board:bg-gray-200 board:dark:bg-gray-600 board:text-gray-700 board:dark:text-gray-200 board:text-xs board:font-bold board:rounded-full"
                                     },
                                     "text": "{{(_global.bulkApplySnapshot?.fields ?? []).length}}"
                                 }
@@ -120,7 +120,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "max-h-48 overflow-y-auto"
+                                "className": "board:max-h-48 board:overflow-y-auto"
                             },
                             "children": [
                                 {
@@ -128,7 +128,7 @@
                                     "name": "Span",
                                     "if": "{{!(_global.bulkApplySnapshot?.fields ?? []).length}}",
                                     "props": {
-                                        "className": "block p-3 text-sm text-gray-500 dark:text-gray-400 italic"
+                                        "className": "board:block board:p-3 board:text-sm board:text-gray-500 board:dark:text-gray-400 board:italic"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.no_fields"
                                 },
@@ -141,21 +141,21 @@
                                         "item_var": "sectionGroup"
                                     },
                                     "props": {
-                                        "className": "border-b board-bulk-apply-group last:border-b-0"
+                                        "className": "board:border-b board-bulk-apply-group board:last:border-b-0"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "px-3 py-1.5 bg-gray-100 dark:bg-gray-700"
+                                                "className": "board:px-3 board:py-1.5 board:bg-gray-100 board:dark:bg-gray-700"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide"
+                                                        "className": "board:text-xs board:font-semibold board:text-gray-600 board:dark:text-gray-300 board:uppercase board:tracking-wide"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.sections.{{sectionGroup.sectionKey}}"
                                                 }
@@ -165,7 +165,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "px-3 py-2 flex flex-wrap gap-1.5"
+                                                "className": "board:px-3 board:py-2 board:flex board:flex-wrap board:gap-1.5"
                                             },
                                             "children": [
                                                 {
@@ -176,7 +176,7 @@
                                                         "item_var": "fieldKey"
                                                     },
                                                     "props": {
-                                                        "className": "inline-flex items-center px-2 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded"
+                                                        "className": "board:inline-flex board:items-center board:px-2 board:py-0.5 board:bg-gray-200 board:dark:bg-gray-600 board:text-gray-700 board:dark:text-gray-200 board:text-xs board:rounded"
                                                     },
                                                     "children": [
                                                         {
@@ -206,14 +206,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "toggle-group"
+                        "className": "board-toggle-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex-center gap-2"
+                                "className": "board:px-4 board:py-2.5 board:bg-gray-50 board:dark:bg-gray-700/50 board:border-b board:border-gray-200 board:dark:border-gray-700 board-flex-center board:gap-2"
                             },
                             "children": [
                                 {
@@ -222,14 +222,14 @@
                                     "props": {
                                         "name": "table-columns",
                                         "size": "sm",
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "board:text-gray-500 board:dark:text-gray-400"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body font-medium"
+                                        "className": "board-text-body board:font-medium"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.selected_boards"
                                 },
@@ -239,7 +239,7 @@
                                     "name": "Span",
                                     "if": "{{_global.bulkApplySnapshot?.applyAll === false}}",
                                     "props": {
-                                        "className": "inline-flex items-center justify-center min-w-5 h-5 px-1.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-full"
+                                        "className": "board:inline-flex board:items-center board:justify-center board:min-w-5 board:h-5 board:px-1.5 board:bg-gray-200 board:dark:bg-gray-600 board:text-gray-700 board:dark:text-gray-200 board:text-xs board:font-bold board:rounded-full"
                                     },
                                     "text": "{{(_global.bulkApplySnapshot?.boardIds ?? []).length}}"
                                 }
@@ -249,7 +249,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "p-3 flex flex-wrap gap-1.5 min-h-12"
+                                "className": "board:p-3 board:flex board:flex-wrap board:gap-1.5 board:min-h-12"
                             },
                             "children": [
                                 {
@@ -257,7 +257,7 @@
                                     "name": "Span",
                                     "if": "{{_global.bulkApplySnapshot?.applyAll !== false}}",
                                     "props": {
-                                        "className": "text-label-subtle italic"
+                                        "className": "board-text-label-subtle board:italic"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.all_boards"
                                 },
@@ -266,7 +266,7 @@
                                     "name": "Span",
                                     "if": "{{_global.bulkApplySnapshot?.applyAll === false && !(_global.bulkApplySnapshot?.boardIds ?? []).length}}",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400 italic"
+                                        "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400 board:italic"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.no_boards"
                                 },
@@ -279,7 +279,7 @@
                                         "item_var": "boardName"
                                     },
                                     "props": {
-                                        "className": "inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-medium rounded-full"
+                                        "className": "board:inline-flex board:items-center board:gap-1 board:px-2 board:py-0.5 board:bg-gray-100 board:dark:bg-gray-700 board:text-gray-800 board:dark:text-gray-200 board:text-xs board:font-medium board:rounded-full"
                                     },
                                     "children": [
                                         {
@@ -299,7 +299,7 @@
                     "name": "Div",
                     "if": "{{$parent._local.bulkApplySaveError}}",
                     "props": {
-                        "className": "alert-danger text-red-700 dark:text-red-400"
+                        "className": "board-alert-danger board:text-red-700 board:dark:text-red-400"
                     },
                     "children": [
                         {
@@ -307,7 +307,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "circle-exclamation",
-                                "className": "flex-shrink-0",
+                                "className": "board:flex-shrink-0",
                                 "size": "sm"
                             }
                         },
@@ -324,7 +324,7 @@
                     "name": "Div",
                     "if": "{{$parent._local.bulkApplyAborted}}",
                     "props": {
-                        "className": "alert-danger"
+                        "className": "board-alert-danger"
                     },
                     "children": [
                         {
@@ -332,7 +332,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "circle-exclamation",
-                                "className": "text-red-600 dark:text-red-400 flex-shrink-0",
+                                "className": "board:text-red-600 board:dark:text-red-400 board:flex-shrink-0",
                                 "size": "sm"
                             }
                         },
@@ -342,14 +342,14 @@
                             "name": "Span",
                             "if": "{{$parent._local.bulkApplyAbortedBoard}}",
                             "props": {
-                                "className": "text-red-700 dark:text-red-300"
+                                "className": "board:text-red-700 board:dark:text-red-300"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "font-bold"
+                                        "className": "board:font-bold"
                                     },
                                     "text": "{{$parent._local.bulkApplyAbortedBoard}}"
                                 },
@@ -366,7 +366,7 @@
                             "name": "Span",
                             "if": "{{!$parent._local.bulkApplyAbortedBoard}}",
                             "props": {
-                                "className": "text-red-700 dark:text-red-300"
+                                "className": "board:text-red-700 board:dark:text-red-300"
                             },
                             "text": "$t:sirsoft-board.admin.settings.bulk_apply_modal.aborted_message_generic"
                         }
@@ -376,7 +376,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-3"
+                        "className": "board:flex board:justify-end board:gap-3"
                     },
                     "children": [
                         {
@@ -391,7 +391,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{$parent._local.isBulkApplying}}",
-                                "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "board-btn board-btn-secondary board:disabled:opacity-50 board:disabled:cursor-not-allowed"
                             },
                             "children": [
                                 {
@@ -550,7 +550,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{$parent._local.isBulkApplying || !(_global.bulkApplySnapshot?.fields ?? []).length || (_global.bulkApplySnapshot?.applyAll === false && !(_global.bulkApplySnapshot?.boardIds ?? []).length)}}",
-                                "className": "flex-center gap-1.5 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "board-flex-center board:gap-1.5 board:px-4 board:py-2 board:bg-amber-700 board:dark:bg-amber-700 board:text-white board:rounded-lg board:hover:bg-amber-800 board:dark:hover:bg-amber-800 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed"
                             },
                             "children": [
                                 {
@@ -559,7 +559,7 @@
                                     "if": "{{$parent._local.isBulkApplying}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "spinner-sm"
+                                        "className": "board-spinner-sm"
                                     }
                                 },
                                 {

@@ -10,7 +10,7 @@
             "name": "A",
             "props": {
                 "href": "/admin/ecommerce/products",
-                "className": "flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:md:w-20 ecommerce:md:h-20 ecommerce:text-[10px] ecommerce:md:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
             },
             "children": [
                 {
@@ -18,14 +18,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "box",
-                        "className": "text-lg md:text-xl"
+                        "className": "ecommerce:text-lg ecommerce:md:text-xl"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-center leading-tight"
+                        "className": "ecommerce:text-center ecommerce:leading-tight"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.products"
                 }
@@ -37,7 +37,7 @@
             "name": "A",
             "props": {
                 "href": "/admin/ecommerce/orders",
-                "className": "flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:md:w-20 ecommerce:md:h-20 ecommerce:text-[10px] ecommerce:md:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
             },
             "children": [
                 {
@@ -45,14 +45,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "shopping-cart",
-                        "className": "text-lg md:text-xl"
+                        "className": "ecommerce:text-lg ecommerce:md:text-xl"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-center leading-tight"
+                        "className": "ecommerce:text-center ecommerce:leading-tight"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.orders"
                 }
@@ -64,7 +64,7 @@
             "name": "A",
             "props": {
                 "href": "/admin/ecommerce/reviews",
-                "className": "flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:md:w-20 ecommerce:md:h-20 ecommerce:text-[10px] ecommerce:md:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
             },
             "children": [
                 {
@@ -72,14 +72,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "star",
-                        "className": "text-lg md:text-xl"
+                        "className": "ecommerce:text-lg ecommerce:md:text-xl"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-center leading-tight"
+                        "className": "ecommerce:text-center ecommerce:leading-tight"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.reviews"
                 }
@@ -91,7 +91,7 @@
             "name": "A",
             "props": {
                 "href": "/admin/ecommerce/promotion-coupons",
-                "className": "flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:md:w-20 ecommerce:md:h-20 ecommerce:text-[10px] ecommerce:md:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
             },
             "children": [
                 {
@@ -99,14 +99,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "ticket",
-                        "className": "text-lg md:text-xl"
+                        "className": "ecommerce:text-lg ecommerce:md:text-xl"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-center leading-tight"
+                        "className": "ecommerce:text-center ecommerce:leading-tight"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.coupons"
                 }
@@ -118,7 +118,7 @@
             "name": "A",
             "props": {
                 "href": "/admin/ecommerce/shipping-policies",
-                "className": "flex items-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"
+                "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-col ecommerce:justify-center ecommerce:gap-1 ecommerce:w-16 ecommerce:h-16 ecommerce:md:w-20 ecommerce:md:h-20 ecommerce:text-[10px] ecommerce:md:text-xs ecommerce:font-medium ecommerce:rounded-xl ecommerce:bg-slate-100 ecommerce:dark:bg-slate-700 ecommerce:text-slate-600 ecommerce:dark:text-slate-300 ecommerce:hover:bg-slate-700 ecommerce:hover:text-white ecommerce:dark:hover:bg-slate-200 ecommerce:dark:hover:text-slate-800 ecommerce:hover:-translate-y-0.5 ecommerce:focus:outline-none ecommerce:focus:ring-2 ecommerce:focus:ring-slate-400 ecommerce:dark:focus:ring-slate-500 ecommerce:transition-all ecommerce:duration-200"
             },
             "children": [
                 {
@@ -126,14 +126,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "truck",
-                        "className": "text-lg md:text-xl"
+                        "className": "ecommerce:text-lg ecommerce:md:text-xl"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-center leading-tight"
+                        "className": "ecommerce:text-center ecommerce:leading-tight"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.dashboard.quick_menu.shipping"
                 }

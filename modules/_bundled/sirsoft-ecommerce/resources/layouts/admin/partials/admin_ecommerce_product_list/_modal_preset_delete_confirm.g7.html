@@ -4,15 +4,15 @@
   있는 자리다. -->
 <partial description="Product Index - Preset Delete Confirm Modal">
   <modal data-type="composite" data-ref="modal_preset_delete_confirm" title="$t:sirsoft-ecommerce.admin.product.modal.preset_delete.title" size="sm">
-    <p data-ref="preset_delete_message" class="text-body">$t:sirsoft-ecommerce.admin.product.modal.preset_delete.confirm|name={{_global.deletingPresetName}}</p>
-    <div data-ref="preset_delete_footer" class="flex justify-end gap-2 mt-4">
-      <button type="button" class="btn btn-secondary">
+    <p data-ref="preset_delete_message" class="ecommerce-text-body">$t:sirsoft-ecommerce.admin.product.modal.preset_delete.confirm|name={{_global.deletingPresetName}}</p>
+    <div data-ref="preset_delete_footer" class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-4">
+      <button type="button" class="ecommerce-btn ecommerce-btn-secondary">
         <on type="click">
           <close-modal/>
         </on>
         $t:common.cancel
       </button>
-      <button type="button" class="btn btn-danger">
+      <button type="button" class="ecommerce-btn ecommerce-btn-danger">
         <on type="click">
           <!-- 삭제. 성공하면 프리셋 목록만 다시 부른다 — 상품 목록은 건드리지 않는다(지운 것은 검색조건이지 상품이 아니다). -->
           <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets/{{_global.deletingPresetId}}" method="DELETE">

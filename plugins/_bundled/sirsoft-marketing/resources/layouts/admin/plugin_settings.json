@@ -85,7 +85,7 @@
                 "dataKey": "form",
                 "trackChanges": true,
                 "props": {
-                    "className": "admin-page-content-responsive"
+                    "className": "marketing-admin-page-content-responsive"
                 },
                 "children": [
                     {
@@ -106,7 +106,7 @@
                         "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
                         "props": {
                             "role": "status",
-                            "className": "alert-warning mt-6"
+                            "className": "marketing-alert-warning marketing:mt-6"
                         },
                         "children": [
                             {
@@ -114,14 +114,14 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "lock",
-                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                    "className": "marketing:text-xl marketing:leading-none marketing:text-amber-600 marketing:dark:text-amber-400 marketing:flex-shrink-0"
                                 }
                             },
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-xs text-yellow-700 dark:text-yellow-300"
+                                    "className": "marketing:text-xs marketing:text-yellow-700 marketing:dark:text-yellow-300"
                                 },
                                 "text": "$t:sirsoft-marketing.plugin_read_only"
                             }
@@ -133,14 +133,14 @@
                         "name": "Div",
                         "if": "{{_local.errors}}",
                         "props": {
-                            "className": "alert-danger"
+                            "className": "marketing-alert-danger"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex gap-3"
+                                    "className": "marketing:flex marketing:gap-3"
                                 },
                                 "children": [
                                     {
@@ -149,7 +149,7 @@
                                         "props": {
                                             "name": "triangle-exclamation",
                                             "size": "md",
-                                            "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                            "className": "marketing:text-red-600 marketing:dark:text-red-400 marketing:flex-shrink-0 marketing:mt-0.5"
                                         }
                                     },
                                     {
@@ -160,7 +160,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-error-strong"
+                                                    "className": "marketing-text-error-strong"
                                                 },
                                                 "text": "$t:admin.plugins.settings.validation_error"
                                             },
@@ -173,14 +173,14 @@
                                                     "item_var": "message"
                                                 },
                                                 "props": {
-                                                    "className": "mt-2 list-disc list-inside space-y-1"
+                                                    "className": "marketing:mt-2 marketing:list-disc marketing:list-inside marketing:space-y-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Li",
                                                         "props": {
-                                                            "className": "text-error-soft"
+                                                            "className": "marketing-text-error-soft"
                                                         },
                                                         "text": "{{message}}"
                                                     }
@@ -197,7 +197,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+                            "className": "marketing:mt-6 marketing:bg-white marketing:dark:bg-gray-800 marketing:rounded-lg marketing:shadow-sm marketing:border marketing:border-gray-200 marketing:dark:border-gray-700"
                         },
                         "children": [
                             {
@@ -205,14 +205,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "panel-header-row"
+                                    "className": "marketing-panel-header-row"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "marketing-section-heading-md"
                                         },
                                         "text": "$t:sirsoft-marketing.settings.section.channels"
                                     }
@@ -223,7 +223,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "divide-y divide-gray-100 dark:divide-gray-700"
+                                    "className": "marketing:divide-y marketing:divide-gray-100 marketing:dark:divide-gray-700"
                                 },
                                 "children": [
                                     {
@@ -231,21 +231,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid-2col lg:grid-cols-3 items-center px-6 py-4"
+                                            "className": "marketing-grid-2col marketing:lg:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "marketing:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "marketing-form-label"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.marketing_consent_enabled.label"
                                                     },
@@ -253,7 +253,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "marketing-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.marketing_consent_enabled.hint"
                                                     }
@@ -263,7 +263,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1 flex justify-end"
+                                                    "className": "marketing:lg:col-span-1 marketing:flex marketing:justify-end"
                                                 },
                                                 "children": [
                                                     {
@@ -283,21 +283,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid-3col-responsive px-6 py-4 bg-gray-100 dark:bg-gray-700"
+                                            "className": "marketing-grid-3col-responsive marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "marketing:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "marketing-form-label"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.marketing_consent_terms_slug.label"
                                                     },
@@ -305,7 +305,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "marketing-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.marketing_consent_terms_slug.hint"
                                                     }
@@ -315,7 +315,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "marketing:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
@@ -325,7 +325,7 @@
                                                             "type": "text",
                                                             "name": "marketing_consent_terms_slug",
                                                             "placeholder": "$t:sirsoft-marketing.settings.fields.terms_slug_placeholder",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent",
+                                                            "className": "marketing:dark:focus:ring-blue-400 marketing:focus:border-transparent",
                                                             "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
@@ -338,21 +338,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "px-6 py-4"
+                                            "className": "marketing:px-6 marketing:py-4"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-between mb-3"
+                                                    "className": "marketing-flex-between marketing:mb-3"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "text-body font-medium"
+                                                            "className": "marketing-text-body marketing:font-medium"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.channels.label"
                                                     },
@@ -399,7 +399,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "flex-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 font-medium transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "className": "marketing-flex-center marketing:gap-1.5 marketing:px-3 marketing:py-1.5 marketing:bg-blue-600 marketing:text-white marketing:rounded-lg marketing:hover:bg-blue-700 marketing:dark:bg-blue-600 marketing:dark:hover:bg-blue-700 marketing:font-medium marketing:transition-colors marketing:text-sm marketing:disabled:opacity-50 marketing:disabled:cursor-not-allowed",
                                                             "disabled": "{{_computed.isPluginReadOnly}}"
                                                         },
                                                         "children": [
@@ -424,7 +424,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "text-tertiary mb-3"
+                                                    "className": "marketing-text-tertiary marketing:mb-3"
                                                 },
                                                 "text": "$t:sirsoft-marketing.settings.channels.description"
                                             },
@@ -433,21 +433,21 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden"
+                                                    "className": "marketing:border marketing:border-gray-200 marketing:dark:border-gray-600 marketing:rounded-lg marketing:overflow-hidden"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-tertiary grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 font-medium uppercase"
+                                                            "className": "marketing-text-tertiary marketing:grid marketing:grid-cols-12 marketing:gap-2 marketing:px-4 marketing:py-2 marketing:bg-gray-50 marketing:dark:bg-gray-700 marketing:font-medium marketing:uppercase"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "col-span-6 sm:col-span-4"
+                                                                    "className": "marketing:col-span-6 marketing:sm:col-span-4"
                                                                 },
                                                                 "text": "$t:sirsoft-marketing.settings.channels.col_label"
                                                             },
@@ -455,7 +455,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "hidden sm:block sm:col-span-4"
+                                                                    "className": "marketing:hidden marketing-hidden marketing:sm:block marketing:sm:col-span-4"
                                                                 },
                                                                 "text": "$t:sirsoft-marketing.settings.channels.col_slug"
                                                             },
@@ -463,7 +463,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "col-span-4 sm:col-span-2 text-center"
+                                                                    "className": "marketing:col-span-4 marketing:sm:col-span-2 marketing:text-center"
                                                                 },
                                                                 "text": "$t:sirsoft-marketing.settings.channels.col_enabled"
                                                             },
@@ -471,7 +471,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "col-span-2 hidden sm:block"
+                                                                    "className": "marketing:col-span-2 marketing:hidden marketing-hidden marketing:sm:block"
                                                                 }
                                                             }
                                                         ]
@@ -486,28 +486,28 @@
                                                             "index_var": "channelIdx"
                                                         },
                                                         "props": {
-                                                            "className": "divide-y divide-gray-100 dark:divide-gray-700"
+                                                            "className": "marketing:divide-y marketing:divide-gray-100 marketing:dark:divide-gray-700"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                                                                    "className": "marketing:grid marketing:grid-cols-12 marketing:gap-2 marketing:px-4 marketing:py-3 marketing:items-center marketing:hover:bg-gray-50 marketing:dark:hover:bg-gray-700/50"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "col-span-6 sm:col-span-4"
+                                                                            "className": "marketing:col-span-6 marketing:sm:col-span-4"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Div",
                                                                                 "props": {
-                                                                                    "className": "flex-center gap-2 flex-wrap"
+                                                                                    "className": "marketing-flex-center marketing:gap-2 marketing:flex-wrap"
                                                                                 },
                                                                                 "children": [
                                                                                     {
@@ -515,7 +515,7 @@
                                                                                         "type": "basic",
                                                                                         "name": "Span",
                                                                                         "props": {
-                                                                                            "className": "text-heading"
+                                                                                            "className": "marketing-text-heading"
                                                                                         },
                                                                                         "text": "{{channel.is_system ? $localized(channel.label, 'sirsoft-marketing.' + channel.key) : ($localized(channel.label) || channel.key)}}"
                                                                                     },
@@ -524,7 +524,7 @@
                                                                                         "name": "Span",
                                                                                         "if": "{{channel.is_system}}",
                                                                                         "props": {
-                                                                                            "className": "text-xs text-blue-700 dark:text-blue-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-blue-100 dark:bg-blue-900"
+                                                                                            "className": "marketing:text-xs marketing:text-blue-700 marketing:dark:text-blue-300 marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:font-medium marketing:bg-blue-100 marketing:dark:bg-blue-900"
                                                                                         },
                                                                                         "text": "$t:sirsoft-marketing.settings.channels.system_badge"
                                                                                     }
@@ -534,7 +534,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-hint font-mono mt-0.5"
+                                                                                    "className": "marketing-text-hint marketing:font-mono marketing:mt-0.5"
                                                                                 },
                                                                                 "text": "{{channel.key}}"
                                                                             },
@@ -543,7 +543,7 @@
                                                                                 "name": "Span",
                                                                                 "if": "{{!!channel.page_slug}}",
                                                                                 "props": {
-                                                                                    "className": "block sm:hidden text-xs text-blue-600 dark:text-blue-400 font-mono mt-0.5"
+                                                                                    "className": "marketing:block marketing:sm:hidden marketing:text-xs marketing:text-blue-600 marketing:dark:text-blue-400 marketing:font-mono marketing:mt-0.5"
                                                                                 },
                                                                                 "text": "{{channel.page_slug}}"
                                                                             }
@@ -553,14 +553,14 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "hidden sm:block sm:col-span-4"
+                                                                            "className": "marketing:hidden marketing-hidden marketing:sm:block marketing:sm:col-span-4"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-label-subtle font-mono"
+                                                                                    "className": "marketing-text-label-subtle marketing:font-mono"
                                                                                 },
                                                                                 "text": "{{channel.page_slug || '-'}}"
                                                                             }
@@ -570,7 +570,7 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "col-span-4 sm:col-span-2 flex justify-center"
+                                                                            "className": "marketing:col-span-4 marketing:sm:col-span-2 marketing:flex marketing:justify-center"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -612,7 +612,7 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "col-span-2 flex justify-end gap-1 sm:gap-2"
+                                                                            "className": "marketing:col-span-2 marketing:flex marketing:justify-end marketing:gap-1 marketing:sm:gap-2"
                                                                         },
                                                                         "children": [
                                                                             {
@@ -649,7 +649,7 @@
                                                                                     "aria-label": "$t:common.edit",
                                                                                     "title": "$t:common.edit",
                                                                                     "type": "button",
-                                                                                    "className": "p-1.5 text-gray-500 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                                    "className": "marketing:p-1.5 marketing:text-gray-500 marketing:dark:text-gray-500 marketing:hover:text-blue-600 marketing:dark:hover:text-blue-400 marketing:rounded marketing:transition-colors marketing:disabled:opacity-50 marketing:disabled:cursor-not-allowed",
                                                                                     "disabled": "{{_computed.isPluginReadOnly}}"
                                                                                 },
                                                                                 "children": [
@@ -695,7 +695,7 @@
                                                                                     "aria-label": "$t:common.delete",
                                                                                     "title": "$t:common.delete",
                                                                                     "type": "button",
-                                                                                    "className": "p-1.5 text-gray-500 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                                    "className": "marketing:p-1.5 marketing:text-gray-500 marketing:dark:text-gray-500 marketing:hover:text-red-600 marketing:dark:hover:text-red-400 marketing:rounded marketing:transition-colors marketing:disabled:opacity-50 marketing:disabled:cursor-not-allowed",
                                                                                     "disabled": "{{_computed.isPluginReadOnly}}"
                                                                                 },
                                                                                 "children": [
@@ -728,7 +728,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+                            "className": "marketing:mt-4 marketing:bg-white marketing:dark:bg-gray-800 marketing:rounded-lg marketing:shadow-sm marketing:border marketing:border-gray-200 marketing:dark:border-gray-700"
                         },
                         "children": [
                             {
@@ -736,14 +736,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "panel-header-row"
+                                    "className": "marketing-panel-header-row"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "section-heading-md"
+                                            "className": "marketing-section-heading-md"
                                         },
                                         "text": "$t:sirsoft-marketing.settings.section.legal"
                                     }
@@ -754,7 +754,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "divide-y divide-gray-100 dark:divide-gray-700"
+                                    "className": "marketing:divide-y marketing:divide-gray-100 marketing:dark:divide-gray-700"
                                 },
                                 "children": [
                                     {
@@ -762,21 +762,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid-2col lg:grid-cols-3 items-center px-6 py-4"
+                                            "className": "marketing-grid-2col marketing:lg:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "marketing:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "marketing-form-label"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.third_party_consent_enabled.label"
                                                     },
@@ -784,7 +784,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "marketing-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.third_party_consent_enabled.hint"
                                                     }
@@ -794,7 +794,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1 flex justify-end"
+                                                    "className": "marketing:lg:col-span-1 marketing:flex marketing:justify-end"
                                                 },
                                                 "children": [
                                                     {
@@ -814,21 +814,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid-3col-responsive px-6 py-4 bg-gray-100 dark:bg-gray-700"
+                                            "className": "marketing-grid-3col-responsive marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "marketing:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "marketing-form-label"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.third_party_consent_terms_slug.label"
                                                     },
@@ -836,7 +836,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "marketing-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.third_party_consent_terms_slug.hint"
                                                     }
@@ -846,7 +846,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "marketing:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
@@ -856,7 +856,7 @@
                                                             "type": "text",
                                                             "name": "third_party_consent_terms_slug",
                                                             "placeholder": "$t:sirsoft-marketing.settings.fields.terms_slug_placeholder",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent",
+                                                            "className": "marketing:dark:focus:ring-blue-400 marketing:focus:border-transparent",
                                                             "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
@@ -869,21 +869,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid-2col lg:grid-cols-3 items-center px-6 py-4"
+                                            "className": "marketing-grid-2col marketing:lg:grid-cols-3 marketing:items-center marketing:px-6 marketing:py-4"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "marketing:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "marketing-form-label"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.info_disclosure_enabled.label"
                                                     },
@@ -891,7 +891,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "marketing-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.info_disclosure_enabled.hint"
                                                     }
@@ -901,7 +901,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1 flex justify-end"
+                                                    "className": "marketing:lg:col-span-1 marketing:flex marketing:justify-end"
                                                 },
                                                 "children": [
                                                     {
@@ -921,21 +921,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid-3col-responsive px-6 py-4 bg-gray-100 dark:bg-gray-700"
+                                            "className": "marketing-grid-3col-responsive marketing:px-6 marketing:py-4 marketing:bg-gray-100 marketing:dark:bg-gray-700"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-2"
+                                                    "className": "marketing:lg:col-span-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Label",
                                                         "props": {
-                                                            "className": "form-label"
+                                                            "className": "marketing-form-label"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.info_disclosure_terms_slug.label"
                                                     },
@@ -943,7 +943,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "form-hint"
+                                                            "className": "marketing-form-hint"
                                                         },
                                                         "text": "$t:sirsoft-marketing.settings.fields.info_disclosure_terms_slug.hint"
                                                     }
@@ -953,7 +953,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "lg:col-span-1"
+                                                    "className": "marketing:lg:col-span-1"
                                                 },
                                                 "children": [
                                                     {
@@ -963,7 +963,7 @@
                                                             "type": "text",
                                                             "name": "info_disclosure_terms_slug",
                                                             "placeholder": "$t:sirsoft-marketing.settings.fields.terms_slug_placeholder",
-                                                            "className": "dark:focus:ring-blue-400 focus:border-transparent",
+                                                            "className": "marketing:dark:focus:ring-blue-400 marketing:focus:border-transparent",
                                                             "disabled": "{{_computed.isPluginReadOnly}}"
                                                         }
                                                     }
@@ -980,7 +980,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "sticky-footer-buttons"
+                            "className": "marketing-sticky-footer-buttons"
                         },
                         "children": [
                             {
@@ -998,7 +998,7 @@
                                 ],
                                 "props": {
                                     "href": "/admin/plugins",
-                                    "className": "button btn btn-secondary"
+                                    "className": "marketing-button marketing-btn marketing-btn-secondary"
                                 },
                                 "children": [
                                     {
@@ -1131,7 +1131,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
-                                    "className": "btn btn-primary flex-center gap-1.5"
+                                    "className": "marketing-btn marketing-btn-primary marketing-flex-center marketing:gap-1.5"
                                 },
                                 "children": [
                                     {
@@ -1140,7 +1140,7 @@
                                         "if": "{{_local.isSaving}}",
                                         "props": {
                                             "name": "spinner",
-                                            "className": "spinner-sm"
+                                            "className": "marketing-spinner-sm"
                                         }
                                     },
                                     {
@@ -1179,21 +1179,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "marketing-row-stack"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-between"
+                                "className": "marketing-flex-between"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-body font-medium"
+                                        "className": "marketing-text-body marketing:font-medium"
                                     },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.enabled"
                                 },
@@ -1227,7 +1227,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "marketing:block marketing:text-xs marketing:font-medium marketing:text-gray-700 marketing:dark:text-gray-300 marketing:mb-1"
                                     },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.key"
                                 },
@@ -1250,7 +1250,7 @@
                                         "value": "{{_global.editingChannel.key ?? ''}}",
                                         "readOnly": "{{_global.editingChannel.is_system || _global.editingChannel._editing}}",
                                         "placeholder": "$t:sirsoft-marketing.settings.channel_modal.key_placeholder",
-                                        "className": "{{_global.editingChannel.is_system || _global.editingChannel._editing ? 'input-readonly w-full' : 'w-full'}}",
+                                        "className": "{{_global.editingChannel.is_system || _global.editingChannel._editing ? 'marketing-input-readonly marketing:w-full' : 'marketing:w-full'}}",
                                         "disabled": "{{_computed.isPluginReadOnly}}"
                                     }
                                 },
@@ -1258,7 +1258,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "marketing-form-hint"
                                     },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.key_hint"
                                 },
@@ -1268,7 +1268,7 @@
                                     "name": "P",
                                     "if": "{{!_global.editingChannel?._editing && (_global.editingChannel?.key ?? '') !== '' && !(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c))}}",
                                     "props": {
-                                        "className": "text-error-soft mt-1"
+                                        "className": "marketing-text-error-soft marketing:mt-1"
                                     },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.key_invalid"
                                 },
@@ -1277,7 +1277,7 @@
                                     "name": "P",
                                     "if": "{{!_global.editingChannel?._editing && (_global.editingChannel?.key ?? '') !== '' && (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key)}}",
                                     "props": {
-                                        "className": "text-error-soft mt-1"
+                                        "className": "marketing-text-error-soft marketing:mt-1"
                                     },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.key_duplicate"
                                 }
@@ -1291,7 +1291,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "marketing:block marketing:text-xs marketing:font-medium marketing:text-gray-700 marketing:dark:text-gray-300 marketing:mb-1"
                                     },
                                     "text": "$t:sirsoft-marketing.settings.channels.col_label"
                                 },
@@ -1341,7 +1341,7 @@
                                     "name": "P",
                                     "if": "{{(_global.editingChannel?._labelTouched ?? false) && String(_global.editingChannel?.label?.[_global.appConfig?.siteLocale ?? $locale] ?? '').trim() === ''}}",
                                     "props": {
-                                        "className": "text-error-soft mt-1"
+                                        "className": "marketing-text-error-soft marketing:mt-1"
                                     },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.label_required"
                                 }
@@ -1355,7 +1355,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        "className": "marketing:block marketing:text-xs marketing:font-medium marketing:text-gray-700 marketing:dark:text-gray-300 marketing:mb-1"
                                     },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.page_slug"
                                 },
@@ -1377,7 +1377,7 @@
                                         "type": "text",
                                         "value": "{{_global.editingChannel.page_slug ?? ''}}",
                                         "placeholder": "$t:sirsoft-marketing.settings.channel_modal.page_slug_placeholder",
-                                        "className": "w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent",
+                                        "className": "marketing:w-full marketing:px-3 marketing:py-2 marketing:text-sm marketing:border marketing:border-gray-300 marketing:dark:border-gray-600 marketing:rounded-lg marketing:bg-white marketing:dark:bg-gray-700 marketing:text-gray-900 marketing:dark:text-white marketing:focus:ring-2 marketing:focus:ring-blue-500 marketing:dark:focus:ring-blue-400 marketing:focus:border-transparent",
                                         "disabled": "{{_computed.isPluginReadOnly}}"
                                     }
                                 },
@@ -1385,7 +1385,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "marketing-form-hint"
                                     },
                                     "text": "$t:sirsoft-marketing.settings.channel_modal.page_slug_hint"
                                 }
@@ -1397,7 +1397,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-2 mt-4"
+                        "className": "marketing:flex marketing:justify-end marketing:gap-2 marketing:mt-4"
                     },
                     "children": [
                         {
@@ -1411,7 +1411,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary"
+                                "className": "marketing-btn marketing-btn-secondary"
                             },
                             "children": [
                                 {
@@ -1469,7 +1469,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{_computed.isPluginReadOnly || !(_global.editingChannel?.key ?? '').split('').every((c) => 'abcdefghijklmnopqrstuvwxyz0123456789_'.includes(c)) || (_global.editingChannel?.key ?? '') === '' || (!_global.editingChannel?._editing && (_global.channels ?? []).some((ch) => ch.key === _global.editingChannel?.key))}}",
-                                "className": "btn btn-primary"
+                                "className": "marketing-btn marketing-btn-primary"
                             },
                             "children": [
                                 {
@@ -1501,14 +1501,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "marketing-row-stack"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-body"
+                                "className": "marketing-text-body"
                             },
                             "text": "$t:sirsoft-marketing.settings.channel_deactivate_modal.message"
                         },
@@ -1516,7 +1516,7 @@
                             "type": "basic",
                             "name": "Ul",
                             "props": {
-                                "className": "list-disc list-inside space-y-1"
+                                "className": "marketing:list-disc marketing:list-inside marketing:space-y-1"
                             },
                             "children": [
                                 {
@@ -1527,7 +1527,7 @@
                                         "item_var": "blockedChannel"
                                     },
                                     "props": {
-                                        "className": "text-heading"
+                                        "className": "marketing-text-heading"
                                     },
                                     "text": "{{blockedChannel.is_system ? $localized(blockedChannel.label, 'sirsoft-marketing.' + blockedChannel.key) : ($localized(blockedChannel.label) || blockedChannel.key)}} ({{blockedChannel.key}})"
                                 }
@@ -1537,7 +1537,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex justify-end gap-2 mt-4"
+                                "className": "marketing:flex marketing:justify-end marketing:gap-2 marketing:mt-4"
                             },
                             "children": [
                                 {
@@ -1551,7 +1551,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn btn-secondary"
+                                        "className": "marketing-btn marketing-btn-secondary"
                                     },
                                     "children": [
                                         {
@@ -1602,7 +1602,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn btn-primary",
+                                        "className": "marketing-btn marketing-btn-primary",
                                         "disabled": "{{_computed.isPluginReadOnly}}"
                                     },
                                     "children": [

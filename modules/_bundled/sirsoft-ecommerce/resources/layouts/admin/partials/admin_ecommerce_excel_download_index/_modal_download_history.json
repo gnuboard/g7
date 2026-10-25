@@ -17,21 +17,21 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "bg-gray-50 dark:bg-gray-900 rounded-lg p-4 mb-6"
+                "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-6"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid grid-cols-2 gap-y-3"
+                        "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-y-3"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "ecommerce-text-label-subtle"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.file_content"
                         },
@@ -39,7 +39,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary text-right"
+                                "className": "ecommerce-text-primary ecommerce:text-right"
                             },
                             "text": "{{_local.selectedItem?.file_content ?? ''}}"
                         },
@@ -47,7 +47,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "ecommerce-text-label-subtle"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.category"
                         },
@@ -55,7 +55,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary text-right"
+                                "className": "ecommerce-text-primary ecommerce:text-right"
                             },
                             "text": "{{_local.selectedItem?.category_name ?? ''}}"
                         },
@@ -63,7 +63,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "ecommerce-text-label-subtle"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.status"
                         },
@@ -71,7 +71,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "text-right"
+                                "className": "ecommerce:text-right"
                             },
                             "children": [
                                 {
@@ -79,7 +79,7 @@
                                     "name": "Span",
                                     "if": "{{_local.selectedItem?.status === 'completed'}}",
                                     "props": {
-                                        "className": "badge-status badge-status-success"
+                                        "className": "ecommerce-badge-status ecommerce-badge-status-success"
                                     },
                                     "children": [
                                         {
@@ -87,7 +87,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "check-circle",
-                                                "className": "text-xs"
+                                                "className": "ecommerce:text-xs"
                                             }
                                         },
                                         {
@@ -102,7 +102,7 @@
                                     "name": "Span",
                                     "if": "{{_local.selectedItem?.status === 'processing'}}",
                                     "props": {
-                                        "className": "badge-status badge-status-processing"
+                                        "className": "ecommerce-badge-status ecommerce-badge-status-processing"
                                     },
                                     "children": [
                                         {
@@ -110,7 +110,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "spinner",
-                                                "className": "text-xs animate-spin"
+                                                "className": "ecommerce:text-xs ecommerce:animate-spin"
                                             }
                                         },
                                         {
@@ -125,7 +125,7 @@
                                     "name": "Span",
                                     "if": "{{_local.selectedItem?.status === 'failed'}}",
                                     "props": {
-                                        "className": "badge-status badge-status-error"
+                                        "className": "ecommerce-badge-status ecommerce-badge-status-error"
                                     },
                                     "children": [
                                         {
@@ -133,7 +133,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "circle-exclamation",
-                                                "className": "text-xs"
+                                                "className": "ecommerce:text-xs"
                                             }
                                         },
                                         {
@@ -148,7 +148,7 @@
                                     "name": "Span",
                                     "if": "{{_local.selectedItem?.status === 'expired'}}",
                                     "props": {
-                                        "className": "badge-status badge-status-expired"
+                                        "className": "ecommerce-badge-status ecommerce-badge-status-expired"
                                     },
                                     "children": [
                                         {
@@ -156,7 +156,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "file-lines",
-                                                "className": "text-xs"
+                                                "className": "ecommerce:text-xs"
                                             }
                                         },
                                         {
@@ -172,7 +172,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "ecommerce-text-label-subtle"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.created_date"
                         },
@@ -180,7 +180,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary text-right"
+                                "className": "ecommerce-text-primary ecommerce:text-right"
                             },
                             "text": "{{_local.selectedItem?.created_date ?? ''}}"
                         },
@@ -188,7 +188,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "ecommerce-text-label-subtle"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.expire_date"
                         },
@@ -196,7 +196,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary text-right"
+                                "className": "ecommerce-text-primary ecommerce:text-right"
                             },
                             "text": "{{_local.selectedItem?.expire_date ?? ''}}"
                         },
@@ -204,7 +204,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "ecommerce-text-label-subtle"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.total_download"
                         },
@@ -212,7 +212,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary text-right font-medium"
+                                "className": "ecommerce-text-primary ecommerce:text-right ecommerce:font-medium"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.download_count|count={{_local.selectedItem?.download_count ?? 0}}"
                         }
@@ -230,14 +230,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-between mb-4"
+                        "className": "ecommerce-flex-between ecommerce:mb-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-heading"
+                                "className": "ecommerce-text-heading"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.history_title"
                         },
@@ -245,7 +245,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-secondary"
+                                "className": "ecommerce-text-secondary"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.history_count|count={{_local.selectedItem?.download_history?.length ?? 0}}"
                         }
@@ -255,7 +255,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "space-y-3 max-h-64 overflow-y-auto"
+                        "className": "ecommerce:space-y-3 ecommerce:max-h-64 ecommerce:overflow-y-auto"
                     },
                     "children": [
                         {
@@ -268,21 +268,21 @@
                                 "index_var": "index"
                             },
                             "props": {
-                                "className": "admin-card mb-3"
+                                "className": "ecommerce-admin-card ecommerce:mb-3"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-3"
+                                        "className": "ecommerce-flex-center ecommerce:gap-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 justify-center flex-shrink-0"
+                                                "className": "ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:rounded-full ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:text-gray-600 ecommerce:dark:text-gray-300 ecommerce:justify-center ecommerce:flex-shrink-0"
                                             },
                                             "children": [
                                                 {
@@ -290,7 +290,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "user",
-                                                        "className": "text-base"
+                                                        "className": "ecommerce:text-base"
                                                     }
                                                 }
                                             ]
@@ -303,7 +303,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-primary font-medium"
+                                                        "className": "ecommerce-text-primary ecommerce:font-medium"
                                                     },
                                                     "children": [
                                                         {
@@ -315,7 +315,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-secondary ml-1"
+                                                                "className": "ecommerce-text-secondary ecommerce:ml-1"
                                                             },
                                                             "text": "({{item.user_id}})"
                                                         }
@@ -325,7 +325,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-center gap-1 text-tertiary"
+                                                        "className": "ecommerce-flex-center ecommerce:gap-1 ecommerce-text-tertiary"
                                                     },
                                                     "children": [
                                                         {
@@ -333,7 +333,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "calendar",
-                                                                "className": "text-xs"
+                                                                "className": "ecommerce:text-xs"
                                                             }
                                                         },
                                                         {
@@ -355,7 +355,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary font-medium"
+                                                "className": "ecommerce-text-secondary ecommerce:font-medium"
                                             },
                                             "text": "#{{item.sequence}}"
                                         }
@@ -372,7 +372,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex justify-end mt-6"
+                "className": "ecommerce:flex ecommerce:justify-end ecommerce:mt-6"
             },
             "children": [
                 {
@@ -386,7 +386,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-primary"
+                        "className": "ecommerce-btn ecommerce-btn-primary"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.excel_download.modal.download_history.confirm"
                 }

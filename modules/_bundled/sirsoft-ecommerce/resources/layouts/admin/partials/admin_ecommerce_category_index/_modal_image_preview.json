@@ -23,7 +23,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "btn btn-outline"
+                    "className": "ecommerce-btn ecommerce-btn-outline"
                 },
                 "text": "$t:sirsoft-ecommerce.admin.category.modal.image_preview.close"
             }
@@ -34,7 +34,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-center w-full justify-center bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden"
+                "className": "ecommerce-flex-center ecommerce:w-full ecommerce:justify-center ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:overflow-hidden"
             },
             "children": [
                 {
@@ -43,7 +43,7 @@
                     "props": {
                         "src": "{{_global.imagePreview.imageUrl}}",
                         "alt": "{{_global.imagePreview.imageAlt}}",
-                        "className": "max-w-full max-h-[70vh] object-contain"
+                        "className": "ecommerce:max-w-full ecommerce:max-h-[70vh] ecommerce:object-contain"
                     }
                 }
             ]

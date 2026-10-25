@@ -31,7 +31,7 @@
             "name": "Div",
             "if": "{{(socialProviders?.data ?? []).length > 0 && !query.social_pending}}",
             "props": {
-                "className": "mb-6"
+                "className": "sl:mb-6"
             },
             "children": [
                 {
@@ -48,21 +48,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center gap-3 mt-6"
+                        "className": "sl:flex sl:items-center sl:gap-3 sl:mt-6"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-1 h-px bg-gray-200 dark:bg-gray-700"
+                                "className": "sl:flex-1 sl:h-px sl:bg-gray-200 sl:dark:bg-gray-700"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-social_login.divider.or_email_signup"
                         },
@@ -70,7 +70,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-1 h-px bg-gray-200 dark:bg-gray-700"
+                                "className": "sl:flex-1 sl:h-px sl:bg-gray-200 sl:dark:bg-gray-700"
                             }
                         }
                     ]

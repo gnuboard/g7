@@ -110,14 +110,14 @@
     <set-state target="global" :ecommerceExportTracking="null" :ecommerceExportTrackingDownloading="false"/>
   </init>
   <slot name="content">
-    <div data-ref="mileage_transactions_content" class="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div data-ref="page_header" class="page-header">
+    <div data-ref="mileage_transactions_content" class="ecommerce:p-6 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:min-h-screen">
+      <div data-ref="page_header" class="ecommerce-page-header">
         <div data-ref="page_header_left">
-          <h1 class="page-title">$t:sirsoft-ecommerce.admin.mileage_transactions.title</h1>
-          <p class="page-description">$t:sirsoft-ecommerce.admin.mileage_transactions.description</p>
+          <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.mileage_transactions.title</h1>
+          <p class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.mileage_transactions.description</p>
         </div>
-        <div data-ref="page_header_actions" class="page-actions">
-          <button data-ref="manual_action_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true}}" class="btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+        <div data-ref="page_header_actions" class="ecommerce-page-actions">
+          <button data-ref="manual_action_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true}}" class="ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
             <on type="click">
               <!-- 수동 지급/회수 창을 연다. 창이 지난번 입력을 물고 뜨지 않도록 열기 전에 입력값 전체를 처음 상태로 깔아 둔다(창은 별도 컨텍스트라 이 값들이 _global 이어야 한다).
                    모달 진입 시 설정의 기본 통화로 채운다 — 특정 통화를 박으면 그 통화 원장이 없는 상점에서 잘못된 통화로 적립된다 -->
@@ -147,9 +147,9 @@
         </div>
       </div>
       <include src="partials/admin_ecommerce_mileage_transaction_index/_filters.g7.html"/>
-      <div data-ref="bulk_action_bar" class="bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
-        <span class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}</span>
-        <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+      <div data-ref="bulk_action_bar" class="ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700/50 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:p-3 ecommerce:mb-4 ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-between ecommerce:gap-3">
+        <span class="ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-nowrap">$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}</span>
+        <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
           <on type="click">
             <!-- 선택한 적립 건들의 만료일 연장 창을 연다. 적립건만 넘기고 회원은 지정하지 않는다 — 여러 회원의 적립건을 함께 골라도 서버가 전부 연장한다(첫 건의 회원만 보내면 나머지 회원 적립건이 조용히 빠졌다) -->
             <sequence>
@@ -184,7 +184,7 @@
               </navigate>
             </on>
           </select>
-          <select data-ref="per_page_select" aria-label="$t:common.per_page" class="w-32 text-sm" value="{{query.per_page || '20'}}">
+          <select data-ref="per_page_select" aria-label="$t:common.per_page" class="ecommerce:w-32 ecommerce:text-sm" value="{{query.per_page || '20'}}">
             <options>
               <option value="10">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.10</option>
               <option value="20">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.20</option>

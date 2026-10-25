@@ -55,7 +55,7 @@ describe('CKEditor5 환경설정 — 의미 클래스 위치', () => {
         for (const field of fields) {
             expect({ id: field.id, className: field.props?.className }).toEqual({
                 id: field.id,
-                className: 'grid-3col-responsive',
+                className: 'ckeditor-grid-3col-responsive',
             });
         }
     });
@@ -76,13 +76,13 @@ describe('CKEditor5 환경설정 — 의미 클래스 위치', () => {
         for (const heading of headings) {
             expect({ text: heading.text, className: heading.props?.className }).toEqual({
                 text: heading.text,
-                className: 'section-heading-md',
+                className: 'ckeditor-section-heading-md',
             });
         }
         for (const title of buttonTitles) {
             expect({ text: title.text, className: title.props?.className }).toEqual({
                 text: title.text,
-                className: 'block section-heading-md',
+                className: 'ckeditor:block ckeditor-section-heading-md',
             });
         }
     });
@@ -93,10 +93,10 @@ describe('CKEditor5 환경설정 — 의미 클래스 위치', () => {
      */
     it('저장 오류 상자는 제목에 강한 오류색, 목록 줄에 옅은 오류색을 쓴다', () => {
         const title = nodes.find((n) => n.text === '$t:admin.plugins.settings.validation_error');
-        expect(title?.props?.className).toBe('text-error-strong');
+        expect(title?.props?.className).toBe('ckeditor-text-error-strong');
 
         const item = nodes.find((n) => n.name === 'Li' && n.text === '{{message}}');
-        expect(item?.props?.className).toBe('text-error-soft');
+        expect(item?.props?.className).toBe('ckeditor-text-error-soft');
     });
 
     /**
@@ -105,7 +105,7 @@ describe('CKEditor5 환경설정 — 의미 클래스 위치', () => {
      */
     it('3열 그리드 클래스는 입력 칸 줄에만 쓴다', () => {
         const misplaced = nodes.filter(
-            (n) => n.props?.className === 'grid-3col-responsive' && !(typeof n.id === 'string' && n.id.startsWith('field_')),
+            (n) => n.props?.className === 'ckeditor-grid-3col-responsive' && !(typeof n.id === 'string' && n.id.startsWith('field_')),
         );
         expect(misplaced.map((n) => n.name ?? n.id)).toEqual([]);
     });

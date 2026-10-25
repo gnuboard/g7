@@ -24,109 +24,109 @@
     <permission>core.plugins.update</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="paynicepayments:p-4 paynicepayments:sm:p-6 paynicepayments:lg:p-8 paynicepayments:min-h-screen paynicepayments:bg-gray-50 paynicepayments:dark:bg-gray-900">
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-pay_nicepayments.settings.title" description="$t:sirsoft-pay_nicepayments.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
-      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
-        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="pay-nicepayments-alert-warning paynicepayments:mt-6">
+        <icon name="lock" class="paynicepayments:text-xl paynicepayments:leading-none paynicepayments:text-amber-600 paynicepayments:dark:text-amber-400 paynicepayments:flex-shrink-0"/>
         <span class="pay-nicepayments-tone-warning">$t:sirsoft-pay_nicepayments.plugin_read_only</span>
       </div>
-      <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
-        <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="pay-nicepayments-alert-danger">
+        <div class="paynicepayments:flex paynicepayments:gap-3">
+          <icon name="triangle-exclamation" class="paynicepayments:text-xl paynicepayments:leading-none paynicepayments:text-red-600 paynicepayments:dark:text-red-400 paynicepayments:flex-shrink-0 paynicepayments:mt-0.5"/>
           <div>
-            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
-            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-              <li class="text-error-soft">{{message}}</li>
+            <h3 class="pay-nicepayments-text-error-strong">$t:admin.plugins.settings.validation_error</h3>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="paynicepayments:mt-2 paynicepayments:list-disc paynicepayments:list-inside paynicepayments:space-y-1">
+              <li class="pay-nicepayments-text-error-soft">{{message}}</li>
             </ul>
           </div>
         </div>
       </div>
-      <div data-ref="test_mode_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="p-6">
-          <div data-ref="field_test_mode" class="flex items-center justify-between">
+      <div data-ref="test_mode_card" class="paynicepayments:mt-6 paynicepayments:bg-white paynicepayments:dark:bg-gray-800 paynicepayments:rounded-lg paynicepayments:shadow-sm paynicepayments:border paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700">
+        <div class="paynicepayments:p-6">
+          <div data-ref="field_test_mode" class="paynicepayments:flex paynicepayments:items-center paynicepayments:justify-between">
             <div>
-              <label class="form-label">$t:sirsoft-pay_nicepayments.settings.test_mode</label>
-              <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.test_mode_hint</p>
+              <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.test_mode</label>
+              <p class="pay-nicepayments-form-hint">$t:sirsoft-pay_nicepayments.settings.test_mode_hint</p>
             </div>
             <toggle data-type="composite" name="is_test_mode" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
         </div>
       </div>
-      <div data-ref="live_mode_warning" data-if="{{_local.form &amp;&amp; !_local.form.is_test_mode}}" class="mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
-        <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
+      <div data-ref="live_mode_warning" data-if="{{_local.form &amp;&amp; !_local.form.is_test_mode}}" class="paynicepayments:mt-6 paynicepayments:bg-amber-50 paynicepayments:dark:bg-amber-900/20 paynicepayments:border paynicepayments:border-amber-200 paynicepayments:dark:border-amber-700 paynicepayments:rounded-lg paynicepayments:p-4">
+        <div class="paynicepayments:flex paynicepayments:gap-3">
+          <icon name="triangle-exclamation" class="paynicepayments:text-xl paynicepayments:leading-none paynicepayments:text-amber-600 paynicepayments:dark:text-amber-400 paynicepayments:flex-shrink-0 paynicepayments:mt-0.5"/>
           <div>
-            <h3 class="text-sm font-semibold pay-nicepayments-tone-warning-strong">$t:sirsoft-pay_nicepayments.settings.live_mode_warning_title</h3>
-            <p class="mt-1 text-sm pay-nicepayments-tone-warning">$t:sirsoft-pay_nicepayments.settings.live_mode_warning_body</p>
+            <h3 class="paynicepayments:text-sm paynicepayments:font-semibold pay-nicepayments-tone-warning-strong">$t:sirsoft-pay_nicepayments.settings.live_mode_warning_title</h3>
+            <p class="paynicepayments:mt-1 paynicepayments:text-sm pay-nicepayments-tone-warning">$t:sirsoft-pay_nicepayments.settings.live_mode_warning_body</p>
           </div>
         </div>
       </div>
-      <div data-ref="live_keys_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="panel-header-row">
-          <h3 class="section-heading-md">$t:sirsoft-pay_nicepayments.settings.section_live_keys</h3>
+      <div data-ref="live_keys_section" class="paynicepayments:mt-6 paynicepayments:bg-white paynicepayments:dark:bg-gray-800 paynicepayments:rounded-lg paynicepayments:shadow-sm paynicepayments:border paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700">
+        <div class="pay-nicepayments-panel-header-row">
+          <h3 class="pay-nicepayments-section-heading-md">$t:sirsoft-pay_nicepayments.settings.section_live_keys</h3>
         </div>
-        <div class="p-6 space-y-6">
-          <div data-ref="field_live_mid" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-pay_nicepayments.settings.live_mid</label>
-              <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.live_mid_hint</p>
+        <div class="paynicepayments:p-6 paynicepayments:space-y-6">
+          <div data-ref="field_live_mid" class="pay-nicepayments-grid-3col-responsive">
+            <div class="paynicepayments:lg:col-span-1">
+              <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.live_mid</label>
+              <p class="pay-nicepayments-form-hint">$t:sirsoft-pay_nicepayments.settings.live_mid_hint</p>
             </div>
-            <div class="lg:col-span-2">
-              <div class="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 pay-nicepayments-focus-group">
-                <span class="inline-flex items-center px-3 bg-gray-100 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 text-body font-mono font-bold select-none">SR</span>
-                <input type="text" name="live_mid" placeholder="paytestm" class="flex-1 font-mono outline-none border-0" disabled="{{_computed.isPluginReadOnly}}"/>
+            <div class="paynicepayments:lg:col-span-2">
+              <div class="paynicepayments:flex paynicepayments:rounded-lg paynicepayments:border paynicepayments:border-gray-300 paynicepayments:dark:border-gray-600 paynicepayments:overflow-hidden paynicepayments:focus-within:ring-2 paynicepayments:focus-within:ring-blue-500 pay-nicepayments-focus-group">
+                <span class="paynicepayments:inline-flex paynicepayments:items-center paynicepayments:px-3 paynicepayments:bg-gray-100 paynicepayments:dark:bg-gray-600 paynicepayments:border-r paynicepayments:border-gray-300 paynicepayments:dark:border-gray-600 pay-nicepayments-text-body paynicepayments:font-mono paynicepayments:font-bold paynicepayments:select-none">SR</span>
+                <input type="text" name="live_mid" placeholder="paytestm" class="paynicepayments:flex-1 paynicepayments:font-mono paynicepayments:outline-none paynicepayments:border-0" disabled="{{_computed.isPluginReadOnly}}"/>
               </div>
-              <p class="mt-1.5 text-tertiary">$t:sirsoft-pay_nicepayments.settings.live_mid_example</p>
+              <p class="paynicepayments:mt-1.5 pay-nicepayments-text-tertiary">$t:sirsoft-pay_nicepayments.settings.live_mid_example</p>
             </div>
           </div>
-          <div data-ref="field_live_merchant_key" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-pay_nicepayments.settings.live_merchant_key</label>
-              <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.live_merchant_key_hint</p>
+          <div data-ref="field_live_merchant_key" class="pay-nicepayments-grid-3col-responsive">
+            <div class="paynicepayments:lg:col-span-1">
+              <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.live_merchant_key</label>
+              <p class="pay-nicepayments-form-hint">$t:sirsoft-pay_nicepayments.settings.live_merchant_key_hint</p>
             </div>
-            <div class="lg:col-span-2">
-              <input type="password" name="live_merchant_key" placeholder="live_key_..." class="dark:focus:ring-blue-400 focus:border-transparent font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div data-ref="redirect_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="panel-header-row">
-          <h3 class="section-heading-md">$t:sirsoft-pay_nicepayments.settings.section_redirect</h3>
-        </div>
-        <div class="p-6 space-y-6">
-          <div data-ref="field_redirect_success_url" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-pay_nicepayments.settings.redirect_success_url</label>
-              <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.redirect_success_url_hint</p>
-            </div>
-            <div class="lg:col-span-2">
-              <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="dark:focus:ring-blue-400 focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
-            </div>
-          </div>
-          <div data-ref="field_redirect_fail_url" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-pay_nicepayments.settings.redirect_fail_url</label>
-              <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.redirect_fail_url_hint</p>
-            </div>
-            <div class="lg:col-span-2">
-              <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="dark:focus:ring-blue-400 focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            <div class="paynicepayments:lg:col-span-2">
+              <input type="password" name="live_merchant_key" placeholder="live_key_..." class="paynicepayments:dark:focus:ring-blue-400 paynicepayments:focus:border-transparent paynicepayments:font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
         </div>
       </div>
-      <div data-ref="vbank_notify_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-blue-200 dark:border-blue-800">
-        <div class="px-6 py-4 border-b border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg">
-          <div class="flex-center gap-2">
-            <icon name="bell" class="text-base text-blue-600 dark:text-blue-400"/>
-            <h3 class="text-base font-semibold text-blue-900 dark:text-blue-100">$t:sirsoft-pay_nicepayments.settings.section_vbank_notify</h3>
+      <div data-ref="redirect_section" class="paynicepayments:mt-6 paynicepayments:bg-white paynicepayments:dark:bg-gray-800 paynicepayments:rounded-lg paynicepayments:shadow-sm paynicepayments:border paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700">
+        <div class="pay-nicepayments-panel-header-row">
+          <h3 class="pay-nicepayments-section-heading-md">$t:sirsoft-pay_nicepayments.settings.section_redirect</h3>
+        </div>
+        <div class="paynicepayments:p-6 paynicepayments:space-y-6">
+          <div data-ref="field_redirect_success_url" class="pay-nicepayments-grid-3col-responsive">
+            <div class="paynicepayments:lg:col-span-1">
+              <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.redirect_success_url</label>
+              <p class="pay-nicepayments-form-hint">$t:sirsoft-pay_nicepayments.settings.redirect_success_url_hint</p>
+            </div>
+            <div class="paynicepayments:lg:col-span-2">
+              <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="paynicepayments:dark:focus:ring-blue-400 paynicepayments:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
+          </div>
+          <div data-ref="field_redirect_fail_url" class="pay-nicepayments-grid-3col-responsive">
+            <div class="paynicepayments:lg:col-span-1">
+              <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.redirect_fail_url</label>
+              <p class="pay-nicepayments-form-hint">$t:sirsoft-pay_nicepayments.settings.redirect_fail_url_hint</p>
+            </div>
+            <div class="paynicepayments:lg:col-span-2">
+              <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="paynicepayments:dark:focus:ring-blue-400 paynicepayments:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            </div>
           </div>
         </div>
-        <div class="p-6">
-          <p class="text-label mb-3">$t:sirsoft-pay_nicepayments.settings.vbank_notify_hint</p>
-          <div class="flex-center gap-2">
-            <input type="text" :readOnly="true" aria-label="$t:sirsoft-pay_nicepayments.settings.section_vbank_notify" value="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify'}}" class="input-readonly flex-1 font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
-            <button type="button" class="flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap">
+      </div>
+      <div data-ref="vbank_notify_section" class="paynicepayments:mt-6 paynicepayments:bg-white paynicepayments:dark:bg-gray-800 paynicepayments:rounded-lg paynicepayments:shadow-sm paynicepayments:border paynicepayments:border-blue-200 paynicepayments:dark:border-blue-800">
+        <div class="paynicepayments:px-6 paynicepayments:py-4 paynicepayments:border-b paynicepayments:border-blue-200 paynicepayments:dark:border-blue-800 paynicepayments:bg-blue-50 paynicepayments:dark:bg-blue-900/20 paynicepayments:rounded-t-lg">
+          <div class="pay-nicepayments-flex-center paynicepayments:gap-2">
+            <icon name="bell" class="paynicepayments:text-base paynicepayments:leading-none paynicepayments:text-blue-600 paynicepayments:dark:text-blue-400"/>
+            <h3 class="paynicepayments:text-base paynicepayments:font-semibold paynicepayments:text-blue-900 paynicepayments:dark:text-blue-100">$t:sirsoft-pay_nicepayments.settings.section_vbank_notify</h3>
+          </div>
+        </div>
+        <div class="paynicepayments:p-6">
+          <p class="pay-nicepayments-text-label paynicepayments:mb-3">$t:sirsoft-pay_nicepayments.settings.vbank_notify_hint</p>
+          <div class="pay-nicepayments-flex-center paynicepayments:gap-2">
+            <input type="text" :readOnly="true" aria-label="$t:sirsoft-pay_nicepayments.settings.section_vbank_notify" value="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nicepayments/payment/vbank-notify'}}" class="pay-nicepayments-input-readonly paynicepayments:flex-1 paynicepayments:font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
+            <button type="button" class="pay-nicepayments-flex-center paynicepayments:gap-1.5 paynicepayments:px-3 paynicepayments:py-2 paynicepayments:bg-gray-100 paynicepayments:dark:bg-gray-700 paynicepayments:hover:bg-gray-200 paynicepayments:dark:hover:bg-gray-600 pay-nicepayments-text-body paynicepayments:border paynicepayments:border-gray-300 paynicepayments:dark:border-gray-600 paynicepayments:rounded-lg paynicepayments:font-medium paynicepayments:transition-colors paynicepayments:whitespace-nowrap">
               <on type="click">
                 <!-- 가상계좌 입금통보 URL 복사 — 상점 관리자에 그대로 붙여 넣는 값이다 -->
                 <sequence>
@@ -134,84 +134,84 @@
                   <toast type="success" message="$t:sirsoft-pay_nicepayments.settings.vbank_notify_copied"/>
                 </sequence>
               </on>
-              <icon name="copy" class="text-base"/>
+              <icon name="copy" class="paynicepayments:text-base paynicepayments:leading-none"/>
               <span>$t:sirsoft-pay_nicepayments.settings.copy</span>
             </button>
           </div>
         </div>
       </div>
-      <div data-ref="escrow_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="p-6">
-          <div data-ref="field_use_escrow" class="flex items-center justify-between">
+      <div data-ref="escrow_section" class="paynicepayments:mt-6 paynicepayments:bg-white paynicepayments:dark:bg-gray-800 paynicepayments:rounded-lg paynicepayments:shadow-sm paynicepayments:border paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700">
+        <div class="paynicepayments:p-6">
+          <div data-ref="field_use_escrow" class="paynicepayments:flex paynicepayments:items-center paynicepayments:justify-between">
             <div>
-              <label class="form-label">$t:sirsoft-pay_nicepayments.settings.use_escrow</label>
-              <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.use_escrow_hint</p>
+              <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.use_escrow</label>
+              <p class="pay-nicepayments-form-hint">$t:sirsoft-pay_nicepayments.settings.use_escrow_hint</p>
             </div>
             <toggle data-type="composite" name="use_escrow" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
         </div>
       </div>
-      <div data-ref="easy_pay_section" data-if="{{false}}" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="panel-header-row">
-          <h3 class="section-heading-md">$t:sirsoft-pay_nicepayments.settings.section_easy_pay</h3>
-          <p class="form-hint">$t:sirsoft-pay_nicepayments.settings.section_easy_pay_hint</p>
+      <div data-ref="easy_pay_section" data-if="{{false}}" class="paynicepayments:mt-6 paynicepayments:bg-white paynicepayments:dark:bg-gray-800 paynicepayments:rounded-lg paynicepayments:shadow-sm paynicepayments:border paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700">
+        <div class="pay-nicepayments-panel-header-row">
+          <h3 class="pay-nicepayments-section-heading-md">$t:sirsoft-pay_nicepayments.settings.section_easy_pay</h3>
+          <p class="pay-nicepayments-form-hint">$t:sirsoft-pay_nicepayments.settings.section_easy_pay_hint</p>
         </div>
-        <div class="divide-y divide-gray-100 dark:divide-gray-700">
-          <div class="flex items-center justify-between px-6 py-4 bg-blue-50 dark:bg-blue-900/20">
+        <div class="paynicepayments:divide-y paynicepayments:divide-gray-100 paynicepayments:dark:divide-gray-700">
+          <div class="paynicepayments:flex paynicepayments:items-center paynicepayments:justify-between paynicepayments:px-6 paynicepayments:py-4 paynicepayments:bg-blue-50 paynicepayments:dark:bg-blue-900/20">
             <div>
-              <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_allow_with_other_pg</label>
-              <p class="mt-0.5 text-tertiary">$t:sirsoft-pay_nicepayments.settings.easy_pay_allow_with_other_pg_hint</p>
+              <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_allow_with_other_pg</label>
+              <p class="paynicepayments:mt-0.5 pay-nicepayments-text-tertiary">$t:sirsoft-pay_nicepayments.settings.easy_pay_allow_with_other_pg_hint</p>
             </div>
             <toggle data-type="composite" name="easy_pay_allow_with_other_pg" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div class="flex items-center justify-between px-6 py-4">
+          <div class="paynicepayments:flex paynicepayments:items-center paynicepayments:justify-between paynicepayments:px-6 paynicepayments:py-4">
             <div>
-              <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_naverpay</label>
-              <p class="mt-0.5 text-xs text-green-700 dark:text-green-400">$t:sirsoft-pay_nicepayments.settings.easy_pay_naverpay_hint</p>
+              <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_naverpay</label>
+              <p class="paynicepayments:mt-0.5 paynicepayments:text-xs paynicepayments:text-green-700 paynicepayments:dark:text-green-400">$t:sirsoft-pay_nicepayments.settings.easy_pay_naverpay_hint</p>
             </div>
             <toggle data-type="composite" name="easy_pay_naverpay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div class="flex items-center justify-between px-6 py-4">
-            <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_kakaopay</label>
+          <div class="paynicepayments:flex paynicepayments:items-center paynicepayments:justify-between paynicepayments:px-6 paynicepayments:py-4">
+            <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_kakaopay</label>
             <toggle data-type="composite" name="easy_pay_kakaopay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div class="flex items-center justify-between px-6 py-4">
-            <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_samsungpay</label>
+          <div class="paynicepayments:flex paynicepayments:items-center paynicepayments:justify-between paynicepayments:px-6 paynicepayments:py-4">
+            <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_samsungpay</label>
             <toggle data-type="composite" name="easy_pay_samsungpay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div class="flex items-center justify-between px-6 py-4">
+          <div class="paynicepayments:flex paynicepayments:items-center paynicepayments:justify-between paynicepayments:px-6 paynicepayments:py-4">
             <div>
-              <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_applepay</label>
-              <p class="mt-0.5 text-tertiary">$t:sirsoft-pay_nicepayments.settings.easy_pay_applepay_hint</p>
+              <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_applepay</label>
+              <p class="paynicepayments:mt-0.5 pay-nicepayments-text-tertiary">$t:sirsoft-pay_nicepayments.settings.easy_pay_applepay_hint</p>
             </div>
             <toggle data-type="composite" name="easy_pay_applepay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div class="flex items-center justify-between px-6 py-4">
-            <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_payco</label>
+          <div class="paynicepayments:flex paynicepayments:items-center paynicepayments:justify-between paynicepayments:px-6 paynicepayments:py-4">
+            <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_payco</label>
             <toggle data-type="composite" name="easy_pay_payco" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div class="flex items-center justify-between px-6 py-4">
-            <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_skpay</label>
+          <div class="paynicepayments:flex paynicepayments:items-center paynicepayments:justify-between paynicepayments:px-6 paynicepayments:py-4">
+            <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_skpay</label>
             <toggle data-type="composite" name="easy_pay_skpay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div class="flex items-center justify-between px-6 py-4">
-            <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_ssgpay</label>
+          <div class="paynicepayments:flex paynicepayments:items-center paynicepayments:justify-between paynicepayments:px-6 paynicepayments:py-4">
+            <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_ssgpay</label>
             <toggle data-type="composite" name="easy_pay_ssgpay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div class="flex items-center justify-between px-6 py-4">
-            <label class="form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_lpay</label>
+          <div class="paynicepayments:flex paynicepayments:items-center paynicepayments:justify-between paynicepayments:px-6 paynicepayments:py-4">
+            <label class="pay-nicepayments-form-label">$t:sirsoft-pay_nicepayments.settings.easy_pay_lpay</label>
             <toggle data-type="composite" name="easy_pay_lpay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
         </div>
       </div>
-      <div data-ref="footer_buttons" class="sticky bottom-0 z-10 flex justify-end items-center gap-3 mt-6 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-700">
-        <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
+      <div data-ref="footer_buttons" class="paynicepayments:sticky paynicepayments:bottom-0 paynicepayments:z-10 paynicepayments:flex paynicepayments:justify-end paynicepayments:items-center paynicepayments:gap-3 paynicepayments:mt-6 paynicepayments:px-4 paynicepayments:py-3 paynicepayments:bg-gray-50 paynicepayments:border paynicepayments:border-gray-200 paynicepayments:rounded-lg paynicepayments:dark:bg-gray-800 paynicepayments:dark:border-gray-700">
+        <a href="/admin/plugins" data-ref="cancel_button" class="pay-nicepayments-button pay-nicepayments-btn pay-nicepayments-btn-secondary">
           <on type="click">
             <navigate :bypassLeaveGuard="true"/>
           </on>
           <span>$t:common.cancel</span>
         </a>
-        <button type="button" data-ref="save_button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+        <button type="button" data-ref="save_button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="pay-nicepayments-btn pay-nicepayments-btn-primary pay-nicepayments-flex-center paynicepayments:gap-1.5">
           <on type="click">
             <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 — 서버가 비밀키를 마스크해 돌려주므로 다시 싣지 않으면 화면 값과 저장값이 어긋난다 -->
             <sequence>
@@ -229,7 +229,7 @@
               </api-call>
             </sequence>
           </on>
-          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="pay-nicepayments-spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:common.save</span>
           <span data-if="{{_local.isSaving}}">$t:common.saving</span>
         </button>

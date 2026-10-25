@@ -28,7 +28,7 @@
                     "name": "Div",
                     "props": {
                         "id": "ext_marketing",
-                        "className": "scroll-mt-32"
+                        "className": "marketing:scroll-mt-32"
                     },
                     "children": [
                         {
@@ -36,21 +36,21 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+                                "className": "marketing:bg-white marketing:dark:bg-gray-800 marketing:border marketing:border-gray-200 marketing:dark:border-gray-700 marketing:rounded-lg marketing:p-6 marketing:mb-6"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-between mb-4"
+                                        "className": "marketing-flex-between marketing:mb-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-2"
+                                                "className": "marketing:flex marketing:items-center marketing:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -59,14 +59,14 @@
                                                     "props": {
                                                         "name": "bullhorn",
                                                         "size": "md",
-                                                        "className": "text-gray-600 dark:text-gray-400"
+                                                        "className": "marketing:text-gray-600 marketing:dark:text-gray-400"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "H3",
                                                     "props": {
-                                                        "className": "section-heading"
+                                                        "className": "marketing-section-heading"
                                                     },
                                                     "text": "$t:admin.users.form.sections.marketing_consent"
                                                 }
@@ -87,14 +87,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "grid grid-cols-1 gap-4"
+                                        "className": "marketing:grid marketing:grid-cols-1 marketing:gap-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "space-y-3"
+                                                "className": "marketing:space-y-3"
                                             },
                                             "children": [
                                                 {
@@ -102,7 +102,7 @@
                                                     "name": "Label",
                                                     "if": "{{user?.data?.marketing_consent_enabled === true}}",
                                                     "props": {
-                                                        "className": "flex items-start gap-3"
+                                                        "className": "marketing:flex marketing:items-start marketing:gap-3"
                                                     },
                                                     "children": [
                                                         {
@@ -111,28 +111,28 @@
                                                             "props": {
                                                                 "checked": "{{!!user?.data?.marketing_consent}}",
                                                                 "disabled": true,
-                                                                "className": "mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                                                                "className": "marketing:mt-0.5 marketing:text-blue-600 marketing:bg-gray-100 marketing:dark:bg-gray-700 marketing:border-gray-300 marketing:dark:border-gray-600 marketing:rounded marketing:cursor-not-allowed"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-1 space-y-1"
+                                                                "className": "marketing:flex-1 marketing:space-y-1"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Div",
                                                                     "props": {
-                                                                        "className": "flex items-center gap-2 flex-wrap"
+                                                                        "className": "marketing:flex marketing:items-center marketing:gap-2 marketing:flex-wrap"
                                                                     },
                                                                     "children": [
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                                                "className": "marketing:text-sm marketing:font-medium marketing:text-gray-900 marketing:dark:text-white"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.marketing_consent"
                                                                         },
@@ -141,7 +141,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{user?.data?.marketing_consent_at}}",
                                                                             "props": {
-                                                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400"
+                                                                                "className": "marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:text-xs marketing:font-medium marketing:bg-green-100 marketing:dark:bg-green-900 marketing:text-green-800 marketing:dark:text-green-400"
                                                                             },
                                                                             "text": "{{user?.data?.marketing_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.marketing_consent_at).toLocaleDateString() : ''}}"
                                                                         },
@@ -150,7 +150,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{!user?.data?.marketing_consent_at}}",
                                                                             "props": {
-                                                                                "className": "text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
+                                                                                "className": "marketing:text-xs marketing:text-gray-600 marketing:dark:text-gray-300 marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:font-medium marketing:bg-gray-100 marketing:dark:bg-gray-700"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.not_agreed"
                                                                         }
@@ -160,7 +160,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "marketing:block marketing:text-xs marketing:text-gray-500 marketing:dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.marketing_consent_desc"
                                                                 }
@@ -177,7 +177,7 @@
                                                         "item_var": "channel"
                                                     },
                                                     "props": {
-                                                        "className": "flex items-start gap-3 ml-8"
+                                                        "className": "marketing:flex marketing:items-start marketing:gap-3 marketing:ml-8"
                                                     },
                                                     "children": [
                                                         {
@@ -186,28 +186,28 @@
                                                             "props": {
                                                                 "checked": "{{!!user?.data?.[channel.key]}}",
                                                                 "disabled": true,
-                                                                "className": "mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                                                                "className": "marketing:mt-0.5 marketing:text-blue-600 marketing:bg-gray-100 marketing:dark:bg-gray-700 marketing:border-gray-300 marketing:dark:border-gray-600 marketing:rounded marketing:cursor-not-allowed"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-1 space-y-1"
+                                                                "className": "marketing:flex-1 marketing:space-y-1"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Div",
                                                                     "props": {
-                                                                        "className": "flex items-center gap-2 flex-wrap"
+                                                                        "className": "marketing:flex marketing:items-center marketing:gap-2 marketing:flex-wrap"
                                                                     },
                                                                     "children": [
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                                                "className": "marketing:text-sm marketing:font-medium marketing:text-gray-900 marketing:dark:text-white"
                                                                             },
                                                                             "text": "{{channel.label}}"
                                                                         },
@@ -216,7 +216,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{user?.data?.[channel.key + '_at']}}",
                                                                             "props": {
-                                                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400"
+                                                                                "className": "marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:text-xs marketing:font-medium marketing:bg-green-100 marketing:dark:bg-green-900 marketing:text-green-800 marketing:dark:text-green-400"
                                                                             },
                                                                             "text": "{{user?.data?.[channel.key + '_at'] ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data[channel.key + '_at']).toLocaleDateString() : ''}}"
                                                                         },
@@ -225,7 +225,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{!user?.data?.[channel.key + '_at']}}",
                                                                             "props": {
-                                                                                "className": "text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
+                                                                                "className": "marketing:text-xs marketing:text-gray-600 marketing:dark:text-gray-300 marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:font-medium marketing:bg-gray-100 marketing:dark:bg-gray-700"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.not_agreed"
                                                                         }
@@ -241,7 +241,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "space-y-3"
+                                                "className": "marketing:space-y-3"
                                             },
                                             "children": [
                                                 {
@@ -249,7 +249,7 @@
                                                     "name": "Label",
                                                     "if": "{{user?.data?.third_party_consent_enabled === true}}",
                                                     "props": {
-                                                        "className": "flex items-start gap-3"
+                                                        "className": "marketing:flex marketing:items-start marketing:gap-3"
                                                     },
                                                     "children": [
                                                         {
@@ -258,28 +258,28 @@
                                                             "props": {
                                                                 "checked": "{{!!user?.data?.third_party_consent}}",
                                                                 "disabled": true,
-                                                                "className": "mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                                                                "className": "marketing:mt-0.5 marketing:text-blue-600 marketing:bg-gray-100 marketing:dark:bg-gray-700 marketing:border-gray-300 marketing:dark:border-gray-600 marketing:rounded marketing:cursor-not-allowed"
                                                             }
                                                         },
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex-1 space-y-1"
+                                                                "className": "marketing:flex-1 marketing:space-y-1"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Div",
                                                                     "props": {
-                                                                        "className": "flex items-center gap-2 flex-wrap"
+                                                                        "className": "marketing:flex marketing:items-center marketing:gap-2 marketing:flex-wrap"
                                                                     },
                                                                     "children": [
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                                                "className": "marketing:text-sm marketing:font-medium marketing:text-gray-900 marketing:dark:text-white"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.third_party_consent"
                                                                         },
@@ -288,7 +288,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{user?.data?.third_party_consent_at}}",
                                                                             "props": {
-                                                                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400"
+                                                                                "className": "marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:text-xs marketing:font-medium marketing:bg-green-100 marketing:dark:bg-green-900 marketing:text-green-800 marketing:dark:text-green-400"
                                                                             },
                                                                             "text": "{{user?.data?.third_party_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.third_party_consent_at).toLocaleDateString() : ''}}"
                                                                         },
@@ -297,7 +297,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{!user?.data?.third_party_consent_at}}",
                                                                             "props": {
-                                                                                "className": "text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
+                                                                                "className": "marketing:text-xs marketing:text-gray-600 marketing:dark:text-gray-300 marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:font-medium marketing:bg-gray-100 marketing:dark:bg-gray-700"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.not_agreed"
                                                                         }
@@ -307,7 +307,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "marketing:block marketing:text-xs marketing:text-gray-500 marketing:dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-marketing.third_party_consent_desc"
                                                                 }
@@ -319,7 +319,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "space-y-1"
+                                                        "className": "marketing:space-y-1"
                                                     },
                                                     "children": [
                                                         {
@@ -327,7 +327,7 @@
                                                             "name": "Label",
                                                             "if": "{{user?.data?.info_disclosure_enabled === true}}",
                                                             "props": {
-                                                                "className": "flex items-start gap-3"
+                                                                "className": "marketing:flex marketing:items-start marketing:gap-3"
                                                             },
                                                             "children": [
                                                                 {
@@ -336,28 +336,28 @@
                                                                     "props": {
                                                                         "checked": "{{!!user?.data?.info_disclosure}}",
                                                                         "disabled": true,
-                                                                        "className": "mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                                                                        "className": "marketing:mt-0.5 marketing:text-blue-600 marketing:bg-gray-100 marketing:dark:bg-gray-700 marketing:border-gray-300 marketing:dark:border-gray-600 marketing:rounded marketing:cursor-not-allowed"
                                                                     }
                                                                 },
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Div",
                                                                     "props": {
-                                                                        "className": "flex-1 space-y-1"
+                                                                        "className": "marketing:flex-1 marketing:space-y-1"
                                                                     },
                                                                     "children": [
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Div",
                                                                             "props": {
-                                                                                "className": "flex items-center gap-2 flex-wrap"
+                                                                                "className": "marketing:flex marketing:items-center marketing:gap-2 marketing:flex-wrap"
                                                                             },
                                                                             "children": [
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Span",
                                                                                     "props": {
-                                                                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                                                        "className": "marketing:text-sm marketing:font-medium marketing:text-gray-900 marketing:dark:text-white"
                                                                                     },
                                                                                     "text": "$t:sirsoft-marketing.info_disclosure"
                                                                                 },
@@ -366,7 +366,7 @@
                                                                                     "name": "Span",
                                                                                     "if": "{{user?.data?.info_disclosure_at}}",
                                                                                     "props": {
-                                                                                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400"
+                                                                                        "className": "marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:text-xs marketing:font-medium marketing:bg-green-100 marketing:dark:bg-green-900 marketing:text-green-800 marketing:dark:text-green-400"
                                                                                     },
                                                                                     "text": "{{user?.data?.info_disclosure_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.info_disclosure_at).toLocaleDateString() : ''}}"
                                                                                 },
@@ -375,7 +375,7 @@
                                                                                     "name": "Span",
                                                                                     "if": "{{!user?.data?.info_disclosure_at}}",
                                                                                     "props": {
-                                                                                        "className": "text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700"
+                                                                                        "className": "marketing:text-xs marketing:text-gray-600 marketing:dark:text-gray-300 marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:font-medium marketing:bg-gray-100 marketing:dark:bg-gray-700"
                                                                                     },
                                                                                     "text": "$t:sirsoft-marketing.not_agreed"
                                                                                 }
@@ -385,7 +385,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                                                                "className": "marketing:block marketing:text-xs marketing:text-gray-500 marketing:dark:text-gray-400"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.info_disclosure_desc"
                                                                         }
@@ -397,7 +397,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400 block ml-8"
+                                                                "className": "marketing:text-xs marketing:text-gray-500 marketing:dark:text-gray-400 marketing:block marketing:ml-8"
                                                             },
                                                             "text": "$t:sirsoft-marketing.info_disclosure_warning"
                                                         }
@@ -412,14 +412,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "mt-6 pt-4"
+                                        "className": "marketing:mt-6 marketing:pt-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "H3",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-white text-sm font-semibold mb-3"
+                                                "className": "marketing:text-gray-900 marketing:dark:text-white marketing:text-sm marketing:font-semibold marketing:mb-3"
                                             },
                                             "text": "$t:admin.users.detail.consent_history"
                                         },
@@ -429,7 +429,7 @@
                                             "name": "Div",
                                             "if": "{{user !== undefined && user !== null && (!user?.data?.consent_histories || user?.data?.consent_histories?.length === 0)}}",
                                             "props": {
-                                                "className": "text-sm text-gray-500 dark:text-gray-400 py-4 text-center"
+                                                "className": "marketing:text-sm marketing:text-gray-500 marketing:dark:text-gray-400 marketing:py-4 marketing:text-center"
                                             },
                                             "text": "$t:sirsoft-marketing.no_consent_history"
                                         },
@@ -439,21 +439,21 @@
                                             "name": "Div",
                                             "if": "{{user?.data?.consent_histories?.length > 0}}",
                                             "props": {
-                                                "className": "max-h-60 overflow-y-auto overflow-x-auto"
+                                                "className": "marketing:max-h-60 marketing:overflow-y-auto marketing:overflow-x-auto"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Table",
                                                     "props": {
-                                                        "className": "divider-list min-w-full"
+                                                        "className": "marketing-divider-list marketing:min-w-full"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Thead",
                                                             "props": {
-                                                                "className": "sticky top-0 bg-gray-50 dark:bg-gray-900 z-10"
+                                                                "className": "marketing:sticky marketing:top-0 marketing:bg-gray-50 marketing:dark:bg-gray-900 marketing:z-10"
                                                             },
                                                             "children": [
                                                                 {
@@ -464,7 +464,7 @@
                                                                             "type": "basic",
                                                                             "name": "Th",
                                                                             "props": {
-                                                                                "className": "text-table-header px-2 py-1.5 text-left"
+                                                                                "className": "marketing-text-table-header marketing:px-2 marketing:py-1.5 marketing:text-left"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.history_date"
                                                                         },
@@ -472,7 +472,7 @@
                                                                             "type": "basic",
                                                                             "name": "Th",
                                                                             "props": {
-                                                                                "className": "text-table-header px-2 py-1.5 text-left"
+                                                                                "className": "marketing-text-table-header marketing:px-2 marketing:py-1.5 marketing:text-left"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.history_channel_key"
                                                                         },
@@ -480,7 +480,7 @@
                                                                             "type": "basic",
                                                                             "name": "Th",
                                                                             "props": {
-                                                                                "className": "text-table-header px-2 py-1.5 text-left"
+                                                                                "className": "marketing-text-table-header marketing:px-2 marketing:py-1.5 marketing:text-left"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.history_action"
                                                                         },
@@ -488,7 +488,7 @@
                                                                             "type": "basic",
                                                                             "name": "Th",
                                                                             "props": {
-                                                                                "className": "text-table-header px-2 py-1.5 text-left"
+                                                                                "className": "marketing-text-table-header marketing:px-2 marketing:py-1.5 marketing:text-left"
                                                                             },
                                                                             "text": "$t:sirsoft-marketing.history_source"
                                                                         }
@@ -500,7 +500,7 @@
                                                             "type": "basic",
                                                             "name": "Tbody",
                                                             "props": {
-                                                                "className": "divider-list"
+                                                                "className": "marketing-divider-list"
                                                             },
                                                             "children": [
                                                                 {
@@ -516,7 +516,7 @@
                                                                             "type": "basic",
                                                                             "name": "Td",
                                                                             "props": {
-                                                                                "className": "text-gray-900 dark:text-white px-2 py-1.5 text-xs whitespace-nowrap"
+                                                                                "className": "marketing:text-gray-900 marketing:dark:text-white marketing:px-2 marketing:py-1.5 marketing:text-xs marketing:whitespace-nowrap"
                                                                             },
                                                                             "text": "{{history?.created_at ?? '-'}}"
                                                                         },
@@ -524,7 +524,7 @@
                                                                             "type": "basic",
                                                                             "name": "Td",
                                                                             "props": {
-                                                                                "className": "text-gray-900 dark:text-white px-2 py-1.5 text-xs"
+                                                                                "className": "marketing:text-gray-900 marketing:dark:text-white marketing:px-2 marketing:py-1.5 marketing:text-xs"
                                                                             },
                                                                             "text": "{{history?.channel_key === 'marketing_consent' ? '$t:sirsoft-marketing.marketing_consent' : history?.channel_key === 'third_party_consent' ? '$t:sirsoft-marketing.third_party_consent' : history?.channel_key === 'info_disclosure' ? '$t:sirsoft-marketing.info_disclosure' : ((user?.data?.channels ?? []).find(ch => ch.key === history?.channel_key)?.label ?? history?.channel_key ?? '-')}}"
                                                                         },
@@ -532,14 +532,14 @@
                                                                             "type": "basic",
                                                                             "name": "Td",
                                                                             "props": {
-                                                                                "className": "px-2 py-1.5 text-xs"
+                                                                                "className": "marketing:px-2 marketing:py-1.5 marketing:text-xs"
                                                                             },
                                                                             "children": [
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Span",
                                                                                     "props": {
-                                                                                        "className": "{{history?.action === 'granted' ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}"
+                                                                                        "className": "{{history?.action === 'granted' ? 'marketing:text-green-700 marketing:dark:text-green-400' : 'marketing:text-red-600 marketing:dark:text-red-400'}}"
                                                                                     },
                                                                                     "text": "{{history?.action === 'granted' ? '$t:sirsoft-marketing.action_granted' : '$t:sirsoft-marketing.action_revoked'}}"
                                                                                 }
@@ -549,7 +549,7 @@
                                                                             "type": "basic",
                                                                             "name": "Td",
                                                                             "props": {
-                                                                                "className": "px-2 py-1.5 text-xs text-gray-500 dark:text-gray-400"
+                                                                                "className": "marketing:px-2 marketing:py-1.5 marketing:text-xs marketing:text-gray-500 marketing:dark:text-gray-400"
                                                                             },
                                                                             "text": "{{history?.source === 'register' ? '$t:sirsoft-marketing.source_register' : history?.source === 'admin' ? '$t:sirsoft-marketing.source_admin' : '$t:sirsoft-marketing.source_profile'}}"
                                                                         }

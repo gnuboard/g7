@@ -1,0 +1,24 @@
+/* 합성 관리자 템플릿 원본 CSS — 의미 클래스 이름과 @theme 만 쓰인다 */
+@import "tailwindcss";
+@theme {
+  --font-sans: 'Fixture Sans', ui-sans-serif, sans-serif;
+}
+@layer components {
+  .input { @apply h-9 bg-gray-100; }
+  .card { @apply rounded-lg shadow; }
+  .card .card-title { @apply text-sm; }
+  .spinner { @apply animate-spin; }
+  .hover-lift { @apply transition; }
+  .section-heading-md { @apply font-semibold; }
+  /* 겹침(Tailwind 유틸리티와 같은 이름): 복사 가능한 규칙이 있다 → 두 이름 */
+  .table { @apply w-full; }
+  .table th { @apply px-2; }
+  /* 겹침: 복사 가능한 규칙이 없다(.dark 가 맨 앞 조상이 아님) → Tailwind 형만 */
+  .panel .dark .hidden { opacity: .5; }
+  .page-header { @apply flex; }
+}
+
+/* 층 밖 의미 규칙 — 유틸리티(px-*)를 이겨야 해서 @layer components 밖에 둔다 */
+@media (min-width: 768px) {
+  .page-header { padding-inline: 1.5rem; }
+}

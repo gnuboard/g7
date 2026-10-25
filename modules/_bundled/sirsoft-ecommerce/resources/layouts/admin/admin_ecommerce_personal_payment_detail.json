@@ -24,12 +24,12 @@
                 "responsive": {
                     "portable": {
                         "props": {
-                            "className": "admin-page-content-compact"
+                            "className": "ecommerce-admin-page-content-compact"
                         }
                     }
                 },
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "ecommerce-admin-page-content"
                 },
                 "children": [
                     {
@@ -37,7 +37,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-start justify-between gap-4 mb-6"
+                            "className": "ecommerce-flex-start ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -49,7 +49,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title mb-2"
+                                            "className": "ecommerce-page-title ecommerce:mb-2"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.title"
                                     },
@@ -57,7 +57,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center flex-wrap gap-2 text-sm text-secondary"
+                                            "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-2 ecommerce:text-sm ecommerce-text-secondary"
                                         },
                                         "children": [
                                             {
@@ -69,7 +69,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "font-medium text-primary"
+                                                    "className": "ecommerce:font-medium ecommerce-text-primary"
                                                 },
                                                 "text": "PP20251028-005"
                                             },
@@ -77,7 +77,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 },
                                                 "text": "|"
                                             },
@@ -90,7 +90,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "font-medium text-primary"
+                                                    "className": "ecommerce:font-medium ecommerce-text-primary"
                                                 },
                                                 "text": "2025-10-28 09:15:30"
                                             },
@@ -98,7 +98,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-gray-500 dark:text-gray-400"
+                                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 },
                                                 "text": "|"
                                             },
@@ -111,7 +111,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "badge badge-yellow"
+                                                    "className": "ecommerce-badge ecommerce-badge-yellow"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.pending"
                                             }
@@ -124,7 +124,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2 flex-shrink-0"
+                                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-shrink-0"
                                 },
                                 "children": [
                                     {
@@ -132,7 +132,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-outline"
+                                            "className": "ecommerce-btn ecommerce-btn-outline"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.list"
                                     },
@@ -141,7 +141,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-outline"
+                                            "className": "ecommerce-btn ecommerce-btn-outline"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.edit"
                                     },
@@ -150,7 +150,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-primary bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-800 text-white dark:text-white"
+                                            "className": "ecommerce-btn ecommerce-btn-primary ecommerce:bg-red-600 ecommerce:dark:bg-red-700 ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-800 ecommerce:text-white ecommerce:dark:text-white"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.actions.delete"
                                     }
@@ -163,7 +163,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card mb-6"
+                            "className": "ecommerce-admin-card ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -171,7 +171,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-start justify-between mb-4"
+                                    "className": "ecommerce-flex-start ecommerce:justify-between ecommerce:mb-4"
                                 },
                                 "children": [
                                     {
@@ -182,7 +182,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "text-lg font-semibold text-heading"
+                                                    "className": "ecommerce:text-lg ecommerce:font-semibold ecommerce-text-heading"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.sample.products.standard_membership_6m"
                                             },
@@ -190,7 +190,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "text-xl font-bold text-heading mt-1"
+                                                    "className": "ecommerce:text-xl ecommerce:font-bold ecommerce-text-heading ecommerce:mt-1"
                                                 },
                                                 "text": "₩60,000"
                                             }
@@ -200,7 +200,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "badge badge-yellow"
+                                            "className": "ecommerce-badge ecommerce-badge-yellow"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment.status.pending"
                                     }
@@ -211,28 +211,28 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "border-t border-gray-200 dark:border-gray-700 pt-4"
+                                    "className": "ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex flex-wrap gap-x-8 gap-y-2 text-sm mb-2"
+                                            "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:gap-x-8 ecommerce:gap-y-2 ecommerce:text-sm ecommerce:mb-2"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "ecommerce-flex-center ecommerce:gap-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-secondary"
+                                                            "className": "ecommerce-text-secondary"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.paid_at"
                                                     },
@@ -240,7 +240,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "ecommerce-tone-error font-medium"
+                                                            "className": "ecommerce-tone-error ecommerce:font-medium"
                                                         },
                                                         "text": "2025-10-27 16:50:10"
                                                     }
@@ -250,14 +250,14 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "ecommerce-flex-center ecommerce:gap-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-secondary"
+                                                            "className": "ecommerce-text-secondary"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.payment_method"
                                                     },
@@ -265,7 +265,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-heading"
+                                                            "className": "ecommerce-text-heading"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment.filter.kakao_pay"
                                                     }
@@ -275,14 +275,14 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "ecommerce-flex-center ecommerce:gap-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-secondary"
+                                                            "className": "ecommerce-text-secondary"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.payer_name"
                                                     },
@@ -290,7 +290,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-heading"
+                                                            "className": "ecommerce-text-heading"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.sample.people.kim_jiyoung"
                                                     }
@@ -302,21 +302,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex flex-wrap gap-x-8 gap-y-2 text-sm mb-3"
+                                            "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:gap-x-8 ecommerce:gap-y-2 ecommerce:text-sm ecommerce:mb-3"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "ecommerce-flex-center ecommerce:gap-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-secondary"
+                                                            "className": "ecommerce-text-secondary"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.approval_number"
                                                     },
@@ -324,7 +324,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-heading"
+                                                            "className": "ecommerce-text-heading"
                                                         },
                                                         "text": "45678912"
                                                     }
@@ -334,14 +334,14 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "ecommerce-flex-center ecommerce:gap-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-secondary"
+                                                            "className": "ecommerce-text-secondary"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.product_info.transaction_id"
                                                     },
@@ -349,7 +349,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-heading"
+                                                            "className": "ecommerce-text-heading"
                                                         },
                                                         "text": "TID20251027165234567"
                                                     }
@@ -361,7 +361,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "flex-center text-sm text-blue-600 dark:text-blue-400 hover:underline gap-1"
+                                            "className": "ecommerce-flex-center ecommerce:text-sm ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline ecommerce:gap-1"
                                         },
                                         "children": [
                                             {
@@ -369,7 +369,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "file-text",
-                                                    "className": "text-base"
+                                                    "className": "ecommerce:text-base"
                                                 }
                                             },
                                             {
@@ -386,7 +386,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "alert-warning"
+                                    "className": "ecommerce-alert-warning"
                                 },
                                 "children": [
                                     {
@@ -394,14 +394,14 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "clock",
-                                            "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"
+                                            "className": "ecommerce:text-xl ecommerce:text-yellow-700 ecommerce:dark:text-yellow-400 ecommerce:flex-shrink-0"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "ecommerce-tone-warning-soft text-xs"
+                                            "className": "ecommerce-tone-warning-soft ecommerce:text-xs"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.status_message.pending"
                                     }
@@ -414,7 +414,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "grid-2col-responsive mb-6"
+                            "className": "ecommerce-grid-2col-responsive ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -422,14 +422,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "admin-card"
+                                    "className": "ecommerce-admin-card"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2 mb-4"
+                                            "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4"
                                         },
                                         "children": [
                                             {
@@ -437,14 +437,14 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "user",
-                                                    "className": "text-xl icon-muted text-gray-500 dark:text-gray-400"
+                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "card-title"
+                                                    "className": "ecommerce-card-title"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.title"
                                             }
@@ -454,7 +454,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid-2col"
+                                            "className": "ecommerce-grid-2col"
                                         },
                                         "children": [
                                             {
@@ -465,7 +465,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-label-subtle text-xs mb-1"
+                                                            "className": "ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.name"
                                                     },
@@ -473,7 +473,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-heading"
+                                                            "className": "ecommerce-text-heading"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.sample.people.jung_sujin"
                                                     }
@@ -487,7 +487,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-label-subtle text-xs mb-1"
+                                                            "className": "ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.member_id"
                                                     },
@@ -495,14 +495,14 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-1"
+                                                            "className": "ecommerce-flex-center ecommerce:gap-1"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                                    "className": "ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline"
                                                                 },
                                                                 "text": "user005"
                                                             },
@@ -511,7 +511,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "external-link",
-                                                                    "className": "text-xs text-blue-600 dark:text-blue-400"
+                                                                    "className": "ecommerce:text-xs ecommerce:text-blue-600 ecommerce:dark:text-blue-400"
                                                                 }
                                                             }
                                                         ]
@@ -526,7 +526,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-label-subtle text-xs mb-1"
+                                                            "className": "ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.email"
                                                     },
@@ -534,7 +534,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-heading"
+                                                            "className": "ecommerce-text-heading"
                                                         },
                                                         "text": "jung@example.com"
                                                     }
@@ -548,7 +548,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-label-subtle text-xs mb-1"
+                                                            "className": "ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.member_info.phone"
                                                     },
@@ -556,7 +556,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-heading"
+                                                            "className": "ecommerce-text-heading"
                                                         },
                                                         "text": "010-5678-9012"
                                                     }
@@ -571,14 +571,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "admin-card"
+                                    "className": "ecommerce-admin-card"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2 mb-4"
+                                            "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4"
                                         },
                                         "children": [
                                             {
@@ -586,14 +586,14 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "globe",
-                                                    "className": "text-xl icon-muted text-gray-500 dark:text-gray-400"
+                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "card-title"
+                                                    "className": "ecommerce-card-title"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_detail.title"
                                             }
@@ -603,7 +603,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "grid-2col"
+                                            "className": "ecommerce-grid-2col"
                                         },
                                         "children": [
                                             {
@@ -614,7 +614,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-label-subtle text-xs mb-1"
+                                                            "className": "ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_detail.payment_number"
                                                     },
@@ -622,7 +622,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-heading"
+                                                            "className": "ecommerce-text-heading"
                                                         },
                                                         "text": "PP20251028-005"
                                                     }
@@ -636,7 +636,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-label-subtle text-xs mb-1"
+                                                            "className": "ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_detail.order_number"
                                                     },
@@ -644,14 +644,14 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex-center gap-1"
+                                                            "className": "ecommerce-flex-center ecommerce:gap-1"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                                    "className": "ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline"
                                                                 },
                                                                 "text": "ORD20251028-5678"
                                                             },
@@ -660,7 +660,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "external-link",
-                                                                    "className": "text-xs text-blue-600 dark:text-blue-400"
+                                                                    "className": "ecommerce:text-xs ecommerce:text-blue-600 ecommerce:dark:text-blue-400"
                                                                 }
                                                             }
                                                         ]
@@ -675,7 +675,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-label-subtle text-xs mb-1"
+                                                            "className": "ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_detail.created_at"
                                                     },
@@ -683,7 +683,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-heading"
+                                                            "className": "ecommerce-text-heading"
                                                         },
                                                         "text": "2025-10-28 09:15:30"
                                                     }
@@ -697,7 +697,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-label-subtle text-xs mb-1"
+                                                            "className": "ecommerce-text-label-subtle ecommerce:text-xs ecommerce:mb-1"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_detail.expired_at"
                                                     },
@@ -705,7 +705,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-heading"
+                                                            "className": "ecommerce-text-heading"
                                                         },
                                                         "text": "2025-11-04 09:15:30"
                                                     }
@@ -722,7 +722,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "grid-2col-responsive mb-6"
+                            "className": "ecommerce-grid-2col-responsive ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -730,14 +730,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "admin-card"
+                                    "className": "ecommerce-admin-card"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2 mb-4"
+                                            "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4"
                                         },
                                         "children": [
                                             {
@@ -745,14 +745,14 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "link",
-                                                    "className": "text-xl icon-muted text-gray-500 dark:text-gray-400"
+                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "card-title"
+                                                    "className": "ecommerce-card-title"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.title"
                                             }
@@ -762,7 +762,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2"
+                                            "className": "ecommerce-flex-center ecommerce:gap-2"
                                         },
                                         "children": [
                                             {
@@ -770,7 +770,7 @@
                                                 "name": "Input",
                                                 "props": {
                                                     "type": "text",
-                                                    "className": "input-readonly flex-1",
+                                                    "className": "ecommerce-input-readonly ecommerce:flex-1",
                                                     "value": "https://pay.example.com/pp-jk1789mno123pqr456",
                                                     "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.title",
                                                     "readOnly": true
@@ -781,7 +781,7 @@
                                                 "name": "Button",
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "btn btn-icon",
+                                                    "className": "ecommerce-btn ecommerce-btn-icon",
                                                     "title": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.copy"
                                                 },
                                                 "children": [
@@ -790,7 +790,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "copy",
-                                                            "className": "text-xl"
+                                                            "className": "ecommerce:text-xl"
                                                         }
                                                     }
                                                 ]
@@ -802,7 +802,7 @@
                                                     "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.open",
                                                     "title": "$t:sirsoft-ecommerce.admin.personal_payment_detail.payment_link.open",
                                                     "type": "button",
-                                                    "className": "btn btn-primary btn-icon text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100"
+                                                    "className": "ecommerce-btn ecommerce-btn-primary ecommerce-btn-icon ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100"
                                                 },
                                                 "children": [
                                                     {
@@ -810,7 +810,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "external-link",
-                                                            "className": "text-xl"
+                                                            "className": "ecommerce:text-xl"
                                                         }
                                                     }
                                                 ]
@@ -824,21 +824,21 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "admin-card"
+                                    "className": "ecommerce-admin-card"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-between mb-4"
+                                            "className": "ecommerce-flex-between ecommerce:mb-4"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "ecommerce-flex-center ecommerce:gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -846,14 +846,14 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "file-text",
-                                                            "className": "text-xl icon-muted text-gray-500 dark:text-gray-400"
+                                                            "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "H3",
                                                         "props": {
-                                                            "className": "card-title"
+                                                            "className": "ecommerce-card-title"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.memo.title"
                                                     }
@@ -864,7 +864,7 @@
                                                 "name": "Button",
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "flex-center text-sm text-blue-600 dark:text-blue-400 hover:underline gap-1"
+                                                    "className": "ecommerce-flex-center ecommerce:text-sm ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline ecommerce:gap-1"
                                                 },
                                                 "children": [
                                                     {
@@ -872,7 +872,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "pen",
-                                                            "className": "text-base"
+                                                            "className": "ecommerce:text-base"
                                                         }
                                                     },
                                                     {
@@ -888,7 +888,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm text-secondary min-h-[60px]"
+                                            "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:rounded-lg ecommerce:p-3 ecommerce:text-sm ecommerce-text-secondary ecommerce:min-h-[60px]"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.sample.misc.vbank_issued_waiting"
                                     }
@@ -901,7 +901,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card"
+                            "className": "ecommerce-admin-card"
                         },
                         "children": [
                             {
@@ -909,14 +909,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-between cursor-pointer"
+                                    "className": "ecommerce-flex-between ecommerce:cursor-pointer"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-3"
+                                            "className": "ecommerce-flex-center ecommerce:gap-3"
                                         },
                                         "children": [
                                             {
@@ -924,14 +924,14 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "calendar",
-                                                    "className": "text-xl icon-muted text-gray-500 dark:text-gray-400"
+                                                    "className": "ecommerce:text-xl ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "card-title"
+                                                    "className": "ecommerce-card-title"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.log.title"
                                             },
@@ -939,7 +939,7 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "badge badge-gray"
+                                                    "className": "ecommerce-badge ecommerce-badge-gray"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.sample.fmt.items|count=5"
                                             }
@@ -950,7 +950,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "chevron-down",
-                                            "className": "text-xl text-gray-500 dark:text-gray-500"
+                                            "className": "ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-500"
                                         }
                                     }
                                 ]
@@ -960,7 +960,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "mt-4 border-t border-gray-200 dark:border-gray-700 pt-4"
+                                    "className": "ecommerce:mt-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4"
                                 },
                                 "children": [
                                     {
@@ -968,21 +968,21 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center flex-wrap justify-end gap-3 mb-4"
+                                            "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:justify-end ecommerce:gap-3 ecommerce:mb-4"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "ecommerce-flex-center ecommerce:gap-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-sm text-secondary"
+                                                            "className": "ecommerce:text-sm ecommerce-text-secondary"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.log.sort:"
                                                     },
@@ -990,7 +990,7 @@
                                                         "type": "basic",
                                                         "name": "Select",
                                                         "props": {
-                                                            "className": "w-40",
+                                                            "className": "ecommerce:w-40",
                                                             "value": "{{_local.logSortBy}}",
                                                             "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_detail.log.sort",
                                                             "options": [
@@ -1011,14 +1011,14 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "ecommerce-flex-center ecommerce:gap-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-sm text-secondary"
+                                                            "className": "ecommerce:text-sm ecommerce-text-secondary"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.log.per_page:"
                                                     },
@@ -1026,7 +1026,7 @@
                                                         "type": "basic",
                                                         "name": "Select",
                                                         "props": {
-                                                            "className": "w-20",
+                                                            "className": "ecommerce:w-20",
                                                             "value": "{{_local.logPerPage}}",
                                                             "aria-label": "$t:sirsoft-ecommerce.admin.personal_payment_detail.log.per_page",
                                                             "options": [
@@ -1056,19 +1056,19 @@
                                         "responsive": {
                                             "portable": {
                                                 "props": {
-                                                    "className": "hidden"
+                                                    "className": "ecommerce:hidden ecommerce-hidden"
                                                 }
                                             }
                                         },
                                         "props": {
-                                            "className": "table-container table-desktop overflow-x-auto"
+                                            "className": "ecommerce-table-container ecommerce-table-desktop ecommerce:overflow-x-auto"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Table",
                                                 "props": {
-                                                    "className": "log-table"
+                                                    "className": "ecommerce-log-table"
                                                 },
                                                 "children": [
                                                     {
@@ -1083,7 +1083,7 @@
                                                                         "type": "basic",
                                                                         "name": "Th",
                                                                         "props": {
-                                                                            "className": "w-44"
+                                                                            "className": "ecommerce:w-44"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.log.columns.processed_at"
                                                                     },
@@ -1091,7 +1091,7 @@
                                                                         "type": "basic",
                                                                         "name": "Th",
                                                                         "props": {
-                                                                            "className": "w-36"
+                                                                            "className": "ecommerce:w-36"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.personal_payment_detail.log.columns.processor"
                                                                     },
@@ -1125,7 +1125,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "log-table-actor"
+                                                                                    "className": "ecommerce-log-table-actor"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.admin|id=admin"
                                                                             }
@@ -1155,7 +1155,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "log-table-actor"
+                                                                                    "className": "ecommerce-log-table-actor"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.people.system"
                                                                             }
@@ -1185,7 +1185,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "log-table-actor"
+                                                                                    "className": "ecommerce-log-table-actor"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.admin|id=admin"
                                                                             }
@@ -1211,33 +1211,33 @@
                                         "responsive": {
                                             "portable": {
                                                 "props": {
-                                                    "className": "row-stack"
+                                                    "className": "ecommerce-row-stack"
                                                 }
                                             }
                                         },
                                         "props": {
-                                            "className": "hidden"
+                                            "className": "ecommerce:hidden ecommerce-hidden"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "log-card"
+                                                    "className": "ecommerce-log-card"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "log-card-header"
+                                                            "className": "ecommerce-log-card-header"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "log-table-actor"
+                                                                    "className": "ecommerce-log-table-actor"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.admin|id=admin"
                                                             },
@@ -1245,7 +1245,7 @@
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-tertiary text-sm"
+                                                                    "className": "ecommerce-text-tertiary ecommerce:text-sm"
                                                                 },
                                                                 "text": "2025-10-28 10:30:25"
                                                             }
@@ -1255,7 +1255,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "log-card-body"
+                                                            "className": "ecommerce-log-card-body"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.sample.misc.resend_payment_link"
                                                     }
@@ -1265,21 +1265,21 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "log-card"
+                                                    "className": "ecommerce-log-card"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "log-card-header"
+                                                            "className": "ecommerce-log-card-header"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "log-table-actor"
+                                                                    "className": "ecommerce-log-table-actor"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.people.system"
                                                             },
@@ -1287,7 +1287,7 @@
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-tertiary text-sm"
+                                                                    "className": "ecommerce-text-tertiary ecommerce:text-sm"
                                                                 },
                                                                 "text": "2025-10-28 09:15:30"
                                                             }
@@ -1297,7 +1297,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "log-card-body"
+                                                            "className": "ecommerce-log-card-body"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.sample.misc.create_payment_link"
                                                     }
@@ -1307,21 +1307,21 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "log-card"
+                                                    "className": "ecommerce-log-card"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "log-card-header"
+                                                            "className": "ecommerce-log-card-header"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "log-table-actor"
+                                                                    "className": "ecommerce-log-table-actor"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.fmt.member_with_id|name=$t:sirsoft-ecommerce.admin.sample.people.admin|id=admin"
                                                             },
@@ -1329,7 +1329,7 @@
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "text-tertiary text-sm"
+                                                                    "className": "ecommerce-text-tertiary ecommerce:text-sm"
                                                                 },
                                                                 "text": "2025-10-28 09:15:00"
                                                             }
@@ -1339,7 +1339,7 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "log-card-body"
+                                                            "className": "ecommerce-log-card-body"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.sample.misc.register_payment_request"
                                                     }
@@ -1352,7 +1352,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center justify-center gap-1 mt-4 pt-4"
+                                            "className": "ecommerce-flex-center ecommerce:justify-center ecommerce:gap-1 ecommerce:mt-4 ecommerce:pt-4"
                                         },
                                         "children": [
                                             {
@@ -1361,7 +1361,7 @@
                                                 "props": {
                                                     "aria-label": "$t:common.first_page",
                                                     "type": "button",
-                                                    "className": "btn btn-icon",
+                                                    "className": "ecommerce-btn ecommerce-btn-icon",
                                                     "disabled": true
                                                 },
                                                 "children": [
@@ -1370,7 +1370,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "angles-left",
-                                                            "className": "text-base"
+                                                            "className": "ecommerce:text-base"
                                                         }
                                                     }
                                                 ]
@@ -1381,7 +1381,7 @@
                                                 "props": {
                                                     "aria-label": "$t:common.prev_page",
                                                     "type": "button",
-                                                    "className": "btn btn-icon",
+                                                    "className": "ecommerce-btn ecommerce-btn-icon",
                                                     "disabled": true
                                                 },
                                                 "children": [
@@ -1390,7 +1390,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "chevron-left",
-                                                            "className": "text-base"
+                                                            "className": "ecommerce:text-base"
                                                         }
                                                     }
                                                 ]
@@ -1400,7 +1400,7 @@
                                                 "name": "Button",
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "flex-center w-8 h-8 justify-center rounded-md text-sm font-medium bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                                                    "className": "ecommerce-flex-center ecommerce:w-8 ecommerce:h-8 ecommerce:justify-center ecommerce:rounded-md ecommerce:text-sm ecommerce:font-medium ecommerce:bg-gray-900 ecommerce:text-white ecommerce:dark:bg-white ecommerce:dark:text-gray-900"
                                                 },
                                                 "text": "1"
                                             },
@@ -1410,7 +1410,7 @@
                                                 "props": {
                                                     "aria-label": "$t:common.next_page",
                                                     "type": "button",
-                                                    "className": "btn btn-icon"
+                                                    "className": "ecommerce-btn ecommerce-btn-icon"
                                                 },
                                                 "children": [
                                                     {
@@ -1418,7 +1418,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "chevron-right",
-                                                            "className": "text-base"
+                                                            "className": "ecommerce:text-base"
                                                         }
                                                     }
                                                 ]
@@ -1429,7 +1429,7 @@
                                                 "props": {
                                                     "aria-label": "$t:common.last_page",
                                                     "type": "button",
-                                                    "className": "btn btn-icon"
+                                                    "className": "ecommerce-btn ecommerce-btn-icon"
                                                 },
                                                 "children": [
                                                     {
@@ -1437,7 +1437,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "angles-right",
-                                                            "className": "text-base"
+                                                            "className": "ecommerce:text-base"
                                                         }
                                                     }
                                                 ]

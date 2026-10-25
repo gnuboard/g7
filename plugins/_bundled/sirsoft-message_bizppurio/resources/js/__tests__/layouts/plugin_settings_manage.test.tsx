@@ -595,7 +595,7 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         expect(findAllByName(manageView, 'Table').length).toBe(0);
         expect(header).toBeTruthy();
         expect(String((header.props as { className?: string })?.className)).toContain('grid-cols-12');
-        expect(portableClass(header)).toBe('hidden');
+        expect(portableClass(header)).toBe('bizppurio:hidden bizppurio-hidden');
         const raw = JSON.stringify(header);
         for (const c of ['notification', 'owner', 'status', 'sms', 'requested_at', 'synced_at', 'actions']) {
             expect(raw, `columns.${c}`).toContain('manage.columns.' + c);
@@ -610,8 +610,8 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         expect(row).toBeTruthy();
         expect(row!.responsive, '반복 노드 자체에 responsive 를 두지 않는다(내부 래퍼 담당)').toBeUndefined();
         const inner = (row!.children ?? [])[0] as AnyNode;
-        expect(String((inner.props as { className?: string })?.className)).toContain('grid grid-cols-12');
-        expect(portableClass(inner)).toContain('flex flex-wrap');
+        expect(String((inner.props as { className?: string })?.className)).toContain('bizppurio:grid bizppurio:grid-cols-12');
+        expect(portableClass(inner)).toContain('bizppurio:flex bizppurio:flex-wrap');
     });
 
     /**
@@ -620,7 +620,7 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
     it('소속·신청일·동기화일 셀은 portable 에서 숨고, 카드 메타 줄이 대신 노출된다', () => {
         const row = findIterationRow(rowsWrap) as AnyNode;
         const rowInner = (row.children ?? [])[0] as AnyNode;
-        const hiddenCells = (rowInner.children ?? []).filter((c) => portableClass(c) === 'hidden');
+        const hiddenCells = (rowInner.children ?? []).filter((c) => portableClass(c) === 'bizppurio:hidden bizppurio-hidden');
         expect(hiddenCells.length).toBeGreaterThanOrEqual(3);
         // 메타 줄: 신청일+동기화일을 한 텍스트에 담고, 데스크톱(hidden)→portable 에서만 보인다
         const all: AnyNode[] = [];
@@ -652,7 +652,7 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
             .find((b) => b.text === '$t:sirsoft-message_bizppurio.manage.btn_search') as AnyNode;
         expect(searchBtn).toBeTruthy();
         const cls = String((searchBtn.props as { className?: string })?.className);
-        expect(cls).toContain('btn btn-primary');
+        expect(cls).toContain('bizppurio-btn bizppurio-btn-primary');
         expect(cls).not.toContain('text-xs');
     });
 
@@ -665,7 +665,7 @@ describe('manage — 목록 모바일 카드 전환 + 도구줄 버튼 일관성
         expect(refreshBtn).toBeTruthy();
         expect(String((refreshBtn.props as { className?: string })?.className)).toContain('btn-icon');
         const raw = JSON.stringify(refreshBtn);
-        expect(raw).toContain('fa-arrows-rotate');
+        expect(raw).toContain('"name":"arrows-rotate"');
         expect(raw).toContain('bizppurio_templates_list');
         expect(raw).not.toContain('"handler":"navigate"');
     });

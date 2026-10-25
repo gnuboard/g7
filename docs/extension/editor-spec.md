@@ -281,7 +281,7 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 
 ### darkMode — 다크 모드 표현 (소형, manifest 인라인 권장)
 
-템플릿이 다크 모드를 어떻게 표현하는지 선언한다. `strategy`: `ancestor-class`(조상 클래스, Tailwind `.dark`) / `media-query` / `none`(다크 미지원 — 편집기 다크 탭 비노출). `previewIsolation`(`rewriteSelector` → `replaceWith`, `flattenLayers`)은 편집기 프리뷰를 admin 호스트의 `html.dark` 조상과 독립적으로 격리하기 위한 셀렉터 치환 규칙이다. 코어 CSS 서빙 API 가 이 선언대로 편집기용 CSS 의 다크 셀렉터를 프리뷰 전용 마커로 치환해 서빙한다(사용자 페이지 CSS 는 원본 그대로 — 무영향).
+템플릿이 다크 모드를 어떻게 표현하는지 선언한다. `strategy`: `ancestor-class`(조상 클래스, Tailwind `.dark`) / `media-query` / `none`(다크 미지원 — 편집기 다크 탭 비노출). `previewIsolation`(`rewriteSelector` → `replaceWith`, `flattenLayers`)은 편집기 프리뷰를 admin 호스트의 `html.dark` 조상과 독립적으로 격리하기 위한 셀렉터 치환 규칙이다. `flattenLayers: true` 는 CSS 의 층 이름(Tailwind `theme`·`base`·`utilities` 등)을 프리뷰 층 `g7-preview` 하나로 모은다 — 관리자 화면 CSS 의 같은 층 이름과 순서가 섞이지 않고, 확장 CSS 의미 칸(`g7-extension`)보다는 아래에 놓인다. 코어 CSS 서빙 API 가 이 선언대로 편집기용 CSS 의 다크 셀렉터를 프리뷰 전용 마커로 치환해 서빙한다(사용자 페이지 CSS 는 원본 그대로 — 무영향).
 
 **화면 폭 조건은 선언하지 않는다.** 다크와 달리 화면 폭은 편집기가 자동으로 격리한다 — 편집기가 떠 있는 동안
 문서의 스타일시트에서 폭 `@media` 와 `vw` 를 프리뷰 영역 폭 기준으로 나눠 두고, 편집기를 벗어나면 원래대로

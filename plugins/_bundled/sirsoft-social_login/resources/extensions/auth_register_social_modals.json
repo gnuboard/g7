@@ -102,7 +102,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "space-y-5"
+                        "className": "sl:space-y-5"
                     },
                     "children": [
                         {
@@ -112,14 +112,14 @@
                             "name": "Div",
                             "if": "{{_global.socialLoginSignupExpired === true}}",
                             "props": {
-                                "className": "space-y-4 text-center"
+                                "className": "sl:space-y-4 sl:text-center"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
                                     },
                                     "text": "$t:sirsoft-social_login.signup.expired"
                                 },
@@ -146,7 +146,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "w-full px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer"
+                                        "className": "sl:w-full sl:px-4 sl:py-2.5 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:font-medium sl:cursor-pointer"
                                     },
                                     "text": "$t:sirsoft-social_login.signup.retry_login"
                                 }
@@ -158,14 +158,14 @@
                             "name": "Div",
                             "if": "{{_global.socialLoginSignupExpired !== true && !!_global.socialLoginSignup}}",
                             "props": {
-                                "className": "space-y-5"
+                                "className": "sl:space-y-5"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                        "className": "sl:text-sm sl:text-gray-600 sl:dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-social_login.signup.intro"
                                 },
@@ -175,7 +175,7 @@
                                     "name": "Div",
                                     "if": "{{_global.socialLoginSignup?.show_profile_fields === true}}",
                                     "props": {
-                                        "className": "space-y-3"
+                                        "className": "sl:space-y-3"
                                     },
                                     "children": [
                                         {
@@ -187,7 +187,7 @@
                                                     "name": "Label",
                                                     "props": {
                                                         "htmlFor": "social_signup_name",
-                                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                        "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300 sl:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-social_login.signup.name"
                                                 },
@@ -211,7 +211,7 @@
                                                         "name": "social_name",
                                                         "value": "{{_global.socialLoginForm?.name ?? ''}}",
                                                         "maxLength": "255",
-                                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                        "className": "sl:w-full sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white",
                                                         "disabled": "{{_global.socialLoginBusy}}"
                                                     }
                                                 }
@@ -226,7 +226,7 @@
                                                     "name": "Label",
                                                     "props": {
                                                         "htmlFor": "social_signup_nickname",
-                                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                                        "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300 sl:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-social_login.signup.nickname"
                                                 },
@@ -250,7 +250,7 @@
                                                         "name": "social_nickname",
                                                         "value": "{{_global.socialLoginForm?.nickname ?? ''}}",
                                                         "maxLength": "50",
-                                                        "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                        "className": "sl:w-full sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white",
                                                         "disabled": "{{_global.socialLoginBusy}}"
                                                     }
                                                 }
@@ -264,14 +264,14 @@
                                     "name": "Div",
                                     "if": "{{_global.socialLoginSignup?.email?.mode === 'locked'}}",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "font-medium"
+                                                "className": "sl:font-medium"
                                             },
                                             "text": "$t:sirsoft-social_login.signup.email"
                                         },
@@ -288,7 +288,7 @@
                                     "name": "P",
                                     "if": "{{_global.socialLoginSignup?.email?.mode === 'placeholder'}}",
                                     "props": {
-                                        "className": "p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-300"
+                                        "className": "sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:text-sm sl:text-yellow-800 sl:dark:text-yellow-300"
                                     },
                                     "text": "$t:sirsoft-social_login.signup.placeholder_notice"
                                 },
@@ -298,7 +298,7 @@
                                     "name": "Div",
                                     "if": "{{_global.socialLoginSignup?.email?.mode === 'input'}}",
                                     "props": {
-                                        "className": "space-y-3"
+                                        "className": "sl:space-y-3"
                                     },
                                     "children": [
                                         {
@@ -306,7 +306,7 @@
                                             "name": "Label",
                                             "props": {
                                                 "htmlFor": "social_signup_email",
-                                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300"
                                             },
                                             "text": "$t:sirsoft-social_login.signup.email"
                                         },
@@ -314,7 +314,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex gap-2"
+                                                "className": "sl:flex sl:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -338,7 +338,7 @@
                                                         "name": "social_email",
                                                         "value": "{{_global.socialLoginForm?.email ?? ''}}",
                                                         "maxLength": "255",
-                                                        "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                        "className": "sl:flex-1 sl:min-w-0 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white",
                                                         "disabled": "{{_global.socialLoginBusy || _global.socialLoginEmailVerified}}"
                                                     }
                                                 },
@@ -405,7 +405,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "shrink-0 px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:sm:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
                                                         "disabled": "{{_global.socialLoginBusy || _global.socialLoginEmailVerified || !_global.socialLoginForm?.email}}"
                                                     },
                                                     "children": [
@@ -430,7 +430,7 @@
                                             "name": "Div",
                                             "if": "{{!!_global.socialLoginEmailChallengeId && !_global.socialLoginEmailVerified}}",
                                             "props": {
-                                                "className": "flex gap-2"
+                                                "className": "sl:flex sl:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -455,7 +455,7 @@
                                                         "autoComplete": "one-time-code",
                                                         "maxLength": "10",
                                                         "placeholder": "$t:sirsoft-social_login.signup.code_placeholder",
-                                                        "className": "flex-1 min-w-0 px-3 py-2 text-center tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                        "className": "sl:flex-1 sl:min-w-0 sl:px-3 sl:py-2 sl:text-center sl:tracking-widest sl:font-mono sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white",
                                                         "disabled": "{{_global.socialLoginBusy}}"
                                                     }
                                                 },
@@ -511,7 +511,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "shrink-0 px-3 py-3 sm:py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:sm:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
                                                         "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.code}}"
                                                     },
                                                     "text": "$t:sirsoft-social_login.signup.verify_code"
@@ -524,7 +524,7 @@
                                             "name": "P",
                                             "if": "{{!!_global.socialLoginEmailChallengeId && !_global.socialLoginEmailVerified}}",
                                             "props": {
-                                                "className": "text-xs"
+                                                "className": "sl:text-xs"
                                             },
                                             "children": [
                                                 {
@@ -532,7 +532,7 @@
                                                     "name": "Span",
                                                     "if": "{{(_global.socialLoginEmailRemaining ?? 0) > 0}}",
                                                     "props": {
-                                                        "className": "text-gray-600 dark:text-gray-400"
+                                                        "className": "sl:text-gray-600 sl:dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-social_login.signup.code_remaining|minutes={{Math.floor((_global.socialLoginEmailRemaining ?? 0) / 60)}}|seconds={{String((_global.socialLoginEmailRemaining ?? 0) % 60).padStart(2, '0')}}"
                                                 },
@@ -541,7 +541,7 @@
                                                     "name": "Span",
                                                     "if": "{{(_global.socialLoginEmailRemaining ?? 0) <= 0 && !!_global.socialLoginEmailExpiresAt}}",
                                                     "props": {
-                                                        "className": "text-red-600 dark:text-red-400"
+                                                        "className": "sl:text-red-600 sl:dark:text-red-400"
                                                     },
                                                     "text": "$t:sirsoft-social_login.signup.code_expired"
                                                 }
@@ -553,7 +553,7 @@
                                             "name": "P",
                                             "if": "{{_global.socialLoginEmailVerified === true}}",
                                             "props": {
-                                                "className": "text-sm text-green-700 dark:text-green-400"
+                                                "className": "sl:text-sm sl:text-green-700 sl:dark:text-green-400"
                                             },
                                             "text": "$t:sirsoft-social_login.signup.email_verified"
                                         }
@@ -564,14 +564,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "space-y-2"
+                                        "className": "sl:space-y-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-2"
+                                                "className": "sl:flex sl:items-center sl:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -620,7 +620,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                        "className": "sl:text-sm sl:text-blue-600 sl:dark:text-blue-400 sl:hover:underline sl:cursor-pointer"
                                                     },
                                                     "text": "$t:auth.terms"
                                                 },
@@ -628,7 +628,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                        "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
                                                     },
                                                     "text": "$t:auth.agree_required"
                                                 }
@@ -638,7 +638,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-2"
+                                                "className": "sl:flex sl:items-center sl:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -687,7 +687,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                        "className": "sl:text-sm sl:text-blue-600 sl:dark:text-blue-400 sl:hover:underline sl:cursor-pointer"
                                                     },
                                                     "text": "$t:auth.privacy"
                                                 },
@@ -695,7 +695,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                        "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
                                                     },
                                                     "text": "$t:auth.agree_required"
                                                 }
@@ -709,7 +709,7 @@
                                     "name": "P",
                                     "if": "{{!!_global.socialLoginSignupError}}",
                                     "props": {
-                                        "className": "text-sm text-red-600 dark:text-red-400",
+                                        "className": "sl:text-sm sl:text-red-600 sl:dark:text-red-400",
                                         "role": "alert"
                                     },
                                     "text": "{{_global.socialLoginSignupError ?? ''}}"
@@ -784,7 +784,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "w-full px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "sl:w-full sl:px-4 sl:py-3 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:font-medium sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
                                         "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.agree_terms || !_global.socialLoginForm?.agree_privacy || (_global.socialLoginSignup?.email?.mode === 'input' && !_global.socialLoginEmailVerified)}}"
                                     },
                                     "text": "$t:sirsoft-social_login.signup.submit"
@@ -810,14 +810,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "space-y-5"
+                        "className": "sl:space-y-5"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-social_login.existing.message|email={{_global.socialLoginSignup?.existing_account?.email_masked ?? ''}}"
                         },
@@ -825,7 +825,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-social_login.existing.hint"
                         },
@@ -836,7 +836,7 @@
                             "name": "Div",
                             "if": "{{_global.socialLoginSignup?.existing_account?.has_password !== false}}",
                             "props": {
-                                "className": "space-y-2"
+                                "className": "sl:space-y-2"
                             },
                             "children": [
                                 {
@@ -844,7 +844,7 @@
                                     "name": "Label",
                                     "props": {
                                         "htmlFor": "social_existing_password_input",
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300"
                                     },
                                     "text": "$t:sirsoft-social_login.existing.by_password"
                                 },
@@ -852,7 +852,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex gap-2"
+                                        "className": "sl:flex sl:gap-2"
                                     },
                                     "children": [
                                         {
@@ -873,7 +873,7 @@
                                                 "id": "social_existing_password_input",
                                                 "name": "social_existing_password",
                                                 "value": "{{_global.socialLoginForm?.password ?? ''}}",
-                                                "className": "flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                "className": "sl:flex-1 sl:min-w-0 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white",
                                                 "showToggle": true,
                                                 "disabled": "{{_global.socialLoginBusy}}"
                                             }
@@ -942,7 +942,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "shrink-0 px-3 py-3 sm:py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:sm:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
                                                 "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.password}}"
                                             },
                                             "text": "$t:sirsoft-social_login.existing.confirm"
@@ -957,14 +957,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "space-y-2"
+                                "className": "sl:space-y-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                        "className": "sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300"
                                     },
                                     "text": "$t:sirsoft-social_login.existing.by_email"
                                 },
@@ -1029,7 +1029,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "sl:w-full sl:px-3 sl:py-3 sl:sm:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
                                         "disabled": "{{_global.socialLoginBusy}}"
                                     },
                                     "children": [
@@ -1052,7 +1052,7 @@
                                     "name": "Div",
                                     "if": "{{!!_global.socialLoginExistingChallengeId}}",
                                     "props": {
-                                        "className": "flex gap-2"
+                                        "className": "sl:flex sl:gap-2"
                                     },
                                     "children": [
                                         {
@@ -1077,7 +1077,7 @@
                                                 "autoComplete": "one-time-code",
                                                 "maxLength": "10",
                                                 "placeholder": "$t:sirsoft-social_login.signup.code_placeholder",
-                                                "className": "flex-1 min-w-0 px-3 py-2 text-center tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                "className": "sl:flex-1 sl:min-w-0 sl:px-3 sl:py-2 sl:text-center sl:tracking-widest sl:font-mono sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white",
                                                 "disabled": "{{_global.socialLoginBusy}}"
                                             }
                                         },
@@ -1144,7 +1144,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "shrink-0 px-3 py-3 sm:py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "sl:shrink-0 sl:px-3 sl:py-3 sl:sm:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed",
                                                 "disabled": "{{_global.socialLoginBusy || !_global.socialLoginForm?.existing_code}}"
                                             },
                                             "text": "$t:sirsoft-social_login.existing.confirm"
@@ -1159,7 +1159,7 @@
                             "name": "P",
                             "if": "{{!!_global.socialLoginSignupError}}",
                             "props": {
-                                "className": "text-sm text-red-600 dark:text-red-400",
+                                "className": "sl:text-sm sl:text-red-600 sl:dark:text-red-400",
                                 "role": "alert"
                             },
                             "text": "{{_global.socialLoginSignupError ?? ''}}"
@@ -1168,7 +1168,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex flex-col sm:flex-row gap-2 pt-2 border-t border-gray-200 dark:border-gray-700"
+                                "className": "sl:flex sl:flex-col sl:sm:flex-row sl:gap-2 sl:pt-2 sl:border-t sl:border-gray-200 sl:dark:border-gray-700"
                             },
                             "children": [
                                 {
@@ -1233,7 +1233,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "flex-1 px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50",
+                                        "className": "sl:flex-1 sl:px-3 sl:py-3 sl:sm:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50",
                                         "disabled": "{{_global.socialLoginBusy}}"
                                     },
                                     "text": "$t:sirsoft-social_login.existing.new_account"
@@ -1261,7 +1261,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "flex-1 px-3 py-3 sm:py-2 text-sm text-gray-600 dark:text-gray-400 hover:underline cursor-pointer"
+                                        "className": "sl:flex-1 sl:px-3 sl:py-3 sl:sm:py-2 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:hover:underline sl:cursor-pointer"
                                     },
                                     "text": "$t:common.cancel"
                                 }

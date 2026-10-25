@@ -309,8 +309,11 @@ function t(key: string, fallback: string): string {
 }
 
 /**
- * 다국어 탭 버튼 기본 스타일(라이트/다크 공통 베이스)을 주입합니다.
+ * CKEditor 라이브러리 DOM(`.ck-*`·`.ck-content`) 보정 스타일을 주입합니다.
  * 이미 주입된 경우 중복 삽입하지 않습니다.
+ *
+ * 다국어 탭처럼 이 플러그인이 이름을 정하는 클래스(`ckeditor-*`)는 플러그인 CSS(resources/css/main.css)가 싣는다.
+ * 여기 남은 규칙은 라이브러리가 정한 이름을 꾸미는 라이브러리 CSS 범위다.
  */
 function loadTabCss(): void {
     if (document.getElementById(CKEDITOR5_TAB_CSS_ID)) {
@@ -319,107 +322,6 @@ function loadTabCss(): void {
     const style = document.createElement('style');
     style.id = CKEDITOR5_TAB_CSS_ID;
     style.textContent = `
-        /* 다국어 탭 컨테이너 */
-        .ckeditor5-locale-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-            align-items: center;
-        }
-        /* 다국어 탭 버튼 - HtmlEditor 언어탭 스타일 */
-        .ckeditor5-locale-tabs button {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border: none;
-            border-radius: 9999px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            font-weight: 600;
-            line-height: 1;
-            transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
-        }
-        /* 비활성 - 기본언어 (blue) — 글자는 hover 바탕(#dbeafe)에서도 4.5 이상인 단계 */
-        .ckeditor5-locale-tabs button.is-default {
-            background: #eff6ff;
-            color: #1d4ed8;
-        }
-        .ckeditor5-locale-tabs button.is-default:hover {
-            background: #dbeafe;
-        }
-        /* 비활성 - 비기본언어 (gray) */
-        .ckeditor5-locale-tabs button:not(.is-default) {
-            background: #f3f4f6;
-            color: #4b5563;
-        }
-        .ckeditor5-locale-tabs button:not(.is-default):hover {
-            background: #e5e7eb;
-        }
-        /* 활성 - 기본언어 — 흰 글자가 4.5 이상인 바탕(종전 #3b82f6 은 3.68) */
-        .ckeditor5-locale-tabs button.is-active.is-default {
-            background: #2563eb;
-            color: #ffffff;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            transform: scale(1.05);
-        }
-        /* 활성 - 비기본언어 */
-        .ckeditor5-locale-tabs button.is-active:not(.is-default) {
-            background: #6b7280;
-            color: #ffffff;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-            transform: scale(1.05);
-        }
-        .ckeditor5-locale-tabs button .ck5-lang-icon {
-            font-size: 0.75rem;
-            line-height: 1;
-        }
-        /* 필수 표시 — 비활성(연한 바탕)은 진한 빨강, 활성(진한 바탕)은 탭 글자색(흰색)을 따른다 */
-        .ckeditor5-locale-tabs button .ck5-required {
-            color: #b91c1c;
-        }
-        .ckeditor5-locale-tabs button.is-active .ck5-required {
-            color: currentColor;
-        }
-        /* 입력 완료 표시(아이콘 3:1) — 회색 hover 바탕(#e5e7eb)에서도 3 이상 */
-        .ckeditor5-locale-tabs button .ck5-check {
-            color: #15803d;
-        }
-        /* 다크 모드 - 비활성 기본언어 */
-        html.dark .ckeditor5-locale-tabs button.is-default {
-            background: rgba(59, 130, 246, 0.15);
-            color: #93c5fd;
-        }
-        html.dark .ckeditor5-locale-tabs button.is-default:hover {
-            background: rgba(59, 130, 246, 0.25);
-        }
-        /* 다크 모드 - 비활성 비기본언어 */
-        html.dark .ckeditor5-locale-tabs button:not(.is-default) {
-            background: #374151;
-            color: #d1d5db;
-        }
-        html.dark .ckeditor5-locale-tabs button:not(.is-default):hover {
-            background: #4b5563;
-        }
-        /* 다크 모드 - 활성 기본언어 */
-        html.dark .ckeditor5-locale-tabs button.is-active.is-default {
-            background: #2563eb;
-            color: #ffffff;
-        }
-        /* 다크 모드 - 활성 비기본언어 */
-        html.dark .ckeditor5-locale-tabs button.is-active:not(.is-default) {
-            background: #4b5563;
-            color: #ffffff;
-        }
-        html.dark .ckeditor5-locale-tabs button .ck5-check {
-            color: #4ade80;
-        }
-        html.dark .ckeditor5-locale-tabs button .ck5-required {
-            color: #fca5a5;
-        }
-        html.dark .ckeditor5-locale-tabs button.is-active .ck5-required {
-            color: currentColor;
-        }
         /* 표 너비 인라인 스타일 무력화 - 컨테이너에 맞게 100% */
         .ck-content figure.table { width: 100%; }
         .ck-content figure.table table { width: 100%; }
@@ -485,12 +387,13 @@ function loadTabCss(): void {
  * 현재 다크 모드 여부를 반환합니다.
  */
 function isDarkMode(): boolean {
-    return document.documentElement.classList.contains('dark');
+    // 템플릿 종류와 무관한 중립 표식 — 템플릿이 다크 방식을 선언하면 코어가 <html data-g7-color-scheme> 를 단다
+    return document.documentElement.getAttribute('data-g7-color-scheme') === 'dark';
 }
 
 /**
  * CKEditor5 다크 모드 CSS 변수를 동적으로 주입하거나 제거합니다.
- * document.documentElement의 'dark' 클래스를 기준으로 판단합니다.
+ * <html data-g7-color-scheme> 중립 표식(템플릿 종류와 무관)을 기준으로 판단합니다.
  */
 function applyDarkModeOverride(): void {
     const existing = document.getElementById(CKEDITOR5_DARK_CSS_ID);
@@ -700,7 +603,7 @@ function applyDarkModeOverride(): void {
 let darkModeObserver: MutationObserver | null = null;
 
 /**
- * <html> 클래스 변경을 감지하여 다크 모드 전환 시 즉시 반영합니다.
+ * <html data-g7-color-scheme> 변경을 감지하여 다크 모드 전환 시 즉시 반영합니다.
  * 최초 1회만 등록합니다.
  */
 function watchDarkMode(): void {
@@ -714,7 +617,7 @@ function watchDarkMode(): void {
 
     darkModeObserver.observe(document.documentElement, {
         attributes: true,
-        attributeFilter: ['class'],
+        attributeFilter: ['data-g7-color-scheme'],
     });
 }
 
@@ -950,7 +853,7 @@ function createMultilingualTabs(
     getEditorData?: (locale: string) => string | null
 ): { tabsEl: HTMLElement; contentEls: Map<string, HTMLElement>; updateCheckIcons: () => void } {
     const tabsEl = document.createElement('div');
-    tabsEl.className = 'ckeditor5-locale-tabs';
+    tabsEl.className = 'ckeditor-locale-tabs';
 
     const contentEls = new Map<string, HTMLElement>();
 
@@ -977,18 +880,18 @@ function createMultilingualTabs(
         if (!getEditorData) return;
         tabsEl.querySelectorAll('button').forEach(btn => {
             const btnLocale = (btn as HTMLButtonElement).dataset.locale;
-            if (!btnLocale || btn.classList.contains('is-active')) {
+            if (!btnLocale || btn.classList.contains('ckeditor-locale-tab--active')) {
                 // 활성 탭은 체크 아이콘 제거
-                const existing = btn.querySelector('.ck5-check');
+                const existing = btn.querySelector('.ckeditor-check');
                 if (existing) existing.remove();
                 return;
             }
             const data = getEditorData(btnLocale);
             const hasValue = Boolean(data?.trim());
-            const existing = btn.querySelector('.ck5-check');
+            const existing = btn.querySelector('.ckeditor-check');
             if (hasValue && !existing) {
                 const icon = document.createElement('i');
-                icon.className = 'fas fa-check ck5-check';
+                icon.className = 'ckeditor-icon ckeditor-icon--check ckeditor-check';
                 btn.appendChild(icon);
             } else if (!hasValue && existing) {
                 existing.remove();
@@ -1004,7 +907,7 @@ function createMultilingualTabs(
         const tab = document.createElement('button');
         tab.type = 'button';
         tab.dataset.locale = locale;
-        tab.className = [isActive ? 'is-active' : '', isDefault ? 'is-default' : ''].filter(Boolean).join(' ');
+        tab.className = ['ckeditor-locale-tab', isActive ? 'ckeditor-locale-tab--active' : '', isDefault ? 'ckeditor-locale-tab--default' : ''].filter(Boolean).join(' ');
         // 언어 이름(언어팩 문자열)은 textContent 로만 넣는다 — innerHTML 금지 (#148 F5x)
         buildLocaleTabContent(tab, locale, isDefault);
         tab.addEventListener('click', async () => {
@@ -1012,7 +915,7 @@ function createMultilingualTabs(
             tabsEl.querySelectorAll('button').forEach(btn => {
                 const btnLocale = (btn as HTMLButtonElement).dataset.locale;
                 const btnIsActive = btnLocale === locale;
-                btn.classList.toggle('is-active', btnIsActive);
+                btn.classList.toggle('ckeditor-locale-tab--active', btnIsActive);
             });
             // 에디터 컨텐츠 영역 전환 (새 locale만 표시, 나머지 숨김)
             // wrapperEl(contentEl.parentElement)에 display를 적용해야

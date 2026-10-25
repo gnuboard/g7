@@ -26,7 +26,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.method"
                         },
@@ -45,7 +45,7 @@
                                 }
                             ],
                             "props": {
-                                "className": "select w-full"
+                                "className": "ecommerce-select ecommerce:w-full"
                             },
                             "children": [
                                 {
@@ -85,7 +85,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.value"
                         },
@@ -93,7 +93,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex gap-2"
+                                "className": "ecommerce:flex ecommerce:gap-2"
                             },
                             "children": [
                                 {
@@ -113,7 +113,7 @@
                                     "props": {
                                         "type": "number",
                                         "placeholder": "0",
-                                        "className": "input flex-1"
+                                        "className": "ecommerce-input ecommerce:flex-1"
                                     }
                                 },
                                 {
@@ -131,7 +131,7 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "select w-24",
+                                        "className": "ecommerce-select ecommerce:w-24",
                                         "aria-label": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.unit"
                                     },
                                     "children": [
@@ -162,7 +162,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "bg-gray-50 dark:bg-gray-900 rounded-lg p-4"
+                        "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:p-4"
                     },
                     "children": [
                         {
@@ -171,7 +171,7 @@
                             "name": "Span",
                             "if": "{{(_local.bulkPriceMethod || 'increase') === 'increase'}}",
                             "props": {
-                                "className": "text-label"
+                                "className": "ecommerce-text-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_increase|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency))}}"
                         },
@@ -181,7 +181,7 @@
                             "name": "Span",
                             "if": "{{(_local.bulkPriceMethod || 'increase') === 'decrease'}}",
                             "props": {
-                                "className": "text-label"
+                                "className": "ecommerce-text-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_decrease|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency))}}"
                         },
@@ -191,7 +191,7 @@
                             "name": "Span",
                             "if": "{{(_local.bulkPriceMethod || 'increase') === 'fixed'}}",
                             "props": {
-                                "className": "text-label"
+                                "className": "ecommerce-text-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.bulk_price.preview_fixed|value={{_local.bulkPriceValue || 0}}|unit={{(_local.bulkPriceUnit || 'won') === 'percent' ? '%' : ((_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency))}}"
                         }
@@ -204,7 +204,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex justify-end gap-2 mt-6"
+                "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6"
             },
             "children": [
                 {
@@ -218,7 +218,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-outline"
+                        "className": "ecommerce-btn ecommerce-btn-outline"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel"
                 },
@@ -245,7 +245,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-primary"
+                        "className": "ecommerce-btn ecommerce-btn-primary"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product.modal.common.change"
                 }

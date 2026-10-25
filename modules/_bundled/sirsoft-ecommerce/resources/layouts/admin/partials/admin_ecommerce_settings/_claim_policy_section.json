@@ -13,14 +13,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card"
+                "className": "ecommerce-admin-card"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H3",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.title"
                 },
@@ -28,7 +28,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "card-description"
+                        "className": "ecommerce-card-description"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.description"
                 },
@@ -36,7 +36,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "ecommerce-row-stack"
                     },
                     "children": [
                         {
@@ -48,7 +48,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.exchange_label"
                                 },
@@ -95,7 +95,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint mt-2"
+                                        "className": "ecommerce-form-hint ecommerce:mt-2"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.exchange_hint"
                                 },
@@ -104,7 +104,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['claim.exchange_requestable_statuses']}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.['claim.exchange_requestable_statuses']?.[0] ?? ''}}"
                                 }
@@ -119,7 +119,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.return_label"
                                 },
@@ -166,7 +166,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint mt-2"
+                                        "className": "ecommerce-form-hint ecommerce:mt-2"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.return_hint"
                                 },
@@ -175,7 +175,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['claim.return_requestable_statuses']}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.['claim.return_requestable_statuses']?.[0] ?? ''}}"
                                 }
@@ -190,7 +190,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.instant_cancel_label"
                                 },
@@ -249,7 +249,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint mt-2"
+                                        "className": "ecommerce-form-hint ecommerce:mt-2"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.instant_cancel_hint"
                                 },
@@ -258,7 +258,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['claim.instant_cancel_statuses']}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.['claim.instant_cancel_statuses']?.[0] ?? ''}}"
                                 }
@@ -273,7 +273,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.refund_request_label"
                                 },
@@ -316,7 +316,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint mt-2"
+                                        "className": "ecommerce-form-hint ecommerce:mt-2"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.refund_request_hint"
                                 },
@@ -325,7 +325,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['claim.refund_request_statuses']}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.['claim.refund_request_statuses']?.[0] ?? ''}}"
                                 }
@@ -336,14 +336,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 flex-wrap"
+                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body w-48 shrink-0"
+                                        "className": "ecommerce-text-body ecommerce:w-48 ecommerce:shrink-0"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.request_period_days_label"
                                 },
@@ -368,7 +368,7 @@
                                         "aria-label": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.request_period_days_label",
                                         "max": "{{_local?.form?._meta?.limits?.claim_request_period_days_max ?? 365}}",
                                         "step": "1",
-                                        "className": "input w-20",
+                                        "className": "ecommerce-input ecommerce:w-20",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "value": "{{_local.form?.claim?.request_period_days ?? 7}}"
                                     }
@@ -377,7 +377,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body"
+                                        "className": "ecommerce-text-body"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.days_unit"
                                 },
@@ -385,7 +385,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "w-full form-hint"
+                                        "className": "ecommerce:w-full ecommerce-form-hint"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.requestable.request_period_days_hint"
                                 },
@@ -394,7 +394,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['claim.request_period_days']}}",
                                     "props": {
-                                        "className": "w-full form-error-xs"
+                                        "className": "ecommerce:w-full ecommerce-form-error-xs"
                                     },
                                     "text": "{{_local.errors?.['claim.request_period_days']?.[0] ?? ''}}"
                                 }
@@ -409,14 +409,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card"
+                "className": "ecommerce-admin-card"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H3",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.title"
                 },
@@ -424,7 +424,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "card-description"
+                        "className": "ecommerce-card-description"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.description"
                 },
@@ -432,7 +432,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "ecommerce-row-stack"
                     },
                     "children": [
                         {
@@ -444,7 +444,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.methods_label"
                                 },
@@ -479,7 +479,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint mt-2"
+                                        "className": "ecommerce-form-hint ecommerce:mt-2"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.methods_hint"
                                 },
@@ -488,7 +488,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['claim.allowed_charge_methods']}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.['claim.allowed_charge_methods']?.[0] ?? ''}}"
                                 }
@@ -503,7 +503,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.payment_methods_label"
                                 },
@@ -526,7 +526,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint mt-2"
+                                        "className": "ecommerce-form-hint ecommerce:mt-2"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.charge.payment_methods_hint"
                                 },
@@ -535,7 +535,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['claim.charge_payment_methods']}}",
                                     "props": {
-                                        "className": "form-error-xs mt-1"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-1"
                                     },
                                     "text": "{{_local.errors?.['claim.charge_payment_methods']?.[0] ?? ''}}"
                                 }
@@ -551,14 +551,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card"
+                "className": "ecommerce-admin-card"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H3",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.title"
                 },
@@ -566,7 +566,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "card-description"
+                        "className": "ecommerce-card-description"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.description"
                 },
@@ -574,7 +574,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "ecommerce-row-stack"
                     },
                     "children": [
                         {
@@ -582,7 +582,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-between"
+                                "className": "ecommerce-flex-between"
                             },
                             "children": [
                                 {
@@ -593,7 +593,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.enabled_label"
                                         },
@@ -601,7 +601,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "form-hint"
+                                                "className": "ecommerce-form-hint"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.enabled_hint"
                                         }
@@ -623,14 +623,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 flex-wrap"
+                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body w-48 shrink-0"
+                                        "className": "ecommerce-text-body ecommerce:w-48 ecommerce:shrink-0"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.due_days_label"
                                 },
@@ -655,7 +655,7 @@
                                         "aria-label": "$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.due_days_label",
                                         "max": "{{_local?.form?._meta?.limits?.advance_exchange_collection_due_days_max ?? 90}}",
                                         "step": "1",
-                                        "className": "input w-20",
+                                        "className": "ecommerce-input ecommerce:w-20",
                                         "disabled": "{{_computed.isReadOnly || _local.form?.claim?.advance_exchange_enabled !== true}}",
                                         "value": "{{_local.form?.claim?.advance_exchange_collection_due_days ?? 14}}"
                                     }
@@ -664,7 +664,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body"
+                                        "className": "ecommerce-text-body"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.days_unit"
                                 },
@@ -672,7 +672,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "w-full form-hint"
+                                        "className": "ecommerce:w-full ecommerce-form-hint"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.advance_exchange.due_days_hint"
                                 },
@@ -681,7 +681,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['claim.advance_exchange_collection_due_days']}}",
                                     "props": {
-                                        "className": "w-full form-error-xs"
+                                        "className": "ecommerce:w-full ecommerce-form-error-xs"
                                     },
                                     "text": "{{_local.errors?.['claim.advance_exchange_collection_due_days']?.[0] ?? ''}}"
                                 }
@@ -696,14 +696,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card"
+                "className": "ecommerce-admin-card"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H3",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.title"
                 },
@@ -711,7 +711,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "card-description"
+                        "className": "ecommerce-card-description"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.description"
                 },
@@ -719,7 +719,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "ecommerce-row-stack"
                     },
                     "children": [
                         {
@@ -727,7 +727,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-between"
+                                "className": "ecommerce-flex-between"
                             },
                             "children": [
                                 {
@@ -738,7 +738,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.zero_charge_label"
                                         },
@@ -746,7 +746,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "form-hint"
+                                                "className": "ecommerce-form-hint"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.zero_charge_hint"
                                         }
@@ -768,7 +768,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-between"
+                                "className": "ecommerce-flex-between"
                             },
                             "children": [
                                 {
@@ -779,7 +779,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.after_payment_label"
                                         },
@@ -787,7 +787,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "form-hint"
+                                                "className": "ecommerce-form-hint"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.after_payment_hint"
                                         }
@@ -809,7 +809,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-between"
+                                "className": "ecommerce-flex-between"
                             },
                             "children": [
                                 {
@@ -820,7 +820,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_request_label"
                                         },
@@ -828,7 +828,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "form-hint"
+                                                "className": "ecommerce-form-hint"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_request_hint"
                                         }
@@ -855,7 +855,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_statuses_label"
                                 },
@@ -898,7 +898,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint mt-2"
+                                        "className": "ecommerce-form-hint ecommerce:mt-2"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_statuses_hint"
                                 },
@@ -907,7 +907,7 @@
                                     "name": "P",
                                     "if": "{{_local.errors?.['claim.auto_approve_refund_statuses']}}",
                                     "props": {
-                                        "className": "form-error"
+                                        "className": "ecommerce-form-error"
                                     },
                                     "text": "{{_local.errors?.['claim.auto_approve_refund_statuses']?.[0] ?? ''}}"
                                 }
@@ -923,7 +923,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_payment_methods_label"
                                 },
@@ -945,7 +945,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint mt-2"
+                                        "className": "ecommerce-form-hint ecommerce:mt-2"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.auto_approve.refund_payment_methods_hint"
                                 },
@@ -954,7 +954,7 @@
                                     "name": "P",
                                     "if": "{{_local.errors?.['claim.auto_approve_refund_payment_methods']}}",
                                     "props": {
-                                        "className": "form-error"
+                                        "className": "ecommerce-form-error"
                                     },
                                     "text": "{{_local.errors?.['claim.auto_approve_refund_payment_methods']?.[0] ?? ''}}"
                                 }
@@ -969,14 +969,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card"
+                "className": "ecommerce-admin-card"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H3",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.title"
                 },
@@ -984,7 +984,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "card-description"
+                        "className": "ecommerce-card-description"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.description"
                 },
@@ -992,7 +992,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "ecommerce-row-stack"
                     },
                     "children": [
                         {
@@ -1000,14 +1000,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 flex-wrap"
+                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body w-48 shrink-0"
+                                        "className": "ecommerce-text-body ecommerce:w-48 ecommerce:shrink-0"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.max_images_label"
                                 },
@@ -1032,7 +1032,7 @@
                                         "aria-label": "$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.max_images_label",
                                         "max": "{{_local?.form?._meta?.limits?.claim_max_images_max ?? 20}}",
                                         "step": "1",
-                                        "className": "input w-20",
+                                        "className": "ecommerce-input ecommerce:w-20",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "value": "{{_local.form?.claim?.max_images ?? 5}}"
                                     }
@@ -1041,7 +1041,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body"
+                                        "className": "ecommerce-text-body"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.images_unit"
                                 },
@@ -1049,7 +1049,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "w-full form-hint"
+                                        "className": "ecommerce:w-full ecommerce-form-hint"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.max_images_hint"
                                 },
@@ -1058,7 +1058,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['claim.max_images']}}",
                                     "props": {
-                                        "className": "w-full form-error-xs"
+                                        "className": "ecommerce:w-full ecommerce-form-error-xs"
                                     },
                                     "text": "{{_local.errors?.['claim.max_images']?.[0] ?? ''}}"
                                 }
@@ -1069,14 +1069,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 flex-wrap"
+                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body w-48 shrink-0"
+                                        "className": "ecommerce-text-body ecommerce:w-48 ecommerce:shrink-0"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.image_max_size_kb_label"
                                 },
@@ -1101,7 +1101,7 @@
                                         "aria-label": "$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.image_max_size_kb_label",
                                         "max": "{{_local?.form?._meta?.limits?.claim_image_max_size_kb_max ?? 20480}}",
                                         "step": "1",
-                                        "className": "input w-28",
+                                        "className": "ecommerce-input ecommerce:w-28",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "value": "{{_local.form?.claim?.image_max_size_kb ?? 2048}}"
                                     }
@@ -1110,7 +1110,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body"
+                                        "className": "ecommerce-text-body"
                                     },
                                     "text": "KB"
                                 },
@@ -1118,7 +1118,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "w-full form-hint"
+                                        "className": "ecommerce:w-full ecommerce-form-hint"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.attachment.image_max_size_kb_hint"
                                 },
@@ -1127,7 +1127,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['claim.image_max_size_kb']}}",
                                     "props": {
-                                        "className": "w-full form-error-xs"
+                                        "className": "ecommerce:w-full ecommerce-form-error-xs"
                                     },
                                     "text": "{{_local.errors?.['claim.image_max_size_kb']?.[0] ?? ''}}"
                                 }
@@ -1142,14 +1142,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card"
+                "className": "ecommerce-admin-card"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H3",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.title"
                 },
@@ -1157,7 +1157,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "card-description"
+                        "className": "ecommerce-card-description"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.description"
                 },
@@ -1166,7 +1166,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "alert-info"
+                        "className": "ecommerce-alert-info"
                     },
                     "children": [
                         {
@@ -1174,14 +1174,14 @@
                             "name": "Icon",
                             "props": {
                                 "name": "circle-info",
-                                "className": "text-base text-blue-600 dark:text-blue-400 flex-shrink-0"
+                                "className": "ecommerce:text-base ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:flex-shrink-0"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ecommerce-tone-info-soft text-xs"
+                                "className": "ecommerce-tone-info-soft ecommerce:text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.notice"
                         }
@@ -1191,7 +1191,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "ecommerce-row-stack"
                     },
                     "children": [
                         {
@@ -1199,7 +1199,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-between"
+                                "className": "ecommerce-flex-between"
                             },
                             "children": [
                                 {
@@ -1210,7 +1210,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.create_refund_request_label"
                                         },
@@ -1218,7 +1218,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "form-hint"
+                                                "className": "ecommerce-form-hint"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.create_refund_request_hint"
                                         }
@@ -1240,7 +1240,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-between"
+                                "className": "ecommerce-flex-between"
                             },
                             "children": [
                                 {
@@ -1251,7 +1251,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-sm font-medium text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.restore_stock_label"
                                         },
@@ -1259,7 +1259,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "form-hint"
+                                                "className": "ecommerce-form-hint"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.policy.complete_defaults.restore_stock_hint"
                                         }

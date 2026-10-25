@@ -1,0 +1,17 @@
+feature: GDPR 알림 템플릿 창 — 수신자 규칙 삭제 버튼 이름
+
+description: |
+  알림 템플릿 편집 창의 수신자 규칙 삭제(×) 버튼이 아이콘 이름 「xmark」 대신 「수신자 규칙 N 삭제」 로 읽히게 한다
+  (이커머스 전수 실측 S5, 2026-10-07 — 같은 창이 코어·이커머스·게시판·GDPR·수출입은행 다섯 곳). 시험 하나가 시나리오 하나다.
+
+axes:
+  case:
+    # plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/notificationRecipientRuleRemoveName.test.ts — 삭제 버튼마다 「수신자 규칙 N 삭제」 aria-label
+    - remove_name_c01
+    - remove_name_c02
+
+effects:
+  - recipient_rule_remove_button_named   # 삭제 버튼마다 「수신자 규칙 N 삭제」 aria-label
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/resources/js/__tests__/layouts/notificationRecipientRuleRemoveName.test.ts

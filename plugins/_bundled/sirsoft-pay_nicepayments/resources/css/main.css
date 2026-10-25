@@ -1,3 +1,37 @@
+/* g7-extension-css:start — convert-layout-classes.mjs 가 생성·갱신하는 블록. 손으로 고치지 않는다. */
+@import "tailwindcss/theme.css" layer(theme) prefix(paynicepayments);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(paynicepayments) source(none);
+@import "./g7-extension.generated.css";
+@source "../layouts";
+@source "../extensions";
+@source "../js";
+@source "../../src";
+@theme {
+  --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-50: #fefce8;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+@custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
+/* g7-extension-css:end */
+
 /**
  * sirsoft-pay_nicepayments 화면 스타일 — 나이스페이먼츠 결제 환경설정과 주문 상세 결제 조회 조각의 안내 글자색
  *
@@ -7,76 +41,101 @@
  *
  * - 경고(주황) / 성공(초록) / 위험(빨강) / 안내(파랑) 네 가지, 각각 본문용과 진한 제목용
  * - 글자 크기·굵기는 레이아웃의 유틸리티 클래스가 정한다 — 여기서는 색만
- * - 다크 모드: 관리자 템플릿은 `<html class="dark">` 로 전환하므로 `.dark` 조상 선택자로 짝을 둔다
+ * - 다크 모드: 템플릿 종류와 무관한 중립 표식(`<html data-g7-color-scheme="dark">`)으로 짝을 둔다.
+ *   「다크 안의 라이트」(관리자 다크 화면 속 라이트 미리보기)는 제외하는 규격이고, 특이도는 템플릿의 `.dark .x` 와 같다
+ * - 칸: 의미 글자색(tone)은 템플릿이 덮을 수 있는 가장 낮은 칸 `@layer g7-extension` 에 둔다.
+ *   에스크로 안내 상자(notice-success)도 의미 상자라 같은 칸에 둔다. 상태 보완 규칙(포커스·호버)은 접두 유틸리티와 같은 일반 칸(층 없음)에 둔다
  * - 색값은 Tailwind 4 기본 팔레트(oklch)와 같다(amber/green/red/blue 의 700·800, 다크는 200·300)
+ * - 일부 색은 16진수로 적는다 — 이전 판 빌드가 내던 값과 화면 계산값을 같게 유지하려는 것이다(같은 팔레트 색, 이름은 줄 끝 주석)
  */
 
-/* 경고 — 라이브 모드 경고 */
-.pay-nicepayments-tone-warning {
-    color: oklch(55.5% 0.163 48.998); /* amber-700 */
-}
+@layer g7-extension {
+    /* 경고 — 라이브 모드 경고 */
+    .pay-nicepayments-tone-warning {
+        color: oklch(55.5% 0.163 48.998); /* amber-700 */
+    }
 
-.dark .pay-nicepayments-tone-warning {
-    color: oklch(87.9% 0.169 91.605); /* amber-300 */
-}
+    .pay-nicepayments-tone-warning:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(87.9% 0.169 91.605); /* amber-300 */
+    }
 
-.pay-nicepayments-tone-warning-strong {
-    color: oklch(47.3% 0.137 46.201); /* amber-800 */
-}
+    .pay-nicepayments-tone-warning-strong {
+        color: oklch(47.3% 0.137 46.201); /* amber-800 */
+    }
 
-.dark .pay-nicepayments-tone-warning-strong {
-    color: oklch(92.4% 0.12 95.746); /* amber-200 */
-}
+    .pay-nicepayments-tone-warning-strong:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: #fee685; /* amber-200 */
+    }
 
-/* 성공 — 주문 상세 결제 탭의 에스크로 안내 문구 */
-.pay-nicepayments-tone-success {
-    color: oklch(52.7% 0.154 150.069); /* green-700 */
-}
+    /* 성공 — 주문 상세 결제 탭의 에스크로 안내 문구 */
+    .pay-nicepayments-tone-success {
+        color: oklch(52.7% 0.154 150.069); /* green-700 */
+    }
 
-.dark .pay-nicepayments-tone-success {
-    color: oklch(87.1% 0.15 154.449); /* green-300 */
-}
+    .pay-nicepayments-tone-success:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: #7bf1a8; /* green-300 */
+    }
 
-.pay-nicepayments-tone-success-strong {
-    color: oklch(44.8% 0.119 151.328); /* green-800 */
-}
+    .pay-nicepayments-tone-success-strong {
+        color: #016630; /* green-800 */
+    }
 
-.dark .pay-nicepayments-tone-success-strong {
-    color: oklch(87.1% 0.15 154.449); /* green-300 */
-}
+    .pay-nicepayments-tone-success-strong:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: #7bf1a8; /* green-300 */
+    }
 
-/* 위험 — (이 화면에서는 아직 쓰지 않음) */
-.pay-nicepayments-tone-danger {
-    color: oklch(50.5% 0.213 27.518); /* red-700 */
-}
+    /* 위험 — (이 화면에서는 아직 쓰지 않음) */
+    .pay-nicepayments-tone-danger {
+        color: oklch(50.5% 0.213 27.518); /* red-700 */
+    }
 
-.dark .pay-nicepayments-tone-danger {
-    color: oklch(80.8% 0.114 19.571); /* red-300 */
-}
+    .pay-nicepayments-tone-danger:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(80.8% 0.114 19.571); /* red-300 */
+    }
 
-.pay-nicepayments-tone-danger-strong {
-    color: oklch(44.4% 0.177 26.899); /* red-800 */
-}
+    .pay-nicepayments-tone-danger-strong {
+        color: #9f0712; /* red-800 */
+    }
 
-.dark .pay-nicepayments-tone-danger-strong {
-    color: oklch(80.8% 0.114 19.571); /* red-300 */
-}
+    .pay-nicepayments-tone-danger-strong:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(80.8% 0.114 19.571); /* red-300 */
+    }
 
-/* 안내 — (이 화면에서는 아직 쓰지 않음) */
-.pay-nicepayments-tone-info {
-    color: oklch(48.8% 0.243 264.376); /* blue-700 */
-}
+    /* 안내 — (이 화면에서는 아직 쓰지 않음) */
+    .pay-nicepayments-tone-info {
+        color: #1447e6; /* blue-700 */
+    }
 
-.dark .pay-nicepayments-tone-info {
-    color: oklch(80.9% 0.105 251.813); /* blue-300 */
-}
+    .pay-nicepayments-tone-info:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(80.9% 0.105 251.813); /* blue-300 */
+    }
 
-.pay-nicepayments-tone-info-strong {
-    color: oklch(42.4% 0.199 265.638); /* blue-800 */
-}
+    .pay-nicepayments-tone-info-strong {
+        color: #193cb8; /* blue-800 */
+    }
 
-.dark .pay-nicepayments-tone-info-strong {
-    color: oklch(80.9% 0.105 251.813); /* blue-300 */
+    .pay-nicepayments-tone-info-strong:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(80.9% 0.105 251.813); /* blue-300 */
+    }
+
+    /*
+     * 주문 상세 결제 탭의 에스크로 안내 상자 — 관리자 템플릿의 의미 상자 클래스(`alert-success`)에 기대지 않고 직접 둔다.
+     * 템플릿이 그 클래스의 이름·색을 바꿔도 이 상자는 따라 바뀌지 않는다.
+     */
+    .pay-nicepayments-notice-success {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid oklch(92.5% 0.084 155.995); /* green-200 */
+        border-radius: 0.375rem;
+        background-color: #f0fdf4; /* green-50 */
+    }
+
+    .pay-nicepayments-notice-success:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        border-color: #016630; /* green-800 */
+        background-color: color-mix(in oklab, oklch(39.3% 0.095 152.535) 20%, transparent); /* green-900/20 */
+    }
 }
 
 /*
@@ -88,33 +147,14 @@
     border-color: transparent;
 }
 
-.dark .pay-nicepayments-focus-group:focus-within {
+.pay-nicepayments-focus-group:focus-within:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
     --tw-ring-color: oklch(70.7% 0.165 254.624); /* blue-400 */
-}
-
-/*
- * 주문 상세 결제 탭의 에스크로 안내 상자 — 관리자 템플릿의 의미 상자 클래스(`alert-success`)에 기대지 않고 직접 둔다.
- * 템플릿이 그 클래스의 이름·색을 바꿔도 이 상자는 따라 바뀌지 않는다.
- */
-.pay-nicepayments-notice-success {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border: 1px solid oklch(92.5% 0.084 155.995); /* green-200 */
-    border-radius: 0.375rem;
-    background-color: oklch(98.2% 0.018 155.826); /* green-50 */
-}
-
-.dark .pay-nicepayments-notice-success {
-    border-color: oklch(44.8% 0.119 151.328); /* green-800 */
-    background-color: color-mix(in oklab, oklch(39.3% 0.095 152.535) 20%, transparent); /* green-900/20 */
 }
 
 /* 진한 에메랄드 단추(흰 글자, 주문 상세 결제 조회) — 호버 바탕을 한 단계 더 짙게. 관리자 템플릿 CSS 에 hover:bg-emerald-800 규칙이 없어 이 플러그인이 제공한다 */
 @media (hover: hover) {
     .pay-nicepayments-btn-emerald:hover,
-    .dark .pay-nicepayments-btn-emerald:hover {
+    .pay-nicepayments-btn-emerald:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
         background-color: oklch(43.2% 0.095 166.913); /* emerald-800 */
     }
 }

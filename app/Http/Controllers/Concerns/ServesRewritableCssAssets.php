@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Concerns;
 
 use App\Support\AssetCssUrlRewriter;
 use App\Support\AssetUrl;
+use App\Support\CssLayerFlattener;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -74,6 +75,12 @@ trait ServesRewritableCssAssets
             static fn (string $path): string => AssetUrl::extensionApiAsset($extensionType, $identifier, $path, $version)
         );
 
+        // 확장 CSS 는 세 칸으로 실린다 — 의미 클래스 층(`g7-extension`)만 남기고 나머지 층 래퍼를 벗겨
+        // 유틸리티가 층 없이 템플릿 뒤에 오게 한다. 병합 번들(ExtensionBundleService)과 같은 처리다.
+        if ($this->servesExtensionCss($extensionType, $identifier, $requestedPath)) {
+            $rewritten = CssLayerFlattener::forExtension($rewritten);
+        }
+
         // ETag 는 **내보내는 본문** 기준이어야 한다. 파일 stat 기준으로 잡으면 URL 모드가
         // 바뀌어 본문이 달라져도 같은 ETag 가 나와 브라우저가 옛 본문을 계속 쓴다.
         $etag = md5($rewritten);
@@ -92,6 +99,45 @@ trait ServesRewritableCssAssets
             'ETag' => $etag,
             'Cache-Control' => $cacheControl,
         ]);
+    }
+
+    /**
+     * 확장 CSS 서빙 규칙(층 평탄화)을 적용할 자산인지 판정합니다.
+     *
+     * 모듈·플러그인 CSS 는 앞글자를 선언한 확장만 대상이다. 템플릿 자기 CSS 는 대상이 아니고, 템플릿이 `template.json`
+     * 의 `extension_css_overrides` 로 선언한 확장 CSS 덮기 파일만 대상이다.
+     *
+     * @param  string  $extensionType  확장 유형 (modules|plugins|templates)
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $requestedPath  확장 기준 요청 경로 (`dist/` 를 뗀 형태)
+     * @return bool 대상 여부
+     */
+    private function servesExtensionCss(string $extensionType, string $identifier, string $requestedPath): bool
+    {
+        if ($extensionType === 'modules' || $extensionType === 'plugins') {
+            // 앞글자(`assets.css.namespace`)를 선언한 확장만 — 병합 번들과 같은 전환기 규칙
+            $manifestName = $extensionType === 'modules' ? 'module.json' : 'plugin.json';
+            $manifestPath = base_path("{$extensionType}/{$identifier}/{$manifestName}");
+            $manifest = is_file($manifestPath) ? json_decode((string) file_get_contents($manifestPath), true) : null;
+
+            return CssLayerFlattener::declaredNamespace(is_array($manifest['assets'] ?? null) ? $manifest['assets'] : []) !== null;
+        }
+
+        if ($extensionType !== 'templates') {
+            return false;
+        }
+
+        $manifestPath = base_path("templates/{$identifier}/template.json");
+        $manifest = is_file($manifestPath) ? json_decode((string) file_get_contents($manifestPath), true) : null;
+        $declared = is_array($manifest['extension_css_overrides'] ?? null) ? $manifest['extension_css_overrides'] : [];
+
+        foreach ($declared as $entry) {
+            if (is_array($entry) && ($entry['path'] ?? null) === 'dist/'.ltrim($requestedPath, '/')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -16,14 +16,14 @@
             "name": "Div",
             "if": "{{_computed.identityPoliciesNoReadPermission}}",
             "props": {
-                "className": "admin-card"
+                "className": "board-admin-card"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex gap-2 text-tertiary"
+                        "className": "board:flex board:gap-2 board-text-tertiary"
                     },
                     "children": [
                         {
@@ -32,7 +32,7 @@
                             "props": {
                                 "name": "lock",
                                 "size": "sm",
-                                "className": "mt-0.5 flex-shrink-0"
+                                "className": "board:mt-0.5 board:flex-shrink-0"
                             }
                         },
                         {
@@ -50,7 +50,7 @@
             "name": "Div",
             "if": "{{!_computed.identityPoliciesNoReadPermission}}",
             "props": {
-                "className": "admin-card"
+                "className": "board-admin-card"
             },
             "children": [
                 {
@@ -60,7 +60,7 @@
                     "name": "Div",
                     "if": "{{boardIdentityPolicies?.data?.abilities?.can_update === false}}",
                     "props": {
-                        "className": "alert-warning mb-4"
+                        "className": "board-alert-warning board:mb-4"
                     },
                     "children": [
                         {
@@ -69,14 +69,14 @@
                             "props": {
                                 "name": "lock",
                                 "size": "lg",
-                                "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                "className": "board:text-amber-600 board:dark:text-amber-400 board:flex-shrink-0"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-xs board-tone-warning"
+                                "className": "board:text-xs board-tone-warning"
                             },
                             "text": "$t:sirsoft-board.admin.settings.identity.read_only_notice"
                         }
@@ -86,7 +86,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "card-description"
+                        "className": "board-card-description"
                     },
                     "text": "$t:sirsoft-board.admin.settings.identity.purposes_section_description"
                 },
@@ -95,7 +95,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6"
+                        "className": "board:flex board:flex-col board:gap-2 board:md:flex-row board:md:items-center board:md:justify-between board:mb-6"
                     },
                     "children": [
                         {
@@ -106,7 +106,7 @@
                                     "type": "basic",
                                     "name": "H3",
                                     "props": {
-                                        "className": "section-title"
+                                        "className": "board-section-title"
                                     },
                                     "text": "$t:admin.identity.policies.page_title"
                                 },
@@ -114,7 +114,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-label-subtle"
+                                        "className": "board-text-label-subtle"
                                     },
                                     "text": "$t:admin.identity.policies.page_description"
                                 }
@@ -178,7 +178,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 dark:disabled:hover:bg-indigo-500",
+                                        "className": "board:px-4 board:py-2 board:text-sm board:font-medium board:bg-indigo-600 board:hover:bg-indigo-700 board:dark:bg-indigo-500 board:dark:hover:bg-indigo-600 board:text-white board:rounded-lg board:transition-colors board:whitespace-nowrap board:disabled:opacity-50 board:disabled:cursor-not-allowed board:disabled:hover:bg-indigo-600 board:dark:disabled:hover:bg-indigo-500",
                                         "disabled": "{{boardIdentityPolicies?.data?.abilities?.can_create !== true}}"
                                     },
                                     "children": [
@@ -198,14 +198,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "mb-6 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg"
+                        "className": "board:mb-6 board:p-4 board:bg-gray-50 board:dark:bg-gray-900 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H4",
                             "props": {
-                                "className": "text-primary text-sm font-semibold mb-2"
+                                "className": "board-text-primary board:text-sm board:font-semibold board:mb-2"
                             },
                             "text": "$t:sirsoft-board.admin.settings.identity.purposes_section_title"
                         },
@@ -213,7 +213,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex flex-wrap gap-2"
+                                "className": "board:flex board:flex-wrap board:gap-2"
                             },
                             "children": [
                                 {
@@ -224,7 +224,7 @@
                                         "item_var": "purpose"
                                     },
                                     "props": {
-                                        "className": "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300",
+                                        "className": "board:inline-flex board:items-center board:gap-1.5 board:px-2.5 board:py-1 board:rounded-full board:text-xs board:font-medium board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:text-gray-700 board:dark:text-gray-300",
                                         "title": "{{(purpose.description ?? '') + ((purpose.allowed_channels ?? []).length > 0 ? ' [' + (purpose.allowed_channels ?? []).join(', ') + ']' : '')}}"
                                     },
                                     "children": [
@@ -232,7 +232,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "font-mono text-[10px] text-indigo-600 dark:text-indigo-400"
+                                                "className": "board:font-mono board:text-[10px] board:text-indigo-600 board:dark:text-indigo-400"
                                             },
                                             "text": "{{purpose.id}}"
                                         },
@@ -248,7 +248,7 @@
                                     "name": "Span",
                                     "if": "{{boardIdentityPurposes !== undefined && ((boardIdentityPurposes?.data ?? []).filter(p => p.source_identifier === 'sirsoft-board').length === 0)}}",
                                     "props": {
-                                        "className": "text-tertiary italic"
+                                        "className": "board-text-tertiary board:italic"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.identity.purposes_empty"
                                 }
@@ -261,7 +261,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2 md:flex-row md:items-center"
+                        "className": "board:bg-gray-50 board:dark:bg-gray-900 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg board:p-4 board:mb-6 board:flex board:flex-col board:gap-2 board:md:flex-row board:md:items-center"
                     },
                     "children": [
                         {
@@ -298,7 +298,7 @@
                                 "aria-label": "$t:admin.identity.policies.col.scope",
                                 "autoBinding": false,
                                 "value": "{{query.scope ?? ''}}",
-                                "className": "text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm",
+                                "className": "board:text-gray-700 board:dark:text-gray-200 board:w-full board:md:w-40 board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:text-sm",
                                 "options": [
                                     {
                                         "value": "",
@@ -364,7 +364,7 @@
                                 "autoBinding": false,
                                 "value": "{{_local.identityPolicySearch ?? query.search ?? ''}}",
                                 "placeholder": "$t:admin.identity.policies.search_placeholder",
-                                "className": "input md:flex-1 md:min-w-[200px]"
+                                "className": "board-input board:md:flex-1 board:md:min-w-[200px]"
                             }
                         },
                         {
@@ -397,7 +397,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100"
+                                "className": "board:px-4 board:py-2 board:text-sm board:font-medium board:bg-gray-900 board:dark:bg-white board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-100"
                             },
                             "children": [
                                 {
@@ -444,7 +444,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "board:px-4 board:py-2 board:text-sm board:font-medium board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:text-gray-700 board:dark:text-gray-200 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -461,7 +461,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "admin-card"
+                        "className": "board-admin-card"
                     },
                     "children": [
                         {
@@ -474,21 +474,21 @@
                                 }
                             },
                             "props": {
-                                "className": "overflow-x-auto"
+                                "className": "board:overflow-x-auto"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Table",
                                     "props": {
-                                        "className": "w-full text-sm"
+                                        "className": "board:w-full board:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Thead",
                                             "props": {
-                                                "className": "bg-gray-50 dark:bg-gray-700/50"
+                                                "className": "board:bg-gray-50 board:dark:bg-gray-700/50"
                                             },
                                             "children": [
                                                 {
@@ -499,7 +499,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.key"
                                                         },
@@ -507,7 +507,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.scope"
                                                         },
@@ -515,7 +515,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.target"
                                                         },
@@ -523,7 +523,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.purpose"
                                                         },
@@ -531,7 +531,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.grace_minutes"
                                                         },
@@ -539,7 +539,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "board:px-3 board:py-2 board:text-right board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.priority"
                                                         },
@@ -547,7 +547,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.enabled"
                                                         },
@@ -555,7 +555,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.col.source_type"
                                                         },
@@ -563,7 +563,7 @@
                                                             "type": "basic",
                                                             "name": "Th",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300"
+                                                                "className": "board:px-3 board:py-2 board:text-right board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:common.actions"
                                                         }
@@ -583,14 +583,14 @@
                                                         "item_var": "policy"
                                                     },
                                                     "props": {
-                                                        "className": "border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30"
+                                                        "className": "board:border-t board:border-gray-200 board:dark:border-gray-700 board:hover:bg-gray-50 board:dark:hover:bg-gray-700/30"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs"
+                                                                "className": "board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:font-mono board:text-xs"
                                                             },
                                                             "text": "{{policy.key ?? ''}}"
                                                         },
@@ -598,7 +598,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300"
+                                                                "className": "board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}"
                                                         },
@@ -606,7 +606,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs truncate max-w-xs"
+                                                                "className": "board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:font-mono board:text-xs board:truncate board:max-w-xs"
                                                             },
                                                             "text": "{{policy.target ?? ''}}"
                                                         },
@@ -614,7 +614,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300"
+                                                                "className": "board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "{{(boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}"
                                                         },
@@ -622,7 +622,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 text-right"
+                                                                "className": "board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:text-right"
                                                             },
                                                             "text": "{{policy.grace_minutes ?? 0}}"
                                                         },
@@ -630,7 +630,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-gray-700 dark:text-gray-300 text-right tabular-nums"
+                                                                "className": "board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:text-right board:tabular-nums"
                                                             },
                                                             "text": "{{policy.priority ?? 100}}"
                                                         },
@@ -638,7 +638,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2"
+                                                                "className": "board:px-3 board:py-2"
                                                             },
                                                             "children": [
                                                                 {
@@ -708,14 +708,14 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2"
+                                                                "className": "board:px-3 board:py-2"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-xs board-tone-info' : 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-xs board-tone-warning'}}"
+                                                                        "className": "{{policy.source_type === 'admin' ? 'board:inline-block board:whitespace-nowrap board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-blue-100 board:dark:bg-blue-900 board:text-xs board-tone-info' : 'board:inline-block board:whitespace-nowrap board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-yellow-100 board:dark:bg-yellow-900 board:text-xs board-tone-warning'}}"
                                                                     },
                                                                     "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
                                                                 }
@@ -725,7 +725,7 @@
                                                             "type": "basic",
                                                             "name": "Td",
                                                             "props": {
-                                                                "className": "px-3 py-2 text-right whitespace-nowrap"
+                                                                "className": "board:px-3 board:py-2 board:text-right board:whitespace-nowrap"
                                                             },
                                                             "children": [
                                                                 {
@@ -783,7 +783,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600",
+                                                                        "className": "board:text-sm board:px-3 board:py-1.5 board:rounded-md board:bg-indigo-600 board:text-white board:hover:bg-indigo-700 board:dark:bg-indigo-500 board:dark:hover:bg-indigo-600 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed board:disabled:hover:bg-indigo-600",
                                                                         "disabled": "{{policy.abilities?.can_update !== true}}"
                                                                     },
                                                                     "text": "$t:common.edit"
@@ -814,7 +814,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "ml-2 text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                                                        "className": "board:ml-2 board:text-sm board:px-3 board:py-1.5 board:rounded-md board:border board:border-red-300 board:dark:border-red-600 board:text-red-700 board:dark:text-red-400 board:hover:bg-red-50 board:dark:hover:bg-red-900/30 board:transition-colors"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -845,7 +845,7 @@
                                 }
                             },
                             "props": {
-                                "className": "divider-list"
+                                "className": "board-divider-list"
                             },
                             "children": [
                                 {
@@ -856,28 +856,28 @@
                                         "item_var": "policy"
                                     },
                                     "props": {
-                                        "className": "p-4"
+                                        "className": "board:p-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-start justify-between gap-3"
+                                                "className": "board-flex-start board:justify-between board:gap-3"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-1 min-w-0"
+                                                        "className": "board:flex-1 board:min-w-0"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "text-primary font-mono text-xs break-all"
+                                                                "className": "board-text-primary board:font-mono board:text-xs board:break-all board-break-all"
                                                             },
                                                             "text": "{{policy.key ?? ''}}"
                                                         },
@@ -885,7 +885,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "form-hint"
+                                                                "className": "board-form-hint"
                                                             },
                                                             "children": [
                                                                 {
@@ -897,7 +897,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "mx-1.5 text-gray-500 dark:text-gray-400"
+                                                                        "className": "board:mx-1.5 board:text-gray-500 board:dark:text-gray-400"
                                                                     },
                                                                     "text": "·"
                                                                 },
@@ -905,7 +905,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "font-mono break-all"
+                                                                        "className": "board:font-mono board:break-all board-break-all"
                                                                     },
                                                                     "text": "{{policy.target ?? ''}}"
                                                                 }
@@ -917,7 +917,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "{{policy.source_type === 'admin' ? 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-xs board-tone-info flex-shrink-0' : 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-xs board-tone-warning flex-shrink-0'}}"
+                                                        "className": "{{policy.source_type === 'admin' ? 'board:inline-block board:whitespace-nowrap board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-blue-100 board:dark:bg-blue-900 board:text-xs board-tone-info board:flex-shrink-0' : 'board:inline-block board:whitespace-nowrap board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-yellow-100 board:dark:bg-yellow-900 board:text-xs board-tone-warning board:flex-shrink-0'}}"
                                                     },
                                                     "text": "$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}"
                                                 }
@@ -927,14 +927,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-between gap-3"
+                                                "className": "board-flex-between board:gap-3"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-tertiary"
+                                                        "className": "board-text-tertiary"
                                                     },
                                                     "children": [
                                                         {
@@ -946,7 +946,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "mx-1.5 text-gray-500 dark:text-gray-400"
+                                                                "className": "board:mx-1.5 board:text-gray-500 board:dark:text-gray-400"
                                                             },
                                                             "text": "·"
                                                         },
@@ -959,7 +959,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "ml-1 font-medium text-gray-700 dark:text-gray-300"
+                                                                "className": "board:ml-1 board:font-medium board:text-gray-700 board:dark:text-gray-300"
                                                             },
                                                             "text": "{{policy.grace_minutes ?? 0}}"
                                                         },
@@ -967,7 +967,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "mx-1.5 text-gray-500 dark:text-gray-400"
+                                                                "className": "board:mx-1.5 board:text-gray-500 board:dark:text-gray-400"
                                                             },
                                                             "text": "·"
                                                         },
@@ -980,7 +980,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "ml-1 font-medium text-gray-700 dark:text-gray-300 tabular-nums"
+                                                                "className": "board:ml-1 board:font-medium board:text-gray-700 board:dark:text-gray-300 board:tabular-nums"
                                                             },
                                                             "text": "{{policy.priority ?? 100}}"
                                                         }
@@ -1053,7 +1053,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center justify-end gap-2"
+                                                "className": "board-flex-center board:justify-end board:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -1111,7 +1111,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600",
+                                                        "className": "board:text-sm board:px-3 board:py-1.5 board:rounded-md board:bg-indigo-600 board:text-white board:hover:bg-indigo-700 board:dark:bg-indigo-500 board:dark:hover:bg-indigo-600 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed board:disabled:hover:bg-indigo-600",
                                                         "disabled": "{{policy.abilities?.can_update !== true}}"
                                                     },
                                                     "text": "$t:common.edit"
@@ -1142,7 +1142,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                                        "className": "board:text-sm board:px-3 board:py-1.5 board:rounded-md board:border board:border-red-300 board:dark:border-red-600 board:text-red-700 board:dark:text-red-400 board:hover:bg-red-50 board:dark:hover:bg-red-900/30 board:transition-colors"
                                                     },
                                                     "children": [
                                                         {
@@ -1163,7 +1163,7 @@
                             "name": "Div",
                             "if": "{{boardIdentityPolicies !== undefined && ((boardIdentityPolicies?.data?.data ?? []).length === 0)}}",
                             "props": {
-                                "className": "py-10 text-center text-label-subtle"
+                                "className": "board:py-10 board:text-center board-text-label-subtle"
                             },
                             "text": "$t:admin.identity.policies.empty"
                         },
@@ -1172,14 +1172,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "footer-buttons-between"
+                                "className": "board-footer-buttons-between"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-tertiary"
+                                        "className": "board-text-tertiary"
                                     },
                                     "text": "$t:admin.identity.policies.pagination_summary|total={{boardIdentityPolicies?.data?.meta?.total ?? 0}}|page={{boardIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{boardIdentityPolicies?.data?.meta?.last_page ?? '-'}}"
                                 },
@@ -1187,7 +1187,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-1"
+                                        "className": "board-flex-center board:gap-1"
                                     },
                                     "children": [
                                         {
@@ -1220,7 +1220,7 @@
                                                 "href": "/admin/boards/settings?tab=identity_policies&page={{Math.max(1, (boardIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}",
                                                 "mergeQuery": true,
                                                 "disabled": "{{(boardIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}",
-                                                "className": "button px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
+                                                "className": "board-button board:px-3 board:py-1.5 board:text-xs board:font-medium board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:text-gray-700 board:dark:text-gray-200 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:aria-disabled:opacity-50 board:aria-disabled:cursor-not-allowed"
                                             },
                                             "children": [
                                                 {
@@ -1234,7 +1234,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
+                                                "className": "board:px-3 board:py-1.5 board:text-xs board:font-medium board:text-gray-700 board:dark:text-gray-200"
                                             },
                                             "text": "$t:admin.identity.policies.page_indicator|page={{boardIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{boardIdentityPolicies?.data?.meta?.last_page ?? '-'}}"
                                         },
@@ -1268,7 +1268,7 @@
                                                 "href": "/admin/boards/settings?tab=identity_policies&page={{boardIdentityPolicies?.data?.meta?.last_page ? Math.min(boardIdentityPolicies?.data?.meta?.last_page, (boardIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((boardIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}",
                                                 "mergeQuery": true,
                                                 "disabled": "{{boardIdentityPolicies?.data?.meta?.last_page ? ((boardIdentityPolicies?.data?.meta?.current_page ?? 1) >= boardIdentityPolicies?.data?.meta?.last_page) : (boardIdentityPolicies?.data?.meta?.has_more_pages !== true)}}",
-                                                "className": "button px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed"
+                                                "className": "board-button board:px-3 board:py-1.5 board:text-xs board:font-medium board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:text-gray-700 board:dark:text-gray-200 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:aria-disabled:opacity-50 board:aria-disabled:cursor-not-allowed"
                                             },
                                             "children": [
                                                 {

@@ -25,53 +25,53 @@
     </props>
   </inject>
   <inject target-id="extension_tab_content" position="append_child">
-    <div data-ref="ext_ecommerce_data_content" data-if="{{!!user?.data?.ecommerce_data}}" id="ext_ecommerce_data" class="scroll-mt-32">
-      <div data-ref="section_ecommerce_data" class="admin-card">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center gap-2">
-            <icon name="bag-shopping" class="text-xl text-gray-600 dark:text-gray-400"/>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.title</h3>
+    <div data-ref="ext_ecommerce_data_content" data-if="{{!!user?.data?.ecommerce_data}}" id="ext_ecommerce_data" class="ecommerce:scroll-mt-32">
+      <div data-ref="section_ecommerce_data" class="ecommerce-admin-card">
+        <div class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-4">
+          <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2">
+            <icon name="bag-shopping" class="ecommerce:text-xl ecommerce:text-gray-600 ecommerce:dark:text-gray-400"/>
+            <h3 class="ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.title</h3>
           </div>
           <extension-badge data-type="composite" type="module" identifier="sirsoft-ecommerce" installedModules="{{_global.installedModules}}"/>
         </div>
-        <div class="grid grid-cols-4 gap-4 mb-4">
-          <responsive on="portable" class="grid grid-cols-2 gap-4 mb-4"/>
-          <div data-ref="field_wishlist_count" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.wishlist</span>
-            <span class="block text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{user?.data?.ecommerce_data?.wishlist_count ?? 0}}</span>
+        <div class="ecommerce:grid ecommerce:grid-cols-4 ecommerce:gap-4 ecommerce:mb-4">
+          <responsive on="portable" class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4 ecommerce:mb-4"/>
+          <div data-ref="field_wishlist_count" class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
+            <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.wishlist</span>
+            <span class="ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{user?.data?.ecommerce_data?.wishlist_count ?? 0}}</span>
           </div>
-          <div data-ref="field_cart_count" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.cart</span>
-            <span class="block text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{user?.data?.ecommerce_data?.cart_count ?? 0}}</span>
+          <div data-ref="field_cart_count" class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
+            <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.cart</span>
+            <span class="ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{user?.data?.ecommerce_data?.cart_count ?? 0}}</span>
           </div>
-          <div data-ref="field_address_count" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.address</span>
-            <span class="block text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{user?.data?.ecommerce_data?.address_count ?? 0}}</span>
+          <div data-ref="field_address_count" class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
+            <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.address</span>
+            <span class="ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{user?.data?.ecommerce_data?.address_count ?? 0}}</span>
           </div>
-          <div data-ref="field_inquiry_count" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.inquiry</span>
-            <span class="block text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{user?.data?.ecommerce_data?.inquiry_count ?? 0}}</span>
+          <div data-ref="field_inquiry_count" class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
+            <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.inquiry</span>
+            <span class="ecommerce:block ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white">$t:sirsoft-ecommerce.admin.user_ecommerce_data.count_unit|count={{user?.data?.ecommerce_data?.inquiry_count ?? 0}}</span>
             <!-- 미답변만 따로 — 전체 건수는 «지금 답해야 할 것이 있는가» 를 말해 주지 않는다 -->
-            <span data-ref="field_inquiry_pending_count" data-if="{{(user?.data?.ecommerce_data?.inquiry_pending_count ?? 0) > 0}}" class="block text-xs font-medium text-amber-700 dark:text-amber-400 mt-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.inquiry_pending|count={{user?.data?.ecommerce_data?.inquiry_pending_count ?? 0}}</span>
+            <span data-ref="field_inquiry_pending_count" data-if="{{(user?.data?.ecommerce_data?.inquiry_pending_count ?? 0) > 0}}" class="ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:mt-1">$t:sirsoft-ecommerce.admin.user_ecommerce_data.inquiry_pending|count={{user?.data?.ecommerce_data?.inquiry_pending_count ?? 0}}</span>
           </div>
         </div>
-        <div data-ref="ecommerce_saved_addresses" class="mb-4">
-          <span class="block text-xs text-gray-500 dark:text-gray-400 mb-2">$t:sirsoft-ecommerce.admin.user_ecommerce_data.saved_addresses</span>
+        <div data-ref="ecommerce_saved_addresses" class="ecommerce:mb-4">
+          <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-2">$t:sirsoft-ecommerce.admin.user_ecommerce_data.saved_addresses</span>
           <!-- 0건이어도 자리를 비우지 않는다 — 통째로 감추면 「이 회원은 배송지가 없다」 와 「이 기능이 없다」 가
                화면에서 같아 보인다(2026-09-21 검수 지적: 배송지 0건 회원을 열었더니 버튼만 남아 미구현으로 읽혔다). -->
-          <span data-ref="ecommerce_saved_addresses_empty" data-if="{{(user?.data?.ecommerce_data?.addresses ?? []).length === 0}}" class="block p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.user_ecommerce_data.address_empty</span>
-          <div data-if="{{(user?.data?.ecommerce_data?.addresses ?? []).length > 0}}" class="flex flex-col gap-2">
-            <div data-each="address, addressIndex in {{user?.data?.ecommerce_data?.addresses ?? []}}" class="p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-sm font-medium text-gray-900 dark:text-white">{{address.recipient_name}}</span>
+          <span data-ref="ecommerce_saved_addresses_empty" data-if="{{(user?.data?.ecommerce_data?.addresses ?? []).length === 0}}" class="ecommerce:block ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.user_ecommerce_data.address_empty</span>
+          <div data-if="{{(user?.data?.ecommerce_data?.addresses ?? []).length > 0}}" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+            <div data-each="address, addressIndex in {{user?.data?.ecommerce_data?.addresses ?? []}}" class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-lg">
+              <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap">
+                <span class="ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">{{address.recipient_name}}</span>
                 <badge data-type="composite" data-if="{{address.is_default}}" color="blue" size="sm">$t:sirsoft-ecommerce.admin.user_ecommerce_data.address_default</badge>
-                <span data-if="{{address.label}}" class="text-xs text-gray-500 dark:text-gray-400">{{address.label}}</span>
+                <span data-if="{{address.label}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{address.label}}</span>
               </div>
-              <span class="block text-sm text-gray-700 dark:text-gray-300 mt-1">{{address.address_summary}}</span>
-              <span data-if="{{address.recipient_phone}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{address.recipient_phone}}</span>
+              <span class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mt-1">{{address.address_summary}}</span>
+              <span data-if="{{address.recipient_phone}}" class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5">{{address.recipient_phone}}</span>
             </div>
           </div>
-          <span data-if="{{(user?.data?.ecommerce_data?.address_count ?? 0) > (user?.data?.ecommerce_data?.addresses ?? []).length}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-2">$t:sirsoft-ecommerce.admin.user_ecommerce_data.address_more|count={{(user?.data?.ecommerce_data?.address_count ?? 0) - (user?.data?.ecommerce_data?.addresses ?? []).length}}</span>
+          <span data-if="{{(user?.data?.ecommerce_data?.address_count ?? 0) > (user?.data?.ecommerce_data?.addresses ?? []).length}}" class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-2">$t:sirsoft-ecommerce.admin.user_ecommerce_data.address_more|count={{(user?.data?.ecommerce_data?.address_count ?? 0) - (user?.data?.ecommerce_data?.addresses ?? []).length}}</span>
         </div>
         <!-- 결제 통화 · 배송 국가 — 종전에는 회원 **수정** 화면에만 있었다. 그래서 「이 회원이
              어느 통화로 결제하나」 를 보려면 고치는 화면을 열어야 했고, 볼 생각만 있던 운영자가
@@ -82,51 +82,51 @@
              별도 확장 파일이 아니라 이 조각 안에 두는 이유는, 바깥에서 주입하려면 이 카드
              (`section_ecommerce_data`)를 앵커로 잡아야 하는데 그 앵커 자체가 확장이 만든
              노드라 주입 시점에 아직 없기 때문이다(실측에서 통째로 서지 않았다). -->
-  <div data-ref="ext_user_preferences_detail" data-if="{{user?.data?.ecommerce_preferred_currency !== undefined || user?.data?.ecommerce_preferred_shipping_country !== undefined}}" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-    <div class="grid grid-cols-2 gap-4">
-      <responsive on="portable" class="grid grid-cols-1 gap-4"/>
+  <div data-ref="ext_user_preferences_detail" data-if="{{user?.data?.ecommerce_preferred_currency !== undefined || user?.data?.ecommerce_preferred_shipping_country !== undefined}}" class="ecommerce:mt-4 ecommerce:pt-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
+    <div class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-4">
+      <responsive on="portable" class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4"/>
       <div data-ref="ext_user_preferences_currency" data-if="{{user?.data?.ecommerce_preferred_currency !== undefined}}">
-        <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-ecommerce.admin.user_currency.title</span>
-        <span class="block text-sm text-gray-900 dark:text-white">{{user?.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? '-'}}</span>
+        <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_currency.title</span>
+        <span class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white">{{user?.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency ?? '-'}}</span>
       </div>
       <div data-ref="ext_user_preferences_shipping_country" data-if="{{user?.data?.ecommerce_preferred_shipping_country !== undefined}}">
-        <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-ecommerce.admin.user_shipping_country.title</span>
-        <span class="block text-sm text-gray-900 dark:text-white">{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.code === (user?.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR')).map(c => ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code))[0] ?? (user?.data?.ecommerce_preferred_shipping_country ?? '-')}}</span>
+        <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-1">$t:sirsoft-ecommerce.admin.user_shipping_country.title</span>
+        <span class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white">{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.code === (user?.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR')).map(c => ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code))[0] ?? (user?.data?.ecommerce_preferred_shipping_country ?? '-')}}</span>
       </div>
     </div>
   </div>
-        <div data-ref="ecommerce_data_links" class="flex flex-wrap gap-2">
-          <a href="/admin/ecommerce/wishlists?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_wishlists" data-testid="user-wishlists-link" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+        <div data-ref="ecommerce_data_links" class="ecommerce:flex ecommerce:flex-wrap ecommerce:gap-2">
+          <a href="/admin/ecommerce/wishlists?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_wishlists" data-testid="user-wishlists-link" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer">
             <on type="click">
               <!-- 이 회원으로 한정한 찜 목록으로 — user_uuid 를 실어 보내면 목록 화면이 회원 배너를 띄운다 -->
               <navigate/>
             </on>
-            <icon name="heart" class="text-base"/>
+            <icon name="heart" class="ecommerce:text-base"/>
             <span>$t:sirsoft-ecommerce.admin.user_ecommerce_data.view_wishlists</span>
           </a>
-          <a href="/admin/ecommerce/carts?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_carts" data-testid="user-carts-link" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <a href="/admin/ecommerce/carts?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_carts" data-testid="user-carts-link" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer">
             <on type="click">
               <!-- 이 회원으로 한정한 장바구니 목록으로 — user_uuid 를 실어 보낸다 -->
               <navigate/>
             </on>
-            <icon name="cart-shopping" class="text-base"/>
+            <icon name="cart-shopping" class="ecommerce:text-base"/>
             <span>$t:sirsoft-ecommerce.admin.user_ecommerce_data.view_carts</span>
           </a>
-          <a href="/admin/ecommerce/user-addresses?user_uuids[]={{user?.data?.uuid ?? ''}}" data-ref="view_member_addresses" data-testid="user-addresses-link" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <a href="/admin/ecommerce/user-addresses?user_uuids[]={{user?.data?.uuid ?? ''}}" data-ref="view_member_addresses" data-testid="user-addresses-link" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer">
             <on type="click">
               <!-- 이 회원으로 한정한 배송지 목록으로 — 그 화면의 전용 회원 필터가 읽는 키로 보낸다.
                    레거시 단건 키(user_uuid)도 흡수되지만, 링크가 화면의 현재 계약을 가리키는 편이 낫다 -->
               <navigate/>
             </on>
-            <icon name="map-pin" class="text-base"/>
+            <icon name="map-pin" class="ecommerce:text-base"/>
             <span>$t:sirsoft-ecommerce.admin.user_ecommerce_data.view_addresses</span>
           </a>
-          <a href="/admin/ecommerce/inquiries?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_inquiries" data-testid="user-inquiries-link" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <a href="/admin/ecommerce/inquiries?user_uuid={{user?.data?.uuid ?? ''}}" data-ref="view_member_inquiries" data-testid="user-inquiries-link" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer">
             <on type="click">
               <!-- 이 회원으로 한정한 상품문의 목록으로 — user_uuid 를 실어 보낸다 -->
               <navigate/>
             </on>
-            <icon name="comments" class="text-base"/>
+            <icon name="comments" class="ecommerce:text-base"/>
             <span>$t:sirsoft-ecommerce.admin.user_ecommerce_data.view_inquiries</span>
           </a>
         </div>

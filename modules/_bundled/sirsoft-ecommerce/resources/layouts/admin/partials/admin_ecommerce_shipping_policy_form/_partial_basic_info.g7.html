@@ -4,19 +4,19 @@
   '기본 정책' 은 상품에 정책이 지정되지 않았을 때 쓰이는 것이라 쇼핑몰에 하나뿐이다 — 여기서 켜면
   다른 정책의 표시가 풀린다. -->
 <partial description="배송정책 폼 - 기본정보 섹션 (정책명, 사용여부, 기본정책)">
-  <div data-ref="basic_info_section" class="admin-card">
-    <h2 class="card-title">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_basic</h2>
-    <div data-ref="basic_info_fields" class="row-stack">
+  <div data-ref="basic_info_section" class="ecommerce-admin-card">
+    <h2 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.shipping_policy.form.section_basic</h2>
+    <div data-ref="basic_info_fields" class="ecommerce-row-stack">
       <div data-ref="field_name">
         <div>
-          <label class="form-label">
+          <label class="ecommerce-form-label">
             <span>$t:sirsoft-ecommerce.admin.shipping_policy.form.name</span>
-            <span class="text-required">*</span>
+            <span class="ecommerce-text-required">*</span>
           </label>
           <multilingual-input data-type="composite" name="name" placeholder="$t:sirsoft-ecommerce.admin.shipping_policy.form.name_placeholder" :maxLength="200" :required="true" layout="tabs" disabled="{{_computed.isReadOnly}}" error="{{_local.errors?.name?.[0] ?? ''}}"/>
         </div>
       </div>
-      <div data-ref="field_row_status" class="grid-2col-responsive">
+      <div data-ref="field_row_status" class="ecommerce-grid-2col-responsive">
         <div data-ref="field_is_active">
           <div>
             <toggle data-type="composite" label="$t:sirsoft-ecommerce.admin.shipping_policy.form.is_active" name="is_active" disabled="{{_computed.isReadOnly}}"/>

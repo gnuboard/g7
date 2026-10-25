@@ -37,8 +37,10 @@ function findAll(node: AnyNode | undefined, pred: (n: AnyNode) => boolean, resul
 }
 
 describe('이커머스 알림 행 footer extension_point 위치', () => {
+    // @scenario case=row_footer_c01
+    // @effects row_footer_extension_point_inside_info_column
     it('extension_point 는 정보 컬럼(flex-1 min-w-0)의 children 이다', () => {
-        const infoColumns = findAll(tab as AnyNode, (n) => n.props?.className === 'flex-1 min-w-0');
+        const infoColumns = findAll(tab as AnyNode, (n) => n.props?.className === 'ecommerce:flex-1 ecommerce:min-w-0');
         expect(infoColumns.length).toBeGreaterThan(0);
 
         const infoColumnHasEp = infoColumns.some((col) =>
@@ -47,10 +49,12 @@ describe('이커머스 알림 행 footer extension_point 위치', () => {
         expect(infoColumnHasEp).toBe(true);
     });
 
+    // @scenario case=row_footer_c02
+    // @effects row_footer_extension_point_inside_info_column
     it('extension_point 는 토글·편집 버튼 컬럼(flex-center gap-3 flex-shrink-0)의 children 이 아니다', () => {
         const buttonColumns = findAll(
             tab as AnyNode,
-            (n) => n.props?.className === 'flex-center gap-3 flex-shrink-0',
+            (n) => n.props?.className === 'ecommerce-flex-center ecommerce:gap-3 ecommerce:flex-shrink-0',
         );
         expect(buttonColumns.length).toBeGreaterThan(0);
 
@@ -60,13 +64,15 @@ describe('이커머스 알림 행 footer extension_point 위치', () => {
         expect(buttonColumnHasEp).toBe(false);
     });
 
+    // @scenario case=row_footer_c03
+    // @effects row_footer_extension_point_inside_info_column
     it('extension_point 가 정보 컬럼과 버튼 컬럼의 공통 부모(행 wrapper)에 직접 걸려 있지 않다', () => {
         const rowWrappers = findAll(
             tab as AnyNode,
             (n) =>
                 Array.isArray(n.children) &&
-                n.children.some((c) => c.props?.className === 'flex-1 min-w-0') &&
-                n.children.some((c) => c.props?.className === 'flex-center gap-3 flex-shrink-0'),
+                n.children.some((c) => c.props?.className === 'ecommerce:flex-1 ecommerce:min-w-0') &&
+                n.children.some((c) => c.props?.className === 'ecommerce-flex-center ecommerce:gap-3 ecommerce:flex-shrink-0'),
         );
         expect(rowWrappers.length).toBeGreaterThan(0);
 

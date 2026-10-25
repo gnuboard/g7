@@ -5,50 +5,50 @@
 <partial description="입금 수동 매칭 모달">
   <modal data-type="composite" data-ref="modal_manual_match" title="$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.title" size="md">
     <footer>
-      <button type="button" class="btn btn-outline">
+      <button type="button" class="ecommerce-btn ecommerce-btn-outline">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.admin.deposit.modal.manual_match.cancel
       </button>
-      <button type="button" class="btn btn-primary">
+      <button type="button" class="ecommerce-btn ecommerce-btn-primary">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.admin.deposit.modal.manual_match.match
       </button>
     </footer>
-    <div data-ref="deposit_info_card" class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6">
-      <div class="grid-2col">
+    <div data-ref="deposit_info_card" class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-6">
+      <div class="ecommerce-grid-2col">
         <div>
-          <span class="text-label text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.depositor_name</span>
-          <div class="text-primary font-medium mt-1">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</div>
+          <span class="ecommerce-text-label ecommerce:text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.depositor_name</span>
+          <div class="ecommerce-text-primary ecommerce:font-medium ecommerce:mt-1">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</div>
         </div>
         <div>
-          <span class="text-label text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.deposit_amount</span>
-          <div class="text-blue-600 dark:text-blue-400 font-semibold mt-1">\49,000</div>
+          <span class="ecommerce-text-label ecommerce:text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.deposit_amount</span>
+          <div class="ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:font-semibold ecommerce:mt-1">\49,000</div>
         </div>
       </div>
-      <div class="mt-4">
-        <span class="text-label text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.deposit_bank</span>
-        <div class="text-primary mt-1">$t:sirsoft-ecommerce.admin.sample.banks.kakaobank</div>
+      <div class="ecommerce:mt-4">
+        <span class="ecommerce-text-label ecommerce:text-xs">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.deposit_bank</span>
+        <div class="ecommerce-text-primary ecommerce:mt-1">$t:sirsoft-ecommerce.admin.sample.banks.kakaobank</div>
       </div>
     </div>
     <div data-ref="order_search_section">
-      <div class="text-label text-sm mb-2">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.search_label</div>
-      <div class="relative mb-4">
-        <input type="text" placeholder="$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.search_placeholder" class="input pl-10"/>
-        <icon name="search" class="text-base absolute left-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"/>
+      <div class="ecommerce-text-label ecommerce:text-sm ecommerce:mb-2">$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.search_label</div>
+      <div class="ecommerce:relative ecommerce:mb-4">
+        <input type="text" placeholder="$t:sirsoft-ecommerce.admin.deposit.modal.manual_match.search_placeholder" class="ecommerce-input ecommerce:pl-10"/>
+        <icon name="search" class="ecommerce:text-base ecommerce:absolute ecommerce:left-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"/>
       </div>
-      <div data-ref="search_result_list" class="toggle-group">
-        <div data-ref="search_result_item_1" class="p-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-l-2 border-l-blue-500 bg-blue-50/50 dark:bg-blue-900/10">
-          <div class="flex-between mb-1">
-            <span class="text-primary font-medium">20240127-004</span>
+      <div data-ref="search_result_list" class="ecommerce-toggle-group">
+        <div data-ref="search_result_item_1" class="ecommerce:p-3 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-800 ecommerce:border-l-2 ecommerce:border-l-blue-500 ecommerce:bg-blue-50/50 ecommerce:dark:bg-blue-900/10">
+          <div class="ecommerce-flex-between ecommerce:mb-1">
+            <span class="ecommerce-text-primary ecommerce:font-medium">20240127-004</span>
           </div>
-          <div class="text-secondary text-sm">$t:sirsoft-ecommerce.admin.sample.fmt.name_product|name=$t:sirsoft-ecommerce.admin.sample.people.lee_younghee|product=$t:sirsoft-ecommerce.admin.sample.products.sports_jacket</div>
-          <div class="flex-between mt-2">
-            <span class="text-primary font-semibold">\159,000</span>
-            <span class="text-secondary text-xs">2024-01-27 11:20:00</span>
+          <div class="ecommerce-text-secondary ecommerce:text-sm">$t:sirsoft-ecommerce.admin.sample.fmt.name_product|name=$t:sirsoft-ecommerce.admin.sample.people.lee_younghee|product=$t:sirsoft-ecommerce.admin.sample.products.sports_jacket</div>
+          <div class="ecommerce-flex-between ecommerce:mt-2">
+            <span class="ecommerce-text-primary ecommerce:font-semibold">\159,000</span>
+            <span class="ecommerce-text-secondary ecommerce:text-xs">2024-01-27 11:20:00</span>
           </div>
         </div>
       </div>

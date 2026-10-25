@@ -22,26 +22,26 @@
             "key": "{{$method._orphaned ? 'orphaned' : 'normal'}}",
             "variants": {
                 "normal": "",
-                "orphaned": "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700"
+                "orphaned": "ecommerce:bg-red-50 ecommerce:dark:bg-red-900/20 ecommerce:border-red-300 ecommerce:dark:border-red-700"
             }
         },
         "props": {
             "data-payment-method": "{{$method.id}}",
-            "className": "excel-card"
+            "className": "ecommerce-excel-card"
         },
         "children": [
             {
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "excel-card-header"
+                    "className": "ecommerce-excel-card-header"
                 },
                 "children": [
                     {
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-center gap-3 flex-1 min-w-0"
+                            "className": "ecommerce-flex-center ecommerce:gap-3 ecommerce:flex-1 ecommerce:min-w-0"
                         },
                         "children": [
                             {
@@ -52,7 +52,7 @@
                                 "if": "{{!$method._orphaned && !_computed.isReadOnly}}",
                                 "props": {
                                     "data-drag-handle": true,
-                                    "className": "cursor-grab text-gray-500 dark:text-gray-400"
+                                    "className": "ecommerce:cursor-grab ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                 },
                                 "children": [
                                     {
@@ -80,14 +80,14 @@
                                 "if": "{{!$method._cached_brand_mark}}",
                                 "props": {
                                     "name": "{{$method._cached_icon ?? 'circle-question'}}",
-                                    "className": "text-secondary text-lg"
+                                    "className": "ecommerce-text-secondary ecommerce:text-lg"
                                 }
                             },
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "font-medium text-gray-900 dark:text-gray-100 truncate"
+                                    "className": "ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate"
                                 },
                                 "text": "{{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}"
                             },
@@ -96,7 +96,7 @@
                                 "name": "Span",
                                 "if": "{{$method._orphaned}}",
                                 "props": {
-                                    "className": "inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                                    "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:whitespace-nowrap ecommerce:shrink-0 ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:font-medium ecommerce:bg-red-100 ecommerce:text-red-800 ecommerce:dark:bg-red-900/30 ecommerce:dark:text-red-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_badge"
                             },
@@ -106,7 +106,7 @@
                                 "if": "{{$method._orphaned_pg}}",
                                 "props": {
                                     "data-testid": "orphaned-pg-badge-{{$method.id}}",
-                                    "className": "inline-flex items-center whitespace-nowrap shrink-0 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                                    "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:whitespace-nowrap ecommerce:shrink-0 ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:font-medium ecommerce:bg-amber-100 ecommerce:text-amber-800 ecommerce:dark:bg-amber-900/30 ecommerce:dark:text-amber-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.orphaned_pg_badge"
                             }
@@ -116,7 +116,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-center gap-2"
+                            "className": "ecommerce-flex-center ecommerce:gap-2"
                         },
                         "children": [
                             {
@@ -160,7 +160,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "btn-icon text-red-500 dark:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "className": "ecommerce-btn-icon ecommerce:text-red-500 ecommerce:dark:text-red-400 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                     "disabled": "{{_computed.isReadOnly}}",
                                     "aria-label": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.remove_orphaned"
                                 },
@@ -183,28 +183,28 @@
                 "name": "Div",
                 "if": "{{!$method._orphaned}}",
                 "props": {
-                    "className": "excel-card-body"
+                    "className": "ecommerce-excel-card-body"
                 },
                 "children": [
                     {
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "row-stack"
+                            "className": "ecommerce-row-stack"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "form-group"
+                                    "className": "ecommerce-form-group"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "ecommerce-form-label"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider"
                                     },
@@ -215,7 +215,7 @@
                                         "if": "{{$method.pg_locked}}",
                                         "props": {
                                             "data-testid": "{{'pg-locked-badge-' + $method.id}}",
-                                            "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                                            "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:px-2.5 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300"
                                         },
                                         "text": "{{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_fixed') + ' · ' + (((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider))?.name ? $localized(((_local.form?.available_pg_providers ?? []).find(p => p.id === $method.pg_provider)).name) : ($method.pg_provider ?? ''))}}"
                                     },
@@ -239,7 +239,7 @@
                                             "data-testid": "{{'pg-select-' + $method.id}}",
                                             "aria-label": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_provider')}}",
                                             "value": "{{$method.pg_provider ?? ''}}",
-                                            "className": "w-full",
+                                            "className": "ecommerce:w-full",
                                             "options": "{{[{value: '', label: '---'}].concat((_local.form?.available_pg_providers ?? []).filter(p => (p.supported_methods ?? []).includes($method.id)).map(p => ({value: p.id, label: $localized(p.name)})))}}",
                                             "disabled": "{{_computed.isReadOnly}}"
                                         }
@@ -250,7 +250,7 @@
                                         "if": "{{!$method.pg_locked && $method.needs_pg && (_local.form?.available_pg_providers ?? []).length === 0}}",
                                         "props": {
                                             "data-testid": "{{'pg-not-installed-' + $method.id}}",
-                                            "className": "text-hint italic"
+                                            "className": "ecommerce-text-hint ecommerce:italic"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_installed"
                                     },
@@ -260,7 +260,7 @@
                                         "if": "{{!$method.pg_locked && !$method.needs_pg}}",
                                         "props": {
                                             "data-testid": "{{'pg-not-required-' + $method.id}}",
-                                            "className": "text-hint"
+                                            "className": "ecommerce-text-hint"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.pg_not_required"
                                     }
@@ -270,14 +270,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "form-group"
+                                    "className": "ecommerce-form-group"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "ecommerce-form-label"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.stock_deduction_timing"
                                     },
@@ -299,7 +299,7 @@
                                         "props": {
                                             "value": "{{$method.stock_deduction_timing ?? 'payment_complete'}}",
                                             "aria-label": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.stock_deduction_timing')}}",
-                                            "className": "w-full",
+                                            "className": "ecommerce:w-full",
                                             "disabled": "{{_computed.isReadOnly}}",
                                             "options": [
                                                 {
@@ -323,14 +323,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "form-group"
+                                    "className": "ecommerce-form-group"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "ecommerce-form-label"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing"
                                     },
@@ -352,7 +352,7 @@
                                         "props": {
                                             "value": "{{$method.mileage_deduction_timing ?? 'payment_complete'}}",
                                             "aria-label": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing')}}",
-                                            "className": "w-full",
+                                            "className": "ecommerce:w-full",
                                             "disabled": "{{_computed.isReadOnly || !(_local.form?.mileage?.enabled)}}",
                                             "options": [
                                                 {
@@ -371,7 +371,7 @@
                                         "name": "Span",
                                         "if": "{{!(_local.form?.mileage?.enabled)}}",
                                         "props": {
-                                            "className": "form-hint text-amber-700 dark:text-amber-400"
+                                            "className": "ecommerce-form-hint ecommerce:text-amber-700 ecommerce:dark:text-amber-400"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.mileage_deduction_timing_disabled_hint"
                                     }
@@ -381,14 +381,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "form-group"
+                                    "className": "ecommerce-form-group"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "form-label"
+                                            "className": "ecommerce-form-label"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount"
                                     },
@@ -412,7 +412,7 @@
                                             "value": "{{$method.min_order_amount ?? 0}}",
                                             "aria-label": "$t:common.row_cell|row={{$localized($method._cached_name, 'sirsoft-ecommerce::settings.payment_methods.' + ($method.id ?? '') + '.name') || $method.id}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.payment_methods.min_order_amount')}}",
                                             "min": 0,
-                                            "className": "input",
+                                            "className": "ecommerce-input",
                                             "disabled": "{{_computed.isReadOnly}}"
                                         }
                                     }

@@ -31,6 +31,13 @@
               onerror="window.__g7AssetUrl && window.__g7AssetUrl.recoverStylesheet(this);">
         @endforeach
         @endif
+
+        {{-- 확장 CSS 의미 클래스 칸 — 템플릿 CSS 링크 **뒤**에 선언한다. 템플릿의 층 규칙(예: Tailwind 초기화)보다
+             위, 층 없는 규칙(확장 유틸리티·템플릿 층 없는 CSS·템플릿 확장 CSS 덮기 파일)보다 아래에 놓인다.
+             앞에 두면 템플릿 초기화(`*{margin:0}` 등)가 확장 의미 클래스를 이긴다.
+             `g7-preview` 는 레이아웃 편집기 프리뷰 CSS(사용자 템플릿 CSS 를 평탄화해 이 층에 담아 서빙)의 자리다 —
+             관리자 템플릿 층 위·확장 의미 칸 아래라서 프리뷰에서도 「템플릿 층 < 확장 의미 칸」 관계가 사용자 화면과 같다. --}}
+        <style>@layer g7-preview, g7-extension;</style>
     </head>
     <body>
         <!-- React 렌더링 루트 -->
@@ -52,6 +59,12 @@
                 pluginAssets: @json($pluginAssets ?? []),
                 bundleUrls: @json($bundleUrls ?? null),
                 customAssets: @json($customAssets ?? []),
+                // 템플릿 다크 방식 선언 — 엔진이 `<html data-g7-color-scheme>` 중립 표식으로 옮긴다(확장 CSS 는 표식만 본다)
+                colorScheme: @json($colorScheme ?? ['strategy' => 'none']),
+                // 템플릿이 선언한 확장 CSS 덮기 파일 중 대상이 활성이고 버전이 맞는 것 — 확장 번들 CSS 뒤에 붙는다
+                extensionCssOverrides: @json($extensionCssOverrides ?? []),
+                // 활성 확장의 CSS 접두 빌드 앞글자 — className 을 해석하는 코드가 앞글자와 변형(md: 등)을 가른다
+                extensionClassPrefixes: @json($extensionClassPrefixes ?? []),
                 {{-- 이번 렌더가 `?custom=off` 로 자산을 껐는지. URL 은 SPA 부팅이 다시 쓰면서
                      쿼리를 잃을 수 있으므로, 화면은 URL 이 아니라 **서버가 실제로 한 일**을 본다. --}}
                 customAssetsDisabled: @json($customAssetsDisabled ?? false),

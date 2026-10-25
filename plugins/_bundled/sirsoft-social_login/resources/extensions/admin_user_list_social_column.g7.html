@@ -18,7 +18,7 @@
                 <field name="name" value="Div"/>
                 <field name="if" value="{{(row.social_providers ?? []).length > 0}}"/>
                 <field name="props">
-                  <field name="className" value="flex items-center gap-1"/>
+                  <field name="className" value="sl:flex sl:items-center sl:gap-1"/>
                   <field name="title" value="{{(row.social_providers ?? []).map(sp => sp.label).join(', ')}}"/>
                 </field>
                 <field name="children">
@@ -26,7 +26,7 @@
                     <field name="type" value="basic"/>
                     <field name="name" value="Span"/>
                     <field name="props">
-                      <field name="className" value="sr-only"/>
+                      <field name="className" value="sl:sr-only"/>
                     </field>
                     <field name="text" value="{{(row.social_providers ?? []).map(sp => sp.label).join(', ')}}"/>
                   </item>
@@ -49,7 +49,7 @@
                 <field name="name" value="Span"/>
                 <field name="if" value="{{(row.social_providers ?? []).length === 0}}"/>
                 <field name="props">
-                  <field name="className" value="text-gray-400 dark:text-gray-500"/>
+                  <field name="className" value="sl:text-gray-400 sl:dark:text-gray-500"/>
                 </field>
                 <field name="text" value="-"/>
               </item>

@@ -22,94 +22,94 @@
     <permission>core.plugins.update</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="verification-kginicis-admin-page-content-responsive">
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-verification_kginicis.settings.title" description="$t:sirsoft-verification_kginicis.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
-      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
-        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-xs verification-kginicis-tone-warning">$t:sirsoft-verification_kginicis.plugin_read_only</span>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="verification-kginicis-alert-warning verificationkginicis:mt-6">
+        <icon name="lock" class="verificationkginicis:text-xl verificationkginicis:leading-none verificationkginicis:text-amber-600 verificationkginicis:dark:text-amber-400 verificationkginicis:flex-shrink-0"/>
+        <span class="verificationkginicis:text-xs verification-kginicis-tone-warning">$t:sirsoft-verification_kginicis.plugin_read_only</span>
       </div>
-      <div data-ref="info_panel" class="alert-info">
-        <div class="flex gap-3">
-          <icon name="circle-info" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
-          <div class="space-y-1 text-xs verification-kginicis-tone-info">
+      <div data-ref="info_panel" class="verification-kginicis-alert-info">
+        <div class="verificationkginicis:flex verificationkginicis:gap-3">
+          <icon name="circle-info" class="verificationkginicis:text-xl verificationkginicis:leading-none verificationkginicis:text-blue-600 verificationkginicis:dark:text-blue-400 verificationkginicis:flex-shrink-0 verificationkginicis:mt-0.5"/>
+          <div class="verificationkginicis:space-y-1 verificationkginicis:text-xs verification-kginicis-tone-info">
             <p>$t:sirsoft-verification_kginicis.settings.info.activation</p>
             <p>$t:sirsoft-verification_kginicis.settings.info.logs</p>
           </div>
         </div>
       </div>
-      <div data-ref="validation_error" data-if="{{_local.errors}}" class="mt-6 alert-danger">
-        <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="verificationkginicis:mt-6 verification-kginicis-alert-danger">
+        <div class="verificationkginicis:flex verificationkginicis:gap-3">
+          <icon name="triangle-exclamation" class="verificationkginicis:text-xl verificationkginicis:leading-none verificationkginicis:text-red-600 verificationkginicis:dark:text-red-400 verificationkginicis:flex-shrink-0 verificationkginicis:mt-0.5"/>
           <div>
-            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
-            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-              <li class="text-error-soft">{{message}}</li>
+            <h3 class="verification-kginicis-text-error-strong">$t:admin.plugins.settings.validation_error</h3>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="verificationkginicis:mt-2 verificationkginicis:list-disc verificationkginicis:list-inside verificationkginicis:space-y-1">
+              <li class="verification-kginicis-text-error-soft">{{message}}</li>
             </ul>
           </div>
         </div>
       </div>
-      <div data-ref="test_mode_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="p-6">
-          <div class="flex-between">
+      <div data-ref="test_mode_card" class="verificationkginicis:mt-6 verificationkginicis:bg-white verificationkginicis:dark:bg-gray-800 verificationkginicis:rounded-lg verificationkginicis:shadow-sm verificationkginicis:border verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700">
+        <div class="verificationkginicis:p-6">
+          <div class="verification-kginicis-flex-between">
             <div>
-              <label class="form-label">$t:sirsoft-verification_kginicis.settings.test_mode</label>
-              <p class="form-hint">$t:sirsoft-verification_kginicis.settings.test_mode_hint</p>
+              <label class="verification-kginicis-form-label">$t:sirsoft-verification_kginicis.settings.test_mode</label>
+              <p class="verification-kginicis-form-hint">$t:sirsoft-verification_kginicis.settings.test_mode_hint</p>
             </div>
             <toggle data-type="composite" name="is_test_mode" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
         </div>
       </div>
-      <div data-ref="live_mode_warning" data-if="{{_local.form &amp;&amp; !_local.form.is_test_mode}}" class="mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
-        <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
+      <div data-ref="live_mode_warning" data-if="{{_local.form &amp;&amp; !_local.form.is_test_mode}}" class="verificationkginicis:mt-6 verificationkginicis:bg-amber-50 verificationkginicis:dark:bg-amber-900/20 verificationkginicis:border verificationkginicis:border-amber-200 verificationkginicis:dark:border-amber-700 verificationkginicis:rounded-lg verificationkginicis:p-4">
+        <div class="verificationkginicis:flex verificationkginicis:gap-3">
+          <icon name="triangle-exclamation" class="verificationkginicis:text-xl verificationkginicis:leading-none verificationkginicis:text-amber-600 verificationkginicis:dark:text-amber-400 verificationkginicis:flex-shrink-0 verificationkginicis:mt-0.5"/>
           <div>
-            <h3 class="text-sm font-semibold verification-kginicis-tone-warning">$t:sirsoft-verification_kginicis.settings.live_mode_warning_title</h3>
-            <p class="mt-1 text-xs verification-kginicis-tone-warning">$t:sirsoft-verification_kginicis.settings.live_mode_warning_body</p>
+            <h3 class="verificationkginicis:text-sm verificationkginicis:font-semibold verification-kginicis-tone-warning">$t:sirsoft-verification_kginicis.settings.live_mode_warning_title</h3>
+            <p class="verificationkginicis:mt-1 verificationkginicis:text-xs verification-kginicis-tone-warning">$t:sirsoft-verification_kginicis.settings.live_mode_warning_body</p>
           </div>
         </div>
       </div>
-      <div data-ref="live_keys_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="panel-header-row">
-          <h3 class="section-heading-md">$t:sirsoft-verification_kginicis.settings.section_live_keys</h3>
+      <div data-ref="live_keys_section" class="verificationkginicis:mt-6 verificationkginicis:bg-white verificationkginicis:dark:bg-gray-800 verificationkginicis:rounded-lg verificationkginicis:shadow-sm verificationkginicis:border verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700">
+        <div class="verification-kginicis-panel-header-row">
+          <h3 class="verification-kginicis-section-heading-md">$t:sirsoft-verification_kginicis.settings.section_live_keys</h3>
         </div>
-        <div class="p-6 space-y-6">
-          <div data-ref="field_live_mid" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-verification_kginicis.settings.live_mid</label>
-              <p class="form-hint">$t:sirsoft-verification_kginicis.settings.live_mid_hint</p>
+        <div class="verificationkginicis:p-6 verificationkginicis:space-y-6">
+          <div data-ref="field_live_mid" class="verification-kginicis-grid-3col-responsive">
+            <div class="verificationkginicis:lg:col-span-1">
+              <label class="verification-kginicis-form-label">$t:sirsoft-verification_kginicis.settings.live_mid</label>
+              <p class="verification-kginicis-form-hint">$t:sirsoft-verification_kginicis.settings.live_mid_hint</p>
             </div>
-            <div class="lg:col-span-2">
-              <div class="{{_local.errors?.live_mid ? 'flex rounded-lg border border-red-500 dark:border-red-500 overflow-hidden' : 'flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 verification-kginicis-focus-group'}}">
-                <span class="inline-flex items-center px-3 bg-gray-100 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 text-body font-mono font-bold select-none">SRB</span>
-                <input type="text" name="live_mid" autoComplete="one-time-code" placeholder="1234567" class="flex-1 font-mono outline-none border-0" disabled="{{_computed.isPluginReadOnly}}"/>
+            <div class="verificationkginicis:lg:col-span-2">
+              <div class="{{_local.errors?.live_mid ? 'verificationkginicis:flex verificationkginicis:rounded-lg verificationkginicis:border verificationkginicis:border-red-500 verificationkginicis:dark:border-red-500 verificationkginicis:overflow-hidden' : 'verificationkginicis:flex verificationkginicis:rounded-lg verificationkginicis:border verificationkginicis:border-gray-300 verificationkginicis:dark:border-gray-600 verificationkginicis:overflow-hidden verificationkginicis:focus-within:ring-2 verificationkginicis:focus-within:ring-blue-500 verification-kginicis-focus-group'}}">
+                <span class="verificationkginicis:inline-flex verificationkginicis:items-center verificationkginicis:px-3 verificationkginicis:bg-gray-100 verificationkginicis:dark:bg-gray-600 verificationkginicis:border-r verificationkginicis:border-gray-300 verificationkginicis:dark:border-gray-600 verification-kginicis-text-body verificationkginicis:font-mono verificationkginicis:font-bold verificationkginicis:select-none">SRB</span>
+                <input type="text" name="live_mid" autoComplete="one-time-code" placeholder="1234567" class="verificationkginicis:flex-1 verificationkginicis:font-mono verificationkginicis:outline-none verificationkginicis:border-0" disabled="{{_computed.isPluginReadOnly}}"/>
               </div>
-              <p data-ref="field_live_mid_error" data-if="{{_local.errors?.live_mid}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.live_mid?.[0] ?? ''}}</p>
+              <p data-ref="field_live_mid_error" data-if="{{_local.errors?.live_mid}}" class="verificationkginicis:mt-1 verificationkginicis:text-sm verificationkginicis:text-red-600 verificationkginicis:dark:text-red-400">{{_local.errors?.live_mid?.[0] ?? ''}}</p>
             </div>
           </div>
-          <div data-ref="field_live_api_key" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-verification_kginicis.settings.live_api_key</label>
+          <div data-ref="field_live_api_key" class="verification-kginicis-grid-3col-responsive">
+            <div class="verificationkginicis:lg:col-span-1">
+              <label class="verification-kginicis-form-label">$t:sirsoft-verification_kginicis.settings.live_api_key</label>
             </div>
-            <div class="lg:col-span-2">
-              <input type="password" name="live_api_key" autoComplete="new-password" placeholder="••••••••••••••••" class="{{_local.errors?.live_api_key ? 'dark:focus:ring-red-400 font-mono border border-red-500 dark:border-red-500 focus:ring-red-500' : 'dark:focus:ring-blue-400 focus:border-transparent font-mono'}}" disabled="{{_computed.isPluginReadOnly}}"/>
-              <p data-ref="field_live_api_key_error" data-if="{{_local.errors?.live_api_key}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.live_api_key?.[0] ?? ''}}</p>
+            <div class="verificationkginicis:lg:col-span-2">
+              <input type="password" name="live_api_key" autoComplete="new-password" placeholder="••••••••••••••••" class="{{_local.errors?.live_api_key ? 'verificationkginicis:dark:focus:ring-red-400 verificationkginicis:font-mono verificationkginicis:border verificationkginicis:border-red-500 verificationkginicis:dark:border-red-500 verificationkginicis:focus:ring-red-500' : 'verificationkginicis:dark:focus:ring-blue-400 verificationkginicis:focus:border-transparent verificationkginicis:font-mono'}}" disabled="{{_computed.isPluginReadOnly}}"/>
+              <p data-ref="field_live_api_key_error" data-if="{{_local.errors?.live_api_key}}" class="verificationkginicis:mt-1 verificationkginicis:text-sm verificationkginicis:text-red-600 verificationkginicis:dark:text-red-400">{{_local.errors?.live_api_key?.[0] ?? ''}}</p>
             </div>
           </div>
         </div>
       </div>
-      <div data-ref="duplicate_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div data-ref="section_duplicate_header" class="panel-header-row">
-          <h3 class="section-heading-md">$t:sirsoft-verification_kginicis.settings.section.duplicate_field</h3>
+      <div data-ref="duplicate_section" class="verificationkginicis:mt-6 verificationkginicis:bg-white verificationkginicis:dark:bg-gray-800 verificationkginicis:rounded-lg verificationkginicis:shadow-sm verificationkginicis:border verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700">
+        <div data-ref="section_duplicate_header" class="verification-kginicis-panel-header-row">
+          <h3 class="verification-kginicis-section-heading-md">$t:sirsoft-verification_kginicis.settings.section.duplicate_field</h3>
         </div>
-        <div data-ref="section_duplicate_body" class="p-6 space-y-6">
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-            <div class="lg:col-span-8">
-              <label class="form-label">$t:sirsoft-verification_kginicis.settings.fields.duplicate_field.label</label>
-              <p class="form-hint">$t:sirsoft-verification_kginicis.settings.duplicate_field.hint</p>
+        <div data-ref="section_duplicate_body" class="verificationkginicis:p-6 verificationkginicis:space-y-6">
+          <div class="verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:lg:grid-cols-12 verificationkginicis:gap-4 verificationkginicis:items-start">
+            <div class="verificationkginicis:lg:col-span-8">
+              <label class="verification-kginicis-form-label">$t:sirsoft-verification_kginicis.settings.fields.duplicate_field.label</label>
+              <p class="verification-kginicis-form-hint">$t:sirsoft-verification_kginicis.settings.duplicate_field.hint</p>
             </div>
-            <div class="lg:col-span-4 space-y-3">
-              <div class="flex-center justify-end gap-6">
-                <label class="inline-clickable text-body">
+            <div class="verificationkginicis:lg:col-span-4 verificationkginicis:space-y-3">
+              <div class="verification-kginicis-flex-center verificationkginicis:justify-end verificationkginicis:gap-6">
+                <label class="verification-kginicis-inline-clickable verification-kginicis-text-body">
                   <on type="click">
                     <!-- 중복 판정 기준을 DI 로 — 라벨을 눌러도 선택되도록 라디오가 아니라 라벨에 액션을 건다(라디오는 클릭을 통과시킨다) -->
                     <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
@@ -118,7 +118,7 @@
                       </field>
                     </set-state>
                   </on>
-                  <input type="radio" :autoBinding="false" name="duplicate_field" value="di" checked="{{(_local.form?.duplicate_field ?? 'di') === 'di'}}" class="radio" disabled="{{_computed.isPluginReadOnly}}">
+                  <input type="radio" :autoBinding="false" name="duplicate_field" value="di" checked="{{(_local.form?.duplicate_field ?? 'di') === 'di'}}" class="verification-kginicis-radio" disabled="{{_computed.isPluginReadOnly}}">
                     <on type="change">
                       <!-- 키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다 -->
                       <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
@@ -130,7 +130,7 @@
                   </input>
                   <span>$t:sirsoft-verification_kginicis.settings.duplicate_field.di</span>
                 </label>
-                <label class="inline-clickable text-body">
+                <label class="verification-kginicis-inline-clickable verification-kginicis-text-body">
                   <on type="click">
                     <!-- 중복 판정 기준을 CI 로 — 위와 같은 이유로 라벨에 액션을 건다 -->
                     <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
@@ -139,7 +139,7 @@
                       </field>
                     </set-state>
                   </on>
-                  <input type="radio" :autoBinding="false" name="duplicate_field" value="ci" checked="{{_local.form?.duplicate_field === 'ci'}}" class="radio" disabled="{{_computed.isPluginReadOnly}}">
+                  <input type="radio" :autoBinding="false" name="duplicate_field" value="ci" checked="{{_local.form?.duplicate_field === 'ci'}}" class="verification-kginicis-radio" disabled="{{_computed.isPluginReadOnly}}">
                     <on type="change">
                       <!-- 키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다 -->
                       <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
@@ -152,29 +152,29 @@
                   <span>$t:sirsoft-verification_kginicis.settings.duplicate_field.ci</span>
                 </label>
               </div>
-              <p class="text-xs text-amber-700 dark:text-amber-400 text-right">$t:sirsoft-verification_kginicis.settings.duplicate_field.warning</p>
+              <p class="verificationkginicis:text-xs verificationkginicis:text-amber-700 verificationkginicis:dark:text-amber-400 verificationkginicis:text-right">$t:sirsoft-verification_kginicis.settings.duplicate_field.warning</p>
             </div>
           </div>
-          <div data-ref="field_duplicate_block_enabled" class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start pt-6 border-t border-gray-200 dark:border-gray-700">
-            <div class="lg:col-span-8">
-              <label class="form-label">$t:sirsoft-verification_kginicis.settings.fields.duplicate_block_enabled.label</label>
-              <p class="form-hint">$t:sirsoft-verification_kginicis.settings.fields.duplicate_block_enabled.hint</p>
-              <p class="text-hint mt-1 italic">$t:sirsoft-verification_kginicis.settings.fields.duplicate_block_enabled.note</p>
+          <div data-ref="field_duplicate_block_enabled" class="verificationkginicis:grid verificationkginicis:grid-cols-1 verificationkginicis:lg:grid-cols-12 verificationkginicis:gap-4 verificationkginicis:items-start verificationkginicis:pt-6 verificationkginicis:border-t verificationkginicis:border-gray-200 verificationkginicis:dark:border-gray-700">
+            <div class="verificationkginicis:lg:col-span-8">
+              <label class="verification-kginicis-form-label">$t:sirsoft-verification_kginicis.settings.fields.duplicate_block_enabled.label</label>
+              <p class="verification-kginicis-form-hint">$t:sirsoft-verification_kginicis.settings.fields.duplicate_block_enabled.hint</p>
+              <p class="verification-kginicis-text-hint verificationkginicis:mt-1 verificationkginicis:italic">$t:sirsoft-verification_kginicis.settings.fields.duplicate_block_enabled.note</p>
             </div>
-            <div class="flex-center lg:col-span-4 justify-end">
+            <div class="verification-kginicis-flex-center verificationkginicis:lg:col-span-4 verificationkginicis:justify-end">
               <toggle data-type="composite" name="duplicate_block_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
         </div>
       </div>
-      <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
+      <div data-ref="footer_buttons" class="verification-kginicis-sticky-footer-buttons">
+        <a href="/admin/plugins" data-ref="cancel_button" class="verification-kginicis-button verification-kginicis-btn verification-kginicis-btn-secondary">
           <on type="click">
             <navigate :bypassLeaveGuard="true"/>
           </on>
           <span>$t:common.cancel</span>
         </a>
-        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="verification-kginicis-btn verification-kginicis-btn-primary verification-kginicis-flex-center verificationkginicis:gap-1.5">
           <on type="click">
             <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 — 서버가 비밀키를 마스크해 돌려주므로 다시 싣지 않으면 화면 값과 저장값이 어긋난다 -->
             <sequence>

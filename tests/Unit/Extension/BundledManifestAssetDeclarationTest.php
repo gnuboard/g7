@@ -24,6 +24,12 @@ class BundledManifestAssetDeclarationTest extends TestCase
 {
     /**
      * 모듈·플러그인 매니페스트의 `assets.{js,css}` 는 객체이며 산출물이 실재해야 한다.
+     *
+     * @scenario case=manifest_asset_c01
+     *
+     * @effects bundled_manifest_css_assets_declared
+     *
+     * @return void 반환값 없음
      */
     public function test_module_and_plugin_asset_declarations_are_objects_pointing_to_existing_files(): void
     {
@@ -91,10 +97,74 @@ class BundledManifestAssetDeclarationTest extends TestCase
     }
 
     /**
+     * `assets.css` 를 선언한 모듈·플러그인은 `assets.css.namespace` 를 선언해야 하고, 그 값은 형식에 맞고
+     * 다른 확장과 겹치지 않아야 한다.
+     *
+     * 확장 CSS 의 모든 클래스는 이 앞글자로 시작한다(손 CSS `{namespace}-`, 접두 빌드 `{letters}:`).
+     * 앞글자가 없거나 겹치면 두 확장의 규칙이 같은 이름으로 서로를 덮는다 — 화면에는 다른 확장의 색이
+     * 묻어나는 것으로만 나타난다. `letters` 는 namespace 에서 영문 소문자만 남긴 것으로, Tailwind 접두가
+     * a-z 만 받기 때문에 비어서는 안 된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=manifest_asset_c02
+     *
+     * @effects bundled_manifest_css_assets_declared
+     */
+    public function test_css_declaring_extensions_declare_unique_valid_namespace(): void
+    {
+        $owners = [];
+        $lettersOwners = [];
+        $violations = [];
+
+        foreach ([['module', 'modules/_bundled'], ['plugin', 'plugins/_bundled']] as [$type, $root]) {
+            foreach (glob(base_path($root).'/*/'.$type.'.json') as $manifestPath) {
+                $manifest = json_decode((string) file_get_contents($manifestPath), true) ?? [];
+                $css = $manifest['assets']['css'] ?? null;
+                if (! is_array($css)) {
+                    continue;
+                }
+
+                $identifier = basename(dirname($manifestPath));
+                $namespace = $css['namespace'] ?? null;
+
+                if (! is_string($namespace) || ! preg_match('/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/', $namespace)) {
+                    $violations[] = sprintf('%s: assets.css.namespace 가 없거나 형식(^[a-z][a-z0-9]*(-[a-z0-9]+)*$)에 맞지 않다 (현재: %s)', $identifier, json_encode($namespace));
+
+                    continue;
+                }
+
+                $letters = preg_replace('/[^a-z]/', '', $namespace);
+                if ($letters === '') {
+                    $violations[] = sprintf('%s: namespace %s 에 영문 소문자가 없다(접두 빌드 앞글자가 빈다)', $identifier, $namespace);
+                }
+
+                if (isset($owners[$namespace])) {
+                    $violations[] = sprintf('%s: namespace %s 가 %s 와 겹친다', $identifier, $namespace, $owners[$namespace]);
+                }
+                if ($letters !== '' && isset($lettersOwners[$letters])) {
+                    $violations[] = sprintf('%s: 접두 빌드 앞글자 %s 가 %s 와 겹친다', $identifier, $letters, $lettersOwners[$letters]);
+                }
+
+                $owners[$namespace] = $identifier;
+                $lettersOwners[$letters] = $identifier;
+            }
+        }
+
+        $this->assertSame([], $violations, "확장 CSS namespace 선언 위반:\n".implode("\n", $violations));
+    }
+
+    /**
      * 템플릿 매니페스트의 `assets` 경로도 실재해야 한다.
      *
      * `css`/`js` 는 파일, `fonts`/`images` 는 디렉토리로 본다. 빈 배열은 "선언 없음" 이라
      * 정상이다.
+     *
+     * @scenario case=manifest_asset_c03
+     *
+     * @effects bundled_manifest_css_assets_declared
+     *
+     * @return void 반환값 없음
      */
     public function test_template_asset_declarations_point_to_existing_files(): void
     {

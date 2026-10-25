@@ -144,5 +144,8 @@
             "type": "style",
             "asset": "vendor/flag-icons/7.2.3/css/flag-icons.min.css"
         }
-    ]
+    ],
+    "features": {
+        "color_scheme": { "strategy": "ancestor-class", "selector": ".dark" }
+    }
 }

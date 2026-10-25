@@ -5,84 +5,84 @@
   코어 회원 검색을 부르고, 고른 회원의 uuid 를 전역에 담는다. -->
 <partial description="Personal Payment Create - Member Search Modal">
   <modal data-type="composite" data-ref="modal_member_search" title="$t:sirsoft-ecommerce.admin.personal_payment_create.modal.member_search.title" size="md">
-    <div data-ref="member_search_input" class="input-search-container mb-4">
-      <icon name="search" class="input-search-icon"/>
-      <input type="text" class="input" placeholder="$t:sirsoft-ecommerce.admin.personal_payment_create.modal.member_search.search_placeholder"/>
+    <div data-ref="member_search_input" class="ecommerce-input-search-container ecommerce:mb-4">
+      <icon name="search" class="ecommerce-input-search-icon"/>
+      <input type="text" class="ecommerce-input" placeholder="$t:sirsoft-ecommerce.admin.personal_payment_create.modal.member_search.search_placeholder"/>
     </div>
     <div data-ref="member_search_results">
-      <button type="button" data-ref="member_item_1" class="w-full justify-start text-left flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+      <button type="button" data-ref="member_item_1" class="ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-flex-center ecommerce:gap-3 ecommerce:p-3 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer ecommerce:transition-colors">
         <on type="click">
           <close-modal/>
         </on>
-        <span class="flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0">
-          <icon name="user" class="text-xl text-gray-500 dark:text-gray-300"/>
+        <span class="ecommerce-flex-center ecommerce:w-10 ecommerce:h-10 ecommerce:bg-gray-200 ecommerce:dark:bg-gray-600 ecommerce:rounded-full ecommerce:justify-center ecommerce:flex-shrink-0">
+          <icon name="user" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-300"/>
         </span>
-        <span class="block flex-1 min-w-0">
-          <span class="flex-center gap-2">
-            <span class="font-medium text-heading">$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu</span>
-            <span class="text-secondary text-sm">(user001)</span>
+        <span class="ecommerce:block ecommerce:flex-1 ecommerce:min-w-0">
+          <span class="ecommerce-flex-center ecommerce:gap-2">
+            <span class="ecommerce:font-medium ecommerce-text-heading">$t:sirsoft-ecommerce.admin.sample.people.kim_cheolsu</span>
+            <span class="ecommerce-text-secondary ecommerce:text-sm">(user001)</span>
           </span>
-          <span class="block text-secondary text-sm truncate">kim@example.com · 010-1234-5678</span>
+          <span class="ecommerce:block ecommerce-text-secondary ecommerce:text-sm ecommerce:truncate">kim@example.com · 010-1234-5678</span>
         </span>
       </button>
-      <button type="button" data-ref="member_item_2" class="w-full justify-start text-left flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+      <button type="button" data-ref="member_item_2" class="ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-flex-center ecommerce:gap-3 ecommerce:p-3 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer ecommerce:transition-colors">
         <on type="click">
           <close-modal/>
         </on>
-        <span class="flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0">
-          <icon name="user" class="text-xl text-gray-500 dark:text-gray-300"/>
+        <span class="ecommerce-flex-center ecommerce:w-10 ecommerce:h-10 ecommerce:bg-gray-200 ecommerce:dark:bg-gray-600 ecommerce:rounded-full ecommerce:justify-center ecommerce:flex-shrink-0">
+          <icon name="user" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-300"/>
         </span>
-        <span class="block flex-1 min-w-0">
-          <span class="flex-center gap-2">
-            <span class="font-medium text-heading">$t:sirsoft-ecommerce.admin.sample.people.lee_younghee</span>
-            <span class="text-secondary text-sm">(user002)</span>
+        <span class="ecommerce:block ecommerce:flex-1 ecommerce:min-w-0">
+          <span class="ecommerce-flex-center ecommerce:gap-2">
+            <span class="ecommerce:font-medium ecommerce-text-heading">$t:sirsoft-ecommerce.admin.sample.people.lee_younghee</span>
+            <span class="ecommerce-text-secondary ecommerce:text-sm">(user002)</span>
           </span>
-          <span class="block text-secondary text-sm truncate">lee@example.com · 010-2345-6789</span>
+          <span class="ecommerce:block ecommerce-text-secondary ecommerce:text-sm ecommerce:truncate">lee@example.com · 010-2345-6789</span>
         </span>
       </button>
-      <button type="button" data-ref="member_item_3" class="w-full justify-start text-left flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+      <button type="button" data-ref="member_item_3" class="ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-flex-center ecommerce:gap-3 ecommerce:p-3 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer ecommerce:transition-colors">
         <on type="click">
           <close-modal/>
         </on>
-        <span class="flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0">
-          <icon name="user" class="text-xl text-gray-500 dark:text-gray-300"/>
+        <span class="ecommerce-flex-center ecommerce:w-10 ecommerce:h-10 ecommerce:bg-gray-200 ecommerce:dark:bg-gray-600 ecommerce:rounded-full ecommerce:justify-center ecommerce:flex-shrink-0">
+          <icon name="user" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-300"/>
         </span>
-        <span class="block flex-1 min-w-0">
-          <span class="flex-center gap-2">
-            <span class="font-medium text-heading">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</span>
-            <span class="text-secondary text-sm">(user003)</span>
+        <span class="ecommerce:block ecommerce:flex-1 ecommerce:min-w-0">
+          <span class="ecommerce-flex-center ecommerce:gap-2">
+            <span class="ecommerce:font-medium ecommerce-text-heading">$t:sirsoft-ecommerce.admin.sample.people.park_minsu</span>
+            <span class="ecommerce-text-secondary ecommerce:text-sm">(user003)</span>
           </span>
-          <span class="block text-secondary text-sm truncate">park@example.com · 010-3456-7890</span>
+          <span class="ecommerce:block ecommerce-text-secondary ecommerce:text-sm ecommerce:truncate">park@example.com · 010-3456-7890</span>
         </span>
       </button>
-      <button type="button" data-ref="member_item_4" class="w-full justify-start text-left flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+      <button type="button" data-ref="member_item_4" class="ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-flex-center ecommerce:gap-3 ecommerce:p-3 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer ecommerce:transition-colors">
         <on type="click">
           <close-modal/>
         </on>
-        <span class="flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0">
-          <icon name="user" class="text-xl text-gray-500 dark:text-gray-300"/>
+        <span class="ecommerce-flex-center ecommerce:w-10 ecommerce:h-10 ecommerce:bg-gray-200 ecommerce:dark:bg-gray-600 ecommerce:rounded-full ecommerce:justify-center ecommerce:flex-shrink-0">
+          <icon name="user" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-300"/>
         </span>
-        <span class="block flex-1 min-w-0">
-          <span class="flex-center gap-2">
-            <span class="font-medium text-heading">$t:sirsoft-ecommerce.admin.sample.people.jung_sujin</span>
-            <span class="text-secondary text-sm">(user004)</span>
+        <span class="ecommerce:block ecommerce:flex-1 ecommerce:min-w-0">
+          <span class="ecommerce-flex-center ecommerce:gap-2">
+            <span class="ecommerce:font-medium ecommerce-text-heading">$t:sirsoft-ecommerce.admin.sample.people.jung_sujin</span>
+            <span class="ecommerce-text-secondary ecommerce:text-sm">(user004)</span>
           </span>
-          <span class="block text-secondary text-sm truncate">jung@example.com · 010-4567-8901</span>
+          <span class="ecommerce:block ecommerce-text-secondary ecommerce:text-sm ecommerce:truncate">jung@example.com · 010-4567-8901</span>
         </span>
       </button>
-      <button type="button" data-ref="member_item_5" class="w-full justify-start text-left flex-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+      <button type="button" data-ref="member_item_5" class="ecommerce:w-full ecommerce:justify-start ecommerce:text-left ecommerce-flex-center ecommerce:gap-3 ecommerce:p-3 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:cursor-pointer ecommerce:transition-colors">
         <on type="click">
           <close-modal/>
         </on>
-        <span class="flex-center w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full justify-center flex-shrink-0">
-          <icon name="user" class="text-xl text-gray-500 dark:text-gray-300"/>
+        <span class="ecommerce-flex-center ecommerce:w-10 ecommerce:h-10 ecommerce:bg-gray-200 ecommerce:dark:bg-gray-600 ecommerce:rounded-full ecommerce:justify-center ecommerce:flex-shrink-0">
+          <icon name="user" class="ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-300"/>
         </span>
-        <span class="block flex-1 min-w-0">
-          <span class="flex-center gap-2">
-            <span class="font-medium text-heading">$t:sirsoft-ecommerce.admin.sample.people.choi_youngsu</span>
-            <span class="text-secondary text-sm">(user005)</span>
+        <span class="ecommerce:block ecommerce:flex-1 ecommerce:min-w-0">
+          <span class="ecommerce-flex-center ecommerce:gap-2">
+            <span class="ecommerce:font-medium ecommerce-text-heading">$t:sirsoft-ecommerce.admin.sample.people.choi_youngsu</span>
+            <span class="ecommerce-text-secondary ecommerce:text-sm">(user005)</span>
           </span>
-          <span class="block text-secondary text-sm truncate">choi@example.com · 010-5678-9012</span>
+          <span class="ecommerce:block ecommerce-text-secondary ecommerce:text-sm ecommerce:truncate">choi@example.com · 010-5678-9012</span>
         </span>
       </button>
     </div>

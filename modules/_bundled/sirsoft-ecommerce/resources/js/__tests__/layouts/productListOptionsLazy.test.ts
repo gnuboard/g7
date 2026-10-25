@@ -89,6 +89,8 @@ describe('상품목록 확장 행 옵션 지연 로딩 — 레이아웃 선언',
     const datagrid = readLayout(DATAGRID_PATH);
     const grid = findDataGrid(datagrid);
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('onExpandChange 가 옵션 로드 핸들러로 연결된다', () => {
         const actions = collectNodes(datagrid, (n) => n?.event === 'onExpandChange');
 
@@ -97,6 +99,8 @@ describe('상품목록 확장 행 옵션 지연 로딩 — 레이아웃 선언',
         expect(actions[0].params).toEqual({ expandedRows: '{{$args[0]}}' });
     });
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('확장 상태 갱신과 옵션 로드가 한 액션으로 묶여 있다', () => {
         // setState 로 expandedRows 를 **갱신**하는 액션이 남아 있으면 순서에 따라 갓 펼친 행이
         // 누락된다. 목록 구성이 바뀔 때의 **초기화**(빈 배열 대입)는 별개 목적이라 제외한다.
@@ -111,6 +115,8 @@ describe('상품목록 확장 행 옵션 지연 로딩 — 레이아웃 선언',
         expect(staleSetState).toHaveLength(0);
     });
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('expandContext 값이 모두 단일 바인딩 형태다', () => {
         const context = grid.props.expandContext;
 
@@ -125,6 +131,8 @@ describe('상품목록 확장 행 옵션 지연 로딩 — 레이아웃 선언',
         });
     });
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('expandContext 에 로딩/에러 표시용 키가 노출된다', () => {
         const context = grid.props.expandContext;
 
@@ -132,6 +140,8 @@ describe('상품목록 확장 행 옵션 지연 로딩 — 레이아웃 선언',
         expect(context.optionsErrorIds).toBe('{{_local.optionsErrorIds ?? []}}');
     });
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('"옵션 없음" 은 로드 완료(Array.isArray)를 확인한 뒤에만 표시된다', () => {
         const noOptions = collectNodes(
             datagrid,
@@ -143,6 +153,8 @@ describe('상품목록 확장 행 옵션 지연 로딩 — 레이아웃 선언',
         expect(noOptions[0].if).toContain('row.options.length === 0');
     });
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('로딩/에러 블록이 존재하고 조건이 단일 바인딩이다', () => {
         const loading = collectNodes(
             datagrid,
@@ -164,10 +176,12 @@ describe('상품목록 확장 행 옵션 지연 로딩 — 레이아웃 선언',
         expect(errored[0].if).toContain('optionsErrorIds');
     });
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('옵션 테이블은 로딩/에러 상태가 아닐 때만 렌더된다', () => {
         const table = collectNodes(
             datagrid,
-            (n) => n?.props?.className === 'overflow-x-auto' && typeof n?.if === 'string'
+            (n) => n?.props?.className === 'ecommerce:overflow-x-auto' && typeof n?.if === 'string'
         );
 
         expect(table.length).toBeGreaterThanOrEqual(1);
@@ -179,6 +193,8 @@ describe('상품목록 확장 행 옵션 지연 로딩 — 레이아웃 선언',
         expect(condition).toContain('optionsErrorIds');
     });
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('재시도 버튼이 재로드 핸들러로 연결된다', () => {
         const retry = collectNodes(
             datagrid,
@@ -193,6 +209,8 @@ describe('상품목록 확장 행 옵션 지연 로딩 — 레이아웃 선언',
 describe('일괄 변경 확인 모달 — 집계 표기', () => {
     const modal = readLayout(CONFIRM_MODAL_PATH);
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('옵션 개수는 배열 길이가 아니라 summary.optionCount 를 쓴다', () => {
         const raw = JSON.stringify(modal);
 
@@ -200,6 +218,8 @@ describe('일괄 변경 확인 모달 — 집계 표기', () => {
         expect(raw).not.toContain('options_section|count={{_global.bulkConfirmData.options.length}}');
     });
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('집계 엔트리와 개별 엔트리가 서로 배타적으로 표시된다', () => {
         const aggregate = collectNodes(
             modal,
@@ -250,6 +270,8 @@ describe('목록 구성 변경 시 펼침 상태 초기화', () => {
         && node?.params?.target === 'local'
         && RESET_KEYS.every((key) => Array.isArray(node.params[key]) && node.params[key].length === 0);
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('초기화 액션이 named_actions 에 단일 정의로 존재한다', () => {
         const layout = readLayout(LIST_PATH);
         const reset = layout.named_actions?.resetExpandedOptionState;
@@ -258,6 +280,8 @@ describe('목록 구성 변경 시 펼침 상태 초기화', () => {
         expect(isResetAction(reset)).toBe(true);
     });
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('검색 실행이 초기화를 거친 뒤 이동한다', () => {
         const layout = readLayout(LIST_PATH);
         const search = layout.named_actions?.searchProducts;
@@ -267,6 +291,8 @@ describe('목록 구성 변경 시 펼침 상태 초기화', () => {
         expect(search.actions[1].actionRef).toBe('searchProductsNavigate');
     });
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('정렬 변경이 초기화를 거친 뒤 이동한다', () => {
         const layout = readLayout(LIST_PATH);
 
@@ -284,6 +310,8 @@ describe('목록 구성 변경 시 펼침 상태 초기화', () => {
         expect(isResetAction(sortSequences[0].actions[0])).toBe(true);
     });
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('페이지 이동이 초기화를 거친 뒤 이동한다', () => {
         const grid = findDataGrid(readLayout(DATAGRID_PATH));
 
@@ -294,6 +322,8 @@ describe('목록 구성 변경 시 펼침 상태 초기화', () => {
         expect(onPageChange.actions[1].handler).toBe('navigate');
     });
 
+    // @scenario row_state=expanding, option_profile=mixed
+    // @effects list_response_omits_options, no_fetch_when_total_count_zero
     it('프리셋 적용과 필터 초기화도 초기화를 거친다', () => {
         const filter = readLayout(FILTER_PATH);
 

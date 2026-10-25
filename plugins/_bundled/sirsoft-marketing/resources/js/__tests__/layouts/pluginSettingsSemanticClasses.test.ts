@@ -48,6 +48,8 @@ function flatten(node: unknown): LayoutNode[] {
 const nodes = flatten(pluginSettingsLayout);
 const cls = (n: LayoutNode) => (typeof n.props?.className === 'string' ? n.props.className : '');
 const HEADINGS = ['H2', 'H3', 'H4'];
+/** 의미 클래스는 이 플러그인 접두 판본이다 — 템플릿 CSS 가 아니라 플러그인 CSS(`@layer g7-extension`)가 정의한다 */
+const NS = 'marketing-';
 
 describe('마케팅 동의 환경설정 — 의미 클래스 위치', () => {
     /**
@@ -58,12 +60,12 @@ describe('마케팅 동의 환경설정 — 의미 클래스 위치', () => {
     it('라벨(2칸)·입력칸(1칸)으로 나뉜 약관 슬러그 입력 줄은 3열 그리드 클래스를 쓴다', () => {
         const rows = nodes.filter((n) => {
             const kids = Array.isArray(n.children) ? n.children : [];
-            const hasSpans = kids.some((k) => cls(k).includes('lg:col-span-1')) && kids.some((k) => cls(k).includes('lg:col-span-2'));
+            const hasSpans = kids.some((k) => cls(k).includes('marketing:lg:col-span-1')) && kids.some((k) => cls(k).includes('marketing:lg:col-span-2'));
             return hasSpans && flatten(kids).some((k) => k.name === 'Input');
         });
         expect(rows.length).toBeGreaterThanOrEqual(3);
         for (const row of rows) {
-            expect({ id: row.id, className: cls(row).split(' ')[0] }).toEqual({ id: row.id, className: 'grid-3col-responsive' });
+            expect({ id: row.id, className: cls(row).split(' ')[0] }).toEqual({ id: row.id, className: `${NS}grid-3col-responsive` });
         }
     });
 
@@ -78,7 +80,7 @@ describe('마케팅 동의 환경설정 — 의미 클래스 위치', () => {
         );
         expect(headings.length).toBe(2);
         for (const heading of headings) {
-            expect({ text: heading.text, className: cls(heading) }).toEqual({ text: heading.text, className: 'section-heading-md' });
+            expect({ text: heading.text, className: cls(heading) }).toEqual({ text: heading.text, className: `${NS}section-heading-md` });
         }
     });
 
@@ -89,10 +91,10 @@ describe('마케팅 동의 환경설정 — 의미 클래스 위치', () => {
      */
     it('저장 오류 상자는 제목에 강한 오류색, 목록 줄에 옅은 오류색을 쓴다', () => {
         const title = nodes.find((n) => typeof n.text === 'string' && n.text.endsWith('.validation_error'));
-        expect(cls(title ?? {})).toBe('text-error-strong');
+        expect(cls(title ?? {})).toBe(`${NS}text-error-strong`);
 
         const item = nodes.find((n) => n.name === 'Li' && n.text === '{{message}}');
-        expect(cls(item ?? {})).toBe('text-error-soft');
+        expect(cls(item ?? {})).toBe(`${NS}text-error-soft`);
     });
 
     /**
@@ -101,11 +103,11 @@ describe('마케팅 동의 환경설정 — 의미 클래스 위치', () => {
      * @effects semantic_classes_not_misplaced
      */
     it('섹션 제목 클래스는 제목에만, 오류 강조색은 오류 문구에만 쓴다', () => {
-        const headingMisuse = nodes.filter((n) => cls(n) === 'section-heading-md' && !HEADINGS.includes(n.name ?? ''));
+        const headingMisuse = nodes.filter((n) => cls(n) === `${NS}section-heading-md` && !HEADINGS.includes(n.name ?? ''));
         expect(headingMisuse.map((n) => n.id ?? n.name)).toEqual([]);
 
         const strongOnSection = nodes.filter(
-            (n) => cls(n).split(' ')[0] === 'text-error-strong' && typeof n.text === 'string' && /\.section\./.test(n.text),
+            (n) => cls(n).split(' ')[0] === `${NS}text-error-strong` && typeof n.text === 'string' && /\.section\./.test(n.text),
         );
         expect(strongOnSection.map((n) => n.text)).toEqual([]);
     });

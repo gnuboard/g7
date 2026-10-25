@@ -8,14 +8,14 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "ecommerce-admin-card"
     },
     "children": [
         {
             "type": "basic",
             "name": "H2",
             "props": {
-                "className": "card-title"
+                "className": "ecommerce-card-title"
             },
             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_basic"
         },
@@ -24,7 +24,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "row-stack"
+                "className": "ecommerce-row-stack"
             },
             "children": [
                 {
@@ -40,7 +40,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "children": [
                                         {
@@ -52,7 +52,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-required"
+                                                "className": "ecommerce-text-required"
                                             },
                                             "text": "*"
                                         }
@@ -80,7 +80,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid-2col-responsive"
+                        "className": "ecommerce-grid-2col-responsive"
                     },
                     "children": [
                         {

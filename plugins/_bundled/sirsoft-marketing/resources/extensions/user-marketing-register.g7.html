@@ -4,9 +4,9 @@
   다른 체크박스가 쓴 값에 표시가 따라와야 하기 때문이다. 값은 각 change 액션이 registerForm 에 쓴다. -->
 <extension target-layout="auth/register" priority="100">
   <inject target-id="register_privacy_agreement" position="append">
-    <div data-ref="register_marketing_consent_section" class="space-y-2">
-      <div data-if="{{marketing_settings?.data?.marketing_consent_enabled === true}}" class="flex items-center gap-2">
-        <label class="flex items-center gap-2 flex-1 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+    <div data-ref="register_marketing_consent_section" class="marketing:space-y-2">
+      <div data-if="{{marketing_settings?.data?.marketing_consent_enabled === true}}" class="marketing:flex marketing:items-center marketing:gap-2">
+        <label class="marketing:flex marketing:items-center marketing:gap-2 marketing:flex-1 marketing:cursor-pointer marketing:text-sm marketing:text-gray-700 marketing:dark:text-gray-300">
           <checkbox name="agree_marketing_consent" checked="{{!!_local.registerForm?.agree_marketing_consent}}" :autoBinding="false" disabled="{{_local?.isRegistering}}">
             <on type="change">
               <!-- 전체 마케팅 동의 — 가입 폼 상태에 쌓아 두고 가입 요청과 함께 보낸다 -->
@@ -17,7 +17,7 @@
           </checkbox>
           <span>$t:sirsoft-marketing.agree_marketing_consent</span>
         </label>
-        <button data-if="{{marketing_settings?.data?.marketing_consent_terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
+        <button data-if="{{marketing_settings?.data?.marketing_consent_terms_slug_set === true}}" type="button" class="marketing:text-xs marketing:text-blue-600 marketing:dark:text-blue-400 marketing:hover:text-blue-800 marketing:dark:hover:text-blue-300 marketing:underline marketing:flex-shrink-0">
           <on type="click">
             <!-- 약관 본문 보기 — 어떤 약관인지 전역에 심고 창을 먼저 띄운 뒤 본문을 받아 채운다(빈 창이라도 즉시 반응하게) -->
             <sequence>
@@ -36,8 +36,8 @@
           <span>$t:sirsoft-marketing.view_terms</span>
         </button>
       </div>
-      <div data-if="{{marketing_settings?.data?.marketing_consent_enabled === true}}" data-each="channel in marketing_settings?.data?.channels ?? []" class="flex items-center gap-2 ml-8">
-        <label class="flex items-center gap-2 flex-1 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+      <div data-if="{{marketing_settings?.data?.marketing_consent_enabled === true}}" data-each="channel in marketing_settings?.data?.channels ?? []" class="marketing:flex marketing:items-center marketing:gap-2 marketing:ml-8">
+        <label class="marketing:flex marketing:items-center marketing:gap-2 marketing:flex-1 marketing:cursor-pointer marketing:text-sm marketing:text-gray-700 marketing:dark:text-gray-300">
           <checkbox name="agree_{{channel.key}}" checked="{{!!_local.registerForm?.['agree_' + channel.key]}}" :autoBinding="false" disabled="{{_local?.isRegistering}}">
             <on type="change">
               <!-- 채널별 동의 — 켜면 전체 동의도 함께 켜 준다 -->
@@ -46,7 +46,7 @@
           </checkbox>
           <span>{{$localized(channel.label_i18n) || channel.label}}</span>
         </label>
-        <button data-if="{{channel.terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
+        <button data-if="{{channel.terms_slug_set === true}}" type="button" class="marketing:text-xs marketing:text-blue-600 marketing:dark:text-blue-400 marketing:hover:text-blue-800 marketing:dark:hover:text-blue-300 marketing:underline marketing:flex-shrink-0">
           <on type="click">
             <!-- 약관 본문 보기 — 채널별 수신 동의 약관도 같은 흐름을 탄다 -->
             <sequence>
@@ -65,8 +65,8 @@
           <span>$t:sirsoft-marketing.view_terms</span>
         </button>
       </div>
-      <div data-if="{{marketing_settings?.data?.third_party_consent_enabled === true}}" class="flex items-center gap-2">
-        <label class="flex items-center gap-2 flex-1 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+      <div data-if="{{marketing_settings?.data?.third_party_consent_enabled === true}}" class="marketing:flex marketing:items-center marketing:gap-2">
+        <label class="marketing:flex marketing:items-center marketing:gap-2 marketing:flex-1 marketing:cursor-pointer marketing:text-sm marketing:text-gray-700 marketing:dark:text-gray-300">
           <checkbox name="agree_third_party_consent" checked="{{!!_local.registerForm?.agree_third_party_consent}}" :autoBinding="false" disabled="{{_local?.isRegistering}}">
             <on type="change">
               <!-- 제3자 제공 동의 -->
@@ -75,7 +75,7 @@
           </checkbox>
           <span>$t:sirsoft-marketing.agree_third_party_consent</span>
         </label>
-        <button data-if="{{marketing_settings?.data?.third_party_consent_terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
+        <button data-if="{{marketing_settings?.data?.third_party_consent_terms_slug_set === true}}" type="button" class="marketing:text-xs marketing:text-blue-600 marketing:dark:text-blue-400 marketing:hover:text-blue-800 marketing:dark:hover:text-blue-300 marketing:underline marketing:flex-shrink-0">
           <on type="click">
             <!-- 약관 본문 보기 — 제3자 제공 동의 약관 -->
             <sequence>
@@ -94,9 +94,9 @@
           <span>$t:sirsoft-marketing.view_terms</span>
         </button>
       </div>
-      <div data-if="{{marketing_settings?.data?.info_disclosure_enabled === true}}" class="space-y-1">
-        <div class="flex items-center gap-2">
-          <label class="flex items-center gap-2 flex-1 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+      <div data-if="{{marketing_settings?.data?.info_disclosure_enabled === true}}" class="marketing:space-y-1">
+        <div class="marketing:flex marketing:items-center marketing:gap-2">
+          <label class="marketing:flex marketing:items-center marketing:gap-2 marketing:flex-1 marketing:cursor-pointer marketing:text-sm marketing:text-gray-700 marketing:dark:text-gray-300">
             <checkbox name="agree_info_disclosure" checked="{{!!_local.registerForm?.agree_info_disclosure}}" :autoBinding="false" disabled="{{_local?.isRegistering}}">
               <on type="change">
                 <!-- 정보 공개 동의 -->
@@ -105,7 +105,7 @@
             </checkbox>
             <span>$t:sirsoft-marketing.agree_info_disclosure</span>
           </label>
-          <button data-if="{{marketing_settings?.data?.info_disclosure_terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0">
+          <button data-if="{{marketing_settings?.data?.info_disclosure_terms_slug_set === true}}" type="button" class="marketing:text-xs marketing:text-blue-600 marketing:dark:text-blue-400 marketing:hover:text-blue-800 marketing:dark:hover:text-blue-300 marketing:underline marketing:flex-shrink-0">
             <on type="click">
               <!-- 약관 본문 보기 — 정보 공개 동의 약관 -->
               <sequence>
@@ -124,7 +124,7 @@
             <span>$t:sirsoft-marketing.view_terms</span>
           </button>
         </div>
-        <span class="block text-xs text-gray-500 dark:text-gray-400 ml-8">$t:sirsoft-marketing.info_disclosure_warning</span>
+        <span class="marketing:block marketing:text-xs marketing:text-gray-500 marketing:dark:text-gray-400 marketing:ml-8">$t:sirsoft-marketing.info_disclosure_warning</span>
       </div>
     </div>
   </inject>
@@ -140,19 +140,19 @@
         <case when="info_disclosure">$t:sirsoft-marketing.terms_modal_info_disclosure</case>
         <default>{{_global.marketingTermsModalType ?? ''}}</default>
       </switch-value>
-      <div class="flex flex-col">
-        <div data-if="{{_global.marketingTermsLoading}}" class="flex justify-center items-center py-12">
-          <icon name="circle-notch" class="text-blue-600 dark:text-blue-500 animate-spin text-3xl"/>
+      <div class="marketing:flex marketing:flex-col">
+        <div data-if="{{_global.marketingTermsLoading}}" class="marketing:flex marketing:justify-center marketing:items-center marketing:py-12">
+          <icon name="circle-notch" class="marketing:text-blue-600 marketing:dark:text-blue-500 marketing:animate-spin marketing:text-3xl marketing:leading-none"/>
         </div>
-        <div data-if="{{_global.marketingTermsPageData?.published_at}}" class="flex-shrink-0 flex items-center gap-2 mb-3">
-          <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.terms_published_at: {{_global.marketingTermsPageData?.published_at | date}}</span>
+        <div data-if="{{_global.marketingTermsPageData?.published_at}}" class="marketing:flex-shrink-0 marketing:flex marketing:items-center marketing:gap-2 marketing:mb-3">
+          <span class="marketing:text-sm marketing:text-gray-500 marketing:dark:text-gray-400">$t:sirsoft-marketing.terms_published_at: {{_global.marketingTermsPageData?.published_at | date}}</span>
         </div>
-        <div data-if="{{_global.marketingTermsPageData}}" class="flex-1 overflow-y-auto min-h-0 max-h-96">
-          <html-content data-type="composite" content="{{_global.marketingTermsPageData?.content ?? ''}}" isHtml="{{(_global.marketingTermsPageData?.content_mode ?? 'html') === 'html'}}" class="prose dark:prose-invert prose-sm max-w-none text-gray-700 dark:text-gray-300"/>
+        <div data-if="{{_global.marketingTermsPageData}}" class="marketing:flex-1 marketing:overflow-y-auto marketing:min-h-0 marketing:max-h-96">
+          <html-content data-type="composite" content="{{_global.marketingTermsPageData?.content ?? ''}}" isHtml="{{(_global.marketingTermsPageData?.content_mode ?? 'html') === 'html'}}" class="marketing:prose marketing:dark:prose-invert marketing:prose-sm marketing:max-w-none marketing:text-gray-700 marketing:dark:text-gray-300"/>
         </div>
-        <div data-if="{{!_global.marketingTermsLoading &amp;&amp; !_global.marketingTermsPageData}}" class="py-8 text-center text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.no_terms_content</div>
-        <div class="flex-shrink-0 flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+        <div data-if="{{!_global.marketingTermsLoading &amp;&amp; !_global.marketingTermsPageData}}" class="marketing:py-8 marketing:text-center marketing:text-gray-500 marketing:dark:text-gray-400">$t:sirsoft-marketing.no_terms_content</div>
+        <div class="marketing:flex-shrink-0 marketing:flex marketing:justify-end marketing:gap-3 marketing:mt-4 marketing:pt-4 marketing:border-t marketing:border-gray-200 marketing:dark:border-gray-700">
+          <button type="button" class="marketing:px-4 marketing:py-2 marketing:bg-gray-900 marketing:dark:bg-white marketing:text-white marketing:dark:text-gray-900 marketing:rounded-lg marketing:hover:bg-gray-800 marketing:dark:hover:bg-gray-100">
             <on type="click">
               <close-modal/>
             </on>

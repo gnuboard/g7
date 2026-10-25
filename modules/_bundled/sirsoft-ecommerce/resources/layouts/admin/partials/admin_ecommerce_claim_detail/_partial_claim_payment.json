@@ -22,14 +22,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "admin-card"
+                        "className": "ecommerce-admin-card"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H2",
                             "props": {
-                                "className": "text-lg font-bold text-gray-900 dark:text-gray-100 mb-6"
+                                "className": "ecommerce:text-lg ecommerce:font-bold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:mb-6"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.title"
                         },
@@ -40,7 +40,7 @@
                             "name": "P",
                             "if": "{{(claim?.data?.order?.payments ?? []).length === 0}}",
                             "props": {
-                                "className": "text-sm text-secondary"
+                                "className": "ecommerce:text-sm ecommerce-text-secondary"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.payment.no_payment"
                         },
@@ -48,7 +48,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "space-y-4"
+                                "className": "ecommerce:space-y-4"
                             },
                             "children": [
                                 {
@@ -61,21 +61,21 @@
                                         "index_var": "payIdx"
                                     },
                                     "props": {
-                                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg p-5"
+                                        "className": "ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-5"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-between mb-4"
+                                                "className": "ecommerce-flex-between ecommerce:mb-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-center gap-3"
+                                                        "className": "ecommerce-flex-center ecommerce:gap-3"
                                                     },
                                                     "children": [
                                                         {
@@ -90,7 +90,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "font-semibold text-gray-900 dark:text-gray-100"
+                                                                "className": "ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                                             },
                                                             "text": "{{payment.payment_number}}"
                                                         }
@@ -110,21 +110,21 @@
                                             "type": "basic",
                                             "name": "Hr",
                                             "props": {
-                                                "className": "border-gray-100 dark:border-gray-800 mb-4"
+                                                "className": "ecommerce:border-gray-100 ecommerce:dark:border-gray-800 ecommerce:mb-4"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "row-stack"
+                                                "className": "ecommerce-row-stack"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "grid-2col-responsive"
+                                                        "className": "ecommerce-grid-2col-responsive"
                                                     },
                                                     "children": [
                                                         {
@@ -135,7 +135,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-tertiary block"
+                                                                        "className": "ecommerce-text-tertiary ecommerce:block"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_method"
                                                                 },
@@ -143,7 +143,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-sm font-semibold text-gray-900 dark:text-gray-100 block"
+                                                                        "className": "ecommerce:text-sm ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:block"
                                                                     },
                                                                     "text": "{{payment.payment_method_label}}"
                                                                 },
@@ -152,7 +152,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{payment.account_info}}",
                                                                     "props": {
-                                                                        "className": "text-tertiary block"
+                                                                        "className": "ecommerce-text-tertiary ecommerce:block"
                                                                     },
                                                                     "text": "{{payment.account_info}}"
                                                                 },
@@ -162,7 +162,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{payment.is_cross_currency}}",
                                                                     "props": {
-                                                                        "className": "text-tertiary block"
+                                                                        "className": "ecommerce-text-tertiary ecommerce:block"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_currency|currency={{payment.payment_currency}}"
                                                                 }
@@ -176,7 +176,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-tertiary block"
+                                                                        "className": "ecommerce-text-tertiary ecommerce:block"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_request_date"
                                                                 },
@@ -184,7 +184,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-sm text-gray-900 dark:text-gray-100 block"
+                                                                        "className": "ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:block"
                                                                     },
                                                                     "text": "{{payment.requested_at_formatted}}"
                                                                 }
@@ -196,7 +196,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "grid-2col-responsive"
+                                                        "className": "ecommerce-grid-2col-responsive"
                                                     },
                                                     "children": [
                                                         {
@@ -208,7 +208,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-tertiary block"
+                                                                        "className": "ecommerce-text-tertiary ecommerce:block"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.payment_date"
                                                                 },
@@ -216,7 +216,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-sm text-gray-900 dark:text-gray-100 block"
+                                                                        "className": "ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:block"
                                                                     },
                                                                     "text": "{{payment.paid_at_formatted}}"
                                                                 }
@@ -231,7 +231,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-tertiary block"
+                                                                        "className": "ecommerce-text-tertiary ecommerce:block"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.due_date"
                                                                 },
@@ -239,7 +239,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-sm text-red-600 dark:text-red-400 font-medium block"
+                                                                        "className": "ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:font-medium ecommerce:block"
                                                                     },
                                                                     "text": "{{payment.due_date_formatted}}"
                                                                 }
@@ -253,7 +253,7 @@
                                             "type": "basic",
                                             "name": "Hr",
                                             "props": {
-                                                "className": "border-gray-100 dark:border-gray-800 mb-4"
+                                                "className": "ecommerce:border-gray-100 ecommerce:dark:border-gray-800 ecommerce:mb-4"
                                             }
                                         },
                                         {
@@ -265,14 +265,14 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex justify-between text-sm"
+                                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-secondary"
+                                                                "className": "ecommerce-text-secondary"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.order_amount"
                                                         },
@@ -280,7 +280,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-gray-900 dark:text-gray-100"
+                                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                                             },
                                                             "text": "{{claim?.data?.order?.subtotal_amount_formatted}}"
                                                         }
@@ -290,14 +290,14 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex justify-between text-sm"
+                                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-secondary"
+                                                                "className": "ecommerce-text-secondary"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.shipping_fee"
                                                         },
@@ -305,7 +305,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-gray-900 dark:text-gray-100"
+                                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                                             },
                                                             "text": "{{claim?.data?.order?.total_shipping_amount_formatted}}"
                                                         }
@@ -320,14 +320,14 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex justify-between text-sm"
+                                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-red-600 dark:text-red-400 font-medium"
+                                                                        "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:font-medium"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.total_discount"
                                                                 },
@@ -335,7 +335,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-red-600 dark:text-red-400"
+                                                                        "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400"
                                                                     },
                                                                     "text": "-{{claim?.data?.order?.total_discount_amount_formatted}}"
                                                                 }
@@ -346,14 +346,14 @@
                                                             "name": "Div",
                                                             "if": "{{claim?.data?.order?.total_product_coupon_discount_amount > 0}}",
                                                             "props": {
-                                                                "className": "flex justify-between text-xs pl-4"
+                                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-xs ecommerce:pl-4"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.coupon"
                                                                 },
@@ -361,7 +361,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                                     },
                                                                     "text": "-{{claim?.data?.order?.total_product_coupon_discount_amount_formatted}}"
                                                                 }
@@ -372,14 +372,14 @@
                                                             "name": "Div",
                                                             "if": "{{claim?.data?.order?.total_code_discount_amount > 0}}",
                                                             "props": {
-                                                                "className": "flex justify-between text-xs pl-4"
+                                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-xs ecommerce:pl-4"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.discount_code"
                                                                 },
@@ -387,7 +387,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                                     },
                                                                     "text": "-{{claim?.data?.order?.total_code_discount_amount_formatted}}"
                                                                 }
@@ -398,14 +398,14 @@
                                                             "name": "Div",
                                                             "if": "{{payment.event_discount_amount > 0}}",
                                                             "props": {
-                                                                "className": "flex justify-between text-xs pl-4"
+                                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-xs ecommerce:pl-4"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.event"
                                                                 },
@@ -413,7 +413,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                                     },
                                                                     "text": "-{{payment.event_discount_amount_formatted}}"
                                                                 }
@@ -424,14 +424,14 @@
                                                             "name": "Div",
                                                             "if": "{{payment.referral_discount_amount > 0}}",
                                                             "props": {
-                                                                "className": "flex justify-between text-xs pl-4"
+                                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-xs ecommerce:pl-4"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.referral"
                                                                 },
@@ -439,7 +439,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                                     },
                                                                     "text": "-{{payment.referral_discount_amount_formatted}}"
                                                                 }
@@ -452,14 +452,14 @@
                                                     "name": "Div",
                                                     "if": "{{claim?.data?.order?.total_points_used_amount > 0}}",
                                                     "props": {
-                                                        "className": "flex justify-between text-sm"
+                                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-purple-600 dark:text-purple-400"
+                                                                "className": "ecommerce:text-purple-600 ecommerce:dark:text-purple-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.mileage_used"
                                                         },
@@ -467,7 +467,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-purple-600 dark:text-purple-400"
+                                                                "className": "ecommerce:text-purple-600 ecommerce:dark:text-purple-400"
                                                             },
                                                             "text": "-{{claim?.data?.order?.total_points_used_amount_formatted}}"
                                                         }
@@ -478,14 +478,14 @@
                                                     "name": "Div",
                                                     "if": "{{claim?.data?.order?.total_deposit_used_amount > 0}}",
                                                     "props": {
-                                                        "className": "flex justify-between text-sm"
+                                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-green-700 dark:text-green-400"
+                                                                "className": "ecommerce:text-green-700 ecommerce:dark:text-green-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.deposit_used"
                                                         },
@@ -493,7 +493,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-green-700 dark:text-green-400"
+                                                                "className": "ecommerce:text-green-700 ecommerce:dark:text-green-400"
                                                             },
                                                             "text": "-{{claim?.data?.order?.total_deposit_used_amount_formatted}}"
                                                         }
@@ -503,14 +503,14 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700"
+                                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm ecommerce:font-bold ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-gray-900 dark:text-gray-100"
+                                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.final_amount"
                                                         },
@@ -518,7 +518,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "text-right"
+                                                                "className": "ecommerce:text-right"
                                                             },
                                                             "children": [
                                                                 {
@@ -526,7 +526,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-900 dark:text-gray-100 block"
+                                                                        "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:block"
                                                                     },
                                                                     "text": "{{claim?.data?.order?.total_paid_amount_formatted}}"
                                                                 },
@@ -536,7 +536,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{payment.is_cross_currency}}",
                                                                     "props": {
-                                                                        "className": "text-hint block font-normal"
+                                                                        "className": "ecommerce-text-hint ecommerce:block ecommerce:font-normal"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.charged_in_payment_currency|currency={{payment.payment_currency}}|amount={{payment.paid_amount_formatted}}"
                                                                 }
@@ -551,7 +551,7 @@
                                                     "name": "Div",
                                                     "if": "{{(claim?.data?.order?.total_cancelled_amount ?? 0) > 0 || (claim?.data?.order?.total_refunded_amount ?? 0) > 0 || (claim?.data?.order?.total_refunded_points_amount ?? 0) > 0}}",
                                                     "props": {
-                                                        "className": "space-y-2 border-t border-red-200 dark:border-red-800"
+                                                        "className": "ecommerce:space-y-2 ecommerce:border-t ecommerce:border-red-200 ecommerce:dark:border-red-800"
                                                     },
                                                     "children": [
                                                         {
@@ -559,14 +559,14 @@
                                                             "name": "Div",
                                                             "if": "{{(claim?.data?.order?.total_cancelled_amount ?? 0) > 0}}",
                                                             "props": {
-                                                                "className": "flex justify-between text-sm"
+                                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-red-600 dark:text-red-400 font-medium"
+                                                                        "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:font-medium"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.cancelled_amount"
                                                                 },
@@ -574,7 +574,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-red-600 dark:text-red-400 font-medium"
+                                                                        "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:font-medium"
                                                                     },
                                                                     "text": "-{{claim?.data?.order?.total_cancelled_amount_formatted}}"
                                                                 }
@@ -586,14 +586,14 @@
                                                             "name": "Div",
                                                             "if": "{{(claim?.data?.order?.total_refunded_amount ?? 0) > 0}}",
                                                             "props": {
-                                                                "className": "flex justify-between text-sm"
+                                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-orange-700 dark:text-orange-400"
+                                                                        "className": "ecommerce:text-orange-700 ecommerce:dark:text-orange-400"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.refunded_amount"
                                                                 },
@@ -601,7 +601,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-orange-700 dark:text-orange-400"
+                                                                        "className": "ecommerce:text-orange-700 ecommerce:dark:text-orange-400"
                                                                     },
                                                                     "text": "-{{claim?.data?.order?.total_refunded_amount_formatted}}"
                                                                 }
@@ -613,14 +613,14 @@
                                                             "name": "Div",
                                                             "if": "{{(claim?.data?.order?.total_refunded_points_amount ?? 0) > 0}}",
                                                             "props": {
-                                                                "className": "flex justify-between text-sm"
+                                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-purple-600 dark:text-purple-400"
+                                                                        "className": "ecommerce:text-purple-600 ecommerce:dark:text-purple-400"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.refund_points_amount"
                                                                 },
@@ -628,7 +628,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-purple-600 dark:text-purple-400"
+                                                                        "className": "ecommerce:text-purple-600 ecommerce:dark:text-purple-400"
                                                                     },
                                                                     "text": "-{{claim?.data?.order?.total_refunded_points_amount_formatted}}"
                                                                 }
@@ -641,14 +641,14 @@
                                                             "name": "Div",
                                                             "if": "{{(claim?.data?.order?.total_refunded_mileage_credit_amount ?? 0) > 0}}",
                                                             "props": {
-                                                                "className": "flex justify-between text-sm pl-3"
+                                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm ecommerce:pl-3"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.refund_mileage_credit_amount"
                                                                 },
@@ -656,7 +656,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-gray-700 dark:text-gray-300"
+                                                                        "className": "ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                                     },
                                                                     "text": "{{claim?.data?.order?.total_refunded_mileage_credit_amount_formatted}}"
                                                                 }
@@ -668,21 +668,21 @@
                                                     "type": "basic",
                                                     "name": "Hr",
                                                     "props": {
-                                                        "className": "border-gray-100 dark:border-gray-800"
+                                                        "className": "ecommerce:border-gray-100 ecommerce:dark:border-gray-800"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex justify-between text-sm"
+                                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.taxable_amount"
                                                         },
@@ -690,7 +690,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "{{claim?.data?.order?.total_tax_amount_formatted}}"
                                                         }
@@ -700,14 +700,14 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex justify-between text-sm"
+                                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.vat"
                                                         },
@@ -715,7 +715,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-gray-700 dark:text-gray-300"
+                                                                "className": "ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                             },
                                                             "text": "{{claim?.data?.order?.total_vat_amount_formatted}}"
                                                         }
@@ -727,14 +727,14 @@
                                                     "name": "Div",
                                                     "if": "{{claim?.data?.order?.total_earned_points_amount > 0 && claim?.data?.order?.order_status !== 'cancelled' && !claim?.data?.order?.is_partially_cancelled}}",
                                                     "props": {
-                                                        "className": "flex justify-between text-sm"
+                                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                                "className": "ecommerce:text-blue-600 ecommerce:dark:text-blue-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.payment_info.expected_points"
                                                         },
@@ -743,7 +743,7 @@
                                                             "name": "Span",
                                                             "if": "{{claim?.data?.order?.total_earned_points_amount_formatted != null}}",
                                                             "props": {
-                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                                "className": "ecommerce:text-blue-600 ecommerce:dark:text-blue-400"
                                                             },
                                                             "text": "{{claim?.data?.order?.total_earned_points_amount_formatted}}"
                                                         },
@@ -752,7 +752,7 @@
                                                             "name": "Span",
                                                             "if": "{{claim?.data?.order?.total_earned_points_amount_formatted == null}}",
                                                             "props": {
-                                                                "className": "text-blue-600 dark:text-blue-400"
+                                                                "className": "ecommerce:text-blue-600 ecommerce:dark:text-blue-400"
                                                             },
                                                             "text": "{{claim?.data?.order?.total_earned_points_amount | number}}P"
                                                         }
@@ -773,14 +773,14 @@
                     "name": "Div",
                     "if": "{{(claim?.data?.claim?.claim_type ?? '') !== 'cancel'}}",
                     "props": {
-                        "className": "admin-card mt-6"
+                        "className": "ecommerce-admin-card ecommerce:mt-6"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H2",
                             "props": {
-                                "className": "text-lg font-bold text-gray-900 dark:text-gray-100 mb-6"
+                                "className": "ecommerce:text-lg ecommerce:font-bold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:mb-6"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.title"
                         },
@@ -802,7 +802,7 @@
                             "name": "Div",
                             "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}",
                             "props": {
-                                "className": "space-y-2"
+                                "className": "ecommerce:space-y-2"
                             },
                             "children": [
                                 {
@@ -810,14 +810,14 @@
                                     "name": "Div",
                                     "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'exchange'}}",
                                     "props": {
-                                        "className": "flex justify-between items-center text-sm gap-3"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:items-center ecommerce:text-sm ecommerce:gap-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "ecommerce-text-secondary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_exchange"
                                         },
@@ -842,7 +842,7 @@
                                                 "type": "number",
                                                 "min": 0,
                                                 "step": "any",
-                                                "className": "w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "ecommerce:w-40 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:text-right ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                                 "value": "{{_local.claimShippingFee ?? ''}}",
                                                 "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}"
                                             }
@@ -854,14 +854,14 @@
                                     "name": "Div",
                                     "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'return'}}",
                                     "props": {
-                                        "className": "flex justify-between items-center text-sm gap-3"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:items-center ecommerce:text-sm ecommerce:gap-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "ecommerce-text-secondary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.claim_shipping_fee_return"
                                         },
@@ -886,7 +886,7 @@
                                                 "type": "number",
                                                 "min": 0,
                                                 "step": "any",
-                                                "className": "w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "ecommerce:w-40 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:text-right ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                                 "value": "{{_local.claimShippingFee ?? ''}}",
                                                 "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}"
                                             }
@@ -898,14 +898,14 @@
                                     "name": "Div",
                                     "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'exchange'}}",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "ecommerce-text-secondary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.additional_product_amount"
                                         },
@@ -913,7 +913,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{claim?.data?.claim?.additional_product_amount_formatted ?? \"\"}}"
                                         }
@@ -924,14 +924,14 @@
                                     "name": "Div",
                                     "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'exchange' && (claim?.data?.claim?.refund_product_amount ?? 0) > 0}}",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-purple-600 dark:text-purple-400"
+                                                "className": "ecommerce:text-purple-600 ecommerce:dark:text-purple-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_product_amount"
                                         },
@@ -939,7 +939,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-purple-600 dark:text-purple-400"
+                                                "className": "ecommerce:text-purple-600 ecommerce:dark:text-purple-400"
                                             },
                                             "text": "{{claim?.data?.claim?.refund_product_amount_formatted ?? \"\"}}"
                                         }
@@ -952,7 +952,7 @@
                                     "name": "Div",
                                     "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') && ((claim?.data?.claim?.shipping_fee_snapshot?.reason ?? '') === 'no_shipping_policy' || (claim?.data?.claim?.shipping_fee_snapshot?.groups ?? []).some(g => g.api_fallback === true || g.policy_source === 'live_policy'))}}",
                                     "props": {
-                                        "className": "text-xs text-gray-500 dark:text-gray-400 text-right"
+                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:text-right"
                                     },
                                     "children": [
                                         {
@@ -966,14 +966,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex justify-between items-center text-sm gap-3"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:items-center ecommerce:text-sm ecommerce:gap-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "ecommerce-text-secondary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.charge_method"
                                         },
@@ -995,7 +995,7 @@
                                             "props": {
                                                 "name": "chargeMethod",
                                                 "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.charge_method",
-                                                "className": "w-48 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "ecommerce:w-48 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                                 "value": "{{_local.chargeMethod ?? ''}}",
                                                 "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}",
                                                 "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.claim.detail.settlement.charge_method_placeholder'), disabled: true }].concat(claim?.data?.charge_methods ?? [])}}"
@@ -1008,14 +1008,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm ecommerce:font-bold ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.total_charge_amount"
                                         },
@@ -1023,7 +1023,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{claim?.data?.claim?.total_charge_amount_formatted ?? \"\"}}"
                                         }
@@ -1035,14 +1035,14 @@
                                     "name": "Div",
                                     "if": "{{(claim?.data?.claim?.outstanding_amount ?? 0) > 0}}",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-red-600 dark:text-red-400 font-medium"
+                                                "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:font-medium"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.outstanding_amount"
                                         },
@@ -1050,7 +1050,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-red-600 dark:text-red-400 font-medium"
+                                                "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:font-medium"
                                             },
                                             "text": "{{claim?.data?.claim?.outstanding_amount_formatted ?? \"\"}}"
                                         }
@@ -1060,7 +1060,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex justify-end pt-2"
+                                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:pt-2"
                                     },
                                     "children": [
                                         {
@@ -1087,7 +1087,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "btn btn-primary",
+                                                "className": "ecommerce-btn ecommerce-btn-primary",
                                                 "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true || _local.isSavingAmounts === true}}"
                                             },
                                             "children": [
@@ -1097,7 +1097,7 @@
                                                     "if": "{{_local.isSavingAmounts}}",
                                                     "props": {
                                                         "name": "spinner",
-                                                        "className": "spinner-sm mr-1"
+                                                        "className": "ecommerce-spinner-sm ecommerce:mr-1"
                                                     }
                                                 },
                                                 {
@@ -1117,21 +1117,21 @@
                             "name": "Div",
                             "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'refund'}}",
                             "props": {
-                                "className": "space-y-2"
+                                "className": "ecommerce:space-y-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "ecommerce-text-secondary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_method"
                                         },
@@ -1141,7 +1141,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-right whitespace-pre-line text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-right ecommerce:whitespace-pre-line ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{claim?.data?.claim?.refund_breakdown_formatted || claim?.data?.claim?.refund_method_label || '-'}}"
                                         }
@@ -1152,14 +1152,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "ecommerce-text-secondary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_amount"
                                         },
@@ -1167,7 +1167,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{claim?.data?.claim?.refund_amount_formatted ?? ''}}"
                                         }
@@ -1178,14 +1178,14 @@
                                     "name": "Div",
                                     "if": "{{(claim?.data?.claim?.refund_points_amount ?? 0) > 0}}",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-purple-600 dark:text-purple-400"
+                                                "className": "ecommerce:text-purple-600 ecommerce:dark:text-purple-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_points_amount"
                                         },
@@ -1193,7 +1193,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-purple-600 dark:text-purple-400"
+                                                "className": "ecommerce:text-purple-600 ecommerce:dark:text-purple-400"
                                             },
                                             "text": "{{claim?.data?.claim?.refund_points_amount_formatted ?? ''}}"
                                         }
@@ -1204,14 +1204,14 @@
                                     "name": "Div",
                                     "if": "{{(claim?.data?.claim?.refund_shipping_amount ?? 0) > 0}}",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "ecommerce-text-secondary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_shipping_amount"
                                         },
@@ -1219,7 +1219,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{claim?.data?.claim?.refund_shipping_amount_formatted ?? ''}}"
                                         }
@@ -1232,14 +1232,14 @@
                                     "name": "Div",
                                     "if": "{{(claim?.data?.claim?.exchange_difference_refund_total ?? 0) > 0}}",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "ecommerce-text-secondary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.exchange_difference_refund"
                                         },
@@ -1247,7 +1247,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{claim?.data?.claim?.exchange_difference_refunds_formatted ?? claim?.data?.claim?.exchange_difference_refund_total_formatted ?? ''}}"
                                         }
@@ -1258,14 +1258,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm ecommerce:font-bold ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_total"
                                         },
@@ -1273,7 +1273,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{claim?.data?.claim?.refund_total_formatted ?? ''}}"
                                         }
@@ -1284,14 +1284,14 @@
                                     "name": "Div",
                                     "if": "{{(claim?.data?.claim?.refunded_at_formatted ?? '') !== ''}}",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "ecommerce-text-secondary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refunded_at"
                                         },
@@ -1299,7 +1299,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{claim?.data?.claim?.refunded_at_formatted ?? ''}}"
                                         }
@@ -1313,14 +1313,14 @@
                             "name": "Div",
                             "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') && (claim?.data?.claim?.payments ?? []).length > 0}}",
                             "props": {
-                                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2"
+                                "className": "ecommerce:mt-4 ecommerce:pt-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:space-y-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "text-label-subtle"
+                                        "className": "ecommerce-text-label-subtle"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.payments_title"
                                 },
@@ -1331,7 +1331,7 @@
                                     "name": "P",
                                     "if": "{{claim?.data?.claim?.paid_but_transition_failed === true}}",
                                     "props": {
-                                        "className": "p-2 rounded bg-amber-50 dark:bg-amber-900/20 text-xs text-amber-700 dark:text-amber-300"
+                                        "className": "ecommerce:p-2 ecommerce:rounded ecommerce:bg-amber-50 ecommerce:dark:bg-amber-900/20 ecommerce:text-xs ecommerce:text-amber-700 ecommerce:dark:text-amber-300"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.paid_transition_failed"
                                 },
@@ -1345,21 +1345,21 @@
                                         "index_var": "cpIdx"
                                     },
                                     "props": {
-                                        "className": "flex justify-between items-center text-sm gap-2 flex-wrap"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:items-center ecommerce:text-sm ecommerce:gap-2 ecommerce:flex-wrap"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-2"
+                                                "className": "ecommerce-flex-center ecommerce:gap-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-medium text-gray-900 dark:text-gray-100"
+                                                        "className": "ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                                     },
                                                     "text": "{{claimPayment.payment_number}}"
                                                 },
@@ -1367,7 +1367,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-secondary"
+                                                        "className": "ecommerce-text-secondary"
                                                     },
                                                     "text": "{{claimPayment.payment_method_label ?? ''}}"
                                                 },
@@ -1385,14 +1385,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-2"
+                                                "className": "ecommerce-flex-center ecommerce:gap-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                        "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                                     },
                                                     "text": "{{claimPayment.total_amount_formatted ?? ''}}"
                                                 },
@@ -1402,7 +1402,7 @@
                                                     "name": "Span",
                                                     "if": "{{(claimPayment.refunded_amount ?? 0) > 0}}",
                                                     "props": {
-                                                        "className": "text-xs text-orange-700 dark:text-orange-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-orange-700 ecommerce:dark:text-orange-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.payment_refunded|amount={{claimPayment.refunded_amount_formatted ?? ''}}"
                                                 }
@@ -1415,7 +1415,7 @@
                                             "name": "P",
                                             "if": "{{claimPayment.pg_error_code === 'VOID_FAILED'}}",
                                             "props": {
-                                                "className": "w-full text-xs text-red-600 dark:text-red-400"
+                                                "className": "ecommerce:w-full ecommerce:text-xs ecommerce:text-red-600 ecommerce:dark:text-red-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.void_failed"
                                         }
@@ -1430,14 +1430,14 @@
                             "name": "Div",
                             "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '')}}",
                             "props": {
-                                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2"
+                                "className": "ecommerce:mt-4 ecommerce:pt-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:space-y-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "text-label-subtle"
+                                        "className": "ecommerce-text-label-subtle"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.linked.title"
                                 },
@@ -1447,7 +1447,7 @@
                                     "name": "P",
                                     "if": "{{(claim?.data?.linked_claims?.refunds ?? []).length === 0}}",
                                     "props": {
-                                        "className": "text-sm text-secondary"
+                                        "className": "ecommerce:text-sm ecommerce-text-secondary"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.linked.empty"
                                 },
@@ -1463,19 +1463,19 @@
                                     "classMap": {
                                         "key": "{{linkedRefund.is_live === false ? 'released' : 'live'}}",
                                         "variants": {
-                                            "released": "text-gray-500 dark:text-gray-400",
-                                            "live": "text-gray-900 dark:text-gray-100"
+                                            "released": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400",
+                                            "live": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                         }
                                     },
                                     "props": {
-                                        "className": "flex justify-between items-center text-sm gap-2 flex-wrap"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:items-center ecommerce:text-sm ecommerce:gap-2 ecommerce:flex-wrap"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-2"
+                                                "className": "ecommerce-flex-center ecommerce:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -1486,7 +1486,7 @@
                                                         "href": "{{linkedRefund.detail_url}}",
                                                         "target": "_blank",
                                                         "rel": "noopener noreferrer",
-                                                        "className": "font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                                                        "className": "ecommerce:font-medium ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline ecommerce:cursor-pointer"
                                                     },
                                                     "text": "{{linkedRefund.claim_number}}"
                                                 },
@@ -1502,7 +1502,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-secondary"
+                                                        "className": "ecommerce-text-secondary"
                                                     },
                                                     "text": "{{linkedRefund.refund_method_label ?? ''}}"
                                                 }
@@ -1512,7 +1512,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-2"
+                                                "className": "ecommerce-flex-center ecommerce:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -1524,7 +1524,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "{{linkedRefund.refunded_at_formatted || linkedRefund.requested_at_formatted || ''}}"
                                                 }
@@ -1541,7 +1541,7 @@
                             "name": "Div",
                             "if": "{{!!claim?.data?.settlement}}",
                             "props": {
-                                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2"
+                                "className": "ecommerce:mt-4 ecommerce:pt-4 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:space-y-2"
                             },
                             "children": [
                                 {
@@ -1550,7 +1550,7 @@
                                     "name": "Div",
                                     "if": "{{claim?.data?.claim?.is_final !== true || !claim?.data?.pending_refund}}",
                                     "props": {
-                                        "className": "text-label-subtle"
+                                        "className": "ecommerce-text-label-subtle"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.preview_title"
                                 },
@@ -1559,7 +1559,7 @@
                                     "name": "Div",
                                     "if": "{{claim?.data?.claim?.is_final === true && !!claim?.data?.pending_refund}}",
                                     "props": {
-                                        "className": "text-label-subtle"
+                                        "className": "ecommerce-text-label-subtle"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.pending_title"
                                 },
@@ -1570,7 +1570,7 @@
                                     "name": "Div",
                                     "if": "{{['exchange', 'return'].includes(claim?.data?.claim?.claim_type ?? '') && (claim?.data?.settlement?.blocked_reason ?? '') === ''}}",
                                     "props": {
-                                        "className": "flex justify-end"
+                                        "className": "ecommerce:flex ecommerce:justify-end"
                                     },
                                     "children": [
                                         {
@@ -1594,7 +1594,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "btn btn-secondary",
+                                                "className": "ecommerce-btn ecommerce-btn-secondary",
                                                 "disabled": "{{claim?.data?.abilities?.can_update_status !== true || _local.isFilingRefundRequest === true}}"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.file_refund_request"
@@ -1608,7 +1608,7 @@
                                     "name": "P",
                                     "if": "{{(claim?.data?.settlement?.blocked_reason ?? '') !== ''}}",
                                     "props": {
-                                        "className": "text-sm text-amber-700 dark:text-amber-400"
+                                        "className": "ecommerce:text-sm ecommerce:text-amber-700 ecommerce:dark:text-amber-400"
                                     },
                                     "text": "{{claim?.data?.settlement?.blocked_reason === 'claim_refund_request_exists' ? $t('sirsoft-ecommerce.admin.claim.detail.settlement.blocked_already_filed') : $t('sirsoft-ecommerce.admin.claim.detail.settlement.blocked_not_applicable')}}"
                                 },
@@ -1619,14 +1619,14 @@
                                     "name": "Div",
                                     "if": "{{claim?.data?.settlement?.refund_product_amount_formatted != null}}",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "ecommerce-text-secondary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_product_amount"
                                         },
@@ -1634,7 +1634,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{claim?.data?.settlement?.refund_product_amount_formatted ?? ''}}"
                                         }
@@ -1646,14 +1646,14 @@
                                     "name": "Div",
                                     "if": "{{claim?.data?.settlement?.refund_shipping_amount_formatted != null}}",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "ecommerce-text-secondary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.refund_shipping_amount"
                                         },
@@ -1661,7 +1661,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{claim?.data?.settlement?.refund_shipping_amount_formatted ?? ''}}"
                                         }
@@ -1672,14 +1672,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-orange-700 dark:text-orange-400 font-medium"
+                                                "className": "ecommerce:text-orange-700 ecommerce:dark:text-orange-400 ecommerce:font-medium"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.expected_refund"
                                         },
@@ -1687,7 +1687,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-orange-700 dark:text-orange-400 font-medium"
+                                                "className": "ecommerce:text-orange-700 ecommerce:dark:text-orange-400 ecommerce:font-medium"
                                             },
                                             "text": "{{claim?.data?.settlement?.refund_amount_formatted ?? ''}}"
                                         }
@@ -1698,14 +1698,14 @@
                                     "name": "Div",
                                     "if": "{{(claim?.data?.settlement?.refund_points_amount ?? 0) > 0}}",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-purple-600 dark:text-purple-400"
+                                                "className": "ecommerce:text-purple-600 ecommerce:dark:text-purple-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.expected_refund_points"
                                         },
@@ -1713,7 +1713,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-purple-600 dark:text-purple-400"
+                                                "className": "ecommerce:text-purple-600 ecommerce:dark:text-purple-400"
                                             },
                                             "text": "{{claim?.data?.settlement?.refund_points_amount_formatted ?? ''}}"
                                         }
@@ -1725,14 +1725,14 @@
                                     "name": "Div",
                                     "if": "{{(claim?.data?.settlement?.deducted_shipping_fee ?? 0) > 0}}",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "ecommerce-text-secondary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.deducted_shipping_fee"
                                         },
@@ -1740,7 +1740,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "{{claim?.data?.settlement?.deducted_shipping_fee_formatted ?? ''}}"
                                         }
@@ -1751,14 +1751,14 @@
                                     "name": "Div",
                                     "if": "{{claim?.data?.settlement?.earn_recovery === true}}",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-secondary"
+                                                "className": "ecommerce-text-secondary"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.earn_recovery"
                                         },
@@ -1766,7 +1766,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-gray-100"
+                                                "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.settlement.earn_recovery_yes"
                                         }
@@ -1786,14 +1786,14 @@
             "if": "{{(claim?.data?.claim?.claim_type ?? '') === 'refund'}}",
             "props": {
                 "data-section-id": "refund_execute",
-                "className": "mt-6"
+                "className": "ecommerce:mt-6"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid grid-cols-1 lg:grid-cols-2 gap-6"
+                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:lg:grid-cols-2 ecommerce:gap-6"
                     },
                     "children": [
                         {
@@ -1802,14 +1802,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "admin-card"
+                                "className": "ecommerce-admin-card"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "H3",
                                     "props": {
-                                        "className": "text-base font-bold text-gray-900 dark:text-gray-100 mb-4"
+                                        "className": "ecommerce:text-base ecommerce:font-bold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:mb-4"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cancellable_title"
                                 },
@@ -1820,7 +1820,7 @@
                                     "name": "P",
                                     "if": "{{!claim?.data?.cancellable}}",
                                     "props": {
-                                        "className": "text-sm text-secondary"
+                                        "className": "ecommerce:text-sm ecommerce-text-secondary"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.unavailable"
                                 },
@@ -1830,7 +1830,7 @@
                                     "name": "Div",
                                     "if": "{{!!claim?.data?.cancellable}}",
                                     "props": {
-                                        "className": "space-y-2"
+                                        "className": "ecommerce:space-y-2"
                                     },
                                     "children": [
                                         {
@@ -1838,14 +1838,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex justify-between text-sm"
+                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-secondary"
+                                                        "className": "ecommerce-text-secondary"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.domain_refundable"
                                                 },
@@ -1853,7 +1853,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                        "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                                     },
                                                     "text": "{{claim?.data?.cancellable?.domain_refundable_formatted ?? ''}}"
                                                 }
@@ -1864,14 +1864,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex justify-between text-sm"
+                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-secondary"
+                                                        "className": "ecommerce-text-secondary"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.payment_capacity"
                                                 },
@@ -1879,7 +1879,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                        "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                                     },
                                                     "text": "{{claim?.data?.cancellable?.payment_capacity_formatted ?? ''}}"
                                                 }
@@ -1896,14 +1896,14 @@
                                                 "index_var": "mIdx"
                                             },
                                             "props": {
-                                                "className": "flex justify-between text-xs pl-4"
+                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-xs ecommerce:pl-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "{{capacity.method_label ?? ''}}"
                                                 },
@@ -1911,7 +1911,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "{{capacity.currency === (claim?.data?.cancellable?.currency ?? '') ? (capacity.remaining_base_formatted ?? '') : ((capacity.remaining_base_formatted ?? '') + ' (' + (capacity.remaining_local_formatted ?? '') + ')')}}"
                                                 }
@@ -1922,14 +1922,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex justify-between text-sm"
+                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-amber-700 dark:text-amber-400"
+                                                        "className": "ecommerce:text-amber-700 ecommerce:dark:text-amber-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.reserved"
                                                 },
@@ -1937,7 +1937,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-amber-700 dark:text-amber-400"
+                                                        "className": "ecommerce:text-amber-700 ecommerce:dark:text-amber-400"
                                                     },
                                                     "text": "{{claim?.data?.cancellable?.reserved_formatted ?? ''}}"
                                                 }
@@ -1954,14 +1954,14 @@
                                                 "index_var": "rIdx"
                                             },
                                             "props": {
-                                                "className": "flex justify-between text-xs pl-4"
+                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-xs ecommerce:pl-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "{{(reservedClaim.type_label ?? '') + ' ' + (reservedClaim.number ?? '')}}"
                                                 },
@@ -1969,7 +1969,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "{{reservedClaim.amount_formatted ?? ''}}"
                                                 }
@@ -1979,14 +1979,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700 pt-2"
+                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm ecommerce:font-bold ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                        "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.amount"
                                                 },
@@ -1995,7 +1995,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                        "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                                     },
                                                     "text": "{{claim?.data?.cancellable?.amount_formatted ?? ''}}"
                                                 }
@@ -2006,7 +2006,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 pt-1"
+                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pt-1"
                                             },
                                             "text": "{{claim?.data?.cancellable?.binding_label ?? ''}}"
                                         }
@@ -2019,14 +2019,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "admin-card"
+                                "className": "ecommerce-admin-card"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "H3",
                                     "props": {
-                                        "className": "text-base font-bold text-gray-900 dark:text-gray-100 mb-4"
+                                        "className": "ecommerce:text-base ecommerce:font-bold ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:mb-4"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.edit_title"
                                 },
@@ -2034,28 +2034,28 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "space-y-4"
+                                        "className": "ecommerce:space-y-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "space-y-1"
+                                                "className": "ecommerce:space-y-1"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex justify-between items-center gap-3"
+                                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:items-center ecommerce:gap-3"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-secondary"
+                                                                "className": "ecommerce:text-sm ecommerce-text-secondary"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.cash_amount"
                                                         },
@@ -2094,7 +2094,7 @@
                                                                 "type": "number",
                                                                 "min": 0,
                                                                 "step": "any",
-                                                                "className": "w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "className": "ecommerce:w-40 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:text-right ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                                                 "value": "{{_local.refundAmount ?? ''}}",
                                                                 "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}"
                                                             }
@@ -2105,7 +2105,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-xs text-right text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-right ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.limit_hint|amount={{claim?.data?.cancellable?.amount_formatted ?? ''}}"
                                                 },
@@ -2120,7 +2120,7 @@
                                                         "index_var": "pgIdx"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-right text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-right ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method_limit_hint|method={{pgCapacity.method_label ?? ''}}|amount={{pgCapacity.currency === (claim?.data?.cancellable?.currency ?? '') ? (pgCapacity.remaining_base_formatted ?? '') : ((pgCapacity.remaining_base_formatted ?? '') + ' (' + (pgCapacity.remaining_local_formatted ?? '') + ')')}}"
                                                 }
@@ -2130,21 +2130,21 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "space-y-1"
+                                                "className": "ecommerce:space-y-1"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex justify-between items-center gap-3"
+                                                        "className": "ecommerce:flex ecommerce:justify-between ecommerce:items-center ecommerce:gap-3"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-sm text-secondary"
+                                                                "className": "ecommerce:text-sm ecommerce-text-secondary"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_amount"
                                                         },
@@ -2182,7 +2182,7 @@
                                                                 "type": "number",
                                                                 "min": 0,
                                                                 "step": "any",
-                                                                "className": "w-40 px-3 py-1.5 text-sm text-right bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "className": "ecommerce:w-40 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:text-right ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                                                 "value": "{{_local.refundPointsAmount ?? ''}}",
                                                                 "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true}}"
                                                             }
@@ -2193,7 +2193,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-xs text-right text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-right ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_hint"
                                                 },
@@ -2208,7 +2208,7 @@
                                                         "index_var": "ptIdx"
                                                     },
                                                     "props": {
-                                                        "className": "text-xs text-right text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-right ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method_limit_hint|method={{ptCapacity.method_label ?? ''}}|amount={{ptCapacity.remaining_base_formatted ?? ''}}"
                                                 }
@@ -2226,7 +2226,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-sm text-secondary mb-2"
+                                                        "className": "ecommerce:text-sm ecommerce-text-secondary ecommerce:mb-2"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.method"
                                                 },
@@ -2261,7 +2261,7 @@
                                                     "name": "P",
                                                     "if": "{{(_local.refundMethod ?? '') === 'points'}}",
                                                     "props": {
-                                                        "className": "mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                                                        "className": "ecommerce:mt-2 ecommerce:rounded-md ecommerce:border ecommerce:border-amber-300 ecommerce:bg-amber-50 ecommerce:px-3 ecommerce:py-2 ecommerce:text-xs ecommerce:text-amber-800 ecommerce:dark:border-amber-700 ecommerce:dark:bg-amber-900/20 ecommerce:dark:text-amber-300"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.points_cash_credit_notice"
                                                 }
@@ -2272,14 +2272,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex justify-between text-sm font-bold border-t border-gray-200 dark:border-gray-700 pt-3"
+                                                "className": "ecommerce:flex ecommerce:justify-between ecommerce:text-sm ecommerce:font-bold ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-3"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                        "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.total"
                                                 },
@@ -2288,7 +2288,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-gray-900 dark:text-gray-100"
+                                                        "className": "ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                                     },
                                                     "text": "{{_local.refundInputTotalFormatted || ((_computed.refundInputTotal ?? 0) + ' ' + (claim?.data?.cancellable?.currency ?? claim?.data?.claim?.currency_code ?? ''))}}"
                                                 }
@@ -2301,7 +2301,7 @@
                                             "name": "P",
                                             "if": "{{(_computed.refundInputTotal ?? 0) > (claim?.data?.cancellable?.amount ?? 0)}}",
                                             "props": {
-                                                "className": "text-xs text-red-600 dark:text-red-400"
+                                                "className": "ecommerce:text-xs ecommerce:text-red-600 ecommerce:dark:text-red-400"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.exceeds"
                                         },
@@ -2313,7 +2313,7 @@
                                             "if": "{{claim?.data?.claim?.refund_fell_back_to_manual === true}}",
                                             "props": {
                                                 "data-testid": "refund-manual-transfer-notice",
-                                                "className": "rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                                                "className": "ecommerce:rounded-md ecommerce:border ecommerce:border-amber-300 ecommerce:bg-amber-50 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:text-amber-800 ecommerce:dark:border-amber-700 ecommerce:dark:bg-amber-900/20 ecommerce:dark:text-amber-300"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.manual_transfer_notice"
                                         },
@@ -2324,7 +2324,7 @@
                                             "name": "Div",
                                             "if": "{{claim?.data?.claim?.pg_settled_pending_ledger === true}}",
                                             "props": {
-                                                "className": "rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                                                "className": "ecommerce:rounded-md ecommerce:border ecommerce:border-amber-300 ecommerce:bg-amber-50 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:text-amber-800 ecommerce:dark:border-amber-700 ecommerce:dark:bg-amber-900/20 ecommerce:dark:text-amber-300"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.pg_settled_pending_ledger_notice"
                                         },
@@ -2332,7 +2332,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex justify-end gap-2 pt-2"
+                                                "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:pt-2"
                                             },
                                             "children": [
                                                 {
@@ -2360,7 +2360,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "btn btn-outline",
+                                                        "className": "ecommerce-btn ecommerce-btn-outline",
                                                         "disabled": "{{claim?.data?.abilities?.can_update_amounts !== true || _local.isSavingAmounts === true}}"
                                                     },
                                                     "children": [
@@ -2370,7 +2370,7 @@
                                                             "if": "{{_local.isSavingAmounts}}",
                                                             "props": {
                                                                 "name": "spinner",
-                                                                "className": "spinner-sm mr-1"
+                                                                "className": "ecommerce-spinner-sm ecommerce:mr-1"
                                                             }
                                                         },
                                                         {
@@ -2413,7 +2413,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "btn btn-primary",
+                                                        "className": "ecommerce-btn ecommerce-btn-primary",
                                                         "disabled": "{{claim?.data?.abilities?.can_execute_refund !== true || _local.isExecutingRefund === true || (claim?.data?.claim?.status ?? '') !== 'approved'}}"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.refund_execute.execute"

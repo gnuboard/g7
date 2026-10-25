@@ -31,14 +31,14 @@
                 ]
             },
             "props": {
-                "className": "flex flex-col max-h-[calc(90vh-140px)] -my-4"
+                "className": "board:flex board:flex-col board:max-h-[calc(90vh-140px)] board:-my-4"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-1 overflow-y-auto space-y-5 pr-1"
+                        "className": "board:flex-1 board:overflow-y-auto board:space-y-5 board:pr-1"
                     },
                     "children": [
                         {
@@ -47,14 +47,14 @@
                             "name": "Div",
                             "if": "{{_global.board_notification_template_form_modal?.errors}}",
                             "props": {
-                                "className": "alert-danger items-start"
+                                "className": "board-alert-danger board:items-start"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-start gap-3"
+                                        "className": "board:flex board:items-start board:gap-3"
                                     },
                                     "children": [
                                         {
@@ -62,7 +62,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "triangle-exclamation",
-                                                "className": "text-sm leading-5 text-red-600 dark:text-red-400 flex-shrink-0"
+                                                "className": "board:text-sm board:leading-5 board:text-red-600 board:dark:text-red-400 board:flex-shrink-0"
                                             }
                                         },
                                         {
@@ -73,7 +73,7 @@
                                                     "type": "basic",
                                                     "name": "H3",
                                                     "props": {
-                                                        "className": "text-error-strong"
+                                                        "className": "board-text-error-strong"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.validation_error"
                                                 },
@@ -86,14 +86,14 @@
                                                         "item_var": "errMsg"
                                                     },
                                                     "props": {
-                                                        "className": "mt-2 list-disc list-inside space-y-1"
+                                                        "className": "board:mt-2 board:list-disc board:list-inside board:space-y-1"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Li",
                                                             "props": {
-                                                                "className": "text-error-soft"
+                                                                "className": "board-text-error-soft"
                                                             },
                                                             "text": "{{errMsg}}"
                                                         }
@@ -110,14 +110,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center flex-wrap gap-2"
+                                "className": "board-flex-center board:flex-wrap board:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle font-medium"
+                                        "className": "board-text-label-subtle board:font-medium"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.type_label"
                                 },
@@ -125,7 +125,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-primary text-sm font-semibold"
+                                        "className": "board-text-primary board:text-sm board:font-semibold"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.notification_definitions.types.{{_global.board_notification_template_form_modal?.definition?.type ?? ''}}"
                                 },
@@ -133,7 +133,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-body font-mono px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded"
+                                        "className": "board-text-body board:font-mono board:px-1.5 board:py-0.5 board:bg-gray-100 board:dark:bg-gray-700 board:rounded"
                                     },
                                     "text": "{{_global.board_notification_template_form_modal?.definition?.type ?? ''}}"
                                 },
@@ -141,7 +141,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400"
                                     },
                                     "text": "·"
                                 },
@@ -149,7 +149,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle"
+                                        "className": "board-text-label-subtle"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.channel_label"
                                 },
@@ -157,7 +157,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm font-medium text-indigo-600 dark:text-indigo-400"
+                                        "className": "board:text-sm board:font-medium board:text-indigo-600 board:dark:text-indigo-400"
                                     },
                                     "text": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.name ?? _global.board_notification_template_form_modal?.template?.channel ?? ''}}"
                                 }
@@ -168,14 +168,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 space-y-3"
+                                "className": "board:bg-purple-50 board:dark:bg-purple-900/20 board:border board:border-purple-200 board:dark:border-purple-700 board:rounded-lg board:p-4 board:space-y-3"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "H4",
                                     "props": {
-                                        "className": "text-sm font-medium text-purple-800 dark:text-purple-200"
+                                        "className": "board:text-sm board:font-medium board:text-purple-800 board:dark:text-purple-200"
                                     },
                                     "text": "$t:admin.settings.notification_definitions.recipients.title"
                                 },
@@ -183,7 +183,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "stack-tight"
+                                        "className": "board-stack-tight"
                                     },
                                     "children": [
                                         {
@@ -195,21 +195,21 @@
                                                 "index_var": "rcptIdx"
                                             },
                                             "props": {
-                                                "className": "bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-600 rounded-lg p-3 space-y-2"
+                                                "className": "board:bg-white board:dark:bg-gray-800 board:border board:border-purple-200 board:dark:border-purple-600 board:rounded-lg board:p-3 board:space-y-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-between"
+                                                        "className": "board-flex-between"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs font-medium text-purple-700 dark:text-purple-300"
+                                                                "className": "board:text-xs board:font-medium board:text-purple-700 board:dark:text-purple-300"
                                                             },
                                                             "text": "$t:admin.settings.notification_definitions.recipients.rule_label|index={{rcptIdx + 1}}"
                                                         },
@@ -230,7 +230,7 @@
                                                             "props": {
                                                                 "aria-label": "$t:admin.settings.notification_definitions.recipients.remove_rule|index={{rcptIdx + 1}}",
                                                                 "type": "button",
-                                                                "className": "p-1 text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                                                "className": "board:p-1 board:text-gray-500 board:hover:text-red-500 board:dark:hover:text-red-400 board:transition-colors"
                                                             },
                                                             "children": [
                                                                 {
@@ -257,7 +257,7 @@
                                                                     "type": "basic",
                                                                     "name": "Label",
                                                                     "props": {
-                                                                        "className": "text-secondary block text-xs font-medium"
+                                                                        "className": "board-text-secondary board:block board:text-xs board:font-medium"
                                                                     },
                                                                     "text": "$t:admin.settings.notification_definitions.recipients.type_label"
                                                                 },
@@ -279,7 +279,7 @@
                                                                     "props": {
                                                                         "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.type_label')}}",
                                                                         "value": "{{rcpt.type ?? ''}}",
-                                                                        "className": "w-full text-sm",
+                                                                        "className": "board:w-full board:text-sm",
                                                                         "options": "{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.board_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }]}}"
                                                                     }
                                                                 }
@@ -298,7 +298,7 @@
                                                                             "type": "basic",
                                                                             "name": "Label",
                                                                             "props": {
-                                                                                "className": "text-secondary block text-xs font-medium"
+                                                                                "className": "board-text-secondary board:block board:text-xs board:font-medium"
                                                                             },
                                                                             "text": "$t:admin.settings.notification_definitions.recipients.relation_label"
                                                                         },
@@ -319,7 +319,7 @@
                                                                             "props": {
                                                                                 "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.relation_label')}}",
                                                                                 "value": "{{rcpt.relation ?? ''}}",
-                                                                                "className": "w-full text-sm",
+                                                                                "className": "board:w-full board:text-sm",
                                                                                 "options": "{{[{ value: '', label: '$t:admin.settings.notification_definitions.recipients.relation_placeholder', disabled: true }, ...(_global.board_notification_template_form_modal?.definition?.relations ?? []).map(r => ({ value: r, label: _global.board_notification_template_form_modal?.definition?.relation_labels?.[r] ?? r }))]}}"
                                                                             }
                                                                         },
@@ -329,7 +329,7 @@
                                                                             "name": "P",
                                                                             "if": "{{((rcpt.relation ?? '') !== '') && !(_global.board_notification_template_form_modal?.definition?.relations ?? []).includes(rcpt.relation)}}",
                                                                             "props": {
-                                                                                "className": "text-xs board-tone-warning mt-1"
+                                                                                "className": "board:text-xs board-tone-warning board:mt-1"
                                                                             },
                                                                             "text": "$t:admin.settings.notification_definitions.recipients.relation_undeclared|relation={{rcpt.relation}}"
                                                                         }
@@ -350,7 +350,7 @@
                                                                             "type": "basic",
                                                                             "name": "Label",
                                                                             "props": {
-                                                                                "className": "text-secondary block text-xs font-medium"
+                                                                                "className": "board-text-secondary board:block board:text-xs board:font-medium"
                                                                             },
                                                                             "text": "$t:admin.settings.notification_definitions.recipients.role_label"
                                                                         },
@@ -361,7 +361,7 @@
                                                                             "name": "Div",
                                                                             "if": "{{(rcpt.value ?? []).length > 0}}",
                                                                             "props": {
-                                                                                "className": "flex flex-wrap gap-1.5 mb-2"
+                                                                                "className": "board:flex board:flex-wrap board:gap-1.5 board:mb-2"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -373,7 +373,7 @@
                                                                                         "index_var": "ridIdx"
                                                                                     },
                                                                                     "props": {
-                                                                                        "className": "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"
+                                                                                        "className": "board:inline-flex board:items-center board:gap-1 board:text-xs board:font-medium board:px-2 board:py-0.5 board:rounded-full board:bg-purple-100 board:text-purple-800 board:dark:bg-purple-900/40 board:dark:text-purple-300"
                                                                                     },
                                                                                     "children": [
                                                                                         {
@@ -397,7 +397,7 @@
                                                                                             ],
                                                                                             "props": {
                                                                                                 "type": "button",
-                                                                                                "className": "inline-flex items-center hover:text-purple-900 dark:hover:text-purple-200",
+                                                                                                "className": "board:inline-flex board:items-center board:hover:text-purple-900 board:dark:hover:text-purple-200",
                                                                                                 "aria-label": "$t:admin.settings.notification_definitions.recipients.remove_selected|name={{String((rcpt.display_names ?? [])[ridIdx] ?? rid)}}"
                                                                                             },
                                                                                             "children": [
@@ -406,7 +406,7 @@
                                                                                                     "name": "Icon",
                                                                                                     "props": {
                                                                                                         "name": "xmark",
-                                                                                                        "className": "text-xs"
+                                                                                                        "className": "board:text-xs"
                                                                                                     }
                                                                                                 }
                                                                                             ]
@@ -470,7 +470,7 @@
                                                                                 "initialText": "$t:admin.settings.notification_definitions.recipients.role_search_placeholder",
                                                                                 "triggerLabel": "$t:admin.settings.notification_definitions.recipients.role_label",
                                                                                 "selectedCountLabel": "$t:admin.settings.notification_definitions.recipients.roles_selected_count|count={{(rcpt.value ?? []).length}}",
-                                                                                "className": "w-full"
+                                                                                "className": "board:w-full"
                                                                             }
                                                                         }
                                                                     ]
@@ -490,7 +490,7 @@
                                                                             "type": "basic",
                                                                             "name": "Label",
                                                                             "props": {
-                                                                                "className": "text-secondary block text-xs font-medium"
+                                                                                "className": "board-text-secondary board:block board:text-xs board:font-medium"
                                                                             },
                                                                             "text": "$t:admin.settings.notification_definitions.recipients.users_label"
                                                                         },
@@ -501,7 +501,7 @@
                                                                             "name": "Div",
                                                                             "if": "{{(rcpt.value ?? []).length > 0}}",
                                                                             "props": {
-                                                                                "className": "flex flex-wrap gap-1.5 mb-2"
+                                                                                "className": "board:flex board:flex-wrap board:gap-1.5 board:mb-2"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -513,7 +513,7 @@
                                                                                         "index_var": "uidIdx"
                                                                                     },
                                                                                     "props": {
-                                                                                        "className": "inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300"
+                                                                                        "className": "board:inline-flex board:items-center board:gap-1 board:text-xs board:font-medium board:px-2 board:py-0.5 board:rounded-full board:bg-purple-100 board:text-purple-800 board:dark:bg-purple-900/40 board:dark:text-purple-300"
                                                                                     },
                                                                                     "children": [
                                                                                         {
@@ -537,7 +537,7 @@
                                                                                             ],
                                                                                             "props": {
                                                                                                 "type": "button",
-                                                                                                "className": "inline-flex items-center hover:text-purple-900 dark:hover:text-purple-200",
+                                                                                                "className": "board:inline-flex board:items-center board:hover:text-purple-900 board:dark:hover:text-purple-200",
                                                                                                 "aria-label": "$t:admin.settings.notification_definitions.recipients.remove_selected|name={{String((rcpt.display_names ?? [])[uidIdx] ?? uid)}}"
                                                                                             },
                                                                                             "children": [
@@ -546,7 +546,7 @@
                                                                                                     "name": "Icon",
                                                                                                     "props": {
                                                                                                         "name": "xmark",
-                                                                                                        "className": "text-xs"
+                                                                                                        "className": "board:text-xs"
                                                                                                     }
                                                                                                 }
                                                                                             ]
@@ -611,7 +611,7 @@
                                                                                 "initialText": "$t:admin.settings.notification_definitions.recipients.users_placeholder",
                                                                                 "triggerLabel": "$t:admin.settings.notification_definitions.recipients.users_label",
                                                                                 "selectedCountLabel": "$t:admin.settings.notification_definitions.recipients.users_selected_count|count={{(rcpt.value ?? []).length}}",
-                                                                                "className": "w-full"
+                                                                                "className": "board:w-full"
                                                                             }
                                                                         }
                                                                     ]
@@ -623,7 +623,7 @@
                                                             "name": "Div",
                                                             "if": "{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}",
                                                             "props": {
-                                                                "className": "flex-center gap-2"
+                                                                "className": "board-flex-center board:gap-2"
                                                             },
                                                             "children": [
                                                                 {
@@ -671,7 +671,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200 font-medium"
+                                        "className": "board:text-sm board:text-purple-600 board:dark:text-purple-400 board:hover:text-purple-800 board:dark:hover:text-purple-200 board:font-medium"
                                     },
                                     "text": "$t:admin.settings.notification_definitions.recipients.add_rule"
                                 }
@@ -698,7 +698,7 @@
                             "name": "Div",
                             "if": "{{!((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "props": {
-                                "className": "flex border-b border-gray-200 dark:border-gray-700"
+                                "className": "board:flex board:border-b board:border-gray-200 board:dark:border-gray-700"
                             },
                             "children": [
                                 {
@@ -721,7 +721,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{(_global.board_notification_template_form_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-indigo-500 dark:border-indigo-400 text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
+                                        "className": "{{(_global.board_notification_template_form_modal?.editLang ?? $locale) === loc ? 'board:border-b-2 board:border-indigo-500 board:dark:border-indigo-400 board:text-indigo-600 board:dark:text-indigo-400' : 'board:text-gray-500 board:dark:text-gray-400 board:hover:text-gray-700 board:dark:hover:text-gray-300'}} board:px-4 board:py-2 board:text-sm board:font-medium board:focus:outline-none"
                                     },
                                     "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                 }
@@ -741,7 +741,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "children": [
                                                 {
@@ -753,7 +753,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-required"
+                                                        "className": "board-text-required"
                                                     },
                                                     "text": "*"
                                                 }
@@ -797,7 +797,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "children": [
                                                 {
@@ -809,7 +809,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-required"
+                                                        "className": "board-text-required"
                                                     },
                                                     "text": "*"
                                                 }
@@ -861,7 +861,7 @@
                                                                         "content": "{{_global.board_notification_template_form_modal?.template?.body?.[bodyLoc] ?? ''}}",
                                                                         "isHtml": true,
                                                                         "showHtmlModeToggle": false,
-                                                                        "className": "min-h-[200px]"
+                                                                        "className": "board:min-h-[200px]"
                                                                     }
                                                                 }
                                                             ]
@@ -888,7 +888,7 @@
                                                         "content": "{{_global.board_notification_template_form_modal?.template?.body?.[_global.board_notification_template_form_modal?.editLang ?? $locale] ?? ''}}",
                                                         "isHtml": false,
                                                         "showHtmlModeToggle": false,
-                                                        "className": "min-h-[200px]"
+                                                        "className": "board:min-h-[200px]"
                                                     }
                                                 }
                                             ]
@@ -911,7 +911,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "text": "$t:admin.settings.notification_definitions.edit_modal.click_url"
                                         },
@@ -933,14 +933,14 @@
                                                 "type": "text",
                                                 "value": "{{_global.board_notification_template_form_modal?.template?.click_url ?? ''}}",
                                                 "placeholder": "/mypage/orders/{order_number}",
-                                                "className": "font-mono"
+                                                "className": "board:font-mono"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "form-hint"
+                                                "className": "board-form-hint"
                                             },
                                             "text": "$t:admin.settings.notification_definitions.edit_modal.click_url_hint"
                                         }
@@ -954,14 +954,14 @@
                             "name": "Div",
                             "if": "{{((_global.board_notification_template_form_modal?.definition?.variables ?? []).length > 0) && !((availableChannels?.data?.channels ?? []).find(c => c.id === _global.board_notification_template_form_modal?.template?.channel)?.template_editor === 'none')}}",
                             "props": {
-                                "className": "bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md p-4"
+                                "className": "board:bg-gray-50 board:dark:bg-gray-900 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-md board:p-4"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "H4",
                                     "props": {
-                                        "className": "text-body font-medium mb-2"
+                                        "className": "board-text-body board:font-medium board:mb-2"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.variables_title"
                                 },
@@ -969,7 +969,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex flex-wrap gap-2"
+                                        "className": "board:flex board:flex-wrap board:gap-2"
                                     },
                                     "children": [
                                         {
@@ -980,14 +980,14 @@
                                                 "item_var": "v"
                                             },
                                             "props": {
-                                                "className": "inline-flex items-center gap-1 text-xs px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300"
+                                                "className": "board:inline-flex board:items-center board:gap-1 board:text-xs board:px-2 board:py-1 board:bg-white board:dark:bg-gray-800 board:border board:border-gray-200 board:dark:border-gray-600 board:rounded board:text-gray-700 board:dark:text-gray-300"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-mono"
+                                                        "className": "board:font-mono"
                                                     },
                                                     "text": "{"
                                                 },
@@ -995,7 +995,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-mono"
+                                                        "className": "board:font-mono"
                                                     },
                                                     "text": "{{v.key}}"
                                                 },
@@ -1003,7 +1003,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-mono"
+                                                        "className": "board:font-mono"
                                                     },
                                                     "text": "}"
                                                 },
@@ -1025,7 +1025,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-between pt-4 pb-4 border-t border-gray-200 dark:border-gray-700 mt-4 flex-shrink-0"
+                        "className": "board-flex-between board:pt-4 board:pb-4 board:border-t board:border-gray-200 board:dark:border-gray-700 board:mt-4 board:flex-shrink-0"
                     },
                     "children": [
                         {
@@ -1076,7 +1076,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                        "className": "board-text-body board:px-4 board:py-2 board:rounded-md board:border board:border-gray-300 board:dark:border-gray-600 board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors",
                                         "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.notification_definitions.edit_modal.btn_preview"
@@ -1087,7 +1087,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex gap-2"
+                                "className": "board:flex board:gap-2"
                             },
                             "children": [
                                 {
@@ -1116,7 +1116,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "board-text-body board:px-4 board:py-2 board:rounded-md board:border board:border-gray-300 board:dark:border-gray-600 board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                         "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
                                     },
                                     "text": "$t:common.cancel"
@@ -1216,7 +1216,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "flex-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "board-flex-center board:gap-2 board:text-sm board:px-4 board:py-2 board:rounded-md board:bg-indigo-600 board:text-white board:hover:bg-indigo-700 board:dark:bg-indigo-500 board:dark:hover:bg-indigo-600 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                         "disabled": "{{_global.board_notification_template_form_modal?.isSaving ?? false}}"
                                     },
                                     "children": [
@@ -1226,7 +1226,7 @@
                                             "if": "{{_global.board_notification_template_form_modal?.isSaving}}",
                                             "props": {
                                                 "name": "spinner",
-                                                "className": "animate-spin",
+                                                "className": "board:animate-spin",
                                                 "size": "sm"
                                             }
                                         },

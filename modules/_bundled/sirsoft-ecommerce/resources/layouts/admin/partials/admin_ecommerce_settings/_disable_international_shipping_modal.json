@@ -21,7 +21,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "alert-warning"
+                        "className": "ecommerce-alert-warning"
                     },
                     "children": [
                         {
@@ -29,14 +29,14 @@
                             "name": "Icon",
                             "props": {
                                 "name": "triangle-exclamation",
-                                "className": "text-amber-600 dark:text-amber-400 text-lg mt-0.5 shrink-0"
+                                "className": "ecommerce:text-amber-600 ecommerce:dark:text-amber-400 ecommerce:text-lg ecommerce:mt-0.5 ecommerce:shrink-0"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "ecommerce-tone-warning-soft text-xs"
+                                "className": "ecommerce-tone-warning-soft ecommerce:text-xs"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.message"
                         }
@@ -47,7 +47,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-2"
+                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -83,7 +83,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary"
+                                "className": "ecommerce-btn ecommerce-btn-secondary"
                             },
                             "children": [
                                 {
@@ -125,7 +125,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-danger"
+                                "className": "ecommerce-btn ecommerce-btn-danger"
                             },
                             "children": [
                                 {

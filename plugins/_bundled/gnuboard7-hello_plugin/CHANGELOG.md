@@ -4,6 +4,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [0.2.2] - 2026-10-25
+
+### Changed
+
+- 환경설정 화면의 모양을 플러그인이 손으로 쓴 순수 CSS(`helloplugin-*` 클래스)로 싣습니다 — 템플릿의 CSS 라이브러리와 무관하게 같은 모양으로 보입니다. 확장이 자기 스타일을 싣는 학습 예시입니다.
+- 코어 7.2.0 이상이 필요합니다(`g7_version >=7.2.0`).
+
 ## [0.2.1] - 2026-10-21
 
 ### Changed

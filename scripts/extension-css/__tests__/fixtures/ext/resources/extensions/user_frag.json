@@ -1,0 +1,7 @@
+{
+    "extension_point": "user_slot",
+    "mode": "append",
+    "components": [
+        { "name": "Div", "props": { "className": "input badge" } }
+    ]
+}

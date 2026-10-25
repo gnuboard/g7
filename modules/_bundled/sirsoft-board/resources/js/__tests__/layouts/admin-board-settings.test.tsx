@@ -2243,7 +2243,7 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
     it('메타 설정 섹션 헤더가 존재한다 (section-header)', () => {
         const header = findById(tabSeo, 'meta_settings_header');
         expect(header).not.toBeNull();
-        expect(header.props.className).toBe('section-header');
+        expect(header.props.className).toBe('board-section-header');
     });
 
     /**
@@ -2260,7 +2260,7 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
         for (const id of cards) {
             const node = findById(tabSeo, id);
             expect(node, `${id} 카드가 없다`).not.toBeNull();
-            expect(node.props.className).toBe('admin-card');
+            expect(node.props.className).toBe('board-admin-card');
             expect(node.name).toBe('SectionLayout');
         }
     });

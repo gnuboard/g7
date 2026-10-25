@@ -109,7 +109,7 @@ describe('Exchange rate history controls', () => {
     // 누른 버튼에 진행 표시가 없으면 눌렸는지 알 수 없고, 끝난 뒤 폼을 비우지 않으면
     // 저장했는데도 「저장」·「취소」가 남아 아직 안 된 것처럼 보인다(제보 2026-09-15).
     const save=nodes(notifications).find((n:any)=>String(n.id ?? '').startsWith('koreaexim_save_channels'));
-    const spinner=nodes(save).find((n:any)=>n.props?.className==='spinner-sm');
+    const spinner=nodes(save).find((n:any)=>n.props?.className==='koreaexim-spinner-sm');
     expect(spinner).toBeTruthy();
     expect(spinner.if).toContain('koreaeximSavingChannels === def.id');   // 누른 버튼만
     expect(save.props.disabled).toContain('koreaeximSavingChannels');      // 저장 중 재클릭 금지
@@ -297,7 +297,7 @@ describe('Exchange rate history controls', () => {
   it('실패 알림 칸 아래에 스케줄 실패 알림과의 차이를 한 줄로 안내하고 보관 기간 칸 이름이 「이력 보관 기간 (일)」이다', () => {
     const field=nodes(form).find((n:any)=>n.name==='Div' && nodes(n).some((c:any)=>c.props?.name==='notify_on_failure'));
     const hint=nodes(field).find((n:any)=>n.name==='P' && String(n.text).startsWith('$t:sirsoft-koreaexim.hints.notify_on_failure'));
-    expect(hint?.props?.className).toBe('form-hint');
+    expect(hint?.props?.className).toBe('koreaexim-form-hint');
     expect(ko.hints.notify_on_failure).toContain('환율 갱신');
     expect(ko.hints.notify_on_failure).toContain('스케줄 관리');
     expect(ko.hints.notify_on_failure).toContain('실패 알림');
@@ -324,7 +324,7 @@ describe('Exchange rate history controls', () => {
     // DataGridProps 에 loading 계약이 없으므로 로딩은 그리드 형제 스피너로 표현한다.
     const spinner=nodes(tabHistory).find((n:any)=>typeof n.if==='string' && n.if.includes('koreaeximRuns === undefined'));
     expect(spinner).toBeTruthy();
-    expect(nodes(spinner).some((n:any)=>n.props?.className==='spinner-sm')).toBe(true);
+    expect(nodes(spinner).some((n:any)=>n.props?.className==='koreaexim-spinner-sm')).toBe(true);
     const runs=(settingsLayout as any).data_sources.filter((d:any)=>typeof d.endpoint==='string' && d.endpoint.includes('/admin/runs'));
     expect(runs.length).toBeGreaterThan(0);
     expect(runs.some((d:any)=>d.fallback?.data?.pagination)).toBe(true);
@@ -337,11 +337,11 @@ describe('Exchange rate history controls', () => {
     // 한쪽을 눌러도 양쪽이 돌아 어느 쪽이 호출됐는지 화면이 거짓말을 한다(제보 2026-09-15).
     // 함께 disabled 되는 것은 의도다 — 서버가 manual-budget 락 하나를 두 경로가 공유한다.
     const owners=nodes(statusCard).filter((n:any)=>Array.isArray(n.actions) && n.actions.some((a:any)=>a?.type==='click'));
-    const buttons=owners.filter((n:any)=>nodes(n).some((c:any)=>c.props?.className==='spinner-sm'));
+    const buttons=owners.filter((n:any)=>nodes(n).some((c:any)=>c.props?.className==='koreaexim-spinner-sm'));
     expect(buttons.map((b:any)=>b.id).sort()).toEqual(['test_connection','update_now']);
 
     for (const button of buttons) {
-      const spinner=nodes(button).find((c:any)=>c.props?.className==='spinner-sm');
+      const spinner=nodes(button).find((c:any)=>c.props?.className==='koreaexim-spinner-sm');
       // 자기 것만 본다 — 키 단독 truthy 가 아니라 누가 켰는지 비교해야 한다.
       expect(spinner.if).toMatch(/_local\.busy\s*===/);
       expect(spinner.if).toContain(button.id === 'test_connection' ? "'test'" : "'update'");

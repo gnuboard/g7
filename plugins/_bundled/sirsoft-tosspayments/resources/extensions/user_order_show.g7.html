@@ -4,44 +4,44 @@
          같은 슬롯이 회원 주문 상세·비회원 주문 상세·신청서 상세에 붙으므로 주문 데이터만 읽고 인증이 필요한 데이터 소스를 쓰지 않는다.
          취소된 주문·결제에는 계좌를 보이지 않고(취소 뒤 입금을 부르지 않게), 자동 취소 경고는 입금 전에만. 입금 금액은 실제로 입금할
          결제예정금액(마일리지 차감 뒤) — 비회원 응답에는 없어(비회원은 마일리지를 못 쓴다) 주문금액으로 대신한다. 색은 이 플러그인 CSS 의 접두 클래스. -->
-    <div data-if="{{order.data.payment?.pg_provider === 'tosspayments' &amp;&amp; order.data.payment?.payment_method === 'vbank' &amp;&amp; !!order.data.payment?.vbank_number &amp;&amp; order.data.payment?.payment_status !== 'cancelled' &amp;&amp; order.data.order_status !== 'cancelled'}}" data-testid="toss-vbank-guide" class="pt-4 mt-2 border-t pay-tosspayments-divider space-y-3">
-      <p class="text-sm font-semibold pay-tosspayments-text-strong">$t:sirsoft-tosspayments.user.vbank_title</p>
-      <div class="space-y-1.5">
-        <div data-if="{{!!order.data.payment?.vbank_name}}" class="flex items-center justify-between text-sm">
+    <div data-if="{{order.data.payment?.pg_provider === 'tosspayments' &amp;&amp; order.data.payment?.payment_method === 'vbank' &amp;&amp; !!order.data.payment?.vbank_number &amp;&amp; order.data.payment?.payment_status !== 'cancelled' &amp;&amp; order.data.order_status !== 'cancelled'}}" data-testid="toss-vbank-guide" class="paytosspayments:pt-4 paytosspayments:mt-2 paytosspayments:border-t pay-tosspayments-divider paytosspayments:space-y-3">
+      <p class="paytosspayments:text-sm paytosspayments:font-semibold pay-tosspayments-text-strong">$t:sirsoft-tosspayments.user.vbank_title</p>
+      <div class="paytosspayments:space-y-1.5">
+        <div data-if="{{!!order.data.payment?.vbank_name}}" class="paytosspayments:flex paytosspayments:items-center paytosspayments:justify-between paytosspayments:text-sm">
           <span class="pay-tosspayments-text-muted">$t:sirsoft-tosspayments.user.vbank_bank</span>
-          <span class="font-medium pay-tosspayments-text-value">{{order.data.payment?.vbank_name}}</span>
+          <span class="paytosspayments:font-medium pay-tosspayments-text-value">{{order.data.payment?.vbank_name}}</span>
         </div>
-        <div class="flex items-center justify-between text-sm">
+        <div class="paytosspayments:flex paytosspayments:items-center paytosspayments:justify-between paytosspayments:text-sm">
           <span class="pay-tosspayments-text-muted">$t:sirsoft-tosspayments.user.vbank_account</span>
-          <span class="font-medium font-mono tracking-wide pay-tosspayments-text-value">{{order.data.payment?.vbank_number}}</span>
+          <span class="paytosspayments:font-medium paytosspayments:font-mono paytosspayments:tracking-wide pay-tosspayments-text-value">{{order.data.payment?.vbank_number}}</span>
         </div>
-        <div data-if="{{!!order.data.payment?.vbank_holder}}" class="flex items-center justify-between text-sm">
+        <div data-if="{{!!order.data.payment?.vbank_holder}}" class="paytosspayments:flex paytosspayments:items-center paytosspayments:justify-between paytosspayments:text-sm">
           <span class="pay-tosspayments-text-muted">$t:sirsoft-tosspayments.user.vbank_holder</span>
-          <span class="font-medium pay-tosspayments-text-value">{{order.data.payment?.vbank_holder}}</span>
+          <span class="paytosspayments:font-medium pay-tosspayments-text-value">{{order.data.payment?.vbank_holder}}</span>
         </div>
-        <div class="flex items-center justify-between text-sm">
+        <div class="paytosspayments:flex paytosspayments:items-center paytosspayments:justify-between paytosspayments:text-sm">
           <span class="pay-tosspayments-text-muted">$t:sirsoft-tosspayments.user.vbank_amount</span>
-          <span class="font-medium pay-tosspayments-text-value">{{order.data.total_due_amount_formatted ?? order.data.total_amount_formatted ?? ''}}</span>
+          <span class="paytosspayments:font-medium pay-tosspayments-text-value">{{order.data.total_due_amount_formatted ?? order.data.total_amount_formatted ?? ''}}</span>
         </div>
-        <div data-if="{{!!order.data.payment?.vbank_due_at_formatted}}" class="flex items-center justify-between text-sm">
+        <div data-if="{{!!order.data.payment?.vbank_due_at_formatted}}" class="paytosspayments:flex paytosspayments:items-center paytosspayments:justify-between paytosspayments:text-sm">
           <span class="pay-tosspayments-text-muted">$t:sirsoft-tosspayments.user.vbank_due</span>
-          <span class="font-medium pay-tosspayments-text-value">{{order.data.payment?.vbank_due_at_formatted}}</span>
+          <span class="paytosspayments:font-medium pay-tosspayments-text-value">{{order.data.payment?.vbank_due_at_formatted}}</span>
         </div>
       </div>
-      <p data-if="{{!order.data.payment?.paid_at}}" class="text-xs pay-tosspayments-tone-warning">$t:sirsoft-tosspayments.user.vbank_notice</p>
+      <p data-if="{{!order.data.payment?.paid_at}}" class="paytosspayments:text-xs pay-tosspayments-tone-warning">$t:sirsoft-tosspayments.user.vbank_notice</p>
     </div>
-    <div data-if="{{order.data.payment?.pg_provider === 'tosspayments' &amp;&amp; !!order.data.payment?.pg_receipt_url}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3">
-      <div data-if="{{!!order.data.payment?.is_escrow}}" class="flex-between">
-        <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-tosspayments.user.payment_type_label</span>
-        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">$t:sirsoft-tosspayments.user.escrow_yes</span>
+    <div data-if="{{order.data.payment?.pg_provider === 'tosspayments' &amp;&amp; !!order.data.payment?.pg_receipt_url}}" class="paytosspayments:pt-4 paytosspayments:mt-2 paytosspayments:border-t paytosspayments:border-gray-200 paytosspayments:dark:border-gray-700 paytosspayments:space-y-3">
+      <div data-if="{{!!order.data.payment?.is_escrow}}" class="pay-tosspayments-user-flex-between">
+        <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.user.payment_type_label</span>
+        <span class="paytosspayments:inline-flex paytosspayments:items-center paytosspayments:gap-1 paytosspayments:px-2 paytosspayments:py-0.5 paytosspayments:rounded-full paytosspayments:text-xs paytosspayments:font-semibold paytosspayments:bg-blue-100 paytosspayments:text-blue-800 paytosspayments:dark:bg-blue-900/30 paytosspayments:dark:text-blue-300">$t:sirsoft-tosspayments.user.escrow_yes</span>
       </div>
-      <div class="flex-between">
-        <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-tosspayments.user.receipt_label</span>
-        <a href="{{order.data.payment.pg_receipt_url}}" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">$t:sirsoft-tosspayments.user.receipt_view</a>
+      <div class="pay-tosspayments-user-flex-between">
+        <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.user.receipt_label</span>
+        <a href="{{order.data.payment.pg_receipt_url}}" target="_blank" rel="noopener noreferrer" class="paytosspayments:text-sm paytosspayments:text-blue-600 paytosspayments:dark:text-blue-400 paytosspayments:hover:underline">$t:sirsoft-tosspayments.user.receipt_view</a>
       </div>
     </div>
-    <div data-if="{{order.data.payment?.pg_provider === 'tosspayments' &amp;&amp; !!order.data.cash_receipt?.receipt_url}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 flex-between">
-      <span class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-tosspayments.user.cash_receipt_label</span>
-      <a href="{{order.data.cash_receipt.receipt_url}}" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">$t:sirsoft-tosspayments.user.cash_receipt_view</a>
+    <div data-if="{{order.data.payment?.pg_provider === 'tosspayments' &amp;&amp; !!order.data.cash_receipt?.receipt_url}}" class="paytosspayments:pt-4 paytosspayments:mt-2 paytosspayments:border-t paytosspayments:border-gray-200 paytosspayments:dark:border-gray-700 pay-tosspayments-user-flex-between">
+      <span class="paytosspayments:text-sm paytosspayments:text-gray-500 paytosspayments:dark:text-gray-400">$t:sirsoft-tosspayments.user.cash_receipt_label</span>
+      <a href="{{order.data.cash_receipt.receipt_url}}" target="_blank" rel="noopener noreferrer" class="paytosspayments:text-sm paytosspayments:text-blue-600 paytosspayments:dark:text-blue-400 paytosspayments:hover:underline">$t:sirsoft-tosspayments.user.cash_receipt_view</a>
     </div>
 </extension>

@@ -9,7 +9,7 @@
  * 로그인 토큰을 읽지 않고, 코어 내부 앱 객체를 쓰지 않으며, `fetch` 를 덮어쓰지 않는다. API 는 코어 API
  * 클라이언트로만 부른다.
  */
-import '../css/buttons.css';
+import '../css/main.css';
 import { ProviderButtons } from './components/composite/ProviderButtons';
 import { ProviderMark } from './components/basic/ProviderMark';
 import { handlerMap } from './handlers';

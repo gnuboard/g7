@@ -26,9 +26,8 @@
 호출해 그리므로, 페이지의 **보이는 모습**을 바꾸는 작업은 이 모듈이 아니라 그 템플릿 쪽입니다.
 
 레이아웃 JSON 만 고쳤다면 빌드는 필요 없고 `php artisan module:update sirsoft-page --force`
-로 반영합니다. 새로 쓴 Tailwind 클래스가 관리자 템플릿의 빌드된 CSS 에 없으면 그 스타일만 조용히 빠지므로,
-기존 레이아웃에 없던 클래스를 도입할 때는 확인하고, 없으면 아래 「에셋」의 `page-` 접두 클래스로 둡니다
-(그때는 `module:build` 가 필요합니다).
+로 반영합니다. 기존 레이아웃에 없던 클래스(`page:` 유틸리티·`page-*`)를 새로 쓰면 이 모듈 CSS 에 아직 없으므로
+`module:build` 로 다시 만듭니다(아래 「에셋」).
 
 작성 화면의 첨부 업로더는 한도를 서버 공개 설정(`attachmentSettings` = `publicLimits()`)에서 그대로 받습니다.
 개수 상한이 없으면 서버가 `max_count: null` 을 내므로 `maxFiles` 를 비워(`?? undefined`) 컴포넌트 기본값을 쓰고,
@@ -98,12 +97,14 @@ ApiClient 로 blob 을 받아야 합니다. 그런데 코어에는 내려받기 
 
 <!-- @intent START -->
 JS 번들 `dist/js/module.iife.js` 는 액션 핸들러만 담은 경량 IIFE 입니다(컴포넌트 없음).
-관리자 화면에만 있는 호버·다크 짝·반투명 배경은 `resources/css/main.css` 에 ``page-`` 접두 클래스로 두고,
-JS 엔트리가 불러와 빌드가 `dist/css/module.css` 로 냅니다(module.json `assets.css`). 관리자 템플릿은 자기
-레이아웃만 훑어 Tailwind 규칙을 만들므로, 이 모듈 레이아웃에만 있는 유틸리티(`dark:bg-gray-700/30` 같은 것)는
-규칙이 생성되지 않아 조용히 빠집니다. 새 레이아웃에 템플릿 CSS 에 없는 유틸리티가 필요하면 여기에 접두 클래스로
-정의합니다 — 이 파일은 템플릿의 `@layer utilities` 밖에 실려 같은 속성의 유틸리티보다 앞서므로 다크·호버 짝을
-함께 둡니다(규약: 코어 문서 `docs/extension/module-assets.md` 「확장 화면의 의미 색은 확장 CSS 가 싣는다」).
+화면 스타일은 이 모듈 자기 CSS 입니다 — `resources/css/main.css` 를 JS 엔트리가 불러와 빌드가 `dist/css/module.css` 로
+냅니다(module.json `assets.css`, 앞글자 `namespace: page`). 템플릿 CSS 라이브러리에 기대지 않습니다.
+배치·색 유틸리티는 `page:` 접두 Tailwind(이 모듈의 작성 도구, preflight 없음)가 레이아웃에 쓰인 것만 만들고,
+템플릿 의미 클래스는 `page-*` 사본(`resources/css/g7-extension.generated.css`, 가장 낮은 칸 `@layer g7-extension`)을
+씁니다. 이 모듈 고유의 호버·다크 짝과 의미 색(`page-tone-*`)은 생성 블록 아래 손 CSS 이고, 다크 모드는 템플릿의
+`.dark` 가 아니라 코어 중립 표식(`data-g7-color-scheme`)을 봅니다. 레이아웃에 새 클래스를 쓰면
+`php artisan module:build sirsoft-page --production` 으로 CSS 를 다시 만듭니다(규약: 코어 문서
+`docs/extension/module-assets.md` 「확장 CSS 자기 공급 규약」).
 
 소스는 `resources/js/` 이고 `php artisan module:build sirsoft-page --production` 으로 굽습니다
 (소스맵을 남기지 않는 배포용 빌드). 굽고 나면 `dist/`(`dist/css/` 포함)를 함께 커밋합니다.

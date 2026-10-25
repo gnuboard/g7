@@ -6,16 +6,16 @@
   갈라 보내는 이유는 select 가 값을 하나만 가질 수 있어서다 — 마지막 밑줄 뒤가 방향이다. -->
 <partial description="Order List - DataGrid Section">
   <div>
-    <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
+    <div data-ref="table_header_bar" class="ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
       <!-- 좌측: 총 항목 개수 -->
-      <div class="flex-center gap-3">
+      <div class="ecommerce-flex-center ecommerce:gap-3">
         <!-- 총 항목 개수 -->
-        <span class="text-label">$t:sirsoft-ecommerce.admin.order.datagrid.total_count|count={{orders?.data?.pagination?.total || 0}}</span>
+        <span class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.order.datagrid.total_count|count={{orders?.data?.pagination?.total || 0}}</span>
       </div>
       <!-- 우측: 정렬, 페이지당 개수, 엑셀 다운로드, 내보내기 — 좁은 화면에서는 내보내기 묶음이 다음 줄로 내려간다 -->
       <div class="flex-center flex-wrap justify-end gap-2">
         <!-- D-050 ~ D-057 정렬 -->
-        <select name="sortBy" aria-label="$t:common.sort_order" class="w-40" value="{{_local.sortBy || 'ordered_at_desc'}}">
+        <select name="sortBy" aria-label="$t:common.sort_order" class="ecommerce:w-40" value="{{_local.sortBy || 'ordered_at_desc'}}">
           <options>
             <option value="ordered_at_desc">$t:sirsoft-ecommerce.admin.order.sort.latest_order</option>
             <option value="ordered_at_asc">$t:sirsoft-ecommerce.admin.order.sort.oldest_order</option>
@@ -34,7 +34,7 @@
           </on>
         </select>
         <!-- D-060 ~ D-063 페이지당 개수 -->
-        <select name="perPage" aria-label="$t:common.per_page" class="w-24" value="{{_local.perPage || '20'}}">
+        <select name="perPage" aria-label="$t:common.per_page" class="ecommerce:w-24" value="{{_local.perPage || '20'}}">
           <options>
             <option value="10">10</option>
             <option value="20">20</option>
@@ -49,7 +49,7 @@
           </on>
         </select>
         <!-- D-070 (요청 사항: 숨김 처리) -->
-        <button data-ref="d_070_excel_download" :data-if="false" type="button" class="btn btn-outline btn-sm">
+        <button data-ref="d_070_excel_download" :data-if="false" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce-btn-sm">
           <on type="click">
             <!-- 모달은 별도 컨텍스트라 페이지의 _local 을 읽지 못한다(형제 _modal_preset_save 와 같은 규약). 다운로드 대상·필터를 여는 지점에서 _global 브리지에 실어 건넨다 — 이것이 없으면 '검색결과' 다운로드의 filters 가 빈 채로 나가 전건이 된다. -->
             <set-state target="global" excelDownloadContext="{{ { type: 'search', selectedItems: (_local.selectedItems ?? []), filter: _local.filter, total: (orders?.data?.pagination?.total ?? 0) } }}"/>
@@ -57,7 +57,7 @@
           <on type="click">
             <open-modal target="modal_excel_download"/>
           </on>
-          <icon name="download" class="text-base"/>
+          <icon name="download" class="ecommerce:text-base"/>
           <span>$t:sirsoft-ecommerce.admin.order.action.excel_download</span>
         </button>
         <!-- 내보내기(#787) — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 목록 응답의 `abilities.can_export`(내보내기 요청 권한 — 목록 API 가 이미 조회 권한을 요구한다)가 참인
@@ -101,7 +101,7 @@
         </div>
       </div>
     </div>
-    <div data-ref="order_datagrid_card" class="p-0 md:p-0">
+    <div data-ref="order_datagrid_card" class="ecommerce:p-0 ecommerce:md:p-0">
       <data-grid data-type="composite" data-ref="order_datagrid" pageHref="/admin/ecommerce/orders?page={page}" :pageHrefMergeQuery="true" rowLabelField="order_number" data="{{orders?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :showColumnSelector="false" selectedCountText="" visibleColumns="{{_local.visibleColumns}}" :responsiveBreakpoint="768" emptyMessage="{{orders === undefined ? '' : $t('sirsoft-ecommerce.admin.order.message.no_orders')}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{orders?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{orders?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{orders?.data?.pagination?.has_more_pages ?? false}}" :pageSize="20" :alwaysShowPagination="true">
         <blur-until-loaded sources="orders"/>
         <column field="no" header="NO" width="60px" :sortable="false" :required="false">
@@ -117,7 +117,7 @@
         <column field="order_number" header="$t:sirsoft-ecommerce.admin.order.column.order_number" width="140px" :sortable="true" :required="true">
           <cell>
             <!-- 주문번호를 눌러 상세로. 보던 목록 상태를 이고 가므로 상세에서 돌아오면 같은 자리가 열린다 -->
-            <a href="/admin/ecommerce/orders/{{row.order_number}}" :mergeQuery="true" class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
+            <a href="/admin/ecommerce/orders/{{row.order_number}}" :mergeQuery="true" class="ecommerce:font-medium ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:cursor-pointer ecommerce:hover:underline">
               <on type="click">
                 <navigate :mergeQuery="true">
                   <query/>
@@ -129,22 +129,22 @@
         </column>
         <column field="product" header="$t:sirsoft-ecommerce.admin.order.column.product" width="auto" :sortable="false" :required="false">
           <cell>
-            <div class="flex items-start gap-2">
-              <img data-if="{{row.first_option?.thumbnail_url}}" src="{{row.first_option?.thumbnail_url}}" alt="{{row.first_option?.product_name}}" class="w-10 h-10 rounded object-cover flex-shrink-0 bg-gray-100 dark:bg-gray-700"/>
-              <div data-if="{{!row.first_option?.thumbnail_url}}" class="w-10 h-10 rounded flex-shrink-0 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                <icon name="image" class="text-gray-500 dark:text-gray-400"/>
+            <div class="ecommerce:flex ecommerce:items-start ecommerce:gap-2">
+              <img data-if="{{row.first_option?.thumbnail_url}}" src="{{row.first_option?.thumbnail_url}}" alt="{{row.first_option?.product_name}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:object-cover ecommerce:flex-shrink-0 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700"/>
+              <div data-if="{{!row.first_option?.thumbnail_url}}" class="ecommerce:w-10 ecommerce:h-10 ecommerce:rounded ecommerce:flex-shrink-0 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:flex ecommerce:items-center ecommerce:justify-center">
+                <icon name="image" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
               </div>
-              <div class="space-y-0.5 min-w-0">
-                <div class="font-medium">
-                  <a data-if="{{row.first_option?.product_code}}" class="hover:underline hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-400 cursor-pointer" href="{{'/admin/ecommerce/products/' + row.first_option?.product_code + '/edit'}}" target="_blank">{{row.first_option?.product_name}}</a>
+              <div class="ecommerce:space-y-0.5 ecommerce:min-w-0">
+                <div class="ecommerce:font-medium">
+                  <a data-if="{{row.first_option?.product_code}}" class="ecommerce:hover:underline ecommerce:hover:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:dark:hover:text-blue-400 ecommerce:cursor-pointer" href="{{'/admin/ecommerce/products/' + row.first_option?.product_code + '/edit'}}" target="_blank">{{row.first_option?.product_name}}</a>
                   <span data-if="{{!row.first_option?.product_code}}">{{row.first_option?.product_name}}</span>
-                  <span data-if="{{row.options_count > 1}}" class="text-gray-500 dark:text-gray-400 font-normal ml-1">$t:defer:sirsoft-ecommerce.admin.order.product.more|count={{row.options_count - 1}}</span>
+                  <span data-if="{{row.options_count > 1}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:font-normal ecommerce:ml-1">$t:defer:sirsoft-ecommerce.admin.order.product.more|count={{row.options_count - 1}}</span>
                 </div>
-                <div data-if="{{row.first_option?.product_option_name}}" class="text-tertiary">{{row.first_option?.product_option_name}}</div>
+                <div data-if="{{row.first_option?.product_option_name}}" class="ecommerce-text-tertiary">{{row.first_option?.product_option_name}}</div>
                 <!-- 추가옵션 요약 — 첫 1건(직접입력 병기) + 외 N건 (Q-E2) -->
-                <div data-if="{{row.first_option?.additional_options_summary}}" class="text-tertiary text-xs">
+                <div data-if="{{row.first_option?.additional_options_summary}}" class="ecommerce-text-tertiary ecommerce:text-xs">
                   <span>{{row.first_option?.additional_options_summary?.label}}</span>
-                  <span data-if="{{(row.first_option?.additional_options_summary?.extra_count ?? 0) > 0}}" class="ml-1">$t:defer:sirsoft-ecommerce.admin.order.product.more|count={{row.first_option.additional_options_summary.extra_count}}</span>
+                  <span data-if="{{(row.first_option?.additional_options_summary?.extra_count ?? 0) > 0}}" class="ecommerce:ml-1">$t:defer:sirsoft-ecommerce.admin.order.product.more|count={{row.first_option.additional_options_summary.extra_count}}</span>
                 </div>
               </div>
             </div>
@@ -152,29 +152,29 @@
         </column>
         <column field="order_amount" header="$t:sirsoft-ecommerce.admin.order.column.order_amount" width="140px" :sortable="true" :required="true">
           <cell>
-            <div class="stack-flush gap-0.5">
-              <span class="font-medium">{{row.total_amount_formatted}}</span>
-              <span data-if="{{row.total_shipping_amount > 0}}" class="text-xs text-gray-500 dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.order.column.shipping_fee_short|amount={{row.total_shipping_amount_formatted}}</span>
-              <span data-if="{{row.total_paid_amount > 0}}" class="text-xs text-green-700 dark:text-green-400">$t:defer:sirsoft-ecommerce.admin.order.column.paid_short|amount={{row.total_paid_amount_formatted}}</span>
-              <span data-if="{{row.total_unpaid_amount > 0}}" class="text-xs text-red-600 dark:text-red-400">$t:defer:sirsoft-ecommerce.admin.order.column.unpaid_short|amount={{row.total_unpaid_amount_formatted}}</span>
-              <span data-if="{{row.total_points_used_amount > 0}}" class="text-xs text-purple-600 dark:text-purple-400">$t:defer:sirsoft-ecommerce.admin.order.column.mileage_used_short|amount={{row.total_points_used_amount_formatted}}</span>
-              <span data-if="{{row.total_earned_points_amount > 0 &amp;&amp; row.order_status !== 'cancelled' &amp;&amp; !row.is_partially_cancelled}}" class="text-xs text-blue-600 dark:text-blue-400">$t:defer:sirsoft-ecommerce.admin.order.column.points_earned_short|amount={{row.total_earned_points_amount_formatted}}</span>
+            <div class="ecommerce-stack-flush ecommerce:gap-0.5">
+              <span class="ecommerce:font-medium">{{row.total_amount_formatted}}</span>
+              <span data-if="{{row.total_shipping_amount > 0}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.order.column.shipping_fee_short|amount={{row.total_shipping_amount_formatted}}</span>
+              <span data-if="{{row.total_paid_amount > 0}}" class="ecommerce:text-xs ecommerce:text-green-700 ecommerce:dark:text-green-400">$t:defer:sirsoft-ecommerce.admin.order.column.paid_short|amount={{row.total_paid_amount_formatted}}</span>
+              <span data-if="{{row.total_unpaid_amount > 0}}" class="ecommerce:text-xs ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:defer:sirsoft-ecommerce.admin.order.column.unpaid_short|amount={{row.total_unpaid_amount_formatted}}</span>
+              <span data-if="{{row.total_points_used_amount > 0}}" class="ecommerce:text-xs ecommerce:text-purple-600 ecommerce:dark:text-purple-400">$t:defer:sirsoft-ecommerce.admin.order.column.mileage_used_short|amount={{row.total_points_used_amount_formatted}}</span>
+              <span data-if="{{row.total_earned_points_amount > 0 &amp;&amp; row.order_status !== 'cancelled' &amp;&amp; !row.is_partially_cancelled}}" class="ecommerce:text-xs ecommerce:text-blue-600 ecommerce:dark:text-blue-400">$t:defer:sirsoft-ecommerce.admin.order.column.points_earned_short|amount={{row.total_earned_points_amount_formatted}}</span>
             </div>
           </cell>
         </column>
         <column field="order_status" header="$t:sirsoft-ecommerce.admin.order.column.order_status" width="100px" :sortable="false" :required="false">
           <cell>
             <!-- 주문상태 배지 묶음 — 상태 배지 아래에 부분취소 보조 배지를 세로로 배치(두 줄) -->
-            <div class="flex flex-col items-start gap-1">
+            <div class="ecommerce:flex ecommerce:flex-col ecommerce:items-start ecommerce:gap-1">
               <status-badge data-type="composite" status="{{row.order_status_variant || 'default'}}" label="{{row.order_status_label}}" :showIcon="false"/>
               <!-- 부분취소 보조 배지 — 일부 옵션만 취소된 주문(별도 주문상태 아님, 파생 플래그) -->
-              <span data-if="{{row.is_partially_cancelled}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">$t:sirsoft-ecommerce.admin.order.detail.partial_cancelled_badge</span>
+              <span data-if="{{row.is_partially_cancelled}}" class="ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:whitespace-nowrap ecommerce:bg-orange-100 ecommerce:text-orange-800 ecommerce:dark:bg-orange-900/30 ecommerce:dark:text-orange-400">$t:sirsoft-ecommerce.admin.order.detail.partial_cancelled_badge</span>
             </div>
           </cell>
         </column>
         <column field="orderer" header="$t:sirsoft-ecommerce.admin.order.column.orderer" width="140px" :sortable="false" :required="false">
           <cell>
-            <span data-if="{{!row.address?.orderer_name &amp;&amp; !row.user?.name}}" class="text-gray-500 dark:text-gray-400">-</span>
+            <span data-if="{{!row.address?.orderer_name &amp;&amp; !row.user?.name}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-</span>
             <action-menu data-type="composite" data-if="{{!!row.address?.orderer_name || !!row.user?.name}}" position="right">
               <prop name="items">
                 <item id="view_member" href="/admin/users/{{row.user?.uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.order.action.view_member" iconName="user" if="{{!!row.user?.uuid}}"/>
@@ -206,13 +206,13 @@
                   </case>
                 </switch>
               </on>
-              <div class="flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors">
-                <icon data-if="{{!!row.user?.uuid}}" name="fa-regular fa-user" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
-                <div class="min-w-0 flex-1">
-                  <span data-if="{{!!row.user?.uuid}}" class="font-medium text-gray-900 dark:text-gray-100 truncate block">{{row.address?.orderer_name || row.user?.name}}</span>
-                  <span data-if="{{!row.user?.uuid}}" class="text-gray-600 dark:text-gray-300 truncate block">{{row.address?.orderer_name || row.user?.name}}</span>
+              <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:rounded-lg ecommerce:px-1 ecommerce:py-0.5 ecommerce:transition-colors">
+                <icon data-if="{{!!row.user?.uuid}}" name="fa-regular fa-user" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"/>
+                <div class="ecommerce:min-w-0 ecommerce:flex-1">
+                  <span data-if="{{!!row.user?.uuid}}" class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate ecommerce:block">{{row.address?.orderer_name || row.user?.name}}</span>
+                  <span data-if="{{!row.user?.uuid}}" class="ecommerce:text-gray-600 ecommerce:dark:text-gray-300 ecommerce:truncate ecommerce:block">{{row.address?.orderer_name || row.user?.name}}</span>
                   <!-- 첫구매 표시 -->
-                  <span data-if="{{row.is_first_order}}" class="text-xs text-emerald-700 dark:text-emerald-400">$t:sirsoft-ecommerce.admin.order.column.first_order</span>
+                  <span data-if="{{row.is_first_order}}" class="ecommerce:text-xs ecommerce:text-emerald-700 ecommerce:dark:text-emerald-400">$t:sirsoft-ecommerce.admin.order.column.first_order</span>
                 </div>
               </div>
             </action-menu>
@@ -224,7 +224,7 @@
               (플러그인이 컬럼 전체를 복사해 덮으면 여기 컬럼 개선이 그 사본에 묻혀 사라진다).
               · 라벨: 간편결제 원 수단처럼 PG 만 아는 라벨은 결제 플러그인이 서버 필터 훅으로 display_label 을 채운다.
               · 표시 자리: 라벨 아래 덧붙이는 표시(테스트 결제 등). 여러 플러그인이 같이 붙고, 각자 자기 주문에만 보인다. -->
-            <div data-ref="payment_method_cell" class="stack-flush">
+            <div data-ref="payment_method_cell" class="ecommerce-stack-flush">
               <span data-ref="payment_method_label">{{row.payment?.payment_method_display_label ?? row.payment?.payment_method_label}}</span>
               <extension-point name="admin_order_list_payment_method_badges"/>
             </div>
@@ -237,8 +237,8 @@
         </column>
         <column field="country" header="$t:sirsoft-ecommerce.admin.order.column.country" width="80px" :sortable="false" :required="false">
           <cell>
-            <div class="flex-center gap-2">
-              <span data-if="{{row.address?.recipient_country_code}}" class="fi fi-{{row.address?.recipient_country_code?.toLowerCase()}} flex-shrink-0"/>
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <span data-if="{{row.address?.recipient_country_code}}" class="ecommerce-flag ecommerce-flag-{{row.address?.recipient_country_code?.toLowerCase()}} ecommerce:flex-shrink-0"/>
               <span data-if="{{row.address?.recipient_country_code}}">{{$localized(row.address?.recipient_country_name) ?? row.address?.recipient_country_code}}</span>
             </div>
           </cell>
@@ -250,12 +250,12 @@
         </column>
         <column comment="클레임 컬럼 (D22) — 유형별 최신 상태 배지. 서버는 claim_summary 를 항상 싣는다(접수 건이 있는 유형만 항목으로 실리므로, 클레임이 없는 주문은 빈 배열이다). 표시 여부는 표시 컬럼 선택 하나가 정한다." field="claim" header="$t:sirsoft-ecommerce.admin.order.column.claim" width="150px" :sortable="false" :required="false">
           <cell>
-            <span data-if="{{(row.claim_summary || []).length === 0}}" class="text-gray-500 dark:text-gray-400">-</span>
-            <div data-if="{{(row.claim_summary || []).length > 0}}" class="flex flex-col items-start gap-1">
-              <div data-each="claimEntry, claimIdx in row.claim_summary || []" class="flex-center gap-1">
+            <span data-if="{{(row.claim_summary || []).length === 0}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">-</span>
+            <div data-if="{{(row.claim_summary || []).length > 0}}" class="ecommerce:flex ecommerce:flex-col ecommerce:items-start ecommerce:gap-1">
+              <div data-each="claimEntry, claimIdx in row.claim_summary || []" class="ecommerce-flex-center ecommerce:gap-1">
                 <status-badge data-type="composite" status="{{claimEntry.status_variant || 'default'}}" label="{{claimEntry.status_label || claimEntry.status || ''}}" :showIcon="false"/>
                 <!-- 같은 유형이 2건 이상이면 최신 1건만 배지로 보이므로 건수를 병기한다. -->
-                <span data-if="{{(claimEntry.count ?? 0) > 1}}" class="text-xs text-gray-500 dark:text-gray-400">{{'(' + claimEntry.count + ')'}}</span>
+                <span data-if="{{(claimEntry.count ?? 0) > 1}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{'(' + claimEntry.count + ')'}}</span>
               </div>
             </div>
           </cell>

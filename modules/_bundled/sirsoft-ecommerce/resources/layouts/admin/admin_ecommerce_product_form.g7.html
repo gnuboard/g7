@@ -322,20 +322,20 @@
     <set-state if="{{!!route.itemCode || !!query?.copy_id}}" target="local" ui.useDefaultShippingPolicy="{{(product?.data?.shipping_policy_id ?? copy_source?.data?.shipping_policy_id) == null ? true : (shipping_policies?.data?.data ?? shipping_policies?.data ?? []).some(p =&gt; p.id === (product?.data?.shipping_policy_id ?? copy_source?.data?.shipping_policy_id) &amp;&amp; p.is_default === true)}}"/>
   </init>
   <slot name="content">
-    <div data-ref="product_form_content" data-key="form" data-track-changes data-debounce="300" class="admin-page-content">
-      <div data-ref="page_header_section" class="mb-6">
-        <div data-ref="page_header" class="page-header-padded flex items-start justify-between gap-3">
+    <div data-ref="product_form_content" data-key="form" data-track-changes data-debounce="300" class="ecommerce-admin-page-content">
+      <div data-ref="page_header_section" class="ecommerce:mb-6">
+        <div data-ref="page_header" class="ecommerce-page-header-padded ecommerce:flex ecommerce:items-start ecommerce:justify-between ecommerce:gap-3">
           <div>
-            <h1 class="page-title">{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}</h1>
-            <p class="page-description">{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.description_edit' : '$t:sirsoft-ecommerce.admin.product.description_create'}}</p>
+            <h1 class="ecommerce-page-title">{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.title_edit' : '$t:sirsoft-ecommerce.admin.product.title_create'}}</h1>
+            <p class="ecommerce-page-description">{{route.itemCode ? '$t:sirsoft-ecommerce.admin.product.description_edit' : '$t:sirsoft-ecommerce.admin.product.description_create'}}</p>
           </div>
-          <a data-ref="view_user_page_link" data-if="{{!!route.itemCode}}" href="{{(_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : ('/' + (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop'))) + '/products/' + route.itemCode}}" target="_blank" rel="noopener noreferrer" title="$t:sirsoft-ecommerce.admin.product.action.view_user_page" class="flex-center gap-2 flex-shrink-0 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
+          <a data-ref="view_user_page_link" data-if="{{!!route.itemCode}}" href="{{(_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : ('/' + (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop'))) + '/products/' + route.itemCode}}" target="_blank" rel="noopener noreferrer" title="$t:sirsoft-ecommerce.admin.product.action.view_user_page" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-shrink-0 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-600 ecommerce:dark:text-gray-300 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded-lg ecommerce:hover:bg-gray-200 ecommerce:dark:hover:bg-gray-600 ecommerce:transition-colors ecommerce:no-underline">
             <icon name="external-link" size="sm"/>
             <span>$t:sirsoft-ecommerce.admin.product.action.view_user_page</span>
           </a>
         </div>
       </div>
-      <tab-navigation-scroll data-type="composite" data-ref="tab_navigation" class="sticky-tab-nav tab-nav-default mb-6" activeTabId="{{_local.activeTab ?? 'basic'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="">
+      <tab-navigation-scroll data-type="composite" data-ref="tab_navigation" class="ecommerce-sticky-tab-nav ecommerce-tab-nav-default ecommerce:mb-6" activeTabId="{{_local.activeTab ?? 'basic'}}" :enableScrollSpy="true" :scrollSpyOffset="120" sectionIdPrefix="">
         <prop name="tabs">
           <item id="basic" label="$t:sirsoft-ecommerce.admin.product.tabs.basic"/>
           <item id="sales" label="$t:sirsoft-ecommerce.admin.product.tabs.sales"/>
@@ -351,56 +351,56 @@
           <item id="activity_log" label="$t:sirsoft-ecommerce.admin.product.tabs.activity_log"/>
         </prop>
       </tab-navigation-scroll>
-      <div data-ref="form_body_content" class="tab-content">
-        <div data-ref="validation_error" data-if="{{_local.errors}}" class="mb-6">
-          <div class="alert-danger">
-            <icon name="triangle-exclamation" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size="md"/>
+      <div data-ref="form_body_content" class="ecommerce-tab-content">
+        <div data-ref="validation_error" data-if="{{_local.errors}}" class="ecommerce:mb-6">
+          <div class="ecommerce-alert-danger">
+            <icon name="triangle-exclamation" class="ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5" size="md"/>
             <div>
-              <h3 class="ecommerce-tone-error-strong text-sm font-medium">$t:sirsoft-ecommerce.common.validation_error</h3>
-              <ul data-if="{{typeof _local.errors === 'object'}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-                <li class="ecommerce-tone-error-soft text-sm">{{message}}</li>
+              <h3 class="ecommerce-tone-error-strong ecommerce:text-sm ecommerce:font-medium">$t:sirsoft-ecommerce.common.validation_error</h3>
+              <ul data-if="{{typeof _local.errors === 'object'}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="ecommerce:mt-2 ecommerce:list-disc ecommerce:list-inside ecommerce:space-y-1">
+                <li class="ecommerce-tone-error-soft ecommerce:text-sm">{{message}}</li>
               </ul>
             </div>
           </div>
         </div>
-        <section data-ref="product_code_info_section" data-if="{{!!route.itemCode}}" id="section_product_code_info" class="scroll-mt-32 mt-6 mb-6">
+        <section data-ref="product_code_info_section" data-if="{{!!route.itemCode}}" id="section_product_code_info" class="ecommerce:scroll-mt-32 ecommerce:mt-6 ecommerce:mb-6">
           <grid data-type="layout" :cols="2" :gap="4">
             <responsive on="portable" :cols="1"/>
             <form-field data-type="composite" label="$t:sirsoft-ecommerce.admin.product.fields.product_code">
-              <span class="text-primary font-medium">{{product?.data?.product_code ?? '-'}}</span>
+              <span class="ecommerce-text-primary ecommerce:font-medium">{{product?.data?.product_code ?? '-'}}</span>
             </form-field>
             <form-field data-type="composite" label="$t:sirsoft-ecommerce.admin.product.fields.sales_product_code">
-              <span class="text-primary font-medium">{{product?.data?.sales_product_code ?? '-'}}</span>
+              <span class="ecommerce-text-primary ecommerce:font-medium">{{product?.data?.sales_product_code ?? '-'}}</span>
             </form-field>
             <form-field data-type="composite" label="$t:sirsoft-ecommerce.admin.product.fields.created_at">
-              <span class="text-secondary">{{product?.data?.created_at | datetime('YYYY-MM-DD HH:mm')}}</span>
+              <span class="ecommerce-text-secondary">{{product?.data?.created_at | datetime('YYYY-MM-DD HH:mm')}}</span>
             </form-field>
             <form-field data-type="composite" label="$t:sirsoft-ecommerce.admin.product.fields.updated_at">
-              <span class="text-secondary">{{product?.data?.updated_at | datetime('YYYY-MM-DD HH:mm')}}</span>
+              <span class="ecommerce-text-secondary">{{product?.data?.updated_at | datetime('YYYY-MM-DD HH:mm')}}</span>
             </form-field>
           </grid>
         </section>
-        <section data-ref="copy_source_info_section" data-if="{{!route.itemCode &amp;&amp; !!query.copy_id}}" id="section_copy_source_info" class="scroll-mt-32 mt-6 mb-6">
-          <div class="alert-info">
-            <div class="flex-center gap-2 mb-3">
-              <icon name="copy" class="text-blue-600 dark:text-blue-400" size="md"/>
-              <span class="text-sm font-medium ecommerce-tone-info-soft">$t:sirsoft-ecommerce.admin.product.copy_mode.title</span>
+        <section data-ref="copy_source_info_section" data-if="{{!route.itemCode &amp;&amp; !!query.copy_id}}" id="section_copy_source_info" class="ecommerce:scroll-mt-32 ecommerce:mt-6 ecommerce:mb-6">
+          <div class="ecommerce-alert-info">
+            <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-3">
+              <icon name="copy" class="ecommerce:text-blue-600 ecommerce:dark:text-blue-400" size="md"/>
+              <span class="ecommerce:text-sm ecommerce:font-medium ecommerce-tone-info-soft">$t:sirsoft-ecommerce.admin.product.copy_mode.title</span>
             </div>
-            <div class="flex-start gap-4">
-              <responsive on="portable" class="flex-center flex-col gap-3"/>
-              <img data-if="{{copy_source?.data?.thumbnail_url}}" src="{{copy_source?.data?.thumbnail_url}}" alt="{{$localized(copy_source?.data?.name)}}" class="w-16 h-16 object-cover rounded-lg flex-shrink-0"/>
-              <div data-if="{{!copy_source?.data?.thumbnail_url}}" class="flex-center w-16 h-16 rounded-lg bg-gray-200 dark:bg-gray-700 justify-center flex-shrink-0">
-                <icon name="image" class="text-2xl text-gray-500 dark:text-gray-400"/>
+            <div class="ecommerce-flex-start ecommerce:gap-4">
+              <responsive on="portable" class="ecommerce-flex-center ecommerce:flex-col ecommerce:gap-3"/>
+              <img data-if="{{copy_source?.data?.thumbnail_url}}" src="{{copy_source?.data?.thumbnail_url}}" alt="{{$localized(copy_source?.data?.name)}}" class="ecommerce:w-16 ecommerce:h-16 ecommerce:object-cover ecommerce:rounded-lg ecommerce:flex-shrink-0"/>
+              <div data-if="{{!copy_source?.data?.thumbnail_url}}" class="ecommerce-flex-center ecommerce:w-16 ecommerce:h-16 ecommerce:rounded-lg ecommerce:bg-gray-200 ecommerce:dark:bg-gray-700 ecommerce:justify-center ecommerce:flex-shrink-0">
+                <icon name="image" class="ecommerce:text-2xl ecommerce:text-gray-500 ecommerce:dark:text-gray-400"/>
               </div>
-              <div class="flex-1 min-w-0">
-                <responsive on="portable" class="w-full text-center"/>
-                <p class="text-primary font-medium truncate">{{$localized(copy_source?.data?.name) || '-'}}</p>
+              <div class="ecommerce:flex-1 ecommerce:min-w-0">
+                <responsive on="portable" class="ecommerce:w-full ecommerce:text-center"/>
+                <p class="ecommerce-text-primary ecommerce:font-medium ecommerce:truncate">{{$localized(copy_source?.data?.name) || '-'}}</p>
                 <!-- 원본 코드는 진입 주소의 copy_id 에서 — 복사 데이터의 product_code 는 새 상품용으로 미리 채번한 코드다 -->
-                <p class="text-label">$t:sirsoft-ecommerce.admin.product.fields.product_code: {{query.copy_id ?? '-'}}</p>
-                <p class="text-sm font-medium text-blue-600 dark:text-blue-400">{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}</p>
+                <p class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.product.fields.product_code: {{query.copy_id ?? '-'}}</p>
+                <p class="ecommerce:text-sm ecommerce:font-medium ecommerce:text-blue-600 ecommerce:dark:text-blue-400">{{(copy_source?.data?.selling_price ?? 0) | number}}{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).find(c => c.is_default)?.symbol ?? (_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency)}}</p>
               </div>
-              <a href="{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0">
-                <responsive on="portable" href="{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mt-2"/>
+              <a href="{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}" target="_blank" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1 ecommerce:text-sm ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline ecommerce:flex-shrink-0">
+                <responsive on="portable" href="{{'/admin/ecommerce/products/' + query.copy_id + '/edit'}}" target="_blank" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1 ecommerce:text-sm ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline ecommerce:mt-2"/>
                 <span>$t:sirsoft-ecommerce.admin.product.copy_mode.view_original</span>
                 <icon name="arrow-up-right-from-square" size="xs"/>
               </a>
@@ -419,9 +419,9 @@
         <include src="partials/admin_ecommerce_product_form/_partial_seo_settings.g7.html"/>
         <include src="partials/admin_ecommerce_product_form/_partial_identification_codes.g7.html"/>
         <include src="partials/admin_ecommerce_product_form/_partial_activity_log.g7.html"/>
-        <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <div data-ref="footer_buttons" class="ecommerce-sticky-footer-buttons">
           <!-- 목록으로. 보던 목록 상태를 이고 간다 -->
-          <a href="/admin/ecommerce/products" :mergeQuery="true" data-ref="footer_list_button" class="button btn btn-outline">
+          <a href="/admin/ecommerce/products" :mergeQuery="true" data-ref="footer_list_button" class="ecommerce-button ecommerce-btn ecommerce-btn-outline">
             <on type="click">
               <navigate :mergeQuery="true">
                 <query/>
@@ -429,13 +429,13 @@
             </on>
             $t:sirsoft-ecommerce.common.list
           </a>
-          <button data-ref="footer_copy_button" data-if="{{route.itemCode &amp;&amp; product_abilities?.data?.abilities?.can_create === true}}" type="button" class="btn btn-outline">
+          <button data-ref="footer_copy_button" data-if="{{route.itemCode &amp;&amp; product_abilities?.data?.abilities?.can_create === true}}" type="button" class="ecommerce-btn ecommerce-btn-outline">
             <on type="click">
               <open-modal target="modal_copy_product"/>
             </on>
             $t:sirsoft-ecommerce.common.copy
           </button>
-          <button data-ref="footer_delete_button" data-if="{{!!route.itemCode}}" type="button" class="btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{product?.data?.abilities?.can_delete !== true}}">
+          <button data-ref="footer_delete_button" data-if="{{!!route.itemCode}}" type="button" class="ecommerce-btn ecommerce-btn-danger ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{product?.data?.abilities?.can_delete !== true}}">
             <on type="click">
               <!-- 삭제 — 곧바로 지우지 않고 먼저 서버에 삭제 가능 여부를 묻는다. 주문·장바구니에 걸린 상품은 지울 수 없고 그 사유와 걸린 자료를 확인 창에서 보여 줘야 하므로, 응답을 전역에 담아 둔 뒤 창을 연다(창은 별도 컨텍스트라 _local 을 못 본다) -->
               <sequence>
@@ -460,7 +460,7 @@
             </on>
             $t:sirsoft-ecommerce.common.delete
           </button>
-          <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="flex-center btn btn-primary gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" data-testid="product-save">
+          <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || _computed.isReadOnly}}" class="ecommerce-flex-center ecommerce-btn ecommerce-btn-primary ecommerce:gap-1.5 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" data-testid="product-save">
             <on type="click">
               <!-- 저장 — 보내기 전에 이미지 업로드부터 끝낸다. 업로드 구획이 아직 서버에 올리지 않은
                 파일을 들고 있을 수 있고, 그 결과 목록으로 폼의 이미지 항목을 갈아 끼운 뒤에야
@@ -486,7 +486,7 @@
                 </api-call>
               </sequence>
             </on>
-            <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+            <icon data-if="{{_local.isSaving}}" name="spinner" class="ecommerce-spinner-sm"/>
             <span data-if="{{!_local.isSaving}}">$t:sirsoft-ecommerce.common.save</span>
             <span data-if="{{_local.isSaving}}">$t:sirsoft-ecommerce.common.saving</span>
           </button>

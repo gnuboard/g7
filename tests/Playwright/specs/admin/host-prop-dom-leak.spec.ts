@@ -71,7 +71,7 @@ test('engine-v1.55.1 - 호스트 정리 후에도 주소 검색은 그대로 열
 });
 
 // @scenario screen=board_post_detail, leak_axis=extension_point
-// @effects html_content_host_clean
+// @effects html_content_host_clean, extension_point_host_class_expression_evaluated
 test('@smoke engine-v1.55.1 - 본문 표시 영역 호스트에 원시값 페이로드가 남지 않는다', async ({ page }) => {
   const token = issueToken('sirsoft-board.archive.admin.posts.read');
   await authenticatePage(page, token);
@@ -88,6 +88,11 @@ test('@smoke engine-v1.55.1 - 본문 표시 영역 호스트에 원시값 페이
 
   // 그리고 본문은 그대로 그려져야 한다(페이로드 소비 경로 보존).
   await expect(host).not.toBeEmpty();
+
+  // 호스트 className 의 `{{…}}` 는 평가된 값으로 붙는다 — 식 원문·조각(`===`·`'html'`)이 클래스가 되면 안 된다 (engine-v1.86.0).
+  const hostClass = (await host.getAttribute('class')) ?? '';
+  expect(hostClass).not.toMatch(/\{\{|\}\}|===/);
+  expect(hostClass).toContain('board:max-w-none');
 
   expect(await collectObjectLeaks(page)).toEqual([]);
 });

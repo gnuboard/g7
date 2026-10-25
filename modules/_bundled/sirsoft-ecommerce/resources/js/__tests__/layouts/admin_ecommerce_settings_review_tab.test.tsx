@@ -266,7 +266,7 @@ describe('리뷰 설정 탭 (_tab_review_settings.json) 렌더링', () => {
             const { container } = await testUtils.render();
             // i18n 키 치환 결과가 자식 노드로 분리될 수 있어 단순 getByText 매칭이
             // 실패할 수 있음. card-title 클래스 H3 의 textContent 로 직접 검증한다
-            const titleNode = container.querySelector('h3.card-title');
+            const titleNode = container.querySelector('h3.ecommerce-card-title');
             expect(titleNode).not.toBeNull();
             expect(titleNode?.textContent ?? '').toContain('리뷰 설정');
         });

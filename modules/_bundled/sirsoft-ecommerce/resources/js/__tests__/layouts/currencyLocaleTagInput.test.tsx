@@ -29,23 +29,33 @@ describe.each([
 ])('A4 — 통화별 언어 TagInput — %s', (_label, file) => {
   const text = load(file);
 
+  // @scenario locales_mapping=multi_match
+  // @effects locale_tag_input_renders_candidates, locale_tag_multi_select_saves
   it('locales TagInput 컴포넌트가 존재한다', () => {
     expect(text).toContain('"name": "TagInput"');
     expect(text).toContain(".locales'");
   });
 
+  // @scenario locales_mapping=multi_match
+  // @effects locale_tag_input_renders_candidates, locale_tag_multi_select_saves
   it('TagInput value 는 currency.locales 를 바인딩한다', () => {
     expect(text).toContain('currency.locales ?? []');
   });
 
+  // @scenario locales_mapping=multi_match
+  // @effects locale_tag_input_renders_candidates, locale_tag_multi_select_saves
   it('options 는 supportedLocales 매핑이다', () => {
     expect(text).toContain('appConfig?.supportedLocales');
   });
 
+  // @scenario locales_mapping=multi_match
+  // @effects locale_tag_input_renders_candidates, locale_tag_multi_select_saves
   it('locales 라벨 i18n 키를 사용한다', () => {
     expect(text).toContain('exchange_settings.locales');
   });
 
+  // @scenario locales_mapping=multi_match
+  // @effects locale_tag_input_renders_candidates, locale_tag_multi_select_saves
   it('locale 검증 에러 시 input-error 로 강조한다', () => {
     // 해당 통화 인덱스의 locales 에러 키 존재 시 input-error 클래스 부여
     expect(text).toContain('input-error');
@@ -54,8 +64,10 @@ describe.each([
     );
   });
 
+  // @scenario locales_mapping=multi_match
+  // @effects locale_tag_input_renders_candidates, locale_tag_multi_select_saves
   it('locale 검증 에러 메시지를 필드 아래 form-error 로 표시한다', () => {
-    expect(text).toContain('"className": "form-error"');
+    expect(text).toContain('"className": "ecommerce-form-error"');
     expect(text).toContain(
       "_local.errors?.[Object.keys(_local.errors ?? {}).find(k => k.startsWith('language_currency.currencies.' + currency._idx + '.locales'))]?.[0]"
     );

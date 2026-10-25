@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ $locale }}">
+<html lang="{{ $locale }}" data-g7-color-scheme="{{ $colorScheme ?? 'light' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -29,6 +29,12 @@
 
     {{-- CSS (템플릿 CSS만 — 코어 app.css 는 사용자 화면에서 미참조하는 Laravel 기본 빌드 파일이라 미포함) --}}
     @foreach($stylesheets as $stylesheet)
+    <link rel="stylesheet" href="{{ $stylesheet }}">
+    @endforeach
+
+    {{-- 확장 CSS — 의미 클래스 층을 템플릿 CSS 뒤에 선언한 다음 확장 번들·덮기 파일을 싣는다(사용자 화면과 같은 순서) --}}
+    <style>@layer g7-extension;</style>
+    @foreach($extensionStylesheets ?? [] as $stylesheet)
     <link rel="stylesheet" href="{{ $stylesheet }}">
     @endforeach
 

@@ -18,14 +18,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-4"
+                "className": "ecommerce:space-y-4"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-label-subtle"
+                        "className": "ecommerce-text-label-subtle"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.description"
                 },
@@ -34,14 +34,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3 flex-between text-sm"
+                        "className": "ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:p-3 ecommerce-flex-between ecommerce:text-sm"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.due_amount"
                         },
@@ -50,7 +50,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "font-semibold text-gray-900 dark:text-gray-100"
+                                "className": "ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                             },
                             "text": "{{order.data?.total_due_charge_amount_formatted ?? order.data?.total_due_amount_formatted ?? ''}}"
                         }
@@ -65,7 +65,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label-block"
+                                "className": "ecommerce-form-label-block"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.depositor_name"
                         },
@@ -87,7 +87,7 @@
                                 "type": "text",
                                 "name": "depositor_name",
                                 "placeholder": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.depositor_name_placeholder",
-                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400",
+                                "className": "ecommerce-text-primary ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-sm ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:dark:focus:ring-blue-400 ecommerce:focus:border-blue-500 ecommerce:dark:focus:border-blue-400",
                                 "value": "{{_local.depositorName ?? ''}}"
                             }
                         }
@@ -102,7 +102,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label-block"
+                                "className": "ecommerce-form-label-block"
                             },
                             "children": [
                                 {
@@ -114,7 +114,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-required"
+                                        "className": "ecommerce-text-required"
                                     },
                                     "text": "*"
                                 }
@@ -138,7 +138,7 @@
                                 "type": "number",
                                 "name": "amount",
                                 "min": 0,
-                                "className": "{{_local.depositConfirmErrors?.amount ? 'w-full px-3 py-2 border border-red-500 dark:border-red-400 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400' : 'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400'}}",
+                                "className": "{{_local.depositConfirmErrors?.amount ? 'ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-red-500 ecommerce:dark:border-red-400 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:text-sm ecommerce:focus:ring-2 ecommerce:focus:ring-red-500 ecommerce:dark:focus:ring-red-400' : 'ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:text-sm ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:dark:focus:ring-blue-400 ecommerce:focus:border-blue-500 ecommerce:dark:focus:border-blue-400'}}",
                                 "value": "{{_local.depositAmount ?? 0}}"
                             }
                         },
@@ -147,7 +147,7 @@
                             "name": "Span",
                             "if": "{{_local.depositConfirmErrors?.amount}}",
                             "props": {
-                                "className": "form-error-xs mt-1 block"
+                                "className": "ecommerce-form-error-xs ecommerce:mt-1 ecommerce:block"
                             },
                             "text": "{{_local.depositConfirmErrors?.amount?.[0] ?? ''}}"
                         },
@@ -156,7 +156,7 @@
                             "name": "Span",
                             "if": "{{!_local.depositConfirmErrors?.amount}}",
                             "props": {
-                                "className": "text-hint mt-1 block"
+                                "className": "ecommerce-text-hint ecommerce:mt-1 ecommerce:block"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.amount_hint"
                         }
@@ -169,7 +169,7 @@
                     "if": "{{order.data?.is_past_payment === true}}",
                     "props": {
                         "data-testid": "confirm-deposit-past-payment-hint",
-                        "className": "rounded-lg border border-gray-200 dark:border-gray-700 p-3 text-hint"
+                        "className": "ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:p-3 ecommerce-text-hint"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.past_payment_hint|status={{order.data?.order_status_label ?? ''}}"
                 },
@@ -178,14 +178,14 @@
                     "name": "Div",
                     "if": "{{order.data?.is_past_payment !== true}}",
                     "props": {
-                        "className": "rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                        "className": "ecommerce:rounded-lg ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:p-3"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "flex items-start gap-2 cursor-pointer"
+                                "className": "ecommerce:flex ecommerce:items-start ecommerce:gap-2 ecommerce:cursor-pointer"
                             },
                             "children": [
                                 {
@@ -205,7 +205,7 @@
                                     "props": {
                                         "type": "checkbox",
                                         "name": "mark_order_complete",
-                                        "className": "mt-0.5",
+                                        "className": "ecommerce:mt-0.5",
                                         "checked": "{{_local.markOrderComplete ?? false}}"
                                     }
                                 },
@@ -217,7 +217,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary text-sm font-medium block"
+                                                "className": "ecommerce-text-primary ecommerce:text-sm ecommerce:font-medium ecommerce:block"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.mark_order_complete"
                                         },
@@ -225,7 +225,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-hint block"
+                                                "className": "ecommerce-text-hint ecommerce:block"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.confirm_deposit.mark_order_complete_hint"
                                         }
@@ -241,7 +241,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "ecommerce-modal-footer-buttons"
             },
             "children": [
                 {
@@ -255,7 +255,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{_local.isConfirmingDeposit}}"
                     },
                     "children": [
@@ -284,7 +284,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{_local.isConfirmingDeposit || order?.data?.abilities?.can_update !== true}}"
                     },
                     "children": [
@@ -294,7 +294,7 @@
                             "if": "{{_local.isConfirmingDeposit}}",
                             "props": {
                                 "name": "spinner",
-                                "className": "animate-spin",
+                                "className": "ecommerce:animate-spin",
                                 "size": "sm"
                             }
                         },

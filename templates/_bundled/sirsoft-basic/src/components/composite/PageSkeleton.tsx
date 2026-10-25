@@ -482,26 +482,30 @@ function resolveResponsiveDisplay(className: string, width: number): { visible: 
     const otherClasses: string[] = [];
 
     for (const token of tokens) {
+        // 확장 접두 빌드 클래스(`ecommerce:md:hidden`)는 앞글자를 떼고 같은 뜻으로 읽는다(engine-v1.86.0)
+        const split = (window as any).G7Core?.style?.splitExtensionClassPrefix?.(token) ?? { prefix: '', rest: token };
+        const extPrefix: string = split.prefix;
+        const bare: string = split.rest;
         // 반응형 접두사 + display 클래스: "lg:grid", "sm:flex", "md:hidden"
-        const responsiveMatch = token.match(/^(sm|md|lg|xl|2xl):(.+)$/);
+        const responsiveMatch = bare.match(/^(sm|md|lg|xl|2xl):(.+)$/);
         if (responsiveMatch) {
             const [, prefix, cls] = responsiveMatch;
             if (DISPLAY_CLASSES.has(cls)) {
                 displayEntries.push({
                     breakpoint: TAILWIND_BREAKPOINTS[prefix] || 0,
-                    display: cls,
+                    display: extPrefix + cls,
                 });
                 continue;
             }
             // 반응형 접두사지만 display가 아닌 클래스 (lg:gap-4 등) → 뷰포트 체크 후 포함
             if ((TAILWIND_BREAKPOINTS[prefix] || 0) <= width) {
-                otherClasses.push(cls); // 접두사 제거하고 포함
+                otherClasses.push(extPrefix + cls); // 반응형 접두사 제거하고 포함(확장 앞글자는 유지)
             }
             continue;
         }
 
         // 기본(접두사 없는) display 클래스: "hidden", "flex", "grid"
-        if (DISPLAY_CLASSES.has(token)) {
+        if (DISPLAY_CLASSES.has(bare)) {
             displayEntries.push({ breakpoint: 0, display: token });
             continue;
         }
@@ -529,7 +533,7 @@ function resolveResponsiveDisplay(className: string, width: number): { visible: 
         effectiveDisplay = displayEntries[0].display;
     }
 
-    const visible = effectiveDisplay !== 'hidden';
+    const visible = ((window as any).G7Core?.style?.splitExtensionClassPrefix?.(effectiveDisplay)?.rest ?? effectiveDisplay) !== 'hidden';
     const resolvedClassName = visible
         ? [effectiveDisplay, ...otherClasses].join(' ')
         : '';

@@ -44,37 +44,6 @@
 /* SAFELIST-END */
 @source "../../layouts/**/*.g7.html";
 
-/*
- * 확장(모듈/플러그인) 레이아웃이 쓰는 Icon 크기 클래스.
- *
- * 위 `@source` 는 **이 템플릿의 layouts/ 만** 훑는다. 모듈·플러그인 레이아웃은 스캔 대상이 아니라
- * 거기서만 쓰이는 클래스는 여기 명시하지 않으면 CSS 가 생성되지 않는다(= 아이콘이 상속 크기로
- * 렌더된다). Icon 은 `<i>` 글리프라 박스가 아니라 `font-size` 로 크기가 정해지므로, 기존
- * `w-N h-N` 을 픽셀 그대로 옮길 때 Tailwind 기본 스케일에 같은 값이 없는 것만 임의값으로 둔다.
- *
- * SAFELIST-START/END 구간은 `extract-safelist.cjs` 가 재생성하므로 그 안에 넣지 않는다.
- */
-@source inline("text-5xl text-[4rem]");
-/*
- * 이커머스 필터 칩의 「고른 상태」 테두리 색(엑셀 다운로드·결제 실패 이력·개인결제·주문 필터). 파랑·회색만 이 템플릿
- * 레이아웃에도 있어 생성됐고 나머지 색은 한 번도 그려지지 않았다.
- */
-@source inline("ring-green-400 ring-cyan-400 ring-orange-400 ring-red-400 ring-yellow-400 dark:ring-blue-500 dark:ring-gray-500 dark:ring-green-500 dark:ring-cyan-500 dark:ring-orange-500 dark:ring-red-500 dark:ring-yellow-500");
-
-/*
- * 확장(모듈) 레이아웃이 쓰는 간격·최소 폭 클래스 — 이커머스 상품 목록·상품 옵션·주문 목록·마일리지 내역·
- * 리뷰 이미지 창이 `gap-0.5`·`min-w-[12rem]` 을 쓴다. 이 템플릿 layouts/ 에는 없어 여기 적지 않으면 CSS 가
- * 생성되지 않고 여백이 조용히 0 이 된다(2026-09-26 #599 3차 검증).
- * `min-w-5` 는 이커머스 클레임 유형 칩, 게시판 일괄 적용 칩 — 없으면 한 자리 숫자 칩이 원이 아닌 타원이 된다.
- */
-@source inline("gap-0.5 min-w-[12rem] min-w-5");
-
-/*
- * 결제 브랜드 마크(BrandMark) 색 배지 클래스 — 결제 플러그인이 결제수단 카탈로그 brand_mark.class 로 실어 보내는 값이라
- * 어느 레이아웃 파일에도 글자로 없다. 이커머스 관리자 결제수단 목록이 이 컴포넌트로 배지를 그린다(#639 — 이전에는 PG
- * 플러그인 주입 스크립트가 DOM 을 고쳐 붙였다).
- */
-@source inline("bg-blue-500 bg-blue-600 bg-blue-700 bg-gray-500 bg-gray-900 bg-green-500 bg-green-600 bg-green-700 bg-green-800 bg-orange-500 bg-orange-700 bg-purple-600 bg-red-500 bg-red-600 bg-red-700 bg-yellow-400 text-gray-950 text-white");
 
 /*
  * 컴포넌트(TSX) 토큰 — 컴포넌트는 아래 `@source "../components/…"` 로 훑는다. Tailwind v4 자동 감지도 빌드 폴더(템플릿 뿌리)

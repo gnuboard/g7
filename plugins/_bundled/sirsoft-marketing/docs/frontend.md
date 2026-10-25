@@ -24,8 +24,9 @@
 찾아 설정 화면을 그리므로, 이름을 바꾸면 설정 화면 자체가 사라집니다.
 
 레이아웃 JSON 만 고쳤다면 빌드는 필요 없고 `php artisan plugin:update sirsoft-marketing --force`
-로 반영합니다. 새로 쓴 Tailwind 클래스가 빌드된 CSS 에 없으면 그 스타일만 조용히 빠지므로,
-기존 레이아웃에 없던 클래스를 도입할 때는 확인이 필요합니다.
+로 반영합니다. 화면 모양은 이 플러그인 CSS(`dist/css/plugin.css`, 앞글자 `marketing`)가 싣습니다 — 레이아웃과 조각은
+`marketing:` 접두 유틸리티와 `marketing-*` 의미 클래스만 씁니다. 새 클래스를 쓰면 `php artisan plugin:build sirsoft-marketing --production`
+으로 CSS 를 다시 만들어야 그 스타일이 실립니다.
 
 설정 화면의 동의 채널 행에 있는 수정·삭제 단추는 아이콘만 있으므로 `aria-label`·`title` 에 코어 공통 키
 (`common.edit`·`common.delete`)를 실어 이름을 줍니다. 아이콘은 꾸밈으로 숨겨지므로(공통 `Icon` 컴포넌트) 이름을 빼면
@@ -78,6 +79,7 @@ _프론트 엔트리포인트가 없습니다._
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
 로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`

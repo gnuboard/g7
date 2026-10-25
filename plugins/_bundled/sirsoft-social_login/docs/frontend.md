@@ -72,7 +72,7 @@
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-`plugin.json` 의 assets 는 JS(`resources/js/index.ts` → `dist/js/plugin.iife.js`)와 CSS(`resources/css/buttons.css` → `dist/css/plugin.css`)입니다. 소스를 바꾸면 `php artisan plugin:build sirsoft-social_login --production` 으로 다시 굽습니다. 테스트 결과 화면과 모의 동의 화면은 서버가 그리는 단독 HTML 입니다.
+`plugin.json` 의 assets 는 JS(`resources/js/index.ts` → `dist/js/plugin.iife.js`)와 CSS(`resources/css/main.css` → `dist/css/plugin.css`, 앞글자 `sl` — 버튼 손 CSS `sl-*` 와 레이아웃용 접두 유틸리티 `sl:*`)입니다. 소스를 바꾸면 `php artisan plugin:build sirsoft-social_login --production` 으로 다시 굽습니다. 테스트 결과 화면과 모의 동의 화면은 서버가 그리는 단독 HTML 입니다.
 <!-- @intent END -->
 
 ## 컴포넌트
@@ -89,7 +89,7 @@
 | `id` · `editorAttrs` | 문자열 / 객체 | 바깥 요소의 DOM id, 레이아웃 편집기가 편집 모드에서만 넣는 표식(바깥 요소에 그대로 펼친다) |
 
 - 모양은 제공자의 `brand`(`kakao`·`naver`·`google`·`facebook`·`custom`)로 고릅니다. 모의 제공자도 원 제공자 brand 를 씁니다. 각 사 버튼 지침의 색(카카오 `#FEE500`, 네이버 `#03A94D`, 구글 흰 배경·`#747775` 테두리, 페이스북 `#1877F2`)과 공식 심볼 SVG 를 인라인으로 그리고, 커스텀(일반 OIDC)은 `button_style` 색과 이름 첫 글자 원을 씁니다.
-- 다크는 사이트 다크(`html.dark`)만 따릅니다(구글 `#131314`·`#8E918F`·`#E3E3E3`). 운영체제 다크 설정은 보지 않습니다 — 사이트를 라이트로 둔 방문자에게 버튼 하나만 어둡게 나오지 않게.
+- 다크는 사이트 다크(템플릿이 선언한 다크 방식에 따라 코어가 다는 `<html data-g7-color-scheme="dark">` 표식)만 따릅니다(구글 `#131314`·`#8E918F`·`#E3E3E3`). 운영체제 다크 설정은 보지 않습니다 — 사이트를 라이트로 둔 방문자에게 버튼 하나만 어둡게 나오지 않게.
 - CSS 는 자체 접두 `.sl-*` 만 쓰고 템플릿 의미 색 클래스에 기대지 않습니다. 버튼마다 `aria-label`(「카카오 로그인」 등)과 `data-social-provider` 가 붙습니다.
 
 `ProviderMark`(등록 이름 `sirsoft-social_login.ProviderMark`, 원본 `resources/js/components/basic/ProviderMark.tsx`) — 마이페이지 「연결된 소셜 계정」 줄 앞의 제공자 표시입니다. 버튼과 같은 공식 심볼을 버튼 색 원(카카오 `#FEE500`, 네이버 `#03A94D`, 구글 흰 배경·`#747775` 테두리 / 다크 `#131314`·`#8E918F`, 페이스북 `#1877F2`) 안에 그리고, 커스텀은 이름 첫 글자 원을 씁니다. props 는 `brand`(내장 4종 밖은 custom) · `label` · `className` · `id`. 이름은 옆 텍스트가 맡으므로 `aria-hidden` 이고 `data-social-provider-mark` 에 계열이 붙습니다. 편집기 팔레트에는 올리지 않습니다.
