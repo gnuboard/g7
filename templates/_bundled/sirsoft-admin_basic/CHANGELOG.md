@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.4] - 2026-10-26
+
+### Fixed
+
+- 레이아웃에서 이미지 갤러리를 닫힌 채 두었다가 시작 사진 번호를 바꿔 열면 확대 창이 항상 처음 사진으로 열리던 문제를 고쳤습니다. 이제 열 때 지정한 사진에서 시작합니다.
+
 ## [1.1.3] - 2026-10-23
 
 ### Added
