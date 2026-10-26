@@ -1,0 +1,30 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   백필은 행마다 독립 판정(스냅샷 값 → 과세 종류)이라 축의 교차곱이 서로 영향을 주지 않는다.
+#   스냅샷 값 5종은 한 번 실행으로, 기록된 행 보존·재실행 멱등은 두 번 실행으로 각각 잠근다.
+feature: 1.3.3 업그레이드 — 기존 주문상품 행의 과세 종류 백필 (#612)
+
+description: |
+  1.3.3 은 주문 시점에 확정한 과세 종류(과세·면세·영세)를 주문상품 행(order_options.tax_status)에 기록한다.
+  업그레이드 전 행은 비어 있으므로 상품 스냅샷의 과세 종류로 한 번 채운다. 없거나 읽을 수 없는 값은 과세 —
+  1.3.2 까지의 계산기가 그 행을 과세로 분류해 금액을 나눴다. 영세는 1.3.3 에 처음 생긴 값이라 기존 행에는 없다.
+
+axes:
+  snapshot_value: [taxable, tax_free, missing, unknown, malformed_json]
+  row_state: [empty, already_recorded]
+  run_count: [once, twice]
+
+exclusions:
+  - { row_state: already_recorded, snapshot_value: tax_free, reason: "기록된 행은 스냅샷을 읽지 않는다 — 스냅샷 값 종류와 무관" }
+  - { row_state: already_recorded, snapshot_value: missing, reason: "기록된 행은 스냅샷을 읽지 않는다" }
+  - { row_state: already_recorded, snapshot_value: unknown, reason: "기록된 행은 스냅샷을 읽지 않는다" }
+  - { row_state: already_recorded, snapshot_value: malformed_json, reason: "기록된 행은 스냅샷을 읽지 않는다" }
+
+effects:
+  - order_option_tax_status_backfilled_from_snapshot
+  - order_option_tax_status_backfill_is_idempotent
+  - zero_rated_columns_exist_with_defaults            # 옵션·주문상품 tax_status(null 허용)·주문 영세 금액(기본 0) + down 가드
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Upgrade/OrderOptionTaxStatusBackfillTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Migrations/ZeroRatedTaxColumnsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Migrations/ZeroRatedTaxMigrationRoundTripTest.php

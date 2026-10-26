@@ -93,6 +93,7 @@
                   <th class="text-table-header px-3 py-2 text-left min-w-[200px]">$t:sirsoft-ecommerce.admin.product.options.columns.option</th>
                   <th class="text-table-header px-3 py-2 text-left min-w-[100px]">$t:sirsoft-ecommerce.admin.product.options.columns.list_price</th>
                   <th class="text-table-header px-3 py-2 text-left min-w-[120px]">$t:sirsoft-ecommerce.admin.product.options.columns.selling_price</th>
+                  <th class="text-table-header px-3 py-2 text-left min-w-[120px]">$t:sirsoft-ecommerce.admin.product.options.columns.tax_status</th>
                   <th class="text-table-header px-3 py-2 text-left min-w-[80px]">$t:sirsoft-ecommerce.admin.product.options.columns.sku</th>
                   <th class="text-table-header px-3 py-2 text-left min-w-[80px]">$t:sirsoft-ecommerce.admin.product.options.columns.stock</th>
                   <th class="text-table-header px-3 py-2 text-left min-w-[80px]">$t:sirsoft-ecommerce.admin.product.options.columns.safe_stock</th>
@@ -145,6 +146,21 @@
                       <div data-ref="option_currency_preview_{{optIdx}}" data-if="{{(_computed.currencyColumns ?? []).length > 0}}" class="flex flex-col gap-0.5 mt-1">
                         <span data-each="currencyCol in {{_computed.currencyColumns}}" class="text-xs text-tertiary whitespace-nowrap">{{opt.multi_currency_selling_price?.[currencyCol.currencyCode]?.formatted ?? ''}}</span>
                       </div>
+                    </div>
+                  </td>
+                  <td class="px-3 py-2">
+                    <div class="flex flex-col">
+                      <select class="{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'select input-error w-full' : 'select w-full' }}" value="{{opt.tax_status ?? ''}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.tax_status')}}" disabled="{{_computed.isReadOnly}}">
+                        <on type="change">
+                          <!-- 이 옵션의 과세 종류 — 비워 두면(기본값 따름) 판매정보의 과세 여부를 따른다. 영세는 세율 0%, 결제사에는 면세로 넘긴다 (#612, 넓은 화면 표) -->
+                          <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="tax_status" value="{{$event.target.value}}"/>
+                        </on>
+                        <option value="">$t:sirsoft-ecommerce.admin.product.options.tax_status_inherit|status={{$t('sirsoft-ecommerce.admin.product.tax.' + (_local.form?.tax_status ?? 'taxable'))}}</option>
+                        <option value="taxable">$t:sirsoft-ecommerce.admin.product.tax.taxable</option>
+                        <option value="tax_free">$t:sirsoft-ecommerce.admin.product.tax.tax_free</option>
+                        <option value="zero_rated">$t:sirsoft-ecommerce.admin.product.tax.zero_rated</option>
+                      </select>
+                      <span data-if="{{ _local.errors?.['options.' + optIdx + '.tax_status'] }}" class="form-error-xs mt-0.5">{{ _local.errors?.['options.' + optIdx + '.tax_status']?.[0] }}</span>
                     </div>
                   </td>
                   <td class="px-3 py-2">
@@ -286,6 +302,20 @@
                   </on>
                 </input>
                 <span data-if="{{ _local.errors?.['options.' + optIdx + '.selling_price'] }}" class="form-error-xs mt-0.5">{{ _local.errors?.['options.' + optIdx + '.selling_price']?.[0] }}</span>
+              </div>
+              <div class="form-group col-span-2">
+                <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.tax_status</label>
+                <select class="{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'select input-error w-full' : 'select w-full' }}" value="{{opt.tax_status ?? ''}}" aria-label="$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.tax_status')}}" disabled="{{_computed.isReadOnly}}">
+                  <on type="change">
+                    <!-- 이 옵션의 과세 종류 — 비워 두면(기본값 따름) 판매정보의 과세 여부를 따른다. 영세는 세율 0%, 결제사에는 면세로 넘긴다 (#612, 좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다) -->
+                    <action handler="sirsoft-ecommerce.updateFormOptionField" index="{{optIdx}}" field="tax_status" value="{{$event.target.value}}"/>
+                  </on>
+                  <option value="">$t:sirsoft-ecommerce.admin.product.options.tax_status_inherit|status={{$t('sirsoft-ecommerce.admin.product.tax.' + (_local.form?.tax_status ?? 'taxable'))}}</option>
+                  <option value="taxable">$t:sirsoft-ecommerce.admin.product.tax.taxable</option>
+                  <option value="tax_free">$t:sirsoft-ecommerce.admin.product.tax.tax_free</option>
+                  <option value="zero_rated">$t:sirsoft-ecommerce.admin.product.tax.zero_rated</option>
+                </select>
+                <span data-if="{{ _local.errors?.['options.' + optIdx + '.tax_status'] }}" class="form-error-xs mt-0.5">{{ _local.errors?.['options.' + optIdx + '.tax_status']?.[0] }}</span>
               </div>
               <div class="form-group">
                 <label class="form-label text-xs">$t:sirsoft-ecommerce.admin.product.options.columns.sku</label>

@@ -66,9 +66,11 @@ class RefundExecutionService
         'total_tax_amount',
         'total_tax_free_amount',
         'total_vat_amount',
+        'total_zero_rated_amount',
         'total_cash_equivalent_amount',
         'mc_total_tax_amount',
         'mc_total_tax_free_amount',
+        'mc_total_zero_rated_amount',
     ];
 
     /**
@@ -202,7 +204,7 @@ class RefundExecutionService
         // (P14, `determineRefundMethod`). ② 는 **정상 취소**라 장부에 남아야 한다.
         // 호출부만이 자기 경로가 어느 쪽인지 안다.
         $paymentUpdates = $recordPaymentLedger && $order->payment !== null
-            ? $this->buildCancelledAmountUpdates($order->payment, $result)
+            ? $this->buildCancelledAmountUpdates($order->payment, $result, $order)
             : [];
 
         if ($paymentUpdates !== []) {
@@ -581,21 +583,39 @@ class RefundExecutionService
      * base 통화 누적(cancelled_amount)과 결제 통화 누적(mc_cancelled_amount)은 별개다.
      * base ≠ 결제 통화일 때 PG 실환불·누적은 결제 통화로 정합되어야 한다.
      *
+     * 취소 부가세(cancelled_vat_amount)도 같은 자리에서 누적한다(#612 ④) — 이 취소·환불로 주문 부가세가
+     * 줄어든 만큼(재계산 전 − 후)이다. 종전에는 쓰는 곳이 없어 부분환불 뒤에도 결제행 부가세 내역이
+     * 승인 당시 값 그대로였다. 승인 부가세(`vat_amount`)는 증빙 기준이라 바꾸지 않고, 누적은 그 값을 넘지 않는다.
+     *
+     * 환불신청서 실행 경로는 계산 결과에 재계산 전 스냅샷을 싣지 않는다(세금 컬럼 갱신값만 싣는다). 그때 재계산
+     * 전 부가세는 아직 갱신 전인 주문 헤더 값이다 — `prepareLedger()` 가 헤더를 고치기 전에 여기를 부른다.
+     *
      * @param  OrderPayment  $payment  결제행
      * @param  AdjustmentResult  $result  계산 결과
-     * @return array<string, mixed> 갱신값 (cancelled_amount / mc_cancelled_amount)
+     * @param  Order|null  $order  갱신 전 주문 (계산 결과에 재계산 전 스냅샷이 없을 때 부가세를 읽는다)
+     * @return array<string, mixed> 갱신값 (cancelled_amount / mc_cancelled_amount / cancelled_vat_amount)
      */
-    public function buildCancelledAmountUpdates(OrderPayment $payment, AdjustmentResult $result): array
+    public function buildCancelledAmountUpdates(OrderPayment $payment, AdjustmentResult $result, ?Order $order = null): array
     {
         $mcCancelled = $payment->mc_cancelled_amount ?? [];
         foreach ($result->mcRefundAmount ?? [] as $code => $amount) {
             $mcCancelled[$code] = (float) ($mcCancelled[$code] ?? 0) + (float) $amount;
         }
 
-        return [
+        $updates = [
             'cancelled_amount' => (float) $payment->cancelled_amount + $result->refundAmount,
             'mc_cancelled_amount' => $mcCancelled,
         ];
+
+        $vatBefore = $result->originalSnapshot['total_vat_amount'] ?? $order?->total_vat_amount;
+        $vatAfter = $result->orderUpdates['total_vat_amount'] ?? $result->recalculatedSnapshot['total_vat_amount'] ?? null;
+
+        if ($vatBefore !== null && $vatAfter !== null) {
+            $cancelledVat = (float) ($payment->cancelled_vat_amount ?? 0) + max(0.0, (float) $vatBefore - (float) $vatAfter);
+            $updates['cancelled_vat_amount'] = min($cancelledVat, (float) ($payment->vat_amount ?? 0));
+        }
+
+        return $updates;
     }
 
     /**

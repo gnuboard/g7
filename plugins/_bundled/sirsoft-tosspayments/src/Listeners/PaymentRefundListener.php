@@ -280,7 +280,8 @@ class PaymentRefundListener implements HookListenerInterface
     /**
      * 취소 금액 중 면세 금액을 산출합니다. (R2)
      *
-     * 면세/과세 분류의 비율은 주문(total_tax_free_amount / total_tax_amount)에서 온다.
+     * 면세/과세 분류의 비율은 주문에서 온다 — 면세는 면세+영세(`Order::pgTaxFreeAmount()`), 과세는 영세를 뺀
+     * 과세 합계(`Order::pgTaxableAmount()`). 영세(세율 0%)는 결제 때 면세로 넘겼으므로 취소도 면세로 나눈다(이커머스 1.3.3, #612).
      * 부분취소면 취소 비율만큼 면세분을 안분한다. 면세분이 없으면 null 을 반환해
      * 요청 본문에서 taxFreeAmount 자체를 생략시킨다.
      *
@@ -301,13 +302,13 @@ class PaymentRefundListener implements HookListenerInterface
      */
     private function resolveTaxFreeAmount(Order $order, OrderPayment $payment, int $cancelAmount): ?int
     {
-        $taxFree = (int) round((float) $order->total_tax_free_amount);
+        $taxFree = (int) round($this->pgTaxFreeOf($order));
 
         if ($taxFree <= 0 || $cancelAmount <= 0) {
             return null;
         }
 
-        $taxable = (int) round((float) $order->total_tax_amount);
+        $taxable = (int) round($this->pgTaxableOf($order));
         $classified = $taxFree + $taxable;
 
         if ($classified <= 0) {
@@ -500,5 +501,34 @@ class PaymentRefundListener implements HookListenerInterface
     protected function getApiService(): TossPaymentsApiService
     {
         return app(TossPaymentsApiService::class);
+    }
+
+    /**
+     * 결제사에 면세로 넘길 주문 금액(면세 + 영세)을 읽습니다.
+     *
+     * 이커머스 1.3.3 의 `Order::pgTaxFreeAmount()` 를 쓰고, 그 메서드가 없는 구버전(영세 없음)은 면세 합계로 떨어진다 —
+     * 플러그인 갱신은 이커머스 의존 버전을 다시 검사하지 않아 구버전과 함께 돌 수 있다.
+     *
+     * @param  Order  $order  주문
+     * @return float 면세 + 영세
+     */
+    private function pgTaxFreeOf(Order $order): float
+    {
+        return method_exists($order, 'pgTaxFreeAmount')
+            ? $order->pgTaxFreeAmount()
+            : (float) ($order->total_tax_free_amount ?? 0);
+    }
+
+    /**
+     * 결제사에 과세로 넘길 주문 금액(영세를 뺀 과세 합계, 부가세 포함)을 읽습니다.
+     *
+     * @param  Order  $order  주문
+     * @return float 과세 합계(영세 제외)
+     */
+    private function pgTaxableOf(Order $order): float
+    {
+        return method_exists($order, 'pgTaxableAmount')
+            ? $order->pgTaxableAmount()
+            : (float) ($order->total_tax_amount ?? 0);
     }
 }

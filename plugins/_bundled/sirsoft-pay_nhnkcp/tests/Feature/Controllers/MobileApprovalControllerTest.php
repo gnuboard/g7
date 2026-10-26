@@ -27,7 +27,7 @@ class MobileApprovalControllerTest extends PluginTestCase
      * 결제 전 회원 주문과 카드 결제 행을 만듭니다. 과세·부가세·면세 금액을 지정할 수 있습니다.
      *
      * @param  int  $totalAmount  주문 총액(원)
-     * @param  array{taxable?: int, vat?: int, taxFree?: int}  $tax  과세 합계·부가세·면세 금액
+     * @param  array{taxable?: int, vat?: int, taxFree?: int, zeroRated?: int}  $tax  과세 합계·부가세·면세·영세 금액 (과세 합계는 영세 포함)
      * @return Order 만든 주문
      */
     private function createOrder(int $totalAmount = 10000, array $tax = []): Order
@@ -35,6 +35,7 @@ class MobileApprovalControllerTest extends PluginTestCase
         $taxable = $tax['taxable'] ?? $totalAmount;
         $vat = $tax['vat'] ?? (int) round($taxable * 10 / 110);
         $taxFree = $tax['taxFree'] ?? 0;
+        $zeroRated = $tax['zeroRated'] ?? 0;
 
         $user = User::factory()->create();
         $order = OrderFactory::new()->create([
@@ -48,6 +49,7 @@ class MobileApprovalControllerTest extends PluginTestCase
             'total_tax_amount' => $taxable,
             'total_vat_amount' => $vat,
             'total_tax_free_amount' => $taxFree,
+            'total_zero_rated_amount' => $zeroRated,
             'currency' => 'KRW',
             'currency_snapshot' => self::krwCurrencySnapshot(),
         ]);
@@ -576,6 +578,67 @@ class MobileApprovalControllerTest extends PluginTestCase
             $fields['good_mny'],
             'good_mny = 공급가액 + 부가세 + 비과세'
         );
+    }
+
+    /**
+     * 영세 금액은 비과세로 넘기고 공급가·부가세는 영세를 뺀 과세분에서만 나눈다 (이커머스 1.3.3, #612).
+     *
+     * 21,000원 = 과세 11,000(공급가 10,000 + 부가세 1,000) + 영세 10,000(과세표준에 포함, 부가세 0).
+     * 영세를 과세로 넘기면 KCP 가 그 몫에서도 부가세를 떼어 공급가·부가세가 틀어진다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario request=valid
+     *
+     * @effects tax_split_fields_follow_the_order_tax_mix
+     */
+    public function test_zero_rated_amount_is_sent_as_free_money(): void
+    {
+        $order = $this->createOrder(21000, ['taxable' => 21000, 'vat' => 1000, 'taxFree' => 0, 'zeroRated' => 10000]);
+        $this->mockSoapService();
+        $this->mockPluginSettings();
+
+        $response = $this->actingAs($order->user)
+            ->postJson(self::APPROVAL_KEY_ENDPOINT, $this->approvalKeyPayload($order));
+
+        $response->assertOk();
+        $fields = $response->json('data.fields');
+
+        $this->assertEquals('TG03', $fields['tax_flag']);
+        $this->assertEquals('10000', $fields['comm_tax_mny']);
+        $this->assertEquals('1000', $fields['comm_vat_mny']);
+        $this->assertEquals('10000', $fields['comm_free_mny']);
+    }
+
+    /**
+     * 영세만 든 주문은 결제액 전부를 비과세로 넘기고 공급가·부가세는 0 이다 (이커머스 1.3.3, #612).
+     *
+     * 13,000원 = 영세 13,000(과세표준에 포함, 부가세 0). 영세를 과세로 보면 비과세 금액이 0 이라 복합과세 필드가
+     * 빠지고, KCP 는 good_mny 전액을 과세로 받아 1,182원의 부가세를 떼어 낸다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario request=valid
+     *
+     * @effects tax_split_fields_follow_the_order_tax_mix
+     */
+    public function test_zero_rated_only_order_is_sent_entirely_as_free_money(): void
+    {
+        $order = $this->createOrder(13000, ['taxable' => 13000, 'vat' => 0, 'taxFree' => 0, 'zeroRated' => 13000]);
+        $this->mockSoapService();
+        $this->mockPluginSettings();
+
+        $response = $this->actingAs($order->user)
+            ->postJson(self::APPROVAL_KEY_ENDPOINT, $this->approvalKeyPayload($order));
+
+        $response->assertOk();
+        $fields = $response->json('data.fields');
+
+        $this->assertEquals('TG03', $fields['tax_flag'] ?? null);
+        $this->assertEquals('0', $fields['comm_tax_mny']);
+        $this->assertEquals('0', $fields['comm_vat_mny']);
+        $this->assertEquals('13000', $fields['comm_free_mny']);
+        $this->assertEquals('13000', $fields['good_mny'], 'good_mny = 공급가액 + 부가세 + 비과세');
     }
 
     /**

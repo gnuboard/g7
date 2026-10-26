@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ProductOptionFactory;
+use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
 
 /**
@@ -26,6 +27,7 @@ class ProductOption extends Model
         'sku' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.sku', 'type' => 'string'],
         'selling_price' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.selling_price', 'type' => 'currency'],
         'list_price' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.list_price', 'type' => 'currency'],
+        'tax_status' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.tax_status', 'type' => 'enum', 'enum' => ProductTaxStatus::class],
         'price_adjustment' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.price_adjustment', 'type' => 'currency'],
         'stock_quantity' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.stock_quantity', 'type' => 'number'],
         'safe_stock_quantity' => ['label_key' => 'sirsoft-ecommerce::activity_log.fields.safe_stock_quantity', 'type' => 'number'],
@@ -53,6 +55,8 @@ class ProductOption extends Model
         'price_adjustment',
         'list_price',
         'selling_price',
+        // 과세 종류 — null 은 상품 기본값을 따른다 (#612)
+        'tax_status',
         'currency_code',
         'stock_quantity',
         'safe_stock_quantity',
@@ -76,10 +80,21 @@ class ProductOption extends Model
         'volume' => 'decimal:2',
         'mileage_value' => 'decimal:2',
         'mileage_type' => 'string',
+        'tax_status' => ProductTaxStatus::class,
         'is_default' => 'boolean',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
     ];
+
+    /**
+     * 실제 적용되는 과세 종류를 반환합니다 — 옵션 지정값, 없으면 상품 기본값.
+     *
+     * @return ProductTaxStatus 실효 과세 종류
+     */
+    public function getEffectiveTaxStatus(): ProductTaxStatus
+    {
+        return ProductTaxStatus::resolveEffective($this->tax_status, $this->product?->tax_status);
+    }
 
     /**
      * 상품 관계
@@ -261,6 +276,8 @@ class ProductOption extends Model
             'price_adjustment' => $this->price_adjustment,
             'list_price' => $this->list_price,
             'selling_price' => $this->selling_price,
+            // 옵션에 지정한 과세 종류 (null = 상품 따름) — 클레임 재계산(스냅샷 모드)이 주문 시점 값을 쓴다
+            'tax_status' => $this->tax_status?->value,
             'currency_code' => $this->currency_code,
             'stock_quantity' => $this->stock_quantity,
             'weight' => $this->weight,

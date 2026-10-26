@@ -386,10 +386,10 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
 | `sirsoft-koreaexim` | 플러그인 | `>=1.3.0` |
-| `sirsoft-pay_kginicis` | 플러그인 | `>=1.3.0` |
-| `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.3.0` |
-| `sirsoft-pay_nicepayments` | 플러그인 | `>=1.3.0` |
-| `sirsoft-tosspayments` | 플러그인 | `>=1.3.0` |
+| `sirsoft-pay_kginicis` | 플러그인 | `>=1.3.3` |
+| `sirsoft-pay_nhnkcp` | 플러그인 | `>=1.3.3` |
+| `sirsoft-pay_nicepayments` | 플러그인 | `>=1.3.3` |
+| `sirsoft-tosspayments` | 플러그인 | `>=1.3.3` |
 | `sirsoft-basic` | 템플릿 | `>=1.3.0` |
 
 **함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)

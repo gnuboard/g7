@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.7] - 2026-10-26
+
+### Added
+
+- 결제 정보 부가세 내역의 「영세금액」(ゼロ税率金額) 일본어 번역을 추가했습니다.
+
 ## [1.0.6] - 2026-10-21
 
 ### Added

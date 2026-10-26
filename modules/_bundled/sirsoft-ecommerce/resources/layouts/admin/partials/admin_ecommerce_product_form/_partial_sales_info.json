@@ -551,8 +551,38 @@
                                         "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
+                                },
+                                {
+                                    "comment": "영세 상품 — 과세 대상이지만 세율 0%(수출 등). 결제사에는 면세로 넘긴다 (#612, 넓은 화면)",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.tax_status": "zero_rated"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.tax_status === 'zero_rated' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.zero_rated"
                                 }
                             ]
+                        },
+                        {
+                            "comment": "옵션마다 과세 종류를 다르게 정하는 곳 안내 (넓은 화면)",
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-label-subtle"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.create.sales_info.tax_status_help"
                         }
                     ]
                 },
@@ -625,8 +655,38 @@
                                         "disabled": "{{_computed.isReadOnly}}"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
+                                },
+                                {
+                                    "comment": "영세 상품 — 과세 대상이지만 세율 0%(수출 등). 결제사에는 면세로 넘긴다 (#612, 좁은 화면)",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.tax_status": "zero_rated"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-group-item {{_local.form.tax_status === 'zero_rated' ? 'active' : ''}} disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.zero_rated"
                                 }
                             ]
+                        },
+                        {
+                            "comment": "옵션마다 과세 종류를 다르게 정하는 곳 안내 (좁은 화면)",
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-label-subtle mt-1"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.product.create.sales_info.tax_status_help"
                         }
                     ]
                 },

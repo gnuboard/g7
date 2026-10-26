@@ -454,6 +454,14 @@
                                                                     "type": "basic",
                                                                     "name": "Th",
                                                                     "props": {
+                                                                        "className": "text-table-header px-3 py-2 text-left min-w-[120px]"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.product.options.columns.tax_status"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
                                                                         "className": "text-table-header px-3 py-2 text-left min-w-[80px]"
                                                                     },
                                                                     "text": "$t:sirsoft-ecommerce.admin.product.options.columns.sku"
@@ -727,6 +735,89 @@
                                                                                             "text": "{{opt.multi_currency_selling_price?.[currencyCol.currencyCode]?.formatted ?? ''}}"
                                                                                         }
                                                                                     ]
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "props": {
+                                                                        "className": "px-3 py-2"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "props": {
+                                                                                "className": "flex flex-col"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Select",
+                                                                                    "actions": [
+                                                                                        {
+                                                                                            "comment": "이 옵션의 과세 종류 — 비워 두면(기본값 따름) 판매정보의 과세 여부를 따른다. 영세는 세율 0%, 결제사에는 면세로 넘긴다 (#612, 넓은 화면 표)",
+                                                                                            "type": "change",
+                                                                                            "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                                            "params": {
+                                                                                                "index": "{{optIdx}}",
+                                                                                                "field": "tax_status",
+                                                                                                "value": "{{$event.target.value}}"
+                                                                                            }
+                                                                                        }
+                                                                                    ],
+                                                                                    "props": {
+                                                                                        "className": "{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'select input-error w-full' : 'select w-full' }}",
+                                                                                        "value": "{{opt.tax_status ?? ''}}",
+                                                                                        "aria-label": "$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.tax_status')}}",
+                                                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                                                    },
+                                                                                    "children": [
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Option",
+                                                                                            "props": {
+                                                                                                "value": ""
+                                                                                            },
+                                                                                            "text": "$t:sirsoft-ecommerce.admin.product.options.tax_status_inherit|status={{$t('sirsoft-ecommerce.admin.product.tax.' + (_local.form?.tax_status ?? 'taxable'))}}"
+                                                                                        },
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Option",
+                                                                                            "props": {
+                                                                                                "value": "taxable"
+                                                                                            },
+                                                                                            "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable"
+                                                                                        },
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Option",
+                                                                                            "props": {
+                                                                                                "value": "tax_free"
+                                                                                            },
+                                                                                            "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
+                                                                                        },
+                                                                                        {
+                                                                                            "type": "basic",
+                                                                                            "name": "Option",
+                                                                                            "props": {
+                                                                                                "value": "zero_rated"
+                                                                                            },
+                                                                                            "text": "$t:sirsoft-ecommerce.admin.product.tax.zero_rated"
+                                                                                        }
+                                                                                    ]
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "if": "{{ _local.errors?.['options.' + optIdx + '.tax_status'] }}",
+                                                                                    "props": {
+                                                                                        "className": "form-error-xs mt-0.5"
+                                                                                    },
+                                                                                    "text": "{{ _local.errors?.['options.' + optIdx + '.tax_status']?.[0] }}"
                                                                                 }
                                                                             ]
                                                                         }
@@ -1353,6 +1444,88 @@
                                                                 "className": "form-error-xs mt-0.5"
                                                             },
                                                             "text": "{{ _local.errors?.['options.' + optIdx + '.selling_price']?.[0] }}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "form-group col-span-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Label",
+                                                            "props": {
+                                                                "className": "form-label text-xs"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.product.options.columns.tax_status"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Select",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "이 옵션의 과세 종류 — 비워 두면(기본값 따름) 판매정보의 과세 여부를 따른다. 영세는 세율 0%, 결제사에는 면세로 넘긴다 (#612, 좁은 화면 카드 — 같은 값을 다른 배치로 세운 것이다)",
+                                                                    "type": "change",
+                                                                    "handler": "sirsoft-ecommerce.updateFormOptionField",
+                                                                    "params": {
+                                                                        "index": "{{optIdx}}",
+                                                                        "field": "tax_status",
+                                                                        "value": "{{$event.target.value}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "className": "{{ _local.errors?.['options.' + optIdx + '.tax_status'] ? 'select input-error w-full' : 'select w-full' }}",
+                                                                "value": "{{opt.tax_status ?? ''}}",
+                                                                "aria-label": "$t:common.row_cell|row={{$localized(opt.option_name) || $t('common.row_n', {n: optIdx + 1})}}|column={{$t('sirsoft-ecommerce.admin.product.options.columns.tax_status')}}",
+                                                                "disabled": "{{_computed.isReadOnly}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Option",
+                                                                    "props": {
+                                                                        "value": ""
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.product.options.tax_status_inherit|status={{$t('sirsoft-ecommerce.admin.product.tax.' + (_local.form?.tax_status ?? 'taxable'))}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Option",
+                                                                    "props": {
+                                                                        "value": "taxable"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.taxable"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Option",
+                                                                    "props": {
+                                                                        "value": "tax_free"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.tax_free"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Option",
+                                                                    "props": {
+                                                                        "value": "zero_rated"
+                                                                    },
+                                                                    "text": "$t:sirsoft-ecommerce.admin.product.tax.zero_rated"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "if": "{{ _local.errors?.['options.' + optIdx + '.tax_status'] }}",
+                                                            "props": {
+                                                                "className": "form-error-xs mt-0.5"
+                                                            },
+                                                            "text": "{{ _local.errors?.['options.' + optIdx + '.tax_status']?.[0] }}"
                                                         }
                                                     ]
                                                 },

@@ -16,7 +16,11 @@ description: |
 
 axes:
   payment_method: [vbank, card]
-  tax: [mixed, taxable_only]
+  tax: [mixed, taxable_only, mixed_with_zero_rated, zero_rated_only]
+
+exclusions:
+  - { payment_method: vbank, tax: mixed_with_zero_rated, reason: "과세 구분 계산은 결제수단을 보지 않는다 — 카드·가상계좌가 같은 경로임은 tax=mixed 두 케이스가 잠근다" }
+  - { payment_method: vbank, tax: zero_rated_only, reason: "과세 구분 계산은 결제수단을 보지 않는다 — 카드·가상계좌가 같은 경로임은 tax=mixed 두 케이스가 잠근다" }
 
 effects:
   - order_name_is_localized_with_a_count_suffix                 # 주문명 = 현재 로케일 첫 상품명 + 「외 N건」
@@ -30,6 +34,7 @@ effects:
   - pg_payment_data_carries_tax_and_vat_with_tax_free           # 면세분 있음: tax_free_amount + tax_amount(부가세 포함) + vat_amount
   - taxable_only_order_carries_no_tax_split                     # 면세분 없음: 세 키 모두 null
   - tax_free_amount_is_capped_by_the_charge                     # 면세 합계(마일리지 차감 전) > 청구액이면 청구액으로 자름
+  - zero_rated_amount_is_sent_as_tax_free                       # #612 P2 — tax_free = 면세+영세, tax_amount = 과세표준−영세
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Controllers/Public/BuildPgPaymentDataTest.php

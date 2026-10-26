@@ -9,10 +9,12 @@ use App\Http\Resources\BaseApiResource;
 use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\ShippingType;
 use Modules\Sirsoft\Ecommerce\Services\ClaimQuantityGuard;
 use Modules\Sirsoft\Ecommerce\Support\ReviewWritePolicy;
+use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
 
 /**
  * 주문 옵션 리소스
@@ -133,6 +135,10 @@ class OrderOptionResource extends BaseApiResource
             // 실결제 금액 (할인 후)
             'final_amount' => $this->roundToOrderCurrency($finalAmount),
             'final_amount_formatted' => $this->formatOrderCurrency($finalAmount),
+
+            // 품목 과세 구분 (#612) — 주문 시점에 확정한 과세 종류와 그 행의 과세·영세·부가세 몫.
+            // 관리자 주문상세 실결제 셀의 「과세: · 부가세: · 영세:」 줄과 품목 배지 재료다(S7 — 종전엔 미노출).
+            ...$this->taxBreakdown(),
 
             // 할인 상세
             'product_coupon_discount_amount' => $this->roundToOrderCurrency($this->product_coupon_discount_amount),
@@ -416,5 +422,43 @@ class OrderOptionResource extends BaseApiResource
         }
 
         return $ids === [] ? [] : app(ClaimQuantityGuard::class)->lockedQuantities($ids);
+    }
+
+    /**
+     * 이 주문상품 행의 과세 구분 필드를 만듭니다 (#612).
+     *
+     * 과세 행의 부가세는 주문 시점 세율(상품 스냅샷 `tax_rate`)로 그 행의 과세 금액에서 구한다 — 주문 헤더의
+     * 부가세가 옵션별 부가세의 합이라 같은 식이다. 영세 행은 과세 금액 전부가 영세 몫이고 부가세는 0 이다.
+     *
+     * @return array<string, mixed> tax_status·tax_status_label·subtotal_tax/zero_rated/vat_amount(+_formatted)
+     */
+    private function taxBreakdown(): array
+    {
+        $status = $this->resource->getEffectiveTaxStatus();
+        $taxAmount = (float) $this->subtotal_tax_amount;
+        $zeroRated = $status === ProductTaxStatus::ZERO_RATED ? $taxAmount : 0.0;
+        $productStatus = ProductTaxStatus::tryFrom((string) ($this->product_snapshot['tax_status'] ?? '')) ?? ProductTaxStatus::TAXABLE;
+        $vat = $status === ProductTaxStatus::TAXABLE
+            ? (float) VatCalculator::fromTaxableAmount(
+                (int) round($taxAmount),
+                VatCalculator::taxableRate(
+                    $productStatus === ProductTaxStatus::TAXABLE,
+                    isset($this->product_snapshot['tax_rate']) ? (float) $this->product_snapshot['tax_rate'] : null,
+                ),
+            )
+            : 0.0;
+
+        return [
+            'tax_status' => $status->value,
+            'tax_status_label' => $status->label(),
+            'subtotal_tax_amount' => $this->roundToOrderCurrency($taxAmount),
+            'subtotal_tax_amount_formatted' => $this->formatOrderCurrency($taxAmount),
+            'subtotal_zero_rated_amount' => $this->roundToOrderCurrency($zeroRated),
+            'subtotal_zero_rated_amount_formatted' => $this->formatOrderCurrency($zeroRated),
+            'subtotal_vat_amount' => $this->roundToOrderCurrency($vat),
+            'subtotal_vat_amount_formatted' => $this->formatOrderCurrency($vat),
+            'subtotal_tax_free_amount' => $this->roundToOrderCurrency((float) $this->subtotal_tax_free_amount),
+            'subtotal_tax_free_amount_formatted' => $this->formatOrderCurrency((float) $this->subtotal_tax_free_amount),
+        ];
     }
 }

@@ -617,4 +617,68 @@ class BuildPgPaymentDataTest extends ModuleTestCase
         $this->assertNull($result['tax_amount']);
         $this->assertNull($result['vat_amount']);
     }
+
+    /**
+     * 영세 금액은 결제사에 면세로 넘기고, 과세 합계에서는 뺀다(#612 P2).
+     *
+     * 주문: 과세표준 31,000(과세 21,000 + 영세 10,000)·부가세 1,909·면세 5,000. 결제사는 「면세 + 영세」를
+     * 부가세 없는 금액으로 받아야 영세분에 부가세를 매기지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario payment_method=card, tax=mixed_with_zero_rated
+     *
+     * @effects zero_rated_amount_is_sent_as_tax_free
+     */
+    public function test_영세_금액은_면세에_합산하고_과세_합계에서_뺀다(): void
+    {
+        $order = Order::factory()->forUser($this->createUser())->create([
+            'total_due_amount' => 36000,
+            'total_tax_amount' => 31000,
+            'total_zero_rated_amount' => 10000,
+            'total_vat_amount' => 1909,
+            'total_tax_free_amount' => 5000,
+            'currency_snapshot' => ['order_currency' => 'KRW'],
+        ]);
+        OrderOption::factory()->forOrder($order)->create(['product_name' => ['ko' => '상품 A']]);
+        OrderPayment::factory()->create(['order_id' => $order->id, 'payment_method' => PaymentMethodEnum::CARD]);
+
+        $result = $this->callBuildPgPaymentData($order->fresh());
+
+        $this->assertSame(15000, $result['tax_free_amount']);
+        $this->assertSame(21000, $result['tax_amount']);
+        $this->assertSame(1909, $result['vat_amount']);
+        $this->assertSame($result['amount'], $result['tax_free_amount'] + $result['tax_amount']);
+    }
+
+    /**
+     * 영세만 든 주문도 면세분이 있는 주문으로 다뤄 과세 구분 키를 싣는다 — 과세 0·부가세 0.
+     *
+     * 영세 도입 전에는 이런 주문이 면세분 없음으로 분류돼 결제사가 전액에 부가세를 매겼다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario payment_method=card, tax=zero_rated_only
+     *
+     * @effects zero_rated_amount_is_sent_as_tax_free
+     */
+    public function test_영세만_든_주문은_전액을_면세로_싣는다(): void
+    {
+        $order = Order::factory()->forUser($this->createUser())->create([
+            'total_due_amount' => 13000,
+            'total_tax_amount' => 13000,
+            'total_zero_rated_amount' => 13000,
+            'total_vat_amount' => 0,
+            'total_tax_free_amount' => 0,
+            'currency_snapshot' => ['order_currency' => 'KRW'],
+        ]);
+        OrderOption::factory()->forOrder($order)->create(['product_name' => ['ko' => '상품 A']]);
+        OrderPayment::factory()->create(['order_id' => $order->id, 'payment_method' => PaymentMethodEnum::CARD]);
+
+        $result = $this->callBuildPgPaymentData($order->fresh());
+
+        $this->assertSame(13000, $result['tax_free_amount']);
+        $this->assertSame(0, $result['tax_amount']);
+        $this->assertSame(0, $result['vat_amount']);
+    }
 }

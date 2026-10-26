@@ -243,6 +243,67 @@ class RefundSpecConformanceTest extends PluginTestCase
     }
 
     /**
+     * 영세 금액은 승인 때처럼 비과세로 나눈다 — 승인 표식은 면세 + 영세, 부분취소 비과세는 그 비율, 부가세는 영세를 뺀
+     * 과세분에서만 뗀다 (이커머스 1.3.3, #612).
+     *
+     * 주문: 과세표준 22,000(영세 8,000 포함)·부가세 1,273·면세 0. 10,000 부분취소 → 비과세 10000×8000/22000 = 3,636,
+     * 부가세 (10000−3636)×1273/14000 = 579.
+     *
+     * @scenario method=card
+     *
+     * @effects partial_refund_carries_tax_split_of_split_approval
+     *
+     * @return void 반환값 없음
+     */
+    public function test_zero_rated_amount_is_split_as_tax_free(): void
+    {
+        $order = $this->paidOrder(['payment_meta' => ['tax_split' => ['tax_free_amount' => 8000, 'tax_free_cancelled' => 0]]]);
+        $order->forceFill([
+            'total_tax_amount' => 22000,
+            'total_zero_rated_amount' => 8000,
+            'total_vat_amount' => 1273,
+            'total_tax_free_amount' => 0,
+            'currency_snapshot' => ['order_currency' => 'KRW'],
+        ])->save();
+
+        $captured = [];
+        $api = $this->createMock(KgInicisApiService::class);
+        $api->method('cancelPayment')->willReturnCallback(function (...$args) use (&$captured) {
+            $captured[] = $args[6] ?? null;
+
+            return ['resultCode' => '00', 'prtcTid' => 'PRTC_1'];
+        });
+        $this->app->instance(KgInicisApiService::class, $api);
+
+        $result = app(PaymentRefundListener::class)->processRefund(['success' => false], $order->fresh(), $order->payment, 10000.0, '부분');
+
+        $this->assertTrue($result['success']);
+        $this->assertSame([['tax' => 579, 'taxFree' => 3636]], $captured);
+
+        $splitter = new class
+        {
+            use SplitsInicisTax;
+
+            /**
+             * 비공개 표식 생성기를 시험에서 부릅니다.
+             *
+             * @param  Order  $order  주문
+             * @param  int  $amount  승인 금액
+             * @return array 표식
+             */
+            public function approvalMeta(Order $order, int $amount): array
+            {
+                return $this->buildTaxSplitApprovalMeta($order, $amount);
+            }
+        };
+        $this->assertSame(
+            ['tax_split' => ['tax_free_amount' => 8000, 'tax_free_cancelled' => 0]],
+            $splitter->approvalMeta($order->fresh(), 22000),
+            '영세만 있어도 승인 표식을 남긴다',
+        );
+    }
+
+    /**
      * 회차별 비과세 몫은 승인 면세액에서 이미 취소한 몫을 뺀 잔여 예산을 넘지 않는다 — 주문 합계는 환불마다 잔여로 줄어
      * 몫의 합이 승인 면세액을 넘을 수 있다(토스 S1-D14 와 같은 상한).
      *

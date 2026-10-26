@@ -274,6 +274,7 @@
     "product_amount": "상품 금액",
     "taxable_amount": "과세 금액",
     "tax_free_amount": "면세 금액",
+    "zero_rated_amount": "영세 금액",
     "discount_total": "할인",
     "coupon_discount": "쿠폰 할인",
     "code_discount": "할인코드 할인",

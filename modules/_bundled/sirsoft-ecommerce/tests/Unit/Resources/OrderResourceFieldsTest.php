@@ -8,6 +8,7 @@ use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\MileageTransactionTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
+use Modules\Sirsoft\Ecommerce\Enums\ProductTaxStatus;
 use Modules\Sirsoft\Ecommerce\Enums\RefundMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundSourceTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\RefundStatusEnum;
@@ -900,5 +901,112 @@ class OrderResourceFieldsTest extends ModuleTestCase
 
         $this->assertSame(10000, (int) $resource['total_refunded_mileage_credit_amount']);
         $this->assertStringContainsString('10,000', $resource['total_refunded_mileage_credit_amount_formatted']);
+    }
+
+    /**
+     * 주문상품 행이 품목별 과세 금액·부가세를 싣는지 확인 — 관리자 주문상세 실결제 셀의 「과세: · 부가세:」 줄 재료(#612 S7).
+     *
+     * 수정 전에는 화면이 바인딩한 `subtotal_tax_amount`·`subtotal_vat_amount` 를 리소스가 싣지 않아
+     * 그 줄이 한 번도 보이지 않았다.
+     *
+     * @effects option_exposes_per_row_tax_and_vat_amounts
+     *
+     * @return void 반환값 없음
+     */
+    public function test_order_option_resource_exposes_row_tax_and_vat(): void
+    {
+        $order = OrderFactory::new()->create(['currency' => 'KRW']);
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'subtotal_tax_amount' => 11000,
+            'subtotal_tax_free_amount' => 0,
+            'product_snapshot' => ['id' => 1, 'name' => '과세 상품', 'tax_status' => 'taxable', 'tax_rate' => 10],
+        ]);
+
+        $resource = (new OrderOptionResource($option))->resolve();
+
+        $this->assertEquals(11000, $resource['subtotal_tax_amount']);
+        $this->assertEquals(1000, $resource['subtotal_vat_amount']);
+        $this->assertStringContainsString('1,000', $resource['subtotal_vat_amount_formatted']);
+    }
+
+    /**
+     * 영세 주문상품 행은 과세 금액 전부를 영세 몫으로 싣고 부가세는 0 인지 확인 (#612 W9).
+     *
+     * 상품 스냅샷은 과세(세율 10)라도 행에 확정한 과세 종류가 영세면 그 값을 따른다 — 스냅샷만 보면
+     * 영세 행에 부가세 909 가 붙어 「과세: · 부가세:」 줄이 영세 품목을 과세로 보인다.
+     *
+     * @effects option_exposes_zero_rated_row_breakdown
+     *
+     * @return void 반환값 없음
+     */
+    public function test_order_option_resource_exposes_zero_rated_row_breakdown(): void
+    {
+        $order = OrderFactory::new()->create(['currency' => 'KRW']);
+        $option = OrderOptionFactory::new()->forOrder($order)->create([
+            'tax_status' => ProductTaxStatus::ZERO_RATED,
+            'subtotal_tax_amount' => 10000,
+            'subtotal_tax_free_amount' => 0,
+            'product_snapshot' => ['id' => 1, 'name' => '수출 상품', 'tax_status' => 'taxable', 'tax_rate' => 10],
+        ]);
+
+        $resource = (new OrderOptionResource($option))->resolve();
+
+        $this->assertSame('zero_rated', $resource['tax_status']);
+        $this->assertEquals(10000, $resource['subtotal_tax_amount']);
+        $this->assertEquals($resource['subtotal_tax_amount'], $resource['subtotal_zero_rated_amount']);
+        $this->assertStringContainsString('10,000', $resource['subtotal_zero_rated_amount_formatted']);
+        $this->assertEquals(0, $resource['subtotal_vat_amount']);
+        $this->assertEquals(0, $resource['subtotal_tax_free_amount']);
+    }
+
+    /**
+     * 주문 응답이 영세 금액과 과세 공급가액(과세 − 영세 − 부가세)을 싣는지 확인 (#612 W8).
+     *
+     * 과세표준 24,000(영세 11,429 포함)·부가세 1,143 → 공급가액 11,428. 영세를 빼지 않으면 22,857 이 되어
+     * PG 영수증 블록의 「공급가액」 줄이 결제사에 면세로 넘긴 영세 몫까지 과세로 보인다.
+     *
+     * @effects order_exposes_zero_rated_and_taxable_supply_amounts
+     *
+     * @return void 반환값 없음
+     */
+    public function test_order_resource_exposes_zero_rated_and_taxable_supply_amounts(): void
+    {
+        $order = OrderFactory::new()->create([
+            'currency' => 'KRW',
+            'total_tax_amount' => 24000,
+            'total_zero_rated_amount' => 11429,
+            'total_vat_amount' => 1143,
+            'total_tax_free_amount' => 0,
+        ]);
+
+        $resource = (new OrderResource($order))->resolve();
+
+        $this->assertEquals(11429, $resource['total_zero_rated_amount']);
+        $this->assertStringContainsString('11,429', $resource['total_zero_rated_amount_formatted']);
+        $this->assertEquals(24000 - 11429 - 1143, $resource['total_taxable_supply_amount']);
+        $this->assertStringContainsString('11,428', $resource['total_taxable_supply_amount_formatted']);
+    }
+
+    /**
+     * 영세가 없는 주문은 영세 금액 0, 공급가액 = 과세 − 부가세(종전 값)인지 확인 (#612 W8 회귀 방지).
+     *
+     * @effects order_exposes_zero_rated_and_taxable_supply_amounts
+     *
+     * @return void 반환값 없음
+     */
+    public function test_order_resource_supply_amount_without_zero_rated_is_tax_minus_vat(): void
+    {
+        $order = OrderFactory::new()->create([
+            'currency' => 'KRW',
+            'total_tax_amount' => 11000,
+            'total_zero_rated_amount' => 0,
+            'total_vat_amount' => 1000,
+            'total_tax_free_amount' => 5000,
+        ]);
+
+        $resource = (new OrderResource($order))->resolve();
+
+        $this->assertEquals(0, $resource['total_zero_rated_amount']);
+        $this->assertEquals(10000, $resource['total_taxable_supply_amount']);
     }
 }

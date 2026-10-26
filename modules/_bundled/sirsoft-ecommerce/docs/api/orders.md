@@ -618,6 +618,8 @@ _단건 응답: `data` 객체의 필드._
 | total_tax_amount_formatted | string | `¥16,000` | `total_tax_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_vat_amount | integer | `1455` | 총 부가세금액 |
 | total_vat_amount_formatted | string | `¥1,455` | `total_vat_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| total_zero_rated_amount | integer | `0` | 총 영세금액 — 총 과세금액에 포함된 세율 0% 몫(부가세 0). 결제사·현금영수증에는 면세로 넘긴다 (1.3.3) |
+| total_zero_rated_amount_formatted | string | `0원` | `total_zero_rated_amount` 의 표시용 포맷 문자열 |
 | total_taxable_supply_amount | integer | `14545` | 과세 공급가액 (총 과세금액 − 부가세, 영수증 과세금액 표시 SSoT) |
 | total_taxable_supply_amount_formatted | string | `¥14,545` | `total_taxable_supply_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_tax_free_amount | integer | `0` | 총 면세금액 |
@@ -638,10 +640,17 @@ _단건 응답: `data` 객체의 필드._
 | delivery_memo | string | `parcel_box` | 배송 메모 (배송지에서 플래튼, 미입력 시 null) |
 | delivery_memo_label | string | `택배함에 넣어주세요` | `delivery_memo` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | options | array | `[{"id":1263,"option_status":"payment_complete","option_st…` | 주문 옵션(품목) 목록 (OrderOptionResource — 상품·옵션·수량·옵션상태·금액) |
+| options[].tax_status | string | `taxable` | 주문 시점에 확정한 과세 종류 (`taxable`·`tax_free`·`zero_rated` — 옵션 지정 ?? 상품 기본값, 1.3.3). 1.3.3 이전 주문은 업그레이드가 상품 스냅샷 값으로 채운다 |
+| options[].tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
+| options[].subtotal_tax_amount | integer | `11000` | 이 품목의 과세 금액(과세표준 — 영세 포함). `_formatted` 동반 |
+| options[].subtotal_vat_amount | integer | `1000` | 과세 품목의 부가세(주문 시점 세율), 면세·영세는 0. `_formatted` 동반 |
+| options[].subtotal_zero_rated_amount | integer | `0` | 영세 품목의 영세 금액(= 과세 금액), 그 외 0. `_formatted` 동반 |
+| options[].subtotal_tax_free_amount | integer | `0` | 면세 품목의 면세 금액. `_formatted` 동반 |
 | shipping_address | object | `{"id":319,"address_type":"shipping","orderer_name":"박대수",…` | 배송지 상세 (OrderAddressResource — 주문자/수령인/국내·해외 주소) |
 | billing_address | null | `null` | 청구지 상세 (OrderAddressResource, 미분리 시 null) |
 | payment | object | `{"id":1,"payment_status":"paid","payment_status_label":"P…` | 대표 결제 정보 (OrderPaymentResource — 결제수단·결제상태·금액). 무통장 결제행은 현금영수증 발급 프로바이더 `cash_receipt_provider`(id)와 그 현재 언어 표시명 `cash_receipt_provider_label`(등록 항목의 `name_key` 번역 → `name` → id 순)을 함께 싣는다. `has_cash_to_return`(bool)은 이 주문에 돌려줄 현금이 남아 있는지(주문 장부·결제행 수납액 기준 — [입금확인]에서 입금만 기록한 결제 전 주문도 포함) — 취소 창의 환불 계좌 칸 노출 근거 |
 | payments | array | `[{"id":1,"payment_status":"paid","payment_status_label":"…` | 결제 이력 목록 (OrderPaymentResource 배열 — 다회 결제/부분결제 포함) |
+| payments[].cancelled_vat_amount | integer | `0` | 취소·환불로 줄어든 부가세 누적(재계산 전 − 후, 승인 부가세 `vat_amount` 상한). 승인 부가세는 바꾸지 않는다 (1.3.3). `_formatted` 동반 |
 | cash_receipt | null | `null` | 현재 유효한 현금영수증 (CashReceiptResource — 취소되지 않은 발급 건, 없으면 null) |
 | cash_receipts | array | `[]` | 현금영수증 발급·취소 이력 전체 (CashReceiptResource 배열 — 취소된 건 포함) |
 
@@ -1067,7 +1076,7 @@ Content-Type: application/json
 | receipt_type_label | string | 발급 용도의 다국어 표시명 (예: `소득공제용`) |
 | amount | integer | 발급 금액 (주문 통화 기준 반올림, 과세분 포함 총액) |
 | amount_formatted | string | 발급 금액의 통화 표기 문자열 (예: `12,000원`) |
-| tax_free_amount | integer | 발급 금액 중 면세 금액 |
+| tax_free_amount | integer | 발급 금액 중 면세 금액 — 면세 + 영세(부가세가 없는 몫, 1.3.3) |
 | tax_free_amount_formatted | string | 면세 금액의 통화 표기 문자열 |
 | identifier_masked | string | 마스킹된 식별번호 (원본은 어떤 응답에도 노출되지 않음) |
 | receipt_url | string\|null | 프로바이더가 발급한 영수증 조회 링크 |
@@ -2290,8 +2299,8 @@ _단건 응답: `data` 객체의 필드 (HTTP 201). 회원은 `order` 에 `Order
 | customer_email | string | `ji792@mail.test` | 주문자 이메일 |
 | customer_phone | string | `01055144949` | 주문자 휴대전화 (숫자만) |
 | customer_key | string \| null | `user_12` | 회원 식별 키 (비회원은 `null`) |
-| tax_free_amount | integer \| null | `5000` | 주문 면세 합계를 청구액과 같은 규칙으로 환산한 최소 화폐단위 정수(청구액 `amount` 를 넘지 않게 자름 — 면세 합계는 마일리지 차감 전 값). 면세분이 없으면 `null` |
-| tax_amount | integer \| null | `22000` | 면세분이 있을 때만: 주문 과세 합계(부가세 포함), 같은 환산 규칙. 없으면 `null` |
+| tax_free_amount | integer \| null | `5000` | 주문 면세 합계 + 영세 합계(1.3.3 — 영세는 부가세가 없어 결제사에 면세로 넘긴다)를 청구액과 같은 규칙으로 환산한 최소 화폐단위 정수(청구액 `amount` 를 넘지 않게 자름 — 면세 합계는 마일리지 차감 전 값). 면세·영세분이 없으면 `null` |
+| tax_amount | integer \| null | `22000` | 면세·영세분이 있을 때만: 주문 과세 합계(부가세 포함)에서 영세를 뺀 값, 같은 환산 규칙. 없으면 `null` |
 | vat_amount | integer \| null | `2000` | 면세분이 있을 때만: 주문 부가세 합계, 같은 환산 규칙. 없으면 `null` — 공급가액·부가세를 나눠 받는 PG 가 결제액을 `vat_amount / tax_amount` 비율로 나눈다 |
 | escrow_products | array | `[{"id":12,"name":"코튼 후드티 #12","code":"YD1JTVLJEMKAUTKS","unitPrice":31000,"quantity":1}]` | 에스크로 결제(가상계좌·계좌이체)용 상품 상세 (`unitPrice` 는 개당가, 비에스크로는 무시) |
 
@@ -2478,6 +2487,8 @@ _단건 응답: `data` 객체의 필드._
 | total_tax_amount_formatted | string | `29,757원` | `total_tax_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_vat_amount | integer | `0` | 총 부가세금액 |
 | total_vat_amount_formatted | string | `0원` | `total_vat_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| total_zero_rated_amount | integer | `0` | 총 영세금액 — 총 과세금액에 포함된 세율 0% 몫(부가세 0). 결제사·현금영수증에는 면세로 넘긴다 (1.3.3) |
+| total_zero_rated_amount_formatted | string | `0원` | `total_zero_rated_amount` 의 표시용 포맷 문자열 |
 | total_taxable_supply_amount | integer | `29757` | 과세 공급가액 (총 과세금액 − 부가세, 영수증 과세금액 표시 SSoT) |
 | total_taxable_supply_amount_formatted | string | `29,757원` | `total_taxable_supply_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_tax_free_amount | integer | `0` | 총 면세금액 |
@@ -2498,6 +2509,12 @@ _단건 응답: `data` 객체의 필드._
 | delivery_memo | null | `null` | 배송 메모 (배송지에서 플래튼, 미입력 시 null) |
 | delivery_memo_label | null | `null` | `delivery_memo` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | options | array | `[]` | 주문 옵션(품목) 목록 (OrderOptionResource — 상품·옵션·수량·옵션상태·금액) |
+| options[].tax_status | string | `taxable` | 주문 시점에 확정한 과세 종류 (`taxable`·`tax_free`·`zero_rated` — 옵션 지정 ?? 상품 기본값, 1.3.3). 1.3.3 이전 주문은 업그레이드가 상품 스냅샷 값으로 채운다 |
+| options[].tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
+| options[].subtotal_tax_amount | integer | `11000` | 이 품목의 과세 금액(과세표준 — 영세 포함). `_formatted` 동반 |
+| options[].subtotal_vat_amount | integer | `1000` | 과세 품목의 부가세(주문 시점 세율), 면세·영세는 0. `_formatted` 동반 |
+| options[].subtotal_zero_rated_amount | integer | `0` | 영세 품목의 영세 금액(= 과세 금액), 그 외 0. `_formatted` 동반 |
+| options[].subtotal_tax_free_amount | integer | `0` | 면세 품목의 면세 금액. `_formatted` 동반 |
 | shipping_address | null | `null` | 배송지 상세 (OrderAddressResource — 주문자/수령인/국내·해외 주소) |
 | billing_address | null | `null` | 청구지 상세 (OrderAddressResource, 미분리 시 null) |
 | payment | null | `null` | 대표 결제 정보 (OrderPaymentResource — 결제수단·결제상태·금액) |
@@ -3323,6 +3340,8 @@ _단건 응답: `data` 객체의 필드._
 | total_tax_amount_formatted | string | `29,757원` | `total_tax_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_vat_amount | integer | `0` | 총 부가세금액 |
 | total_vat_amount_formatted | string | `0원` | `total_vat_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
+| total_zero_rated_amount | integer | `0` | 총 영세금액 — 총 과세금액에 포함된 세율 0% 몫(부가세 0). 결제사·현금영수증에는 면세로 넘긴다 (1.3.3) |
+| total_zero_rated_amount_formatted | string | `0원` | `total_zero_rated_amount` 의 표시용 포맷 문자열 |
 | total_taxable_supply_amount | integer | `29757` | 과세 공급가액 (총 과세금액 − 부가세, 영수증 과세금액 표시 SSoT) |
 | total_taxable_supply_amount_formatted | string | `29,757원` | `total_taxable_supply_amount` 값의 표시용 포맷 문자열 (통화/용량/일시 등 로케일·단위 포맷) |
 | total_tax_free_amount | integer | `0` | 총 면세금액 |
@@ -3343,6 +3362,12 @@ _단건 응답: `data` 객체의 필드._
 | delivery_memo | null | `null` | 배송 메모 (배송지에서 플래튼, 미입력 시 null) |
 | delivery_memo_label | null | `null` | `delivery_memo` 값의 사람이 읽는 라벨 (현지화/Enum 파생) |
 | options | array | `[]` | 주문 옵션(품목) 목록 (OrderOptionResource — 상품·옵션·수량·옵션상태·금액) |
+| options[].tax_status | string | `taxable` | 주문 시점에 확정한 과세 종류 (`taxable`·`tax_free`·`zero_rated` — 옵션 지정 ?? 상품 기본값, 1.3.3). 1.3.3 이전 주문은 업그레이드가 상품 스냅샷 값으로 채운다 |
+| options[].tax_status_label | string | `과세` | `tax_status` 의 현지화 라벨 |
+| options[].subtotal_tax_amount | integer | `11000` | 이 품목의 과세 금액(과세표준 — 영세 포함). `_formatted` 동반 |
+| options[].subtotal_vat_amount | integer | `1000` | 과세 품목의 부가세(주문 시점 세율), 면세·영세는 0. `_formatted` 동반 |
+| options[].subtotal_zero_rated_amount | integer | `0` | 영세 품목의 영세 금액(= 과세 금액), 그 외 0. `_formatted` 동반 |
+| options[].subtotal_tax_free_amount | integer | `0` | 면세 품목의 면세 금액. `_formatted` 동반 |
 | shipping_address | null | `null` | 배송지 상세 (OrderAddressResource — 주문자/수령인/국내·해외 주소) |
 | billing_address | null | `null` | 청구지 상세 (OrderAddressResource, 미분리 시 null) |
 | payment | null | `null` | 대표 결제 정보 (OrderPaymentResource — 결제수단·결제상태·금액) |

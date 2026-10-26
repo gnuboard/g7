@@ -351,7 +351,9 @@ trait HandlesOrderCreation
         // **전액 과세**로 등록해 두었다가 면세분이 실린 취소를 **「취소 할 수 없는 금액 입니다」**
         // 로 거절한다 — 면세 상품이 섞인 주문의 부분환불이 통째로 막힌다.
         // 환산은 청구액과 같은 스냅샷 규칙을 쓴다(둘이 다른 환율을 타면 PG 가 합을 못 맞춘다).
-        $taxFreeBase = (float) ($order->total_tax_free_amount ?? 0);
+        // 영세(세율 0%)는 부가세가 없으므로 PG 에는 면세에 합산해 넘긴다(#612 P2) — 쇼핑몰 장부에는
+        // `total_zero_rated_amount` 로 따로 남는다. 계산식은 Order::pgTaxFreeAmount()/pgTaxableAmount() 한 곳.
+        $taxFreeBase = $order->pgTaxFreeAmount();
         $taxFreeCharge = $taxFreeBase > 0
             ? app(CurrencyConversionService::class)
                 ->resolveSnapshotPaymentCharge($taxFreeBase, $order->currency_snapshot ?? [])
@@ -364,7 +366,7 @@ trait HandlesOrderCreation
         $vatCharge = null;
         if ($taxFreeCharge !== null) {
             $taxCharge = app(CurrencyConversionService::class)
-                ->resolveSnapshotPaymentCharge((float) ($order->total_tax_amount ?? 0), $order->currency_snapshot ?? []);
+                ->resolveSnapshotPaymentCharge($order->pgTaxableAmount(), $order->currency_snapshot ?? []);
             $vatCharge = app(CurrencyConversionService::class)
                 ->resolveSnapshotPaymentCharge((float) ($order->total_vat_amount ?? 0), $order->currency_snapshot ?? []);
         }
@@ -386,7 +388,7 @@ trait HandlesOrderCreation
             'tax_free_amount' => $taxFreeCharge !== null
                 ? min($taxFreeCharge['minor_unit_amount'], $charge['minor_unit_amount'])
                 : null,
-            // 면세분이 있을 때만: 과세 합계(부가세 포함)·부가세 — 공급가액·부가세 분할 비율용
+            // 면세분이 있을 때만: 과세 합계(부가세 포함, 영세 제외)·부가세 — 공급가액·부가세 분할 비율용
             'tax_amount' => $taxCharge['minor_unit_amount'] ?? null,
             'vat_amount' => $vatCharge['minor_unit_amount'] ?? null,
             'customer_name' => $shippingAddress?->orderer_name,
