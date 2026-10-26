@@ -281,8 +281,8 @@ describe('회원 주문상세 클레임 섹션 — 기본 서브탭 (서버가 �
     const test = makeDefaultTypeTest({ page: '1' }, 'return');
     await test.render();
 
-    // 탭 라벨은 표현식 안 $t() 라 하네스가 키를 그대로 남긴다 — 활성 판정만 본다
-    expect(activeTabs()).toEqual(['claim.list.tab_return']);
+    // 탭 라벨은 표현식 안 $t() — 시험 도구가 실제 앱처럼 $locale·$templateId 를 실으면서(7.1.3) 번역된 라벨로 활성 판정을 본다
+    expect(activeTabs()).toEqual(['반품']);
     expect(screen.getByText('RT20260901-0003')).toBeInTheDocument();
 
     test.cleanup();
@@ -294,7 +294,7 @@ describe('회원 주문상세 클레임 섹션 — 기본 서브탭 (서버가 �
     const test = makeDefaultTypeTest({ type: 'exchange', page: '1' }, 'return');
     await test.render();
 
-    expect(activeTabs()).toEqual(['claim.list.tab_exchange']);
+    expect(activeTabs()).toEqual(['교환']);
 
     test.cleanup();
   });

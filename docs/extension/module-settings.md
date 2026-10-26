@@ -144,6 +144,8 @@ storage/app/modules/{vendor-module}/settings/
 }
 ```
 
+> **계산값 키 (7.1.3+)**: 요청마다 계산하는 값(다른 확장의 훅 결과 등)은 `defaults` 에 두더라도 모듈 클래스의 `getComputedSettingKeys()` 에 선언한다. 선언한 키는 설치 때 설정 파일에 쓰지 않고, 저장 요청·기존 파일에서 빼고, 읽을 때 늘 `getConfigValues()` 의 실시간 값을 쓴다 — [플러그인 개발 가이드 — 계산값 키](plugin-development.md#계산값-키-getcomputedsettingkeys-713).
+
 ### 3.4 frontend_schema 섹션
 
 프론트엔드에 노출할 필드를 제어합니다.

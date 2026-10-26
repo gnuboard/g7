@@ -17,3 +17,4 @@ export { A, type AProps } from './components/basic/A';
 export { Span, type SpanProps } from './components/basic/Span';
 export { Img, type ImgProps } from './components/basic/Img';
 export { HelloModuleMemoCard } from './components/overrides/gnuboard7-hello_module/MemoCard';
+export { handlerMap, initTemplate } from './bootstrap';

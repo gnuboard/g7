@@ -1,0 +1,22 @@
+feature: 확장 설정의 계산값 키 — 설치·저장 때 쓰지 않고 읽을 때 늘 실시간 값 (7.1.3)
+
+description: |
+  확장은 getComputedSettingKeys() 로 매번 계산하는 설정 키를 선언한다(GDPR 필수 저장 잠금·제공 목록). Plugin·ModuleSettingsService
+  의 읽기는 저장 파일의 그 키를 무시하고 실시간 값을 쓰고, 저장은 요청·기존 파일 양쪽에서 뺀다. 플러그인 설치 시드는 defaults 절이
+  없을 때 설정 스키마의 키만, 계산값 키는 빼고 쓴다(설치 시점 고정값이 파일에 굳는 문제도 함께 정리).
+
+axes:
+  owner: [plugin, module]
+  path: [read, save, install_seed]
+
+exclusions:
+  - { owner: module, path: save, reason: "모듈 저장은 플러그인과 같은 ComputedSettingKeys::strip 두 줄 — plugin 칸이 덮는다" }
+  - { owner: module, path: install_seed, reason: "모듈 설치 시드는 defaults.json 의 defaults 절만 쓰며 같은 strip 한 줄 — 번들 모듈에 계산값 키 선언 0" }
+
+effects:
+  - computed_key_read_is_always_live
+  - computed_key_never_written_on_save
+  - install_seed_writes_schema_keys_only
+
+test_files:
+  - tests/Unit/Services/PluginSettingsComputedKeysTest.php

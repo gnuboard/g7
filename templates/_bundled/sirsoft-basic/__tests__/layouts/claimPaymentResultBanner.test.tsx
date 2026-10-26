@@ -97,7 +97,14 @@ async function renderWith(query: Record<string, string>) {
   return { utils, container };
 }
 
+// 결과 안내는 식 안의 $t(...) 로 번역된다 — 실제 앱처럼 $locale·$templateId 를 싣는 시험 도구(7.1.3)에서는 번역된 문장이 보인다
+// (종전 도구는 그 전역을 빠뜨려 키 원문이 남았고, 시험이 그 원문을 단언했다)
 describe('클레임 추가결제 결과 배너', () => {
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   *
+   * @effects claim_payment_returns_to_a_screen_that_exists
+   */
   it('주문 상세에는 남아 있지 않다 — 이관은 옮기는 것이지 복제가 아니다', () => {
     const orderShell = fs.readFileSync(
       path.resolve(__dirname, '../../layouts/mypage/orders/show.json'),
@@ -114,6 +121,11 @@ describe('클레임 추가결제 결과 배너', () => {
     active = null;
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   *
+   * @effects claim_payment_result_banner_distinguishes_three_outcomes
+   */
   it('성공 — 완료 안내와 신청번호가 나오고 재시도 안내는 나오지 않는다', async () => {
     const { utils, container } = await renderWith({
       claim_payment: 'success',
@@ -123,15 +135,20 @@ describe('클레임 추가결제 결과 배너', () => {
 
     const text = container.textContent ?? '';
 
-    expect(text).toContain('claim.payment_result.success');
-    expect(text).not.toContain('claim.payment_result.failed');
-    expect(text).not.toContain('claim.payment_result.cancelled');
+    expect(text).toContain('추가 결제가 완료되었습니다.');
+    expect(text).not.toContain('추가 결제가 완료되지 않았습니다.');
+    expect(text).not.toContain('결제를 취소하셨습니다.');
     // 신청번호는 파라미터 치환까지 간다 — 번호가 실리지 않으면 어느 건의 결제인지 알 수 없다.
     expect(text).toContain('신청번호 RT20260831-0001');
     expect(text).not.toContain('다시 결제하실 수 있습니다');
     expect(container.querySelector('[data-icon="circle-check"]')).not.toBeNull();
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   *
+   * @effects claim_payment_result_banner_distinguishes_three_outcomes
+   */
   it('실패 — 실패 안내와 재시도 안내가 함께 나온다 (성공과 구분된다)', async () => {
     const { utils, container } = await renderWith({
       claim_payment: 'failed',
@@ -142,47 +159,67 @@ describe('클레임 추가결제 결과 배너', () => {
 
     const text = container.textContent ?? '';
 
-    expect(text).toContain('claim.payment_result.failed');
+    expect(text).toContain('추가 결제가 완료되지 않았습니다.');
     expect(text).toContain('다시 결제하실 수 있습니다');
-    expect(text).not.toContain('claim.payment_result.success');
+    expect(text).not.toContain('추가 결제가 완료되었습니다.');
     // 서버는 계약대로 실패 코드를 함께 싣는다(`?error={code}`) — 감추면 구매자가 고객센터에
     // 말할 것이 남지 않고 운영자도 어느 실패인지 알 수 없다.
     expect(text).toContain('실패 코드 amount_mismatch');
     expect(container.querySelector('[data-icon="circle-exclamation"]')).not.toBeNull();
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   *
+   * @effects claim_payment_result_banner_distinguishes_three_outcomes
+   */
   it('실패 — 코드가 실리지 않은 실패에서는 코드 줄을 세우지 않는다 (빈 코드 표시 금지)', async () => {
     const { utils, container } = await renderWith({ claim_payment: 'failed' });
     active = utils;
 
     const text = container.textContent ?? '';
 
-    expect(text).toContain('claim.payment_result.failed');
+    expect(text).toContain('추가 결제가 완료되지 않았습니다.');
     expect(text).toContain('다시 결제하실 수 있습니다');
     expect(text).not.toContain('실패 코드');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   *
+   * @effects claim_payment_result_banner_distinguishes_three_outcomes
+   */
   it('사용자 중단 — 실패가 아니라 중단으로 안내하고 재시도 안내를 붙이지 않는다', async () => {
     const { utils, container } = await renderWith({ claim_payment: 'cancelled' });
     active = utils;
 
     const text = container.textContent ?? '';
 
-    expect(text).toContain('claim.payment_result.cancelled');
-    expect(text).not.toContain('claim.payment_result.failed');
+    expect(text).toContain('결제를 취소하셨습니다.');
+    expect(text).not.toContain('추가 결제가 완료되지 않았습니다.');
     expect(text).not.toContain('다시 결제하실 수 있습니다');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   *
+   * @effects claim_payment_result_banner_distinguishes_three_outcomes
+   */
   it('신청번호가 없으면 그 줄만 빠지고 결과 안내는 남는다', async () => {
     const { utils, container } = await renderWith({ claim_payment: 'success' });
     active = utils;
 
     const text = container.textContent ?? '';
 
-    expect(text).toContain('claim.payment_result.success');
+    expect(text).toContain('추가 결제가 완료되었습니다.');
     expect(text).not.toContain('신청번호');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   *
+   * @effects claim_payment_result_banner_absent_without_the_query
+   */
   it('결제창을 거쳐 오지 않은 평소 진입에는 배너가 서지 않는다', async () => {
     const { utils, container } = await renderWith({});
     active = utils;
@@ -190,6 +227,11 @@ describe('클레임 추가결제 결과 배너', () => {
     expect((container.textContent ?? '').trim()).toBe('');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=detail, entry=none
+   *
+   * @effects claim_payment_result_banner_absent_without_the_query
+   */
   it('알 수 없는 값은 배너를 세우지 않는다 (임의의 쿼리로 안내를 띄울 수 없다)', async () => {
     const { utils, container } = await renderWith({ claim_payment: 'whatever' });
     active = utils;

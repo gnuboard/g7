@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Extension\ModuleSettingsInterface;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
+use App\Extension\Support\ComputedSettingKeys;
 use App\Extension\TemplateManager;
 use App\Traits\FiltersFrontendSchema;
 use App\Traits\NormalizesSettingsData;
@@ -101,8 +102,8 @@ class ModuleSettingsService
         // 기본값 로드
         $defaults = $moduleInstance->getConfigValues();
 
-        // 저장된 설정 파일 로드
-        $savedSettings = $this->loadSettingsFromFile($identifier);
+        // 저장된 설정 파일 로드 — 계산값 키는 파일에 남아 있어도 무시하고 늘 실시간 값(기본값)을 쓴다 (7.1.3)
+        $savedSettings = ComputedSettingKeys::strip($this->loadSettingsFromFile($identifier), ComputedSettingKeys::of($moduleInstance));
 
         // 기본값과 저장된 설정 병합
         $settings = array_merge($defaults, $savedSettings);
@@ -256,9 +257,10 @@ class ModuleSettingsService
         $schema = $moduleInstance->getSettingsSchema();
         $settings = $this->encryptSensitiveFields($settings, $schema);
 
-        // 기존 설정과 병합
-        $existingSettings = $this->loadSettingsFromFile($identifier);
-        $mergedSettings = array_merge($existingSettings, $settings);
+        // 기존 설정과 병합 — 계산값 키는 요청에서도 기존 파일에서도 빼고 쓴다 (7.1.3)
+        $computedKeys = ComputedSettingKeys::of($moduleInstance);
+        $existingSettings = ComputedSettingKeys::strip($this->loadSettingsFromFile($identifier), $computedKeys);
+        $mergedSettings = array_merge($existingSettings, ComputedSettingKeys::strip($settings, $computedKeys));
 
         // 파일에 저장
         $result = $this->saveSettingsToFile($identifier, $mergedSettings);

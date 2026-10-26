@@ -2085,9 +2085,11 @@ class ComponentHtmlMapper
     /**
      * 컴포넌트의 actions에서 링크 변환 대상 액션을 추출합니다.
      *
-     * click 이벤트의 navigate/openWindow 핸들러만 추출하며,
-     * sequence 내부에 중첩된 navigate/openWindow도 탐색합니다.
-     * replace: true인 navigate는 제외합니다 (필터/페이지네이션).
+     * click 이벤트의 navigate/openWindow 핸들러만 추출하며, 엔진이 실행하는 중첩 키(sequence·parallel 의
+     * `actions`/`params.actions`, conditions 의 `then`, switch 의 `cases`)를 모두 따라 내려간다 — 예전에는
+     * sequence 한 단계만 봐서 parallel·conditions·중첩 sequence 안의 링크를 봇 HTML 에서 놓쳤다(7.1.3).
+     * replace: true인 navigate는 제외합니다 (필터/페이지네이션). path 가 params 에 없고 최상위 target 에
+     * 있으면 그것을 path 로 쓴다(엔진과 같은 해석).
      *
      * @param  array  $component  컴포넌트 정의
      * @return array|null ['handler' => string, 'params' => array] 또는 null
@@ -2110,41 +2112,98 @@ class ComponentHtmlMapper
                 continue;
             }
 
-            $handler = $action['handler'] ?? '';
-            $params = $action['params'] ?? [];
+            $found = $this->findLinkActionInTree($action, 0);
+            if ($found !== null) {
+                return $found;
+            }
+        }
 
-            // 직접 navigate/openWindow
-            if ($handler === 'navigate' || $handler === 'openWindow') {
-                // replace: true인 navigate는 제외
-                if ($handler === 'navigate' && ! empty($params['replace'])) {
-                    continue;
-                }
+        return null;
+    }
 
-                return ['handler' => $handler, 'params' => $params];
+    /**
+     * 액션 하나와 그 중첩 액션에서 첫 navigate/openWindow 를 찾습니다.
+     *
+     * @param  array  $action  액션 정의
+     * @param  int  $depth  중첩 깊이 (순환·과도한 깊이 방어)
+     * @return array|null ['handler' => string, 'params' => array] 또는 null
+     */
+    private function findLinkActionInTree(array $action, int $depth): ?array
+    {
+        if ($depth > 8) {
+            return null;
+        }
+
+        $handler = $action['handler'] ?? '';
+        $params = is_array($action['params'] ?? null) ? $action['params'] : [];
+
+        if ($handler === 'navigate' || $handler === 'openWindow') {
+            // replace: true인 navigate는 제외
+            if ($handler === 'navigate' && ! empty($params['replace'])) {
+                return null;
+            }
+            if (! isset($params['path']) && is_string($action['target'] ?? null) && $action['target'] !== '') {
+                $params['path'] = $action['target'];
             }
 
-            // sequence 내부 탐색
-            if ($handler === 'sequence') {
-                $seqActions = $action['actions'] ?? $params['actions'] ?? [];
-                foreach ($seqActions as $seqAction) {
-                    if (! is_array($seqAction)) {
-                        continue;
-                    }
-                    $seqHandler = $seqAction['handler'] ?? '';
-                    $seqParams = $seqAction['params'] ?? [];
+            return ['handler' => $handler, 'params' => $params];
+        }
 
-                    if ($seqHandler === 'navigate' || $seqHandler === 'openWindow') {
-                        if ($seqHandler === 'navigate' && ! empty($seqParams['replace'])) {
-                            continue;
-                        }
-
-                        return ['handler' => $seqHandler, 'params' => $seqParams];
-                    }
+        foreach ($this->childActionLists($action, $params) as $children) {
+            foreach ($children as $child) {
+                if (! is_array($child)) {
+                    continue;
+                }
+                $found = $this->findLinkActionInTree($child, $depth + 1);
+                if ($found !== null) {
+                    return $found;
                 }
             }
         }
 
         return null;
+    }
+
+    /**
+     * 엔진이 실행하는 중첩 액션 목록들을 모읍니다 (sequence·parallel·conditions·switch).
+     *
+     * @param  array  $action  액션 정의
+     * @param  array  $params  액션 params
+     * @return array<int, array<int, mixed>> 중첩 액션 목록들
+     */
+    private function childActionLists(array $action, array $params): array
+    {
+        $lists = [];
+        foreach ([$action['actions'] ?? null, $params['actions'] ?? null] as $list) {
+            if (is_array($list)) {
+                $lists[] = $list;
+            }
+        }
+
+        foreach ([$action['conditions'] ?? null, $params['conditions'] ?? null] as $conditions) {
+            if (! is_array($conditions)) {
+                continue;
+            }
+            foreach ($conditions as $condition) {
+                $then = is_array($condition) ? ($condition['then'] ?? null) : null;
+                if (is_array($then)) {
+                    $lists[] = array_is_list($then) ? $then : [$then];
+                }
+            }
+        }
+
+        foreach ([$action['cases'] ?? null, $params['cases'] ?? null] as $cases) {
+            if (! is_array($cases)) {
+                continue;
+            }
+            foreach ($cases as $case) {
+                if (is_array($case)) {
+                    $lists[] = array_is_list($case) ? $case : [$case];
+                }
+            }
+        }
+
+        return $lists;
     }
 
     /**

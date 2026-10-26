@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Extension\HookCacheManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
@@ -17,6 +18,8 @@ use Illuminate\Console\Command;
  */
 class HooksCacheCommand extends Command
 {
+    use ReportsLifecycleWarnings;
+
     /**
      * @var string 커맨드 시그니처
      */

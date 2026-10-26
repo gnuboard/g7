@@ -1,0 +1,22 @@
+feature: 상품 상세 확대 창 — 고른 썸네일의 사진에서 시작 (#821)
+
+description: |
+  상품 상세(ProductImageViewer)에서 썸네일로 큰 사진을 바꾼 뒤 큰 사진을 누르면 확대 창(ImageGallery)이
+  그 사진으로 열려야 한다. ImageGallery 는 닫힌 채 늘 마운트돼 있고 openGallery 가 startIndex 만 바꾸는데,
+  현재 번호가 useState(startIndex) 초기값으로만 잡혀 매번 첫 사진(「1 / N」)으로 열렸다.
+  실제 ImageGallery(yet-another-react-lightbox)를 렌더하고 카운터 「N / M」 으로 판정한다.
+
+axes:
+  case: [third_thumbnail, reopen_other_thumbnail]
+  # third_thumbnail: 3번째 썸네일 → 큰 사진 → 「3 / 5」
+  # reopen_other_thumbnail: 4번째로 열기 → 닫기 → 1번째 썸네일로 다시 열기 → 「1 / 5」
+
+effects:
+  - lightbox_opens_at_selected_image   # 확대 창 카운터가 고른 썸네일 번호 / 전체
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/ProductImageViewer.lightboxStartIndex.test.tsx
+
+notes: |
+  브라우저 회귀: tests/scenarios/e2e-product-image-lightbox-start-index.yaml (실제 상품 상세 화면).
+  관리자 템플릿의 같은 사본: templates/_bundled/sirsoft-admin_basic/tests/scenarios/image-gallery-start-index-on-open.yaml

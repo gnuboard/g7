@@ -4,11 +4,13 @@ namespace App\Console\Commands\Core;
 
 use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Exceptions\UpgradeHandoffException;
 use App\Extension\ExtensionManager;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Services\CoreUpdateService;
@@ -44,6 +46,7 @@ class ExecuteUpgradeStepsCommand extends Command
     use BundledExtensionUpdatePrompt;
     use ClearsTemplateCaches;
     use HasUnifiedConfirm;
+    use ReportsLifecycleWarnings;
 
     protected $signature = 'core:execute-upgrade-steps
         {--from= : 시작 버전}
@@ -57,6 +60,16 @@ class ExecuteUpgradeStepsCommand extends Command
         {--skip-bundled-updates : 번들 확장 일괄 업데이트 생략 (부모가 prompt 로 처리)}';
 
     protected $description = '코어 업그레이드 스텝을 별도 프로세스에서 실행합니다. 단독 실행 시 사전/사후 단계를 자동 수행하며, --steps-only 로 스텝만 실행할 수 있습니다.';
+
+    /**
+     * 재동기화·오토로드 갱신 실패 경고는 표로만 보이고 종료코드는 바꾸지 않습니다 — 부모(core:update)는 종료코드 0 만 성공으로 본다.
+     *
+     * @return bool 늘 false
+     */
+    protected function lifecycleWarningsChangeExitCode(): bool
+    {
+        return false;
+    }
 
     /**
      * 커맨드를 실행합니다.
@@ -99,6 +112,7 @@ class ExecuteUpgradeStepsCommand extends Command
                 Log::warning('upgrade step spawn 자식: updateComposerAutoload 호출 실패', [
                     'error' => $e->getMessage(),
                 ]);
+                LifecycleWarnings::current()->add('autoload', 'autoload-extensions.php', $e->getMessage());
             }
         }
 

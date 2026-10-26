@@ -9,6 +9,7 @@ use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Extension\Support\LifecycleWarnings;
 use App\Models\NotificationDefinition;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Illuminate\Support\Facades\DB;
@@ -89,12 +90,17 @@ class Plugin extends AbstractPlugin
 
         foreach ($steps as $step => $run) {
             try {
-                $run();
+                $result = $run();
             } catch (\Throwable $e) {
-                Log::warning('[sirsoft-message_bizppurio] 알림 채널 template 증강 재시드 실패', [
-                    'step' => $step,
-                    'error' => $e->getMessage(),
-                ]);
+                $this->reportReseedFailure($step, $e->getMessage());
+
+                continue;
+            }
+
+            // 모듈·플러그인 단계는 확장별 실패를 안에서 잡고 반환값(failed: 식별자 => 사유)으로만 알린다
+            $failed = is_array($result) && is_array($result['failed'] ?? null) ? $result['failed'] : [];
+            foreach ($failed as $identifier => $message) {
+                $this->reportReseedFailure($step.':'.$identifier, (string) $message);
             }
         }
 
@@ -109,6 +115,27 @@ class Plugin extends AbstractPlugin
         );
 
         return true;
+    }
+
+    /**
+     * 활성화 재시드 실패 하나를 로그와 생명주기 경고로 알립니다.
+     *
+     * 활성화는 성공을 유지하고, 코어(7.1.3+)의 생명주기 경고 목록으로 운영자에게 알린다(옛 코어는 로그만).
+     *
+     * @param  string  $target  실패한 단계(core·modules·plugins), 확장별 실패면 `단계:확장 식별자`
+     * @param  string  $message  실패 사유
+     * @return void 반환값 없음
+     */
+    private function reportReseedFailure(string $target, string $message): void
+    {
+        Log::warning('[sirsoft-message_bizppurio] 알림 채널 template 증강 재시드 실패', [
+            'step' => $target,
+            'error' => $message,
+        ]);
+
+        if (class_exists(LifecycleWarnings::class)) {
+            LifecycleWarnings::current()->add('reseed', $this->getIdentifier().':'.$target, $message);
+        }
     }
 
     /**

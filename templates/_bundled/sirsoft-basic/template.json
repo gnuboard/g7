@@ -21,7 +21,7 @@
         "email": "contact@sirsoft.com",
         "url": "https://sirsoft.com"
     },
-    "release_date": "2026-10-22",
+    "release_date": "2026-10-26",
     "g7_version": ">=7.2.0",
     "dependencies": {
         "modules": {
@@ -32,6 +32,13 @@
         "plugins": {
             "sirsoft-daum_postcode": ">=1.0.0"
         }
+    },
+    "necessary_storage": {
+        "localStorage": [
+            "g7_color_scheme"
+        ],
+        "sessionStorage": [],
+        "cookie": []
     },
     "assets": {
         "css": [

@@ -11,7 +11,12 @@
  * Tailwind CSS 속성 그룹 정의
  *
  * 같은 CSS 속성을 제어하는 클래스들을 그룹화합니다.
- * override 클래스가 있으면 base 클래스는 제거됩니다.
+ * override 클래스가 있으면 같은 그룹의 base 클래스는 제거됩니다.
+ *
+ * 그룹은 Tailwind 의 실제 충돌 단위다 (@since engine-v1.83.0) — 축·변이 다른 유틸리티(`p`·`px`·`pt`, `top`·`left`,
+ * `border`·`border-t`, `overflow`·`overflow-x` …)는 서로 다른 그룹이다. 종전에는 한 그룹으로 묶어 `px-2` 가 기본 `p-4` 를
+ * 통째로 지우는 등 지우면 안 되는 기본 클래스를 지웠다. 상위 유틸리티가 하위 축을 덮는 관계는 `CONFLICTING_CLASS_GROUPS` 다.
+ * 첫 일치 그룹을 쓰므로 좁은 패턴을 넓은 패턴보다 앞에 둔다.
  */
 const TAILWIND_CLASS_GROUPS: Record<string, RegExp> = {
   // Flexbox & Grid
@@ -19,12 +24,16 @@ const TAILWIND_CLASS_GROUPS: Record<string, RegExp> = {
   items: /^items-(start|end|center|baseline|stretch)$/,
   content: /^content-(start|end|center|between|around|evenly|stretch)$/,
   self: /^self-(auto|start|end|center|stretch|baseline)$/,
-  flex: /^flex-(row|row-reverse|col|col-reverse|wrap|wrap-reverse|nowrap|1|auto|initial|none)$/,
+  flexDirection: /^flex-(row|row-reverse|col|col-reverse)$/,
+  flexWrap: /^flex-(wrap|wrap-reverse|nowrap)$/,
+  flex: /^flex-(1|auto|initial|none)$/,
   grow: /^(grow|grow-0)$/,
   shrink: /^(shrink|shrink-0)$/,
   basis: /^basis-/,
-  order: /^(order-|-)order-/,
-  gap: /^gap(-x|-y)?-/,
+  order: /^-?order-/,
+  gapX: /^gap-x-/,
+  gapY: /^gap-y-/,
+  gap: /^gap-/,
   gridCols: /^grid-cols-/,
   gridRows: /^grid-rows-/,
   colSpan: /^col-(span-|start-|end-)/,
@@ -35,7 +44,13 @@ const TAILWIND_CLASS_GROUPS: Record<string, RegExp> = {
 
   // Position
   position: /^(static|fixed|absolute|relative|sticky)$/,
-  inset: /^(inset|top|right|bottom|left)-/,
+  insetX: /^-?inset-x-/,
+  insetY: /^-?inset-y-/,
+  inset: /^-?inset-/,
+  top: /^-?top-/,
+  right: /^-?right-/,
+  bottom: /^-?bottom-/,
+  left: /^-?left-/,
   zIndex: /^z-/,
 
   // Sizing
@@ -47,9 +62,28 @@ const TAILWIND_CLASS_GROUPS: Record<string, RegExp> = {
   maxHeight: /^max-h-/,
 
   // Spacing
-  padding: /^p[xytblr]?-/,
-  margin: /^-?m[xytblr]?-/,
-  space: /^space-(x|y)-/,
+  padding: /^p-/,
+  paddingX: /^px-/,
+  paddingY: /^py-/,
+  paddingS: /^ps-/,
+  paddingE: /^pe-/,
+  paddingT: /^pt-/,
+  paddingR: /^pr-/,
+  paddingB: /^pb-/,
+  paddingL: /^pl-/,
+  margin: /^-?m-/,
+  marginX: /^-?mx-/,
+  marginY: /^-?my-/,
+  marginS: /^-?ms-/,
+  marginE: /^-?me-/,
+  marginT: /^-?mt-/,
+  marginR: /^-?mr-/,
+  marginB: /^-?mb-/,
+  marginL: /^-?ml-/,
+  spaceXReverse: /^space-x-reverse$/,
+  spaceYReverse: /^space-y-reverse$/,
+  spaceX: /^-?space-x-/,
+  spaceY: /^-?space-y-/,
 
   // Typography
   fontSize: /^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$/,
@@ -64,7 +98,8 @@ const TAILWIND_CLASS_GROUPS: Record<string, RegExp> = {
   letterSpacing: /^tracking-/,
   textOverflow: /^(truncate|text-ellipsis|text-clip)$/,
   whitespace: /^whitespace-/,
-  wordBreak: /^break-/,
+  // break-after·before·inside 는 아래 Layout 의 별도 그룹이다 — word-break 값만 (@since engine-v1.83.0)
+  wordBreak: /^break-(normal|words|all|keep)$/,
 
   // Background
   bgColor: /^bg-(inherit|current|transparent|black|white|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-/,
@@ -77,10 +112,32 @@ const TAILWIND_CLASS_GROUPS: Record<string, RegExp> = {
   bgOrigin: /^bg-origin-/,
 
   // Border
-  borderWidth: /^border(-[xytblr])?(-0|-2|-4|-8)?$/,
+  borderWidth: /^border(-0|-2|-4|-8)?$/,
+  borderWidthX: /^border-x(-0|-2|-4|-8)?$/,
+  borderWidthY: /^border-y(-0|-2|-4|-8)?$/,
+  borderWidthS: /^border-s(-0|-2|-4|-8)?$/,
+  borderWidthE: /^border-e(-0|-2|-4|-8)?$/,
+  borderWidthT: /^border-t(-0|-2|-4|-8)?$/,
+  borderWidthR: /^border-r(-0|-2|-4|-8)?$/,
+  borderWidthB: /^border-b(-0|-2|-4|-8)?$/,
+  borderWidthL: /^border-l(-0|-2|-4|-8)?$/,
   borderColor: /^border-(inherit|current|transparent|black|white|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-/,
   borderStyle: /^border-(solid|dashed|dotted|double|hidden|none)$/,
-  borderRadius: /^rounded(-[tblrse]{1,2})?(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadius: /^rounded(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusS: /^rounded-s(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusE: /^rounded-e(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusT: /^rounded-t(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusR: /^rounded-r(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusB: /^rounded-b(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusL: /^rounded-l(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusSS: /^rounded-ss(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusSE: /^rounded-se(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusEE: /^rounded-ee(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusES: /^rounded-es(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusTL: /^rounded-tl(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusTR: /^rounded-tr(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusBR: /^rounded-br(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
+  borderRadiusBL: /^rounded-bl(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?$/,
   ringWidth: /^ring(-0|-1|-2|-4|-8|-inset)?$/,
   ringColor: /^ring-(inherit|current|transparent|black|white|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-/,
   ringOffset: /^ring-offset-/,
@@ -111,10 +168,14 @@ const TAILWIND_CLASS_GROUPS: Record<string, RegExp> = {
   backdropSepia: /^backdrop-sepia-/,
 
   // Transforms
-  scale: /^scale(-x|-y)?-/,
+  scaleX: /^-?scale-x-/,
+  scaleY: /^-?scale-y-/,
+  scale: /^-?scale-/,
   rotate: /^-?rotate-/,
-  translate: /^-?translate-[xy]-/,
-  skew: /^-?skew-[xy]-/,
+  translateX: /^-?translate-x-/,
+  translateY: /^-?translate-y-/,
+  skewX: /^-?skew-x-/,
+  skewY: /^-?skew-y-/,
   transformOrigin: /^origin-/,
 
   // Transitions & Animation
@@ -133,8 +194,12 @@ const TAILWIND_CLASS_GROUPS: Record<string, RegExp> = {
   touchAction: /^touch-/,
 
   // Layout
-  overflow: /^overflow(-x|-y)?-(auto|hidden|clip|visible|scroll)$/,
-  overscroll: /^overscroll(-x|-y)?-(auto|contain|none)$/,
+  overflow: /^overflow-(auto|hidden|clip|visible|scroll)$/,
+  overflowX: /^overflow-x-(auto|hidden|clip|visible|scroll)$/,
+  overflowY: /^overflow-y-(auto|hidden|clip|visible|scroll)$/,
+  overscroll: /^overscroll-(auto|contain|none)$/,
+  overscrollX: /^overscroll-x-(auto|contain|none)$/,
+  overscrollY: /^overscroll-y-(auto|contain|none)$/,
   visibility: /^(visible|invisible|collapse)$/,
   aspectRatio: /^aspect-/,
   columns: /^columns-/,
@@ -148,6 +213,43 @@ const TAILWIND_CLASS_GROUPS: Record<string, RegExp> = {
   isolation: /^(isolate|isolation-auto)$/,
   objectFit: /^object-(contain|cover|fill|none|scale-down)$/,
   objectPosition: /^object-/,
+};
+
+/**
+ * 상위 그룹 → 그 그룹이 함께 덮는 하위 그룹 (@since engine-v1.83.0)
+ *
+ * override 클래스가 상위 그룹이면 같은 변이의 하위 그룹 base 클래스도 지운다(`p-0` 은 `px-4`·`pt-2` 를 덮는다). 반대 방향은
+ * 지우지 않는다 — `px-2` 와 `p-4` 는 함께 있어야 세로 여백이 남는다(Tailwind 는 축 유틸리티를 전체 유틸리티 뒤에 둔다).
+ * tailwind-merge 의 conflictingClassGroups 와 같은 규칙이다.
+ */
+const CONFLICTING_CLASS_GROUPS: Record<string, string[]> = {
+  padding: ['paddingX', 'paddingY', 'paddingS', 'paddingE', 'paddingT', 'paddingR', 'paddingB', 'paddingL'],
+  paddingX: ['paddingR', 'paddingL'],
+  paddingY: ['paddingT', 'paddingB'],
+  margin: ['marginX', 'marginY', 'marginS', 'marginE', 'marginT', 'marginR', 'marginB', 'marginL'],
+  marginX: ['marginR', 'marginL'],
+  marginY: ['marginT', 'marginB'],
+  inset: ['insetX', 'insetY', 'top', 'right', 'bottom', 'left'],
+  insetX: ['right', 'left'],
+  insetY: ['top', 'bottom'],
+  gap: ['gapX', 'gapY'],
+  borderWidth: ['borderWidthX', 'borderWidthY', 'borderWidthS', 'borderWidthE', 'borderWidthT', 'borderWidthR', 'borderWidthB', 'borderWidthL'],
+  borderWidthX: ['borderWidthR', 'borderWidthL'],
+  borderWidthY: ['borderWidthT', 'borderWidthB'],
+  borderRadius: [
+    'borderRadiusS', 'borderRadiusE', 'borderRadiusT', 'borderRadiusR', 'borderRadiusB', 'borderRadiusL',
+    'borderRadiusSS', 'borderRadiusSE', 'borderRadiusEE', 'borderRadiusES',
+    'borderRadiusTL', 'borderRadiusTR', 'borderRadiusBR', 'borderRadiusBL',
+  ],
+  borderRadiusS: ['borderRadiusSS', 'borderRadiusES'],
+  borderRadiusE: ['borderRadiusSE', 'borderRadiusEE'],
+  borderRadiusT: ['borderRadiusTL', 'borderRadiusTR'],
+  borderRadiusR: ['borderRadiusTR', 'borderRadiusBR'],
+  borderRadiusB: ['borderRadiusBR', 'borderRadiusBL'],
+  borderRadiusL: ['borderRadiusTL', 'borderRadiusBL'],
+  overflow: ['overflowX', 'overflowY'],
+  overscroll: ['overscrollX', 'overscrollY'],
+  scale: ['scaleX', 'scaleY'],
 };
 
 /**
@@ -216,14 +318,16 @@ export function mergeClasses(baseClasses: string, overrideClasses?: string): str
   const baseArr = baseClasses.split(/\s+/).filter(Boolean);
   const overrideArr = overrideClasses.split(/\s+/).filter(Boolean);
 
-  // override 클래스들의 그룹+variant 조합을 수집
+  // override 클래스들의 그룹+variant 조합을 수집 — 상위 그룹이면 덮는 하위 그룹도 함께 (@since engine-v1.83.0)
   const overrideGroupVariants = new Map<string, string>();
   for (const cls of overrideArr) {
     const group = findClassGroup(cls);
     if (group) {
       const variant = extractVariant(cls);
-      const key = `${group}:${variant}`;
-      overrideGroupVariants.set(key, cls);
+      overrideGroupVariants.set(`${group}:${variant}`, cls);
+      for (const covered of CONFLICTING_CLASS_GROUPS[group] ?? []) {
+        overrideGroupVariants.set(`${covered}:${variant}`, cls);
+      }
     }
   }
 

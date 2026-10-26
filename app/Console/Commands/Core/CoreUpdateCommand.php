@@ -5,6 +5,7 @@ namespace App\Console\Commands\Core;
 use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
 use App\Console\Commands\Core\Concerns\BundledSourcePlacementPrompt;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Exceptions\UpgradeHandoffException;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Custom\CustomPackageConflictChecker;
@@ -35,6 +36,7 @@ class CoreUpdateCommand extends Command
     use BundledSourcePlacementPrompt;
     use ClearsTemplateCaches;
     use HasUnifiedConfirm;
+    use ReportsLifecycleWarnings;
 
     protected $signature = 'core:update
         {--force : 버전 비교 없이 강제 업데이트}
@@ -51,6 +53,16 @@ class CoreUpdateCommand extends Command
     protected $description = '그누보드7 코어를 최신 버전으로 업데이트합니다';
 
     private const TOTAL_STEPS = 11;
+
+    /**
+     * 재동기화 등 부분 실패 경고는 표로만 보이고 종료코드는 바꾸지 않습니다 — 끝난 업데이트를 자동화 스크립트가 실패로 보지 않게.
+     *
+     * @return bool 늘 false
+     */
+    protected function lifecycleWarningsChangeExitCode(): bool
+    {
+        return false;
+    }
 
     /**
      * 커맨드를 실행합니다.

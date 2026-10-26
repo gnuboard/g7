@@ -57,14 +57,13 @@ function loadPartial(file: string): any {
 }
 
 /**
- * 라벨 중 `text` 안의 `$t('...')` 로 만드는 것은 이 하네스가 치환하지 않고 키를 그대로 남긴다
- * (`$t:키` 형태만 치환한다). 실 화면에서는 엔진이 둘 다 치환하므로, 잴 것은 **어느 키가
- * 섰는가** 이고 그것이 곧 분기가 맞았다는 증거다.
+ * 라벨 중 `text` 안의 `$t('...')` 로 만드는 것도 실제 앱처럼 번역된다 — 시험 도구가 $locale·$templateId 를 싣게 된
+ * 7.1.3 부터(종전 도구는 키를 그대로 남겨 키로 쟀다). 잴 것은 **어느 문구가 섰는가** 이고 그것이 곧 분기가 맞았다는 증거다.
  */
-const SAVE_LABEL = 'claim.edit.save';
-const SUBMIT_LABEL = 'claim.apply.submit';
-const DELTA_MORE = 'claim.edit.charge_delta_more';
-const DELTA_LESS = 'claim.edit.charge_delta_less';
+const SAVE_LABEL = '저장';
+const SUBMIT_LABEL = '신청하기';
+const DELTA_MORE = '추가로 청구됩니다.';
+const DELTA_LESS = '환급됩니다.';
 
 const TRANSLATIONS = {
   claim: {
@@ -177,6 +176,11 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     active = null;
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_locks_items_and_quantity
+   */
   it('품목·수량은 잠긴다 (D13 — 승인 전에도 바꿀 수 없는 축)', async () => {
     const { utils, container } = await renderPartial('_apply_items.json', editState());
     active = utils;
@@ -194,6 +198,11 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     expect(numbers.every((el) => el.disabled)).toBe(true);
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_locks_items_and_quantity
+   */
   it('전체선택과 [교환상품 변경] 은 서지 않는다 (눌러도 아무 일이 없는 자리를 남기지 않는다)', async () => {
     const { utils, container } = await renderPartial('_apply_items.json', editState());
     active = utils;
@@ -204,6 +213,11 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     expect(text).not.toContain('교환상품 변경');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_locks_items_and_quantity
+   */
   it('작성 화면에서는 같은 컨트롤이 살아 있다 (대조군 — 잠금이 수정 모드에만 걸린다)', async () => {
     const { utils, container } = await renderPartial(
       '_apply_items.json',
@@ -222,6 +236,11 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     expect(checkboxes.some((el) => !el.disabled)).toBe(true);
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_hides_charge_axes_and_shows_the_recorded_method
+   */
   it('청구 2축은 서지 않고 접수 때 고른 방식이 읽기 전용으로 남는다', async () => {
     const { utils, container } = await renderPartial('_apply_summary.json', editState());
     active = utils;
@@ -236,6 +255,11 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     expect(text).toContain('신청 시 결제');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_replaces_submit_with_save
+   */
   it('제출 버튼 대신 저장 버튼이 선다', async () => {
     const { utils, container } = await renderPartial('_apply_summary.json', editState());
     active = utils;
@@ -246,6 +270,11 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     expect(labels).not.toContain(SUBMIT_LABEL);
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_replaces_submit_with_save
+   */
   it('사유를 지우면 저장 버튼이 잠긴다', async () => {
     const { utils, container } = await renderPartial(
       '_apply_summary.json',
@@ -261,6 +290,11 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     expect(save?.disabled).toBe(true);
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_replaces_submit_with_save
+   */
   it('미리보기가 아직 없어도 저장은 열려 있다 (사유만 고치는 저장은 금액을 건드리지 않는다)', async () => {
     const { utils, container } = await renderPartial('_apply_summary.json', editState());
     active = utils;
@@ -272,6 +306,11 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     expect(save?.disabled).toBe(false);
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_charge_delta_notice_only_when_nonzero
+   */
   it('재발송지 변경 차액 — 더 청구될 때만 그 안내가 선다', async () => {
     const { utils, container } = await renderPartial(
       '_apply_summary.json',
@@ -286,6 +325,11 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     expect(text).not.toContain(DELTA_LESS);
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_charge_delta_notice_only_when_nonzero
+   */
   it('재발송지 변경 차액 — 돌려받을 금액이면 환급 안내가 선다', async () => {
     const { utils, container } = await renderPartial(
       '_apply_summary.json',
@@ -299,6 +343,11 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     expect(text).not.toContain(DELTA_MORE);
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_charge_delta_notice_only_when_nonzero
+   */
   it('차액이 0 이면 안내를 세우지 않는다 (0원 안내는 안내가 아니다)', async () => {
     const { utils, container } = await renderPartial('_apply_summary.json', editState());
     active = utils;
@@ -309,6 +358,11 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     expect(text).not.toContain(DELTA_LESS);
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_rejection_stays_on_screen
+   */
   it('수정 거절 사유는 요약 카드에 남는다 (토스트로만 알리면 사라진다)', async () => {
     const { utils, container } = await renderPartial(
       '_apply_summary.json',
@@ -319,6 +373,11 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     expect(container.textContent ?? '').toContain('승인된 신청은 수정할 수 없습니다.');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_refund_account_is_editable_and_explained
+   */
   it('환불 계좌는 수정 화면에서 편집할 수 있다 (2026-09-01 확정 — 신청 단계에서만)', async () => {
     const { utils, container } = await renderPartial(
       '_apply_refund_account.json',
@@ -345,6 +404,11 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     expect(inputs.some((el) => el.disabled)).toBe(false);
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_refund_account_is_editable_and_explained
+   */
   it('빈 칸으로 여는 이유를 화면이 말한다 (지금 기록된 계좌 + 비우면 유지)', async () => {
     const { utils, container } = await renderPartial(
       '_apply_refund_account.json',
@@ -365,14 +429,18 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     const text = container.textContent ?? '';
 
     // 안내가 없으면 구매자는 빈 칸을 "계좌가 등록되지 않았다" 로 읽고, 채우지 않고 저장한다.
-    // 라벨은 `$t('...')` 형태라 이 하네스가 키를 그대로 남긴다(파일 상단 주석) — 잴 것은
-    // 어느 키가 섰는가이며, 값(마스킹된 계좌)은 그 옆에 실제로 그려진다.
-    expect(text).toContain('claim.edit.refund_account_current');
+    // 라벨은 `$t('...')` 형태다(파일 상단 주석) — 잴 것은 어느 문구가 섰는가이며, 값(마스킹된 계좌)은 그 옆에 실제로 그려진다.
+    expect(text).toContain('지금 기록된 환불 계좌');
     expect(text).toContain('국민은행');
     expect(text).toContain('****1234');
     expect(text).toContain('계좌를 바꾸려면 아래에 다시 입력해 주세요.');
   });
 
+  /**
+   * @scenario claim_type=exchange, screen=edit, entry=detail
+   *
+   * @effects claim_edit_refund_account_is_editable_and_explained
+   */
   it('작성 화면에서는 그 안내가 서지 않는다 (대조군 — 고칠 대상이 없다)', async () => {
     const { utils, container } = await renderPartial(
       '_apply_refund_account.json',
@@ -385,6 +453,6 @@ describe('클레임 신청서 수정 모드 — 렌더', () => {
     );
     active = utils;
 
-    expect(container.textContent ?? '').not.toContain('claim.edit.refund_account_current');
+    expect(container.textContent ?? '').not.toContain('지금 기록된 환불 계좌');
   });
 });

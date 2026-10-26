@@ -785,9 +785,12 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
     // → 아직 관측되지 않은(unconsumed) 슬롯만 누적 병합한다. 상세: localInitSlot.ts
     const mergedLocalInit = mergeLocalInitSlot(state.currentDataContext._localInit, data._localInit);
 
+    // 전역 변수는 기존 데이터 뒤에 둔다 (@since engine-v1.83.0) — 기존 컨텍스트는 첫 렌더 때 심은 전역 변수(`$locales` 등)를
+    // 이미 갖고 있어, 앞에 두면 옛 값이 새 값을 이겼다(언어팩 설치 직후 `reloadExtensionState` 가 활성 언어 목록을 바꿔도
+    // 새로고침 전까지 옛 목록). 전역 변수 키는 `createGlobalVariables` 만 만든다.
     state.currentDataContext = {
-      ...globalVariables,           // 전역 변수 (낮은 우선순위)
       ...state.currentDataContext,  // 기존 데이터
+      ...globalVariables,           // 전역 변수 (기존 데이터의 옛 전역 변수를 새 값으로)
       ...data,                       // 새 데이터 (높은 우선순위)
       _global: mergedGlobalState,   // _global은 명시적으로 깊은 병합된 값 사용
       _localInit: mergedLocalInit,  // _localInit은 소비 전이면 누적 병합된 값 사용

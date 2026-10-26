@@ -1,5 +1,5 @@
 /**
- * custom 주소(routes/custom.php) 전체 페이지 이동 테스트 (#792 W6 · engine-v1.83.0)
+ * custom 주소(routes/custom.php) 전체 페이지 이동 테스트 (#792 W6 · engine-v1.84.0)
  *
  * 엔진 화면 안에서 서버의 개발자 화면 주소로 이동하면 엔진이 `pushState` 로 직접 그리지 않고 `location.assign` 으로
  * 서버에 넘기는지, 뒤로·앞으로 가기(`popstate`)로 그 주소에 오면 `location.reload` 로 서버가 다시 그리는지,
@@ -170,7 +170,7 @@ describe('Router — custom 주소 전체 페이지 이동', () => {
   });
 
   /**
-   * 이탈 가드(engine-v1.82.0)와 custom 주소 재적재(engine-v1.83.0)가 같은 popstate 에서 만나는 순서 —
+   * 이탈 가드(engine-v1.82.0)와 custom 주소 재적재(engine-v1.84.0)가 같은 popstate 에서 만나는 순서 —
    * `navigate` 와 같이 가드를 먼저 묻고, 머무르기면 다시 적재하지 않고 확정 주소를 다시 쌓는다.
    * 떠나기를 고르면 재적재하며, 이미 허락했으므로 beforeunload 가 다시 묻지 않는다(develop-7.2.0 병합 2026-10-21).
    *

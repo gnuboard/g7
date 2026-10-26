@@ -3,6 +3,7 @@
 namespace App\Extension\Helpers;
 
 use App\Exceptions\ExtensionOperationInProgressException;
+use App\Extension\Support\LifecycleWarnings;
 use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -67,6 +68,7 @@ final class ExtensionOperationLock
                 'identifier' => $identifier,
                 'error' => $e->getMessage(),
             ]);
+            LifecycleWarnings::current()->add('operation_lock', $identifier, $e->getMessage());
 
             return new self(null);
         }

@@ -324,6 +324,83 @@ handler: 'toast',
 /**
  * 에러 핸들링 유틸리티 함수
  */
+/**
+ * 핸들러 트리를 따라 `showErrorPage` 에 오류 코드를 넣는다 (@since engine-v1.83.0).
+ *
+ * 엔진이 실행하는 묶음 키 — `actions`·`params.actions`(sequence·parallel)·`conditions[].then`·`cases` 값(switch) — 안까지 내려간다.
+ * 종전에는 최상위 `showErrorPage` 에만 넣어, 묶음 안 `showErrorPage` 는 오류 코드 없이 기본값 500 화면을 그렸다.
+ * `onSuccess`·`onError`·`errorHandling` 은 그 하위 액션 자신의 결과 처리라 내려가지 않는다. 이미 `params.errorCode` 가 있으면
+ * 그대로 둔다. 원본은 바꾸지 않고, 바뀐 가지만 새 객체로 만든다.
+ *
+ * @param node 핸들러 정의(또는 그 배열)
+ * @param errorCode 넣을 오류 코드
+ * @returns 오류 코드를 넣은 핸들러 정의
+ */
+function injectErrorCodeInto(node: unknown, errorCode: number): unknown {
+  if (Array.isArray(node)) {
+    const mapped = node.map((item) => injectErrorCodeInto(item, errorCode));
+
+    return mapped.some((item, index) => item !== node[index]) ? mapped : node;
+  }
+  if (!node || typeof node !== 'object') {
+    return node;
+  }
+
+  const action = node as Record<string, any>;
+
+  if (action.handler === 'showErrorPage') {
+    if (action.params?.errorCode !== undefined) {
+      return action;
+    }
+
+    return { ...action, params: { ...action.params, errorCode } };
+  }
+
+  let next: Record<string, any> = action;
+  const assign = (key: string, value: unknown): void => {
+    if (value !== action[key]) {
+      next = next === action ? { ...action } : next;
+      next[key] = value;
+    }
+  };
+
+  if (action.actions !== undefined) {
+    assign('actions', injectErrorCodeInto(action.actions, errorCode));
+  }
+  if (action.params && typeof action.params === 'object' && action.params.actions !== undefined) {
+    const nested = injectErrorCodeInto(action.params.actions, errorCode);
+    if (nested !== action.params.actions) {
+      assign('params', { ...action.params, actions: nested });
+    }
+  }
+  if (Array.isArray(action.conditions)) {
+    const branches = action.conditions.map((branch: any) => {
+      if (!branch || typeof branch !== 'object' || branch.then === undefined) {
+        return branch;
+      }
+      const then = injectErrorCodeInto(branch.then, errorCode);
+
+      return then === branch.then ? branch : { ...branch, then };
+    });
+    if (branches.some((branch: unknown, index: number) => branch !== action.conditions[index])) {
+      assign('conditions', branches);
+    }
+  }
+  if (action.cases && typeof action.cases === 'object' && !Array.isArray(action.cases)) {
+    let changed = false;
+    const cases: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(action.cases)) {
+      cases[key] = injectErrorCodeInto(value, errorCode);
+      changed = changed || cases[key] !== value;
+    }
+    if (changed) {
+      assign('cases', cases);
+    }
+  }
+
+  return next;
+}
+
 export const ErrorHandlingUtils = {
   /**
    * 에러 코드에 해당하는 핸들러를 찾습니다.
@@ -383,15 +460,6 @@ export const ErrorHandlingUtils = {
     errorCodeKey: ErrorCode,
     actualErrorCode?: number
   ): ErrorHandlerConfig {
-    if (handler.handler !== 'showErrorPage') {
-      return handler;
-    }
-
-    // params.errorCode가 이미 있으면 그대로 사용
-    if (handler.params?.errorCode !== undefined) {
-      return handler;
-    }
-
     // errorHandling 키값을 errorCode로 주입
     const errorCode = typeof errorCodeKey === 'string'
       ? parseInt(errorCodeKey, 10)
@@ -404,12 +472,6 @@ export const ErrorHandlingUtils = {
       return handler;
     }
 
-    return {
-      ...handler,
-      params: {
-        ...handler.params,
-        errorCode: resolvedErrorCode,
-      },
-    };
+    return injectErrorCodeInto(handler, resolvedErrorCode) as ErrorHandlerConfig;
   },
 };

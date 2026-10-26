@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands\LanguagePack;
 
+use App\Console\Commands\Traits\ReportsLifecycleWarnings;
+use App\Extension\Support\LifecycleWarnings;
 use App\Models\LanguagePack;
 use App\Services\LanguagePack\LanguagePackBaseLocales;
 use App\Services\LanguagePackService;
@@ -25,6 +27,8 @@ use Throwable;
  */
 class ProvisionLanguagePackCommand extends Command
 {
+    use ReportsLifecycleWarnings;
+
     /**
      * @var string
      */
@@ -110,6 +114,7 @@ class ProvisionLanguagePackCommand extends Command
                 $isRepair ? $repaired++ : $installed++;
             } catch (Throwable $e) {
                 $this->warn(__('language_packs.commands.provision.item_failed', ['identifier' => $identifier, 'error' => $e->getMessage()]));
+                LifecycleWarnings::current()->add('language_pack_provision', (string) $identifier, $e->getMessage());
                 $failed++;
             }
         }

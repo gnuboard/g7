@@ -331,7 +331,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 코어와 재호환된 확장을 원클릭으로 복구(재활성화)합니다. 경로의 `{type}`/`{identifier}`로 대상을 지정하며, 대상이 `IncompatibleCore` 사유로 자동 비활성화된 상태인지 검증한 뒤 코어 버전 재검증을 거쳐 활성화합니다. 잘못된 타입은 422, 미존재 확장은 404, hidden 확장이나 자동 비활성화가 아닌 경우는 error_code와 함께 422를 반환하고, 재검증 실패 시 글로벌 핸들러가 core_version_mismatch로 변환합니다. `core.plugins.activate` 권한이 필요합니다.
+**설명** 코어와 재호환된 확장을 원클릭으로 복구(재활성화)합니다. 경로의 `{type}`/`{identifier}`로 대상을 지정하며, 대상이 `IncompatibleCore` 사유로 자동 비활성화된 상태인지 검증한 뒤 코어 버전 재검증을 거쳐 활성화합니다. 잘못된 타입은 422, 미존재 확장은 404, hidden 확장이나 자동 비활성화가 아닌 경우는 error_code와 함께 422를 반환하고, 재검증 실패 시 글로벌 핸들러가 core_version_mismatch로 변환합니다. `core.plugins.activate` 권한이 필요합니다. 재활성화 중 레이아웃 등록 같은 일부 항목이 실패하면(작업은 성공) 응답 `data.warnings` 에 경고 목록이 붙습니다(7.1.3+, 형식은 [공통 응답 — 부분 실패 경고](README.md#부분-실패-경고-datawarnings-713)).
 
 ### GET /api/admin/extensions/{type}/{identifier}/custom-assets
 <!-- @generated:start:api.admin.extensions.custom-assets.index -->

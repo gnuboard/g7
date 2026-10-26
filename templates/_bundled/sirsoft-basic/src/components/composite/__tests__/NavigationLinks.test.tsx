@@ -25,7 +25,10 @@ import { Pagination } from '../Pagination';
 import { TabNavigation } from '../TabNavigation';
 import { NotificationCenter } from '../NotificationCenter';
 import { executeImageDownload } from '../ImageGallery';
-import { isPlainLeftClick as engineIsPlainLeftClick } from '@core/template-engine/navigationLinks';
+import {
+  isPlainLeftClick as engineIsPlainLeftClick,
+  resolveInternalHref as engineResolveInternalHref,
+} from '@core/template-engine/navigationLinks';
 
 let dispatch: ReturnType<typeof vi.fn>;
 
@@ -37,6 +40,8 @@ const installCore = (extra: Record<string, unknown> = {}) => {
     navigation: {
       // 엔진의 실제 판정(수정키·가운데 단추·링크 요소의 target·download) — 링크 요소를 넘겨야 target·download 를 본다
       isPlainLeftClick: engineIsPlainLeftClick,
+      // 내부 링크 판정은 코어 한 곳(engine-v1.83.0) — 실제 엔진 판정을 주입한다
+      resolveInternalHref: engineResolveInternalHref,
       mergeQueryIntoHref: (href: string) => `${href}${href.includes('?') ? '&' : '?'}page=2`,
     },
     ...extra,

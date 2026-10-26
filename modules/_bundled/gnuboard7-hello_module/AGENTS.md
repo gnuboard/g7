@@ -157,7 +157,7 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 7개 | `modules/_bundled/gnuboard7-hello_module/tests` |
-| Vitest | 7개 | — |
+| Vitest | 7개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 12개 | `tests/scenarios` |
 

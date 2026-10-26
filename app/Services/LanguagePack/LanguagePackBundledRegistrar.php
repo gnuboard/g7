@@ -7,6 +7,7 @@ use App\Contracts\Repositories\LanguagePackRepositoryInterface;
 use App\Enums\LanguagePackDeactivationReason;
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackStatus;
+use App\Extension\Support\LifecycleWarnings;
 use App\Models\LanguagePack;
 use App\Services\LanguagePackService;
 use App\Support\LocaleTag;
@@ -167,6 +168,7 @@ class LanguagePackBundledRegistrar
                     'pack_id' => $pack->id,
                     'error' => $e->getMessage(),
                 ]);
+                LifecycleWarnings::current()->add('language_pack', (string) $pack->identifier, $e->getMessage());
             }
         }
 
@@ -214,6 +216,7 @@ class LanguagePackBundledRegistrar
                     'identifier' => $pack->identifier,
                     'error' => $e->getMessage(),
                 ]);
+                LifecycleWarnings::current()->add('language_pack', (string) $pack->identifier, $e->getMessage());
             }
         }
 
@@ -395,6 +398,7 @@ class LanguagePackBundledRegistrar
                 'identifier' => $identifier,
                 'error' => $e->getMessage(),
             ]);
+            LifecycleWarnings::current()->add('language_pack', (string) $identifier, $e->getMessage());
         }
     }
 

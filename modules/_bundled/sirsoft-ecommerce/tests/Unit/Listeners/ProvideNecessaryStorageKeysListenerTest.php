@@ -29,6 +29,7 @@ class ProvideNecessaryStorageKeysListenerTest extends ModuleTestCase
     private const EXPECTED = [
         'localStorage' => [
             'g7_cart_key',
+            'g7_order_*',
         ],
         'sessionStorage' => [
             'g7_guest_order_token',
@@ -40,6 +41,8 @@ class ProvideNecessaryStorageKeysListenerTest extends ModuleTestCase
     /** @var array<string, string> 키 => 그 키를 실제로 저장하는 소스 (이 확장 루트 기준) */
     private const WRITERS = [
         'g7_cart_key' => '../../../templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
+        // 관리자 주문 목록 표시 열 — `g7_order_visible_columns_{관리자 uuid}` 로 저장한다(앞부분 매칭, 1.3.2)
+        'g7_order_*' => 'resources/js/handlers/orderHandlers.ts',
         'g7_guest_order_token' => '../../../templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
         'g7_guest_order_number' => '../../../templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
         'g7_guest_order_expires_at' => '../../../templates/_bundled/sirsoft-basic/src/handlers/storageHandlers.ts',
@@ -159,8 +162,12 @@ class ProvideNecessaryStorageKeysListenerTest extends ModuleTestCase
         foreach (self::WRITERS as $key => $relative) {
             $source = file_get_contents($root.'/'.$relative);
             $this->assertIsString($source, $relative.' 를 읽지 못했습니다.');
+            // 끝 `*` 는 앞부분 매칭 — 저장 코드는 그 접두로 시작하는 문자열을 쓴다
+            $pattern = str_ends_with($key, '*')
+                ? '/[\'"`]'.preg_quote(rtrim($key, '*'), '/').'/'
+                : '/[\'"]'.preg_quote($key, '/').'[\'"]/';
             $this->assertMatchesRegularExpression(
-                '/[\'"]'.preg_quote($key, '/').'[\'"]/',
+                $pattern,
                 $source,
                 "{$key} 가 {$relative} 의 저장 키 문자열과 어긋납니다."
             );

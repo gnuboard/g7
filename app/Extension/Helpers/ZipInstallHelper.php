@@ -2,8 +2,8 @@
 
 namespace App\Extension\Helpers;
 
+use App\Extension\Exceptions\UnsafeArchiveException;
 use Illuminate\Support\Facades\File;
-use ZipArchive;
 
 /**
  * ZIP 추출 + manifest 검증 공통 유틸리티.
@@ -16,27 +16,18 @@ class ZipInstallHelper
     /**
      * ZIP 파일을 추출합니다.
      *
-     * @param string $zipPath ZIP 파일 경로
-     * @param string $extractPath 추출 대상 디렉토리
+     * @param  string  $zipPath  ZIP 파일 경로
+     * @param  string  $extractPath  추출 대상 디렉토리
+     * @param  string|null  $displayName  경고에 보일 원래 파일 이름 (업로드 임시 파일일 때)
      * @return void
      *
      * @throws \RuntimeException ZIP 파일 열기/추출 실패 시
+     * @throws UnsafeArchiveException 압축 밖 경로·심볼릭 링크 항목이 있을 때
      */
-    public static function extractZip(string $zipPath, string $extractPath): void
+    public static function extractZip(string $zipPath, string $extractPath, ?string $displayName = null): void
     {
-        if (! file_exists($zipPath)) {
-            throw new \RuntimeException(__('common.errors.zip_file_not_found'));
-        }
-
-        $zip = new ZipArchive;
-
-        if ($zip->open($zipPath) !== true) {
-            throw new \RuntimeException(__('common.errors.zip_open_failed'));
-        }
-
-        File::ensureDirectoryExists($extractPath);
-        $zip->extractTo($extractPath);
-        $zip->close();
+        // 역슬래시 경로 정규화 + 압축 밖 경로 거부
+        SafeArchiveExtractor::extractZip($zipPath, $extractPath, $displayName);
     }
 
     /**
@@ -44,10 +35,11 @@ class ZipInstallHelper
      *
      * extractZip + findAndValidateManifest를 한번에 수행하는 편의 메서드입니다.
      *
-     * @param string $zipPath ZIP 파일 경로
-     * @param string $extractPath 추출 대상 디렉토리
-     * @param string $manifestName manifest 파일명 (module.json, plugin.json, template.json)
-     * @param string $extensionType 확장 타입 (modules, plugins, templates)
+     * @param  string  $zipPath  ZIP 파일 경로
+     * @param  string  $extractPath  추출 대상 디렉토리
+     * @param  string  $manifestName  manifest 파일명 (module.json, plugin.json, template.json)
+     * @param  string  $extensionType  확장 타입 (modules, plugins, templates)
+     * @param  string|null  $displayName  경고에 보일 원래 파일 이름 (업로드 임시 파일일 때)
      * @return array{identifier: string, config: array, sourcePath: string}
      *
      * @throws \RuntimeException 추출 또는 검증 실패 시
@@ -56,9 +48,10 @@ class ZipInstallHelper
         string $zipPath,
         string $extractPath,
         string $manifestName,
-        string $extensionType
+        string $extensionType,
+        ?string $displayName = null
     ): array {
-        static::extractZip($zipPath, $extractPath);
+        static::extractZip($zipPath, $extractPath, $displayName);
 
         return static::findAndValidateManifest($extractPath, $manifestName, $extensionType);
     }
@@ -66,9 +59,9 @@ class ZipInstallHelper
     /**
      * 추출된 디렉토리에서 manifest를 찾고 검증합니다.
      *
-     * @param string $extractPath 추출된 디렉토리 경로
-     * @param string $manifestName manifest 파일명 (module.json, plugin.json, template.json)
-     * @param string $extensionType 확장 타입 (modules, plugins, templates)
+     * @param  string  $extractPath  추출된 디렉토리 경로
+     * @param  string  $manifestName  manifest 파일명 (module.json, plugin.json, template.json)
+     * @param  string  $extensionType  확장 타입 (modules, plugins, templates)
      * @return array{identifier: string, config: array, sourcePath: string}
      *
      * @throws \RuntimeException manifest를 찾을 수 없거나 유효하지 않은 경우
@@ -111,8 +104,8 @@ class ZipInstallHelper
      *
      * GitHub 아카이브는 owner-repo-hash/ 구조이므로 1단계 하위 검색이 필수입니다.
      *
-     * @param string $directory 검색할 디렉토리
-     * @param string $manifestName manifest 파일명
+     * @param  string  $directory  검색할 디렉토리
+     * @param  string  $manifestName  manifest 파일명
      * @return string|null manifest 파일 경로 또는 null
      */
     public static function findManifest(string $directory, string $manifestName): ?string
@@ -138,9 +131,9 @@ class ZipInstallHelper
     /**
      * 추출된 소스를 _pending 디렉토리로 이동합니다.
      *
-     * @param string $sourcePath 소스 디렉토리 경로
-     * @param string $pendingBasePath _pending 기본 경로 (예: base_path('modules/_pending'))
-     * @param string $identifier 확장 식별자
+     * @param  string  $sourcePath  소스 디렉토리 경로
+     * @param  string  $pendingBasePath  _pending 기본 경로 (예: base_path('modules/_pending'))
+     * @param  string  $identifier  확장 식별자
      * @return string 이동된 _pending 경로
      */
     public static function moveToPending(

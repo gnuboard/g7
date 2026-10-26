@@ -136,7 +136,8 @@ class ExtensionRecoveryController extends AdminBaseController
             'template' => $manager->activateTemplate($identifier),
         };
 
-        return ResponseHelper::success('extensions.alerts.recovered_success', [
+        // 공용 성공 응답을 거쳐야 재활성화 중 일부 항목 실패(레이아웃 등록 등)가 data.warnings 로 실린다 (7.1.3)
+        return $this->success('extensions.alerts.recovered_success', [
             'extension_type' => $type,
             'identifier' => $identifier,
         ]);

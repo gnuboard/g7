@@ -1,3 +1,4 @@
+// e2e:allow 학습용 숨김(hidden) 샘플 템플릿 — 운영 사이트에서 활성화되지 않아 브라우저 경로가 없다. 링크 판정·부트스트랩은 Vitest(__tests__/components/A.coreLinkApi·__tests__/bootstrap/initTemplate)로 잠그고, 같은 코어 링크 API 의 브라우저 확인은 tests/Playwright/specs/engine-713-binding-cache-links.spec.ts 가 맡는다
 import React, { useSyncExternalStore } from 'react';
 
 export interface AProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
@@ -10,9 +11,10 @@ export interface AProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
 /** 엔진 전역 — 레이아웃 렌더 중에만 있다 */
 const g7 = (): any => (typeof window !== 'undefined' ? (window as any).G7Core : undefined);
 
-/** 같은 사이트 안 주소인가 — '/' 로 시작하고 '//'·'/\'(브라우저가 다른 호스트로 읽음)가 아닌 것만 SPA 로 옮긴다 */
-const isInternalHref = (href?: string): href is string =>
-  typeof href === 'string' && /^\/(?![/\\])/.test(href);
+/*
+ * 링크 규칙(주소 구독·내부 링크 판정·새 창 rel)은 코어 한 곳(`G7Core.navigation`, engine-v1.83.0)에 있다 — 이 템플릿은 그것을
+ * 부르기만 한다. 아래 대체는 그 API 가 없는 옛 코어에서만 쓰는 짧은 판정이다(샘플 템플릿이 규칙을 다시 만들지 않는다).
+ */
 
 /** 구독하지 않는 링크의 subscribe·snapshot — 같은 함수여야 React 가 다시 구독하지 않는다 */
 const noSubscribe = (): (() => void) => () => {};
@@ -20,50 +22,76 @@ const noSnapshot = (): string => '';
 const readLocationSearch = (): string => (typeof window === 'undefined' ? '' : window.location.search);
 
 /**
- * 주소 검색부가 바뀔 수 있는 순간을 구독한다 — 엔진 `G7Core.navigation.subscribeLocationSearch`(뒤로/앞으로·같은 화면 쿼리 교체).
- * 그 API 가 없는 옛 엔진에서는 뒤로/앞으로(`popstate`)만 본다.
+ * 옛 코어용 대체 구독 — 코어 `subscribeLocationSearch`(7.1.2, 뒤로/앞으로·같은 화면 쿼리 교체)가 있으면 그것을 쓰고,
+ * 그마저 없는 코어에서만 뒤로/앞으로(`popstate`)를 본다.
  *
  * @param callback 검색부가 바뀌었을 수 있을 때 부를 함수
  * @returns 구독 해제 함수
  */
-const subscribeLocationSearch = (callback: () => void): (() => void) => {
-  const fn = g7()?.navigation?.subscribeLocationSearch;
-  if (typeof fn === 'function') {
-    const off = fn(callback);
-
-    return typeof off === 'function' ? off : () => {};
+const subscribeLocationFallback = (callback: () => void): (() => void) => {
+  const subscribe = g7()?.navigation?.subscribeLocationSearch;
+  if (typeof subscribe === 'function') {
+    return subscribe(callback);
   }
+
   window.addEventListener('popstate', callback);
 
   return () => window.removeEventListener('popstate', callback);
 };
 
 /**
- * 렌더할 때 현재 쿼리를 href 에 합치는 링크(`mergeQuery`)가 주소 검색부를 구독한다.
- *
- * 같은 화면에서 쿼리만 바꾸는 `navigate replace` 는 화면을 다시 마운트하지 않고 링크 props 도 그대로라 엔진이 링크를
- * 다시 그리지 않는다 — 그러면 가운데 클릭·Ctrl+클릭·새 탭·주소 복사가 옛 쿼리로 간다. 검색부가 바뀌면 이 훅이 다시 그린다.
- * `enabled` 가 거짓이면 구독하지 않는다(쿼리를 합치지 않는 링크의 렌더 비용은 그대로).
+ * 옛 코어용 대체 훅 — 코어 `useLocationSearch` 와 같은 모양.
  *
  * @param enabled 현재 쿼리를 href 에 합치면 true
  * @returns 현재 주소 검색부(구독하지 않으면 '')
  */
-const useLocationSearch = (enabled: boolean): string =>
+const fallbackLocationSearch = (enabled: boolean): string =>
   useSyncExternalStore(
-    enabled ? subscribeLocationSearch : noSubscribe,
+    enabled ? subscribeLocationFallback : noSubscribe,
     enabled ? readLocationSearch : noSnapshot,
     noSnapshot,
   );
 
 /**
- * 새 창(`target="_blank"`) 링크의 rel — 이미 준 값은 지키고 `noopener noreferrer` 를 합친다.
- * 새 창이 `window.opener` 로 이 화면을 조작하거나 주소를 넘겨받지 못하게 한다.
+ * 렌더할 때 현재 쿼리를 href 에 합치는 링크(`mergeQuery`)가 주소 검색부를 구독한다 — 코어 훅(같은 React)을 그대로 부르고,
+ * 없으면 대체 훅. 코어 유무는 렌더 사이에 바뀌지 않으므로 렌더마다 같은 훅 하나를 부른다.
+ *
+ * @param enabled 현재 쿼리를 href 에 합치면 true
+ * @returns 현재 주소 검색부(구독하지 않으면 '')
+ */
+const useLocationSearch = (enabled: boolean): string => {
+  const coreHook = g7()?.navigation?.useLocationSearch;
+  const impl: (enabled: boolean) => string = typeof coreHook === 'function' ? coreHook : fallbackLocationSearch;
+
+  return impl(enabled);
+};
+
+/**
+ * 같은 사이트 안 주소면 SPA 로 옮길 경로를, 아니면 null — 코어 `resolveInternalHref`(엔진 navigate 와 같은 판정).
+ * 옛 코어에서는 '/' 로 시작하고 '//'·'/\'(브라우저가 다른 호스트로 읽음)가 아닌 경로만 내부로 본다.
+ *
+ * @param href 링크 주소
+ * @returns 내부 경로 또는 null
+ */
+const resolveInternalHref = (href?: string): string | null => {
+  if (typeof href !== 'string' || href === '') return null;
+  const fn = g7()?.navigation?.resolveInternalHref;
+  if (typeof fn === 'function') return fn(href);
+
+  return /^\/(?![/\\])/.test(href) ? href : null;
+};
+
+/**
+ * 새 창(`target="_blank"`) 링크의 rel — 코어 `mergeRelForTarget`(빠진 noopener·noreferrer 만 덧붙이고 준 값은 지킨다).
+ * 옛 코어에서는 같은 규칙으로 직접 합친다.
  *
  * @param target 링크 target
  * @param rel 레이아웃이 준 rel
  * @returns 붙일 rel(새 창이 아니면 받은 값 그대로)
  */
 const relFor = (target?: string, rel?: string): string | undefined => {
+  const fn = g7()?.navigation?.mergeRelForTarget;
+  if (typeof fn === 'function') return fn(rel, target);
   if (target !== '_blank') return rel;
   const tokens = new Set((rel ?? '').split(/\s+/).filter(Boolean));
   tokens.add('noopener');
@@ -113,11 +141,13 @@ export const A: React.FC<AProps> = ({
       onClick(event);
       return;
     }
-    if (event.defaultPrevented || !isInternalHref(resolvedHref)) return;
+    if (event.defaultPrevented) return;
+    const path = resolveInternalHref(resolvedHref);
+    if (path === null) return;
     const core = g7();
     if (!core?.navigation?.isPlainLeftClick?.(event)) return;
     event.preventDefault();
-    core.dispatch?.({ handler: 'navigate', params: { path: resolvedHref } });
+    core.dispatch?.({ handler: 'navigate', params: { path } });
   };
 
   return (

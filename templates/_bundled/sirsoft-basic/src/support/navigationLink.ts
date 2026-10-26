@@ -1,3 +1,4 @@
+// e2e:allow 이번 변경은 코어 링크 API 가 없는 옛 코어(7.1.1·7.1.2) 전용 대체 판정 — 7.1.3 코어 실브라우저에서는 도달하지 않아 Vitest(NavigationLinks.coreLinkApi)로 잠근다. 7.1.3 코어 경로는 Playwright core-link-api spec 이 잰다
 /**
  * 화면 이동 링크 도우미 (sirsoft-basic 공용, #757)
  *
@@ -50,10 +51,9 @@ const noSnapshot = (): string => '';
 const readLocationSearch = (): string => (typeof window === 'undefined' ? '' : window.location.search);
 
 /**
- * 주소 검색부가 바뀔 수 있는 순간을 구독합니다 — 엔진 `G7Core.navigation.subscribeLocationSearch`(뒤로/앞으로·같은 화면 쿼리 교체).
- * 그 API 가 없는 옛 엔진에서는 뒤로/앞으로(`popstate`)만 본다.
+ * 옛 코어(engine-v1.83.0 전)용 짧은 대체 구독 — 엔진 주소 교체 알림 API 가 있으면 그것을, 없으면 뒤로/앞으로(`popstate`)만 본다.
  */
-const subscribeLocationSearch = (callback: () => void): (() => void) => {
+const subscribeFallback = (callback: () => void): (() => void) => {
   const fn = core()?.navigation?.subscribeLocationSearch;
   if (typeof fn === 'function') {
     const off = fn(callback);
@@ -65,34 +65,61 @@ const subscribeLocationSearch = (callback: () => void): (() => void) => {
   return () => window.removeEventListener('popstate', callback);
 };
 
+/** 옛 코어용 대체 훅 — 코어 `useLocationSearch` 와 같은 모양 */
+const fallbackLocationSearch = (enabled: boolean): string =>
+  useSyncExternalStore(
+    enabled ? subscribeFallback : noSubscribe,
+    enabled ? readLocationSearch : noSnapshot,
+    noSnapshot,
+  );
+
 /**
  * 렌더할 때 현재 쿼리를 href 에 합치는 컴포넌트가 주소 검색부를 구독합니다(`mergeQuery`·`pageHrefMergeQuery` 등).
  *
- * 같은 화면에서 쿼리만 바꾸는 `navigate replace` 는 화면을 다시 마운트하지 않고, 링크 props 도 그대로라 엔진이 그 링크를
- * 다시 그리지 않는다 — 그러면 가운데 클릭·Ctrl+클릭·새 탭·주소 복사가 옛 쿼리로 간다. 검색부가 바뀌면 이 훅이 다시 그린다.
- * `enabled` 가 거짓이면 구독하지 않는다(쿼리를 합치지 않는 링크의 렌더 비용은 그대로).
+ * 구독 규칙은 코어 한 곳(`G7Core.navigation.useLocationSearch`, engine-v1.83.0)에 있다 — 템플릿은 코어와 같은 React 를
+ * 쓰므로 그 훅을 그대로 부른다. 그 훅이 없는 옛 코어에서만 짧은 대체로 동작한다. 코어 유무는 렌더 사이에 바뀌지 않으므로
+ * 어느 쪽이든 렌더마다 훅 하나(`useSyncExternalStore`)를 같은 순서로 부른다.
  *
  * @param enabled 현재 쿼리를 href 에 합치면 true
  * @return 현재 주소 검색부(`?a=1`, 구독하지 않으면 '')
  */
 export function useLocationSearch(enabled: boolean): string {
-  return useSyncExternalStore(
-    enabled ? subscribeLocationSearch : noSubscribe,
-    enabled ? readLocationSearch : noSnapshot,
-    noSnapshot,
-  );
+  const coreHook = core()?.navigation?.useLocationSearch;
+  const impl: (enabled: boolean) => string = typeof coreHook === 'function' ? coreHook : fallbackLocationSearch;
+
+  return impl(enabled);
 }
 
 /**
- * 같은 출처 주소의 경로가 `//` 로 시작하는지 봅니다(`https://이 사이트//다른호스트` — 백슬래시 변형은 URL 파서가 `/` 로 바꾼다).
+ * 이 사이트 안 주소(SPA 로 옮길 내부 링크)인지 판정합니다 — 판정은 코어 한 곳(`G7Core.navigation.resolveInternalHref`,
+ * 엔진 navigate 와 같은 규칙: `//host`·`/\host`·경로가 `//` 로 시작하는 같은 출처 주소·실행 스킴은 내부가 아니다).
+ * 그 API 가 없는 옛 코어(7.1.1·7.1.2)에서는 짧은 대체로 판정한다 — `/` 로 시작하고 `//`·`/\` 가 아닌 경로, 그리고 같은 출처
+ * `http(s)://` 주소 중 경로가 `//`·`/\` 로 시작하지 않는 것(알림·메뉴의 전체 주소 — 7.1.2 템플릿과 같은 결과, 새 탭으로 열리지 않게).
  *
- * 엔진 navigate 의 같은 출처 판정(`navPolicy.toSameOriginNavPath`)은 이 경로를 프로토콜 상대 주소로 보고 거부한다.
- * 여기서 내부 링크로 통과시키면 보통 클릭은 대체 경로로 가는데 href·새 탭은 그 주소로 남아 판정이 갈린다(7.1.1).
- *
- * @param url 같은 출처로 판정된 주소
- * @return 경로가 `//` 로 시작하면 true (해석할 수 없으면 true — 내부 링크로 두지 않는다)
+ * @param url 링크 주소(앞뒤 공백 제거됨)
+ * @return 내부 링크면 true
  */
-function hasProtocolRelativePath(url: string): boolean {
+function isInternalLink(url: string): boolean {
+  const fn = core()?.navigation?.resolveInternalHref;
+  if (typeof fn === 'function') {
+    // 경로나 http(s) 주소만 링크 후보 — 상대 경로·스킴 없는 값은 종전처럼 링크로 그리지 않는다
+    if (!url.startsWith('/') && !/^https?:\/\//i.test(url)) return false;
+
+    return fn(url) !== null;
+  }
+
+  if (/^\/(?![/\\])/.test(url)) return true;
+
+  return /^https?:\/\//i.test(url) && isSameOriginRequest(url) && !hasDoubleSlashPath(url);
+}
+
+/**
+ * 주소의 경로가 `//`(또는 `/\`, 주소 해석 때 `//` 로 바뀜)로 시작하는지 판정합니다 — 엔진 navigate 가 거부하는 같은 출처 주소.
+ *
+ * @param url 같은 출처 `http(s)://` 주소
+ * @return 경로가 `//` 로 시작하거나 주소를 해석할 수 없으면 true
+ */
+function hasDoubleSlashPath(url: string): boolean {
   try {
     return new URL(url, window.location.href).pathname.startsWith('//');
   } catch {
@@ -104,8 +131,8 @@ function hasProtocolRelativePath(url: string): boolean {
  * 링크로 그려도 되는 주소인지 판정해 href 값을 돌려줍니다.
  *
  * - 빈 값·`#`·실행 스킴(`javascript:` 등)은 링크가 아니다 → null
- * - `/` 하나로 시작하는 경로(`//`·`/\` 제외)와 같은 출처 주소는 내부 링크 — 단 같은 출처라도 경로가 `//` 로
- *   시작하면(엔진 navigate 가 거부하는 주소) 내부 링크가 아니다
+ * - 내부 링크 판정은 코어 한 곳({@link isInternalLink} → `G7Core.navigation.resolveInternalHref`) — `/` 경로와 같은 출처
+ *   주소가 내부 링크이고, 같은 출처라도 경로가 `//` 로 시작하면(엔진 navigate 가 거부하는 주소) 내부 링크가 아니다
  * - `http(s)://` 바깥 주소는 바깥 링크(새 탭으로 연다)
  *
  * @param url 메뉴·항목 데이터의 주소
@@ -115,9 +142,7 @@ export function resolveLinkHref(url: unknown): { href: string; external: boolean
   if (typeof url !== 'string') return null;
   const trimmed = url.trim();
   if (trimmed === '' || trimmed === '#') return null;
-  if (/^\/(?![/\\])/.test(trimmed) || (isSameOriginRequest(trimmed) && !hasProtocolRelativePath(trimmed))) {
-    return { href: trimmed, external: false };
-  }
+  if (isInternalLink(trimmed)) return { href: trimmed, external: false };
   if (/^https?:\/\//i.test(trimmed)) return { href: trimmed, external: true };
 
   return null;
@@ -166,6 +191,10 @@ export function handleLinkClick(event: React.MouseEvent, onPlain: () => void): b
  * @return 붙일 rel(없으면 undefined)
  */
 export function mergeRelForTarget(target: string | undefined, rel: string | undefined): string | undefined {
+  // 규칙은 코어 한 곳(`G7Core.navigation.mergeRelForTarget`, engine-v1.83.0 — 이 템플릿의 규칙이 정본으로 이관됨).
+  // 그 API 가 없는 옛 코어에서만 아래 같은 규칙으로 동작한다.
+  const fn = core()?.navigation?.mergeRelForTarget;
+  if (typeof fn === 'function') return fn(rel, target);
   if (target !== '_blank') return rel;
   const tokens = (rel ?? '').split(/\s+/).filter(Boolean);
   for (const required of ['noopener', 'noreferrer']) {

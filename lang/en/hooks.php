@@ -13,4 +13,6 @@ return [
     'cache_file_written' => 'Hook mapping cache file generated',
     'cache_listener_not_found' => 'Hook cache generation: listener class not found',
     'cache_listener_hooks_failed' => 'Hook cache generation: getSubscribedHooks() error — entry excluded',
+    'cache_listener_interface_missing' => 'Hook cache generation: listener does not implement HookListenerInterface — excluded',
+    'cache_stale_extension_changed' => 'Files of an active extension changed, so the hook cache is stale — falling back to scanning and rebuilding it at the end of this request',
 ];

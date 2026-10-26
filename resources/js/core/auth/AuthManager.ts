@@ -50,7 +50,7 @@ export interface AuthConfig {
    * 로그인 인계 코드 교환 엔드포인트 — 외부 인증(소셜 로그인 등)이 발급한 일회용 코드를 바꿔 로그인한다.
    * 없으면 그 인증 타입은 인계를 지원하지 않는다(관리자는 아직 미지원).
    *
-   * @since engine-v1.83.0
+   * @since engine-v1.84.0
    */
   handoffEndpoint?: string;
   /**
@@ -494,7 +494,7 @@ export class AuthManager {
    * @param options - 추가 옵션 (headers 등 — globalHeaders 의 장바구니 키 등)
    * @returns 인증 완료 / 2단계 인증 요구 / 비밀번호 변경 단계 요구
    * @throws Error 인계를 지원하지 않는 인증 타입이거나 코드가 무효(422)·상태 거절(401)·잠금(423)일 때
-   * @since engine-v1.83.0
+   * @since engine-v1.84.0
    */
   async loginWithHandoff(
     type: AuthType,

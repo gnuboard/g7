@@ -592,7 +592,10 @@ G7Core.modal.close();
 | `onComplete(callback)` | 전환 완료 시 콜백 실행 | 구독 해제 함수 |
 | `isPlainLeftClick(event)` | 「보통 클릭」(왼쪽 단추·수정키 없음·링크면 `target` 없음/`_self`·`download` 없음)인지 — 링크를 그리는 합성 컴포넌트가 참일 때만 기본 동작을 막는다 (engine-v1.80.1) | `boolean` |
 | `mergeQueryIntoHref(href)` | 현재 주소의 쿼리를 링크 주소에 합친다(링크 쪽 키가 이김). 같은 출처가 아니면 그대로 (engine-v1.80.1) | `string` |
-| `subscribeLocationSearch(callback)` | 현재 주소의 쿼리가 바뀔 수 있는 순간(뒤로/앞으로, 같은 화면에서 쿼리만 바꾸는 `navigate` `replace`)에 `callback` 을 부른다. 렌더할 때 `mergeQueryIntoHref` 로 href 를 만드는 컴포넌트가 `useSyncExternalStore(subscribe, () => window.location.search)` 로 구독해 주소만 바뀌어도 링크를 다시 그린다 (engine-v1.82.1) | 구독 해제 함수 |
+| `subscribeLocationSearch(callback)` | 현재 주소의 쿼리가 바뀔 수 있는 순간(뒤로/앞으로, 같은 화면에서 쿼리만 바꾸는 `navigate` `replace`)에 `callback` 을 부른다. 렌더할 때 `mergeQueryIntoHref` 로 href 를 만드는 컴포넌트가 `useSyncExternalStore(subscribe, () => window.location.search)` 로 구독해 주소만 바뀌어도 링크를 다시 그린다 (engine-v1.82.1). 링크 컴포넌트는 이 함수를 직접 감싸지 말고 아래 `useLocationSearch` 훅을 쓴다(코어 7.1.3) | 구독 해제 함수 |
+| `useLocationSearch(enabled)` | **React 훅.** 주소 검색부를 구독해 쿼리가 바뀌면(뒤로/앞으로, 같은 화면 `navigate` `replace`·`replaceUrl`) 컴포넌트를 다시 그린다. 렌더할 때 현재 쿼리를 href 에 합치는 링크 컴포넌트가 `enabled` 를 참으로 부른다. 거짓이면 구독하지 않는다. 컴포넌트 렌더 중에만 부른다 (engine-v1.83.0) | `string` — 현재 검색부(`?a=1`), 구독하지 않으면 `''` |
+| `resolveInternalHref(href)` | 링크 href 가 이 사이트 안 주소면 「경로?쿼리#해시」. 빈 값·`#…`·실행 스킴·다른 출처·`//host`·백슬래시 변형(`/\host`)·경로가 `//` 로 시작하는 같은 출처 주소는 `null`. 엔진 `navigate` 와 같은 판정이다 — 링크 컴포넌트는 판정을 다시 만들지 않는다 (engine-v1.83.0) | `string \| null` |
+| `mergeRelForTarget(rel, target)` | 새 창 링크의 rel. `target` 이 `_blank` 면 `noopener`·`noreferrer` 중 빠진 것만 덧붙이고 넘겨받은 토큰은 남긴다(대소문자 무시). 새 창이 아니면 받은 값 그대로 (engine-v1.83.0) | `string \| undefined` |
 | `getRouteGeneration()` | 지금 경로 전환 세대 — 경로 전환이 시작될 때마다 1 씩 는다(같은 주소로 다시 들어와도 는다). 진행 중인 이동 뒤에 새 이동이 대기열에 들어와 진행 중인 화면 처리가 밀릴 때도 는다(engine-v1.82.0 — 값은 늘 같은 방향으로만 바뀐다). 엔진이 없으면 `0` (engine-v1.81.1) | `number` |
 | `isLeaveGuarded()` | 지금 화면을 떠나면 이탈 확인 창이 뜨는지 — 레이아웃 `meta.leave_guard` 식을 읽기 전용으로 평가한다. 선언이 없거나 이미 떠나기로 승인된 이동 중이면 `false` (engine-v1.82.0) | `boolean` |
 
@@ -685,7 +688,7 @@ Tailwind CSS 클래스를 런타임에서 병합하는 헬퍼 API입니다.
 
 | 메서드 | 설명 | 반환값 |
 |--------|------|--------|
-| `mergeClasses(base, override)` | 충돌하는 Tailwind 클래스 병합 | `string` |
+| `mergeClasses(base, override)` | 충돌하는 Tailwind 클래스 병합 — 엔진 충돌 그룹 표에 든 클래스만 판정([한계](#지원-범위와-한계)) | `string` |
 | `conditionalClass(conditions)` | 조건부 클래스 적용 | `string` |
 | `joinClasses(...classes)` | 여러 클래스 문자열 결합 | `string` |
 
@@ -707,19 +710,46 @@ G7Core.style.mergeClasses('dark:text-white dark:bg-gray-800', 'dark:text-gray-10
 // 결과: 'dark:bg-gray-800 dark:text-gray-100'
 ```
 
-### 지원하는 클래스 그룹
+### 충돌 판정 규칙 (engine-v1.83.0)
 
-| 그룹 | 설명 | 예시 |
-|------|------|------|
-| justify | Flexbox justify-content | `justify-center`, `justify-between` |
-| items | Flexbox align-items | `items-center`, `items-start` |
-| textAlign | 텍스트 정렬 | `text-left`, `text-center` |
-| display | 디스플레이 속성 | `flex`, `block`, `hidden` |
-| bgColor | 배경색 | `bg-white`, `bg-gray-100` |
-| textColor | 텍스트색 | `text-gray-900`, `text-blue-500` |
-| width/height | 크기 | `w-full`, `h-10` |
-| padding/margin | 여백 | `p-4`, `m-2` |
-| ... | 대부분의 Tailwind 클래스 지원 | - |
+`mergeClasses` 는 Tailwind 전체를 이해하는 병합기가 아니다. 엔진이 가진 **충돌 그룹 표**에 든 클래스만 판정하고, 표에 없는 클래스는 그대로 둔다. 판정은 다음 세 규칙이 전부다.
+
+1. **같은 충돌 그룹 + 같은 변형 접두사**면 base 쪽을 지우고 override 를 남긴다(`justify-center` ↔ `justify-start`). 변형 접두사는 글자 그대로 같아야 같은 것으로 본다(`dark:` 와 접두사 없음은 서로 다르다).
+2. **상위 유틸리티는 하위 축을 함께 지운다** — override 가 `p-0` 이면 base 의 `px-4`·`pt-2` 도 지운다.
+3. **하위 축은 상위를 지우지 않는다** — override `px-2` 는 base `p-4` 를 남긴다(세로 여백 유지). Tailwind 가 축 유틸리티를 전체 유틸리티 뒤에 출력하므로 둘이 함께 있어야 의도대로 그려진다. tailwind-merge 의 「상위가 하위를 덮음」 규칙과 같다.
+
+| 상위 그룹 (override 로 오면 하위도 지움) | 함께 지우는 하위 그룹 |
+|------|------|
+| `p-*` | `px` `py` `ps` `pe` `pt` `pr` `pb` `pl` (`px` 는 `pr`·`pl`, `py` 는 `pt`·`pb`) |
+| `m-*` | `mx` `my` `ms` `me` `mt` `mr` `mb` `ml` (`mx` 는 `mr`·`ml`, `my` 는 `mt`·`mb`) |
+| `inset-*` | `inset-x` `inset-y` `top` `right` `bottom` `left` (`inset-x` 는 `right`·`left`, `inset-y` 는 `top`·`bottom`) |
+| `gap-*` | `gap-x` `gap-y` |
+| `border`(폭) | `border-x` `border-y` `border-s` `border-e` `border-t` `border-r` `border-b` `border-l` |
+| `rounded` | `rounded-s/e/t/r/b/l` 와 모서리(`rounded-tl` 등). 변(`rounded-t`)은 그 변의 두 모서리를 지운다 |
+| `overflow-*` | `overflow-x` `overflow-y` |
+| `overscroll-*` | `overscroll-x` `overscroll-y` |
+| `scale-*` | `scale-x` `scale-y` |
+
+그 밖에 서로 **다른 그룹**이라 지우지 않는 짝:
+
+| 짝 | 이유 |
+|------|------|
+| `flex-row`/`flex-col` ↔ `flex-wrap` ↔ `flex-1`/`flex-auto` ↔ `flex`(display) | 방향·줄바꿈·크기·디스플레이는 각각 다른 속성 |
+| `space-x-4` ↔ `space-x-reverse` | 간격과 방향 반전은 다른 그룹 |
+| `break-after-*`·`break-before-*`·`break-inside-*` ↔ `break-words`·`break-all` | 단 나누기와 단어 줄바꿈(word-break)은 다른 그룹 |
+| `top-4` ↔ `left-0`, `border-t` ↔ `border`(base 쪽), `overflow-x-auto` ↔ `overflow-hidden`(base 쪽) | 축·변이 다르면 다른 그룹(위 규칙 3) |
+
+### 지원 범위와 한계
+
+| 판정함 | 판정하지 않음(그대로 둘 다 남음) |
+|------|------|
+| Tailwind v3 기본 유틸리티 중 표에 든 것 — 정렬(`justify`·`items`·`content`·`self`), flex/grid, display, position·inset, 크기(`w`·`h`·`min-*`·`max-*`), 여백, 글자(크기·굵기·정렬·색·행간·자간 등), 배경, 테두리·둥글기·ring, 그림자·불투명도·필터·변형·전환, 커서·overflow 등 | **커스텀 클래스**(`btn`·`card-header` 같은 템플릿 고유 클래스) — 그룹이 없으므로 충돌로 보지 않는다 |
+| 값 접두사로 판정하는 그룹의 임의값(`w-[320px]`·`p-[3px]`·`gap-[6px]`) | 값 목록으로 판정하는 그룹의 임의값 — 색(`text-[#333]`·`bg-[var(--x)]`·`border-[#ddd]`), 글자 크기(`text-[13px]`), 그림자·둥글기 임의값 |
+| 변형 접두사 `dark:` `hover:` `focus:` `active:` `disabled:` `group-hover:` `sm:` `md:` `lg:` `xl:` `2xl:` 과 그 조합 | 그 밖의 변형 접두사(`focus-visible:`·`aria-*:`·`data-*:`·`peer-*:`·`group-*`(hover 외)·`max-*:` 등) — 접두사를 떼지 못해 그룹을 찾지 못한다 |
+| | **Tailwind v4 신규 유틸리티**(`size-*`·`bg-linear-*`·`shadow-xs`·`rounded-xs`·`inset-shadow-*`·`text-shadow-*` 등)와 v4 에서 바뀐 이름 |
+| | 색 이름 목록 밖의 색 토큰(테마에 추가한 `bg-primary-500` 등) |
+
+판정하지 않는 클래스는 base 와 override 가 **둘 다 남는다**. 그때 어느 쪽이 이기는지는 클래스 순서가 아니라 CSS 출력 순서(레이어·소스 순서)가 정한다 — 원하는 결과가 나오지 않으면 override 를 표에 든 표준 유틸리티로 쓰거나, 템플릿 CSS 에서 우선순위를 정한다([템플릿 고유 CSS 와 기본 컴포넌트 클래스](template-development.md#템플릿-고유-css-와-기본-컴포넌트-클래스)).
 
 ### conditionalClass
 

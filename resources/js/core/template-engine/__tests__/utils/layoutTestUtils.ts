@@ -22,6 +22,18 @@ import { DataBindingEngine } from '../../DataBindingEngine';
 import { TranslationEngine, TranslationContext } from '../../TranslationEngine';
 import { ActionDispatcher, ActionDefinition } from '../../ActionDispatcher';
 import DynamicRenderer, { ComponentDefinition } from '../../DynamicRenderer';
+import { ParentContextProvider } from '../../ParentContextProvider';
+import {
+  isPlainLeftClick,
+  mergeQueryIntoHref,
+  mergeRelForTarget,
+  resolveInternalHref,
+  subscribeLocationSearch,
+  useLocationSearch,
+} from '../../navigationLinks';
+import { evaluateComputedDefinitions } from '../../helpers/ComputedEvaluator';
+// 데이터소스 initLocal·initGlobal·initIsolated 를 실제 앱과 같은 규칙으로 적용하려고 TemplateApp 의 처리 함수를 그대로 쓴다(7.1.3 WP11)
+import { TemplateApp } from '../../../TemplateApp';
 
 // 유틸리티 임포트
 import {
@@ -100,6 +112,12 @@ export interface LayoutTestOptions {
   // 라우트/쿼리 파라미터
   routeParams?: Record<string, string>;
   queryParams?: Record<string, string>;
+  /** 현재 경로 — 실제 앱처럼 `route.path` 로 싣는다 (기본 '/') */
+  routePath?: string;
+  /** 시스템 활성 언어 목록 — `$locales` (기본 ['ko', 'en']) */
+  locales?: string[];
+  /** 템플릿이 지원하는 언어 목록 — `$templateLocales` (기본 ['ko', 'en']) */
+  templateLocales?: string[];
 
   // 인증 설정
   auth?: {
@@ -346,26 +364,39 @@ function validateDataBindingTypes(
 }
 
 /**
- * data_sources를 처리하고 fetch mock을 통해 데이터를 로드합니다.
+ * 데이터소스 받기 결과 — 실제 앱처럼 성공한 값과 실패 기록(`_dataSourceErrors` 의 원본)을 나눈다.
+ */
+interface ProcessedDataSources {
+  /** 데이터소스 id → 응답 본문(실패면 fallback 또는 null) */
+  data: Record<string, any>;
+  /** 데이터소스 id → { message, status } — 실제 앱 `_dataSourceErrors` 와 같은 모양 */
+  errors: Record<string, { message: string; status: number }>;
+  /** 받기를 시도한 데이터소스 id(직접 모의 포함) — waitForDataSource 판정용 */
+  attempted: string[];
+}
+
+/**
+ * data_sources 를 모의 API 로 받습니다.
  *
- * API 응답 구조 처리:
- * - mockApi('cartItems', { response: { items: [...] } }) 설정 시
- * - createMockResponse는 { success: true, data: { items: [...] } }를 반환
- * - 이 함수는 data 필드만 추출하여 cartItems = { items: [...] }로 저장
- * - 따라서 레이아웃에서 cartItems.items로 접근 가능
+ * 응답 규칙은 하나다(7.1.3 WP11 T6): 데이터소스 id 로 직접 등록한 모의든 URL 로 찾은 모의든 `mockApi(id, { response })` 의
+ * `response` 가 곧 실제 앱 데이터 컨텍스트에 실리는 **응답 본문**이다(실제 앱은 API 응답 본문 `{ data, meta, … }` 을 통째로
+ * 싣는다 — 레이아웃은 `{{id.data.…}}` 로 읽는다). URL 모의는 모의 fetch 가 감싼 `{ success, data }` 를 벗겨 같은 값을 얻는다.
  *
- * 또는 data 필드 내에 중첩된 data가 있는 경우 (페이지네이션):
- * - mockApi('products', { response: { data: [...], meta: {} } }) 설정 시
- * - products = { data: [...], meta: {} }로 저장
- * - 레이아웃에서 products.data로 접근 가능
+ * 실패는 실제 앱과 같이 `{ message, status }` 로 기록하고(T5), 값은 선언한 fallback 이나 null 이다.
+ *
+ * @param dataSources 레이아웃 data_sources
+ * @param mockApiRegistry 모의 API 레지스트리
+ * @param routeParams 경로 파라미터(엔드포인트 치환)
+ * @param queryParams 쿼리 파라미터
+ * @returns 받은 값·실패 기록·시도한 id
  */
 async function processDataSources(
   dataSources: LayoutJson['data_sources'],
   mockApiRegistry: MockApiRegistry,
   routeParams: Record<string, string> = {},
   queryParams: Record<string, string> = {}
-): Promise<Record<string, any>> {
-  const result: Record<string, any> = {};
+): Promise<ProcessedDataSources> {
+  const result: ProcessedDataSources = { data: {}, errors: {}, attempted: [] };
 
   if (!dataSources || dataSources.length === 0) {
     return result;
@@ -378,26 +409,28 @@ async function processDataSources(
     }
 
     if ((!ds.type || ds.type === 'api') && ds.endpoint) {
+      result.attempted.push(ds.id);
+      const fail = (status: number, message: string) => {
+        result.errors[ds.id] = { message, status };
+        result.data[ds.id] = ds.fallback ?? null;
+      };
+
       try {
-        // 1. 먼저 ds.id로 직접 mock 조회 (URL 추출 불일치 방지)
+        // 1. 데이터소스 id 로 직접 등록한 모의 (URL 추출 불일치 방지)
         const directMock = mockApiRegistry.mocks.get(ds.id);
         if (directMock) {
           if (directMock.error) {
-            result[ds.id] = ds.fallback ?? null;
+            fail(directMock.error.status, directMock.error.message);
             continue;
           }
           if (directMock.delay) {
             await new Promise(resolve => setTimeout(resolve, directMock.delay));
           }
-          // mockApi('order', { response: { data: {...} } }) 설정 시
-          // directMock.response = { data: {...} }
-          // result[ds.id] = { data: {...} }
-          result[ds.id] = directMock.response;
+          result.data[ds.id] = directMock.response;
           continue;
         }
 
-        // 2. 직접 mock이 없으면 기존 URL 기반 fetchSpy 사용
-        // endpoint에서 route 파라미터 치환
+        // 2. 직접 mock이 없으면 URL 기반 fetchSpy 사용 — endpoint 에서 route 파라미터 치환
         let endpoint = ds.endpoint;
         for (const [key, value] of Object.entries(routeParams)) {
           endpoint = endpoint.replace(`{${key}}`, value);
@@ -413,23 +446,20 @@ async function processDataSources(
           endpoint = url.pathname + url.search;
         }
 
-        // fetch 호출 (mockApiRegistry의 fetchSpy가 처리)
         const response = await mockApiRegistry.fetchSpy(endpoint, {
           method: ds.method || 'GET',
         });
-
         const json = await response.json();
 
-        // API 래핑 구조 해제: { success: true, data: ... } → data만 저장
-        if (json && typeof json === 'object' && 'data' in json) {
-          result[ds.id] = json.data;
-        } else {
-          result[ds.id] = json;
+        if (!response.ok) {
+          fail(response.status, json?.message ?? 'Error');
+          continue;
         }
+
+        // 모의 fetch 가 감싼 `{ success, data }` 를 벗긴다 — 직접 모의의 `response` 와 같은 값
+        result.data[ds.id] = json && typeof json === 'object' && 'data' in json ? json.data : json;
       } catch (error) {
-        // 에러 시 fallback 데이터 사용 또는 null
-        const fallback = ds.fallback;
-        result[ds.id] = fallback ?? null;
+        fail(0, error instanceof Error ? error.message : String(error));
       }
     }
   }
@@ -505,12 +535,16 @@ export function createLayoutTest(
     _isolated: { ...layoutInitIsolated } as Record<string, any>,
   };
 
+  // 직접 부른 G7Core.toast.* 기록 — 액션 `toast` 는 엔진 내장 처리가 `_global.toasts` 에 쓴다(getToasts 가 함께 읽는다)
   const toasts: Array<{ type: string; message: string }> = [];
-  const modalStack: string[] = [];
   const componentEventListeners = new Map<string, Set<(data?: any) => any>>();
   const navigationHistory: string[] = [];
   const validationWarnings: LayoutValidationWarning[] = [];
   let fetchedDataContext: Record<string, any> = {};
+  let dataSourceErrors: Record<string, { message: string; status: number }> = {};
+  let attemptedDataSources: string[] = [];
+  let localInit: Record<string, any> = {};
+  let isolatedInit: Record<string, any> = {};
 
   // Mock 레지스트리
   const mockApiRegistry = createMockApiRegistry();
@@ -546,6 +580,35 @@ export function createLayoutTest(
     }
   });
 
+  /**
+   * 실제 앱 `TemplateApp.setGlobalState` 와 같은 쓰기 — 얕은 병합(또는 함수형 갱신). `_local` 키는 실제 앱처럼
+   * `_global._local`(저장소 B)에 두고, 실제 앱에서 그 값이 곧 화면의 로컬 상태이므로 도구의 로컬 상태에도 싣는다
+   * (컴포넌트 문맥 없는 setState local — init_actions 등 — 이 이 경로로 쓴다).
+   *
+   * @param updates 병합할 값 또는 이전 값을 받아 새 값을 돌려주는 함수
+   */
+  const applyGlobalUpdate = (updates: Record<string, any> | ((prev: Record<string, any>) => Record<string, any>)) => {
+    const hadLocalKey = Object.prototype.hasOwnProperty.call(state._global, '_local');
+    // 실제 앱의 globalState._local 은 화면 로컬 상태 전체다 — 도구 _global 에 그 키가 없으면 도구 로컬 상태를 기준으로 넘긴다
+    const base = hadLocalKey ? state._global : { ...state._global, _local: state._local };
+    let next: Record<string, any>;
+    let wroteLocal: boolean;
+    if (typeof updates === 'function') {
+      next = { ...(updates(base) ?? base) };
+      wroteLocal = next._local !== base._local;
+      if (!hadLocalKey && !wroteLocal) {
+        delete next._local;
+      }
+    } else {
+      next = { ...state._global, ...updates };
+      wroteLocal = Object.prototype.hasOwnProperty.call(updates ?? {}, '_local');
+    }
+    state._global = next;
+    if (wroteLocal && next._local && typeof next._local === 'object') {
+      state._local = next._local;
+    }
+  };
+
   // 초기화 함수
   function initialize() {
     // ComponentRegistry
@@ -568,30 +631,14 @@ export function createLayoutTest(
       );
     }
 
-    // ActionDispatcher
+    // ActionDispatcher — toast·openModal·closeModal 은 엔진 내장 처리가 `_global.toasts`·`_global.modalStack` 에 쓴다.
+    // 종전 도구는 같은 이름의 사용자 핸들러를 등록했지만 내장 처리가 먼저 돌아 죽은 코드였다(7.1.3 WP11 T10).
     actionDispatcher = new ActionDispatcher({
       navigate: mockNavigate,
     });
 
-    // 커스텀 핸들러 등록: toast
-    actionDispatcher.registerHandler('toast', (params: any) => {
-      toasts.push({ type: params.type || 'info', message: params.message });
-    });
-
-    // 커스텀 핸들러 등록: openModal
-    actionDispatcher.registerHandler('openModal', (params: any) => {
-      modalStack.push(params.target);
-    });
-
-    // 커스텀 핸들러 등록: closeModal
-    actionDispatcher.registerHandler('closeModal', () => {
-      modalStack.pop();
-    });
-
-    // setState 핸들러에 globalStateUpdater 연결
-    actionDispatcher.setGlobalStateUpdater?.((updates: Record<string, any>) => {
-      state._global = { ...state._global, ...updates };
-    });
+    // setState(global)·toast·openModal 등 엔진이 쓰는 전역 상태 갱신기 — 실제 앱 setGlobalState 와 같은 규칙
+    actionDispatcher.setGlobalStateUpdater?.((updates: any) => applyGlobalUpdate(updates));
 
     // 레이아웃 최상위 named_actions 등록 (engine-v1.19.0+)
     // 미등록 시 actionRef 가 해석되지 않아 named_actions 를 쓰는 레이아웃은
@@ -613,7 +660,7 @@ export function createLayoutTest(
         // 꽂아 액션 params 안의 `{{_global.*}}` 가 전부 undefined 로 평가됐다.
         // 정본: `resources/js/core/devtools/DiagnosticEngine.ts:65` 「반환값이 곧 _global 이다 — ._global 을 덧붙이지 말 것」.
         get: () => ({ ...state._global, _local: state._local }),
-        set: (updates: any) => { state._global = { ...state._global, ...updates }; },
+        set: (updates: any) => applyGlobalUpdate(updates),
         getLocal: () => state._local,
         setLocal: (updates: any) => { state._local = { ...state._local, ...updates }; },
       },
@@ -624,9 +671,19 @@ export function createLayoutTest(
         info: (msg: string) => toasts.push({ type: 'info', message: msg }),
       },
       modal: {
-        open: (id: string) => modalStack.push(id),
-        close: () => modalStack.pop(),
-        getStack: () => modalStack,
+        open: (id: string) => openModalById(id),
+        close: () => closeTopModal(),
+        getStack: () => [...(state._global.modalStack ?? [])],
+      },
+      // 링크 API — 실제 앱 G7Core.navigation 과 같은 함수(engine-v1.83.0). 템플릿 링크 컴포넌트는 코어 훅을 부르므로
+      // 엔진 렌더러와 같은 React 로 그려진다(템플릿 시험 폴더의 React 사본과 섞이지 않는다)
+      navigation: {
+        isPlainLeftClick,
+        mergeQueryIntoHref,
+        subscribeLocationSearch,
+        useLocationSearch,
+        resolveInternalHref,
+        mergeRelForTarget,
       },
       // 컴포넌트 이벤트 버스 — 운영 G7CoreGlobals.initComponentEventSystem 과 같은 계약(on → 해제 함수,
       // emit → 리스너 결과 배열, 리스너가 throw 하면 reject). 없으면 `<on listen>` 이 구독조차 하지 않아
@@ -659,6 +716,194 @@ export function createLayoutTest(
     };
   }
 
+  /** 모달 열기 — 실제 엔진처럼 `_global.modalStack` 에 쌓는다 */
+  function openModalById(modalId: string) {
+    const stack: string[] = state._global.modalStack ?? [];
+    state._global = { ...state._global, modalStack: stack.includes(modalId) ? stack : [...stack, modalId] };
+  }
+
+  /** 맨 위 모달 닫기 */
+  function closeTopModal() {
+    const stack: string[] = state._global.modalStack ?? [];
+    state._global = { ...state._global, modalStack: stack.slice(0, -1) };
+  }
+
+  /**
+   * 실제 앱(TemplateApp 의 첫 렌더 컨텍스트 + template-engine 전역 변수)과 같은 모양의 데이터 컨텍스트를 만든다(7.1.3 WP11 T1~T8).
+   *
+   * @returns 렌더·액션에 넘길 데이터 컨텍스트
+   */
+  function buildDataContext(): Record<string, any> {
+    const routeParams = options.routeParams || {};
+    const definesData = layoutJson.defines || {};
+
+    const context: Record<string, any> = {
+      // template-engine createGlobalVariables (낮은 우선순위)
+      $locale: options.locale || 'ko',
+      $locales: options.locales || ['ko', 'en'],
+      $templateLocales: options.templateLocales || ['ko', 'en'],
+      $templateId: options.templateId || 'test-template',
+      ...options.initialData, // fallback 데이터
+      ...routeParams,
+      ...fetchedDataContext, // fetch된 데이터가 우선
+      route: { ...routeParams, path: options.routePath || '/' },
+      query: options.queryParams || {},
+      _global: {
+        ...state._global,
+        // 레이아웃 경고 — 베이스 레이아웃의 LayoutWarnings 컴포넌트가 쓴다
+        layoutWarnings: (layoutJson as any).warnings || [],
+      },
+      _local: state._local,
+      _globalSetState: (updates: any) => applyGlobalUpdate(updates),
+      _dataSourceErrors: Object.keys(dataSourceErrors).length > 0 ? dataSourceErrors : undefined,
+      _localInit: Object.keys(localInit).length > 0 ? localInit : undefined,
+      _isolatedInit: Object.keys(isolatedInit).length > 0 ? isolatedInit : undefined,
+      _defines: Object.keys(definesData).length > 0 ? definesData : undefined,
+    };
+
+    // computed — 렌더·액션 경로와 같은 공용 평가기(TemplateApp.calculateComputed 와 같은 호출)
+    if (layoutJson.computed && Object.keys(layoutJson.computed).length > 0) {
+      context._computed = evaluateComputedDefinitions(layoutJson.computed, context, new DataBindingEngine(), {
+        previous: {},
+        onError: 'undefined',
+      });
+      context._computedDefinitions = layoutJson.computed;
+    }
+
+    return context;
+  }
+
+  /**
+   * 데이터소스 initLocal·initGlobal·initIsolated 를 실제 앱 함수(TemplateApp.processInitOptions)로 적용한다(T7).
+   */
+  function applyDataSourceInit() {
+    localInit = {};
+    isolatedInit = {};
+    const dataSources = layoutJson.data_sources || [];
+    if (dataSources.length > 0) {
+      // 처리 함수는 `this.globalState`(initGlobal 대상)만 쓴다 — 저장소 B(`_global._local`)는 있던 그대로 둔다
+      const hadLocalKey = Object.prototype.hasOwnProperty.call(state._global, '_local');
+      const app = Object.create(TemplateApp.prototype) as any;
+      app.globalState = hadLocalKey ? { ...state._global } : { ...state._global, _local: state._local };
+      app.processInitOptions(dataSources, fetchedDataContext, localInit, isolatedInit, state._local);
+      const nextGlobal = { ...app.globalState };
+      if (!hadLocalKey) {
+        delete nextGlobal._local;
+      }
+      state._global = nextGlobal;
+    }
+
+    // 실제 앱: 데이터소스 initLocal 값은 `_localInit` 으로 렌더러에 넘어가 로컬 상태에 병합된다
+    const { _forceLocalInit: _ignoredForce, ...localValues } = localInit;
+    if (Object.keys(localValues).length > 0) {
+      state._local = { ...state._local, ...localValues };
+    }
+
+    // 레이아웃 initIsolated 는 데이터소스 값이 없는 키만 채운다(TemplateApp 과 같은 순서)
+    for (const [key, value] of Object.entries(layoutInitIsolated)) {
+      if (isolatedInit[key] === undefined) {
+        isolatedInit[key] = JSON.parse(JSON.stringify(value));
+      }
+    }
+  }
+
+  /**
+   * 받기 실패한 데이터소스의 errorHandling(상태 코드별·default)·onError 를 실행한다(T5).
+   *
+   * @param dataContext 실행 문맥
+   */
+  async function runDataSourceErrorHandlers(dataContext: Record<string, any>) {
+    for (const ds of layoutJson.data_sources || []) {
+      const failure = dataSourceErrors[ds.id];
+      if (!failure) continue;
+      const handling = (ds as any).errorHandling;
+      const handlerDef = handling?.[String(failure.status)] ?? handling?.default ?? (ds as any).onError;
+      if (!handlerDef) continue;
+      const defs = Array.isArray(handlerDef) ? handlerDef : [handlerDef];
+      for (const def of defs) {
+        const handler = actionDispatcher.createHandler(
+          { type: 'click', ...def } as any,
+          { ...dataContext, error: failure },
+        );
+        await handler(new Event('error'));
+      }
+    }
+  }
+
+  /**
+   * init_actions 를 실제 ActionDispatcher 로 실행한다(T9) — TemplateApp.executeInitActions 와 같이 항목마다 최신 상태로 문맥을 갱신.
+   *
+   * @param baseContext 시작 문맥
+   */
+  async function runInitActions(baseContext: Record<string, any>) {
+    const initActions = layoutJson.initActions || layoutJson.init_actions || [];
+    let currentContext = { ...baseContext };
+    for (const initAction of initActions) {
+      try {
+        const handler = actionDispatcher.createHandler({ ...initAction, type: 'click' } as any, currentContext);
+        await handler(new Event('init'));
+      } catch {
+        // 실제 앱도 init 항목 하나의 실패로 화면 진입을 막지 않는다(로그만)
+      }
+      currentContext = { ...currentContext, _global: { ...state._global }, _local: state._local };
+    }
+  }
+
+  /**
+   * 렌더 트리 — 실제 앱처럼 일반 컴포넌트 다음에 모달을 ParentContextProvider 로 감싸 그리고, `_global.modalStack` 으로 열림을 정한다(T10).
+   *
+   * @param dataContext 데이터 컨텍스트
+   * @returns 렌더할 React 요소
+   */
+  function buildTree(dataContext: Record<string, any>): React.ReactElement {
+    const translationContext: TranslationContext = {
+      templateId: options.templateId || 'test-template',
+      locale: options.locale || 'ko',
+    };
+    const slotName = options.slotName || 'content';
+    const components = extractComponents(layoutJson, slotName);
+    const rendererProps = { translationContext, registry, bindingEngine, translationEngine, actionDispatcher };
+
+    const modalStack: string[] = dataContext._global?.modalStack || [];
+    const layoutContextStack: Array<{ dataContext?: Record<string, any> }> = (window as any).__g7LayoutContextStack || [];
+    const parentDataContext = layoutContextStack[layoutContextStack.length - 1]?.dataContext;
+    const modals = options.includeModals && layoutJson.modals ? layoutJson.modals : [];
+
+    return React.createElement(
+      React.Fragment,
+      null,
+      React.createElement(DynamicRenderer, {
+        key: 'root',
+        componentDef: { id: 'root', type: 'layout', name: 'Fragment', children: components } as ComponentDefinition,
+        dataContext,
+        isRootRenderer: true,
+        ...rendererProps,
+      } as any),
+      React.createElement(
+        ParentContextProvider,
+        { key: '__modal_parent_context_provider' },
+        modals.map((modalDef: any) => {
+          const stackIndex = modalStack.indexOf(modalDef.id);
+          return React.createElement(DynamicRenderer, {
+            key: `modal_${modalDef.id}_renderer`,
+            componentDef: {
+              ...modalDef,
+              props: {
+                ...modalDef.props,
+                isOpen: stackIndex >= 0 || dataContext._global?.activeModal === modalDef.id,
+                style: { ...modalDef.props?.style, zIndex: stackIndex >= 0 ? 50 + stackIndex : 50 },
+                onClose: actionDispatcher.createHandler({ type: 'click', handler: 'closeModal' } as any, dataContext),
+              },
+            },
+            dataContext,
+            parentDataContext,
+            ...rendererProps,
+          } as any);
+        }),
+      ),
+    );
+  }
+
   // 렌더링 함수
   async function doRender() {
     initialize();
@@ -671,20 +916,6 @@ export function createLayoutTest(
       state._global = { ...state._global, ...layoutJson.global_state };
     }
 
-    // init_actions에서 setState 핸들러 처리
-    const initActions = layoutJson.init_actions || layoutJson.initActions || [];
-    for (const action of initActions) {
-      if (action.handler === 'setState' && action.params) {
-        const { target, ...stateValues } = action.params;
-        if (target === 'global') {
-          state._global = { ...state._global, ...stateValues };
-        } else {
-          // 기본값은 local
-          state._local = { ...state._local, ...stateValues };
-        }
-      }
-    }
-
     // 인증 정보를 상태에 추가
     if (options.auth) {
       state._global.auth = {
@@ -694,72 +925,35 @@ export function createLayoutTest(
       };
     }
 
-    // data_sources 처리: mockApi로 등록된 데이터를 fetch mock을 통해 로드
-    const dataSourceData = await processDataSources(
+    // data_sources 처리: mockApi로 등록된 데이터를 받는다 (실패는 `_dataSourceErrors` 원본으로 기록)
+    const processed = await processDataSources(
       layoutJson.data_sources,
       mockApiRegistry,
       options.routeParams || {},
       options.queryParams || {}
     );
+    fetchedDataContext = processed.data;
+    dataSourceErrors = processed.errors;
+    attemptedDataSources = processed.attempted;
 
+    // 실행 순서(TemplateApp): 레이아웃 init* → 데이터소스 init* → 오류 처리기 → init_actions → 렌더
+    applyDataSourceInit();
+    await runDataSourceErrorHandlers(buildDataContext());
+    await runInitActions(buildDataContext());
 
-    // initialData는 fallback으로 사용 (mockApi가 없는 경우)
-    fetchedDataContext = {
-      ...options.initialData, // fallback 데이터
-      ...dataSourceData,      // fetch된 데이터가 우선
-    };
-
-    // dataContext 구성
-    const dataContext = {
-      ...fetchedDataContext,
-      _local: state._local,
-      _global: state._global,
-      route: options.routeParams || {},
-      query: options.queryParams || {},
-    };
-
-    const translationContext: TranslationContext = {
-      templateId: options.templateId || 'test-template',
-      locale: options.locale || 'ko',
-    };
-
-    // 레이아웃 JSON에서 컴포넌트 추출
-    const slotName = options.slotName || 'content';
-    const components = extractComponents(layoutJson, slotName);
-
-    // 모달 포함 옵션
-    let allComponents = [...components];
-    if (options.includeModals && layoutJson.modals) {
-      allComponents = [...allComponents, ...layoutJson.modals];
-    }
+    const dataContext = buildDataContext();
+    const allComponents = [
+      ...extractComponents(layoutJson, options.slotName || 'content'),
+      ...(options.includeModals && layoutJson.modals ? layoutJson.modals : []),
+    ];
 
     // 슬롯 시스템 검증
-    const slotWarnings = validateSlotSystem(allComponents);
-    validationWarnings.push(...slotWarnings);
+    validationWarnings.push(...validateSlotSystem(allComponents));
 
     // 데이터 바인딩 타입 검증
-    const bindingWarnings = validateDataBindingTypes(allComponents, dataContext, bindingEngine);
-    validationWarnings.push(...bindingWarnings);
+    validationWarnings.push(...validateDataBindingTypes(allComponents, dataContext, bindingEngine));
 
-    // ComponentDefinition으로 변환
-    const componentDef: ComponentDefinition = {
-      id: 'root',
-      type: 'layout',
-      name: 'Fragment',
-      children: allComponents,
-    };
-
-    renderResult = render(
-      React.createElement(DynamicRenderer, {
-        componentDef,
-        dataContext,
-        translationContext,
-        registry,
-        bindingEngine,
-        translationEngine,
-        actionDispatcher,
-      })
-    );
+    renderResult = render(buildTree(dataContext));
 
     // 데이터소스 로딩 대기
     await waitFor(() => {}, { timeout: 100 });
@@ -776,49 +970,7 @@ export function createLayoutTest(
       throw new Error('render()를 먼저 호출하세요');
     }
 
-    const dataContext = {
-      ...options.initialData,   // fallback 데이터
-      ...fetchedDataContext,    // fetch된 데이터 (API 응답)
-      _local: state._local,
-      _global: state._global,
-      route: options.routeParams || {},
-      query: options.queryParams || {},
-    };
-
-    const translationContext: TranslationContext = {
-      templateId: options.templateId || 'test-template',
-      locale: options.locale || 'ko',
-    };
-
-    // 레이아웃 JSON에서 컴포넌트 추출
-    const slotName = options.slotName || 'content';
-    const components = extractComponents(layoutJson, slotName);
-
-    // 모달 포함 옵션
-    let allComponents = [...components];
-    if (options.includeModals && layoutJson.modals) {
-      allComponents = [...allComponents, ...layoutJson.modals];
-    }
-
-    // ComponentDefinition으로 변환
-    const componentDef: ComponentDefinition = {
-      id: 'root',
-      type: 'layout',
-      name: 'Fragment',
-      children: allComponents,
-    };
-
-    renderResult.rerender(
-      React.createElement(DynamicRenderer, {
-        componentDef,
-        dataContext,
-        translationContext,
-        registry,
-        bindingEngine,
-        translationEngine,
-        actionDispatcher,
-      })
-    );
+    renderResult.rerender(buildTree(buildDataContext()));
 
     await waitFor(() => {}, { timeout: 50 });
   }
@@ -837,11 +989,14 @@ export function createLayoutTest(
       _isolated: {},
     };
     toasts.length = 0;
-    modalStack.length = 0;
     componentEventListeners.clear();
     navigationHistory.length = 0;
     validationWarnings.length = 0;
     fetchedDataContext = {};
+    dataSourceErrors = {};
+    attemptedDataSources = [];
+    localInit = {};
+    isolatedInit = {};
   }
 
   // userEvent 인스턴스
@@ -892,23 +1047,19 @@ export function createLayoutTest(
       }
     },
     getComputed: (key) => {
-      // computed 값은 layoutJson의 computed 섹션에서 계산
-      const computed = layoutJson.computed?.[key];
-      if (computed && bindingEngine) {
-        return bindingEngine.resolve(computed, {
-          _local: state._local,
-          _global: state._global,
-        });
+      // 실제 앱과 같은 문맥(데이터소스·route·query·_local·_global)으로 계산한 `_computed` 값(T1)
+      if (!layoutJson.computed?.[key]) {
+        return undefined;
       }
-      return undefined;
+      return buildDataContext()._computed?.[key];
     },
 
-    // 액션
+    // 액션 — 실제 디스패치처럼 렌더 데이터 컨텍스트 전체를 넘긴다
     triggerAction: async (actionDef) => {
       if (actionDispatcher) {
         const handler = actionDispatcher.createHandler(
           actionDef,
-          { _local: state._local, _global: state._global },
+          buildDataContext(),
           { state: state._local, setState: mockSetState }
         );
         const mockEvent = {
@@ -928,13 +1079,16 @@ export function createLayoutTest(
       }
     },
 
-    // 모달
-    openModal: (modalId) => modalStack.push(modalId),
-    closeModal: () => modalStack.pop(),
-    getModalStack: () => [...modalStack],
+    // 모달 — 실제 엔진과 같은 `_global.modalStack`
+    openModal: (modalId) => openModalById(modalId),
+    closeModal: () => closeTopModal(),
+    getModalStack: () => [...(state._global.modalStack ?? [])],
 
-    // 토스트
-    getToasts: () => [...toasts],
+    // 토스트 — 액션 toast(엔진 내장 → `_global.toasts`) + 직접 부른 G7Core.toast.*
+    getToasts: () => [
+      ...(state._global.toasts ?? []).map((t: { type?: string; message?: string }) => ({ type: t.type ?? 'info', message: t.message ?? '' })),
+      ...toasts,
+    ],
 
     // 네비게이션
     getNavigationHistory: () => [...navigationHistory],
@@ -943,9 +1097,9 @@ export function createLayoutTest(
     // 유틸리티
     waitForDataSource: async (dataSourceId) => {
       await waitFor(() => {
-        // 데이터소스 로딩 완료 확인
+        // 데이터소스 로딩 완료 확인 — 직접 모의(id)도 받기 시도로 친다(T6)
         const calls = mockApiRegistry.fetchSpy.mock.calls;
-        const hasCall = calls.some((call: any[]) =>
+        const hasCall = attemptedDataSources.includes(dataSourceId) || calls.some((call: any[]) =>
           call[0]?.includes(dataSourceId)
         );
         if (!hasCall) {
@@ -990,11 +1144,7 @@ export function createLayoutTest(
       if (options.includeModals && layoutJson.modals) {
         allComponents = [...allComponents, ...layoutJson.modals];
       }
-      return validateDataBindingTypes(
-        allComponents,
-        { ...fetchedDataContext, _local: state._local, _global: state._global },
-        bindingEngine
-      );
+      return validateDataBindingTypes(allComponents, buildDataContext(), bindingEngine);
     },
     assertNoValidationErrors: () => {
       const errors = validationWarnings.filter(

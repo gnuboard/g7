@@ -396,6 +396,15 @@ class EcommerceSettingsService implements ModuleSettingsInterface
                 $processedSettings = $this->applyRemovedDefaultCurrencies($processedSettings);
             }
 
+            // 읽기 때 언어팩으로 보강한 이름은 저장하지 않는다 — 화면이 되돌려 보낸 보강값이 파일에 굳으면 언어팩을
+            // 끄거나 번역을 고쳐도 옛 이름이 남는다(1.3.2, 코어 7.1.3 계산값 키와 같은 유형). 읽기는 다시 실시간으로 채운다.
+            if ($category === 'language_currency' && is_array($processedSettings['currencies'] ?? null)) {
+                $processedSettings['currencies'] = $this->stripCatalogNameEnrichment($processedSettings['currencies'], 'currencies');
+            }
+            if ($category === 'shipping' && is_array($processedSettings['available_countries'] ?? null)) {
+                $processedSettings['available_countries'] = $this->stripCatalogNameEnrichment($processedSettings['available_countries'], 'countries');
+            }
+
             if (! $this->saveCategorySettings($category, $processedSettings)) {
                 $success = false;
             }
@@ -619,6 +628,40 @@ class EcommerceSettingsService implements ModuleSettingsInterface
     private function getCategoryFilePath(string $category): string
     {
         return $this->getStoragePath().'/'.$category.'.json';
+    }
+
+    /**
+     * 읽기 때 언어팩으로 보강한 카탈로그 이름(통화·배송 국가)을 저장값에서 뺍니다 (1.3.2)
+     *
+     * 모듈 자체 언어(ko·en) 밖이면서 지금 번역과 같은 값은 보강분으로 본다 — 운영자가 다르게 적은 값은 남긴다.
+     *
+     * @param  array<int, array<string, mixed>>  $items  통화 또는 국가 목록
+     * @param  string  $catalog  번역 키 카탈로그 (`currencies` | `countries`)
+     * @return array<int, array<string, mixed>> 보강값을 뺀 목록
+     */
+    private function stripCatalogNameEnrichment(array $items, string $catalog): array
+    {
+        $ownLocales = ['ko', 'en'];
+
+        foreach ($items as $idx => $item) {
+            if (! is_array($item) || empty($item['code']) || ! is_array($item['name'] ?? null)) {
+                continue;
+            }
+
+            $langKey = "sirsoft-ecommerce::settings.{$catalog}.{$item['code']}.name";
+            foreach ($item['name'] as $locale => $value) {
+                if (in_array($locale, $ownLocales, true) || ! is_string($value)) {
+                    continue;
+                }
+
+                $translated = __($langKey, [], (string) $locale);
+                if ($translated !== $langKey && $translated === $value) {
+                    unset($items[$idx]['name'][$locale]);
+                }
+            }
+        }
+
+        return $items;
     }
 
     /**

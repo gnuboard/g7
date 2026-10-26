@@ -74,7 +74,9 @@ async function renderSettings(form: Record<string, unknown>, extraLocal: Record<
         translations: TRANSLATIONS,
         locale: 'ko',
     });
-    utils.mockApi('settings', { response: { data: form } });
+    // 실제 설정 API 응답처럼 수정 권한(abilities.can_update)을 싣는다 — 없으면 레이아웃 computed isPluginReadOnly 가 참이라
+    // 실제 화면도 입력·저장이 잠긴다(7.1.3 시험 도구가 computed 를 실제 앱처럼 계산하면서 드러난 모의 누락)
+    utils.mockApi('settings', { response: { data: { ...form, abilities: { can_update: true } } } });
     const { container } = await utils.render();
     return { utils, container };
 }
