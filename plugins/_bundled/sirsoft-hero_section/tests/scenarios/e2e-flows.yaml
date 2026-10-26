@@ -1,0 +1,31 @@
+feature: 히어로섹션 관리 → 사용자 화면 반영 E2E
+
+description: |
+  실제 브라우저에서 관리자가 배너를 다루면 사용자 홈·쇼핑 메인에 그대로 반영되는지 확인한다.
+  각 사양은 끝날 때 자기가 만든 배너·이미지 파일을 지운다(#787 교훈). 운영자가 바꾸는 문구는 상수로 단언하지 않고
+  테스트가 만든 값으로 단언한다. 전역 상태 회귀는 SPA 안 이동으로 본다.
+  모바일 폭에서 의미가 같은 흐름(권한·비활성화)은 데스크톱만 둔다.
+
+axes:
+  flow:
+    - create_banner_appears_on_home
+    - scheduled_banner_hidden_until_start
+    - reorder_reflected_on_home
+    - bulk_hide_removes_from_home
+    - delete_removes_from_home
+    - locale_switch_changes_text
+    - plugin_deactivate_hides_section
+    - read_only_admin_sees_no_edit_buttons
+  viewport: [desktop, mobile]
+
+exclusions:
+  - { flow: plugin_deactivate_hides_section, viewport: mobile, reason: "비활성화 반영은 폭과 무관" }
+  - { flow: read_only_admin_sees_no_edit_buttons, viewport: mobile, reason: "권한 판정은 폭과 무관(카드 보기 단추는 레이아웃 테스트가 본다)" }
+
+effects:
+  - user_screen_reflects_admin_change
+  - test_data_cleaned_up
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/admin-banner-to-home.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/hero-locale-and-lifecycle.spec.ts

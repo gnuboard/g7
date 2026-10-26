@@ -463,6 +463,7 @@ cp .env.example .env
 | **sirsoft-ckeditor5** | CKEditor 5 에디터 |
 | **sirsoft-gdpr** | 개인정보 보호(GDPR) |
 | **sirsoft-message_bizppurio** | 비즈뿌리오 메시지 발송 (문자·카카오 알림톡) |
+| **sirsoft-hero_section** | 히어로섹션(메인 배너) 관리·사용자 화면 슬라이더 |
 
 ### 템플릿
 
@@ -484,6 +485,7 @@ cp .env.example .env
 | **g7-plugin-sirsoft-ckeditor5-ja** | CKEditor5 플러그인 일본어 |
 | **g7-plugin-sirsoft-daum_postcode-ja** | 다음 우편번호 플러그인 일본어 |
 | **g7-plugin-sirsoft-gdpr-ja** | 개인정보 보호(GDPR) 플러그인 일본어 |
+| **g7-plugin-sirsoft-hero_section-ja** | 히어로섹션 플러그인 일본어 |
 | **g7-plugin-sirsoft-marketing-ja** | 마케팅 플러그인 일본어 |
 | **g7-plugin-sirsoft-koreaexim-ja** | 수출입은행 환율 플러그인 일본어 |
 | **g7-plugin-sirsoft-message_bizppurio-ja** | 비즈뿌리오 메시지 발송 플러그인 일본어 |

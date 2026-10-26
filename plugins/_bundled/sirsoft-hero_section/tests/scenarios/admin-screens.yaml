@@ -1,0 +1,43 @@
+feature: 히어로섹션 관리자 화면 레이아웃 계약 (목록·순서 변경 창·등록/수정·플러그인 설정)
+
+description: |
+  `.g7.html` 을 구운 짝 JSON 을 createLayoutTest 로 렌더해 화면 계약을 잠근다.
+  #757 규칙(선택칸 이름·이동은 링크·받는 중 빈 문구 숨김·행 이름)과 abilities 기반 단추 노출,
+  위치 탭이 바뀌면 선택이 비워지는지(다른 위치 배너가 일괄 처리에 섞이지 않게), 순서 변경 창,
+  폼 초기화가 한 번만 일어나는지(재조회로 변경 표시가 되살아나는 회귀 방지)를 본다.
+
+axes:
+  surface:
+    - list_position_tabs_are_links
+    - list_empty_message_hidden_while_loading
+    - list_row_label_and_control_names
+    - list_row_actions_edit_is_link
+    - list_buttons_follow_abilities
+    - list_status_filter_and_sort_go_to_query
+    - list_bulk_bar_shows_selection_count
+    - list_selection_cleared_on_tab_or_filter_change
+    - list_slider_settings_save_and_error
+    - list_preview_empty_message
+    - reorder_modal_loads_position_items
+    - reorder_up_down_buttons_and_edges
+    - reorder_save_disabled_when_unchanged
+    - form_create_uses_query_position_and_temp_key
+    - form_edit_initializes_once
+    - form_period_inputs_toggle
+    - form_multilingual_tabs_active_locales
+    - form_upload_endpoint_temp_or_banner
+    - form_upload_limit_uses_effective_mb
+    - form_recommended_size_warning
+    - form_validation_errors_render
+    - plugin_settings_save_with_onerror
+    - plugin_settings_shows_server_upload_limit
+
+effects:
+  - accessible_names_present
+  - navigation_uses_links
+  - abilities_gate_actions
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_list.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/plugin_settings.test.tsx

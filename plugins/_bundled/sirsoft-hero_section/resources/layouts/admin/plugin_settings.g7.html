@@ -1,0 +1,93 @@
+<!-- 히어로섹션 환경설정 화면 — 코어의 플러그인 설정 규약(경로·엔드포인트·저장 흐름)을 따른다. 배너 자체와 위치별 슬라이더 설정은
+  배너 관리 화면이 맡고, 여기에는 운영자가 서버 사정에 맞춰 바꾸는 두 값(이미지 최대 용량·사용자 화면 배너 캐시 시간)만 둔다. -->
+<layout name="plugin_settings" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-hero_section.settings.title" description="$t:sirsoft-hero_section.settings.description"/>
+  <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) — 저장 후 되돌아왔을 때 낡은 값이 남지 않게 -->
+  <data-source id="settings" label_key="$t:sirsoft-hero_section.editor.data_source.settings" type="api" endpoint="/api/admin/plugins/{{route.identifier}}/settings" method="GET" :auto_fetch="true" :auth_required="true" initLocal="form" :refetchOnMount="true">
+    <error-handling>
+      <default>
+        <!-- 처음 받기 실패는 빈 폼·기본값으로 저장되지 않게 본문 오류 화면, 다시 받기 실패는 보던 값을 그대로 두고 알린다 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 서버 PHP 업로드 한도 — 코어 설정 응답에는 없는 값이라 배너 관리 쪽 위치 설정 응답의 `upload` 를 함께 받는다. 배너 조회 권한이 없어 실패하면 한도 안내만 숨긴다 -->
+  <data-source id="upload_limit" label_key="$t:sirsoft-hero_section.editor.data_source.upload_limit" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/position-settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <fallback :data="null"/>
+  </data-source>
+  <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
+  <permissions>
+    <permission>core.plugins.update</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-hero_section.settings.title" description="$t:sirsoft-hero_section.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
+        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+        <span class="text-xs text-yellow-700 dark:text-yellow-300">$t:sirsoft-hero_section.plugin_read_only</span>
+      </div>
+      <div data-ref="settings_form" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div data-ref="settings_fields" class="p-6 space-y-6">
+          <div data-ref="field_max_upload_mb" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label" htmlFor="hero_section_max_upload_mb">$t:sirsoft-hero_section.settings.fields.max_upload_mb.label</label>
+              <p class="form-hint">$t:sirsoft-hero_section.settings.fields.max_upload_mb.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="number" id="hero_section_max_upload_mb" name="max_upload_mb" :min="1" :max="10" class="focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+              <p data-if="{{_local.errors?.max_upload_mb}}" class="form-error">{{_local.errors?.max_upload_mb?.[0]}}</p>
+              <p data-ref="server_upload_limit" data-if="{{!!upload_limit?.data?.upload?.server_limit_mb}}" class="form-hint">$t:sirsoft-hero_section.settings.fields.max_upload_mb.server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}</p>
+              <p data-ref="server_upload_limit_warning" data-if="{{!!upload_limit?.data?.upload?.server_limit_mb &amp;&amp; Number(_local.form?.max_upload_mb ?? 0) &gt; upload_limit.data.upload.server_limit_mb}}" role="status" class="text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-hero_section.settings.fields.max_upload_mb.over_server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}</p>
+            </div>
+          </div>
+          <div data-ref="field_public_cache_minutes" class="grid-3col-responsive">
+            <div class="lg:col-span-1">
+              <label class="form-label" htmlFor="hero_section_public_cache_minutes">$t:sirsoft-hero_section.settings.fields.public_cache_minutes.label</label>
+              <p class="form-hint">$t:sirsoft-hero_section.settings.fields.public_cache_minutes.hint</p>
+            </div>
+            <div class="lg:col-span-2">
+              <input type="number" id="hero_section_public_cache_minutes" name="public_cache_minutes" :min="0" :max="60" class="focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+              <p data-if="{{_local.errors?.public_cache_minutes}}" class="form-error">{{_local.errors?.public_cache_minutes?.[0]}}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="footer_buttons" class="sticky-footer-buttons">
+        <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
+          <on type="click">
+            <navigate/>
+          </on>
+          <span>$t:common.cancel</span>
+        </a>
+        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+          <on type="click">
+            <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다. 실패하면 필드 오류를 칸 아래에 보이고 사유를 알린다 -->
+            <sequence>
+              <set-state target="local" :isSaving="true" :errors="null"/>
+              <api-call :auth_required="true" target="/api/admin/plugins/{{route.identifier}}/settings" method="PUT" body="{{_local.form}}">
+                <success>
+                  <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                  <toast type="success" message="$t:admin.plugins.settings.save_success"/>
+                  <refetch-data-source dataSourceId="settings"/>
+                </success>
+                <fail>
+                  <set-state target="local" :isSaving="false" errors="{{error.errors}}"/>
+                  <toast type="error" message="{{error.message ?? '$t:admin.plugins.settings.save_error'}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <span data-if="{{!_local.isSaving}}">$t:common.save</span>
+          <span data-if="{{_local.isSaving}}">$t:common.saving</span>
+        </button>
+      </div>
+    </div>
+  </slot>
+</layout>

@@ -1,0 +1,586 @@
+<!-- 히어로섹션 관리 목록 — 위치(사이트 홈·쇼핑몰 메인)별 배너. 위치·상태·검색·정렬·쪽은 전부 URL 쿼리라 새로고침·뒤로 가기에도
+  같은 조건이 다시 열린다. 위쪽에 지금 노출 중인 배너 미리보기와 그 위치의 슬라이더 설정, 아래쪽에 표·일괄 작업·순서 변경 창이 있다.
+  노출 상태 필터·정렬은 서버가 기간 조건으로 처리한다(화면에서 거르지 않는다). 선택 묶음은 위치·필터·쪽이 바뀌면 비운다 —
+  다른 위치 배너가 일괄 작업에 섞이지 않게. -->
+<layout name="hero_section_banner_list" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-hero_section.admin.title" description="$t:sirsoft-hero_section.admin.description"/>
+  <!-- 배너 목록 — 쿼리가 바뀌면 다시 받는다 -->
+  <data-source id="banners" label_key="$t:sirsoft-hero_section.editor.data_source.banners" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/banners" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true" loading_strategy="progressive">
+    <params position="{{query.position || 'home_hero'}}" status="{{query.status}}" search="{{query.search}}" sort_by="{{query.sort_by || 'sort_order'}}" sort_order="{{query.sort_order || 'asc'}}" page="{{query.page || 1}}" per_page="{{query.per_page || 20}}"/>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <!-- 다시 받기 실패는 보던 목록을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+  </data-source>
+  <!-- 지금 노출 중인 배너 — 목록 위 미리보기 -->
+  <data-source id="preview" label_key="$t:sirsoft-hero_section.editor.data_source.preview" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/banners/preview" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true">
+    <params position="{{query.position || 'home_hero'}}"/>
+  </data-source>
+  <!-- 위치 목록·위치별 슬라이더 설정·업로드 한도 -->
+  <data-source id="position_settings" label_key="$t:sirsoft-hero_section.editor.data_source.position_settings" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/position-settings" method="GET" :auto_fetch="true" :auth_required="true" :refetchOnMount="true"/>
+  <computed name="currentPosition">{{query.position || 'home_hero'}}</computed>
+  <computed name="currentSettings">{{(position_settings?.data?.positions ?? []).find(p =&gt; p.key === (query.position || 'home_hero'))?.settings ?? {autoplay: true, interval_seconds: 5, effect: 'slide'} }}</computed>
+  <init-local>
+    <field name="filter">
+      <field name="search" value=""/>
+      <field name="status" value=""/>
+    </field>
+    <field name="previewDevice" value="pc"/>
+    <field name="sliderForm" :value="null"/>
+    <field name="sliderSaving" :value="false"/>
+  </init-local>
+  <init-global>
+    <field name="bulkSelectedIds" :value="[]"/>
+    <field name="targetBanner" :value="null"/>
+    <field name="isDeleting" :value="false"/>
+    <field name="isBulkWorking" :value="false"/>
+    <field name="reorderItems" :value="null"/>
+    <field name="reorderOriginal" :value="null"/>
+    <field name="reorderLoading" :value="false"/>
+    <field name="reorderSaving" :value="false"/>
+    <field name="reorderError" :value="null"/>
+  </init-global>
+  <permissions>
+    <permission>sirsoft-hero_section.banners.read</permission>
+  </permissions>
+  <transition-overlay>
+    <wait-for>banners</wait-for>
+  </transition-overlay>
+  <!-- 필터 적용 — 빈 값은 주소에 남기지 않고, 조건이 바뀌었으니 1쪽·선택 묶음을 비운다 -->
+  <action name="searchBanners">
+    <sequence>
+      <set-state target="global" :bulkSelectedIds="[]"/>
+      <navigate path="/admin/plugins/sirsoft-hero_section/banners" :mergeQuery="true" :replace="true" transition_overlay_target="hero_banner_datagrid__body">
+        <query :page="1" status="{{_local.filter.status || undefined}}" search="{{_local.filter.search || undefined}}"/>
+      </navigate>
+    </sequence>
+  </action>
+  <init>
+    <set-state target="global" :bulkSelectedIds="[]">
+      <field name="_local">
+        <field name="filter">
+          <field name="search" value="{{query.search || ''}}"/>
+          <field name="status" value="{{query.status || ''}}"/>
+        </field>
+      </field>
+    </set-state>
+  </init>
+  <slot name="content">
+    <div data-ref="hero_list_content" class="admin-page-content">
+      <div data-ref="page_header" class="flex-between flex-wrap gap-3 mb-6">
+        <div>
+          <h1 class="page-title">$t:sirsoft-hero_section.admin.title</h1>
+          <p class="text-label-subtle mt-1">$t:sirsoft-hero_section.admin.description</p>
+        </div>
+        <a data-ref="create_button" data-if="{{banners?.data?.abilities?.can_create === true}}" href="/admin/plugins/sirsoft-hero_section/banners/create?position={{_computed.currentPosition}}" :mergeQuery="true" class="button btn btn-primary">
+          <on type="click">
+            <!-- 보던 목록 조건(상태·검색·쪽)을 이고 간다 — 등록 화면이 저장·취소 뒤 같은 목록으로 돌아온다 -->
+            <navigate :mergeQuery="true">
+              <query/>
+            </navigate>
+          </on>
+          <icon name="plus" size="sm"/>
+          <span>$t:sirsoft-hero_section.admin.list.create</span>
+        </a>
+      </div>
+      <!-- 위치 탭 — 다른 위치로 가는 것은 화면 이동이라 링크다(가운데 클릭·새 탭 가능). 건수는 서버 통계 -->
+      <nav data-ref="position_tabs" aria-label="$t:sirsoft-hero_section.admin.position.tabs_label" class="flex flex-wrap items-center gap-2 mb-2">
+        <a data-ref="position_tab_home" href="/admin/plugins/sirsoft-hero_section/banners?position=home_hero" aria-current="{{_computed.currentPosition === 'home_hero' ? 'page' : undefined}}" class="px-4 py-2 rounded-lg text-sm font-medium border {{_computed.currentPosition === 'home_hero' ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+          <on type="click">
+            <sequence>
+              <set-state target="global" :bulkSelectedIds="[]"/>
+              <navigate/>
+            </sequence>
+          </on>
+          <span>$t:sirsoft-hero_section.admin.position.home_hero</span>
+          <span class="ml-1 tabular-nums">{{banners?.data?.statistics?.positions?.home_hero ?? ''}}</span>
+        </a>
+        <a data-ref="position_tab_shop" href="/admin/plugins/sirsoft-hero_section/banners?position=shop_hero" aria-current="{{_computed.currentPosition === 'shop_hero' ? 'page' : undefined}}" class="px-4 py-2 rounded-lg text-sm font-medium border {{_computed.currentPosition === 'shop_hero' ? 'bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+          <on type="click">
+            <sequence>
+              <set-state target="global" :bulkSelectedIds="[]"/>
+              <navigate/>
+            </sequence>
+          </on>
+          <span>$t:sirsoft-hero_section.admin.position.shop_hero</span>
+          <span class="ml-1 tabular-nums">{{banners?.data?.statistics?.positions?.shop_hero ?? ''}}</span>
+        </a>
+      </nav>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-6">$t:sirsoft-hero_section.admin.position.hint</p>
+      <div data-ref="top_cards" class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <!-- 미리보기 — 지금 노출 중인 배너를 사용자 슬라이더 그대로 그린다. 응답은 관리자 상세 모양(다국어 원본 객체)이라 문구 네 칸을 지금 화면 언어 글자로 바꿔 넘긴다(객체를 그대로 넘기면 슬라이더가 그리다 깨진다) -->
+        <section data-ref="preview_card" aria-labelledby="hero_preview_heading" class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div class="flex-between flex-wrap gap-2 mb-3">
+            <h2 id="hero_preview_heading" class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-hero_section.admin.preview.title|count={{(preview?.data?.data ?? []).length}}</h2>
+            <div role="group" aria-label="$t:sirsoft-hero_section.admin.preview.device_label" class="flex gap-1">
+              <button type="button" data-ref="preview_device_pc" aria-pressed="{{_local.previewDevice === 'pc'}}" class="px-3 py-1 text-xs rounded border {{_local.previewDevice === 'pc' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+                <on type="click">
+                  <set-state target="local" previewDevice="pc"/>
+                </on>
+                $t:sirsoft-hero_section.admin.preview.pc
+              </button>
+              <button type="button" data-ref="preview_device_mobile" aria-pressed="{{_local.previewDevice === 'mobile'}}" class="px-3 py-1 text-xs rounded border {{_local.previewDevice === 'mobile' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+                <on type="click">
+                  <set-state target="local" previewDevice="mobile"/>
+                </on>
+                $t:sirsoft-hero_section.admin.preview.mobile
+              </button>
+            </div>
+          </div>
+          <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="hero_preview" banners="{{(preview?.data?.data ?? []).map(b =&gt; ({...b, title: b.title_localized, description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}" settings="{{_computed.currentSettings}}" device="{{_local.previewDevice}}" emptyText="{{preview === undefined ? '' : $t('sirsoft-hero_section.admin.preview.empty')}}"/>
+        </section>
+        <!-- 슬라이더 설정 — 이 위치에만 적용 -->
+        <section data-ref="slider_card" aria-labelledby="hero_slider_heading" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex flex-col gap-4">
+          <div>
+            <h2 id="hero_slider_heading" class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-hero_section.admin.slider.title</h2>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">$t:sirsoft-hero_section.admin.slider.scope|position={{$t('sirsoft-hero_section.admin.position.' + _computed.currentPosition)}}</p>
+          </div>
+          <label class="flex-between gap-3 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_slider_autoplay">
+            <span>$t:sirsoft-hero_section.admin.slider.autoplay</span>
+            <input type="checkbox" id="hero_slider_autoplay" class="h-4 w-4 rounded text-blue-600" checked="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).autoplay}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
+              <on type="change">
+                <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, autoplay: $event.target.checked})}}"/>
+              </on>
+            </input>
+          </label>
+          <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_slider_interval">
+            <span>$t:sirsoft-hero_section.admin.slider.interval</span>
+            <select id="hero_slider_interval" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{String((_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).interval_seconds)}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
+              <options>
+                <option value="3">$t:sirsoft-hero_section.admin.slider.seconds|n=3</option>
+                <option value="5">$t:sirsoft-hero_section.admin.slider.seconds|n=5</option>
+                <option value="7">$t:sirsoft-hero_section.admin.slider.seconds|n=7</option>
+              </options>
+              <on type="change">
+                <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, interval_seconds: Number($event.target.value)})}}"/>
+              </on>
+            </select>
+          </label>
+          <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_slider_effect">
+            <span>$t:sirsoft-hero_section.admin.slider.effect</span>
+            <select id="hero_slider_effect" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings).effect}}" disabled="{{banners?.data?.abilities?.can_update !== true}}">
+              <options>
+                <option value="slide">$t:sirsoft-hero_section.admin.slider.effects.slide</option>
+                <option value="fade">$t:sirsoft-hero_section.admin.slider.effects.fade</option>
+                <option value="none">$t:sirsoft-hero_section.admin.slider.effects.none</option>
+              </options>
+              <on type="change">
+                <set-state target="local" sliderForm="{{({...(_local.sliderForm?.position === _computed.currentPosition ? _local.sliderForm : _computed.currentSettings), position: _computed.currentPosition, effect: $event.target.value})}}"/>
+              </on>
+            </select>
+          </label>
+          <button type="button" data-ref="slider_save_button" data-if="{{banners?.data?.abilities?.can_update === true}}" class="btn btn-primary flex-center gap-1.5" disabled="{{_local.sliderSaving || _local.sliderForm?.position !== _computed.currentPosition || (_local.sliderForm.autoplay === _computed.currentSettings.autoplay &amp;&amp; Number(_local.sliderForm.interval_seconds) === Number(_computed.currentSettings.interval_seconds) &amp;&amp; _local.sliderForm.effect === _computed.currentSettings.effect)}}">
+            <on type="click">
+              <!-- 설정 저장 — 진행 깃발은 성공·실패 양쪽에서 푼다. 작업본은 비우지 않는다: 다시 받은 서버 값과 같아지면 저장 버튼이 저절로 잠긴다(비우면 재조회 도착 전 옛 값이 잠깐 보인다). 작업본은 위치를 함께 들고 있어 다른 위치 탭에서는 쓰이지 않는다 -->
+              <sequence>
+                <set-state target="local" :sliderSaving="true"/>
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/position-settings/{{_computed.currentPosition}}" method="PUT" >
+                  <success>
+                    <set-state target="local" :sliderSaving="false"/>
+                    <toast type="success" message="{{response.message}}"/>
+                    <refetch-data-source dataSourceId="position_settings"/>
+                  </success>
+                  <fail>
+                    <set-state target="local" :sliderSaving="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                  <body autoplay="{{_local.sliderForm.autoplay}}" interval_seconds="{{Number(_local.sliderForm.interval_seconds)}}" effect="{{_local.sliderForm.effect}}"/>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_local.sliderSaving}}" name="spinner" class="spinner-sm"/>
+            <span>$t:sirsoft-hero_section.admin.slider.save</span>
+          </button>
+        </section>
+      </div>
+      <!-- 필터 줄 — 상태·제목 검색·순서 변경 -->
+      <div data-ref="filter_bar" class="flex flex-wrap items-end gap-3 mb-4">
+        <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300" htmlFor="hero_filter_status">
+          <span>$t:sirsoft-hero_section.admin.list.status_filter</span>
+          <select id="hero_filter_status" class="w-36 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{_local.filter.status}}">
+            <options>
+              <option value="">$t:sirsoft-hero_section.admin.status.all</option>
+              <option value="active">$t:sirsoft-hero_section.admin.status.active</option>
+              <option value="scheduled">$t:sirsoft-hero_section.admin.status.scheduled</option>
+              <option value="ended">$t:sirsoft-hero_section.admin.status.ended</option>
+              <option value="inactive">$t:sirsoft-hero_section.admin.status.inactive</option>
+            </options>
+            <on type="change">
+              <sequence>
+                <set-state target="local" filter.status="{{$event.target.value}}"/>
+                <action-ref name="searchBanners"/>
+              </sequence>
+            </on>
+          </select>
+        </label>
+        <label class="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300 flex-1 min-w-[12rem]" htmlFor="hero_filter_search">
+          <span>$t:sirsoft-hero_section.admin.list.search</span>
+          <input type="search" id="hero_filter_search" class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{_local.filter.search}}" placeholder="$t:sirsoft-hero_section.admin.list.search_placeholder">
+            <on type="change">
+              <set-state target="local" filter.search="{{$event.target.value}}"/>
+            </on>
+            <on type="keydown" key="Enter">
+              <action-ref name="searchBanners"/>
+            </on>
+          </input>
+        </label>
+        <button type="button" data-ref="search_button" class="btn btn-secondary">
+          <on type="click">
+            <action-ref name="searchBanners"/>
+          </on>
+          $t:sirsoft-hero_section.admin.list.search_button
+        </button>
+        <div class="flex-1"/>
+        <button type="button" data-ref="reorder_button" data-if="{{banners?.data?.abilities?.can_update === true &amp;&amp; (banners?.data?.statistics?.positions?.[_computed.currentPosition] ?? 0) &gt; 1}}" class="btn btn-secondary flex-center gap-2" disabled="{{_global.reorderLoading}}">
+          <on type="click">
+            <!-- 순서 변경 창 열기 — 이 위치 배너 전체를 받아 작업본·원본으로 담는다 -->
+            <sequence>
+              <set-state target="global" :reorderLoading="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/banners/order?position={{_computed.currentPosition}}" method="GET">
+                <success>
+                  <set-state target="global" :reorderLoading="false" :reorderError="null" reorderItems="{{(response?.data?.data ?? []).map(b =&gt; ({id: b.id, title: b.title_localized, status: b.status, thumbnail: b.thumbnail?.url ?? null}))}}" reorderOriginal="{{(response?.data?.data ?? []).map(b =&gt; b.id)}}"/>
+                  <open-modal target="hero_reorder_modal"/>
+                </success>
+                <fail>
+                  <set-state target="global" :reorderLoading="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.reorderLoading}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{!_global.reorderLoading}}" name="fa-solid fa-arrow-down-short-wide" class="text-base"/>
+          <span>$t:sirsoft-hero_section.admin.reorder.button</span>
+        </button>
+      </div>
+      <!-- 일괄 작업 줄 — 선택이 있을 때만 -->
+      <div data-ref="bulk_action_bar" data-if="{{(_global.bulkSelectedIds ?? []).length &gt; 0}}" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
+        <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-hero_section.admin.list.selected|count={{(_global.bulkSelectedIds ?? []).length}}</span>
+        <div class="flex-1"/>
+        <button type="button" data-ref="bulk_show_button" data-if="{{banners?.data?.abilities?.can_update === true}}" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+          <on type="click">
+            <sequence>
+              <set-state target="global" :isBulkWorking="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/banners/bulk-status" method="PATCH">
+                <success>
+                  <set-state target="global" :isBulkWorking="false" :bulkSelectedIds="[]"/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <refetch-data-source dataSourceId="banners"/>
+                  <refetch-data-source dataSourceId="preview"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isBulkWorking="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body ids="{{_global.bulkSelectedIds}}" :is_active="true"/>
+              </api-call>
+            </sequence>
+          </on>
+          $t:sirsoft-hero_section.admin.list.bulk_show
+        </button>
+        <button type="button" data-ref="bulk_hide_button" data-if="{{banners?.data?.abilities?.can_update === true}}" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+          <on type="click">
+            <sequence>
+              <set-state target="global" :isBulkWorking="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/banners/bulk-status" method="PATCH">
+                <success>
+                  <set-state target="global" :isBulkWorking="false" :bulkSelectedIds="[]"/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <refetch-data-source dataSourceId="banners"/>
+                  <refetch-data-source dataSourceId="preview"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isBulkWorking="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body ids="{{_global.bulkSelectedIds}}" :is_active="false"/>
+              </api-call>
+            </sequence>
+          </on>
+          $t:sirsoft-hero_section.admin.list.bulk_hide
+        </button>
+        <button type="button" data-ref="bulk_delete_button" data-if="{{banners?.data?.abilities?.can_delete === true}}" class="px-3 py-1.5 text-sm border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 rounded-lg disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+          <on type="click">
+            <open-modal target="hero_bulk_delete_modal"/>
+          </on>
+          $t:sirsoft-hero_section.admin.list.bulk_delete
+        </button>
+      </div>
+      <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-3">
+        <span class="text-label">$t:sirsoft-hero_section.admin.list.total|count={{banners?.data?.pagination?.total ?? 0}}</span>
+        <select name="sortBy" aria-label="$t:common.sort_order" class="w-40 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm" value="{{(query.sort_by || 'sort_order') + ':' + (query.sort_order || 'asc')}}">
+          <options>
+            <option value="sort_order:asc">$t:sirsoft-hero_section.admin.list.sort.sort_order</option>
+            <option value="status:asc">$t:sirsoft-hero_section.admin.list.sort.status</option>
+            <option value="created_at:desc">$t:sirsoft-hero_section.admin.list.sort.created_desc</option>
+            <option value="created_at:asc">$t:sirsoft-hero_section.admin.list.sort.created_asc</option>
+          </options>
+          <on type="change">
+            <!-- 정렬은 서버가 한다 — 주소만 바꾼다 -->
+            <sequence>
+              <set-state target="global" :bulkSelectedIds="[]"/>
+              <navigate path="/admin/plugins/sirsoft-hero_section/banners" :mergeQuery="true" :replace="true" transition_overlay_target="hero_banner_datagrid__body">
+                <query sort_by="{{$event.target.value.split(':')[0]}}" sort_order="{{$event.target.value.split(':')[1]}}" :page="1"/>
+              </navigate>
+            </sequence>
+          </on>
+        </select>
+      </div>
+      <!-- 배너 표 — 쪽 넘김은 서버, 쪽 번호는 링크(pageHref). 받는 중에는 빈 문구를 숨긴다 -->
+      <data-grid data-type="composite" data-ref="hero_banner_datagrid" pageHref="/admin/plugins/sirsoft-hero_section/banners?page={page}" :pageHrefMergeQuery="true" rowLabelField="title_localized" data="{{banners?.data?.data ?? []}}" idField="id" :selectable="true" selectionScope="page" selectedIds="{{_global.bulkSelectedIds ?? []}}" selectedCountText="" emptyMessage="{{banners === undefined ? '' : $t('sirsoft-hero_section.admin.list.empty')}}" :serverSidePagination="true" serverCurrentPage="{{banners?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{banners?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{banners?.data?.pagination?.has_more_pages ?? false}}">
+        <blur-until-loaded sources="banners"/>
+        <column field="thumbnail" header="$t:sirsoft-hero_section.admin.list.column.image" width="120px">
+          <cell>
+            <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail?.url}}" alt="" class="w-24 h-8 object-cover rounded border border-gray-200 dark:border-gray-700" loading="lazy"/>
+            <span data-if="{{!row.thumbnail}}" class="text-xs text-gray-400 dark:text-gray-500">-</span>
+          </cell>
+        </column>
+        <column field="title_localized" header="$t:sirsoft-hero_section.admin.list.column.title">
+          <cell>
+            <div class="flex flex-col gap-1 min-w-0">
+              <a href="/admin/plugins/sirsoft-hero_section/banners/{{row.id}}/edit" class="font-medium text-gray-900 dark:text-white hover:underline truncate">
+                <on type="click">
+                  <navigate/>
+                </on>
+                {{row.title_localized}}
+              </a>
+              <div class="flex flex-wrap gap-1">
+                <span data-each="locale in row.title_locales ?? []" class="px-1.5 py-0.5 text-[11px] rounded bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 uppercase">{{locale}}</span>
+              </div>
+            </div>
+          </cell>
+        </column>
+        <column field="period" header="$t:sirsoft-hero_section.admin.list.column.period" width="220px">
+          <cell>
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{row.display_period === 'range' ? (row.starts_at_display + ' ~ ' + row.ends_at_display) : $t('sirsoft-hero_section.admin.list.always')}}</span>
+          </cell>
+        </column>
+        <column field="status" header="$t:sirsoft-hero_section.admin.list.column.status" width="110px">
+          <cell>
+            <status-badge data-type="composite" status="{{row.status === 'active' ? 'success' : (row.status === 'scheduled' ? 'info' : (row.status === 'ended' ? 'default' : 'danger'))}}" label="{{$t('sirsoft-hero_section.admin.status.' + row.status)}}" :showIcon="false"/>
+          </cell>
+        </column>
+        <column field="sort_order" header="$t:sirsoft-hero_section.admin.list.column.order" width="70px">
+          <cell>
+            <span class="tabular-nums text-sm text-gray-600 dark:text-gray-400">{{row.sort_order + 1}}</span>
+          </cell>
+        </column>
+        <column field="created_at_display" header="$t:sirsoft-hero_section.admin.list.column.created_at" width="170px"/>
+        <prop name="rowActions">
+          <item id="edit" href="/admin/plugins/sirsoft-hero_section/banners/{{row.id}}/edit" :mergeQuery="true" label="$t:sirsoft-hero_section.admin.list.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
+          <item id="divider" :divider="true"/>
+          <item id="delete" label="$t:sirsoft-hero_section.admin.list.action.delete" iconName="fa-regular fa-trash-can" variant="danger" disabledField="abilities.can_delete"/>
+        </prop>
+        <on type="change" event="onSelectionChange">
+          <set-state target="global" bulkSelectedIds="{{$args[0]}}"/>
+        </on>
+        <on type="change" event="onPageChange">
+          <sequence>
+            <set-state target="global" :bulkSelectedIds="[]"/>
+            <navigate path="/admin/plugins/sirsoft-hero_section/banners" :replace="true" :mergeQuery="true" transition_overlay_target="hero_banner_datagrid__body">
+              <query page="{{$args[0]}}"/>
+            </navigate>
+          </sequence>
+        </on>
+        <on type="action" event="onRowAction">
+          <switch>
+            <case when="edit">
+              <navigate path="/admin/plugins/sirsoft-hero_section/banners/{{$args[1].id}}/edit" :mergeQuery="true">
+                <query/>
+              </navigate>
+            </case>
+            <case when="delete">
+              <set-state target="global" targetBanner="{{$args[1]}}"/>
+              <open-modal target="hero_delete_modal"/>
+            </case>
+          </switch>
+        </on>
+      </data-grid>
+    </div>
+  </slot>
+  <modal>
+    <!-- 한 건 영구 삭제 확인 — 이미지 파일까지 지워져 되돌릴 수 없다. 잠시 내리려면 비노출을 쓰도록 안내한다 -->
+    <modal data-type="composite" data-ref="hero_delete_modal" title="$t:sirsoft-hero_section.admin.delete.title" size="medium">
+      <div class="flex flex-col gap-3">
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-hero_section.admin.delete.message|title={{_global.targetBanner?.title_localized ?? ''}}</p>
+        <div class="alert-warning">
+          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+          <p class="text-xs text-yellow-800 dark:text-yellow-200">$t:sirsoft-hero_section.admin.delete.warning</p>
+        </div>
+      </div>
+      <div class="modal-footer-buttons">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50" disabled="{{_global.isDeleting}}">
+          <on type="click">
+            <sequence>
+              <set-state target="global" :isDeleting="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/banners/{{_global.targetBanner?.id}}" method="DELETE">
+                <success>
+                  <set-state target="global" :isDeleting="false" :targetBanner="null" :bulkSelectedIds="[]"/>
+                  <close-modal/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <refetch-data-source dataSourceId="banners"/>
+                  <refetch-data-source dataSourceId="preview"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isDeleting="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isDeleting}}" name="spinner" class="spinner-sm"/>
+          <span>$t:common.delete</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 선택한 여러 건 영구 삭제 확인 -->
+    <modal data-type="composite" data-ref="hero_bulk_delete_modal" title="$t:sirsoft-hero_section.admin.delete.bulk_title" size="medium">
+      <div class="flex flex-col gap-3">
+        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-hero_section.admin.delete.bulk_message|count={{(_global.bulkSelectedIds ?? []).length}}</p>
+        <div class="alert-warning">
+          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+          <p class="text-xs text-yellow-800 dark:text-yellow-200">$t:sirsoft-hero_section.admin.delete.warning</p>
+        </div>
+      </div>
+      <div class="modal-footer-buttons">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isBulkWorking}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          $t:common.cancel
+        </button>
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+          <on type="click">
+            <sequence>
+              <set-state target="global" :isBulkWorking="true"/>
+              <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/banners/bulk" method="DELETE">
+                <success>
+                  <set-state target="global" :isBulkWorking="false" :bulkSelectedIds="[]"/>
+                  <close-modal/>
+                  <toast type="success" message="{{response.message}}"/>
+                  <refetch-data-source dataSourceId="banners"/>
+                  <refetch-data-source dataSourceId="preview"/>
+                </success>
+                <fail>
+                  <set-state target="global" :isBulkWorking="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+                <body ids="{{_global.bulkSelectedIds}}"/>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isBulkWorking}}" name="spinner" class="spinner-sm"/>
+          <span>$t:common.delete</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- 순서 변경 창 — 이 위치 배너 전체를 끌거나 ↑↓ 로 바꾼 뒤 저장. 바뀐 것이 없으면 저장을 잠근다 -->
+    <modal data-type="composite" data-ref="hero_reorder_modal" title="$t:sirsoft-hero_section.admin.reorder.title" size="md">
+      <on type="click" event="onClose">
+        <sequence>
+          <close-modal target="hero_reorder_modal"/>
+          <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
+        </sequence>
+      </on>
+      <div data-ref="reorder_modal_content" class="flex flex-col gap-3">
+        <p class="text-label">$t:sirsoft-hero_section.admin.reorder.description</p>
+        <div data-ref="reorder_list_frame" class="max-h-[70vh] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
+          <div data-ref="reorder_list" class="divide-y divide-gray-200 dark:divide-gray-700">
+            <sortable source="{{(_global.reorderItems ?? []).map((r, i) =&gt; ({...r, _idx: i}))}}" item-var="row" item-key="id" index-var="rIdx" strategy="verticalList" handle="[data-drag-handle]"/>
+            <item-template>
+              <div data-testid="hero-reorder-row-{{row.id}}" class="flex items-center gap-3 px-3 py-2 bg-white dark:bg-gray-800">
+                <div :data-drag-handle="true" aria-hidden="true" title="{{$t('sirsoft-hero_section.admin.reorder.drag_handle', { name: row.title })}}" class="hidden md:flex cursor-grab text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                  <icon name="fa-solid fa-grip-vertical" class="text-sm"/>
+                </div>
+                <span class="w-6 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400">{{row._idx + 1}}</span>
+                <img data-if="{{!!row.thumbnail}}" src="{{row.thumbnail}}" alt="" class="w-16 h-6 object-cover rounded"/>
+                <span class="truncate flex-1 font-medium text-gray-900 dark:text-gray-100">{{row.title}}</span>
+                <status-badge data-type="composite" status="{{row.status === 'active' ? 'success' : (row.status === 'scheduled' ? 'info' : (row.status === 'ended' ? 'default' : 'danger'))}}" label="{{$t('sirsoft-hero_section.admin.status.' + row.status)}}" :showIcon="false"/>
+                <button data-testid="hero-reorder-up-{{row.id}}" type="button" aria-label="{{$t('sirsoft-hero_section.admin.reorder.move_up', { name: row.title })}}" class="flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === 0}}">
+                  <on type="click">
+                    <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx - 1 ? a[row._idx] : (i === row._idx ? a[row._idx - 1] : r))}}" :reorderError="null"/>
+                  </on>
+                  <icon name="fa-solid fa-chevron-up" class="text-xs"/>
+                </button>
+                <button data-testid="hero-reorder-down-{{row.id}}" type="button" aria-label="{{$t('sirsoft-hero_section.admin.reorder.move_down', { name: row.title })}}" class="flex-center w-10 h-10 shrink-0 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed" disabled="{{_global.reorderSaving || row._idx === (_global.reorderItems ?? []).length - 1}}">
+                  <on type="click">
+                    <set-state target="global" reorderItems="{{(_global.reorderItems ?? []).map((r, i, a) =&gt; i === row._idx ? a[row._idx + 1] : (i === row._idx + 1 ? a[row._idx] : r))}}" :reorderError="null"/>
+                  </on>
+                  <icon name="fa-solid fa-chevron-down" class="text-xs"/>
+                </button>
+              </div>
+            </item-template>
+            <on event="onSortEnd">
+              <set-state target="global" reorderItems="{{$sortedItems.map(r =&gt; ({id: r.id, title: r.title, status: r.status, thumbnail: r.thumbnail}))}}" :reorderError="null"/>
+            </on>
+          </div>
+        </div>
+        <div data-ref="reorder_error_box" data-if="{{!!_global.reorderError}}" role="alert" class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">{{_global.reorderError}}</div>
+        <div class="modal-footer-buttons">
+          <button type="button" class="btn btn-secondary" disabled="{{_global.reorderSaving}}">
+            <on type="click">
+              <sequence>
+                <close-modal target="hero_reorder_modal"/>
+                <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
+              </sequence>
+            </on>
+            <span>$t:common.cancel</span>
+          </button>
+          <button data-testid="hero-reorder-save" type="button" :lockRepeatClick="true" class="btn btn-primary flex-center gap-2" disabled="{{_global.reorderSaving || JSON.stringify((_global.reorderItems ?? []).map(i =&gt; i.id)) === JSON.stringify(_global.reorderOriginal ?? [])}}">
+            <on type="click">
+              <!-- 저장 — 전체 id 를 새 순서로 보낸다. 422(그 사이 목록이 바뀜)는 창 안에 사유를 남긴다 -->
+              <sequence>
+                <set-state target="global" :reorderSaving="true" :reorderError="null"/>
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/banners/order" method="PUT">
+                  <success>
+                    <set-state target="global" :reorderSaving="false" :reorderItems="null" :reorderOriginal="null"/>
+                    <close-modal target="hero_reorder_modal"/>
+                    <toast type="success" message="{{response.message}}"/>
+                    <refetch-data-source dataSourceId="banners"/>
+                    <refetch-data-source dataSourceId="preview"/>
+                  </success>
+                  <fail>
+                    <conditions>
+                      <when if="{{error.status === 422}}">
+                        <set-state target="global" :reorderSaving="false" reorderError="{{error.errors?.ids?.[0] ?? error.message}}"/>
+                      </when>
+                      <else>
+                        <set-state target="global" :reorderSaving="false"/>
+                        <toast type="error" message="{{error.message}}"/>
+                      </else>
+                    </conditions>
+                  </fail>
+                  <body position="{{_computed.currentPosition}}" ids="{{(_global.reorderItems ?? []).map(i =&gt; i.id)}}"/>
+                </api-call>
+              </sequence>
+            </on>
+            <icon data-if="{{_global.reorderSaving}}" name="spinner" class="spinner-sm"/>
+            <span>$t:sirsoft-hero_section.admin.reorder.save</span>
+          </button>
+        </div>
+      </div>
+    </modal>
+  </modal>
+</layout>

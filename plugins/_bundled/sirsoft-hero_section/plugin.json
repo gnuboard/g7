@@ -1,0 +1,36 @@
+{
+    "identifier": "sirsoft-hero_section",
+    "vendor": "sirsoft",
+    "name": {
+        "ko": "히어로섹션",
+        "en": "Hero Section"
+    },
+    "version": "1.0.0",
+    "license": "MIT",
+    "description": {
+        "ko": "사이트 홈·쇼핑몰 메인 상단의 히어로섹션(메인 배너)을 관리하고 사용자 템플릿 확장점에 슬라이더로 보여 줍니다.",
+        "en": "Manages hero section (main banner) slides and shows them as a slider in user template extension points such as the site home and shop main."
+    },
+    "g7_version": ">=7.2.0",
+    "dependencies": {
+        "modules": {},
+        "plugins": {}
+    },
+    "github_url": null,
+    "github_changelog_url": null,
+    "assets": {
+        "js": {
+            "entry": "resources/js/index.ts",
+            "output": "dist/js/plugin.iife.js"
+        },
+        "css": {
+            "entry": "resources/css/hero.css",
+            "output": "dist/css/plugin.css"
+        },
+        "handlers": false
+    },
+    "loading": {
+        "strategy": "global",
+        "priority": 100
+    }
+}

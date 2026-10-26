@@ -1,0 +1,64 @@
+# 히어로섹션 — 프론트엔드
+
+> 레이아웃·액션 핸들러·전역 진입점·에셋 · 진입점: [AGENTS.md](../AGENTS.md)
+
+## 레이아웃
+
+<!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+레이아웃 3개 (루트: `resources/layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+
+| 그룹 | 개수 |
+|---|---|
+| `admin` | 3개 |
+
+| 레이아웃 | 그룹 | 종류 | extends |
+|---|---|---|---|
+| `hero_section_banner_form` | `admin` | 화면 | `_admin_base` |
+| `hero_section_banner_list` | `admin` | 화면 | `_admin_base` |
+| `plugin_settings` | `admin` | 화면 | `_admin_base` |
+<!-- @generated:layouts END -->
+
+<!-- @intent START -->
+관리자 화면 3개 — 목록(`hero_section_banner_list`: 위치 탭·미리보기·위치별 슬라이더 설정·필터·일괄·[순서 변경] 창), 등록/수정(`hero_section_banner_form`: 등록은 `route.id` 없음, 수정은 `/:id/edit`), 환경설정(`plugin_settings`). 경로는 플러그인 네임스페이스(`*/admin/plugins/sirsoft-hero_section/banners…`) 안이다.
+
+- 목록의 위치·상태·검색·정렬·쪽은 전부 URL 쿼리다. 상태 필터·정렬은 서버가 기간 조건으로 처리하고 화면은 쿼리만 바꾼다. 위치·필터·정렬이 바뀌면 선택 묶음(`_global.bulkSelectedIds`)을 비운다.
+- 등록 화면은 들어올 때마다 임시 키(`_global.tempKey = $uuid()`)를 만들어 이미지를 그 키로 먼저 올리고, 저장 때 `temp_key` 로 배너에 붙인다. 수정 화면은 이미지를 바로 그 배너(`banner_id`)에 올린다. 갈래는 렌더 값에서 `route.id` 대신 폼에 심긴 배너 id(`_local.form.id`)로 판정한다.
+- 이미지 업로더(`file-uploader`)는 업로드 응답을 첨부 모양으로 받는다 — 서버 `BannerImageResource` 가 그 모양에 url·device·width·height 를 더해 낸다. PC 이미지는 삭제 주소를 비워 화면에서만 빼고(서버 삭제 불가, 교체만), 모바일 이미지는 바로 지운다.
+- 업로드 한도는 위치 설정 응답의 `upload.effective_mb`(설정값과 서버 PHP 한도 중 작은 값)를 쓴다 — 플러그인 설정 API 는 설정 관리 권한이라 배너 담당자가 못 읽을 수 있다. 환경설정 화면도 같은 응답으로 서버 한도를 안내한다.
+<!-- @intent END -->
+
+## 액션 핸들러
+
+<!-- @generated:handlers START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+_등록하는 액션 핸들러가 없습니다._
+<!-- @generated:handlers END -->
+
+<!-- @intent START -->
+커스텀 액션 핸들러를 두지 않는다 — 임시 업로드 키는 `$uuid()`, 순서 변경은 엔진 `<sortable>`, 저장·재조회·토스트는 기본 액션으로 충분하다.
+<!-- @intent END -->
+
+## 전역 진입점
+
+<!-- @generated:frontend-entry START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+_프론트 엔트리포인트가 없습니다._
+<!-- @generated:frontend-entry END -->
+
+<!-- @intent START -->
+프런트 엔트리(`resources/js/index.ts`)가 `HeroSlider`(사용자 확장점 슬라이더)·`HeroBannerPreview`(관리자 미리보기 — 같은 슬라이더를 기기 틀 안에서 그린다)를 코어 레지스트리에 등록한다(`registerExtensionComponent`).
+<!-- @intent END -->
+
+## 에셋
+
+<!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+| 경로 | 구분 |
+|---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
+| `dist/js/plugin.iife.js` | 빌드 산출물 (커밋 대상) |
+| `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
+
+로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
+<!-- @generated:assets END -->
+
+<!-- @intent START -->
+`resources/js/index.ts` → `dist/js/plugin.iife.js`(React external — 코어가 실은 인스턴스를 빌려 쓴다), `resources/css/hero.css` → `dist/css/plugin.css`. 빌드는 `php artisan plugin:build sirsoft-hero_section --production` 이고 산출물(`dist/`·`components.json`)을 함께 커밋한다.
+<!-- @intent END -->

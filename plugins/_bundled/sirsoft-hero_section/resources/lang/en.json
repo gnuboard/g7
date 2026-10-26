@@ -1,0 +1,205 @@
+{
+    "editor": {
+        "data_source": {
+            "settings": "Hero section settings",
+            "banner": "Banner detail",
+            "banners": "Banner list",
+            "preview": "Showing banners preview",
+            "position_settings": "Positions and slider settings",
+            "upload_limit": "Upload limit",
+            "heroSectionHome": "Site home banners",
+            "heroSectionShop": "Shop main banners"
+        },
+        "state": {
+            "with_data": "With banners",
+            "empty_data": "No banners",
+            "delete_confirm": "Delete confirmation",
+            "bulk_delete_confirm": "Bulk delete confirmation",
+            "reorder_open": "Reorder dialog"
+        },
+        "palette": {
+            "group": "Hero Section",
+            "hero_slider": {
+                "label": "Hero banner slider"
+            }
+        }
+    },
+    "settings": {
+        "title": "Hero Section Settings",
+        "description": "Set the banner image upload limit and the banner cache time on user screens.",
+        "fields": {
+            "max_upload_mb": {
+                "label": "Maximum image size (MB)",
+                "hint": "Maximum size of one banner image (1–10). Files larger than the server PHP upload_max_filesize or post_max_size are still rejected even if this value is higher.",
+                "server_limit": "Current server limit: {{mb}}MB",
+                "over_server_limit": "This value is larger than the server limit ({{mb}}MB). Files over that limit cannot be uploaded."
+            },
+            "public_cache_minutes": {
+                "label": "Banner cache time on user screens (minutes)",
+                "hint": "Set 0 to disable caching (0–60). Saving, deleting or reordering banners is reflected immediately, and the cache also expires at scheduled start and end times."
+            }
+        }
+    },
+    "plugin_read_only": "You do not have permission to change this plugin's settings, so they are shown read-only.",
+    "slider": {
+        "label": "Main banner",
+        "previous": "Previous banner",
+        "next": "Next banner",
+        "pause": "Pause auto-rotation",
+        "play": "Resume auto-rotation"
+    },
+    "admin": {
+        "title": "Hero Section",
+        "description": "Manage the banners shown at the top of the site home and shop main pages, by position.",
+        "position": {
+            "tabs_label": "Display position",
+            "home_hero": "Site home",
+            "shop_hero": "Shop main",
+            "hint": "A position is a hero section slot (extension point) provided by the user template."
+        },
+        "status": {
+            "all": "All",
+            "active": "Showing",
+            "scheduled": "Scheduled",
+            "ended": "Ended",
+            "inactive": "Inactive"
+        },
+        "preview": {
+            "title": "Showing now: {{count}}",
+            "device_label": "Preview device",
+            "pc": "PC",
+            "mobile": "Mobile",
+            "empty": "No banners are showing."
+        },
+        "slider": {
+            "title": "Slider settings",
+            "scope": "Applies to the {{position}} position only.",
+            "autoplay": "Autoplay",
+            "interval": "Interval",
+            "seconds": "{{n}} s",
+            "effect": "Transition",
+            "effects": {
+                "slide": "Slide",
+                "fade": "Fade",
+                "none": "None"
+            },
+            "save": "Save settings"
+        },
+        "list": {
+            "create": "Add banner",
+            "status_filter": "Status",
+            "search": "Search title",
+            "search_placeholder": "Banner title",
+            "search_button": "Search",
+            "total": "{{count}} total",
+            "selected": "{{count}} selected",
+            "bulk_show": "Show",
+            "bulk_hide": "Hide",
+            "bulk_delete": "Delete",
+            "empty": "No banners yet.",
+            "always": "Always",
+            "sort": {
+                "sort_order": "Display order",
+                "status": "By status",
+                "created_desc": "Newest first",
+                "created_asc": "Oldest first"
+            },
+            "column": {
+                "image": "Image",
+                "title": "Title",
+                "period": "Period",
+                "status": "Status",
+                "order": "Order",
+                "created_at": "Created"
+            },
+            "action": {
+                "edit": "Edit",
+                "delete": "Delete"
+            }
+        },
+        "reorder": {
+            "button": "Reorder",
+            "title": "Reorder banners",
+            "description": "Drag rows or use the ↑↓ buttons, then press [Save]. The user page and preview follow the new order.",
+            "drag_handle": "Drag {{name}}",
+            "move_up": "Move {{name}} up",
+            "move_down": "Move {{name}} down",
+            "save": "Save"
+        },
+        "delete": {
+            "title": "Delete banner",
+            "message": "Delete the banner \"{{title}}\"?",
+            "bulk_title": "Delete selected banners",
+            "bulk_message": "Delete {{count}} selected banners?",
+            "warning": "The banner and its PC and mobile images are deleted right away and cannot be restored. To take it down temporarily, hide it instead."
+        },
+        "form": {
+            "create_title": "Add banner",
+            "edit_title": "Edit banner",
+            "description": "Set the banner text, images, link and display period. The preview on the right shows your unsaved input.",
+            "validation_error": "Please check your input.",
+            "section": {
+                "basic": "Basic info",
+                "text": "Text",
+                "image": "Images",
+                "link": "Link",
+                "period": "Display period"
+            },
+            "position": "Display position",
+            "position_hint": "A hero section slot provided by the current user template.",
+            "is_active": "Active",
+            "is_active_hint": "When off, the banner is hidden on the user page regardless of its period (inactive).",
+            "locale_hint": "You can enter text for each language enabled on the site. Empty languages show the site default language text.",
+            "title": "Title",
+            "title_placeholder": "Banner title",
+            "visible": "Show",
+            "align_label": "Alignment",
+            "align": {
+                "left": "Left",
+                "center": "Center",
+                "right": "Right"
+            },
+            "title_color": "Title color",
+            "title_color_code": "Title color code",
+            "description_label": "Description",
+            "description_placeholder": "Text shown under the title",
+            "description_color": "Description color",
+            "description_color_code": "Description color code",
+            "button_text": "Button text",
+            "button_text_placeholder": "e.g. Learn more",
+            "button_text_hint": "If filled, only the button is a link; if empty, the whole banner is a link.",
+            "image_alt": "Image alt text",
+            "image_alt_hint": "Read aloud to visitors who cannot see the screen. If empty, the title is read.",
+            "image": {
+                "pc": "PC image",
+                "pc_hint": "Recommended 1920×640 · up to {{mb}}MB · JPG, PNG, WEBP",
+                "mobile": "Mobile image",
+                "mobile_hint": "Optional · recommended 750×1000 · up to {{mb}}MB · Without it, mobile shows the PC image.",
+                "size_mismatch": "The uploaded image is {{width}}×{{height}}. It differs from the recommended size ({{recommended}}) and may be cropped on some screens.",
+                "remove_title": "Delete mobile image",
+                "remove_message": "Delete the mobile image? Mobile will then show the PC image.",
+                "delete_failed": "Could not delete the image. Please try again shortly."
+            },
+            "link_url": "Link URL",
+            "link_url_placeholder": "/shop or https://example.com",
+            "link_url_hint": "Only site paths (starting with /) or http(s) URLs are allowed.",
+            "link_new_window": "Open in new window",
+            "period": {
+                "always": "Always",
+                "range": "Date range",
+                "starts_at": "Display start",
+                "ends_at": "Display end",
+                "hint": "If saved now, it will show as \"{{status}}\" — estimated with this device's clock; the actual status follows the site time zone."
+            },
+            "preview": {
+                "title": "Preview",
+                "empty": "Upload a PC image to see the preview.",
+                "has_button": "Pressing the button opens the link.",
+                "whole_link": "No button — the whole banner is a link."
+            },
+            "cancel": "Cancel",
+            "save": "Save",
+            "saving": "Saving…"
+        }
+    }
+}

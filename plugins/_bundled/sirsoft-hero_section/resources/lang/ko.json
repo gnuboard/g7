@@ -1,0 +1,205 @@
+{
+    "editor": {
+        "data_source": {
+            "settings": "히어로섹션 설정",
+            "banner": "배너 상세",
+            "banners": "배너 목록",
+            "preview": "노출 중 배너 미리보기",
+            "position_settings": "위치·슬라이더 설정",
+            "upload_limit": "업로드 한도",
+            "heroSectionHome": "사이트 홈 노출 배너",
+            "heroSectionShop": "쇼핑몰 메인 노출 배너"
+        },
+        "state": {
+            "with_data": "배너 있음",
+            "empty_data": "배너 없음",
+            "delete_confirm": "삭제 확인",
+            "bulk_delete_confirm": "일괄 삭제 확인",
+            "reorder_open": "순서 변경 창"
+        },
+        "palette": {
+            "group": "히어로섹션",
+            "hero_slider": {
+                "label": "히어로 배너 슬라이더"
+            }
+        }
+    },
+    "settings": {
+        "title": "히어로섹션 설정",
+        "description": "배너 이미지 업로드 한도와 사용자 화면 배너 캐시 시간을 정합니다.",
+        "fields": {
+            "max_upload_mb": {
+                "label": "이미지 최대 용량(MB)",
+                "hint": "배너 이미지 한 장의 최대 용량입니다(1~10). 서버 PHP 의 upload_max_filesize·post_max_size 보다 크게 잡아도 그 값을 넘는 파일은 올라가지 않습니다.",
+                "server_limit": "현재 서버 한도: {{mb}}MB",
+                "over_server_limit": "설정값이 서버 한도({{mb}}MB)보다 큽니다. 이 한도를 넘는 파일은 올라가지 않습니다."
+            },
+            "public_cache_minutes": {
+                "label": "사용자 화면 배너 캐시 시간(분)",
+                "hint": "0 이면 캐시를 쓰지 않습니다(0~60). 배너를 저장·삭제하거나 순서를 바꾸면 바로 반영되고, 예약 시작·종료 시각에도 캐시가 먼저 만료됩니다."
+            }
+        }
+    },
+    "plugin_read_only": "이 플러그인 설정을 수정할 권한이 없어 읽기 전용으로 표시됩니다.",
+    "slider": {
+        "label": "메인 배너",
+        "previous": "이전 배너",
+        "next": "다음 배너",
+        "pause": "자동 넘김 일시정지",
+        "play": "자동 넘김 다시 시작"
+    },
+    "admin": {
+        "title": "히어로섹션 관리",
+        "description": "사이트 홈·쇼핑몰 메인 상단에 보이는 배너를 위치별로 관리합니다.",
+        "position": {
+            "tabs_label": "노출 위치",
+            "home_hero": "사이트 홈",
+            "shop_hero": "쇼핑몰 메인",
+            "hint": "위치는 사용자 템플릿이 열어 둔 히어로섹션 자리(확장점)입니다."
+        },
+        "status": {
+            "all": "전체",
+            "active": "노출중",
+            "scheduled": "예약",
+            "ended": "종료",
+            "inactive": "비활성"
+        },
+        "preview": {
+            "title": "지금 노출 중 {{count}}개",
+            "device_label": "미리 볼 기기",
+            "pc": "PC",
+            "mobile": "모바일",
+            "empty": "노출 중인 배너가 없습니다."
+        },
+        "slider": {
+            "title": "슬라이더 설정",
+            "scope": "{{position}} 위치에만 적용됩니다.",
+            "autoplay": "자동 넘김",
+            "interval": "넘김 간격",
+            "seconds": "{{n}}초",
+            "effect": "전환 효과",
+            "effects": {
+                "slide": "슬라이드",
+                "fade": "페이드",
+                "none": "없음"
+            },
+            "save": "설정 저장"
+        },
+        "list": {
+            "create": "배너 등록",
+            "status_filter": "상태",
+            "search": "제목 검색",
+            "search_placeholder": "배너 제목",
+            "search_button": "검색",
+            "total": "총 {{count}}건",
+            "selected": "{{count}}개 선택됨",
+            "bulk_show": "노출",
+            "bulk_hide": "비노출",
+            "bulk_delete": "삭제",
+            "empty": "등록된 배너가 없습니다.",
+            "always": "상시",
+            "sort": {
+                "sort_order": "노출 순서",
+                "status": "상태순",
+                "created_desc": "최근 등록순",
+                "created_asc": "오래된 등록순"
+            },
+            "column": {
+                "image": "이미지",
+                "title": "제목",
+                "period": "노출 기간",
+                "status": "상태",
+                "order": "순서",
+                "created_at": "등록일"
+            },
+            "action": {
+                "edit": "수정",
+                "delete": "삭제"
+            }
+        },
+        "reorder": {
+            "button": "순서 변경",
+            "title": "배너 순서 변경",
+            "description": "끌어서 옮기거나 ↑↓ 단추로 순서를 바꾼 뒤 [저장]을 누르세요. 사용자 화면과 미리보기 순서가 함께 바뀝니다.",
+            "drag_handle": "{{name}} 끌어서 옮기기",
+            "move_up": "{{name}} 위로",
+            "move_down": "{{name}} 아래로",
+            "save": "저장"
+        },
+        "delete": {
+            "title": "배너 삭제",
+            "message": "「{{title}}」 배너를 삭제할까요?",
+            "bulk_title": "선택한 배너 삭제",
+            "bulk_message": "선택한 배너 {{count}}개를 삭제할까요?",
+            "warning": "삭제하면 배너와 PC·모바일 이미지가 바로 지워지고 되돌릴 수 없습니다. 잠시 내리려면 비노출을 쓰세요."
+        },
+        "form": {
+            "create_title": "배너 등록",
+            "edit_title": "배너 수정",
+            "description": "배너 문구·이미지·링크·노출 기간을 정합니다. 오른쪽 미리보기는 저장 전 입력값입니다.",
+            "validation_error": "입력값을 확인해 주세요.",
+            "section": {
+                "basic": "기본 정보",
+                "text": "문구",
+                "image": "이미지",
+                "link": "링크",
+                "period": "노출 기간"
+            },
+            "position": "노출 위치",
+            "position_hint": "현재 사용자 템플릿이 제공하는 히어로섹션 자리입니다.",
+            "is_active": "사용",
+            "is_active_hint": "끄면 기간과 상관없이 사용자 화면에 보이지 않습니다(비활성).",
+            "locale_hint": "사이트에 켜 둔 언어마다 입력할 수 있습니다. 비워 둔 언어는 사이트 기본 언어 문구로 보입니다.",
+            "title": "제목",
+            "title_placeholder": "배너 제목",
+            "visible": "표시",
+            "align_label": "정렬",
+            "align": {
+                "left": "왼쪽",
+                "center": "가운데",
+                "right": "오른쪽"
+            },
+            "title_color": "제목 색상",
+            "title_color_code": "제목 색상 코드",
+            "description_label": "설명",
+            "description_placeholder": "제목 아래에 보일 설명",
+            "description_color": "설명 색상",
+            "description_color_code": "설명 색상 코드",
+            "button_text": "버튼 문구",
+            "button_text_placeholder": "예: 자세히 보기",
+            "button_text_hint": "입력하면 버튼만 링크가 되고, 비우면 배너 전체가 링크가 됩니다.",
+            "image_alt": "이미지 대체 텍스트",
+            "image_alt_hint": "화면을 볼 수 없는 방문자에게 읽어 주는 설명입니다. 비우면 제목을 읽어 줍니다.",
+            "image": {
+                "pc": "PC 이미지",
+                "pc_hint": "권장 1920×640 · 최대 {{mb}}MB · JPG·PNG·WEBP",
+                "mobile": "모바일 이미지",
+                "mobile_hint": "선택 · 권장 750×1000 · 최대 {{mb}}MB · 등록하지 않으면 모바일에서도 PC 이미지를 사용합니다.",
+                "size_mismatch": "올린 이미지는 {{width}}×{{height}} 입니다. 권장 크기({{recommended}})와 달라 화면에 따라 잘려 보일 수 있습니다.",
+                "remove_title": "모바일 이미지 삭제",
+                "remove_message": "모바일 이미지를 삭제할까요? 삭제하면 모바일에서도 PC 이미지가 보입니다.",
+                "delete_failed": "이미지를 삭제하지 못했습니다. 잠시 뒤 다시 시도해 주세요."
+            },
+            "link_url": "이동할 주소",
+            "link_url_placeholder": "/shop 또는 https://example.com",
+            "link_url_hint": "사이트 안 경로(/로 시작) 또는 http(s) 주소만 쓸 수 있습니다.",
+            "link_new_window": "새 창에서 열기",
+            "period": {
+                "always": "상시",
+                "range": "기간 지정",
+                "starts_at": "노출 시작",
+                "ends_at": "노출 종료",
+                "hint": "지금 저장하면 「{{status}}」(으)로 표시됩니다 — 이 기기 시각 기준 안내이며 실제 상태는 사이트 시간대로 정해집니다."
+            },
+            "preview": {
+                "title": "미리보기",
+                "empty": "PC 이미지를 올리면 미리보기가 보입니다.",
+                "has_button": "버튼을 누르면 링크로 이동합니다.",
+                "whole_link": "버튼 없음 — 배너 전체가 링크입니다."
+            },
+            "cancel": "취소",
+            "save": "저장",
+            "saving": "저장 중…"
+        }
+    }
+}

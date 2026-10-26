@@ -1,0 +1,14 @@
+{
+    "_meta": {
+        "version": "1.0.0",
+        "description": "히어로섹션 플러그인 환경설정"
+    },
+    "defaults": {
+        "max_upload_mb": 5,
+        "public_cache_minutes": 10
+    },
+    "frontend_schema": {
+        "max_upload_mb": { "expose": false },
+        "public_cache_minutes": { "expose": false }
+    }
+}

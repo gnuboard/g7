@@ -1,0 +1,85 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "identifier": "sirsoft-hero_section",
+    "version": "1.0.0",
+    "components": {
+        "basic": [],
+        "composite": [
+            {
+                "name": "HeroBannerPreview",
+                "type": "composite",
+                "path": "plugins/_bundled/sirsoft-hero_section/resources/js/components/composite/HeroBannerPreview.tsx",
+                "props": {
+                    "banners": {
+                        "type": "array",
+                        "required": false,
+                        "description": "미리 볼 배너 (목록 미리보기는 노출 중인 배너들, 폼 미리보기는 저장 전 입력값 1건)"
+                    },
+                    "settings": {
+                        "type": "HeroSliderSettings",
+                        "required": false,
+                        "description": "위치 슬라이더 설정"
+                    },
+                    "device": {
+                        "type": "'pc' | 'mobile'",
+                        "required": false,
+                        "description": "미리 볼 기기"
+                    },
+                    "emptyText": {
+                        "type": "string",
+                        "required": false,
+                        "description": "배너가 없을 때 보일 문구"
+                    },
+                    "className": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사용자 정의 클래스"
+                    }
+                }
+            },
+            {
+                "name": "HeroSlider",
+                "type": "composite",
+                "path": "plugins/_bundled/sirsoft-hero_section/resources/js/components/composite/HeroSlider.tsx",
+                "props": {
+                    "banners": {
+                        "type": "array",
+                        "required": false,
+                        "description": "노출 배너 (공개 API 순서 그대로)"
+                    },
+                    "settings": {
+                        "type": "HeroSliderSettings",
+                        "required": false,
+                        "description": "위치 슬라이더 설정"
+                    },
+                    "position": {
+                        "type": "string",
+                        "required": false,
+                        "description": "위치 키 (`home_hero`·`shop_hero`) — 오버라이드·테스트 식별용"
+                    },
+                    "forceDevice": {
+                        "type": "'pc' | 'mobile'",
+                        "required": false,
+                        "description": "미리보기용 기기 고정 — 지정하면 화면 폭과 관계없이 그 기기 이미지를 쓴다"
+                    },
+                    "className": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사용자 정의 클래스"
+                    },
+                    "id": {
+                        "type": "string",
+                        "required": false,
+                        "description": "DOM id"
+                    },
+                    "editorAttrs": {
+                        "type": "object",
+                        "required": false,
+                        "description": "레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread)"
+                    }
+                }
+            }
+        ],
+        "layout": []
+    }
+}

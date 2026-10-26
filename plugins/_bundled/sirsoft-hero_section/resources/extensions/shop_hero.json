@@ -1,0 +1,38 @@
+{
+    "comment": "쇼핑몰 메인 상단 히어로 자리(`shop_hero`)에 배너 슬라이더를 붙이는 조각 — 지금 노출 중인 배너(현재 언어 문구)와 그 위치의 슬라이더 설정을\n  공개 API 로 받는다. 배너가 0건이거나 받기에 실패하면 아무것도 그리지 않는다(구좌 숨김, 화면 오류로 만들지 않는다). 플러그인을 끄면 이 조각과\n  공개 API 가 함께 빠져 자리도 비어 있다. 언어를 바꾸면 화면이 새로 마운트되며 새 언어로 다시 받는다.",
+    "extension_point": "shop_hero",
+    "mode": "append",
+    "priority": 50,
+    "data_sources": [
+        {
+            "id": "heroSectionShop",
+            "label_key": "$t:sirsoft-hero_section.editor.data_source.heroSectionShop",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-hero_section/hero",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": false,
+            "loading_strategy": "background",
+            "params": {
+                "position": "shop_hero"
+            },
+            "fallback": {
+                "data": null
+            },
+            "comment": "지금 노출 중인 배너 — 인증 없이 받는다. 실패하면 빈 값으로 떨어져 슬라이더를 그리지 않는다"
+        }
+    ],
+    "components": [
+        {
+            "id": "heroSectionShop_slider",
+            "type": "composite",
+            "name": "sirsoft-hero_section.HeroSlider",
+            "if": "{{(heroSectionShop?.data?.banners ?? []).length > 0}}",
+            "props": {
+                "banners": "{{heroSectionShop?.data?.banners ?? []}}",
+                "settings": "{{heroSectionShop?.data?.settings}}",
+                "position": "shop_hero"
+            }
+        }
+    ]
+}

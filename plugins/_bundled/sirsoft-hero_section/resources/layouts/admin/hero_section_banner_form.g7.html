@@ -1,0 +1,372 @@
+<!-- 히어로섹션 배너 등록·수정 — 한 레이아웃이 등록(`route.id` 없음)과 수정(`route.id`)을 겸한다. 둘의 차이는 폼을 무엇으로
+  채우느냐와 이미지가 어디에 붙느냐뿐이다: 등록은 화면에 들어올 때 만든 임시 키(`_global.tempKey`)로 이미지를 먼저 올리고 저장 때
+  그 키를 보내 배너에 붙이며, 수정은 이미지를 바로 그 배너(`banner_id`)에 올린다. 입력은 전부 `_local.form` 한 그릇에 모이고
+  오른쪽 미리보기는 저장 전 입력값(지금 관리자 화면 언어)을 사용자 슬라이더 그대로 그린다 — PC 이미지가 있어야 그리고, 링크는 관리자
+  화면을 떠나지 않게 미리보기 자리로 바꾼다. 계산값: 권장 크기와 다른 이미지는 막지 않고 안내만 하고(크기를 재지 못한 이미지는 안내하지
+  않는다), 기간 안내(`periodHint`)는 이 기기 시각으로 미리 계산한 것일 뿐 실제 상태는 서버가 사이트 시간대로 정한다. -->
+<layout name="hero_section_banner_form" version="1.0.0" extends="_admin_base">
+  <meta leave_guard="{{_local.hasChanges === true}}" title="{{route.id ? '$t:sirsoft-hero_section.admin.form.edit_title' : '$t:sirsoft-hero_section.admin.form.create_title'}}"/>
+  <!-- 수정 진입일 때만 원본을 받아 폼에 한 번 심는다(initLocal). 성공 콜백에서 폼을 다시 쓰지 않는다 — 재조회가 손댄 값을 덮고 「고친 것 있음」 을 되살리지 않게 -->
+  <data-source id="banner" label_key="$t:sirsoft-hero_section.editor.data_source.banner" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/banners/{{route.id}}" method="GET" if="{{!!route.id}}" initLocal="form" :refetchOnMount="true" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+      <on-code code="404">
+        <show-error-page target="content"/>
+      </on-code>
+      <default>
+        <!-- 다시 받기 실패는 입력 중인 값을 그대로 두고 알린다 — 처음 받기 실패만 본문 오류 화면 -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+    <field name="errorCondition">
+      <field name="if" value="{{response?.data?.abilities?.can_update === false}}"/>
+      <field name="errorCode" :value="403"/>
+    </field>
+  </data-source>
+  <!-- 업로드 한도 — 플러그인 설정 API 는 설정 관리 권한이라 배너 담당자가 못 읽을 수 있어, 배너 조회 권한으로 열리는 위치 설정 응답의 `upload` 를 쓴다. 못 받으면 기본 5MB 로 안내한다 -->
+  <data-source id="position_settings" label_key="$t:sirsoft-hero_section.editor.data_source.position_settings" type="api" endpoint="/api/plugins/sirsoft-hero_section/admin/position-settings" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="background">
+    <fallback :data="null"/>
+  </data-source>
+  <init-local>
+    <field name="form">
+      <field name="position" value="home_hero"/>
+      <field name="is_active" :value="true"/>
+      <field name="display_period" value="always"/>
+      <field name="starts_at_local" value=""/>
+      <field name="ends_at_local" value=""/>
+      <field name="title" :value="[]"/>
+      <field name="description" :value="[]"/>
+      <field name="button_text" :value="[]"/>
+      <field name="image_alt" :value="[]"/>
+      <field name="title_visible" :value="true"/>
+      <field name="title_color" value="#FFFFFF"/>
+      <field name="title_align" value="left"/>
+      <field name="description_visible" :value="true"/>
+      <field name="description_color" value="#E5E7EB"/>
+      <field name="description_align" value="left"/>
+      <field name="link_url" value=""/>
+      <field name="link_new_window" :value="false"/>
+      <field name="images">
+        <field name="pc" :value="null"/>
+        <field name="mobile" :value="null"/>
+      </field>
+    </field>
+    <field name="isSaving" :value="false"/>
+    <field name="errors" :value="null"/>
+    <field name="previewDevice" value="pc"/>
+  </init-local>
+  <computed name="uploadMb">{{position_settings?.data?.upload?.effective_mb ?? 5}}</computed>
+  <computed name="listPosition">{{_local.form?.position === 'shop_hero' ? 'shop_hero' : 'home_hero'}}</computed>
+  <computed name="pcSizeMismatch">{{!!_local.form?.images?.pc?.width &amp;&amp; (_local.form.images.pc.width !== 1920 || _local.form.images.pc.height !== 640)}}</computed>
+  <computed name="mobileSizeMismatch">{{!!_local.form?.images?.mobile?.width &amp;&amp; (_local.form.images.mobile.width !== 750 || _local.form.images.mobile.height !== 1000)}}</computed>
+  <computed name="periodHint">{{(() => { const f = _local.form ?? {}; if (f.is_active === false) return 'inactive'; if (f.display_period !== 'range') return 'active'; const now = Date.now(); const s = f.starts_at_local ? new Date(f.starts_at_local).getTime() : NaN; const e = f.ends_at_local ? new Date(f.ends_at_local).getTime() : NaN; if (!isNaN(s) &amp;&amp; s &gt; now) return 'scheduled'; if (!isNaN(e) &amp;&amp; e &lt; now) return 'ended'; return 'active'; })()}}</computed>
+  <computed name="previewBanners">{{_local.form?.images?.pc ? [{ id: 0, title: $localized(_local.form?.title) ?? '', description: $localized(_local.form?.description) ?? '', button_text: $localized(_local.form?.button_text) ?? '', image_alt: $localized(_local.form?.image_alt) || $localized(_local.form?.title) || '', title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url ? '#hero_form_preview' : null, link_new_window: false, images: { pc: _local.form.images.pc, mobile: _local.form.images.mobile ?? null } }] : []}}</computed>
+  <permissions>
+    <permission>sirsoft-hero_section.banners.update</permission>
+  </permissions>
+  <init>
+    <!-- 들어올 때마다 「고친 것 있음」 과 직전 오류를 지운다 — 같은 레이아웃의 다른 배너로 넘어와도 앞 화면 표시가 남지 않게 -->
+    <set-state target="local" :hasChanges="false" :errors="null" :isSaving="false"/>
+    <!-- 등록 진입: 수정 화면에서 SPA 로 넘어오면 `_local` 이 남으므로 폼을 기본값으로 되돌리고, 위치는 목록에서 보던 탭(쿼리 position)으로 시작한다 -->
+    <set-state if="{{!route.id}}" target="local" :form="null"/>
+    <set-state if="{{!route.id}}" target="local">
+      <field name="form">
+        <field name="position" value="{{query.position === 'shop_hero' ? 'shop_hero' : 'home_hero'}}"/>
+        <field name="is_active" :value="true"/>
+        <field name="display_period" value="always"/>
+        <field name="starts_at_local" value=""/>
+        <field name="ends_at_local" value=""/>
+        <field name="title" :value="[]"/>
+        <field name="description" :value="[]"/>
+        <field name="button_text" :value="[]"/>
+        <field name="image_alt" :value="[]"/>
+        <field name="title_visible" :value="true"/>
+        <field name="title_color" value="#FFFFFF"/>
+        <field name="title_align" value="left"/>
+        <field name="description_visible" :value="true"/>
+        <field name="description_color" value="#E5E7EB"/>
+        <field name="description_align" value="left"/>
+        <field name="link_url" value=""/>
+        <field name="link_new_window" :value="false"/>
+        <field name="images">
+          <field name="pc" :value="null"/>
+          <field name="mobile" :value="null"/>
+        </field>
+      </field>
+    </set-state>
+    <!-- 등록 화면마다 새 임시 키 — 이미지가 이 키로 먼저 올라가고 저장 때 배너에 붙는다. 저장하지 않고 떠난 임시 이미지는 정리 명령이 지운다 -->
+    <set-state if="{{!route.id}}" target="global" tempKey="{{$uuid()}}"/>
+    <set-state if="{{!!route.id}}" target="global" :tempKey="null"/>
+  </init>
+  <slot name="content">
+    <div data-ref="hero_form_content" class="admin-page-content">
+      <div data-ref="page_header" class="page-header">
+        <div>
+          <h1 class="page-title">{{_local.form?.id ? '$t:sirsoft-hero_section.admin.form.edit_title' : '$t:sirsoft-hero_section.admin.form.create_title'}}</h1>
+          <p class="page-description">$t:sirsoft-hero_section.admin.form.description</p>
+        </div>
+      </div>
+      <div id="hero_form_errors" data-ref="validation_error_banner" data-if="{{_local.errors}}" role="alert" class="alert-danger">
+        <icon name="triangle-exclamation" class="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size="md"/>
+        <div>
+          <h3 class="text-sm font-medium text-red-800 dark:text-red-200">$t:sirsoft-hero_section.admin.form.validation_error</h3>
+          <ul data-if="{{typeof _local.errors === 'object'}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) =&gt; Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
+            <li class="text-sm text-red-700 dark:text-red-300">{{message}}</li>
+          </ul>
+        </div>
+      </div>
+      <div data-ref="hero_form_columns" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div data-ref="form_sections" data-key="form" data-track-changes data-debounce="300" class="lg:col-span-2 flex flex-col gap-6">
+          <!-- 기본 정보 — 노출 위치는 템플릿이 열어 둔 히어로섹션 자리(확장점) 이름과 같다 -->
+          <section data-ref="basic_card" class="admin-card">
+            <h2 class="card-title">$t:sirsoft-hero_section.admin.form.section.basic</h2>
+            <div class="row-stack">
+              <div data-ref="field_position">
+                <label class="form-label">
+                  <span>$t:sirsoft-hero_section.admin.form.position</span>
+                  <span class="text-required">*</span>
+                </label>
+                <radio-group data-type="composite" name="position" :inline="true">
+                  <responsive on="mobile" :inline="false"/>
+                  <prop name="options">
+                    <item label="$t:sirsoft-hero_section.admin.position.home_hero" value="home_hero"/>
+                    <item label="$t:sirsoft-hero_section.admin.position.shop_hero" value="shop_hero"/>
+                  </prop>
+                </radio-group>
+                <p data-if="{{_local.errors?.position}}" class="form-error">{{_local.errors?.position?.[0] ?? ''}}</p>
+                <p data-if="{{!_local.errors?.position}}" class="form-hint">$t:sirsoft-hero_section.admin.form.position_hint</p>
+              </div>
+              <div data-ref="field_is_active">
+                <toggle data-type="composite" label="$t:sirsoft-hero_section.admin.form.is_active" name="is_active"/>
+                <p class="form-hint">$t:sirsoft-hero_section.admin.form.is_active_hint</p>
+              </div>
+            </div>
+          </section>
+          <!-- 문구 — 사이트에 켜 둔 언어마다 탭이 생긴다. 제목은 사이트 기본 언어만 필수이고, 비운 언어는 사용자 화면에서 기본 언어 문구로 보인다 -->
+          <section data-ref="text_card" class="admin-card">
+            <h2 class="card-title">$t:sirsoft-hero_section.admin.form.section.text</h2>
+            <p class="form-hint mb-4">$t:sirsoft-hero_section.admin.form.locale_hint</p>
+            <div class="row-stack">
+              <div data-ref="field_title">
+                <label class="form-label">
+                  <span>$t:sirsoft-hero_section.admin.form.title</span>
+                  <span class="text-required">*</span>
+                </label>
+                <multilingual-input data-type="composite" name="title" layout="tabs" :maxLength="100" :required="true" placeholder="$t:sirsoft-hero_section.admin.form.title_placeholder" error="{{_local.errors?.title?.[0] ?? ''}}"/>
+                <div data-ref="title_style" class="flex flex-wrap items-center gap-4 mt-2">
+                  <toggle data-type="composite" label="$t:sirsoft-hero_section.admin.form.visible" name="title_visible"/>
+                  <div class="flex items-center gap-2">
+                    <input type="color" name="title_color" aria-label="$t:sirsoft-hero_section.admin.form.title_color" class="w-10 h-9 p-1 rounded cursor-pointer"/>
+                    <input type="text" name="title_color" aria-label="$t:sirsoft-hero_section.admin.form.title_color_code" :maxLength="7" placeholder="#FFFFFF" class="input w-28"/>
+                  </div>
+                  <radio-group data-type="composite" name="title_align" :inline="true" size="sm" label="$t:sirsoft-hero_section.admin.form.align_label">
+                    <prop name="options">
+                      <item label="$t:sirsoft-hero_section.admin.form.align.left" value="left"/>
+                      <item label="$t:sirsoft-hero_section.admin.form.align.center" value="center"/>
+                      <item label="$t:sirsoft-hero_section.admin.form.align.right" value="right"/>
+                    </prop>
+                  </radio-group>
+                </div>
+                <p data-if="{{_local.errors?.title_color}}" class="form-error">{{_local.errors?.title_color?.[0] ?? ''}}</p>
+              </div>
+              <div data-ref="field_description">
+                <label class="form-label">$t:sirsoft-hero_section.admin.form.description_label</label>
+                <multilingual-input data-type="composite" name="description" layout="tabs" inputType="textarea" :rows="2" :maxLength="300" placeholder="$t:sirsoft-hero_section.admin.form.description_placeholder" error="{{_local.errors?.description?.[0] ?? ''}}"/>
+                <div data-ref="description_style" class="flex flex-wrap items-center gap-4 mt-2">
+                  <toggle data-type="composite" label="$t:sirsoft-hero_section.admin.form.visible" name="description_visible"/>
+                  <div class="flex items-center gap-2">
+                    <input type="color" name="description_color" aria-label="$t:sirsoft-hero_section.admin.form.description_color" class="w-10 h-9 p-1 rounded cursor-pointer"/>
+                    <input type="text" name="description_color" aria-label="$t:sirsoft-hero_section.admin.form.description_color_code" :maxLength="7" placeholder="#E5E7EB" class="input w-28"/>
+                  </div>
+                  <radio-group data-type="composite" name="description_align" :inline="true" size="sm" label="$t:sirsoft-hero_section.admin.form.align_label">
+                    <prop name="options">
+                      <item label="$t:sirsoft-hero_section.admin.form.align.left" value="left"/>
+                      <item label="$t:sirsoft-hero_section.admin.form.align.center" value="center"/>
+                      <item label="$t:sirsoft-hero_section.admin.form.align.right" value="right"/>
+                    </prop>
+                  </radio-group>
+                </div>
+                <p data-if="{{_local.errors?.description_color}}" class="form-error">{{_local.errors?.description_color?.[0] ?? ''}}</p>
+              </div>
+              <div data-ref="field_button_text">
+                <label class="form-label">$t:sirsoft-hero_section.admin.form.button_text</label>
+                <multilingual-input data-type="composite" name="button_text" layout="tabs" :maxLength="30" placeholder="$t:sirsoft-hero_section.admin.form.button_text_placeholder" error="{{_local.errors?.button_text?.[0] ?? ''}}"/>
+                <p class="form-hint">$t:sirsoft-hero_section.admin.form.button_text_hint</p>
+              </div>
+              <div data-ref="field_image_alt">
+                <label class="form-label">$t:sirsoft-hero_section.admin.form.image_alt</label>
+                <multilingual-input data-type="composite" name="image_alt" layout="tabs" :maxLength="200" error="{{_local.errors?.image_alt?.[0] ?? ''}}"/>
+                <p class="form-hint">$t:sirsoft-hero_section.admin.form.image_alt_hint</p>
+              </div>
+            </div>
+          </section>
+          <!-- 이미지 — 등록 화면은 임시 키로, 수정 화면은 그 배너로 바로 올라간다(갈래는 폼에 심긴 배너 id 로 판정 — 렌더 값에 주소 매개변수를 직접 쓰지 않는다). 같은 기기 이미지를 다시 올리면 서버가 앞 이미지를 바꾼다 -->
+          <section data-ref="image_card" class="admin-card">
+            <h2 class="card-title">$t:sirsoft-hero_section.admin.form.section.image</h2>
+            <div class="row-stack">
+              <div data-ref="field_pc_image">
+                <label class="form-label">
+                  <span>$t:sirsoft-hero_section.admin.form.image.pc</span>
+                  <span class="text-required">*</span>
+                </label>
+                <p class="form-hint mb-2">$t:sirsoft-hero_section.admin.form.image.pc_hint|mb={{_computed.uploadMb}}</p>
+                <!-- PC 이미지는 서버에서 지울 수 없다(필수 이미지가 빈 배너를 막는다) — 삭제 주소를 비워 화면에서만 빼고, 새로 올리면 서버가 바꾼다 -->
+                <file-uploader data-type="composite" data-ref="pc_image_uploader" :maxFiles="1" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp" :autoUpload="true" size="sm" initialFiles="{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}" uploadParams="{{_local.form?.id ? ({ device: 'pc', banner_id: String(_local.form.id) }) : ({ device: 'pc', temp_key: _global.tempKey ?? '' })}}">
+                  <prop name="apiEndpoints">
+                    <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
+                    <field name="delete" value=""/>
+                  </prop>
+                  <on type="change" event="onFilesChange">
+                    <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="true"/>
+                  </on>
+                  <on type="change" event="onUploadComplete">
+                    <set-state target="local" form.images.pc="{{$args[0]?.[0] ?? null}}"/>
+                  </on>
+                  <on type="change" event="onUploadError">
+                    <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+                  </on>
+                  <on type="change" event="onRemove">
+                    <set-state target="local" :form.images.pc="null"/>
+                  </on>
+                </file-uploader>
+                <p data-if="{{_computed.pcSizeMismatch}}" data-ref="pc_size_warning" class="mt-2 text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-hero_section.admin.form.image.size_mismatch|width={{_local.form?.images?.pc?.width}}|height={{_local.form?.images?.pc?.height}}|recommended=1920×640</p>
+                <p data-if="{{_local.errors?.temp_key}}" class="form-error">{{_local.errors?.temp_key?.[0] ?? ''}}</p>
+              </div>
+              <div data-ref="field_mobile_image">
+                <label class="form-label">$t:sirsoft-hero_section.admin.form.image.mobile</label>
+                <p class="form-hint mb-2">$t:sirsoft-hero_section.admin.form.image.mobile_hint|mb={{_computed.uploadMb}}</p>
+                <file-uploader data-type="composite" data-ref="mobile_image_uploader" :maxFiles="1" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp" :autoUpload="true" size="sm" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-hero_section.admin.form.image.remove_title" confirmRemoveMessage="$t:sirsoft-hero_section.admin.form.image.remove_message" initialFiles="{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}" uploadParams="{{_local.form?.id ? ({ device: 'mobile', banner_id: String(_local.form.id) }) : ({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}">
+                  <prop name="apiEndpoints">
+                    <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
+                    <field name="delete" value="/api/plugins/sirsoft-hero_section/admin/banner-images/:id"/>
+                  </prop>
+                  <on type="change" event="onFilesChange">
+                    <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="true"/>
+                  </on>
+                  <on type="change" event="onUploadComplete">
+                    <set-state target="local" form.images.mobile="{{$args[0]?.[0] ?? null}}"/>
+                  </on>
+                  <on type="change" event="onUploadError">
+                    <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+                  </on>
+                  <on type="change" event="onDeleteError">
+                    <toast type="error" message="$t:sirsoft-hero_section.admin.form.image.delete_failed"/>
+                  </on>
+                  <on type="change" event="onRemove">
+                    <set-state target="local" :form.images.mobile="null"/>
+                  </on>
+                </file-uploader>
+                <p data-if="{{_computed.mobileSizeMismatch}}" data-ref="mobile_size_warning" class="mt-2 text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-hero_section.admin.form.image.size_mismatch|width={{_local.form?.images?.mobile?.width}}|height={{_local.form?.images?.mobile?.height}}|recommended=750×1000</p>
+              </div>
+            </div>
+          </section>
+          <!-- 링크 — 사이트 안 경로(/…) 또는 http(s) 주소만 받는다. 검증은 서버가 하고 화면은 사유를 칸 아래에 보인다 -->
+          <section data-ref="link_card" class="admin-card">
+            <h2 class="card-title">$t:sirsoft-hero_section.admin.form.section.link</h2>
+            <div class="row-stack">
+              <div data-ref="field_link_url">
+                <label class="form-label" htmlFor="hero_link_url">$t:sirsoft-hero_section.admin.form.link_url</label>
+                <input type="text" id="hero_link_url" name="link_url" :maxLength="2048" placeholder="$t:sirsoft-hero_section.admin.form.link_url_placeholder" class="input w-full min-w-[200px]"/>
+                <p data-if="{{_local.errors?.link_url}}" class="form-error">{{_local.errors?.link_url?.[0] ?? ''}}</p>
+                <p data-if="{{!_local.errors?.link_url}}" class="form-hint">$t:sirsoft-hero_section.admin.form.link_url_hint</p>
+              </div>
+              <toggle data-type="composite" label="$t:sirsoft-hero_section.admin.form.link_new_window" name="link_new_window"/>
+            </div>
+          </section>
+          <!-- 노출 기간 — 상시 또는 기간 지정. 상태는 저장하지 않고 볼 때마다 서버가 기간으로 계산한다 -->
+          <section data-ref="period_card" class="admin-card">
+            <h2 class="card-title">$t:sirsoft-hero_section.admin.form.section.period</h2>
+            <div class="row-stack">
+              <radio-group data-type="composite" name="display_period" :inline="true">
+                <prop name="options">
+                  <item label="$t:sirsoft-hero_section.admin.form.period.always" value="always"/>
+                  <item label="$t:sirsoft-hero_section.admin.form.period.range" value="range"/>
+                </prop>
+              </radio-group>
+              <div data-ref="period_range" data-if="{{_local.form?.display_period === 'range'}}" class="flex flex-wrap items-center gap-2">
+                <input type="datetime-local" name="starts_at_local" aria-label="$t:sirsoft-hero_section.admin.form.period.starts_at" class="input w-52">
+                  <responsive on="portable" class="input w-full"/>
+                </input>
+                <span class="text-label-subtle">~</span>
+                <input type="datetime-local" name="ends_at_local" aria-label="$t:sirsoft-hero_section.admin.form.period.ends_at" class="input w-52">
+                  <responsive on="portable" class="input w-full"/>
+                </input>
+              </div>
+              <p data-if="{{_local.errors?.starts_at}}" class="form-error">{{_local.errors?.starts_at?.[0] ?? ''}}</p>
+              <p data-if="{{_local.errors?.ends_at}}" class="form-error">{{_local.errors?.ends_at?.[0] ?? ''}}</p>
+              <p data-ref="period_hint" class="form-hint">{{$t('sirsoft-hero_section.admin.form.period.hint', { status: $t('sirsoft-hero_section.admin.status.' + _computed.periodHint) })}}</p>
+            </div>
+          </section>
+          <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
+            <a href="/admin/plugins/sirsoft-hero_section/banners?position={{_computed.listPosition}}" :mergeQuery="true" data-ref="footer_cancel_button" class="button flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
+              <on type="click">
+                <!-- 목록으로 — 보던 조건(상태·검색·쪽)을 이고 가되 위치는 폼에서 고른 탭으로. 위치를 바꿨으면 앞 위치의 쪽 번호는 버린다 -->
+                <navigate :mergeQuery="true">
+                  <query position="{{_computed.listPosition}}" page="{{_computed.listPosition === (query.position || 'home_hero') ? query.page : undefined}}"/>
+                </navigate>
+              </on>
+              <span>$t:sirsoft-hero_section.admin.form.cancel</span>
+            </a>
+            <button data-ref="footer_save_button" type="button" disabled="{{_local.isSaving || !_local.form?.images?.pc}}" class="btn btn-primary flex-center gap-1.5">
+              <on type="click">
+                <!-- 저장 — 등록/수정은 `route.id` 하나로 주소와 방식을 가른다. 기간 입력값은 사이트 시간대 그대로 보내고 서버가 UTC 로 바꾼다 -->
+                <sequence>
+                  <set-state target="local" :isSaving="true" :errors="null"/>
+                  <api-call :auth_required="true" target="{{route.id ? '/api/plugins/sirsoft-hero_section/admin/banners/' + route.id : '/api/plugins/sirsoft-hero_section/admin/banners'}}" method="{{route.id ? 'PUT' : 'POST'}}" body="{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, ...(route.id ? {} : { temp_key: _global.tempKey }) })}}">
+                    <success>
+                      <set-state target="local" :isSaving="false" :hasChanges="false"/>
+                      <toast type="success" message="{{response.message}}"/>
+                      <navigate :bypassLeaveGuard="true" path="/admin/plugins/sirsoft-hero_section/banners" :mergeQuery="true">
+                        <query position="{{_computed.listPosition}}" page="{{_computed.listPosition === (query.position || 'home_hero') ? query.page : undefined}}"/>
+                      </navigate>
+                    </success>
+                    <fail>
+                      <!-- 422 는 칸마다 사유 + 위쪽 요약으로 옮겨 보인다. 그 밖 실패는 알림만 -->
+                      <set-state target="local" :isSaving="false" errors="{{error.errors ?? null}}"/>
+                      <toast type="error" message="{{error.message}}"/>
+                      <scroll-into-view if="{{!!error.errors}}" selector="#hero_form_errors" behavior="smooth" block="start" :waitForElement="true" :timeout="1000"/>
+                    </fail>
+                  </api-call>
+                </sequence>
+              </on>
+              <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+              <span data-if="{{!_local.isSaving}}">$t:sirsoft-hero_section.admin.form.save</span>
+              <span data-if="{{_local.isSaving}}">$t:sirsoft-hero_section.admin.form.saving</span>
+            </button>
+          </div>
+        </div>
+        <!-- 미리보기 — 저장 전 입력값을 사용자 슬라이더 그대로 그린다. 좁은 화면에서는 입력 아래로 내려간다 -->
+        <aside id="hero_form_preview" data-ref="preview_card" aria-labelledby="hero_form_preview_heading" class="admin-card self-start">
+          <div class="flex-between flex-wrap gap-2 mb-3">
+            <h2 id="hero_form_preview_heading" class="card-title">$t:sirsoft-hero_section.admin.form.preview.title</h2>
+            <div role="group" aria-label="$t:sirsoft-hero_section.admin.preview.device_label" class="flex gap-1">
+              <button type="button" data-ref="preview_device_pc" aria-pressed="{{_local.previewDevice === 'pc'}}" class="px-3 py-1 text-xs rounded border {{_local.previewDevice === 'pc' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+                <on type="click">
+                  <set-state target="local" previewDevice="pc"/>
+                </on>
+                $t:sirsoft-hero_section.admin.preview.pc
+              </button>
+              <button type="button" data-ref="preview_device_mobile" aria-pressed="{{_local.previewDevice === 'mobile'}}" class="px-3 py-1 text-xs rounded border {{_local.previewDevice === 'mobile' ? 'bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900' : 'bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}">
+                <on type="click">
+                  <set-state target="local" previewDevice="mobile"/>
+                </on>
+                $t:sirsoft-hero_section.admin.preview.mobile
+              </button>
+            </div>
+          </div>
+          <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="form_preview" banners="{{_computed.previewBanners}}" settings="{{({ autoplay: false, interval_seconds: 5, effect: 'none' })}}" device="{{_local.previewDevice}}" emptyText="$t:sirsoft-hero_section.admin.form.preview.empty"/>
+          <p data-if="{{_computed.previewBanners.length &gt; 0}}" class="form-hint mt-2">{{$localized(_local.form?.button_text) ? $t('sirsoft-hero_section.admin.form.preview.has_button') : $t('sirsoft-hero_section.admin.form.preview.whole_link')}}</p>
+        </aside>
+      </div>
+    </div>
+  </slot>
+</layout>

@@ -676,6 +676,7 @@
 | `sirsoft-ckeditor5` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-ckeditor5/docs/extension-points.md#발행-훅) |
 | `sirsoft-ecommerce` | 모듈 | [확장 지점 문서](../../modules/_bundled/sirsoft-ecommerce/docs/extension-points.md#발행-훅) |
 | `sirsoft-gdpr` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-gdpr/docs/extension-points.md#발행-훅) |
+| `sirsoft-hero_section` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-hero_section/docs/extension-points.md#발행-훅) |
 | `sirsoft-koreaexim` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-koreaexim/docs/extension-points.md#발행-훅) |
 | `sirsoft-marketing` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-marketing/docs/extension-points.md#발행-훅) |
 | `sirsoft-message_bizppurio` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-message_bizppurio/docs/extension-points.md#발행-훅) |

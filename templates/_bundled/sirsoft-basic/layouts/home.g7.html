@@ -52,6 +52,10 @@
   </data-source>
   <permissions/>
   <slot name="content">
+    <!-- 사이트 홈 상단 히어로 자리 — 히어로섹션 플러그인이 배너 슬라이더를 붙인다(전폭, 본문 container 앞). 붙인 플러그인이 없거나 노출 중인 배너가 없으면 아무것도 그리지 않는다 -->
+    <extension-point name="home_hero" data-ref="home_hero_slot">
+      <default/>
+    </extension-point>
     <container data-type="layout" class="py-6 px-4">
       <responsive on="tablet" class="py-6 px-6"/>
       <responsive on="desktop" class="py-6 px-8"/>

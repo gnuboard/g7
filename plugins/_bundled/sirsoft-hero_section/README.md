@@ -1,0 +1,151 @@
+# 그누보드7 히어로섹션 플러그인
+
+**그누보드7 플러그인 · sirsoft-hero_section**
+사이트 홈·쇼핑몰 메인 상단의 히어로섹션(메인 배너)을 관리하고 사용자 템플릿 확장점에 슬라이더로 보여 줍니다.
+
+<!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+<p align="center">
+  <img src="https://img.shields.io/badge/version-1.0.0-0066FF?style=flat-square" alt="version 1.0.0">
+  <img src="https://img.shields.io/badge/type-%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-555555?style=flat-square" alt="type 플러그인">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.2.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.2.0">
+  <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
+</p>
+<!-- @generated:badges END -->
+
+---
+
+[소개](#소개) · [주요 기능](#주요-기능) · [동작 방식](#동작-방식) · [요구 사항](#요구-사항) · [설치](#설치) · [관리자 설정](#관리자-설정) · [사용 방법](#사용-방법) · [다른 확장과의 연동](#다른-확장과의-연동) · [문서](#문서) · [트러블슈팅](#트러블슈팅) · [변경 이력](#변경-이력) · [라이선스](#라이선스)
+
+---
+
+## 소개
+
+<!-- @intent START -->
+사이트 첫 화면의 히어로섹션(메인 배너)은 신상품·프로모션·공지·캠페인을 알리는 가장 중요한 자리입니다. 이 플러그인을 쓰면 마케팅·운영 담당자가 개발자 없이 배너를 바꾸고, 정해 둔 기간에 맞춰 자동으로 보이거나 사라지게 할 수 있습니다.
+
+- 기본 사용자 템플릿(sirsoft-basic)의 **사이트 홈**과 **쇼핑몰 메인** 상단에 슬라이더로 나옵니다. 다른 사용자 템플릿도 같은 이름의 자리만 두면 그대로 씁니다.
+- 언어별 문구와 PC·모바일 이미지를 따로 넣을 수 있습니다.
+- 노출수·클릭수 통계는 이번 판에 없습니다.
+<!-- @intent END -->
+
+## 주요 기능
+
+<!-- @intent START -->
+| 영역 | 설명 |
+|---|---|
+| 배너 목록 | 위치(사이트 홈·쇼핑몰 메인)별 목록, 지금 노출 중인 배너 미리보기, 상태(노출중·예약·종료·비활성) 필터, 일괄 노출·비노출·삭제, [순서 변경] 창 |
+| 배너 등록·수정 | 언어별 제목·설명·버튼 문구·대체 텍스트, 문구 표시 여부·색상·정렬, PC·모바일 이미지(모바일 없으면 PC 사용), 링크·새 창, 상시 또는 기간 지정 노출, 사용 여부 |
+| 슬라이더 설정 | 위치마다 자동 재생·전환 간격(3·5·7초)·전환 효과(슬라이드·페이드·없음) |
+| 사용자 화면 | 기기에 맞는 이미지 자동 전환, 현재 언어 문구(없으면 기본 언어), 노출할 배너가 없으면 자리째 숨김 |
+| 운영 | 조회 / 등록·수정 / 삭제 권한 분리, 모든 작업 활동 로그 기록, 이미지 최대 용량·사용자 화면 캐시 시간 설정 |
+
+<!-- @intent END -->
+
+## 동작 방식
+
+<!-- @intent START -->
+```mermaid
+flowchart LR
+  A[운영자] -->|배너 등록·순서·기간| B[히어로섹션 관리]
+  B --> C[(배너 데이터)]
+  D[사용자 템플릿<br/>home_hero · shop_hero 자리] -->|플러그인이 슬라이더를 끼움| E[방문자 화면]
+  C -->|지금 노출할 배너만| E
+```
+
+노출 상태는 정해 둔 기간과 사용 여부로 그때그때 판단합니다 — 시작 시각이 되면 보이고 종료 시각이 지나면 사라집니다.
+<!-- @intent END -->
+
+## 요구 사항
+
+<!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+| 항목 | 값 |
+|---|---|
+| 그누보드7 코어 | `>=7.2.0` |
+| PHP | `^8.2` |
+<!-- @generated:requirements END -->
+
+## 설치
+
+<!-- @generated:install START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+```bash
+# 번들 설치 (코어에 동봉된 소스에서 설치)
+php artisan plugin:install sirsoft-hero_section
+
+# 활성화
+php artisan plugin:activate sirsoft-hero_section
+
+# 업데이트 (번들 소스 기준 강제 반영)
+php artisan plugin:update sirsoft-hero_section --force
+```
+<!-- @generated:install END -->
+
+## 관리자 설정
+
+<!-- @generated:settings-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+| 키 | 의미 | 기본값 |
+|---|---|---|
+| `max_upload_mb` | 이미지 최대 용량(MB) | `5` |
+| `public_cache_minutes` | 사용자 화면 배너 캐시 시간(분) | `10` |
+
+개발자용 상세(타입·검증·저장 위치)는 [설정 스키마](docs/settings.md#설정-스키마) 를 보세요.
+<!-- @generated:settings-summary END -->
+
+<!-- @intent START -->
+- **이미지 최대 용량**: 고화질 배너를 올려야 할 때 올립니다(최대 10MB). 서버 PHP 한도보다 크게 잡아도 그 한도를 넘는 파일은 올라가지 않으니 트러블슈팅 표를 함께 보세요.
+- **사용자 화면 배너 캐시 시간**: 방문자가 많으면 늘리고, 0 으로 두면 매번 새로 읽습니다. 배너를 저장·삭제·순서 변경하면 캐시와 관계없이 바로 반영됩니다.
+<!-- @intent END -->
+
+## 사용 방법
+
+<!-- @intent START -->
+관리자 화면이 추가되면 쓰는 대표 흐름:
+
+1. 관리자 메뉴 「히어로섹션 관리」 → 위치(사이트 홈) → [배너 등록] → 문구·PC 이미지·링크 입력 → 저장 → 사이트 홈 상단에 나타남.
+2. 기간 지정으로 저장하면 「예약」으로 보이다가 시작 시각에 자동 노출, 종료 시각에 자동으로 사라짐.
+3. [순서 변경] 창에서 끌거나 ↑↓ 로 바꾸고 저장하면 사용자 화면 순서도 바로 바뀜.
+<!-- @intent END -->
+
+## 다른 확장과의 연동
+
+<!-- @generated:integrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+**이 확장이 의존하는 확장**
+
+없음 — 코어만으로 동작합니다.
+
+**이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
+
+없음.
+<!-- @generated:integrations END -->
+
+## 문서
+
+<!-- @generated:docs-index START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
+| 문서 | 내용 | 상태 |
+|---|---|---|
+| [docs/README.md](docs/README.md) | 문서 통합 목차와 실측 집계 | ✅ |
+| [docs/architecture.md](docs/architecture.md) | 설계 의도·계층 지도·디렉토리 맵 | ✅ |
+| [docs/extension-points.md](docs/extension-points.md) | 발행/구독 훅·미들웨어·채널·스케줄 | ✅ |
+| [docs/data-model.md](docs/data-model.md) | 모델·소유 테이블·마이그레이션·Enum | ✅ |
+| [docs/settings.md](docs/settings.md) | 설정 스키마·권한·메뉴·라우트·의존 관계 | ✅ |
+| [docs/frontend.md](docs/frontend.md) | 레이아웃·액션 핸들러·전역 진입점·에셋 | ✅ |
+| [docs/editor-spec.md](docs/editor-spec.md) | 레이아웃 편집기에 선언한 팔레트·컨트롤·샘플 데이터 | ✅ |
+| [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
+| [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
+<!-- @generated:docs-index END -->
+
+## 트러블슈팅
+
+<!-- @intent START -->
+| 증상 | 원인 | 조치 |
+|---|---|---|
+| 배너 이미지 업로드가 용량 오류로 실패하거나, 큰 파일이 비어서 올라감 | 서버 PHP 의 `upload_max_filesize`·`post_max_size` 가 플러그인 설정 「이미지 최대 용량」보다 작음 — 실제 한도는 셋 중 가장 작은 값 | php.ini(또는 PHP-FPM 풀 설정)에서 두 값을 올리고 PHP 를 다시 시작합니다. `post_max_size` 는 `upload_max_filesize` 보다 크게 둡니다 |
+| 배너를 등록했는데 사이트 홈(또는 쇼핑몰 메인)에 보이지 않음 | ① 사용 중인 사용자 템플릿에 `home_hero`·`shop_hero` 자리가 없음 ② 배너 상태가 노출중이 아님(예약·종료·비활성) ③ 플러그인이 꺼져 있음 | ① 템플릿 본문 맨 앞에 `<extension-point name="home_hero"><default/></extension-point>` 를 둡니다(기본 템플릿은 이미 있음) ② 관리 목록의 상태 열과 노출 기간을 확인합니다 ③ 플러그인 관리에서 켭니다. 저장·순서 변경은 캐시와 관계없이 바로 반영됩니다 |
+<!-- @intent END -->
+
+## 변경 이력
+
+[CHANGELOG.md](CHANGELOG.md)
+
+## 라이선스
+
+MIT

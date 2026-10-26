@@ -1,0 +1,187 @@
+/**
+ * E2E: 관리자가 배너를 다루면 사이트 홈 상단 슬라이더에 그대로 반영된다 (#810)
+ *
+ * @scenario-manifest tests/scenarios/e2e-flows.yaml
+ * @effects user_screen_reflects_admin_change, test_data_cleaned_up
+ *
+ * 관리자 조작은 데스크톱 폭에서 하고(관리자 표는 휴대폰 폭에서 카드 보기라 조작 경로가 다르다 — 그 화면 계약은
+ * 레이아웃 테스트가 본다), 사용자 화면 확인은 축의 폭(데스크톱·휴대폰)으로 한다. 단언은 운영 문구가 아니라 사양이
+ * 만든 배너 제목으로 하고, 사양이 만든 배너는 끝날 때 fixture 가 지운다(이미지 파일 포함).
+ */
+import {
+  test, expect, authenticatePage, createBanner, gotoUser, slider, slideTitles, uniqueTitle,
+  ADMIN_LIST, API, PNG_1X1, VIEWPORTS, auth,
+} from '../fixtures/hero-auth';
+import type { Page } from '@playwright/test';
+
+/**
+ * 관리자 목록(사이트 홈 탭)을 열고 표가 붙을 때까지 기다린다.
+ *
+ * @param page 페이지
+ */
+async function gotoAdminList(page: Page): Promise<void> {
+  await page.setViewportSize(VIEWPORTS.desktop);
+  await page.goto(`${ADMIN_LIST}?position=home_hero`);
+  await expect(page.locator('#hero_banner_datagrid')).toBeAttached({ timeout: 30_000 });
+}
+
+/**
+ * 사용자 홈을 그 폭으로 열고 슬라이더 제목 목록을 돌려준다.
+ *
+ * @param page 페이지
+ * @param viewport 폭
+ * @returns 슬라이드 제목(순서대로)
+ */
+async function homeTitles(page: Page, viewport: keyof typeof VIEWPORTS): Promise<string[]> {
+  await page.setViewportSize(VIEWPORTS[viewport]);
+  await gotoUser(page, '/');
+  await page.waitForResponse((r) => r.url().includes(`${API}/hero?position=home_hero`), { timeout: 30_000 }).catch(() => undefined);
+  await page.waitForTimeout(500);
+  return slideTitles(page);
+}
+
+for (const viewport of ['desktop', 'mobile'] as const) {
+  test.describe(`관리자 → 사이트 홈 (${viewport})`, () => {
+    // @scenario flow=create_banner_appears_on_home, viewport=desktop
+    // @scenario flow=create_banner_appears_on_home, viewport=mobile
+    // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+    test(`등록 화면에서 만든 배너가 홈 슬라이더에 보인다 (${viewport})`, async ({ page, request, managerToken, created }) => {
+      const errors: string[] = [];
+      page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+      const title = uniqueTitle('등록');
+
+      await authenticatePage(page, managerToken);
+      await page.setViewportSize(VIEWPORTS.desktop);
+      await page.goto(`${ADMIN_LIST}/create?position=home_hero`);
+      await expect(page.locator('#footer_save_button')).toBeVisible({ timeout: 30_000 });
+      // PC 이미지가 없으면 저장이 잠겨 있다
+      await expect(page.locator('#footer_save_button')).toBeDisabled();
+
+      await page.locator('input[name="title[ko]"]').fill(title);
+      const uploaded = page.waitForResponse((r) => r.url().includes(`${API}/admin/banner-images`) && r.request().method() === 'POST');
+      await page.locator('#pc_image_uploader input[type="file"]').setInputFiles({ name: 'e2e-pc.png', mimeType: 'image/png', buffer: PNG_1X1 });
+      expect((await uploaded).status()).toBe(201);
+      // 1x1 이미지는 권장 크기와 달라 안내가 뜨지만 저장은 막지 않는다
+      await expect(page.locator('#pc_size_warning')).toBeVisible();
+      await expect(page.locator('#footer_save_button')).toBeEnabled();
+
+      const saved = page.waitForResponse((r) => r.url().endsWith(`${API}/admin/banners`) && r.request().method() === 'POST');
+      await page.locator('#footer_save_button').click();
+      const response = await saved;
+      expect(response.status()).toBe(201);
+      created.push((await response.json()).data.id);
+      // 저장 뒤에는 같은 위치 탭 목록으로 돌아온다
+      await expect(page).toHaveURL(/\/admin\/plugins\/sirsoft-hero_section\/banners\?.*position=home_hero/, { timeout: 30_000 });
+
+      expect(await homeTitles(page, viewport)).toContain(title);
+      await expect(slider(page)).toBeVisible();
+      expect(errors.filter((e) => !/favicon/i.test(e))).toEqual([]);
+    });
+
+    // @scenario flow=scheduled_banner_hidden_until_start, viewport=desktop
+    // @scenario flow=scheduled_banner_hidden_until_start, viewport=mobile
+    // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+    test(`시작 전인 예약 배너는 목록에 「예약」으로 보이고 홈에는 나오지 않는다 (${viewport})`, async ({ page, request, managerToken, created }) => {
+      const now = uniqueTitle('지금');
+      const later = uniqueTitle('예약');
+      const tomorrow = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 16);
+      const nextWeek = new Date(Date.now() + 9 * 86_400_000).toISOString().slice(0, 16);
+      created.push(await createBanner(request, managerToken, { title: { ko: now } }));
+      created.push(await createBanner(request, managerToken, { title: { ko: later }, display_period: 'range', starts_at: tomorrow, ends_at: nextWeek }));
+
+      await authenticatePage(page, managerToken);
+      await gotoAdminList(page);
+      const row = page.locator('#hero_banner_datagrid tr', { hasText: later });
+      await expect(row).toContainText('예약');
+
+      const titles = await homeTitles(page, viewport);
+      expect(titles).toContain(now);
+      expect(titles).not.toContain(later);
+    });
+
+    // @scenario flow=reorder_reflected_on_home, viewport=desktop
+    // @scenario flow=reorder_reflected_on_home, viewport=mobile
+    // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+    test(`[순서 변경] 창에서 바꾼 순서가 홈 슬라이더 순서가 된다 (${viewport})`, async ({ page, request, managerToken, created }) => {
+      const first = uniqueTitle('첫째');
+      const second = uniqueTitle('둘째');
+      created.push(await createBanner(request, managerToken, { title: { ko: first } }));
+      const secondId = await createBanner(request, managerToken, { title: { ko: second } });
+      created.push(secondId);
+
+      const before = await homeTitles(page, viewport);
+      expect(before.indexOf(first)).toBeLessThan(before.indexOf(second));
+
+      await authenticatePage(page, managerToken);
+      await gotoAdminList(page);
+      await page.locator('#reorder_button').click();
+      const modal = page.getByRole('dialog', { name: '배너 순서 변경' });
+      await expect(modal).toBeVisible({ timeout: 20_000 });
+      // 바뀐 것이 없으면 저장이 잠겨 있다
+      await expect(page.getByTestId('hero-reorder-save')).toBeDisabled();
+      await page.getByTestId(`hero-reorder-up-${secondId}`).click();
+      const saved = page.waitForResponse((r) => r.url().includes(`${API}/admin/banners/order`) && r.request().method() === 'PUT');
+      await page.getByTestId('hero-reorder-save').click();
+      expect((await saved).status()).toBe(200);
+      await expect(modal).toBeHidden({ timeout: 20_000 });
+
+      const after = await homeTitles(page, viewport);
+      expect(after.indexOf(second)).toBeLessThan(after.indexOf(first));
+    });
+
+    // @scenario flow=bulk_hide_removes_from_home, viewport=desktop
+    // @scenario flow=bulk_hide_removes_from_home, viewport=mobile
+    // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+    test(`표에서 골라 [비노출] 하면 홈에서 사라진다 (${viewport})`, async ({ page, request, managerToken, created }) => {
+      const keep = uniqueTitle('유지');
+      const hide = uniqueTitle('숨김');
+      created.push(await createBanner(request, managerToken, { title: { ko: keep } }));
+      created.push(await createBanner(request, managerToken, { title: { ko: hide } }));
+
+      await authenticatePage(page, managerToken);
+      await gotoAdminList(page);
+      // 선택칸은 엔진 상태를 거쳐 체크 표시가 바뀐다 — 누른 뒤 체크 상태를 기다린다
+      const pick = page.getByRole('checkbox', { name: `${hide} 선택` });
+      await pick.click();
+      await expect(pick).toBeChecked();
+      await expect(page.locator('#bulk_action_bar')).toContainText('1');
+      const done = page.waitForResponse((r) => r.url().includes(`${API}/admin/banners/bulk-status`));
+      await page.locator('#bulk_hide_button').click();
+      expect((await done).status()).toBe(200);
+      await expect(page.locator('#hero_banner_datagrid tr', { hasText: hide })).toContainText('비활성', { timeout: 20_000 });
+
+      const titles = await homeTitles(page, viewport);
+      expect(titles).toContain(keep);
+      expect(titles).not.toContain(hide);
+    });
+
+    // @scenario flow=delete_removes_from_home, viewport=desktop
+    // @scenario flow=delete_removes_from_home, viewport=mobile
+    // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+    test(`행 메뉴 [삭제] 로 지운 배너는 홈에서 사라지고 이미지도 지워진다 (${viewport})`, async ({ page, request, managerToken, created }) => {
+      const title = uniqueTitle('삭제');
+      const id = await createBanner(request, managerToken, { title: { ko: title } });
+      created.push(id);
+      const detail = await request.get(`${API}/admin/banners/${id}`, { headers: auth(managerToken) });
+      const imageUrl = (await detail.json()).data.images.pc.url as string;
+      expect(await homeTitles(page, viewport)).toContain(title);
+
+      await authenticatePage(page, managerToken);
+      await gotoAdminList(page);
+      const row = page.locator('#hero_banner_datagrid tbody tr', { hasText: title });
+      await row.getByRole('button', { name: '작업' }).click();
+      await page.getByRole('menuitem', { name: '삭제' }).click();
+      const modal = page.getByRole('dialog', { name: '배너 삭제' });
+      await expect(modal).toBeVisible();
+      await expect(modal).toContainText(title);
+      const removed = page.waitForResponse((r) => r.url().endsWith(`${API}/admin/banners/${id}`) && r.request().method() === 'DELETE');
+      await modal.getByRole('button', { name: '삭제' }).click();
+      expect((await removed).status()).toBe(200);
+      await expect(page.locator('#hero_banner_datagrid tbody tr', { hasText: title })).toHaveCount(0, { timeout: 20_000 });
+
+      expect(await homeTitles(page, viewport)).not.toContain(title);
+      // 영구 삭제 — 공개 이미지 주소도 더는 열리지 않는다
+      expect((await request.get(imageUrl)).status()).toBe(404);
+    });
+  });
+}
