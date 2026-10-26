@@ -58,6 +58,7 @@ class ScheduleDeclarationTest extends ModuleTestCase
             'prune-pending-claim-images' => ['sirsoft-ecommerce:prune-pending-claim-images', '0 0 * * *', null, []],
             'cancel-orphan-claim-payments' => ['sirsoft-ecommerce:cancel-orphan-claim-payments', '0 0 * * *', null, []],
             'notify-overdue-collections' => ['sirsoft-ecommerce:claims:notify-overdue-collections', '0 0 * * *', null, []],
+            'prune-exports' => ['sirsoft-ecommerce:prune-exports', '0 * * * *', null, []],
         ], $this->scheduleDeclarationTable((new Module)->getSchedules()));
     }
 

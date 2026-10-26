@@ -85,6 +85,13 @@
       "help": "Select to use a different disk for this module only. Leave empty to follow the public asset storage setting in core system settings.",
       "unavailable": "The saved disk ({disk}) is no longer available, so images are being streamed. Select another disk and save to change it."
     },
+    "export_retention": {
+      "title": "Export file retention",
+      "description": "How long files created in Export Management are kept on the server. When the period ends, the file is deleted and the job is marked Expired. Job records and download history are kept.",
+      "prefix": "Keep for",
+      "suffix": "days after completion",
+      "help": "Choose 1–30 days so files containing customer personal data do not stay on the server for long. A new value applies to files completed from now on."
+    },
     "inquiry_settings": {
       "title": "1:1 Inquiry Board Settings",
       "description": "Configure the product 1:1 inquiry feature.",

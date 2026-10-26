@@ -475,4 +475,17 @@ return [
         'parcel_box' => '택배함에 넣어주세요',
         'call' => '배송 전 연락 부탁드립니다',
     ],
+    // 내보내기(#787)
+    'export_status' => [
+        'pending' => '대기',
+        'processing' => '진행중',
+        'completed' => '완료',
+        'failed' => '실패',
+        'expired' => '만료',
+    ],
+    'export_type' => [
+        'orders' => '주문내역',
+        'products' => '상품내역',
+        'mileage' => '마일리지 내역',
+    ],
 ];

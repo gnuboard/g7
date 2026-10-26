@@ -2,7 +2,9 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Modules\Sirsoft\Ecommerce\Models\Order;
@@ -110,6 +112,19 @@ interface OrderRepositoryInterface
      * @return LengthAwarePaginator 페이지네이션된 주문 목록
      */
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator;
+
+    /**
+     * 내보내기 원천 쿼리 — 주문 목록과 같은 조건·같은 권한 범위로 고른 주문 쿼리를 돌려줍니다.
+     *
+     * 목록과 같은 필터 경로를 지나야 화면 건수와 파일 행 수가 어긋나지 않는다. 권한 범위(`sirsoft-ecommerce.orders.read` 의 본인·역할 범위)는
+     * **요청자를 인자로** 판정한다 — 파일은 큐 작업에서 만들어 로그인 사용자가 없으므로, 현재 사용자 기준으로 걸면 범위가 빠진다.
+     *
+     * @param  array  $filters  검증된 주문 목록 필터
+     * @param  array<int, int>|null  $ids  「선택한 행」 주문 ID (지정하면 목록 필터 대신 이 ID 만)
+     * @param  User  $requester  권한 범위를 판정할 요청자
+     * @return Builder 주문 쿼리 (관계·정렬 없음)
+     */
+    public function newExportQuery(array $filters, ?array $ids, User $requester): Builder;
 
     /**
      * 관리자 주문 목록과 같은 권한 범위·필터로 주문 수를 셉니다. (목록과 같은 출발 쿼리·필터 단일 출처를 그대로 쓴다)

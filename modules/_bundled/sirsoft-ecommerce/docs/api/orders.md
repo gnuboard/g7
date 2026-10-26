@@ -303,6 +303,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+- **권한 메모(1.4.0)**: 목록 응답 `abilities.can_export`(= `sirsoft-ecommerce.exports.create`) — 목록 머리 줄 [내보내기] 버튼을 보일지 정하는 키. 실제 요청은 [exports.md](exports.md) 가 받는다.
+
 **설명** 관리자가 주문을 다양한 필터·검색·정렬 조건으로 페이지네이션 조회합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.read` 권한이 필요하며, `Admin\OrderController@index`가 `OrderService::getList()`로 목록을, `getStatistics()`로 상태별 통계를 함께 가져와 `OrderCollection`에 담아 반환합니다. 검색 필드(주문번호/주문자명/상품명/SKU 등)·기간·주문상태·결제수단·금액대·회원/비회원 구분 등 폭넓은 필터를 지원합니다. 관리자 주문 목록 화면의 기본 데이터 소스입니다.
 
 

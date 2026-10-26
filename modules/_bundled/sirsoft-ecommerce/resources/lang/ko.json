@@ -64,7 +64,11 @@
             "claim_settings": "배송정책 클레임 설정",
             "claims": "취소/반품/교환 목록",
             "orderClaims": "주문 클레임 내역",
-            "claimRequestContext": "직권 접수 문맥"
+            "claimRequestContext": "직권 접수 문맥",
+            "exports": "내보내기 목록",
+            "ecommerceExportCatalog": "내보내기 설정(카탈로그)",
+            "exportDownloads": "내보내기 다운로드 이력",
+            "ecommerceExportEstimateSource": "내보내기 예상 건수"
         }
     },
     "common": {
@@ -112,6 +116,9 @@
         },
         "excel_download": {
             "$partial": "partial/ko/admin/excel_download.json"
+        },
+        "export": {
+            "$partial": "partial/ko/admin/export.json"
         },
         "personal_payment": {
             "$partial": "partial/ko/admin/personal_payment.json"

@@ -285,54 +285,8 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
         // (호출부: UserMileageService::paginateAdminHistory 하나. 회원 본인 내역은 paginateForUser).
         PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.mileage.read');
 
-        if (! empty($filters['user_id'])) {
-            $query->where('user_id', $filters['user_id']);
-        }
-
-        // 거래유형: UI 4분류 슬러그(earn/use/expire/adjust)를 8종 enum으로 역매핑
-        if (! empty($filters['type'])) {
-            $query->whereIn('type', $this->typesForCategory($filters['type']));
-        }
-
-        if (! empty($filters['currency'])) {
-            $query->where('currency', $filters['currency']);
-        }
-
-        // 기간 필터 — whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 못 쓰게 만든다.
-        // 같은 결과를 내는 범위 조건으로 바꿔 created_at 인덱스를 살린다
-        // (종료일은 그날 23:59:59.999999 까지 포함해야 whereDate 와 동일한 경계를 갖는다).
-        // 목록이 일시를 보는 사람의 시간대로 그리므로 그 하루로 자른다.
-        $this->applyViewerDateRangeFilter($query, 'created_at', $filters['start_date'] ?? null, $filters['end_date'] ?? null);
-
-        // 검색: search_field 별 대상 컬럼/관계 분기 (member/member_id/email/order)
-        if (! empty($filters['search_keyword'])) {
-            $keyword = $filters['search_keyword'];
-            $field = $filters['search_field'] ?? 'member';
-
-            $query->where(function ($outer) use ($field, $keyword) {
-                switch ($field) {
-                    case 'member_id':
-                        $outer->where('user_id', $keyword);
-                        break;
-                    case 'email':
-                        $outer->whereHas('user', function ($q) use ($keyword) {
-                            $q->where('email', 'like', "%{$keyword}%");
-                        });
-                        break;
-                    case 'order':
-                        $outer->whereHas('order', function ($q) use ($keyword) {
-                            $q->where('order_number', 'like', "%{$keyword}%");
-                        });
-                        break;
-                    case 'member':
-                    default:
-                        $outer->whereHas('user', function ($q) use ($keyword) {
-                            $q->where('name', 'like', "%{$keyword}%");
-                        });
-                        break;
-                }
-            });
-        }
+        // 필터 — 내보내기와 같은 한 경로(applyListFilters)를 지난다
+        $this->applyListFilters($query, $filters);
 
         // 적립/사용 이력은 계속 쌓이므로 지연 조인으로 뒤쪽 페이지 비용을 고정한다.
         //
@@ -387,6 +341,86 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
             'amount_asc' => [['column' => 'amount', 'direction' => 'asc'], ['column' => 'id', 'direction' => 'asc']],
             default => [['column' => 'created_at', 'direction' => 'desc'], ['column' => 'id', 'direction' => 'desc']],
         };
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function newExportQuery(array $filters, ?array $ids, User $requester): Builder
+    {
+        $query = MileageTransaction::query();
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.mileage.read', $requester);
+
+        if ($ids !== null) {
+            // 「선택한 행」은 그 선택이 대상이다 — 목록 필터를 덧씌우지 않는다
+            return $query->whereIn('id', $ids);
+        }
+
+        $this->applyListFilters($query, $filters);
+
+        return $query;
+    }
+
+    /**
+     * 목록 필터 조건을 쿼리에 겁니다 — 목록 조회와 내보내기 원천 쿼리(`newExportQuery`)가 같은 이 한 경로를 지난다.
+     *
+     * 축을 두 곳에 복제하면 한쪽에만 필터가 늘어나는 순간 화면 건수와 파일 행 수가 조용히 어긋난다. 권한 범위는 걸지
+     * 않는다 — 필터가 아니라 호출자의 열람 범위이므로 호출부가 각자 건다.
+     *
+     * @param  Builder  $query  쿼리
+     * @param  array  $filters  검증된 목록 필터
+     * @return void 반환값 없음 (쿼리에 직접 조건을 건다)
+     */
+    protected function applyListFilters(Builder $query, array $filters): void
+    {
+        if (! empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
+
+        // 거래유형: UI 4분류 슬러그(earn/use/expire/adjust)를 8종 enum으로 역매핑
+        if (! empty($filters['type'])) {
+            $query->whereIn('type', $this->typesForCategory($filters['type']));
+        }
+
+        if (! empty($filters['currency'])) {
+            $query->where('currency', $filters['currency']);
+        }
+
+        // 기간 필터 — whereDate 는 컬럼에 DATE() 를 씌워 인덱스를 못 쓰게 만든다.
+        // 같은 결과를 내는 범위 조건으로 바꿔 created_at 인덱스를 살린다
+        // (종료일은 그날 23:59:59.999999 까지 포함해야 whereDate 와 동일한 경계를 갖는다).
+        // 목록이 일시를 보는 사람의 시간대로 그리므로 그 하루로 자른다.
+        $this->applyViewerDateRangeFilter($query, 'created_at', $filters['start_date'] ?? null, $filters['end_date'] ?? null);
+
+        // 검색: search_field 별 대상 컬럼/관계 분기 (member/member_id/email/order)
+        if (! empty($filters['search_keyword'])) {
+            $keyword = $filters['search_keyword'];
+            $field = $filters['search_field'] ?? 'member';
+
+            $query->where(function ($outer) use ($field, $keyword) {
+                switch ($field) {
+                    case 'member_id':
+                        $outer->where('user_id', $keyword);
+                        break;
+                    case 'email':
+                        $outer->whereHas('user', function ($q) use ($keyword) {
+                            $q->where('email', 'like', "%{$keyword}%");
+                        });
+                        break;
+                    case 'order':
+                        $outer->whereHas('order', function ($q) use ($keyword) {
+                            $q->where('order_number', 'like', "%{$keyword}%");
+                        });
+                        break;
+                    case 'member':
+                    default:
+                        $outer->whereHas('user', function ($q) use ($keyword) {
+                            $q->where('name', 'like', "%{$keyword}%");
+                        });
+                        break;
+                }
+            });
+        }
     }
 
     /**

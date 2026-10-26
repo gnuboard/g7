@@ -71,6 +71,19 @@ return [
         'complete' => '완료',
         'refund' => '환급',
         'execute' => '실행',
+        // 내보내기(#787)
+        'export' => [
+            'request' => '신청 접수',
+            'request_denied' => '요청 거부',
+            'start' => '시작',
+            'complete' => '완료',
+            'fail' => '실패',
+            'download' => '다운로드',
+            'view_downloads' => '다운로드 이력 조회',
+            'delete' => '삭제',
+            'expire' => '소멸',
+            'retry' => '다시 요청',
+        ],
     ],
 
     'description' => [
@@ -297,6 +310,17 @@ return [
         'claim_payment_cancel' => '클레임 추가결제 대기 취소 (:payment_number)',
         'claim_image_upload' => '클레임 첨부 업로드 (:original_name)',
         'claim_image_delete' => '클레임 첨부 삭제 (:original_name)',
+        // 내보내기(#787)
+        'export_request' => '내보내기 요청 (:file_name)',
+        'export_request_denied' => ':type_label 내보내기 요청 거부 (:reason_label)',
+        'export_start' => '내보내기 처리 시작 (:file_name)',
+        'export_complete' => '내보내기 파일 생성 완료 (:file_name)',
+        'export_fail' => '내보내기 파일 생성 실패 (:file_name)',
+        'export_download' => '내보내기 파일 다운로드 (:file_name)',
+        'export_view_downloads' => '내보내기 다운로드 이력 조회 (:file_name)',
+        'export_delete' => '내보내기 파일 삭제 (:file_name)',
+        'export_expire' => '내보내기 파일 보관 기간 만료 (:file_name)',
+        'export_retry' => '내보내기 다시 요청 (:file_name)',
     ],
 
     // ChangeDetector 필드 라벨
@@ -435,4 +459,9 @@ return [
 
     // 이름을 되찾지 못한 엔티티의 표시 (설명 파라미터 해석 실패 시)
     'entity_id_fallback' => 'ID: :id',
+    // 내보내기(#787)
+    'export_denied_reasons' => [
+        'forbidden' => '권한 없음',
+        'too_many_pending' => '동시 요청 한도 초과',
+    ],
 ];

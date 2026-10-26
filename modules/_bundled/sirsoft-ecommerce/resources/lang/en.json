@@ -64,7 +64,11 @@
             "claim_settings": "Shipping policy claim settings",
             "claims": "Claims",
             "orderClaims": "Order Claim History",
-            "claimRequestContext": "Claim request context"
+            "claimRequestContext": "Claim request context",
+            "exports": "Export list",
+            "ecommerceExportCatalog": "Export options (catalog)",
+            "exportDownloads": "Export download history",
+            "ecommerceExportEstimateSource": "Export estimate"
         }
     },
     "common": {
@@ -112,6 +116,9 @@
         },
         "excel_download": {
             "$partial": "partial/en/admin/excel_download.json"
+        },
+        "export": {
+            "$partial": "partial/en/admin/export.json"
         },
         "personal_payment": {
             "$partial": "partial/en/admin/personal_payment.json"

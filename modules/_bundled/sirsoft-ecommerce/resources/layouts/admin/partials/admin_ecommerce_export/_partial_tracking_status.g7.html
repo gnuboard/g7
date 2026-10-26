@@ -1,0 +1,46 @@
+<!-- 방금 요청한 내보내기의 진행 표시 — 상품·주문·마일리지 목록이 함께 쓴다(#787). 요청 창이 접수 응답으로
+  `_global.ecommerceExportTracking` 을 채우고 5초마다 작업 상세를 받아 갱신한다(대기·진행중이 끝나면 멈춘다). 목록에 들어올 때
+  `<init>` 이 비우므로 이 화면에서 요청한 1건만 보인다. [받기]는 내보내기 관리의 파일명 단추와 같은 일회용 주소 경로이고
+  권한·범위 검사도 같다. -->
+<partial description="Ecommerce Export - Tracking Status">
+  <div data-ref="ecommerce_export_tracking" data-if="{{_global.ecommerceExportTracking?.id}}" role="status" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+    <span data-if="{{_global.ecommerceExportTracking?.status === 'pending' || _global.ecommerceExportTracking?.status === 'processing'}}" class="flex items-center gap-1">
+      <icon name="spinner" class="spinner-sm"/>
+      <span>$t:sirsoft-ecommerce.admin.export.tracking.processing</span>
+    </span>
+    <span data-if="{{_global.ecommerceExportTracking?.status === 'completed'}}" class="text-green-700 dark:text-green-400">$t:sirsoft-ecommerce.admin.export.tracking.ready</span>
+    <button data-if="{{_global.ecommerceExportTracking?.status === 'completed' &amp;&amp; _global.ecommerceExportTracking?.can_download === true}}" type="button" class="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportTrackingDownloading === true}}">
+      <on type="click">
+        <!-- 그 자리에서 받기 — 서버가 다운로드 이력·횟수를 남긴다. 성공·실패 모두 진행 표시를 푼다 -->
+        <sequence>
+          <set-state target="global" :ecommerceExportTrackingDownloading="true"/>
+          <action handler="sirsoft-ecommerce.downloadExportFile" url="/api/modules/sirsoft-ecommerce/admin/exports/{{_global.ecommerceExportTracking?.id}}/download-link" filename="{{_global.ecommerceExportTracking?.file_name}}">
+            <success>
+              <set-state target="global" :ecommerceExportTrackingDownloading="false"/>
+            </success>
+            <fail>
+              <set-state target="global" :ecommerceExportTrackingDownloading="false"/>
+              <toast type="error" message="$t:sirsoft-ecommerce.admin.export.messages.download_failed"/>
+            </fail>
+          </action>
+        </sequence>
+      </on>
+      <icon data-if="{{_global.ecommerceExportTrackingDownloading === true}}" name="spinner" class="spinner-sm"/>
+      <span>$t:sirsoft-ecommerce.admin.export.tracking.download</span>
+    </button>
+    <span data-if="{{_global.ecommerceExportTracking?.status === 'failed' || _global.ecommerceExportTracking?.status === 'expired'}}" class="text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.admin.export.tracking.failed</span>
+    <a data-if="{{['completed', 'failed', 'expired'].includes(_global.ecommerceExportTracking?.status) &amp;&amp; !(_global.ecommerceExportTracking?.status === 'completed' &amp;&amp; _global.ecommerceExportTracking?.can_download === true)}}" href="/admin/ecommerce/exports" class="text-blue-600 dark:text-blue-400 hover:underline">
+      <span>$t:sirsoft-ecommerce.admin.export.tracking.open_manage</span>
+    </a>
+    <button type="button" aria-label="$t:sirsoft-ecommerce.admin.export.tracking.dismiss" class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+      <on type="click">
+        <!-- 표시 닫기 — 따라가던 반복도 멈춘다 -->
+        <sequence>
+          <stop-interval id="ecommerce_export_track_poll"/>
+          <set-state target="global" :ecommerceExportTracking="null"/>
+        </sequence>
+      </on>
+      <icon name="xmark" class="text-xs"/>
+    </button>
+  </div>
+</partial>

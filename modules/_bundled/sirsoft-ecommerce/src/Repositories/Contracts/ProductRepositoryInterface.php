@@ -2,9 +2,11 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use App\Models\User;
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 
@@ -49,6 +51,19 @@ interface ProductRepositoryInterface
      * @return LengthAwarePaginator 페이지네이션된 상품 목록
      */
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator;
+
+    /**
+     * 내보내기 원천 쿼리 — 상품 목록과 같은 조건·같은 권한 범위로 고른 상품 쿼리를 돌려줍니다.
+     *
+     * 목록과 같은 필터 경로를 지나야 화면 건수와 파일 행 수가 어긋나지 않는다. 권한 범위(`sirsoft-ecommerce.products.read` 의 본인·역할 범위)는
+     * **요청자를 인자로** 판정한다 — 파일은 큐 작업에서 만들어 로그인 사용자가 없으므로, 현재 사용자 기준으로 걸면 범위가 빠진다.
+     *
+     * @param  array  $filters  검증된 상품 목록 필터
+     * @param  array<int, int>|null  $ids  「선택한 행」 상품 ID (지정하면 목록 필터 대신 이 ID 만)
+     * @param  User  $requester  권한 범위를 판정할 요청자
+     * @return Builder 상품 쿼리 (관계·정렬 없음)
+     */
+    public function newExportQuery(array $filters, ?array $ids, User $requester): Builder;
 
     /**
      * 여러 상품의 옵션을 상품 ID 로 묶어 한 번에 조회합니다 (비활성 옵션 포함).
@@ -155,6 +170,8 @@ interface ProductRepositoryInterface
      * 상품 통계 캐시를 무효화합니다.
      *
      * 상품이 바뀌면 통계도 곧바로 달라져야 합니다.
+     *
+     * @return void 반환값 없음
      */
     public function forgetStatisticsCache(): void;
 

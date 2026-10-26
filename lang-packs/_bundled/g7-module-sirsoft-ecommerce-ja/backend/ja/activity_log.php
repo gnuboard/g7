@@ -66,6 +66,18 @@ return [
         'mode_change' => '進行方法変更',
         'stock_restore' => '在庫復旧',
         'request_update' => '申請内容修正',
+        'export' => [
+            'request' => '申請受付',
+            'request_denied' => 'リクエスト却下',
+            'start' => '開始',
+            'complete' => '完了',
+            'fail' => '失敗',
+            'download' => 'ダウンロード',
+            'view_downloads' => 'ダウンロード履歴照会',
+            'delete' => '削除',
+            'expire' => '消滅',
+            'retry' => '再度リクエスト',
+        ],
     ],
     'description' => [
         'product_index' => '商品 目録 閲覧',
@@ -251,8 +263,17 @@ return [
         'claim_refund_request_update_on_behalf' => '返金申請内容修正 — 管理者が顧客に代わり修正(:claim_number)',
         'claim_payment_refund' => 'クレーム追加決済返金 (:payment_number)',
         'claim_payment_refund_amount' => 'クレーム追加決済返金 (:payment_number, :amount)',
+        'export_request' => 'エクスポートリクエスト (:file_name)',
+        'export_request_denied' => ':type_label エクスポートリクエスト却下 (:reason_label)',
+        'export_start' => 'エクスポート処理開始 (:file_name)',
+        'export_complete' => 'エクスポートファイル作成完了 (:file_name)',
+        'export_fail' => 'エクスポートファイル作成失敗 (:file_name)',
+        'export_download' => 'エクスポートファイルダウンロード (:file_name)',
+        'export_view_downloads' => 'エクスポートダウンロード履歴照会 (:file_name)',
+        'export_delete' => 'エクスポートファイル削除 (:file_name)',
+        'export_expire' => 'エクスポートファイル保管期間満了 (:file_name)',
+        'export_retry' => 'エクスポート再度リクエスト (:file_name)',
     ],
-    // 手動決済処理アクティビティログの項目名 (Q13·Q26)
     'manual_paid' => [
         'items' => [
             'apply_stock_deduction' => '在庫差し引き',
@@ -262,7 +283,6 @@ return [
         ],
         'none' => '-',
     ],
-
     'fields' => [
         'website' => 'ウェブサイト',
         'is_active' => '有効化否か',
@@ -357,5 +377,9 @@ return [
     'entity_id_fallback' => 'ID: :id',
     'values' => [
         'masked_change' => '変更されました(個人情報のため値は記録されません)',
+    ],
+    'export_denied_reasons' => [
+        'forbidden' => '権限なし',
+        'too_many_pending' => '同時リクエスト制限超過',
     ],
 ];

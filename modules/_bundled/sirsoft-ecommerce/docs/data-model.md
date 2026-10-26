@@ -18,6 +18,8 @@
 | `CouponIssue` | `ecommerce_promotion_coupon_issues` | 9 | coupon→Coupon, user→User, order→Order | - |
 | `EcommerceStat` | `ecommerce_stats` | 4 | - | - |
 | `EcommerceUserProfile` | `ecommerce_user_profiles` | 3 | user→User | - |
+| `Export` | `ecommerce_exports` | 30 | requester→User, downloads→ExportDownload | SoftDeletes |
+| `ExportDownload` | `ecommerce_export_downloads` | 6 | export→Export, user→User | - |
 | `ExtraFeeTemplate` | `ecommerce_shipping_policy_extra_fee_templates` | 7 | creator→User, updater→User | - |
 | `HasDirectAssetUrl` | (규약) | - | - | - |
 | `MileageBalance` | `ecommerce_mileage_balances` | 9 | user→User | - |
@@ -148,6 +150,8 @@
 | `ecommerce_claim_images` | `ClaimImage` |
 | `ecommerce_claim_payments` | `ClaimPayment` |
 | `ecommerce_claim_reasons` | `ClaimReason` |
+| `ecommerce_export_downloads` | `ExportDownload` |
+| `ecommerce_exports` | `Export` |
 | `ecommerce_mail_templates` | - |
 | `ecommerce_mileage_balances` | `MileageBalance` |
 | `ecommerce_mileage_transactions` | `MileageTransaction` |
@@ -241,7 +245,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 126개.
+마이그레이션 128개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -371,6 +375,8 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `2026_10_05_000002_add_exchange_difference_refunds_to_ecommerce_order_refunds_table.php` | - | `ecommerce_order_refunds` | ✅ |
 | `2026_10_05_000003_add_refund_method_overridden_to_ecommerce_order_refunds_table.php` | - | `ecommerce_order_refunds` | ✅ |
 | `2026_10_05_000010_add_reactivation_columns_to_ecommerce_order_cancels_table.php` | - | `ecommerce_order_cancels`, `ecommerce_order_cancel_options` | ✅ |
+| `2026_10_19_000001_create_ecommerce_exports_table.php` | `ecommerce_exports` | - | ✅ |
+| `2026_10_19_000002_create_ecommerce_export_downloads_table.php` | `ecommerce_export_downloads` | - | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
@@ -438,6 +444,8 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `DeviceTypeEnum` | `string` | 6 | `pc`, `mobile`, `app_ios`, `app_android`, `admin`, `api` |
 | `ExchangeModeEnum` | `string` | 2 | `standard`, `advance` |
 | `ExchangeStatusEnum` | `string` | 14 | `requested`, `payment_pending`, `paid`, `approved`, `on_hold`, `rejected`, `collection_ready`, `collecting`, `외 6개` |
+| `ExportStatusEnum` | `string` | 5 | `pending`, `processing`, `completed`, `failed`, `expired` |
+| `ExportTypeEnum` | `string` | 3 | `orders`, `products`, `mileage` |
 | `MileageEarnTriggerEnum` | `string` | 2 | `delivered`, `confirmed` |
 | `MileageTransactionTypeEnum` | `string` | 9 | `purchase_earn`, `admin_earn`, `order_use`, `admin_deduct`, `expired`, `refund_restore`, `order_cancel_restore`, `earn_cancel`, `외 1개` |
 | `OrderDateTypeEnum` | `string` | 5 | `ordered_at`, `paid_at`, `confirmed_at`, `delivered_at`, `cancelled_at` |
@@ -530,6 +538,10 @@ Enum 49종이 이 도메인의 **어휘 전체**입니다. 상태·분류를 문
 | `EcommerceStatRepositoryInterface` | 인터페이스 | 이커머스 일별 판매 집계 Repository 계약 |
 | `EcommerceUserProfileRepository` | 구현 | 이커머스 사용자 프로필 Repository 구현체 (A3) |
 | `EcommerceUserProfileRepositoryInterface` | 인터페이스 | 이커머스 사용자 프로필 Repository 인터페이스 (A3) |
+| `ExportDownloadRepository` | 구현 | 내보내기 다운로드 이력 Repository |
+| `ExportDownloadRepositoryInterface` | 인터페이스 | 내보내기 다운로드 이력 Repository 인터페이스 |
+| `ExportRepository` | 구현 | 내보내기 작업 Repository |
+| `ExportRepositoryInterface` | 인터페이스 | 내보내기 작업 Repository 인터페이스 |
 | `ExtraFeeTemplateRepository` | 구현 | 추가배송비 템플릿 Repository 구현체 |
 | `ExtraFeeTemplateRepositoryInterface` | 인터페이스 | 추가배송비 템플릿 Repository 인터페이스 |
 | `FiltersAdminClaimList` | 구현 | 관리자 클레임 목록 필터 공용 트레이트 |

@@ -70,6 +70,19 @@ return [
         'complete' => 'Completed',
         'refund' => 'Refunded',
         'execute' => 'Executed',
+        // 내보내기(#787)
+        'export' => [
+            'request' => 'Request Received',
+            'request_denied' => 'Request denied',
+            'start' => 'Start',
+            'complete' => 'Completed',
+            'fail' => 'Fail',
+            'download' => 'Downloaded',
+            'view_downloads' => 'View downloads',
+            'delete' => 'Deleted',
+            'expire' => 'Expired',
+            'retry' => 'Retry',
+        ],
     ],
 
     'description' => [
@@ -297,6 +310,17 @@ return [
         'claim_payment_cancel' => 'Claim additional payment request cancelled (:payment_number)',
         'claim_image_upload' => 'Claim attachment uploaded (:original_name)',
         'claim_image_delete' => 'Claim attachment deleted (:original_name)',
+        // 내보내기(#787)
+        'export_request' => 'Export requested (:file_name)',
+        'export_request_denied' => ':type_label export request denied (:reason_label)',
+        'export_start' => 'Export started (:file_name)',
+        'export_complete' => 'Export file created (:file_name)',
+        'export_fail' => 'Export file failed (:file_name)',
+        'export_download' => 'Export file downloaded (:file_name)',
+        'export_view_downloads' => 'Export download history viewed (:file_name)',
+        'export_delete' => 'Export file deleted (:file_name)',
+        'export_expire' => 'Export file retention ended (:file_name)',
+        'export_retry' => 'Export requested again (:file_name)',
     ],
 
     // ChangeDetector field labels
@@ -435,4 +459,9 @@ return [
 
     // Display for an entity whose name could not be resolved
     'entity_id_fallback' => 'ID: :id',
+    // 내보내기(#787)
+    'export_denied_reasons' => [
+        'forbidden' => 'No permission',
+        'too_many_pending' => 'Too many requests in progress',
+    ],
 ];

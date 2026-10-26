@@ -9,6 +9,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\BrandRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\CartRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\Concerns\FiltersAdminClaimList;
 use Modules\Sirsoft\Ecommerce\Repositories\CouponRepository;
+use Modules\Sirsoft\Ecommerce\Repositories\ExportRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\ExtraFeeTemplateRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\MileageTransactionRepository;
 use Modules\Sirsoft\Ecommerce\Repositories\OrderRepository;
@@ -26,11 +27,13 @@ use Modules\Sirsoft\Ecommerce\Services\OrderService;
 use Modules\Sirsoft\Ecommerce\Services\ProductImageService;
 use Modules\Sirsoft\Ecommerce\Services\ProductOptionService;
 use Modules\Sirsoft\Ecommerce\Services\ProductReviewService;
+use Modules\Sirsoft\Ecommerce\Services\ExportService;
 use Modules\Sirsoft\Ecommerce\Services\ProductService;
 use Modules\Sirsoft\Ecommerce\Services\ProductWishlistService;
 use Modules\Sirsoft\Ecommerce\Services\ShippingPolicyService;
 use Modules\Sirsoft\Ecommerce\Services\UserAddressService;
 use Modules\Sirsoft\Ecommerce\Services\UserMileageService;
+use Modules\Sirsoft\Ecommerce\Support\ExportAccess;
 
 /**
  * 이커머스 스코프 강제 지점 원장 리스너
@@ -367,6 +370,21 @@ class EcommerceScopeLedgerListener implements HookListenerInterface
                     UserMileageService::class.'::extendLotExpiry',
                     UserMileageService::class.'::assertMemberWithinManageScope',
                 ],
+            ],
+
+            // ── 내보내기 (#787 — 주인은 요청자 requested_by) ──
+            // 목록은 저장소가 조회 범위를 쿼리에 걸고, 일괄 삭제는 라우트 모델이 없어 서비스가 작업마다 삭제 범위를 다시 본다.
+            // {export} 상세·이력·받기·삭제는 라우트 모델 바인딩으로 미들웨어가 보고, 다시 요청은 범위 없는 「요청」 권한이라
+            // 컨트롤러가 조회 범위로 본다(ExportController::retry → ExportAccess::inScope).
+            'sirsoft-ecommerce.exports.read' => [
+                'mode' => ScopedPermissionEnforcement::MODE_QUERY,
+                'routes' => $r('exports.index'),
+                'paths' => [ExportRepository::class.'::paginateForAdmin', ExportAccess::class.'::applyScope'],
+            ],
+            'sirsoft-ecommerce.exports.delete' => [
+                'mode' => ScopedPermissionEnforcement::MODE_SERVICE,
+                'routes' => $r('exports.bulk-destroy'),
+                'paths' => [ExportService::class.'::bulkDelete', ExportAccess::class.'::inScope'],
             ],
         ];
     }

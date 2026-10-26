@@ -9,9 +9,10 @@
 > **손으로 넣었습니다**. `api:docgen` 기본 경로가 파괴적 재생성 가드에 막혀(수기 서술 소실 방지) 목차를
 > 다시 굽지 못하기 때문입니다. 세 문서는 각각 관리자 목록·단건 삭제·일괄 삭제 3엔드포인트이며, 다음에
 > 생성기가 이 블록을 정상적으로 다시 구우면 같은 산식으로 덮여도 무방합니다.
+> 내보내기(`exports.md`, 12엔드포인트 — 일회용 파일 주소 포함) 행과 그 증분도 같은 이유로 손으로 넣었습니다.
 
 <!-- @generated:start:api-readme-index -->
-- **문서 수**: 36 · **엔드포인트 수**: 248
+- **문서 수**: 37 · **엔드포인트 수**: 260
 
 | 문서 | 도메인 | 엔드포인트 |
 | --- | --- | --- |
@@ -30,6 +31,7 @@
 | [coupons.md](coupons.md) | `coupons` | 4 |
 | [currency.md](currency.md) | `currency` | 2 |
 | [dashboard.md](dashboard.md) | `dashboard` | 4 |
+| [exports.md](exports.md) | `exports` | 12 |
 | [extra-fee-templates.md](extra-fee-templates.md) | `extra-fee-templates` | 10 |
 | [guest.md](guest.md) | `guest` | 20 |
 | [identity-policies.md](identity-policies.md) | `identity-policies` | 4 |

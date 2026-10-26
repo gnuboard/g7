@@ -391,6 +391,8 @@ class StoreEcommerceSettingsRequest extends FormRequest
             //  시점의 오타를 성공 응답으로 통과시켜도 된다는 뜻이 아니다 — 운영자에게는
             //  "저장됐는데 CDN 이 안 붙는" 무증상 상태로만 보인다.)
             'basic_info.public_asset_disk' => ['nullable', 'string', 'max:100', $this->publicAssetDiskRule()],
+            // 내보내기 파일 보관 기간(일, #787) — 경계값은 config limits 가 단일 출처
+            'basic_info.export_retention_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.export_retention_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.export_retention_days_max', 30)],
 
             'language_currency' => ['sometimes', 'array'],
             // default_language 제거 (A1-⑤, D-LANG): 사이트 언어는 코어 일반설정으로 일원화. 모듈 orphan 필드.
@@ -1988,6 +1990,9 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'basic_info.mail_order_number.max' => __('sirsoft-ecommerce::validation.custom.basic_info.mail_order_number.max'),
             'basic_info.telecom_number.string' => __('sirsoft-ecommerce::validation.custom.basic_info.telecom_number.string'),
             'basic_info.telecom_number.max' => __('sirsoft-ecommerce::validation.custom.basic_info.telecom_number.max'),
+            'basic_info.export_retention_days.integer' => __('sirsoft-ecommerce::validation.custom.basic_info.export_retention_days.integer'),
+            'basic_info.export_retention_days.min' => __('sirsoft-ecommerce::validation.custom.basic_info.export_retention_days.min'),
+            'basic_info.export_retention_days.max' => __('sirsoft-ecommerce::validation.custom.basic_info.export_retention_days.max'),
 
             // language_currency 섹션 (default_language 제거 — A1-⑤, D-LANG)
             'language_currency.default_currency.string' => __('sirsoft-ecommerce::validation.custom.language_currency.default_currency.string'),

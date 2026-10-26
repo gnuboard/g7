@@ -321,6 +321,8 @@ import {
 
 // 파일 내려받기·다국어 태그 편집 창 (관리자 템플릿 핸들러에 기대지 않도록 모듈이 소유)
 import { downloadFileHandler } from './downloadFile';
+// 내보내기 파일 일회용 주소 받기 (#787)
+import { downloadExportFileHandler } from './downloadExportFile';
 import {
     updateMultilingualTagValueHandler,
     cancelMultilingualTagHandler,
@@ -481,6 +483,7 @@ export const handlerMap = {
     buildOrderBulkConfirmData: buildOrderBulkConfirmDataHandler,
     executeOrderBulkAction: executeOrderBulkActionHandler,
     downloadFile: downloadFileHandler,
+    downloadExportFile: downloadExportFileHandler,
     saveVisibleColumns: saveVisibleColumnsHandler,
     loadVisibleColumns: loadVisibleColumnsHandler,
     loadVisibleFilters: loadVisibleFiltersHandler,

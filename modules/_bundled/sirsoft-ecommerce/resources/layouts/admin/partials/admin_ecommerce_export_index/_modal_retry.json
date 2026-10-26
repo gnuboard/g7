@@ -1,0 +1,250 @@
+{
+    "comment": "실패한 내보내기를 같은 조건으로 다시 요청하는 확인 창. 서버는 원 작업의 조건으로 **새 작업**을 만든다 — 원 작업은\n  실패 기록으로 남고, 기준 시각은 지금으로 바뀐다(그사이 바뀐 데이터가 반영된다는 사실을 안내 문장이 적는다).\n  권한(내보내기 요청 + 원본 조회 + 개인정보 파일이면 개인정보 권한)은 서버가 다시 본다. 다른 운영자가 요청한 개인정보 작업이면\n  (서버 `abilities.retry_needs_reason`) 다시 요청하는 사람이 자기 사유를 적는다 — 원래 요청자의 사유를 자기 것으로 남기지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "Export Retry Confirmation Modal"
+    },
+    "id": "export_retry_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-ecommerce.admin.export.modal_retry.title",
+        "size": "medium"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-gray-700 dark:text-gray-300"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.export.modal_retry.message"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 flex flex-col gap-1"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-primary font-medium"
+                            },
+                            "text": "{{_global.ecommerceExportTarget?.type_label}} · {{_global.ecommerceExportTarget?.requested_at}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.ecommerceExportTarget?.error_message}}",
+                            "props": {
+                                "className": "text-sm text-red-600 dark:text-red-400"
+                            },
+                            "text": "{{_global.ecommerceExportTarget?.error_message}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-info"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "circle-info",
+                                "className": "text-blue-500 dark:text-blue-400 shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-xs text-blue-700 dark:text-blue-300"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.export.modal_retry.hint"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.ecommerceExportTarget?.abilities?.retry_needs_reason === true}}",
+                    "props": {
+                        "className": "flex flex-col gap-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.export.modal.reason"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Textarea",
+                            "actions": [
+                                {
+                                    "comment": "다른 운영자의 개인정보 작업을 다시 요청할 때 적는 내 사유 — [확인]이 본문에 싣는다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "ecommerceExportRetryReason": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "retryReason",
+                                "rows": "2",
+                                "maxlength": "500",
+                                "placeholder": "$t:sirsoft-ecommerce.admin.export.modal.reason_placeholder",
+                                "className": "input w-full",
+                                "value": "{{_global.ecommerceExportRetryReason ?? ''}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-ecommerce.admin.export.modal_retry.reason_hint"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "modal-footer-buttons"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "closeModal"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.ecommerceExportIsRetrying}}"
+                    },
+                    "text": "$t:sirsoft-ecommerce.admin.export.common.cancel"
+                },
+                {
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "다시 요청 실행. 새 작업이 목록 맨 위에 대기로 나타나고, 목록 응답의 `has_active` 가 자동 갱신을 다시 건다.",
+                            "type": "click",
+                            "handler": "sequence",
+                            "actions": [
+                                {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "ecommerceExportIsRetrying": true
+                                    }
+                                },
+                                {
+                                    "handler": "apiCall",
+                                    "target": "/api/modules/sirsoft-ecommerce/admin/exports/{{_global.ecommerceExportTarget?.id}}/retry",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "POST",
+                                        "body": {
+                                            "reason": "{{_global.ecommerceExportRetryReason ?? ''}}"
+                                        }
+                                    },
+                                    "onSuccess": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "ecommerceExportIsRetrying": false,
+                                                "ecommerceExportTarget": null,
+                                                "ecommerceExportRetryReason": null
+                                            }
+                                        },
+                                        {
+                                            "handler": "refetchDataSource",
+                                            "params": {
+                                                "dataSourceId": "exports"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-ecommerce.admin.export.messages.retried"
+                                            }
+                                        },
+                                        {
+                                            "handler": "closeModal"
+                                        }
+                                    ],
+                                    "onError": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "ecommerceExportIsRetrying": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{error.message}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "disabled": "{{_global.ecommerceExportIsRetrying}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "if": "{{_global.ecommerceExportIsRetrying}}",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "{{_global.ecommerceExportIsRetrying ? '$t:sirsoft-ecommerce.admin.export.common.processing' : '$t:sirsoft-ecommerce.admin.export.common.confirm'}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

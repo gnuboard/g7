@@ -2,8 +2,6 @@
 
 return [
     'copy_suffix' => '（コピー）',
-
-    // 입금 전 취소 주문의 가상계좌를 PG 에서 닫을 때 보내는 취소 사유 (P-D1)
     'vbank_close_reason' => '入金前の注文キャンセル',
     'categories' => [
         'list_retrieved' => 'カテゴリ一覧を閲覧しました。',
@@ -1218,7 +1216,6 @@ return [
         'notifications' => [
             'request_origin_admin' => '販売者がお客様に代わって受け付けました。',
             'withdraw_origin_admin' => 'お客様のご要望により販売者が取り下げました。',
-            // 환불 완료 알림·상세의 수단별 금액 줄 (S7)
             'refund_breakdown_cash' => ':method :amount',
             'refund_breakdown_points' => 'マイレージ :amount',
             'advance_exchange_notice' => '先交換です — 既存の商品は:dateまでにお送りください。',
@@ -1266,7 +1263,6 @@ return [
     'notification_relations' => [
         'author' => 'お問い合わせの投稿者',
     ],
-    // 通知テンプレート編集ウィンドウ「使用可能な変数」の説明 — common は変数キーごとの既定、by_type はその通知でのみ意味が異なる変数。キーがない場合は宣言文字列をそのまま使う。
     'notification_variables' => [
         'common' => [
             'name' => '受信者名',
@@ -1359,9 +1355,24 @@ return [
             'order_custom_email' => [
                 'app_name' => 'サイト名',
             ],
+            'export_completed' => [
+                'name' => '受信者(申請者)名',
+                'type_label' => '作業タイプ (注文内容·商品内容·マイレージ内容)',
+                'exports_url' => 'エクスポート管理 URL',
+                'exports_path' => 'エクスポート管理パス (サイトアドレスなし)',
+                'file_name' => 'ファイル名',
+                'row_count' => '行数',
+                'expires_at' => 'ファイル有効期限',
+            ],
+            'export_failed' => [
+                'name' => '受信者(申請者)名',
+                'type_label' => '作業タイプ (注文内容·商品内容·マイレージ内容)',
+                'exports_url' => 'エクスポート管理 URL',
+                'exports_path' => 'エクスポート管理パス (サイトアドレスなし)',
+                'error_message' => '失敗理由',
+            ],
         ],
     ],
-    // コンソールコマンド出力
     'console' => [
         'mileage' => [
             'disabled' => 'マイレージ機能が無効になっています。',
@@ -1436,8 +1447,10 @@ return [
             'start' => 'マイレージ残高キャッシュの再算出を開始します...',
             'done' => 'マイレージ残高キャッシュの再算出が完了しました。',
         ],
+        'prune_exports' => [
+            'done' => '期限切れ処理 :expired件、タイムアウト失敗処理 :failed件',
+        ],
     ],
-    // シーダーのコンソール出力 (module:install・module:seed)
     'seeders' => [
         'activity_log_sample' => [
             'skip_no_admin' => '管理者ユーザーがいないため、eコマースのアクティビティログシーダーをスキップします。',
@@ -1698,5 +1711,19 @@ return [
             'done' => '配送ポリシーのダミーデータ :count 件が正常に作成されました。',
             'purged' => '既存の配送ポリシー :count 件を削除しました。',
         ],
+    ],
+    'export' => [
+        'download_link_issued' => 'ダウンロードアドレスを発行しました。',
+        'catalog_retrieved' => 'エクスポート設定を読み込みました。',
+        'estimated' => '予想件数を計算しました。',
+        'requested' => 'エクスポートを申請しました。完了したら「エクスポート管理」からダウンロードできます。',
+        'list_retrieved' => 'エクスポート一覧を読み込みました。',
+        'retrieved' => 'エクスポート作業を読み込みました。',
+        'downloads_retrieved' => 'ダウンロード履歴を読み込みました。',
+        'deleted' => 'エクスポートファイルを削除しました。',
+        'bulk_deleted' => ':count件を削除しました。 (スキップ :skipped件)',
+    ],
+    'lifecycle' => [
+        'purge_failed' => 'エクスポートされたファイルを削除できなかったため、削除を中止しました。ストレージの権限·状態を確認した後、再度削除してください(個人情報が含まれる可能性があるファイルのため、削除せずに残しています)。',
     ],
 ];

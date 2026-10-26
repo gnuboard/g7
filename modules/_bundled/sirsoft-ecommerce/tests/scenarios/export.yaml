@@ -1,0 +1,170 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   축은 서로 독립인 판정 축(유형·범위·행 단위·권한·관리 동작)이라 곱집합 전부가 의미 있는 조합이 아니다.
+#   각 테스트가 자기 축 값을 @scenario 로 적고, effects ↔ 테스트가 1:1 로 대응한다.
+#   화면(내보내기 창·내보내기 관리)은 Vitest(핸들러)와 Playwright 사양이 같은 매니페스트의 화면 effects 를 맡는다.
+feature: 이커머스 내보내기 (상품·주문·마일리지 내역 → 파일, 내보내기 관리) (#787)
+
+description: |
+  주문·상품·마일리지 목록의 [내보내기] 창에서 요청하면 큐 작업으로 CSV 를 만들고, 「이커머스 › 내보내기 관리」에서
+  내려받는다. 창·진행 표시는 세 목록이 함께 쓰는 공용 조각(partials/admin_ecommerce_export)이다.
+
+  핵심 동작:
+    - 요청: 202 접수, 같은 요청자·같은 중복 방지 키는 기존 작업 반환, 요청자당 대기+진행중 3건 상한,
+      기간은 시작일 포함 1년 상한.
+    - 권한: 내보내기 권한 + 그 유형의 원본 조회 권한(orders.read 등), 개인정보 필드는 개인정보 권한과 사유.
+      작업 범위는 코어 표준 권한 범위(owner_key=requested_by) — 역할 관리에서 권한마다 본인만/소유 역할/전체,
+      기본은 관리자 전체·이커머스 관리자 본인만.
+    - 범위: 목록의 검색 조건을 목록 저장소와 같은 필터 경로로 적용(필터 파리티), 기준 시각 뒤 행 제외.
+    - 생성: 행은 청크(500)로 순회, 하위 단위 행에서 상위 금액은 첫 행에만(합계 이중 계산 방지),
+      CSV 는 BOM·CRLF·수식 무력화(숫자 열 제외), 합계는 정수 눈금으로 정확히.
+    - 관리: 다운로드 이력·횟수·활동 로그, 선택 삭제는 진행중·범위 밖을 건너뜀, 실패 건 다시 요청, 보관 기간 만료 정리.
+    - 다운로드: 60초·1회용 주소를 발급하고 브라우저가 그 주소를 직접 연다(파일을 메모리에 올리지 않음). 받을 때 토큰 주인의
+      권한·범위를 다시 본다.
+    - 선언: 「내보내기 관리」 메뉴는 이커머스 하위 맨 뒤, 정리 예약 작업(prune-exports)은 등록된 명령을 가리킨다.
+    - 모델 선언(D19): 모델의 모든 컬럼은 내보내기 선언 또는 제외 사유 중 한 곳에만 있다(반자동 매핑의 잠금).
+    - 생애주기: 모듈 비활성화 직전 만료 파일 정리, 제거는 「데이터 유지」여도 파일을 모두 지운다.
+
+axes:
+  type:
+    - orders
+    - products
+    - mileage
+  scope:
+    - filter       # 현재 검색 조건 (목록 필터 그대로)
+    - selected     # 선택한 행
+    - all          # 조건 없음 (기간만)
+  row_unit:
+    - order_option # 주문상품 1건당 1행 (상위 금액은 첫 행에만)
+  totals:
+    - on
+  format:
+    - csv
+  permission:
+    - no_domain_read  # 원본 조회 권한 없음
+    - personal_data   # 개인정보 권한·사유
+    - self_scope      # 내보내기 권한 범위 「본인만」(역할 관리 표준 범위)
+    - role_scope      # 내보내기 권한 범위 「소유 역할」
+    - full_scope      # 내보내기 권한 범위 「전체」
+    - export_create   # 내보내기 요청 권한 있음 (목록 abilities.can_export)
+    - no_export_create # 내보내기 요청 권한 없음
+  action:
+    - bulk_delete
+    - retry
+    - prune
+    - declaration
+    - activity_log
+    - settings
+    - download
+    - notify
+    - requester_menu
+  model:
+    - declared            # 실제 모델 선언
+    - undeclared_personal # personal 누락 선언 (고정물)
+  viewport:
+    - mobile              # 휴대폰 너비(767px 이하)
+
+effects:
+  # 요청
+  - export_request_creates_pending_job
+  - export_idempotency_key_dedupes
+  - export_period_capped_at_one_year
+  - missing_list_period_defaults_to_recent_month
+  - export_active_jobs_capped_per_requester
+  # 권한
+  - export_domain_read_required
+  - export_personal_fields_need_permission_and_reason
+  - self_scope_hides_others_jobs
+  - list_abilities_carry_can_export
+  - full_scope_reveals_others_jobs
+  - role_scope_reveals_same_role_jobs
+  - export_scope_defaults_admin_full_manager_self
+  - personal_scope_limits_others_personal_jobs
+  - download_requires_domain_read
+  # 범위·생성
+  - export_filter_matches_list_filter
+  - rows_after_cutoff_excluded
+  - rows_streamed_in_chunks
+  - parent_level_amount_written_on_first_row_only
+  - parent_level_label_names_type_unit
+  - field_labels_unique_per_row_unit
+  - totals_count_parent_amount_once
+  - totals_are_exact_decimal_sums
+  - totals_label_never_hides_a_sum
+  - csv_starts_with_bom_and_uses_crlf
+  - csv_formula_cells_neutralized
+  - csv_numeric_cells_untouched
+  # 관리
+  - download_records_history
+  - download_streams_via_one_time_link
+  - download_link_rechecks_permission
+  - download_requires_full_source_scope_for_others
+  - own_file_needs_scope_at_least_as_broad_as_when_generated
+  - download_history_ip_needs_personal_permission
+  - retry_of_others_personal_job_needs_own_reason
+  - bulk_delete_skips_processing
+  - failed_job_can_be_retried
+  - retry_with_no_rows_is_rejected
+  - expired_files_pruned
+  - date_only_values_keep_calendar_day
+  - stored_file_removed_when_record_update_fails
+  - reservation_retry_does_not_fail_running_job
+  - activity_log_labels_resolved
+  - notification_click_opens_export_management
+  # 선언 — 메뉴·예약 작업, 모델 선언(D19)
+  - menu_and_schedule_declared
+  - export_declarations_cover_all_columns
+  - export_declarations_are_well_formed
+  - export_declaration_requires_personal_flag
+  # 생애주기·설정·기본 권한
+  - deactivate_prunes_expired_files
+  - uninstall_purges_all_files
+  - retention_range_validated
+  - sensitive_permissions_default_admin_only
+  # 화면 (Vitest·Playwright)
+  - download_uses_own_handler_with_auth
+  - order_list_export_request_accepted
+  - export_manage_lists_requested_job
+  - export_button_shown_on_every_list
+  - export_button_hidden_without_permission
+  - request_progress_shown_on_list
+  - requester_menu_opens_member_and_filters_list
+  - requester_member_item_is_new_window_link
+  - custom_item_row_unit_selects_item_fields
+  - export_actions_fit_on_mobile
+  - empty_estimate_blocks_request
+  - estimate_failure_blocks_request
+  - validation_errors_shown_inline
+  - list_period_option_disabled_when_unusable
+  - estimate_recalculates_automatically
+  - download_history_shows_field_count_and_totals
+  - export_context_replaced_on_every_open
+  - field_change_recalculates_estimate
+  - totals_hint_when_nothing_summable
+  - reason_field_announces_required_and_invalid
+  - export_request_sources_identical_across_lists
+
+scale:
+  - { n: 100000, dataset: ecommerce_orders, job: GenerateExportJob, assert: [chunked_scan_bounded_memory, all_rows_exported_across_chunks] }
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportPermissionScopeDeclarationTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportCatalogLabelsTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportDefaultPeriodTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportDownloadLinkTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportEdgeCaseTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportLifecycleTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportNotificationLinkTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportRobustnessTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportScaleTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportSecurityTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Export/ExportListAbilityTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Exports/CsvExportWriterTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Exports/ExportDeclarationCoverageTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Listeners/ExportActivityLogDescriptionResolverTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/Services/ExportServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Export/ExportSourceQueryParityTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/handlers/__tests__/downloadExportFile.test.ts
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/exportRequestSourcesIdentical.test.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-export-request-and-manage.spec.ts
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-export-modal-usability.spec.ts

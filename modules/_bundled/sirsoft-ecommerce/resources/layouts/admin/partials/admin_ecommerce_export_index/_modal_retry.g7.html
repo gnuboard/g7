@@ -1,0 +1,60 @@
+<!-- 실패한 내보내기를 같은 조건으로 다시 요청하는 확인 창. 서버는 원 작업의 조건으로 **새 작업**을 만든다 — 원 작업은
+  실패 기록으로 남고, 기준 시각은 지금으로 바뀐다(그사이 바뀐 데이터가 반영된다는 사실을 안내 문장이 적는다).
+  권한(내보내기 요청 + 원본 조회 + 개인정보 파일이면 개인정보 권한)은 서버가 다시 본다. 다른 운영자가 요청한 개인정보 작업이면
+  (서버 `abilities.retry_needs_reason`) 다시 요청하는 사람이 자기 사유를 적는다 — 원래 요청자의 사유를 자기 것으로 남기지 않는다. -->
+<partial description="Export Retry Confirmation Modal">
+  <modal data-type="composite" data-ref="export_retry_modal" title="$t:sirsoft-ecommerce.admin.export.modal_retry.title" size="medium">
+    <div>
+      <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.export.modal_retry.message</p>
+      <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 flex flex-col gap-1">
+        <span class="text-primary font-medium">{{_global.ecommerceExportTarget?.type_label}} · {{_global.ecommerceExportTarget?.requested_at}}</span>
+        <span data-if="{{_global.ecommerceExportTarget?.error_message}}" class="text-sm text-red-600 dark:text-red-400">{{_global.ecommerceExportTarget?.error_message}}</span>
+      </div>
+      <div class="alert-info">
+        <icon name="circle-info" class="text-blue-500 dark:text-blue-400 shrink-0"/>
+        <span class="text-xs text-blue-700 dark:text-blue-300">$t:sirsoft-ecommerce.admin.export.modal_retry.hint</span>
+      </div>
+      <div data-if="{{_global.ecommerceExportTarget?.abilities?.retry_needs_reason === true}}" class="flex flex-col gap-2">
+        <span class="form-label">$t:sirsoft-ecommerce.admin.export.modal.reason</span>
+        <textarea name="retryReason" rows="2" maxlength="500" placeholder="$t:sirsoft-ecommerce.admin.export.modal.reason_placeholder" class="input w-full" value="{{_global.ecommerceExportRetryReason ?? ''}}">
+          <on type="change">
+            <!-- 다른 운영자의 개인정보 작업을 다시 요청할 때 적는 내 사유 — [확인]이 본문에 싣는다 -->
+            <set-state target="global" ecommerceExportRetryReason="{{$event.target.value}}"/>
+          </on>
+        </textarea>
+        <p class="form-hint">$t:sirsoft-ecommerce.admin.export.modal_retry.reason_hint</p>
+      </div>
+    </div>
+    <div class="modal-footer-buttons">
+      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsRetrying}}">
+        <on type="click">
+          <close-modal/>
+        </on>
+        $t:sirsoft-ecommerce.admin.export.common.cancel
+      </button>
+      <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsRetrying}}">
+        <on type="click">
+          <!-- 다시 요청 실행. 새 작업이 목록 맨 위에 대기로 나타나고, 목록 응답의 `has_active` 가 자동 갱신을 다시 건다. -->
+          <sequence>
+            <set-state target="global" :ecommerceExportIsRetrying="true"/>
+            <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/exports/{{_global.ecommerceExportTarget?.id}}/retry" method="POST">
+              <body reason="{{_global.ecommerceExportRetryReason ?? ''}}"/>
+              <success>
+                <set-state target="global" :ecommerceExportIsRetrying="false" :ecommerceExportTarget="null" :ecommerceExportRetryReason="null"/>
+                <refetch-data-source dataSourceId="exports"/>
+                <toast type="success" message="$t:sirsoft-ecommerce.admin.export.messages.retried"/>
+                <close-modal/>
+              </success>
+              <fail>
+                <set-state target="global" :ecommerceExportIsRetrying="false"/>
+                <toast type="error" message="{{error.message}}"/>
+              </fail>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.ecommerceExportIsRetrying}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.ecommerceExportIsRetrying ? '$t:sirsoft-ecommerce.admin.export.common.processing' : '$t:sirsoft-ecommerce.admin.export.common.confirm'}}</span>
+      </button>
+    </div>
+  </modal>
+</partial>

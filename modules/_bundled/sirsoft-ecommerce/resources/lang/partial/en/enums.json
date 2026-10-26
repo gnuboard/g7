@@ -258,5 +258,17 @@
   "claim_shipping_fee_mode": {
     "fixed": "Fixed Amount",
     "original_policy": "Recalculate by Original Policy"
+  },
+  "export_status": {
+    "pending": "Pending",
+    "processing": "Processing",
+    "completed": "Completed",
+    "failed": "Failed",
+    "expired": "Expired"
+  },
+  "export_type": {
+    "orders": "Orders",
+    "products": "Products",
+    "mileage": "Mileage history"
   }
 }

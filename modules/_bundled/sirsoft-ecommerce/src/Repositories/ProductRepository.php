@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Helpers\PermissionHelper;
+use App\Models\User;
 use App\Models\ActivityLog;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
@@ -135,6 +136,51 @@ class ProductRepository implements ProductRepositoryInterface
             'stock_quantity'
         );
 
+        // 검색어·필터 — 내보내기와 같은 한 경로(applyListFilters)를 지난다
+        $this->applyListFilters($query, $filters);
+
+        return $this->paginateWithDeferredJoin(
+            query: $query,
+            columns: ['*'],
+            sort: $this->resolveAdminSortSpec($filters),
+            perPage: $perPage,
+            relations: $listRelations,
+            withCount: $listWithCount,
+            outerUsing: $listOuterUsing,
+            resultCap: PaginationLimits::resultCap('admin.products'),
+        );
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function newExportQuery(array $filters, ?array $ids, User $requester): Builder
+    {
+        $query = $this->model->newQuery();
+        PermissionHelper::applyPermissionScope($query, 'sirsoft-ecommerce.products.read', $requester);
+
+        if ($ids !== null) {
+            // 「선택한 행」은 그 선택이 대상이다 — 목록 필터를 덧씌우지 않는다
+            return $query->whereIn('id', $ids);
+        }
+
+        $this->applyListFilters($query, $filters);
+
+        return $query;
+    }
+
+    /**
+     * 목록 필터 조건을 쿼리에 겁니다 — 목록 조회와 내보내기 원천 쿼리(`newExportQuery`)가 같은 이 한 경로를 지난다.
+     *
+     * 축을 두 곳에 복제하면 한쪽에만 필터가 늘어나는 순간 화면 건수와 파일 행 수가 조용히 어긋난다. 권한 범위는 걸지
+     * 않는다 — 필터가 아니라 호출자의 열람 범위이므로 호출부가 각자 건다.
+     *
+     * @param  Builder  $query  쿼리
+     * @param  array  $filters  검증된 목록 필터
+     * @return void 반환값 없음 (쿼리에 직접 조건을 건다)
+     */
+    protected function applyListFilters(Builder $query, array $filters): void
+    {
         // 문자열 검색
         if (! empty($filters['search_keyword'])) {
             $keyword = $filters['search_keyword'];
@@ -149,49 +195,23 @@ class ProductRepository implements ProductRepositoryInterface
             // total 계산 경로와 결과 조회 경로가 같은 술어를 공유한다는 성질도 유지된다.
             if (in_array($field, ['all', 'name', 'description'])) {
                 $this->applyKeywordMatch($query, $keyword, includeAuxFields: $field === 'all');
-
-                // 필터 적용
-                $this->applyAdminFilters($query, $filters);
-
-                return $this->paginateWithDeferredJoin(
-                    query: $query,
-                    columns: ['*'],
-                    sort: $this->resolveAdminSortSpec($filters),
-                    perPage: $perPage,
-                    relations: $listRelations,
-                    withCount: $listWithCount,
-                    outerUsing: $listOuterUsing,
-                    resultCap: PaginationLimits::resultCap('admin.products'),
-                );
+            } else {
+                // FULLTEXT 미대상 필드 (product_code, sku, barcode) → LIKE 직접
+                $query->where(function ($q) use ($keyword, $field) {
+                    if ($field === 'product_code') {
+                        $q->where('product_code', 'like', "%{$keyword}%");
+                    }
+                    if ($field === 'sku') {
+                        $q->where('sku', 'like', "%{$keyword}%");
+                    }
+                    if ($field === 'barcode') {
+                        $q->where('barcode', 'like', "%{$keyword}%");
+                    }
+                });
             }
-
-            // FULLTEXT 미대상 필드 (product_code, sku, barcode) → LIKE 직접
-            $query->where(function ($q) use ($keyword, $field) {
-                if ($field === 'product_code') {
-                    $q->where('product_code', 'like', "%{$keyword}%");
-                }
-                if ($field === 'sku') {
-                    $q->where('sku', 'like', "%{$keyword}%");
-                }
-                if ($field === 'barcode') {
-                    $q->where('barcode', 'like', "%{$keyword}%");
-                }
-            });
         }
 
-        // 필터 적용
         $this->applyAdminFilters($query, $filters);
-
-        return $this->paginateWithDeferredJoin(
-            query: $query,
-            columns: ['*'],
-            sort: $this->resolveAdminSortSpec($filters),
-            perPage: $perPage,
-            relations: $listRelations,
-            withCount: $listWithCount,
-            outerUsing: $listOuterUsing,
-            resultCap: PaginationLimits::resultCap('admin.products'),
-        );
     }
 
     /**

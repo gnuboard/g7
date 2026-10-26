@@ -1,0 +1,385 @@
+{
+    "comment": "내보내기 관리 (운영자) — 상품·주문·마일리지 목록에서 요청한 내보내기 작업의 진행 상황을 보고 파일을 내려받는다.\n  배송정책 목록과 같은 규약이다: 검색·필터·정렬·쪽수를 전부 URL 쿼리에 싣고, 진입 시 `<init>` 이 쿼리를 필터\n  입력값으로 되돌려 담는다. 작업은 큐에서 돌므로 대기·진행중 행이 있으면 목록이 몇 초마다 스스로 다시 받고,\n  모두 끝나면 멈춘다(판정은 서버가 내려 주는 `has_active` 하나). 행의 버튼·메뉴는 서버 abilities 로만 잠근다.",
+    "version": "1.0.0",
+    "layout_name": "admin_ecommerce_export_index",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-ecommerce.admin.export.title"
+    },
+    "data_sources": [
+        {
+            "id": "exports",
+            "label_key": "$t:sirsoft-ecommerce.editor.data_source.exports",
+            "type": "api",
+            "endpoint": "/api/modules/sirsoft-ecommerce/admin/exports",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "{{query.per_page || 20}}",
+                "search_field": "{{query.search_field}}",
+                "search_keyword": "{{query.search_keyword}}",
+                "statuses": "{{query['statuses[]']}}",
+                "types": "{{query['types[]']}}",
+                "personal": "{{query.personal}}",
+                "start_date": "{{query.start_date}}",
+                "end_date": "{{query.end_date}}",
+                "mine": "{{query.mine}}",
+                "sort_by": "{{query.sort_by || 'requested_at'}}",
+                "sort_order": "{{query.sort_order || 'desc'}}"
+            },
+            "onSuccess": [
+                {
+                    "handler": "startInterval",
+                    "if": "{{response?.data?.data?.has_active === true}}",
+                    "params": {
+                        "id": "export_list_poll",
+                        "intervalMs": 5000,
+                        "actions": [
+                            {
+                                "handler": "refetchDataSource",
+                                "params": {
+                                    "dataSourceId": "exports"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "handler": "stopInterval",
+                    "if": "{{response?.data?.data?.has_active !== true}}",
+                    "params": {
+                        "id": "export_list_poll"
+                    }
+                }
+            ],
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                },
+                "default": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "목록 본체. 조회 조건을 전부 URL 쿼리에서 읽으므로 주소가 바뀌는 것이 곧 재조회다. 응답의 `has_active` 가\n       참이면 5초 주기 재조회를 걸고 거짓이면 푼다 — 판정을 응답값으로만 하는 까닭은 직전에 넣은 전역 값이 이 성공\n       핸들러에서 낡은 값으로 읽히기 때문이다(이커머스 환경설정 개인정보 직권 실행과 같은 방식)."
+        }
+    ],
+    "initLocal": {
+        "filter": {
+            "searchField": "all",
+            "search": "",
+            "statuses": [],
+            "types": [],
+            "personal": "",
+            "startDate": "",
+            "endDate": "",
+            "mine": false
+        }
+    },
+    "initGlobal": {
+        "ecommerceExportTarget": null,
+        "ecommerceExportIsDeleting": false,
+        "ecommerceExportIsBulkDeleting": false,
+        "ecommerceExportIsRetrying": false,
+        "ecommerceExportDownloadingId": null,
+        "ecommerceExportBulkSelectedItems": [],
+        "ecommerceExportDownloadsPage": 1
+    },
+    "permissions": [
+        "sirsoft-ecommerce.exports.read"
+    ],
+    "transition_overlay": {
+        "wait_for": [
+            "exports"
+        ]
+    },
+    "named_actions": {
+        "searchExports": {
+            "comment": "필터 적용 — 입력칸이 여럿이라 필터 조각·엔터·초기화가 이 액션 하나를 공유한다. 빈 값은 undefined 로 떨어뜨려\n       주소에 남기지 않고, 조건이 바뀌었으니 쪽수는 1로 되돌린다",
+            "handler": "navigate",
+            "params": {
+                "path": "/admin/ecommerce/exports",
+                "mergeQuery": true,
+                "replace": true,
+                "transition_overlay_target": "export_datagrid__body",
+                "query": {
+                    "page": 1,
+                    "search_field": "{{_local.filter.search ? (_local.filter.searchField || 'all') : undefined}}",
+                    "search_keyword": "{{_local.filter.search || undefined}}",
+                    "statuses[]": "{{_local.filter.statuses?.length > 0 ? _local.filter.statuses : undefined}}",
+                    "types[]": "{{_local.filter.types?.length > 0 ? _local.filter.types : undefined}}",
+                    "personal": "{{_local.filter.personal || undefined}}",
+                    "start_date": "{{_local.filter.startDate || undefined}}",
+                    "end_date": "{{_local.filter.endDate || undefined}}",
+                    "mine": "{{_local.filter.mine ? 'true' : undefined}}"
+                }
+            }
+        }
+    },
+    "init_actions": [
+        {
+            "handler": "setState",
+            "params": {
+                "target": "global",
+                "_local": {
+                    "filter": {
+                        "searchField": "{{query.search_field || 'all'}}",
+                        "search": "{{query.search_keyword || ''}}",
+                        "statuses": "{{[].concat(query['statuses[]'] || [])}}",
+                        "types": "{{[].concat(query['types[]'] || [])}}",
+                        "personal": "{{query.personal || ''}}",
+                        "startDate": "{{query.start_date || ''}}",
+                        "endDate": "{{query.end_date || ''}}",
+                        "mine": "{{query.mine === 'true'}}"
+                    }
+                }
+            }
+        }
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "export_index_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex-between mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.export.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.export.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "새로고침 — 같은 조건·쪽을 다시 부른다(진행률은 자동 갱신과 별개로 바로 확인할 수 있어야 한다)",
+                                        "type": "click",
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "exports"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "btn btn-icon",
+                                    "aria-label": "$t:common.refresh",
+                                    "title": "$t:common.refresh"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "arrows-rotate",
+                                            "className": "text-xl"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "partial": "partials/admin_ecommerce_export_index/_partial_warnings.json"
+                    },
+                    {
+                        "partial": "partials/admin_ecommerce_export_index/_partial_filter.json"
+                    },
+                    {
+                        "id": "data_table_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "mt-6"
+                        },
+                        "children": [
+                            {
+                                "partial": "partials/admin_ecommerce_export_index/_partial_bulk_actions.json"
+                            },
+                            {
+                                "id": "table_header_bar",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex-between flex-wrap gap-3 mb-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-label"
+                                        },
+                                        "text": "$t:sirsoft-ecommerce.admin.export.pagination.total|count={{exports?.data?.pagination?.total || 0}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex-center gap-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "선택값은 `필드명_방향` 한 덩어리라 마지막 마디를 방향으로 떼어 낸다(`requested_at_desc` 처럼 필드명 자체에 밑줄이 있어 앞쪽은 다시 이어 붙인다)",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/exports",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "export_datagrid__body",
+                                                            "query": {
+                                                                "sort_by": "{{$event.target.value.split('_').slice(0, -1).join('_')}}",
+                                                                "sort_order": "{{$event.target.value.split('_').pop()}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "name": "sortBy",
+                                                    "aria-label": "$t:common.sort_order",
+                                                    "className": "w-40 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "value": "{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'requested_at_desc'}}",
+                                                    "options": [
+                                                        {
+                                                            "value": "requested_at_desc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.export.sort.requested_at_desc"
+                                                        },
+                                                        {
+                                                            "value": "requested_at_asc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.export.sort.requested_at_asc"
+                                                        },
+                                                        {
+                                                            "value": "completed_at_desc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.export.sort.completed_at_desc"
+                                                        },
+                                                        {
+                                                            "value": "file_size_desc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.export.sort.file_size_desc"
+                                                        },
+                                                        {
+                                                            "value": "download_count_desc",
+                                                            "label": "$t:sirsoft-ecommerce.admin.export.sort.download_count_desc"
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "한 쪽에 담는 수가 달라지면 현재 쪽 번호는 뜻이 없어지므로 1쪽으로 되돌린다",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/ecommerce/exports",
+                                                            "mergeQuery": true,
+                                                            "replace": true,
+                                                            "transition_overlay_target": "export_datagrid__body",
+                                                            "query": {
+                                                                "per_page": "{{$event.target.value}}",
+                                                                "page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "name": "perPage",
+                                                    "aria-label": "$t:common.per_page",
+                                                    "className": "w-20 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm",
+                                                    "value": "{{query.per_page || '20'}}",
+                                                    "options": [
+                                                        {
+                                                            "value": "10",
+                                                            "label": "10"
+                                                        },
+                                                        {
+                                                            "value": "20",
+                                                            "label": "20"
+                                                        },
+                                                        {
+                                                            "value": "50",
+                                                            "label": "50"
+                                                        },
+                                                        {
+                                                            "value": "100",
+                                                            "label": "100"
+                                                        }
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "partial": "partials/admin_ecommerce_export_index/_partial_datagrid.json"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "한 건 삭제 확인",
+            "partial": "partials/admin_ecommerce_export_index/_modal_delete.json"
+        },
+        {
+            "comment": "선택한 여러 건 삭제 확인",
+            "partial": "partials/admin_ecommerce_export_index/_modal_bulk_delete.json"
+        },
+        {
+            "comment": "실패한 작업을 같은 조건으로 다시 요청",
+            "partial": "partials/admin_ecommerce_export_index/_modal_retry.json"
+        },
+        {
+            "comment": "다운로드 이력 — 파일 정보·요청 조건과 누가 언제 내려받았는지",
+            "partial": "partials/admin_ecommerce_export_index/_modal_downloads.json"
+        }
+    ]
+}

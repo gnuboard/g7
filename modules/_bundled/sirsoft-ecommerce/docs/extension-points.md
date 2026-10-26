@@ -5,7 +5,7 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 593종 / 호출 지점 697곳. 이 중 589종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 23곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 622종 / 호출 지점 727곳. 이 중 589종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 23곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
@@ -235,6 +235,35 @@
 | `sirsoft-ecommerce.coupon.user_list_validation_rules` | filter | — | `src/Http/Requests/User/UserCouponListRequest.php:35` |
 | `sirsoft-ecommerce.currency.after_apply_rates` | action | 환율 적용 후 | `src/Services/EcommerceSettingsService.php:1031` |
 | `sirsoft-ecommerce.currency.registered_rate_providers` | filter | 환율 제공자 목록 | `src/Services/EcommerceSettingsService.php:962` |
+| `sirsoft-ecommerce.export.after_complete` | action | 내보내기 파일 생성 완료 후 (완료 알림 발송) | `src/Services/ExportService.php:671` |
+| `sirsoft-ecommerce.export.after_delete` | action | 내보내기 작업 삭제 후 | `src/Services/ExportService.php:1035` |
+| `sirsoft-ecommerce.export.after_download` | action | 내보내기 파일 다운로드 후 | `src/Services/ExportService.php:1007` |
+| `sirsoft-ecommerce.export.after_expire` | action | 보관 기간 만료로 파일 삭제 후 | `src/Services/ExportService.php:1139` |
+| `sirsoft-ecommerce.export.after_fail` | action | 내보내기 파일 생성 실패 후 (실패 알림 발송) | `src/Services/ExportService.php:706` |
+| `sirsoft-ecommerce.export.after_request` | action | 내보내기 요청 접수 후 | `src/Services/ExportService.php:420` |
+| `sirsoft-ecommerce.export.after_retry` | action | 실패 작업 다시 요청 후 | `src/Services/ExportService.php:1111` |
+| `sirsoft-ecommerce.export.after_start` | action | 내보내기 파일 생성 시작 후 | `src/Services/ExportService.php:572` |
+| `sirsoft-ecommerce.export.after_view_downloads` | action | 다운로드 이력 조회 후 | `src/Services/ExportService.php:962` |
+| `sirsoft-ecommerce.export.before_request` | action | 내보내기 요청 저장 전 | `src/Services/ExportService.php:357` |
+| `sirsoft-ecommerce.export.bulk_delete_validation_rules` | filter | 선택 삭제 검증 규칙 | `src/Http/Requests/Admin/ExportBulkDeleteRequest.php:38` |
+| `sirsoft-ecommerce.export.catalog_validation_rules` | filter | 창 카탈로그 검증 규칙 | `src/Http/Requests/Admin/ExportCatalogRequest.php:50` |
+| `sirsoft-ecommerce.export.declarations` | filter | 모델 내보내기 선언 추가·교체 | `src/Exports/Declarations/ModelDeclarationRegistry.php:60` |
+| `sirsoft-ecommerce.export.destroy_validation_rules` | filter | 삭제 검증 규칙 | `src/Http/Requests/Admin/DestroyExportRequest.php:33` |
+| `sirsoft-ecommerce.export.download_by_token_validation_rules` | filter | 일회용 다운로드 주소 검증 규칙 | `src/Http/Requests/DownloadByTokenRequest.php:43` |
+| `sirsoft-ecommerce.export.download_validation_rules` | filter | 파일 다운로드 검증 규칙 | `src/Http/Requests/Admin/DownloadExportRequest.php:33` |
+| `sirsoft-ecommerce.export.downloads_validation_rules` | filter | 다운로드 이력 검증 규칙 | `src/Http/Requests/Admin/ExportDownloadHistoryRequest.php:33` |
+| `sirsoft-ecommerce.export.filter_request_data` | filter | 요청 본문 가공(저장 전) | `src/Services/ExportService.php:358` |
+| `sirsoft-ecommerce.export.filter_row` | filter | 파일 한 행의 셀 가공 | `src/Services/ExportService.php:617` |
+| `sirsoft-ecommerce.export.list_validation_rules` | filter | 관리 목록 검증 규칙 | `src/Http/Requests/Admin/ExportListRequest.php:68` |
+| `sirsoft-ecommerce.export.mileage.fields` | filter | 마일리지 내역 내보내기 필드 추가 | `src/Exports/Types/MileageExportType.php:125` |
+| `sirsoft-ecommerce.export.orders.fields` | filter | 주문내역 내보내기 필드 추가 | `src/Exports/Types/OrderExportType.php:167` |
+| `sirsoft-ecommerce.export.products.fields` | filter | 상품내역 내보내기 필드 추가 | `src/Exports/Types/ProductExportType.php:158` |
+| `sirsoft-ecommerce.export.registered_formats` | filter | 파일 형식 추가 (예: XLSX 플러그인) | `src/Exports/ExportFormatRegistry.php:38` |
+| `sirsoft-ecommerce.export.registered_types` | filter | 내보내기 유형 추가 | `src/Exports/ExportTypeRegistry.php:44` |
+| `sirsoft-ecommerce.export.request_denied` | action | 내보내기 요청 거부 | `src/Http/Controllers/Admin/ExportController.php:107` 외 1곳 |
+| `sirsoft-ecommerce.export.request_validation_rules` | filter | 내보내기 요청·예상 건수 검증 규칙 | `src/Http/Requests/Admin/StoreExportRequest.php:135` |
+| `sirsoft-ecommerce.export.retry_validation_rules` | filter | 다시 요청 검증 규칙 | `src/Http/Requests/Admin/RetryExportRequest.php:38` |
+| `sirsoft-ecommerce.export.show_validation_rules` | filter | 작업 상세 검증 규칙 | `src/Http/Requests/Admin/ShowExportRequest.php:33` |
 | `sirsoft-ecommerce.extra_fee_template.after_bulk_create` | action | — | `src/Services/ExtraFeeTemplateService.php:301` |
 | `sirsoft-ecommerce.extra_fee_template.after_bulk_delete` | action | — | `src/Services/ExtraFeeTemplateService.php:227` |
 | `sirsoft-ecommerce.extra_fee_template.after_bulk_toggle_active` | action | — | `src/Services/ExtraFeeTemplateService.php:255` |
@@ -833,6 +862,55 @@ FormRequest 쪽 `{동작}_validation_rules`(filter). `brand.*` 19종을 한 번 
 `order_delivered`·`order_completed`·`order_cancelled`)은 비회원 주문이면 주문자 연락처를 extract_data 의
 data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습니다. 문자·알림톡 채널은 이 모듈의
 주문 모델을 읽지 않고 그 키만 읽습니다. 연락처가 없거나 회원 주문이면 키를 넣지 않습니다.
+
+### 내보내기 — 형식·유형·항목을 더하는 방법 (#787)
+
+내보내기는 「무엇을(유형·항목)」과 「어떻게 쓰는가(형식)」를 나눠 둡니다. 기본은 CSV 한 형식과 주문내역·상품내역·마일리지
+내역 세 유형이고, 다른 확장(플러그인)은 아래 필터로 더하거나 바꿉니다. 이 모듈의 코드를 고칠 필요가 없습니다.
+
+```text
+ExportService ──► ExportTypeRegistry ──► Order/Product/MileageExportType ──► 각 Repository::newExportQuery(요청자 범위)
+     │        └─► ExportFormatRegistry ──► CsvExportFormat ──► CsvExportWriter (BOM·CRLF·수식 무력화)
+     │        └─► ModelDeclarationRegistry ──► Declarations\*Declaration (컬럼 → 값 종류·개인정보·합계 / 제외 사유)
+     ▼
+GenerateExportJob(큐) 가 행을 청크로 읽어 작성기에 한 줄씩 넘긴다 — 메모리에 쌓지 않는다
+```
+
+**새 파일 형식(예: XLSX)** — `Exports\Contracts\ExportFormatInterface` 를 구현하고 `sirsoft-ecommerce.export.registered_formats`
+필터에서 `[키 => 형식 인스턴스]` 배열에 더합니다. 형식은 키·라벨 키·확장자·MIME·형식 버전과 `createWriter($absolutePath)` 만
+책임지고, 작성기(`ExportWriterInterface`)는 머리 줄·행·합계 행을 **받는 즉시** 파일에 씁니다(10만 행도 메모리가 일정해야 한다 —
+`ExportScaleTest`). 열·값·개인정보 가림은 엔진이 정해 넘기므로 형식은 셀 값을 바꾸지 않습니다. 등록되면 내보내기 창의 「파일
+형식」 선택지와 요청 검증(`format`)에 자동으로 나타납니다. `ExportFormatInterface` 가 아닌 값은 경고 로그를 남기고 무시합니다.
+
+```php
+// 플러그인 리스너 — HookListenerInterface::getSubscribedHooks()
+'sirsoft-ecommerce.export.registered_formats' => ['method' => 'addXlsx', 'type' => 'filter'],
+
+public function addXlsx(array $formats): array
+{
+    $xlsx = new XlsxExportFormat;           // implements ExportFormatInterface
+    $formats[$xlsx->key()] = $xlsx;
+
+    return $formats;
+}
+```
+
+**새 유형** — `Exports\Contracts\ExportTypeInterface`(공통 구현은 `Exports\Types\AbstractExportType`)를 구현해
+`sirsoft-ecommerce.export.registered_types` 필터로 더합니다. 유형은 「어떤 행을, 어떤 필드로」를 책임지며, 행을 고르는
+조건(`query()`)은 그 유형의 **목록 화면과 같은 필터·권한 범위**여야 합니다 — 어긋나면 화면 건수와 파일 행 수가 조용히
+달라집니다. 기본 세 유형은 각 Repository 의 `newExportQuery($filters, $ids, $requester)` 를 부릅니다(큐 작업에는 로그인
+사용자가 없어 범위를 요청자로 판정한다). `readPermission()` 은 파일을 받을 때도 다시 보는 원본 조회 권한입니다.
+
+**새 모델 선언·항목** — 내보낼 컬럼은 모델이 아니라 선언 클래스(`Exports\Declarations\ModelDeclaration` 구현)가 갖습니다.
+`fields()` 는 컬럼 → `type`(string·integer·money·datetime·translatable…)·`personal`(개인정보 여부)·`summable`, `excluded()` 는
+내보내지 않는 컬럼 → 사유이고, 모델의 모든 컬럼은 둘 중 한 곳에만 있어야 합니다(스키마 동기화 테스트가 잡는다). 다른 확장의
+모델은 `sirsoft-ecommerce.export.declarations` 필터로 선언 클래스를 더하고, 이미 있는 유형에 항목만 더하려면
+`sirsoft-ecommerce.export.{orders|products|mileage}.fields`(인자: 필드 배열·행 단위) 필터에서 `ExportField` 를 덧붙입니다.
+`personal: true` 항목은 개인정보 권한이 있는 운영자에게만 보이고, 고르면 다운로드 사유가 필수입니다.
+
+**행 가공·요청 가공** — `sirsoft-ecommerce.export.filter_row`(파일 한 행의 셀)와 `filter_request_data`(저장 전 요청 본문)로
+값을 바꿀 수 있고, 생애주기는 `export.after_*` 액션(요청·시작·완료·실패·다운로드·삭제·만료·다시 요청)으로 받습니다. 이
+모듈의 활동 로그와 완료·실패 알림도 같은 액션을 구독해 붙입니다.
 <!-- @intent END -->
 
 ## 구독 훅
@@ -841,6 +919,7 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
 | 훅 이름 | 유형 | 리스너 | 메서드 | 우선순위 |
 |---|---|---|---|---|
 | `core.activity_log.filter_description_params` | filter | `ActivityLogDescriptionResolver` | `resolveDescriptionParams` | 10 |
+| `core.activity_log.filter_description_params` | filter | `ExportActivityLogDescriptionResolver` | `resolveDescriptionParams` | 10 |
 | `core.auth.after_login` | action (미선언) | `MergeCartOnLoginListener` | `handle` | 20 |
 | `core.auth.after_register` | action (미선언) | `AssignDefaultCurrencyOnRegisterListener` | `handleRegister` | 20 |
 | `core.auth.after_register` | action (미선언) | `AssignDefaultShippingCountryOnRegisterListener` | `handleRegister` | 20 |
@@ -957,6 +1036,16 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
 | `sirsoft-ecommerce.coupon.restore` | action (미선언) | `OrderActivityLogListener` | `handleCouponRestore` | 20 |
 | `sirsoft-ecommerce.coupon.use` | action (미선언) | `CouponUseListener` | `markCouponsUsed` | 10 |
 | `sirsoft-ecommerce.coupon.use` | action (미선언) | `OrderActivityLogListener` | `handleCouponUse` | 20 |
+| `sirsoft-ecommerce.export.after_complete` | action (미선언) | `ExportActivityLogListener` | `handleAfterComplete` | 20 |
+| `sirsoft-ecommerce.export.after_delete` | action (미선언) | `ExportActivityLogListener` | `handleAfterDelete` | 20 |
+| `sirsoft-ecommerce.export.after_download` | action (미선언) | `ExportActivityLogListener` | `handleAfterDownload` | 20 |
+| `sirsoft-ecommerce.export.after_expire` | action (미선언) | `ExportActivityLogListener` | `handleAfterExpire` | 20 |
+| `sirsoft-ecommerce.export.after_fail` | action (미선언) | `ExportActivityLogListener` | `handleAfterFail` | 20 |
+| `sirsoft-ecommerce.export.after_request` | action (미선언) | `ExportActivityLogListener` | `handleAfterRequest` | 20 |
+| `sirsoft-ecommerce.export.after_retry` | action (미선언) | `ExportActivityLogListener` | `handleAfterRetry` | 20 |
+| `sirsoft-ecommerce.export.after_start` | action (미선언) | `ExportActivityLogListener` | `handleAfterStart` | 20 |
+| `sirsoft-ecommerce.export.after_view_downloads` | action (미선언) | `ExportActivityLogListener` | `handleAfterViewDownloads` | 20 |
+| `sirsoft-ecommerce.export.request_denied` | action (미선언) | `ExportActivityLogListener` | `handleRequestDenied` | 20 |
 | `sirsoft-ecommerce.extra_fee_template.after_bulk_create` | action (미선언) | `EcommerceAdminActivityLogListener` | `handleExtraFeeAfterBulkCreate` | 20 |
 | `sirsoft-ecommerce.extra_fee_template.after_bulk_delete` | action (미선언) | `EcommerceAdminActivityLogListener` | `handleExtraFeeAfterBulkDelete` | 20 |
 | `sirsoft-ecommerce.extra_fee_template.after_bulk_toggle_active` | action (미선언) | `EcommerceAdminActivityLogListener` | `handleExtraFeeAfterBulkToggleActive` | 20 |
@@ -978,6 +1067,7 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
 | `sirsoft-ecommerce.mileage.use` | action (미선언) | `OrderActivityLogListener` | `handleMileageUse` | 20 |
 | `sirsoft-ecommerce.notification.extract_data` | filter | `ClaimNotificationDataListener` | `extractData` | 25 |
 | `sirsoft-ecommerce.notification.extract_data` | filter | `EcommerceNotificationDataListener` | `extractData` | 20 |
+| `sirsoft-ecommerce.notification.extract_data` | filter | `ExportNotificationDataListener` | `extractData` | 25 |
 | `sirsoft-ecommerce.notification.personalize_data` | filter | `ClaimNotificationDataListener` | `personalizeClaimData` | 25 |
 | `sirsoft-ecommerce.notification.personalize_data` | filter | `EcommerceNotificationDataListener` | `personalizeOrderData` | 20 |
 | `sirsoft-ecommerce.option.after_bulk_update` | action (미선언) | `EcommerceAdminActivityLogListener` | `handleOptionAfterBulkUpdate` | 20 |
@@ -1128,6 +1218,9 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
 | `EcommerceNotificationDataListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/EcommerceNotificationDataListener.php` |
 | `EcommerceScopeLedgerListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/EcommerceScopeLedgerListener.php` |
 | `EcommerceUserActivityLogListener` | 9개 | 명시 등록 | ✅ | `src/Listeners/EcommerceUserActivityLogListener.php` |
+| `ExportActivityLogDescriptionResolver` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExportActivityLogDescriptionResolver.php` |
+| `ExportActivityLogListener` | 10개 | 명시 등록 | ✅ | `src/Listeners/ExportActivityLogListener.php` |
+| `ExportNotificationDataListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExportNotificationDataListener.php` |
 | `InjectAppConfigDeviceListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/InjectAppConfigDeviceListener.php` |
 | `IssueCashReceiptOnDepositListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/IssueCashReceiptOnDepositListener.php` |
 | `MergeCartOnLoginListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/MergeCartOnLoginListener.php` |
@@ -1175,8 +1268,6 @@ data 에 코어 표준 키(`GenericNotification::RECIPIENT_PHONE_KEY`)로 싣습
   SEO·카테고리 트리·배송정책 캐시 비우기는 `'sync' => true` 로 저장한 요청 안에서 돌고(본문은
   `DB::afterCommit` 으로 커밋 뒤에 비움), 상품 상세를 미리 다시 그리는 무거운 일만
   `SeoProductDetailRegenerateListener` 가 큐에서 맡습니다 — 비우기가 큐로 가면 워커가 돌 때까지 옛 화면이 보입니다.
-  상품 상세는 번호 주소(사이트맵이 싣는 `products/{id}`)와 상품 코드 주소(사용자 화면 링크)를 함께 비우고,
-  상품 코드를 바꾼 저장이면 `after_update` 의 수정 전 스냅샷(두 번째 인자)에서 옛 코드를 꺼내 옛 코드 주소도 비웁니다.
 - **금전·정합 5종** (`MileageTransactionListener` · `CouponUseListener` · `CouponRestoreListener` ·
   `UserMileageCleanupListener` · `IssueCashReceiptOnDepositListener`): 호출자 트랜잭션과 함께
   되돌아가야 하므로 `'sync' => true` 로 구독합니다.
@@ -1436,6 +1527,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `prune-pending-claim-images` | `0 0 * * *` | 클레임 임시 첨부 삭제 |
 | `cancel-orphan-claim-payments` | `0 0 * * *` | 고아 클레임 결제 취소 |
 | `notify-overdue-collections` | `0 0 * * *` | 회수 지연 알림 |
+| `prune-exports` | `0 * * * *` | 내보내기 파일 정리 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->
@@ -1502,6 +1594,8 @@ _등록하는 브로드캐스트 채널이 없습니다._
 | `mileage_expiring_soon` | `mail`, `database` |
 | `order_custom_email` | `mail` |
 | `identity.purpose.checkout_verification` | `mail` |
+| `export_completed` | `database` |
+| `export_failed` | `database` |
 | `exchange_requested` | `mail`, `database` |
 | `exchange_requested_admin` | `mail`, `database` |
 | `exchange_payment_requested` | `mail`, `database` |

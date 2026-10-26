@@ -223,6 +223,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+- **권한 메모(1.4.0)**: 목록 응답 `abilities.can_export`(= `sirsoft-ecommerce.exports.create`) — 목록 머리 줄 [내보내기] 버튼을 보일지 정하는 키. 실제 요청은 [exports.md](exports.md) 가 받는다.
+
 **설명** 관리자가 전체 회원의 마일리지 거래 원장을 검색·필터·페이지네이션으로 조회합니다. `permission:sirsoft-ecommerce.mileage.read` 권한이 필요하며, 회원(member·member_id·email)·주문번호 검색, type(earn·use·expire·adjust)·통화·기간 필터, 금액/생성일 정렬을 지원합니다. `UserMileageService::paginateAdminHistory()`가 조회하고 `MileageTransactionCollection`이 통화 필터 후보(`withCurrencies`)와 함께 직렬화합니다. 각 행은 원장 스냅샷(balance_after, remaining_amount 등)을 그대로 노출하며 원장은 불변입니다. 권한 범위가 「본인만」·「소유역할」 이면 그 범위 안의 행만 돌려줍니다(범위 밖 행은 목록·건수에서 빠집니다).
 
 

@@ -36,7 +36,8 @@
             "privacy_officer_email": "",
             "mail_order_number": "",
             "telecom_number": "",
-            "public_asset_disk": ""
+            "public_asset_disk": "",
+            "export_retention_days": 7
         },
         "language_currency": {
             "rate_provider": null,
@@ -699,6 +700,9 @@
                     "expose": false
                 },
                 "public_asset_disk": {
+                    "expose": false
+                },
+                "export_retention_days": {
                     "expose": false
                 }
             }

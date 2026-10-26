@@ -92,6 +92,10 @@ return [
         'cart_expiry_days_min' => 1,
         'cart_expiry_days_max' => 365,
 
+        // 내보내기 파일 보관 기간(일) — 개인정보가 담길 수 있는 파일이 서버에 오래 남지 않도록 상한을 둔다(#787)
+        'export_retention_days_min' => 1,
+        'export_retention_days_max' => 30,
+
         // 마일리지 (전역)
         'default_earn_rate_min' => 0,
         'default_earn_rate_max' => 100,

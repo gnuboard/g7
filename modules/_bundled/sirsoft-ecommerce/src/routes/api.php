@@ -16,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimReasonController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CouponController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\DashboardController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\EcommerceSettingsController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ExportController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ExtraFeeTemplateController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\IdentityPolicyController as AdminIdentityPolicyController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\MileageTransactionController;
@@ -1996,4 +1997,65 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.inquiries.destroy');
     });
 
+    // 내보내기 API — 주문·상품·마일리지 목록의 내보내기 요청과 「내보내기 관리」(#787)
+    // 데이터 범위는 그 유형의 조회 권한(주문=orders.read …)이 정하고, exports.* 는 작업(파일)에 대한 권한이다.
+    Route::prefix('exports')->group(function () {
+        Route::get('/catalog', [ExportController::class, 'catalog'])
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.create')
+            ->name('admin.exports.catalog');
+
+        Route::post('/estimate', [ExportController::class, 'estimate'])
+            ->middleware(['permission:admin,sirsoft-ecommerce.exports.create', 'throttle:sirsoft-ecommerce.export-estimate'])
+            ->name('admin.exports.estimate');
+
+        Route::post('/', [ExportController::class, 'store'])
+            ->middleware(['permission:admin,sirsoft-ecommerce.exports.create', 'throttle:sirsoft-ecommerce.export-request'])
+            ->name('admin.exports.store');
+
+        Route::get('/', [ExportController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.read')
+            ->name('admin.exports.index');
+
+        Route::delete('/bulk', [ExportController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.delete')
+            ->name('admin.exports.bulk-destroy');
+
+        Route::get('/{export}', [ExportController::class, 'show'])
+            ->whereNumber('export')
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.read')
+            ->name('admin.exports.show');
+
+        Route::get('/{export}/download', [ExportController::class, 'download'])
+            ->whereNumber('export')
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.download')
+            ->name('admin.exports.download');
+
+        Route::post('/{export}/download-link', [ExportController::class, 'downloadLink'])
+            ->whereNumber('export')
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.download')
+            ->name('admin.exports.download-link');
+
+        Route::get('/{export}/downloads', [ExportController::class, 'downloads'])
+            ->whereNumber('export')
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.read')
+            ->name('admin.exports.downloads');
+
+        Route::post('/{export}/retry', [ExportController::class, 'retry'])
+            ->whereNumber('export')
+            ->middleware(['permission:admin,sirsoft-ecommerce.exports.create', 'throttle:sirsoft-ecommerce.export-request'])
+            ->name('admin.exports.retry');
+
+        Route::delete('/{export}', [ExportController::class, 'destroy'])
+            ->whereNumber('export')
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.delete')
+            ->name('admin.exports.destroy');
+    });
+
 });
+
+// 내보내기 파일 일회용 주소 — 관리 화면이 인증 헤더로 발급받은 64자 토큰(60초·1회용)을 브라우저가 직접 연다.
+// 인증 헤더를 실을 수 없는 브라우저 다운로드라 admin 묶음 밖에 둔다. 권한은 토큰을 쓰는 시점에 다시 본다.
+Route::get('exports/file/{token}', [ExportController::class, 'downloadByToken'])
+    ->where('token', '[A-Za-z0-9]{64}')
+    ->middleware('throttle:sirsoft-ecommerce.export-file')
+    ->name('exports.file');

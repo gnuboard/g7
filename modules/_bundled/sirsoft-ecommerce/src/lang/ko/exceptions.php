@@ -208,4 +208,27 @@ return [
     // 택배사 관련
     'shipping_carrier_not_found' => '택배사를 찾을 수 없습니다.',
     'shipping_carrier_in_use' => '주문에서 사용 중인 택배사는 삭제할 수 없습니다. (사용 횟수: :count건)',
+    // 내보내기(#787)
+    'export' => [
+        'enqueue_failed' => '내보내기 작업을 큐에 넣지 못했습니다. 잠시 후 다시 시도하세요.',
+        'requester_missing' => '요청한 운영자 계정을 찾을 수 없어 파일을 만들지 않았습니다.',
+        'type_unavailable' => '이 내보내기 유형을 지금 사용할 수 없습니다. 유형을 제공하는 확장이 꺼져 있는지 확인하세요.',
+        'format_unavailable' => '이 파일 형식을 지금 사용할 수 없습니다.',
+        'no_fields' => '내보낼 항목이 없습니다. 권한이 바뀌어 고른 항목을 쓸 수 없게 되었을 수 있습니다.',
+        'storage_write_failed' => '파일을 저장하지 못했습니다. 저장소 설정과 남은 공간을 확인하세요.',
+        'generation_failed' => '파일을 만드는 중 오류가 발생했습니다.',
+        'permission_revoked' => '요청한 운영자의 권한이 바뀌어 파일을 만들지 않았습니다.',
+        'timeout' => '처리 시간이 한도를 넘어 중단했습니다. 기간이나 범위를 줄여 다시 요청하세요.',
+        'file_expired' => '보관 기간이 지나 파일이 삭제되었습니다.',
+        'not_downloadable' => '아직 내려받을 수 있는 상태가 아닙니다.',
+        'file_missing' => '파일을 찾을 수 없습니다.',
+        'processing_not_deletable' => '진행중인 작업은 삭제할 수 없습니다.',
+        'not_retryable' => '실패한 작업만 다시 요청할 수 있습니다.',
+        'no_rows' => '지금 조건에 맞는 행이 없어 다시 요청하지 않았습니다. 목록에서 기간이나 검색 조건을 바꿔 새로 요청하세요.',
+        'download_link_expired' => '다운로드 주소가 만료됐거나 이미 사용됐습니다. 내보내기 관리에서 파일명을 다시 누르세요.',
+        'scope_denied' => '내 권한 범위 밖의 내보내기입니다. 다른 운영자가 요청한 내보내기를 다루려면 관리자에게 역할 관리에서 내보내기 권한 범위를 넓혀 달라고 요청하세요.',
+        'domain_permission_required' => '이 파일의 원본 데이터를 볼 권한이 없습니다.',
+        'declaration_missing_personal' => ':model 의 내보내기 선언 :column 에 personal(개인정보 여부)이 없습니다.',
+        'declaration_invalid_type' => ':model 의 내보내기 선언 :column 의 type 이 올바르지 않습니다.',
+    ],
 ];

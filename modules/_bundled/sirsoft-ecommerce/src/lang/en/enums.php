@@ -473,4 +473,17 @@ return [
         'parcel_box' => 'Leave in parcel box',
         'call' => 'Please call before delivery',
     ],
+    // 내보내기(#787)
+    'export_status' => [
+        'pending' => 'Pending',
+        'processing' => 'Processing',
+        'completed' => 'Completed',
+        'failed' => 'Failed',
+        'expired' => 'Expired',
+    ],
+    'export_type' => [
+        'orders' => 'Orders',
+        'products' => 'Products',
+        'mileage' => 'Mileage history',
+    ],
 ];

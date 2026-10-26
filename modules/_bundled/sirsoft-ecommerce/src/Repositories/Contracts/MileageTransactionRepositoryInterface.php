@@ -2,8 +2,10 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\MileageTransaction;
 
@@ -197,6 +199,19 @@ interface MileageTransactionRepositoryInterface
      * @return LengthAwarePaginator 페이지네이터
      */
     public function paginateWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator;
+
+    /**
+     * 내보내기 원천 쿼리 — 관리자 마일리지 내역 목록과 같은 조건·같은 권한 범위로 고른 마일리지 거래 쿼리를 돌려줍니다.
+     *
+     * 목록과 같은 필터 경로를 지나야 화면 건수와 파일 행 수가 어긋나지 않는다. 권한 범위(`sirsoft-ecommerce.mileage.read` 의 본인·역할 범위)는
+     * **요청자를 인자로** 판정한다 — 파일은 큐 작업에서 만들어 로그인 사용자가 없으므로, 현재 사용자 기준으로 걸면 범위가 빠진다.
+     *
+     * @param  array  $filters  검증된 마일리지 목록 필터
+     * @param  array<int, int>|null  $ids  「선택한 행」 거래 ID (지정하면 목록 필터 대신 이 ID 만)
+     * @param  User  $requester  권한 범위를 판정할 요청자
+     * @return Builder 거래 쿼리 (관계·정렬 없음)
+     */
+    public function newExportQuery(array $filters, ?array $ids, User $requester): Builder;
 
     /**
      * 마이페이지용 회원 거래 목록을 조회합니다 (페이지네이션).
