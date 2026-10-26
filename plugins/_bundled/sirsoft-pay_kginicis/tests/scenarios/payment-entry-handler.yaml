@@ -16,6 +16,7 @@ effects:
   - cbt_form_follows_manual
   - mobile_form_follows_manual
   - sdk_host_allowlisted
+  - tax_split_follows_manual   # 면세분 있음: PC tax·taxfree / 모바일 P_TAX·P_TAXFREE(합 규칙 = KCP·나이스), 없음: 미전송(#820)
 
 test_files:
   - plugins/_bundled/sirsoft-pay_kginicis/resources/js/__tests__/handlers/requestPayment.test.ts

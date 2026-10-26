@@ -81,6 +81,15 @@ exclusions:
 
 # 후속 효과 체인
 effects:
+  - tax_free_amount_capped_by_payment_amount # 면세 금액 > 결제 금액(마일리지 차감 전 면세 합계)이면 결제 금액으로 자름(#820)
+  # 결제창 진입 핸들러(requestPayment) — 시험별 매핑을 위해 효과 이름을 둔다(#820 audit 보충)
+  - payment_entry_guarded                       # 결제 데이터 없음 → 조기 반환
+  - sdk_error_shows_error_modal                 # SDK 오류 → 오류 문구 상태 + 모달
+  - user_cancel_reported_and_notice_shown       # 사용자 취소 → 취소 기록 API(비회원 토큰 헤더)·로딩 해제·안내 모달
+  - claim_cancel_returns_to_claim_detail        # 클레임 추가결제 취소 → 주문 취소 API 없이 서버가 준 복귀 주소
+  - tax_free_amount_sent_with_payment           # 면세 금액 있으면 taxFreeAmount(카드·가상계좌), 없으면 키 없음
+  - payment_method_from_action_argument_only    # 결제수단 = 액션 인자 → 서버 저장값, 화면 상태로 채우지 않음
+  - sdk_host_allowlisted                        # SDK 주입 호스트 게이트 = manifest trusted_script_hosts
   - vbank_due_at_stored_in_app_timezone   # 가상계좌 dueDate(+09:00)를 앱 시간대(UTC)로 바꿔 저장 — 9시간 어긋남 방지(S4-D5 후속)
   - toss_provider_registered_with_payment_handler
   - toss_provider_hook_subscriptions_declared

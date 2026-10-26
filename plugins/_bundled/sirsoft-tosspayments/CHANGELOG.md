@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.2] - 2026-10-26
+
+### Fixed
+
+- 면세 상품이 섞인 주문에서 마일리지를 과세 상품 금액보다 많이 쓰면 결제창에 넘기는 면세 금액이 결제 금액보다 커질 수 있던 문제를 고쳤습니다. 이제 면세 금액을 결제 금액 안으로 맞춰 넘깁니다.
+
 ## [1.1.1] - 2026-10-21
 
 ### Changed

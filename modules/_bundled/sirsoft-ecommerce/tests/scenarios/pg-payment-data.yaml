@@ -12,6 +12,7 @@ description: |
   수정 이력 (#820):
     - 면세 합계만 싣고 과세 합계·부가세를 싣지 않아, 결제액을 공급가액·부가세로 나눠 받는 NHN KCP 결제창의 부가세가 늘 0 이었다.
       면세분이 있으면 tax_amount(부가세 포함 과세 합계)·vat_amount 를 같은 환산 규칙으로 함께 싣는다.
+    - 면세 합계는 마일리지 차감 전 값이라 청구액을 넘을 수 있었다(토스는 그대로 보냄). tax_free_amount 를 청구액으로 자른다.
 
 axes:
   payment_method: [vbank, card]
@@ -28,6 +29,7 @@ effects:
   - non_vbank_order_omits_the_vbank_due                         # 가상계좌가 아니면 키 없음
   - pg_payment_data_carries_tax_and_vat_with_tax_free           # 면세분 있음: tax_free_amount + tax_amount(부가세 포함) + vat_amount
   - taxable_only_order_carries_no_tax_split                     # 면세분 없음: 세 키 모두 null
+  - tax_free_amount_is_capped_by_the_charge                     # 면세 합계(마일리지 차감 전) > 청구액이면 청구액으로 자름
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Http/Controllers/Public/BuildPgPaymentDataTest.php

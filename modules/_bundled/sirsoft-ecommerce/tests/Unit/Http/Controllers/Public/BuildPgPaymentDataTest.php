@@ -580,6 +580,27 @@ class BuildPgPaymentDataTest extends ModuleTestCase
     }
 
     /**
+     * 마일리지를 과세분보다 많이 써 청구액이 면세 합계보다 작아지면 면세 금액을 청구액으로 자른다.
+     *
+     * 면세 합계는 쿠폰 할인 뒤·마일리지 차감 전 값이다. PG 는 면세 금액이 결제 금액 안에 있어야 받는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario payment_method=card, tax=mixed
+     *
+     * @effects tax_free_amount_is_capped_by_the_charge
+     */
+    public function test_면세_합계가_청구액보다_크면_청구액으로_자른다(): void
+    {
+        $order = $this->makeTaxSplitOrder(PaymentMethodEnum::CARD, 30000);
+
+        $result = $this->callBuildPgPaymentData($order);
+
+        $this->assertSame(24000, $result['amount']);
+        $this->assertSame(24000, $result['tax_free_amount']);
+    }
+
+    /**
      * 면세분이 없는 주문은 과세 구분 키를 모두 null 로 둔다 — 과세 전용 상점에 불필요한 복합과세 분기를 태우지 않는다.
      *
      * @return void 반환값 없음
