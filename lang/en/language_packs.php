@@ -117,7 +117,7 @@ return [
             'failed' => 'Failed to uninstall language pack: :error',
         ],
         'update' => [
-            'invalid_source' => 'Unknown --source value: :source (choose one of auto|bundled|github)',
+            'invalid_source' => 'Unknown --source value: :source (choose one of auto, bundled, github)',
             'not_found' => 'Language pack not found: :identifier',
             'done' => 'Language pack updated: :identifier (:from → :to)',
             'failed' => 'Failed to update language pack: :error',

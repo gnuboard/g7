@@ -217,6 +217,39 @@
                                                 "text": "$t:admin.users.detail.unlock"
                                             }
                                         ]
+                                    },
+                                    {
+                                        "comment": "모든 기기에서 로그아웃(7.2.0) — 그 회원의 로그인 토큰을 전부 지운다. 확인 창을 거친다. 회원 수정 권한이 있어야 누를 수 있다.",
+                                        "id": "header_revoke_sessions_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "openModal",
+                                                "target": "revoke_sessions_confirm_modal"
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "disabled": "{{user?.data?.abilities?.can_update !== true}}",
+                                            "className": "flex-center gap-2 btn btn-secondary"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "arrow-right-from-bracket",
+                                                    "className": "text-base"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:admin.users.detail.revoke_sessions.button"
+                                            }
+                                        ]
                                     }
                                 ]
                             }
@@ -1754,5 +1787,156 @@
                 ]
             }
         ]
-    }
+    },
+    "modals": [
+        {
+            "comment": "모든 기기에서 로그아웃 확인 창(7.2.0). 성공하면 그 회원의 다음 요청부터 로그인이 풀린다.",
+            "id": "revoke_sessions_confirm_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:admin.users.detail.revoke_sessions.confirm_title",
+                "size": "sm"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "py-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-gray-700 dark:text-gray-300"
+                            },
+                            "text": "$t:admin.users.detail.revoke_sessions.confirm_message"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "modal-footer-buttons"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_global.isRevokingSessions}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.cancel"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "revoke_sessions_confirm_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "모든 세션을 끊고 모달을 닫는다 — 진행 표시는 성공·실패 양쪽에서 끈다",
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "isRevokingSessions": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/users/{{route?.id}}/sessions/revoke",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isRevokingSessions": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:admin.users.detail.revoke_sessions.success"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "isRevokingSessions": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "disabled": "{{_global.isRevokingSessions}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.isRevokingSessions}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "spin": true,
+                                        "className": "text-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.users.detail.revoke_sessions.confirm"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "meta": {
+                "editor_label": "$t:admin.users.detail.revoke_sessions.confirm_title"
+            }
+        }
+    ]
 }

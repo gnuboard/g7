@@ -279,7 +279,8 @@ Route::middleware(['auth:sanctum'])->post('broadcasting/auth', function (Request
 // 본인인증 (IdentityVerification) 공개 엔드포인트
 // challenge 라우트 파라미터를 IdentityVerificationLog 모델로 자동 resolve — PermissionMiddleware 의 owner_key='user_id' scope 매칭 표준 메커니즘 활용
 Route::model('challenge', IdentityVerificationLog::class);
-Route::prefix('identity')->group(function () {
+// allow.inactive_user: 공통 회원 상태 관문(EnsureActiveUser) 통과 표식 — 가입 후 인증 대기 회원이 본인인증을 마쳐 활성화하는 경로다
+Route::prefix('identity')->middleware('allow.inactive_user')->group(function () {
     Route::get('providers', [IdentityVerificationController::class, 'providers'])
         ->name('api.identity.providers.index');
 
@@ -351,6 +352,10 @@ Route::prefix('auth')->group(function () {
         // 응답은 `login` 과 같은 모양(인증 완료·2단계 인증·비밀번호 변경)이고, 로그인과 같은 제한을 적용한다.
         Route::post('login/handoff', [UserAuthController::class, 'loginHandoff'])
             ->name('api.auth.login.handoff');
+        // 로그인 진입 판정 — 이메일 칸을 벗어날 때 그 식별자의 로그인 수단(비밀번호 / 외부 수단)을 묻는다.
+        // 응답은 회원 유무와 무관하게 같은 모양이고(확장이 도메인으로만 답한다), 로그인과 같은 제한을 적용한다.
+        Route::post('login/discover', [UserAuthController::class, 'discover'])
+            ->name('api.auth.login.discover');
     });
 
     // 공개 인증 라우트 (세션 불필요)
@@ -395,6 +400,14 @@ Route::prefix('auth')->group(function () {
         Route::post('login/password-change/postpone', [AdminAuthController::class, 'postponePasswordChange'])
             ->middleware(['throttle:auth-login', 'start.api.session'])
             ->name('api.auth.admin.login.password-change.postpone');
+        // 관리자 로그인 인계 — 외부 인증이 관리자 경로로 발급한 일회용 코드를 교환한다. 사용자 인계와 같은 제한·세션.
+        Route::post('login/handoff', [AdminAuthController::class, 'loginHandoff'])
+            ->middleware(['throttle:auth-login', 'start.api.session'])
+            ->name('api.auth.admin.login.handoff');
+        // 관리자 로그인 진입 판정 — 사용자 경로와 같은 응답 모양
+        Route::post('login/discover', [AdminAuthController::class, 'discover'])
+            ->middleware('throttle:auth-login')
+            ->name('api.auth.admin.login.discover');
     });
 });
 
@@ -890,6 +903,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::delete('{user}', [AdminUserController::class, 'destroy'])->middleware('permission:admin,core.users.delete')->name('api.admin.users.destroy');
         // 계정 잠금 해제 — 영구 잠금(무한대) 계정의 유일한 복구 경로
         Route::post('{user}/unlock', [AdminUserController::class, 'unlock'])->middleware('permission:admin,core.users.update')->name('api.admin.users.unlock');
+        // 모든 기기에서 로그아웃(강제) — 그 회원의 토큰을 전부 지운다. 하위 관리자는 최고관리자를 대상으로 하지 못한다(등급 가드)
+        Route::post('{user}/sessions/revoke', [AdminUserController::class, 'revokeSessions'])->middleware('permission:admin,core.users.update')->name('api.admin.users.sessions.revoke');
     });
 
     // 스케줄 관리

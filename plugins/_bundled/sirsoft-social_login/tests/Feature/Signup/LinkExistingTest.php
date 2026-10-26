@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\SocialLogin\Tests\Feature\Signup;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Auth\LoginHandoffService;
 use App\Services\IdentityMessageDispatcher;
 use App\Services\UserService;
 use Illuminate\Support\Facades\Hash;
@@ -94,6 +95,18 @@ class LinkExistingTest extends PluginTestCase
 
         $this->assertStringStartsWith('/login?login_handoff=', (string) $done->json('data.handoff_url'));
         $this->assertSame($existing->id, SocialAccount::query()->where('provider_user_id', 'k-ex1')->value('user_id'));
+        $this->assertNull($done->json('data.handoff_cookie'), '묶음 쿠키는 본문이 아니라 응답 쿠키로만 나간다');
+
+        // 연결 확인은 API 응답이라 인계 코드의 묶음 쿠키를 응답에 직접 싣는다(코어 7.2.0 브라우저 묶기) — 그 쿠키로 교환하면 로그인된다.
+        $bind = $done->getCookie(LoginHandoffService::BIND_COOKIE, false);
+        $this->assertNotNull($bind, '연결 확인 응답이 인계 코드의 묶음 쿠키를 싣는다');
+        parse_str((string) parse_url((string) $done->json('data.handoff_url'), PHP_URL_QUERY), $q);
+        $this->app['auth']->forgetGuards();
+        $this->withCredentials()
+            ->withUnencryptedCookie(LoginHandoffService::BIND_COOKIE, (string) $bind->getValue())
+            ->postJson('/api/auth/login/handoff', ['code' => $q['login_handoff']])
+            ->assertOk()
+            ->assertJsonPath('data.user.uuid', $existing->uuid);
     }
 
     /**

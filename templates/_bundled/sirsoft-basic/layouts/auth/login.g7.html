@@ -49,6 +49,9 @@
     <!-- 2단계 인증·비밀번호 변경(#736) 단계 상태는 전역이라 화면을 떠나도 남는다 — 진입할 때마다 1단계로 되돌린다. -->
     <set-state target="global" :twoFactor="null" :passwordChange="null"/>
     <toast if="{{query?.reason === 'session_expired'}}" type="warning" message="$t:auth.session_expired_toast"/>
+    <!-- 로그인 화면 자동 이동(7.2.0) — 사이트가 회사 계정 로그인으로 바로 보내도록 정했으면 이동한다. `?local=1`(비상 계정 진입로)이거나
+         인계 교환·외부 인증 오류·동의 대기·연결 확인 대기로 돌아온 화면이면 이동하지 않는다 — 오류 화면이 다시 IdP 로 튕기면 무한 왕복이 된다. -->
+    <action if="{{!!_global.appConfig?.auth?.auto_redirect?.user &amp;&amp; !query?.local &amp;&amp; !query?.login_handoff &amp;&amp; !query?.sso_error &amp;&amp; !query?.sso_pending &amp;&amp; !query?.sso_link}}" handler="redirect" :replace="true" url="{{_global.appConfig.auth.auto_redirect.user + (query?.redirect ? (_global.appConfig.auth.auto_redirect.user.includes('?') ? '&amp;' : '?') + 'redirect=' + encodeURIComponent(query.redirect) : '')}}"/>
     <!-- 로그인 인계 — 외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원을 `/login?login_handoff={코드}` 로 보낸다. 코드를 교환하면
          비밀번호 로그인과 같은 응답이 와서 2단계 인증·비밀번호 변경·휴면 해제 안내를 그대로 쓴다. 코드는 한 번만 통하므로
          교환 뒤에는 주소에서 지운다(새로고침해도 다시 교환하지 않게). 실패(만료·재사용·상태 거절)는 오류 자리에 싣는다. -->
@@ -84,9 +87,20 @@
       <!-- 로그인 폼 -->
       <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:auth.login</h2>
+        <!-- 비상 계정 진입(`?local=1`, 7.2.0) — 자동 이동을 건너뛴 비밀번호 화면임을 알린다(디자인 ⑤) -->
+        <div data-if="{{!!query.local}}" data-ref="login_local_notice" class="mb-6 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200" role="note">$t:auth.external.local_notice</div>
         <include src="partials/auth/_login_form.g7.html"/>
         <!-- 확장 영역 — 소셜 로그인 버튼처럼 다른 로그인 수단을 확장이 붙이는 자리. 붙인 확장이 없으면 아무것도 그리지 않는다. -->
         <extension-point name="auth_login_extensions" data-ref="auth_login_extensions_slot"/>
+        <!-- 자동 이동이 켜진 사이트에서도 이 화면(비밀번호 로그인)에 닿는 길 — 비상 계정용(7.2.0) -->
+        <div data-if="{{!!_global.appConfig?.auth?.auto_redirect?.user}}" class="mt-4 text-center text-sm">
+          <a href="/login?local=1" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
+            <on type="click">
+              <navigate/>
+            </on>
+            $t:auth.external.other_method
+          </a>
+        </div>
         <!-- 하단 링크 영역 -->
         <div class="mt-4 flex items-center justify-between text-sm">
           <a href="/forgot-password" class="inline-flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
@@ -95,7 +109,8 @@
             </on>
             $t:auth.forgot_password_link
           </a>
-          <a href="/register" class="inline-flex items-center justify-center text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+          <!-- 「일반 회원가입 받지 않음」이면 숨긴다(7.2.0) -->
+          <a data-if="{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}" href="/register" class="inline-flex items-center justify-center text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
             <on type="click">
               <navigate/>
             </on>

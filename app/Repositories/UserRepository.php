@@ -989,6 +989,26 @@ class UserRepository implements UserRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function updateAccessTokenSessionMeta(PersonalAccessToken $token, ?string $loginMethod, ?\DateTimeInterface $absoluteExpiresAt): void
+    {
+        $token->forceFill([
+            // 로그인 문맥 정규화와 같은 64자(컬럼 길이 — 2026_10_25 마이그레이션)
+            'login_method' => $loginMethod === null ? null : mb_substr($loginMethod, 0, 64),
+            'absolute_expires_at' => $absoluteExpiresAt,
+        ])->save();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteAllAccessTokens(User $user): int
+    {
+        return (int) $user->tokens()->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function deleteAccessToken(PersonalAccessToken $token): void
     {
         $token->delete();

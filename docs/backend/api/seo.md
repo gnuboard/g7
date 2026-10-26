@@ -259,7 +259,7 @@ HTTP/1.1 200
 ```json
 {
     "success": true,
-    "message": "messages.success",
+    "message": "성공적으로 처리되었습니다.",
     "data": {
         "last_updated_at": "2026-08-04T12:53:51+00:00",
         "progress": {

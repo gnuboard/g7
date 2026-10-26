@@ -18,6 +18,10 @@ use Tests\TestCase;
  *
  * 채널 활성화 + readiness + 템플릿 존재 검증을 단계별로 확인합니다.
  * 핵심 회귀: 활성 템플릿이 없는 채널은 제외되어야 함 (빈 subject/body 방지).
+ * 채널 후보는 코어 단일 진입점 `NotificationChannelService::resolveChannelCandidates()` 가 정한다(#703) — 서비스를 대신하는
+ * 모의 객체는 그 메서드를 실제 구현으로 통과시킨다(채널 후보 필터 두 단계를 그대로 거친다).
+ *
+ * @scenario-manifest tests/scenarios/generic-notification-via.yaml
  */
 class GenericNotificationViaTest extends TestCase
 {
@@ -25,6 +29,11 @@ class GenericNotificationViaTest extends TestCase
 
     private NotificationDefinition $definition;
 
+    /**
+     * 시험용 알림 정의를 만들고 채널 서비스·readiness 를 모의 객체로 격리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,6 +73,11 @@ class GenericNotificationViaTest extends TestCase
         $this->mockReadiness([]);
     }
 
+    /**
+     * 템플릿 캐시를 무효화하고 남긴 정의·템플릿·발송 로그를 지웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 캐시 무효화 후 데이터 정리
@@ -85,6 +99,12 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * 확장 설정에서 mail 채널이 OFF면 via()가 mail을 제외한다 (database만 반환).
+     *
+     * @scenario path=multichannel, gate=extension_toggle
+     *
+     * @effects disabled_channel_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_via_excludes_channel_disabled_by_extension_toggle(): void
     {
@@ -105,6 +125,12 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * 확장 설정에서 모든 채널이 OFF면 빈 배열 반환.
+     *
+     * @scenario path=multichannel, gate=extension_toggle
+     *
+     * @effects disabled_channel_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_via_returns_empty_when_all_channels_disabled_by_extension(): void
     {
@@ -124,6 +150,12 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * $channel 직접 지정 발송 경로에도 확장 토글이 적용된다.
+     *
+     * @scenario path=explicit, gate=extension_toggle
+     *
+     * @effects explicit_channel_toggle_honored
+     *
+     * @return void 반환값 없음
      */
     public function test_via_with_explicit_channel_honors_extension_toggle(): void
     {
@@ -146,6 +178,12 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * $channel 직접 지정 + 확장 토글 ON → 해당 채널이 그대로 반환.
+     *
+     * @scenario path=explicit, gate=extension_toggle
+     *
+     * @effects explicit_channel_toggle_honored
+     *
+     * @return void 반환값 없음
      */
     public function test_via_with_explicit_channel_returns_when_enabled(): void
     {
@@ -172,8 +210,9 @@ class GenericNotificationViaTest extends TestCase
      * getAvailableChannels() 는 기본적으로 mail/database 만 반환하도록 mock 한다
      * (비활성 확장 채널 제외 회귀 테스트가 available 목록을 재정의할 수 있도록).
      *
-     * @param  array<string, bool>  $channelMap
+     * @param  array<string, bool>  $channelMap  채널별 확장 토글 (미지정 채널은 켜짐)
      * @param  array<int, string>|null  $availableIds  available 채널 id 목록(미지정 시 mail/database)
+     * @return void 반환값 없음
      */
     private function mockChannelEnabled(array $channelMap, ?array $availableIds = null): void
     {
@@ -188,6 +227,8 @@ class GenericNotificationViaTest extends TestCase
             ->andReturn(array_map(static fn (string $id) => ['id' => $id], $availableIds));
         $mock->shouldReceive('isChannelAvailable')
             ->andReturnUsing(fn (string $channel) => in_array($channel, $availableIds, true));
+        // 채널 후보 단일 진입점(#703 — via() 가 필터 훅을 직접 부르던 자리)은 실제 구현을 그대로 탄다
+        $mock->shouldReceive('resolveChannelCandidates')->passthru();
         $this->app->instance(NotificationChannelService::class, $mock);
     }
 
@@ -198,6 +239,7 @@ class GenericNotificationViaTest extends TestCase
      * 특정 채널을 not-ready 로 재정의할 수 있다.
      *
      * @param  array<string, bool>  $readyMap  채널별 readiness 맵
+     * @return void 반환값 없음
      */
     private function mockReadiness(array $readyMap): void
     {
@@ -214,6 +256,12 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * 양쪽 채널 모두 활성 템플릿이 있으면 두 채널 모두 반환
+     *
+     * @scenario path=multichannel, gate=template
+     *
+     * @effects both_channels_returned
+     *
+     * @return void 반환값 없음
      */
     public function test_via_returns_both_channels_when_both_have_templates(): void
     {
@@ -230,6 +278,12 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * readiness 실패 채널은 제외 — 템플릿·확장 토글이 OK여도 미설정 mail 은 발송 대상에서 빠진다.
+     *
+     * @scenario path=multichannel, gate=readiness
+     *
+     * @effects not_ready_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_via_excludes_channel_that_is_not_ready(): void
     {
@@ -247,6 +301,12 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * mail 템플릿만 있으면 mail만 반환, database 제외
+     *
+     * @scenario path=multichannel, gate=template
+     *
+     * @effects missing_template_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_via_excludes_channel_without_template(): void
     {
@@ -262,6 +322,12 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * database 템플릿만 있으면 database만 반환 (mail은 readiness도 영향)
+     *
+     * @scenario path=multichannel, gate=template
+     *
+     * @effects missing_template_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_via_returns_only_database_when_mail_has_no_template(): void
     {
@@ -278,6 +344,12 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * 비활성 템플릿은 없는 것으로 취급 — 채널 제외
+     *
+     * @scenario path=multichannel, gate=template
+     *
+     * @effects inactive_template_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_via_excludes_channel_with_inactive_template(): void
     {
@@ -293,6 +365,12 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * 모든 채널에 템플릿이 없으면 빈 배열 반환
+     *
+     * @scenario path=multichannel, gate=template
+     *
+     * @effects missing_template_excluded
+     *
+     * @return void 반환값 없음
      */
     public function test_via_returns_empty_when_no_templates(): void
     {
@@ -306,6 +384,12 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * 알림 정의가 없는 type은 기본 mail 채널이지만 템플릿도 없으므로 빈 배열
+     *
+     * @scenario path=multichannel, gate=definition
+     *
+     * @effects unknown_type_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_via_unknown_type_returns_empty(): void
     {
@@ -322,6 +406,12 @@ class GenericNotificationViaTest extends TestCase
      * 에서 빠진다. 하지만 저장된 채널 설정·템플릿은 남아 있어, via() 가 available 목록을 확인하지
      * 않으면 죽은 채널을 발송 후보로 넣고 "건너뜀" 로그까지 남긴다. available 목록에 없는 채널은
      * 로그 없이 제외되어야 한다 (채널 지정 경로).
+     *
+     * @scenario path=explicit, gate=available
+     *
+     * @effects unavailable_channel_excluded_silently
+     *
+     * @return void 반환값 없음
      */
     public function test_via_with_explicit_channel_excludes_channel_not_in_available_list(): void
     {
@@ -345,6 +435,12 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * 다채널 자동 결정 경로에서도 available 목록에 없는 채널은 로그 없이 제외된다.
+     *
+     * @scenario path=multichannel, gate=available
+     *
+     * @effects unavailable_channel_excluded_silently
+     *
+     * @return void 반환값 없음
      */
     public function test_via_multichannel_excludes_channel_not_in_available_list(): void
     {
@@ -366,6 +462,10 @@ class GenericNotificationViaTest extends TestCase
 
     /**
      * 테스트용 템플릿 생성 헬퍼
+     *
+     * @param  string  $channel  채널
+     * @param  bool  $isActive  활성 여부
+     * @return NotificationTemplate 템플릿
      */
     private function createTemplate(string $channel, bool $isActive = true): NotificationTemplate
     {

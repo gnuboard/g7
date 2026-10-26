@@ -38,8 +38,11 @@ function collectNavigates(node: unknown, acc: Json[] = []): Json[] {
   return acc;
 }
 
-/** 복귀 경로를 쓰는 navigate(네 갈래). */
-const redirectNavigates: Json[] = collectNavigates((adminLogin as Json).components)
+/**
+ * 복귀 경로를 쓰는 navigate(네 갈래). 자격증명 갈래는 7.2.0 에서 이름 붙은 액션 `applyAdminLoginResult` 로 뽑혀
+ * 폼 로그인과 인계 교환이 함께 쓰므로 `named_actions` 도 함께 훑는다.
+ */
+const redirectNavigates: Json[] = collectNavigates([(adminLogin as Json).components, (adminLogin as Json).named_actions])
   .filter((n) => String(n.params?.path ?? '').includes('redirect'));
 const redirectPaths: string[] = redirectNavigates.map((n) => String(n.params?.path ?? ''));
 
@@ -112,6 +115,10 @@ describe('관리자 로그인 복귀 경로 대체값', () => {
     // 「비밀번호 찾기」 같은 고정 경로를 빼면, 복귀 경로를 쓰는 이동은 네 갈래이고 모두 같은 path·fallbackPath 다
     // (한 곳만 고치면 그 갈래만 로그인 화면에 머문다).
     expect(redirectPaths.length).toBe(4);
+    // 자격증명 갈래는 이름 붙은 액션 안에 하나만 있고, 폼 로그인과 인계 교환이 그 액션을 부른다
+    expect(collectNavigates((adminLogin as Json).named_actions?.applyAdminLoginResult)).toHaveLength(1);
+    expect(JSON.stringify((adminLogin as Json).components)).toContain('"actionRef":"applyAdminLoginResult"');
+    expect(JSON.stringify((adminLogin as Json).init_actions)).toContain('"actionRef":"applyAdminLoginResult"');
     expect(new Set(redirectPaths).size).toBe(1);
     expect(redirectNavigates.every((n) => n.params?.fallbackPath === '/admin')).toBe(true);
     // 거르기는 엔진 한 곳 — 레이아웃 식이 주소를 직접 거르지 않는다

@@ -1,0 +1,30 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변종이다. 메서드(hasSettings, getSettingsLayout, getSettingsSchema)마다 쓰는 축이 달라 layout 과 schema 를 곱한 조합은 실재하지 않는다. 회귀 가드는 effects 이고 모든 effect 가 test_files 의 @effects 로 귀속된다.
+feature: 플러그인 설정 계약 (AbstractPlugin hasSettings, getSettingsLayout, getSettingsSchema)
+
+description: |
+  AbstractPlugin 의 설정 관련 기본 동작. 설정 레이아웃 경로가 있으면 hasSettings() 가 true, 없으면 false 다.
+  getSettingsLayout() 은 플러그인 경로의 resources/layouts/admin/plugin_settings 를 찾아 원본(.g7.html)을
+  산출물(.json)보다 먼저 돌려주고, 파일이 없으면 null 이며, 하위 클래스가 오버라이드할 수 있다.
+  getSettingsSchema() 는 기본이 빈 배열이고 오버라이드할 수 있으며, 번들 Daum 우편번호 플러그인은
+  display_mode, popup_width, popup_height, theme_color 필드를 선언한다.
+
+axes:
+  method: [hasSettings, getSettingsLayout, getSettingsSchema]
+  layout: [present, absent, default_file, override]
+  schema: [default, override, bundled_plugin]
+
+exclusions: []
+
+effects:
+  - has_settings_true_when_layout_present
+  - has_settings_false_when_layout_absent
+  - has_settings_follows_settings_layout
+  - settings_layout_resolves_default_file
+  - settings_layout_null_when_file_missing
+  - settings_layout_override_respected
+  - settings_schema_empty_by_default
+  - settings_schema_override_respected
+  - daum_postcode_schema_fields_declared
+
+test_files:
+  - tests/Unit/Extension/AbstractPluginSettingsTest.php

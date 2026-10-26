@@ -35,6 +35,8 @@ interface HeaderProps {
     currentLocale?: string;
     /** 쇼핑몰 기본 경로 (예: "/shop", "/") */
     shopBase?: string;
+    /** 일반 회원가입을 받는지 — false 면 비로그인 헤더의 회원가입 버튼을 숨긴다 (기본 true, 7.2.0) */
+    registrationEnabled?: boolean;
     /** 추가 CSS 클래스 */
     className?: string;
     /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */

@@ -395,7 +395,7 @@ class GenericNotification extends BaseNotification
 
             // click_url 패턴이 있으면 변수 치환하여 포함 (알림센터 클릭 시 이동 URL)
             $clickUrl = $template->click_url
-                ? $template->replaceVariablesInString($template->click_url, $this->data)
+                ? $template->replaceVariablesInString($template->click_url, $this->data, $locale)
                 : null;
 
             return [
@@ -403,13 +403,13 @@ class GenericNotification extends BaseNotification
                 'subject' => $rendered['subject'],
                 'body' => $rendered['body'],
                 'click_url' => $clickUrl,
-                'data' => $this->data,
+                'data' => NotificationVariables::resolve($this->data, $locale),
             ];
         }
 
         return [
             'type' => $this->type,
-            'data' => $this->data,
+            'data' => NotificationVariables::resolve($this->data, $locale),
         ];
     }
 
@@ -425,11 +425,15 @@ class GenericNotification extends BaseNotification
         if (str_starts_with($method, 'to')) {
             $channel = lcfirst(substr($method, 2));
 
+            // 확장 채널도 메일·사이트 알림과 같은 받는 사람 언어로 고른 변수 값을 받는다.
+            $notifiable = $parameters[0] ?? null;
+            $data = is_object($notifiable) ? $this->getDataFor($notifiable) : $this->data;
+
             return HookManager::applyFilters(
                 "{$this->hookPrefix}.notification.to_{$channel}",
-                $this->data,
+                $data,
                 $this->type,
-                $parameters[0] ?? null
+                $notifiable
             );
         }
 
@@ -470,6 +474,20 @@ class GenericNotification extends BaseNotification
     public function getData(): array
     {
         return $this->data;
+    }
+
+    /**
+     * 받는 사람 언어로 언어별 변수 값을 고른 알림 데이터를 반환합니다.
+     *
+     * 자체 템플릿으로 본문을 만드는 확장 채널 드라이버는 `getData()` 대신 이것을 쓴다 —
+     * 메일·사이트 알림과 같은 규칙(`NotificationVariables`)으로 값을 고른다.
+     *
+     * @param  object  $notifiable  알림 수신자
+     * @return array 언어별 값을 문자열로 해석한 알림 변수 데이터
+     */
+    public function getDataFor(object $notifiable): array
+    {
+        return NotificationVariables::resolve($this->data, self::resolveNotifiableLocale($notifiable));
     }
 
     /**

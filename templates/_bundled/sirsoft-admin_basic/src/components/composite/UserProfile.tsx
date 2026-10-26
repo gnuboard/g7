@@ -1,3 +1,4 @@
+// e2e:allow 서버가 로그아웃 뒤 이동 경로(redirect_url)를 주는 경우는 외부 인증 확장의 로그아웃 모드가 있어야 생겨 코어 단독 E2E 로 재현할 수 없다 — UserProfile.originPolicy 단위 시험과 계획서 §10 M7(로그아웃 모드) 브라우저 실측이 덮는다. 응답 없음 경로는 A1 M0 실측(T10')
 import React, { useState, useRef, useEffect } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
@@ -218,11 +219,18 @@ export const UserProfile: React.FC<UserProfileProps> = ({
       }
 
       // API 호출 — 실패(4xx·5xx)는 예외로 떨어진다
-      await api.post(logoutEndpoint);
+      const result = await api.post(logoutEndpoint);
 
-      // 로그아웃 성공 - 토큰 제거 후 로그인 페이지로 리다이렉션
+      // 서버가 정한 로그아웃 뒤 이동 경로(외부 인증의 IdP 로그아웃 등, 7.2.0) — 같은 출처 경로만 따른다.
+      // 외부 IdP 로 나가는 이동은 서버의 같은 출처 라우트가 302 한다(코어 AuthManager.logout() 과 같은 규칙)
+      const serverRedirect = result?.data?.redirect_url;
+      const nextPath = typeof serverRedirect === 'string' && serverRedirect.startsWith('/') && isSameOriginRequest(serverRedirect)
+        ? serverRedirect
+        : safeRedirectPath;
+
+      // 로그아웃 성공 - 토큰 제거 후 이동
       clearAuthToken();
-      window.location.href = safeRedirectPath;
+      window.location.href = nextPath;
     } catch (error) {
       logger.error('로그아웃 오류:', error);
       // 실패해도 토큰 제거 및 로그인 페이지로 이동 (토큰 만료 등의 경우)

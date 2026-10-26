@@ -1,0 +1,18 @@
+{
+  "deprovision-check": {
+    "label": "SSO 定期点検",
+    "description": "IdP に在籍状況を再照会し、退職した会員をブロックして、復帰した会員を再び有効にします(定期点検を有効にした IdP のみ)。"
+  },
+  "withdraw-deprovisioned": {
+    "label": "SSO 退職後の退会",
+    "description": "退職処理後、定めた日数が過ぎた会員を退会(匿名化)させます(退職後の退会を有効にした IdP のみ、管理者アカウントはスキップ)。"
+  },
+  "metadata-refresh": {
+    "label": "SSO IdP メタデータ更新",
+    "description": "SAML IdP メタデータを再取得して証明書の有効期限を記録し、有効期限が近づくと通知します。"
+  },
+  "prune": {
+    "label": "SSO 履歴の保存期間整理",
+    "description": "保存期間が過ぎたログイン試行履歴、SCIM 受信履歴、終了した SSO セッション記録を削除します。"
+  }
+}

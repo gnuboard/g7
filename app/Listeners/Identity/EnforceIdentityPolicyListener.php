@@ -8,6 +8,7 @@ use App\Enums\IdentityOriginType;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Services\IdentityPolicyService;
+use App\Support\Auth\SystemOperation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -203,6 +204,14 @@ class EnforceIdentityPolicyListener implements HookListenerInterface
     {
         $hookName = $this->resolveCurrentHook();
         if ($hookName === null) {
+            return;
+        }
+
+        // 행위자 없는 시스템 작업(동기화·프로비저닝·예약 탈퇴)은 사람용 본인인증 관문을 받지 않는다 —
+        // 받으면 대상 회원으로 판정돼 428 로 작업이 멈춘다. 사람이 행위자인 경로는 이 문맥을 쓰지 않는다.
+        if (SystemOperation::active()) {
+            SystemOperation::logBypass($hookName);
+
             return;
         }
 

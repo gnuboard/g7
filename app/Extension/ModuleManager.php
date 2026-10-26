@@ -3448,42 +3448,21 @@ class ModuleManager implements ModuleManagerInterface
     }
 
     /**
-     * 모듈 제거 시 관련 역할을 삭제합니다.
+     * 모듈 제거(데이터까지 삭제) 시 그 모듈이 소유한 역할을 삭제합니다.
      *
-     * 조건:
-     * - 모듈이 소유한 역할만 삭제 (extension_type='module')
-     * - role에 부여된 permission이 하나도 없어야 삭제
+     * 모듈 소유(extension_type='module', extension_identifier=이 모듈) 역할 전부를 권한·메뉴·회원 연결을 떼고 지운다.
+     * 종전에는 역할에 권한이 하나도 없을 때만 지워, 다른 확장이 사용자 권한을 `roles: ['*']`(모든 활성 역할)로 붙이면 역할이 남았다
+     * (7.2.0). 다른 확장 소유 역할·권한·회원은 건드리지 않는다. 이 메서드는 「데이터까지 삭제」 갈래에서만 불린다.
      *
      * @param  ModuleInterface  $module  모듈 인스턴스
      * @return void 반환값 없음
      */
     protected function removeModuleRoles(ModuleInterface $module): void
     {
-        if (! method_exists($module, 'getRoles')) {
-            return;
-        }
+        $roles = $this->roleRepository->getByExtension(ExtensionOwnerType::Module, $module->getIdentifier());
 
-        $roles = $module->getRoles();
-
-        foreach ($roles as $roleData) {
-            $role = $this->roleRepository->findExtensionRoleByIdentifier(
-                $roleData['identifier'],
-                ExtensionOwnerType::Module,
-                $module->getIdentifier()
-            );
-
-            if ($role) {
-                // role에 권한이 남아있는지 확인
-                $permissionCount = $this->roleRepository->getPermissionCount($role);
-                if ($permissionCount === 0) {
-                    $this->roleRepository->delete($role);
-                } else {
-                    Log::warning('모듈 역할에 권한이 남아있어 삭제하지 않습니다.', [
-                        'role' => $roleData['identifier'],
-                        'remaining_permissions' => $permissionCount,
-                    ]);
-                }
-            }
+        foreach ($roles as $role) {
+            $this->roleRepository->deleteWithRelations($role);
         }
     }
 
@@ -4157,7 +4136,7 @@ class ModuleManager implements ModuleManagerInterface
             return;
         }
 
-        // 붙을 자리(호스트 레이아웃·확장점)가 없는 템플릿에는 등록하지 않는다 (C10). 종전엔 모든 활성 템플릿에
+        // 붙을 자리(호스트 레이아웃·확장점)가 없는 템플릿에는 등록하지 않는다 (7.2.0). 종전엔 모든 활성 템플릿에
         // 무조건 등록해 사용자 템플릿에 관리자 대상 조각(죽은 행)이 쌓였다. 조각 컴파일 자체는 템플릿과 무관하다
         // (JSON 과 동일 — 2026-09-28 결정). 호스트가 나중에 설치되는 순서 의존은 호출부가
         // `registerAllActiveExtensionsToTemplate` 재호출로 메운다.

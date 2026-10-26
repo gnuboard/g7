@@ -53,7 +53,7 @@
         "too_long_session_storage": "Session storage — item cannot exceed 128 characters.",
         "too_long_cookie": "Cookie — item cannot exceed 128 characters.",
         "must_be_array": "Each storage scope must be an array of item names.",
-        "invalid_scope": "Unknown storage scope: :scope (only local storage, session storage and cookies are allowed)"
+        "invalid_scope": "Unknown storage scope: {scope} (only local storage, session storage and cookies are allowed)"
     },
     "settings": {
         "saved": "Settings have been saved.",

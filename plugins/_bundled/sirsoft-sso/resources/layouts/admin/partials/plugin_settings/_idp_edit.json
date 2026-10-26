@@ -1,0 +1,3266 @@
+{
+    "comment": "IdP 편집 보기(?idp={id}) — 하위 탭 ① 기본 ② 연결 정보 ③ 계정과 연결 ④ 속성 ⑤ 역할 매핑 ⑥ 보안 ⑦ 프로비저닝 ⑧ 진단.\n     값은 _local.idpForm(상세 응답 그대로)에 있고 [저장]이 그대로 보낸다. 연결 정보 칸은 드라이버의 칸 정의(idpForm.schema)로 그린다 — 비밀 칸(secret)은\n     idpForm.secrets 에, 나머지는 idpForm.config 에 쓴다. 비밀값은 가린 값 그대로 두면 유지된다.\n     관리자 역할 대상 규칙과, 연결 회원 중 관리자가 있는 IdP 의 역할 동기화 방식, 그룹 출처는 최고관리자가 아니면 잠근다(abilities.role_rules_locked — W14, W35).",
+    "meta": {
+        "is_partial": true,
+        "description": "IdP 편집"
+    },
+    "layout_name": "partials/plugin_settings/_idp_edit",
+    "id": "idp_edit_view",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{!!query.idp}}",
+    "props": {
+        "className": "mt-6 space-y-4"
+    },
+    "children": [
+        {
+            "id": "idp_edit_header",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-wrap items-center justify-between gap-2"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex items-center gap-3 min-w-0"
+                    },
+                    "children": [
+                        {
+                            "id": "idp_back_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "목록 보기로 돌아간다 — 저장하지 않은 편집은 버린다",
+                                    "type": "click",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "/admin/plugins/sirsoft-sso/settings",
+                                        "query": {
+                                            "tab": "idps"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn-icon",
+                                "title": "$t:sirsoft-sso.admin.settings.idp.back",
+                                "aria-label": "$t:sirsoft-sso.admin.settings.idp.back"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fa-solid fa-arrow-left",
+                                        "className": "text-lg"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "min-w-0"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H2",
+                                    "props": {
+                                        "className": "text-lg font-semibold text-gray-900 dark:text-white truncate"
+                                    },
+                                    "text": "{{_local.idpForm?.display_label ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "{{(_local.idpForm?.key ?? '') + ' · ' + (_local.idpForm?.protocol_label ?? '')}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex flex-wrap gap-2"
+                    },
+                    "children": [
+                        {
+                            "id": "idp_save_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "actionRef": "saveIdp"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-primary text-sm",
+                                "disabled": "{{!_computed.canUpdate || _local.isSavingIdp}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.save"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "idp_delete_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "연결 회원이 없는 IdP 만 지울 수 있다(서버도 409 로 막는다)",
+                                    "type": "click",
+                                    "handler": "apiCall",
+                                    "target": "/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}",
+                                    "auth_required": true,
+                                    "params": {
+                                        "method": "DELETE"
+                                    },
+                                    "confirm": "$t:sirsoft-sso.admin.settings.idp.delete_confirm",
+                                    "onSuccess": [
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "success",
+                                                "message": "$t:sirsoft-sso.admin.settings.idp.deleted"
+                                            }
+                                        },
+                                        {
+                                            "handler": "navigate",
+                                            "params": {
+                                                "path": "/admin/plugins/sirsoft-sso/settings",
+                                                "query": {
+                                                    "tab": "idps"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "onError": {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-danger text-sm",
+                                "disabled": "{{!_computed.canUpdate || (_local.idpForm?.accounts_total ?? 0) > 0}}",
+                                "title": "$t:sirsoft-sso.admin.settings.idp.delete_hint"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:common.delete"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "idp_unavailable_alert",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{!!_local.idpForm && _local.idpForm?.available === false}}",
+            "props": {
+                "role": "alert",
+                "className": "alert-warning"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "fa-solid fa-triangle-exclamation",
+                        "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "props": {
+                        "className": "text-sm text-amber-800 dark:text-amber-200"
+                    },
+                    "text": "{{_local.idpForm?.protocol === 'ldap' ? $t('sirsoft-sso.admin.idp.ldap_extension_missing') : $t('sirsoft-sso.admin.settings.idp.unavailable_notice')}}"
+                }
+            ]
+        },
+        {
+            "id": "idp_edit_tabs",
+            "type": "composite",
+            "name": "TabNavigation",
+            "actions": [
+                {
+                    "comment": "하위 탭은 화면 상태로만 바꾼다(주소는 그대로 ?idp=)",
+                    "type": "change",
+                    "event": "onTabChange",
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "idpTab": "{{$args[0]}}"
+                    }
+                }
+            ],
+            "props": {
+                "activeTabId": "{{_local.idpTab ?? 'basic'}}",
+                "variant": "pills",
+                "tabs": [
+                    {
+                        "id": "basic",
+                        "label": "$t:sirsoft-sso.admin.settings.idp.tabs.basic"
+                    },
+                    {
+                        "id": "connection",
+                        "label": "$t:sirsoft-sso.admin.settings.idp.tabs.connection"
+                    },
+                    {
+                        "id": "accounts",
+                        "label": "$t:sirsoft-sso.admin.settings.idp.tabs.accounts"
+                    },
+                    {
+                        "id": "attributes",
+                        "label": "$t:sirsoft-sso.admin.settings.idp.tabs.attributes"
+                    },
+                    {
+                        "id": "roles",
+                        "label": "$t:sirsoft-sso.admin.settings.idp.tabs.roles"
+                    },
+                    {
+                        "id": "security",
+                        "label": "$t:sirsoft-sso.admin.settings.idp.tabs.security"
+                    },
+                    {
+                        "id": "provisioning",
+                        "label": "$t:sirsoft-sso.admin.settings.idp.tabs.provisioning"
+                    },
+                    {
+                        "id": "diagnostics",
+                        "label": "$t:sirsoft-sso.admin.settings.idp.tabs.diagnostics"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "idp_edit_form",
+            "type": "basic",
+            "name": "Div",
+            "dataKey": "idpForm",
+            "props": {
+                "className": "admin-card space-y-6"
+            },
+            "children": [
+                {
+                    "comment": "① 기본",
+                    "id": "idp_tab_basic",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_local.idpTab ?? 'basic') === 'basic'}}",
+                    "props": {
+                        "className": "space-y-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "enabled",
+                                        "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.enabled",
+                                        "size": "md",
+                                        "disabled": "{{!_computed.canUpdate}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.enabled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.enabled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.idpErrors?.enabled}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.idpErrors?.enabled?.[0] ?? _local.idpErrors?.enabled ?? ''}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.idp.fields.label"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "MultilingualInput",
+                                    "props": {
+                                        "name": "label",
+                                        "maxLength": 100,
+                                        "disabled": "{{!_computed.canUpdate}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-2col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.sort_order"
+                                        },
+                                        {
+                                            "comment": "audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "sort_order",
+                                                "min": 0,
+                                                "max": 9999,
+                                                "className": "input",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-start gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "button_visible",
+                                                "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.button_visible",
+                                                "size": "md",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.fields.button_visible"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "form-hint"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.hints.button_visible"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.button_bg"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "button_style.bg",
+                                                "className": "input",
+                                                "placeholder": "#1f2937",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.button_fg"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "button_style.fg",
+                                                "className": "input",
+                                                "placeholder": "#ffffff",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.button_border"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "button_style.border",
+                                                "className": "input",
+                                                "placeholder": "#1f2937",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "② 연결 정보 — 드라이버 칸 정의로 그린다",
+                    "id": "idp_tab_connection",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.idpTab === 'connection'}}",
+                    "props": {
+                        "className": "space-y-5"
+                    },
+                    "children": [
+                        {
+                            "id": "idp_config_field_{{field.key}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "_local.idpForm?.schema ?? []",
+                                "item_var": "field"
+                            },
+                            "dataKey": "{{field.key}}",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "{{field.label + (field.required ? ' *' : '')}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!field.hint}}",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "{{field.hint}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "if": "{{field.type === 'string' || field.type === 'url' || field.type === 'number'}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "연결 정보 칸 — 그 키 하나만 바꿔 config 에 되쓴다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "idpForm.config": "{{Object.assign({}, _local.idpForm?.config ?? {}, Object.fromEntries([[field.key, $event.target.value]]))}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "{{field.type === 'number' ? 'number' : 'text'}}",
+                                                "className": "input",
+                                                "value": "{{_local.idpForm?.config?.[field.key] ?? field.default ?? ''}}",
+                                                "disabled": "{{!_computed.canUpdate || field.readonly === true}}",
+                                                "aria-label": "{{field.label}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "if": "{{field.type === 'secret' || field.secret === true}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "비밀 칸 — 가린 값 그대로 두면 서버가 기존 값을 유지한다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "idpForm.secrets": "{{Object.assign({}, _local.idpForm?.secrets ?? {}, Object.fromEntries([[field.key, $event.target.value]]))}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "password",
+                                                "className": "input",
+                                                "value": "{{_local.idpForm?.secrets?.[field.key] ?? ''}}",
+                                                "autoComplete": "new-password",
+                                                "disabled": "{{!_computed.canUpdate || field.readonly === true}}",
+                                                "aria-label": "{{field.label}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Textarea",
+                                            "if": "{{field.type === 'textarea' || field.type === 'list'}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "목록 칸은 줄마다 한 값",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "idpForm.config": "{{Object.assign({}, _local.idpForm?.config ?? {}, Object.fromEntries([[field.key, field.type === 'list' ? $event.target.value.split('\\n').map(v => v.trim()).filter(v => v !== '') : $event.target.value]]))}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "input",
+                                                "rows": "4",
+                                                "value": "{{field.type === 'list' ? ((_local.idpForm?.config?.[field.key] ?? field.default ?? []).join ? (_local.idpForm?.config?.[field.key] ?? field.default ?? []).join('\\n') : '') : (_local.idpForm?.config?.[field.key] ?? '')}}",
+                                                "disabled": "{{!_computed.canUpdate || field.readonly === true}}",
+                                                "aria-label": "{{field.label}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "if": "{{field.type === 'select'}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "프리셋이 있는 칸(LDAP 디렉터리 종류)은 고른 프리셋 값으로 관련 칸을 함께 채운다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "idpForm.config": "{{Object.assign({}, _local.idpForm?.config ?? {}, field.presets?.[$event.target.value] ?? {}, Object.fromEntries([[field.key, $event.target.value]]))}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "className": "w-full",
+                                                "value": "{{_local.idpForm?.config?.[field.key] ?? field.default ?? ''}}",
+                                                "disabled": "{{!_computed.canUpdate || field.readonly === true}}",
+                                                "aria-label": "{{field.label}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "if": "{{field.options_source === 'ldap_idps'}}",
+                                                    "props": {
+                                                        "value": ""
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.no_lookup_directory"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "iteration": {
+                                                        "source": "field.options_source === 'ldap_idps' ? (ssoIdps?.data?.idps ?? []).filter(i => i.protocol === 'ldap').map(i => ({ value: String(i.id), label: i.display_label })) : (field.options ?? [])",
+                                                        "item_var": "option"
+                                                    },
+                                                    "props": {
+                                                        "value": "{{option.value ?? option}}"
+                                                    },
+                                                    "text": "{{option.label ?? option}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "if": "{{field.type === 'boolean'}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "켜고 끄는 칸 — 체크 상태를 그대로 불리언으로 담는다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "idpForm.config": "{{Object.assign({}, _local.idpForm?.config ?? {}, Object.fromEntries([[field.key, $event.target.checked]]))}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "checkbox",
+                                                "className": "h-4 w-4 rounded text-blue-600",
+                                                "checked": "{{(_local.idpForm?.config?.[field.key] ?? field.default) === true}}",
+                                                "disabled": "{{!_computed.canUpdate || field.readonly === true}}",
+                                                "aria-label": "{{field.label}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{!!_local.idpErrors?.[field.key]}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.idpErrors?.[field.key]}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "ldap_plaintext_warning",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_local.idpForm?.protocol === 'ldap' && _local.idpForm?.config?.encryption === 'none'}}",
+                            "props": {
+                                "role": "alert",
+                                "className": "form-error"
+                            },
+                            "text": "$t:sirsoft-sso.admin.idp.ldap_plaintext_warning"
+                        },
+                        {
+                            "id": "saml_lookup_none",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_local.idpForm?.protocol === 'saml' && !_local.idpForm?.config?.lookup_directory_idp_id}}",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-sso.admin.idp.saml_lookup_directory_none"
+                        },
+                        {
+                            "comment": "운영자가 IdP 콘솔에 넣을 값",
+                            "id": "sp_info_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_local.idpForm?.sp_info ?? []).length > 0}}",
+                            "props": {
+                                "className": "pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.idp.sp_info_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.idp.sp_info_hint"
+                                },
+                                {
+                                    "id": "sp_info_row_{{row.key}}",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "_local.idpForm?.sp_info ?? []",
+                                        "item_var": "row"
+                                    },
+                                    "dataKey": "{{row.key}}",
+                                    "props": {
+                                        "className": "flex flex-col sm:flex-row sm:items-center gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs font-medium text-gray-500 dark:text-gray-400 sm:w-40 flex-shrink-0"
+                                            },
+                                            "text": "{{row.label}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Code",
+                                            "props": {
+                                                "className": "flex-1 min-w-0 break-all text-xs bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 px-2 py-1.5 rounded"
+                                            },
+                                            "text": "{{row.value}}"
+                                        },
+                                        {
+                                            "id": "copy_sp_info_{{row.key}}",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "값을 복사한다 — IdP 콘솔에 그대로 붙여 넣는다",
+                                                    "type": "click",
+                                                    "handler": "sirsoft-sso.copyToClipboard",
+                                                    "params": {
+                                                        "text": "{{row.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-secondary text-xs",
+                                                "aria-label": "$t:sirsoft-sso.admin.common.copy_named|name={{row.label}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "fa-regular fa-copy",
+                                                        "className": "text-xs"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "hidden sm:inline"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.common.copy"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "sp_keys_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.idpForm?.protocol === 'saml'}}",
+                            "props": {
+                                "className": "pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "flex-1 text-sm text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.idp.saml_generate_sp_keys_confirm"
+                                },
+                                {
+                                    "id": "generate_sp_keys",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "SP 서명 키를 새로 만든다 — 이전 키는 30일 함께 둔다. 새 메타데이터를 IdP 에 다시 등록해야 한다",
+                                            "type": "click",
+                                            "handler": "apiCall",
+                                            "target": "/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}/sp-keys",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST"
+                                            },
+                                            "confirm": "$t:sirsoft-sso.admin.settings.idp.sp_keys_confirm",
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:sirsoft-sso.admin.settings.idp.sp_keys_done"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "ssoIdp"
+                                                    }
+                                                }
+                                            ],
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-secondary text-sm",
+                                        "disabled": "{{!_computed.canUpdate}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.sp_keys"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "③ 계정과 연결",
+                    "id": "idp_tab_accounts",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.idpTab === 'accounts'}}",
+                    "props": {
+                        "className": "space-y-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.provisioning_mode"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.provisioning_mode"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "provisioning_mode",
+                                                "className": "w-full",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "preregistered"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.provisioning_mode.preregistered"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "jit"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.provisioning_mode.jit"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.owned_domains"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.owned_domains"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2 space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "TagInput",
+                                            "props": {
+                                                "name": "owned_domains",
+                                                "creatable": true,
+                                                "placeholder": "corp.example",
+                                                "className": "w-full",
+                                                "defaultVariant": "blue",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-start gap-3"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Toggle",
+                                                    "props": {
+                                                        "name": "enforce_owned_domains",
+                                                        "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.enforce_owned_domains",
+                                                        "size": "md",
+                                                        "disabled": "{{!_computed.canUpdate}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Label",
+                                                            "props": {
+                                                                "className": "form-label"
+                                                            },
+                                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.enforce_owned_domains"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "form-hint"
+                                                            },
+                                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.enforce_owned_domains"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.idp.fields.link_methods"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-start gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "link_methods.domain_auto",
+                                                "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.link_domain_auto",
+                                                "size": "md",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.fields.link_domain_auto"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "form-hint"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.hints.link_domain_auto"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{_local.idpForm?.link_methods?.domain_auto === true}}",
+                                                    "props": {
+                                                        "role": "alert",
+                                                        "className": "form-error"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.warnings.domain_auto"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-start gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "link_methods.verify",
+                                                "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.link_verify",
+                                                "size": "md",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.fields.link_verify"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "form-hint"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.hints.link_verify"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-start gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "link_methods.admin",
+                                                "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.link_admin",
+                                                "size": "md",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.fields.link_admin"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "form-hint"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.hints.link_admin"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "require_consent",
+                                        "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.require_consent",
+                                        "size": "md",
+                                        "disabled": "{{!_computed.canUpdate}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.require_consent"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.require_consent"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.identity_policy"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.identity_policy"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "identity_policy",
+                                                "className": "w-full",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "skip"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.identity_policy.skip"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "apply"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.identity_policy.apply"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "allow_local_password",
+                                        "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.allow_local_password",
+                                        "size": "md",
+                                        "disabled": "{{!_computed.canUpdate}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.allow_local_password"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.allow_local_password"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "④ 속성 동기화",
+                    "id": "idp_tab_attributes",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.idpTab === 'attributes'}}",
+                    "props": {
+                        "className": "space-y-3"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.attribute_map"
+                        },
+                        {
+                            "id": "attribute_rule_{{index}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "_local.idpForm?.attribute_map ?? []",
+                                "item_var": "rule",
+                                "index_var": "index"
+                            },
+                            "dataKey": "{{'attr-' + index}}",
+                            "props": {
+                                "className": "flex flex-col md:flex-row md:items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "회원 쪽 칸 이름 — 이 줄만 바꾼다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "idpForm.attribute_map": "{{(_local.idpForm?.attribute_map ?? []).map((r, i) => i === index ? Object.assign({}, r, { field: $event.target.value }) : r)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "className": "input md:w-48",
+                                        "value": "{{rule.field}}",
+                                        "placeholder": "name / attr:department",
+                                        "aria-label": "$t:sirsoft-sso.admin.settings.idp.fields.attribute_field",
+                                        "disabled": "{{!_computed.canUpdate}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "IdP 가 주는 속성 이름 — 이 줄만 바꾼다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "idpForm.attribute_map": "{{(_local.idpForm?.attribute_map ?? []).map((r, i) => i === index ? Object.assign({}, r, { source: $event.target.value }) : r)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "className": "input md:w-48",
+                                        "value": "{{rule.source}}",
+                                        "placeholder": "displayName",
+                                        "aria-label": "$t:sirsoft-sso.admin.settings.idp.fields.attribute_source",
+                                        "disabled": "{{!_computed.canUpdate}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "동기화 방식(덮어쓰고 잠금·매 로그인 덮어쓰기·처음만·가져오지 않음) — 이 줄만 바꾼다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "idpForm.attribute_map": "{{(_local.idpForm?.attribute_map ?? []).map((r, i) => i === index ? Object.assign({}, r, { mode: $event.target.value }) : r)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "className": "md:w-48",
+                                        "value": "{{rule.mode ?? 'sync'}}",
+                                        "aria-label": "$t:sirsoft-sso.admin.settings.idp.fields.attribute_mode",
+                                        "disabled": "{{!_computed.canUpdate}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Option",
+                                            "props": {
+                                                "value": "sync_lock"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.options.attribute_mode.sync_lock"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Option",
+                                            "props": {
+                                                "value": "sync"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.options.attribute_mode.sync"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Option",
+                                            "props": {
+                                                "value": "first_only"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.options.attribute_mode.first_only"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Option",
+                                            "props": {
+                                                "value": "ignore"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.options.attribute_mode.ignore"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "이 규칙 줄을 지운다 — 저장해야 반영된다",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "idpForm.attribute_map": "{{(_local.idpForm?.attribute_map ?? []).filter((r, i) => i !== index)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-icon",
+                                        "title": "$t:sirsoft-sso.admin.common.remove_row",
+                                        "aria-label": "$t:sirsoft-sso.admin.common.remove_row",
+                                        "disabled": "{{!_computed.canUpdate}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "fa-solid fa-trash",
+                                                "className": "text-sm"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(_local.idpForm?.attribute_map ?? []).some(r => r.field === 'email' && r.mode !== 'ignore')}}",
+                            "props": {
+                                "role": "status",
+                                "className": "form-hint"
+                            },
+                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.email_sync"
+                        },
+                        {
+                            "id": "add_attribute_rule",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "새 규칙 줄은 이름 ← displayName 매번 동기화로 시작한다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "idpForm.attribute_map": "{{(_local.idpForm?.attribute_map ?? []).concat([{ field: 'name', source: 'displayName', mode: 'sync' }])}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary text-sm",
+                                "disabled": "{{!_computed.canUpdate}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fa-solid fa-plus",
+                                        "className": "text-xs"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-sso.admin.settings.idp.add_attribute"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "⑤ 역할 매핑",
+                    "id": "idp_tab_roles",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.idpTab === 'roles'}}",
+                    "props": {
+                        "className": "space-y-5"
+                    },
+                    "children": [
+                        {
+                            "id": "role_rules_locked_notice",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.idpForm?.abilities?.role_rules_locked === true}}",
+                            "props": {
+                                "role": "status",
+                                "className": "alert-warning"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "lock",
+                                        "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm text-amber-800 dark:text-amber-200"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.idp.role_rules_locked"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-2col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.role_sync_mode"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "role_sync_mode",
+                                                "className": "w-full",
+                                                "disabled": "{{!_computed.canUpdate || _local.idpForm?.abilities?.role_rules_locked === true}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "managed_only"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.role_sync_mode.managed_only"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "authoritative"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.role_sync_mode.authoritative"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "first_only"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.role_sync_mode.first_only"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_local.idpForm?.role_sync_mode === 'authoritative'}}",
+                                            "props": {
+                                                "role": "alert",
+                                                "className": "form-error"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.warnings.authoritative"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.group_source"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "group_source",
+                                                "className": "w-full",
+                                                "disabled": "{{!_computed.canUpdate || _local.idpForm?.abilities?.role_rules_locked === true}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "assertion"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.group_source.assertion"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "scim"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.group_source.scim"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "ldap"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.group_source.ldap"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "group_compare_options",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-col sm:flex-row gap-4"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-start gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "config.group_case_sensitive",
+                                                "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.group_case_sensitive",
+                                                "size": "md",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.group_case_sensitive"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_local.idpForm?.group_source === 'ldap'}}",
+                                    "props": {
+                                        "className": "flex-start gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "config.group_dn_cn",
+                                                "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.group_dn_cn",
+                                                "size": "md",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.group_dn_cn"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "role_rule_{{index}}",
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "_local.idpForm?.role_mapping ?? []",
+                                "item_var": "rule",
+                                "index_var": "index"
+                            },
+                            "dataKey": "{{'role-' + index}}",
+                            "props": {
+                                "className": "flex flex-col md:flex-row md:items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "IdP 그룹 이름 — 이 줄만 바꾼다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "idpForm.role_mapping": "{{(_local.idpForm?.role_mapping ?? []).map((r, i) => i === index ? Object.assign({}, r, { group: $event.target.value }) : r)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "className": "input md:flex-1",
+                                        "value": "{{rule.group}}",
+                                        "placeholder": "$t:sirsoft-sso.admin.settings.idp.placeholders.group",
+                                        "aria-label": "$t:sirsoft-sso.admin.settings.idp.fields.role_group",
+                                        "disabled": "{{!_computed.canUpdate || (rule.role === 'admin' && !_computed.isSuper)}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "붙일 역할 식별자 — 관리자 역할 줄은 최고관리자만 고친다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "idpForm.role_mapping": "{{(_local.idpForm?.role_mapping ?? []).map((r, i) => i === index ? Object.assign({}, r, { role: $event.target.value }) : r)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "text",
+                                        "className": "input md:w-48",
+                                        "value": "{{rule.role}}",
+                                        "placeholder": "manager",
+                                        "aria-label": "$t:sirsoft-sso.admin.settings.idp.fields.role_role",
+                                        "disabled": "{{!_computed.canUpdate || (rule.role === 'admin' && !_computed.isSuper)}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{rule.role === 'admin' && !_computed.isSuper}}",
+                                    "props": {
+                                        "name": "lock",
+                                        "className": "text-amber-600 dark:text-amber-400",
+                                        "aria-label": "$t:sirsoft-sso.admin.settings.idp.super_only"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "이 매핑 줄을 지운다 — 관리자 역할 줄은 최고관리자만 지운다",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "idpForm.role_mapping": "{{(_local.idpForm?.role_mapping ?? []).filter((r, i) => i !== index)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn-icon",
+                                        "title": "$t:sirsoft-sso.admin.common.remove_row",
+                                        "aria-label": "$t:sirsoft-sso.admin.common.remove_row",
+                                        "disabled": "{{!_computed.canUpdate || (rule.role === 'admin' && !_computed.isSuper)}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "fa-solid fa-trash",
+                                                "className": "text-sm"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "add_role_rule",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "comment": "빈 매핑 줄을 하나 더한다",
+                                    "type": "click",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "idpForm.role_mapping": "{{(_local.idpForm?.role_mapping ?? []).concat([{ group: '', role: '' }])}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary text-sm",
+                                "disabled": "{{!_computed.canUpdate}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "fa-solid fa-plus",
+                                        "className": "text-xs"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-sso.admin.settings.idp.add_role_rule"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "⑥ 보안",
+                    "id": "idp_tab_security",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.idpTab === 'security'}}",
+                    "props": {
+                        "className": "space-y-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.two_factor_mode"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.two_factor_mode"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "two_factor_mode",
+                                                "className": "w-full",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "skip_if_mfa"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.two_factor_mode.skip_if_mfa"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "always_skip"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.two_factor_mode.always_skip"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "always"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.two_factor_mode.always"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.logout_mode"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.logout_mode"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "logout_mode",
+                                                "className": "w-full",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "local"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.logout_mode.local"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "rp",
+                                                        "disabled": "{{_local.idpForm?.capabilities?.slo !== true}}"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.logout_mode.rp"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Option",
+                                                    "props": {
+                                                        "value": "both",
+                                                        "disabled": "{{_local.idpForm?.capabilities?.slo !== true}}"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.options.logout_mode.both"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_local.idpForm?.capabilities?.slo !== true}}",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.logout_unsupported"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.idpForm?.capabilities?.idpInitiated === true}}",
+                            "props": {
+                                "className": "flex-start gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "idp_initiated",
+                                        "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.idp_initiated",
+                                        "size": "md",
+                                        "disabled": "{{!_computed.canUpdate}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.idp_initiated"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "role": "alert",
+                                                "className": "form-error"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.idp.saml_idp_initiated_warning"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.max_session_minutes"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.max_session_minutes"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "max_session_minutes",
+                                                "min": 1,
+                                                "max": 10080,
+                                                "className": "input",
+                                                "placeholder": "480",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "⑦ 프로비저닝",
+                    "id": "idp_tab_provisioning",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.idpTab === 'provisioning'}}",
+                    "props": {
+                        "className": "space-y-6"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "deprovision.scim",
+                                        "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.scim",
+                                        "size": "md",
+                                        "disabled": "{{!_computed.canUpdate}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1 min-w-0 space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.scim"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.scim"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col sm:flex-row sm:items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "id": "scim_endpoint",
+                                                    "type": "basic",
+                                                    "name": "Code",
+                                                    "props": {
+                                                        "className": "flex-1 min-w-0 break-all text-xs bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 px-2 py-1.5 rounded"
+                                                    },
+                                                    "text": "{{_local.idpForm?.scim?.endpoint ?? ''}}"
+                                                },
+                                                {
+                                                    "id": "copy_scim_endpoint",
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "IdP 쪽에 넣을 SCIM 주소를 복사한다",
+                                                            "type": "click",
+                                                            "handler": "sirsoft-sso.copyToClipboard",
+                                                            "params": {
+                                                                "text": "{{_local.idpForm?.scim?.endpoint ?? ''}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "btn btn-secondary text-xs",
+                                                        "aria-label": "$t:sirsoft-sso.admin.common.copy_named|name=SCIM"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "props": {
+                                                                "name": "fa-regular fa-copy",
+                                                                "className": "text-xs"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "grid-2col-responsive"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Label",
+                                                            "props": {
+                                                                "className": "form-label"
+                                                            },
+                                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.scim_match"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Select",
+                                                            "props": {
+                                                                "name": "deprovision.scim_match",
+                                                                "className": "w-full",
+                                                                "disabled": "{{!_computed.canUpdate}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Option",
+                                                                    "props": {
+                                                                        "value": "userName"
+                                                                    },
+                                                                    "text": "userName"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Option",
+                                                                    "props": {
+                                                                        "value": "externalId"
+                                                                    },
+                                                                    "text": "externalId"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "form-hint"
+                                                            },
+                                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.scim_match"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "space-y-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "if": "{{!!_local.idpForm?.scim?.has_token}}",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "{{$t('sirsoft-sso.admin.settings.idp.scim_token_issued_at')}}: {{_local.idpForm?.scim?.token_issued_at | datetime | default('-')}}"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "if": "{{!_local.idpForm?.scim?.has_token}}",
+                                                            "props": {
+                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:sirsoft-sso.admin.settings.idp.scim_token_none"
+                                                        },
+                                                        {
+                                                            "id": "issue_scim_token",
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "if": "{{!_local.idpForm?.scim?.has_token}}",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "SCIM 토큰 첫 발급 — 응답에서 한 번만 보인다. 무효화할 이전 토큰이 없어 확인을 묻지 않는다",
+                                                                    "type": "click",
+                                                                    "handler": "apiCall",
+                                                                    "target": "/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}/scim-token",
+                                                                    "auth_required": true,
+                                                                    "params": {
+                                                                        "method": "POST"
+                                                                    },
+                                                                    "onSuccess": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "scimToken": "{{response.data}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "refetchDataSource",
+                                                                            "params": {
+                                                                                "dataSourceId": "ssoIdp"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "onError": {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "btn btn-secondary text-sm",
+                                                                "disabled": "{{!_computed.canUpdate}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:sirsoft-sso.admin.settings.idp.scim_token_issue"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "id": "reissue_scim_token",
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "if": "{{!!_local.idpForm?.scim?.has_token}}",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "SCIM 토큰 재발급 — 이전 토큰은 즉시 무효라 확인을 받는다. 확인 문구는 식이 아니라 고정 문구여야 한다(엔진은 원문 유무로 확인창을 띄운다)",
+                                                                    "type": "click",
+                                                                    "handler": "apiCall",
+                                                                    "target": "/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}/scim-token",
+                                                                    "auth_required": true,
+                                                                    "params": {
+                                                                        "method": "POST"
+                                                                    },
+                                                                    "confirm": "$t:sirsoft-sso.admin.settings.idp.scim_token_reissue_confirm",
+                                                                    "onSuccess": [
+                                                                        {
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "scimToken": "{{response.data}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "refetchDataSource",
+                                                                            "params": {
+                                                                                "dataSourceId": "ssoIdp"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "onError": {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "btn btn-secondary text-sm",
+                                                                "disabled": "{{!_computed.canUpdate}}"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:sirsoft-sso.admin.settings.idp.scim_token_reissue"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "scim_token_once",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "if": "{{!!_local.scimToken?.token}}",
+                                            "props": {
+                                                "role": "status",
+                                                "className": "alert-warning flex-col items-start gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-amber-800 dark:text-amber-200"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.scim_token_once"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex w-full flex-col sm:flex-row sm:items-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Code",
+                                                            "props": {
+                                                                "className": "flex-1 min-w-0 break-all text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-2 py-1.5 rounded"
+                                                            },
+                                                            "text": "{{_local.scimToken?.token}}"
+                                                        },
+                                                        {
+                                                            "id": "copy_scim_token",
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "한 번만 보이는 새 토큰을 복사한다 — 이 화면을 벗어나면 다시 볼 수 없다",
+                                                                    "type": "click",
+                                                                    "handler": "sirsoft-sso.copyToClipboard",
+                                                                    "params": {
+                                                                        "text": "{{_local.scimToken?.token ?? ''}}"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "btn btn-secondary text-xs",
+                                                                "aria-label": "$t:sirsoft-sso.admin.common.copy_named|name=SCIM token"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Icon",
+                                                                    "props": {
+                                                                        "name": "fa-regular fa-copy",
+                                                                        "className": "text-xs"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "deprovision.periodic",
+                                        "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.periodic",
+                                        "size": "md",
+                                        "disabled": "{{!_computed.canUpdate || (_local.idpForm?.protocol === 'saml' && !_local.idpForm?.config?.lookup_directory_idp_id)}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-1 min-w-0 space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.periodic"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "{{$t('sirsoft-sso.admin.settings.idp.hints.periodic_' + (_local.idpForm?.protocol ?? 'oidc'))}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "if": "{{_local.idpForm?.protocol === 'saml' && !_local.idpForm?.config?.lookup_directory_idp_id}}",
+                                            "props": {
+                                                "role": "status",
+                                                "className": "form-hint text-amber-700 dark:text-amber-300"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.periodic_saml_no_directory"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "sm:w-40"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.admin.settings.idp.fields.periodic_minutes"
+                                                },
+                                                {
+                                                    "comment": "audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다",
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "props": {
+                                                        "type": "number",
+                                                        "name": "deprovision.periodic_minutes",
+                                                        "min": 5,
+                                                        "max": 10080,
+                                                        "className": "input",
+                                                        "placeholder": "60",
+                                                        "disabled": "{{!_computed.canUpdate}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "다음 로그인 차단(D7 ③)은 항상 켜져 있다 — 퇴사로 꺼진 연결은 이 IdP 로그인에서 늘 거절된다. 끌 수 있는 칸으로 두면 꺼도 바뀌는 것이 없어\n             운영자를 속이므로 켬 고정 표시로 둔다. 폼 값으로 보내지 않는다(name 없음).",
+                            "id": "deprovision_on_login_fixed",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "ariaLabel": "$t:sirsoft-sso.admin.settings.idp.fields.on_login",
+                                        "size": "md",
+                                        "checked": true,
+                                        "disabled": true
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.on_login"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.on_login"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid-3col-responsive"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.fields.withdraw_after_days"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.hints.withdraw_after_days"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "lg:col-span-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "deprovision.withdraw_after_days",
+                                                "min": 1,
+                                                "max": 3650,
+                                                "className": "input",
+                                                "placeholder": "30",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "comment": "⑧ 진단",
+                    "id": "idp_tab_diagnostics",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_local.idpTab === 'diagnostics'}}",
+                    "props": {
+                        "className": "space-y-5"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "id": "run_connection_test",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "서버 쪽 연결 테스트 — 메타데이터, 키, 주소를 확인한다. 회원으로 로그인하지 않는다",
+                                            "type": "click",
+                                            "handler": "apiCall",
+                                            "target": "/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}/test",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST"
+                                            },
+                                            "onSuccess": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "testResult": "{{response.data}}"
+                                                }
+                                            },
+                                            "onError": {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.idp.test_failed'}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-secondary text-sm",
+                                        "disabled": "{{!_computed.canUpdate}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.test"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "run_browser_test",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "브라우저로 로그인 테스트 — API 가 1회용 시작 주소를 주면 IdP 로 왕복한다(회원으로 로그인하지 않고 받은 신원 요약만 본다)",
+                                            "type": "click",
+                                            "handler": "sirsoft-sso.startWithTicket",
+                                            "params": {
+                                                "endpoint": "/plugins/sirsoft-sso/admin/idps/{{query.idp}}/test",
+                                                "body": "{{({ browser: true })}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-secondary text-sm",
+                                        "disabled": "{{!_computed.canUpdate || _local.idpForm?.capabilities?.redirect !== true}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:sirsoft-sso.admin.settings.idp.browser_test"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "ldap_test_account",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.idpForm?.protocol === 'ldap'}}",
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.idp.ldap_test_account"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.idp.ldap_test_account_hint"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex flex-col sm:flex-row gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "시험할 디렉터리 계정 식별자 — 화면 상태에만 둔다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "ldapTestId": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "className": "input sm:w-1/3",
+                                                "value": "{{_local.ldapTestId ?? ''}}",
+                                                "autoComplete": "off",
+                                                "aria-label": "$t:sirsoft-sso.admin.idp.ldap_test_identifier"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "시험용 비밀번호 — 화면 상태에만 두고 시험이 끝나면 비운다",
+                                                    "type": "change",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "ldapTestPw": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "password",
+                                                "className": "input sm:w-1/3",
+                                                "value": "{{_local.ldapTestPw ?? ''}}",
+                                                "autoComplete": "new-password",
+                                                "aria-label": "$t:sirsoft-sso.admin.idp.ldap_test_password"
+                                            }
+                                        },
+                                        {
+                                            "id": "run_ldap_account_test",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "계정으로 시험 — 입력한 비밀번호는 서버가 저장하지 않는다. 끝나면 칸을 비운다",
+                                                    "type": "click",
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}/test",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": "{{({ account_identifier: _local.ldapTestId, account_password: _local.ldapTestPw })}}"
+                                                    },
+                                                    "onSuccess": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "testResult": "{{response.data}}",
+                                                            "ldapTestPw": ""
+                                                        }
+                                                    },
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "ldapTestPw": ""
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.idp.test_failed'}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-secondary text-sm",
+                                                "disabled": "{{!_computed.canUpdate || !_local.ldapTestId || !_local.ldapTestPw}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-sso.admin.idp.ldap_test_account"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "saml_site_url_invalid",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{(_local.testResult?.checks ?? []).some(c => c.key === 'site_url' && !c.ok)}}",
+                            "props": {
+                                "role": "alert",
+                                "className": "form-error"
+                            },
+                            "text": "$t:sirsoft-sso.admin.idp.saml_site_url_invalid"
+                        },
+                        {
+                            "id": "connection_test_result",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{!!_local.testResult}}",
+                            "props": {
+                                "role": "status",
+                                "className": "{{_local.testResult?.ok ? 'alert-success' : 'alert-warning'}} flex-col items-start gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm font-medium"
+                                    },
+                                    "text": "{{_local.testResult?.ok ? $t('sirsoft-sso.admin.settings.idp.test_ok') : $t('sirsoft-sso.admin.settings.idp.test_not_ok')}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "props": {
+                                        "className": "space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "_local.testResult?.checks ?? []",
+                                                "item_var": "check"
+                                            },
+                                            "dataKey": "{{check.key}}",
+                                            "props": {
+                                                "className": "text-xs flex items-start gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "{{check.ok ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'}}",
+                                                        "className": "{{check.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}} flex-shrink-0 mt-0.5"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "break-all"
+                                                    },
+                                                    "text": "{{(check.message || check.key) + (check.detail ? ' — ' + check.detail : '')}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "grid grid-cols-3 gap-x-4 gap-y-1 text-sm"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.idp.last_success"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "col-span-2 text-gray-800 dark:text-gray-200"
+                                    },
+                                    "text": "{{_local.idpForm?.last_success_at | datetime | default('-')}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.idp.last_error"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "col-span-2 text-gray-800 dark:text-gray-200"
+                                    },
+                                    "text": "{{_local.idpForm?.last_error_at | datetime | default('-')}}{{_local.idpForm?.last_error_at && _local.idpForm?.last_error_code ? ' (' + _local.idpForm.last_error_code + ')' : ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.idp.periodic_checked_at"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "col-span-2 text-gray-800 dark:text-gray-200"
+                                    },
+                                    "text": "{{_local.idpForm?.periodic_checked_at | datetime | default('-')}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!_local.idpForm?.cert_expires_at}}",
+                                    "props": {
+                                        "className": "text-gray-500 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.idp.cert_expires_at"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{!!_local.idpForm?.cert_expires_at}}",
+                                    "props": {
+                                        "className": "col-span-2 text-gray-800 dark:text-gray-200"
+                                    },
+                                    "text": "{{_local.idpForm?.cert_expires_at | datetime | default('-')}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "recent_attempts",
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "text-sm font-semibold text-gray-900 dark:text-white mb-2"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.idp.recent_attempts"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_local.idpForm?.recent_attempts ?? []).length === 0}}",
+                                    "props": {
+                                        "className": "text-hint"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.logs.empty"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "if": "{{(_local.idpForm?.recent_attempts ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "divide-y divide-gray-100 dark:divide-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "_local.idpForm?.recent_attempts ?? []",
+                                                "item_var": "attempt"
+                                            },
+                                            "dataKey": "{{attempt.id}}",
+                                            "props": {
+                                                "className": "py-2 flex flex-wrap items-center gap-2 text-xs"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-500 dark:text-gray-400 whitespace-nowrap"
+                                                    },
+                                                    "text": "{{attempt.created_at | datetime | default('-')}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-gray-800 dark:text-gray-200"
+                                                    },
+                                                    "text": "{{$t('sirsoft-sso.admin.logs.intents.' + attempt.intent)}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "{{attempt.outcome === 'failed' || attempt.outcome === 'denied' ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}}"
+                                                    },
+                                                    "text": "{{$t('sirsoft-sso.admin.logs.outcomes.' + attempt.outcome)}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!!attempt.reason_code}}",
+                                                    "props": {
+                                                        "className": "font-mono text-gray-600 dark:text-gray-300"
+                                                    },
+                                                    "text": "{{attempt.reason_code}}"
+                                                },
+                                                {
+                                                    "comment": "실패한 IdP 응답 요약(§7 L-3) — 서명이 붙었는지, 어설션 유효 시각, 대상. 서명 없음·시계 차이·SP 엔티티 ID 불일치를 가려 본다(원문은 저장하지 않는다)",
+                                                    "id": "attempt_response_summary_{{attempt.id}}",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!!attempt.response_summary}}",
+                                                    "props": {
+                                                        "className": "basis-full text-gray-500 dark:text-gray-400 break-all"
+                                                    },
+                                                    "text": "{{[(attempt.response_summary?.signed ? $t('sirsoft-sso.admin.settings.idp.response_summary.signed') : $t('sirsoft-sso.admin.settings.idp.response_summary.unsigned')), $t('sirsoft-sso.admin.settings.idp.response_summary.not_on_or_after') + ' ' + (attempt.response_summary?.not_on_or_after ?? '-'), $t('sirsoft-sso.admin.settings.idp.response_summary.audiences') + ' ' + ((attempt.response_summary?.audiences ?? []).join(', ') || '-')].join(' · ')}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

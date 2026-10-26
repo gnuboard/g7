@@ -111,12 +111,52 @@ describe('AuthManager.loginWithHandoff', () => {
   });
 
   /**
-   * @scenario auth_type=admin
-   * @effects handoff_admin_unsupported
+   * 관리자 인계는 관리자 경로로 교환하고 관리자 세션을 연다 (engine-v1.85.0 — 종전에는 인계 엔드포인트가 없어 던졌다).
+   *
+   * @scenario auth_type=admin, response=authenticated
+   * @effects handoff_admin_exchanges_on_admin_endpoint
    */
-  it('관리자 타입은 인계 엔드포인트가 없어 요청하지 않고 던진다', async () => {
-    await expect(authManager.loginWithHandoff('admin', 'CODE')).rejects.toThrow('Login handoff is not supported');
-    expect(mockApiClient.post).not.toHaveBeenCalled();
+  it('관리자 타입은 관리자 인계 경로로 교환하고 세션을 연다', async () => {
+    const user = { uuid: 'a-1', name: '관리자', email: 'a@example.test' };
+    mockApiClient.post.mockResolvedValue({ success: true, data: { token: 'tok-admin', token_type: 'Bearer', user } });
+
+    const result = await authManager.loginWithHandoff('admin', 'CODE');
+
+    expect(mockApiClient.post).toHaveBeenCalledWith('/auth/admin/login/handoff', { code: 'CODE' }, undefined);
+    expect(result.status).toBe('authenticated');
+    expect(mockApiClient.setToken).toHaveBeenCalledWith('tok-admin');
+    expect(authManager.isAuthenticated()).toBe(true);
+  });
+
+  /**
+   * @scenario auth_type=admin, response=two_factor_required
+   * @effects handoff_admin_two_factor_without_session
+   */
+  it('관리자 인계의 2단계 인증 응답은 세션 없이 challenge 를 돌려준다', async () => {
+    mockApiClient.post.mockResolvedValue({
+      success: true,
+      data: { two_factor_required: true, challenge_id: 'c-a', provider_id: 'g7:core.mail', expires_at: null },
+    });
+
+    const result = await authManager.loginWithHandoff('admin', 'CODE');
+
+    expect(result.status).toBe('two_factor_required');
+    expect(mockApiClient.setToken).not.toHaveBeenCalled();
+  });
+
+  /**
+   * @scenario auth_type=admin, response=invalid_code
+   * @effects handoff_admin_invalid_code_rejects
+   */
+  it('관리자 인계 코드 무효(422)면 서버 메시지로 던진다', async () => {
+    const error: any = new Error('Request failed');
+    error.response = { status: 422, data: { message: '로그인 정보가 만료되었거나 올바르지 않습니다.', errors: { code: ['…'] } } };
+    mockApiClient.post.mockRejectedValue(error);
+
+    await expect(authManager.loginWithHandoff('admin', 'BAD')).rejects.toMatchObject({
+      message: '로그인 정보가 만료되었거나 올바르지 않습니다.',
+      status: 422,
+    });
   });
 
   /**

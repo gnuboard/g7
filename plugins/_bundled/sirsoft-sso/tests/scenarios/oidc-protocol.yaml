@@ -1,0 +1,31 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 거절된 시작의 콜백 단계)이 대부분이라 명목상이다.
+feature: sso_oidc_protocol
+description: |
+  OIDC 드라이버와 id_token 검증 — 모의 IdP 변종 카탈로그(부록 C-1) 전수, 알고리즘 허용 목록, iss/aud/azp, 시간 오차, nonce, at_hash, kid 회전 1회 갱신, back-channel logout_token, refresh 갱신(주기 점검), PKCE·nonce·state 전송.
+axes:
+  protocol: [oidc]
+  variant: [appendix_c1]
+  refresh: [valid]
+  subject_claim: [custom]
+  endpoint: [authorize]
+  token: [valid, logout_token]
+  alg: ["none|HS256", none, HS256]
+  claim: ["iss|aud|azp", iss, aud, azp, "exp|iat", exp, iat, "nonce|at_hash", nonce, at_hash]
+  leeway: [120]
+  jwks: ["rotated|unknown_kid", rotated, unknown_kid]
+effects:
+  - identity_or_error_code
+  - refresh_rotates_token
+  - subject_from_configured_claim
+  - pkce_s256_nonce_state_sent
+  - claims_returned
+  - rejected_before_signature
+  - rejected
+  - within_leeway_ok
+  - beyond_rejected
+  - rejected_on_mismatch
+  - jwks_refetched_once
+  - backchannel_claims_checked
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Unit/Drivers/OidcDriverTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Unit/Services/IdTokenValidationTest.php

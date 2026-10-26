@@ -11,6 +11,7 @@ use App\Enums\ScheduleType;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Models\Concerns\HasUserOverrides;
+use App\Support\LocalizedValue;
 use Carbon\Carbon;
 use Cron\CronExpression;
 use Illuminate\Database\Eloquent\Builder;
@@ -274,17 +275,8 @@ class Schedule extends Model
             return null;
         }
 
-        $locale = $locale ?? app()->getLocale();
-        $fallback = (string) config('app.fallback_locale');
-
-        foreach ([$locale, $fallback] as $candidate) {
-            $value = $values[$candidate] ?? null;
-            if (is_string($value) && $value !== '') {
-                return $value;
-            }
-        }
-
-        return null;
+        // 다국어 값 해석은 저장소 단일 기준(받는 로케일 → 사이트 기본 → en)으로 — 어느 로케일에도 없으면 null
+        return LocalizedValue::pick($values, $locale ?? app()->getLocale(), false);
     }
 
     /**

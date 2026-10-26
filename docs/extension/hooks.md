@@ -217,7 +217,30 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 
 - 외부 인증은 이름을 반드시 넘깁니다 — 비어 있으면 `issue()`·`loginVerifiedUser()` 가 거절합니다(비밀번호 로그인으로 잘못 기록되지 않게).
 - 활동 로그·통계처럼 수단별로 세는 리스너는 이 키로 가릅니다. 키가 없는 경우(7.2.0 이전 코어)는 `password` 로 봅니다.
+- 같은 문맥에 `token_id`(이번 로그인으로 발급한 토큰 id)와 `external_ref`(외부 인증이 넘긴 외부 세션 참조, 없으면 `null`)도 실립니다.
+  외부 로그아웃(IdP 쪽 세션 종료)을 코어 토큰과 짝지을 때 씁니다.
 - 계약 전체는 [인증 문서 — 외부 인증 로그인·로그인 인계](../backend/authentication.md) 를 봅니다.
+
+### 외부 인증 확장점 훅 (7.2.0)
+
+SSO·디렉터리 로그인·헤더 인증처럼 **비밀번호가 아닌 수단으로 로그인시키는 확장**이 코어 관문에 끼어드는 자리입니다. 확장이 등록하지
+않으면 모두 지금 동작 그대로입니다(필터는 기본값을 돌려준다). 필터가 돌려준 경로는 **같은 출처 경로만** 쓰이고 다른 출처 주소는
+버려집니다. 쓰는 법은 [인증 문서](../backend/authentication.md#외부-인증-확장점-720)에 있습니다.
+
+| 훅 | 종류 | 인자 | 언제 · 돌려줄 것 |
+| --- | --- | --- | --- |
+| `core.auth.password_auth_decision` | filter | `(?PasswordAuthDecision $decision = null, array $subject)` — `$subject` = `identifier`·`user`(없으면 식별자 기준 1차 판정)·`guard`·`purpose`(`login`·`reset_request`·`reset_complete`·`set_password`·`admin_set_password`·`login_password_change`) | 비밀번호 로그인·재설정·설정 직전. `PasswordAuthDecision::deny()` 를 돌려주면 막힌다(로그인 403·재설정 422 `auth.password_auth_disabled`). `null`·이상한 값은 허용 |
+| `core.auth.password_reset_blocked` | action | `(User $user, PasswordAuthDecision $decision)` | 재설정 요청이 회원 기준으로 막혔을 때 1회 — 응답은 계정 열거를 막으려고 일반 성공 응답이다 |
+| `core.auth.registered_credential_verifiers` | filter | `(array $verifiers)` — `id => ExternalCredentialVerifierInterface` | 외부 자격 증명 검증자(디렉터리 로그인 등) 등록. 계약 미구현 값은 버려진다 |
+| `core.auth.login_discovery` | filter | `(?LoginDiscoveryResult $result = null, string $identifier, string $guard)` | 로그인 화면 이메일 칸을 벗어날 때(`POST /api/auth/login/discover`·`/api/auth/admin/login/discover`). `LoginDiscoveryResult::external($label, $path)` 이면 비밀번호 칸 대신 그 수단으로 안내. 회원 유무가 드러나지 않게 식별자 모양(도메인)으로만 판정한다 |
+| `core.auth.login_discover_validation_rules` | filter | `(array $rules, LoginDiscoverRequest $request)` | 진입 판정 요청 검증 규칙 |
+| `core.auth.login_auto_redirect` | filter | `(?string $path = null, string $guard)` | 로그인 화면에 오면 바로 보낼 경로(사이트 전체 SSO). 화면은 `?local=1`·인계·오류 쿼리가 있으면 이동하지 않는다 |
+| `core.auth.logout_redirect_url` | filter | `(?string $path = null, User $user, array{guard: string, token_id: ?int})` | 로그아웃 응답 `data.redirect_url`(토큰을 지우기 **전**에 부른다 — IdP 로그아웃 주소 계산용). 엔진은 같은 출처 경로면 그리로, 아니면 로그인 화면으로 간다 |
+| `core.auth.self_registration_open` | filter | `(bool $open)` | 「일반 회원가입 받기」 판정(`AuthService::isSelfRegistrationOpen()`). 거짓이면 공개 가입 API 403 `auth.registration_disabled` — 확장 내부 가입(`AuthService::register()` 직접 호출)은 막지 않는다 |
+| `core.user.locked_fields` | filter | `(array $fields = [], User $user, string $surface)` — `$surface` = `profile`·`admin` | 외부에서 관리하는 회원 칸. 허용 이름(`name`·`nickname`·`mobile`·`phone`·`language`·`email`)만 남고, 요청으로 다른 값이 오면 422 `user.field_locked`. 응답 `locked_fields` 로 화면이 읽기 전용으로 그린다. 서비스 직접 호출(동기화)은 막지 않는다 |
+| `core.user.after_block` | action | `(User $user, array $context)` — `reason_key`·`source` | `UserService::blockUser()` 뒤(토큰 전량 회수 뒤, 이미 차단이어도) |
+| `core.user.after_unblock` | action | `(User $user, array $context)` | `UserService::unblockUser()` 뒤 |
+| `core.user.after_sessions_revoked` | action | `(User $user, ?User $actor, array{count: int})` | `UserService::revokeAllSessions()` 뒤(관리자 「모든 기기에서 로그아웃」 또는 시스템 경로 — 행위자 없음) |
 
 ### 회원 역할 변경 훅 (7.1.0)
 
@@ -332,6 +355,14 @@ if ($order->isGuestOrder() && $phone !== '') {
     $data[GenericNotification::RECIPIENT_PHONE_KEY] = $phone;
 }
 ```
+
+### 언어별 변수 값 (7.2.0)
+
+`extract_data` 반환의 `data` 값은 문자열 대신 `{로케일: 문자열}` 배열을 줄 수 있습니다
+(`'idp_label' => ['ko' => '회사 계정', 'en' => 'Company account']`). 코어가 수신자 언어 → 사이트 기본 언어 →
+영어 → 첫 유효값 순으로 골라 제목·본문·`click_url`·저장 data·`to_{채널}` 필터 data 에 씁니다. 자체 템플릿으로
+본문을 만드는 채널 드라이버는 `getData()` 대신 `$notification->getDataFor($notifiable)` 로 같은 값을 받습니다.
+상세: [알림 시스템 — 언어별 변수 값](../backend/notification-system.md#언어별-변수-값-720).
 
 ### 알림 정의 시딩 계약 (7.1.0)
 
@@ -795,7 +826,7 @@ $boards = $this->cache->remember('board_menu', function () {
 | 적용 시점 | 규칙 판정 **이전**. 제외에 걸리면 그 요청은 규칙을 보지 않고 통과합니다 |
 | 적용 한계 | **관리자 영역은 이 훅으로 열 수 없습니다** — 관리자 화면·관리자 API·관리자 로그인 API 는 제외 판정 자체를 건너뜁니다 |
 
-코어는 관례적인 콜백 경로(`plugins/*/payment/*`, `plugins/*/webhook`, `api/plugins/*/webhook*`, `plugins/*/plugin/*/callback`)를 이미 제외하므로, 그 관례를 따르는 확장은 훅을 구독하지 않아도 됩니다. 관례 밖 경로로 외부 통보를 받는 확장만 등록하면 됩니다 — 등록하지 않으면 운영자가 `plugins/*` 류 규칙을 넣는 순간 결제 승인·입금 통보가 403 으로 끊기고, 실패는 상대편 재시도 로그에만 남습니다.
+코어는 관례적인 콜백 경로(`plugins/*/payment/*`, `plugins/*/webhook`, `plugins/*/webhooks`, `api/plugins/*/webhook*`, `plugins/*/plugin/*/callback`)를 이미 제외하므로, 그 관례를 따르는 확장은 훅을 구독하지 않아도 됩니다. 관례 밖 경로로 외부 통보를 받는 확장만 등록하면 됩니다 — 등록하지 않으면 운영자가 `plugins/*` 류 규칙을 넣는 순간 결제 승인·입금 통보가 403 으로 끊기고, 실패는 상대편 재시도 로그에만 남습니다.
 
 ```php
 public static function getSubscribedHooks(): array

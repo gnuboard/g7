@@ -67,6 +67,8 @@ const FORM_ONLY = [
   'field_password_confirmation',
   // 본인 계정의 비밀번호를 바꿀 때만 묻는 확인 칸(#736 D19) — 비밀번호처럼 쓰기 전용이다.
   'field_current_password',
+  // 「비밀번호 없이 만들기」(7.2.0 A2t, K11) — 등록 화면에만 있는 생성 방식 선택이라 상세에 짝이 없다.
+  'field_create_without_password',
 ];
 
 /**
@@ -146,7 +148,13 @@ describe('관리자 회원 상세 ↔ 수정 정합 (#599)', () => {
     // 직접 세우는 방식이라(searchable-dropdown 은 폼 바인딩을 받지 않는다) 여기 규칙이 닿지 않는다.
     const editable = sectionsAndFields(form)
       .filter((id) => id.startsWith('field_'))
-      .filter((id) => !RECORD_ONLY.includes(id) && id !== 'field_password_group' && id !== 'field_country');
+      .filter((id) => !RECORD_ONLY.includes(id) && id !== 'field_password_group' && id !== 'field_country')
+      // `field_create_without_password` 는 자동 바인딩을 끄고 change 에서 `form.create_without_password` 를 boolean 으로 직접 세운다
+      // (빈 문자열이 실리지 않게, 7.2.0 A2t) — name 규칙 대신 아래에서 그 배선을 따로 확인한다.
+      .filter((id) => id !== 'field_create_without_password');
+
+    const passwordlessWiring = JSON.stringify(form);
+    expect(passwordlessWiring).toContain('"form.create_without_password":"{{$event.target.checked}}"');
 
     const missing = editable.filter((id) => {
       let hit: any = null;

@@ -78,7 +78,8 @@ async function submitAndReadChallenge(
   submit: () => Promise<void>
 ): Promise<string> {
   const [response] = await Promise.all([
-    page.waitForResponse((r) => r.url().includes(urlPart) && r.request().method() === 'POST'),
+    // 경로 정확 비교 — 이메일 칸 onBlur 의 `POST /api/auth/login/discover` 응답이 먼저 오면 포함 판정이 그것을 잡는다.
+    page.waitForResponse((r) => new URL(r.url()).pathname === urlPart && r.request().method() === 'POST'),
     submit(),
   ]);
 
@@ -265,7 +266,7 @@ test('관리자 로그인 — 관리자가 아닌 계정은 인증번호 단계 
   await page.fill('input[name="email"]', nonAdminEmail);
   await page.fill('input[name="password"]', PASSWORD);
   const [response] = await Promise.all([
-    page.waitForResponse((r) => r.url().includes('/api/auth/admin/login') && r.request().method() === 'POST'),
+    page.waitForResponse((r) => new URL(r.url()).pathname === '/api/auth/admin/login' && r.request().method() === 'POST'),
     page.click('#login_submit_button'),
   ]);
 

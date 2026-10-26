@@ -19,6 +19,8 @@ class AdminAuthTest extends TestCase
      *
      * isAdmin() 은 role 에 type='admin' permission 이 하나라도 있어야 true.
      * 테스트 통과를 위해 admin.default permission 을 기본 생성하여 role 에 연결.
+     *
+     * @return User admin 역할이 붙은 사용자
      */
     private function createAdminUser(): User
     {
@@ -54,15 +56,33 @@ class AdminAuthTest extends TestCase
     }
 
     /**
-     * 관리자 로그인 테스트 - 실제로는 공개 로그인 API를 사용하므로 스킵
+     * 관리자가 관리자 로그인 API 로 로그인하면 Bearer 토큰을 받는다.
+     *
+     * @scenario actor=admin, action=login, accept=json
+     *
+     * @effects admin_login_issues_bearer_token
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_can_login(): void
     {
-        $this->markTestSkipped('Admin login uses the same endpoint as user login');
+        $admin = $this->createAdminUser();
+
+        $this->postJson('/api/auth/admin/login', ['email' => $admin->email, 'password' => 'password'])
+            ->assertOk()
+            ->assertJsonPath('data.token_type', 'Bearer');
+
+        $this->assertSame(1, PersonalAccessToken::where('tokenable_id', $admin->id)->count());
     }
 
     /**
      * 관리자 로그아웃 시 현재 토큰이 삭제되는지 테스트
+     *
+     * @scenario actor=admin, action=logout, accept=json
+     *
+     * @effects admin_logout_succeeds
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_logout_deletes_current_token(): void
     {
@@ -92,6 +112,12 @@ class AdminAuthTest extends TestCase
 
     /**
      * 인증 없이 관리자 API 접근 시 401 반환 테스트
+     *
+     * @scenario actor=guest, action=access_admin_api, accept=json, endpoint=auth_user
+     *
+     * @effects guest_admin_api_401
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_user_cannot_access_admin_api(): void
     {
@@ -109,6 +135,12 @@ class AdminAuthTest extends TestCase
      * Accept 헤더가 없으면 expectsJson()===false 가 되어 Laravel 기본 폴백이
      * route('login') redirect 를 시도 → 미정의 라우트로 HTTP 500 이 되던 결함.
      * bootstrap/app.php 핸들러의 is('api/*') 가드로 항상 401 JSON 이 되어야 한다.
+     *
+     * @scenario actor=guest, action=access_admin_api, accept=none, endpoint=auth_user
+     *
+     * @effects guest_without_accept_gets_401_json_not_redirect
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_admin_api_returns_401_without_accept_header(): void
     {
@@ -123,6 +155,12 @@ class AdminAuthTest extends TestCase
 
     /**
      * Accept: text/html (브라우저 직접 접근) 으로 비인증 관리자 API 접근 시에도 401 JSON 반환 (공개#39).
+     *
+     * @scenario actor=guest, action=access_admin_api, accept=html, endpoint=auth_user
+     *
+     * @effects guest_html_accept_gets_401_json
+     *
+     * @return void 반환값 없음
      */
     public function test_unauthenticated_admin_api_returns_401_with_html_accept_header(): void
     {
@@ -135,6 +173,12 @@ class AdminAuthTest extends TestCase
 
     /**
      * 무효 토큰 + Accept 헤더 없이 비인증 관리자 API 접근 시 401 JSON 반환 (공개#39).
+     *
+     * @scenario actor=invalid_token, action=access_admin_api, accept=none, endpoint=auth_user
+     *
+     * @effects invalid_token_gets_401_without_redirect
+     *
+     * @return void 반환값 없음
      */
     public function test_invalid_token_admin_api_returns_401_without_accept_header(): void
     {
@@ -148,6 +192,12 @@ class AdminAuthTest extends TestCase
 
     /**
      * 단일 엔드포인트 한정이 아님 — 다른 /api/admin/* 경로도 동일하게 401 JSON 반환 (공개#39).
+     *
+     * @scenario actor=guest, action=access_admin_api, accept=none, endpoint=dashboard_resources
+     *
+     * @effects other_admin_endpoint_401_without_redirect
+     *
+     * @return void 반환값 없음
      */
     public function test_other_admin_api_endpoint_returns_401_without_accept_header(): void
     {
@@ -159,6 +209,12 @@ class AdminAuthTest extends TestCase
 
     /**
      * 일반 사용자는 관리자 API 접근 불가 테스트
+     *
+     * @scenario actor=regular_user, action=access_admin_api, accept=json, endpoint=auth_user
+     *
+     * @effects regular_user_admin_api_403
+     *
+     * @return void 반환값 없음
      */
     public function test_regular_user_cannot_access_admin_api(): void
     {
@@ -173,6 +229,12 @@ class AdminAuthTest extends TestCase
 
     /**
      * 토큰 갱신 시 새 토큰이 생성되는지 테스트
+     *
+     * @scenario actor=admin, action=refresh, accept=json
+     *
+     * @effects token_refresh_issues_usable_token
+     *
+     * @return void 반환값 없음
      */
     public function test_token_refresh_returns_new_token(): void
     {

@@ -36,7 +36,11 @@ effects:
   - handoff_two_factor_challenge_without_session
   - handoff_password_change_challenge_without_session
   - handoff_failure_keeps_state
-  - handoff_admin_unsupported
+  - handoff_admin_exchanges_on_admin_endpoint
+  - handoff_admin_two_factor_without_session
+  - handoff_admin_invalid_code_rejects
+  - handoff_admin_dispatches_admin_type
+  - login_error_carries_server_data
   - handoff_forwards_headers
   - handoff_action_shape_equals_login
   - handoff_requires_code

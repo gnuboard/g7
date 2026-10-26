@@ -61,6 +61,11 @@ final class IpAccessMatcher
         'plugins/*/webhook/*',
         'api/plugins/*/webhook',
         'api/plugins/*/webhook/*',
+        // 복수형 경로를 쓰는 확장(소셜 로그인 제공자 웹훅 등) — 뜻은 단수와 같다
+        'plugins/*/webhooks',
+        'plugins/*/webhooks/*',
+        'api/plugins/*/webhooks',
+        'api/plugins/*/webhooks/*',
         // 본인인증 서비스의 결과 콜백
         'plugins/*/plugin/*/callback',
     ];

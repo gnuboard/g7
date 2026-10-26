@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Privacy\DTO\PrivacyRetentionTarget;
 use App\Privacy\PrivacyRetentionManager;
 use App\Rules\PasswordPolicy;
+use App\Services\Auth\PasswordAuthPolicyService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -359,6 +360,19 @@ class PasswordExpiryService
         // 비밀번호가 없는 회원은 바꿀 비밀번호가 없다 — 관리자 지정·만료 둘 다 요구하지 않는다(요구하면 변경하는
         // 순간 의도 없이 비밀번호 회원이 된다).
         if (! $user->hasPassword()) {
+            return null;
+        }
+
+        // 비밀번호 인증이 막힌 회원(회사 계정 로그인 강제 등)은 비밀번호를 쓰지 않으므로 바꾸라고 요구하지 않는다 — 요구하면
+        // 외부 인증으로 들어온 그 회원이 쓰지도 못할 비밀번호 변경 단계에 갇힌다(7.2.0).
+        $decision = app(PasswordAuthPolicyService::class)->decide([
+            'identifier' => (string) $user->email,
+            'user' => $user,
+            'guard' => 'user',
+            'purpose' => 'login_password_change',
+        ]);
+
+        if (! $decision->allowed) {
             return null;
         }
 

@@ -20,6 +20,7 @@
         },
         "security": {
             "force_https": false,
+            "registration_enabled": true,
             "login_attempt_enabled": true,
             "auth_token_lifetime": 30,
             "max_login_attempts": 5,
@@ -287,7 +288,8 @@
                 "password_block_sequential_chars": { "type": "boolean", "sensitive": false },
                 "password_sequential_chars_length": { "type": "integer", "sensitive": false },
                 "password_reuse_prevention_enabled": { "type": "boolean", "sensitive": false },
-                "password_reuse_count": { "type": "integer", "sensitive": false }
+                "password_reuse_count": { "type": "integer", "sensitive": false },
+                "registration_enabled": { "type": "boolean", "sensitive": false }
             }
         },
         "mail": {

@@ -10,7 +10,7 @@
 1. 로그인 왕복과 제공자 웹훅은 웹 주소다(아래 「웹 엔드포인트」). JSON API 는 그 앞뒤 화면(버튼 목록, 가입 모달, 마이페이지 연결 관리, 관리자 설정 진단 통계, 관리자 회원 탭)이 부른다
 6. 관리자 응답은 제공자 비밀값을 마스크(`••••••••`)로만 싣는다 — 마스크를 그대로 돌려보내면 유지, `null`(빈 문자열)은 삭제
 2. 가입 모달 API 는 게스트가 부른다 — 콜백이 발급한 48자 가입 대기 토큰(pending_token)이 곧 권한이고, 유효 시간이 지나면 404 `expired`
-3. 로그인 토큰은 이 플러그인이 만들지 않는다 — 가입·연결이 끝나면 코어 로그인 인계 주소(handoff_url)를 돌려주고, 화면이 그 주소로 가서 코어가 로그인시킨다
+3. 로그인 토큰은 이 플러그인이 만들지 않는다 — 가입·연결이 끝나면 코어 로그인 인계 주소(handoff_url)를 돌려주고, 화면이 그 주소로 가서 코어가 로그인시킨다. 인계 코드는 발급한 브라우저에 묶이므로(코어 7.2.0) `handoff_url` 을 주는 응답은 묶음 쿠키 `g7_login_bind`(HttpOnly, SameSite=Lax, Path `/api/auth`, 120초)를 `Set-Cookie` 로 함께 보낸다 — 같은 브라우저에서만 교환된다
 4. 실패 응답은 `errors.code` 에 플러그인 코드를 싣는다(아래 「실패 코드」). 화면은 이 코드로 분기한다
 5. 요청 제한은 라우트마다 따로 센다(throttle 세 번째 인자 = 버킷 이름) — 화면마다 부르는 제공자 목록이 인증번호 요청 한도를 깎지 않는다
 ```
@@ -167,6 +167,8 @@
 { "success": true, "message": "...", "data": { "handoff_url": "/login?login_handoff=…&redirect=%2F" } }
 ```
 
+응답 헤더에 인계 코드의 묶음 쿠키 `Set-Cookie: g7_login_bind=…; path=/api/auth; httponly; samesite=lax` 가 실립니다(본문에는 없음).
+
 코어 가입 이메일 인증이 켜진 사이트는 `data.redirect_url` 이 `/login?social_notice=pending_verification` 이고 로그인하지 않습니다.
 
 ### POST /api/plugins/sirsoft-social_login/signup/link-existing/request
@@ -177,7 +179,7 @@
 - **미들웨어**: `throttle:10,1,sirsoft-social_login.link-existing-request`
 - **본문**: `pending_token`, `method`(`password`|`email`), `password`(method=password 일 때)
 
-**응답 200** — 비밀번호: `data: { "handoff_url": "…" }` · 이메일: `data: { "challenge_id": "…", "expires_at": "…" }`. 비밀번호가 틀리면 422 `password_mismatch`, 비밀번호와 인증번호를 합쳐 5번 틀리면 404 `too_many_attempts`, 기존 계정 주소로 메일을 보내지 못하면 503 `mail_failed`.
+**응답 200** — 비밀번호: `data: { "handoff_url": "…" }` + 묶음 쿠키 `g7_login_bind` 응답 헤더 · 이메일: `data: { "challenge_id": "…", "expires_at": "…" }`. 비밀번호가 틀리면 422 `password_mismatch`, 비밀번호와 인증번호를 합쳐 5번 틀리면 404 `too_many_attempts`, 기존 계정 주소로 메일을 보내지 못하면 503 `mail_failed`.
 
 ### POST /api/plugins/sirsoft-social_login/signup/link-existing/verify
 
@@ -185,7 +187,7 @@
 - **미들웨어**: `throttle:10,1,sirsoft-social_login.link-existing-verify`
 - **본문**: `pending_token`, `challenge_id`, `code`
 
-**응답 200** — `data: { "handoff_url": "…" }`.
+**응답 200** — `data: { "handoff_url": "…" }` + 묶음 쿠키 `g7_login_bind` 응답 헤더.
 
 ### POST /api/plugins/sirsoft-social_login/signup/discard-existing
 

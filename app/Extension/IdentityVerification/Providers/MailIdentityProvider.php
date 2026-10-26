@@ -3,6 +3,7 @@
 namespace App\Extension\IdentityVerification\Providers;
 
 use App\Contracts\Extension\IdentityVerificationInterface;
+use App\Contracts\Extension\UserScopedIdentityProviderInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Enums\IdentityVerificationStatus;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
@@ -10,6 +11,7 @@ use App\Extension\IdentityVerification\DTO\VerificationResult;
 use App\Models\User;
 use App\Services\IdentityMessageDispatcher;
 use App\Support\ScreenUrl;
+use App\Support\UndeliverableEmail;
 use Carbon\CarbonInterval;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -27,7 +29,7 @@ use Illuminate\Support\Str;
  *
  * @since 7.0.0-beta.4
  */
-class MailIdentityProvider implements IdentityVerificationInterface
+class MailIdentityProvider implements IdentityVerificationInterface, UserScopedIdentityProviderInterface
 {
     /** @var int 인증코드 최소 길이 */
     public const MIN_CODE_LENGTH = 4;
@@ -126,6 +128,20 @@ class MailIdentityProvider implements IdentityVerificationInterface
         $mailer = (string) config('mail.default', '');
 
         return $mailer !== '';
+    }
+
+    /**
+     * 이 회원에게 메일 인증번호를 보낼 수 있는지 돌려줍니다 — 받을 수 있는 이메일이 있어야 한다.
+     *
+     * 대체 주소(`…@….invalid`)나 빈 이메일 회원에게는 닿지 않는 인증번호를 보내지 않는다. 목적별 수단 해석이 이 판정으로 다음
+     * 수단(외부 인증 재로그인 등)으로 넘어간다(7.2.0). 판정은 부작용이 없다.
+     *
+     * @param  User  $user  대상 회원
+     * @return bool 보낼 수 있으면 true
+     */
+    public function canChallengeUser(User $user): bool
+    {
+        return ! UndeliverableEmail::is($user->email);
     }
 
     /**

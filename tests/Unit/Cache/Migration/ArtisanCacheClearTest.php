@@ -21,11 +21,18 @@ use Tests\TestCase;
  * 주의: 아래 키 문자열은 이관 당시의 픽스처다. 현행 커맨드는 유령 키 forget 을
  * 제거하고 상태 키 무효화 + 레이아웃 캐시 + 버전 bump 로 동작한다 (#588) —
  * 커맨드의 실동작 검증은 {Module,Plugin,Template}ArtisanCommandsTest 가 담당한다.
+ *
+ * @scenario-manifest tests/scenarios/cache-artisan-clear-key-round-trip.yaml
  */
 class ArtisanCacheClearTest extends TestCase
 {
     private CoreCacheDriver $cache;
 
+    /**
+     * 캐시를 비우고 array 저장소 코어 드라이버를 CacheInterface 로 바인딩합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,6 +42,11 @@ class ArtisanCacheClearTest extends TestCase
         $this->app->instance(CacheInterface::class, $this->cache);
     }
 
+    /**
+     * 테스트가 남긴 캐시를 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Cache::flush();
@@ -43,6 +55,12 @@ class ArtisanCacheClearTest extends TestCase
 
     /**
      * G-1-1: 모듈 키 픽스처 다건 put→forget 왕복 (드라이버 동작 검증 — 커맨드 미호출).
+     *
+     * @scenario case=module_keys
+     *
+     * @effects per_extension_keys_forgotten
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function g_1_1_module_cache_clear_removes_per_module_keys(): void
@@ -72,6 +90,12 @@ class ArtisanCacheClearTest extends TestCase
 
     /**
      * G-1-2: 플러그인 키 픽스처 다건 put→forget 왕복 (드라이버 동작 검증 — 커맨드 미호출).
+     *
+     * @scenario case=plugin_keys
+     *
+     * @effects per_extension_keys_forgotten
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function g_1_2_plugin_cache_clear_removes_per_plugin_keys(): void
@@ -99,6 +123,12 @@ class ArtisanCacheClearTest extends TestCase
 
     /**
      * G-1-3: 템플릿/레이아웃 키 픽스처 다건 put→forget 왕복 (드라이버 동작 검증 — 커맨드 미호출).
+     *
+     * @scenario case=template_keys
+     *
+     * @effects per_extension_keys_forgotten
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function g_1_3_template_cache_clear_removes_template_layout_routes(): void
@@ -130,6 +160,12 @@ class ArtisanCacheClearTest extends TestCase
 
     /**
      * G-1-4: 전역 + 개별 키 혼합 다건 put→forget 왕복 (드라이버 동작 검증 — 커맨드 미호출).
+     *
+     * @scenario case=global_and_module_keys
+     *
+     * @effects global_keys_forgotten, per_extension_keys_forgotten
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function g_1_4_clear_without_args_clears_all(): void

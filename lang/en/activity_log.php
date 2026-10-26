@@ -90,6 +90,11 @@ return [
         'dormant_restored' => 'Dormancy Lifted',
         'dormant_converted' => 'Marked Dormant',
         'dormant_withdrawn' => 'Dormant Account Withdrawn',
+        // External authentication extension points (7.2.0)
+        'register_identity_policy_skipped' => 'Sign-up Without Identity Policy',
+        'block' => 'Member Blocked',
+        'unblock' => 'Member Unblocked',
+        'sessions_revoked' => 'Signed Out of All Devices',
 
         // Password policy (auth.password_*) — compound words that do not collide with existing segments
         'password_change' => 'Password Changed',
@@ -208,6 +213,10 @@ return [
         'user_dormant_restored' => 'Dormancy lifted by sign-in (ID: :user_id)',
         'user_dormant_converted' => 'Marked dormant after long inactivity (ID: :user_id)',
         'user_dormant_withdrawn' => 'Withdrawn after the dormancy period (ID: :user_id)',
+        'user_register_identity_policy_skipped' => 'Signed up without the identity verification policy (ID: :user_id, reason: :reason)',
+        'user_block' => 'Member blocked (ID: :user_id, reason: :reason)',
+        'user_unblock' => 'Member unblocked (ID: :user_id, reason: :reason)',
+        'user_sessions_revoked' => 'Member signed out of all devices (ID: :user_id, :count tokens)',
         'privacy_manual_run_queued' => 'Privacy action manual run queued (:target)',
         'privacy_manual_run_queued_skip_waiting' => 'Privacy action manual run queued — waiting period skipped (:target)',
         'privacy_manual_run_completed' => 'Privacy action manual run completed (:target, :count item)|Privacy action manual run completed (:target, :count items)',

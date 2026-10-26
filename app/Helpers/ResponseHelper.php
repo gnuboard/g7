@@ -50,6 +50,8 @@ class ResponseHelper
      * @param  mixed  $errors  오류 정보
      * @param  array  $messageParams  메시지 매개변수
      * @param  string  $domain  번역 도메인 (기본값: 'core')
+     * @param  array<string, mixed>|null  $data  실패 응답에 함께 실을 안내 데이터 (화면이 다음 동작에 쓰는 값 — 예: 이동 경로).
+     *                                           null 이면 `data` 키를 싣지 않는다(기존 응답 모양 그대로)
      * @return JsonResponse JSON 응답
      */
     public static function error(
@@ -57,12 +59,17 @@ class ResponseHelper
         int $statusCode = 400,
         mixed $errors = null,
         array $messageParams = [],
-        string $domain = 'core'
+        string $domain = 'core',
+        ?array $data = null
     ): JsonResponse {
         $response = [
             'success' => false,
             'message' => self::trans($messageKey, $messageParams, $domain),
         ];
+
+        if ($data !== null) {
+            $response['data'] = $data;
+        }
 
         if ($errors instanceof \Throwable) {
             if (config('app.debug')) {

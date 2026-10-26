@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Rules\PasswordPolicy;
 use App\Services\Auth\ReauthenticationService;
+use App\Services\UserLockedFieldsService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -116,6 +117,9 @@ class UpdateUserRequest extends FormRequest
                 $rules['current_password'] = ['required_with:password', 'nullable', 'string', 'current_password:sanctum'];
             }
         }
+
+        // 외부(회사 계정)가 관리하는 칸은 현재 값과 같아야 한다 — 요청에 그 칸이 없으면 통과(7.2.0)
+        $rules = app(UserLockedFieldsService::class)->applyRules($rules, $this->targetUser(), UserLockedFieldsService::SURFACE_ADMIN);
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.user.update_validation_rules', $rules, $this);

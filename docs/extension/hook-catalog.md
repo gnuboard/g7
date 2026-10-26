@@ -9,8 +9,8 @@
 
 ## 목차
 
-- [코어](#코어) (633)
-- [기본 제공 확장](#기본-제공-확장) (16)
+- [코어](#코어) (645)
+- [기본 제공 확장](#기본-제공-확장) (17)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
 
@@ -108,11 +108,16 @@
 | `core.auth.before_reset_password` | action | 1 |  |
 | `core.auth.forgot_password_validation_rules` | filter | 2 |  |
 | `core.auth.lockout_minutes` | filter | 2 |  |
+| `core.auth.login_auto_redirect` | filter | 2 |  |
+| `core.auth.login_discover_validation_rules` | filter | 2 |  |
+| `core.auth.login_discovery` | filter | 3 |  |
 | `core.auth.login_failed` | action | 2 |  |
 | `core.auth.login_handoff_validation_rules` | filter | 2 |  |
 | `core.auth.login_validation_rules` | filter | 2 |  |
 | `core.auth.logout` | action | 1 |  |
+| `core.auth.logout_redirect_url` | filter | 3 |  |
 | `core.auth.max_login_attempts` | filter | 2 |  |
+| `core.auth.password_auth_decision` | filter | 2 |  |
 | `core.auth.password_change_postpone_validation_rules` | filter | 2 |  |
 | `core.auth.password_change_postponed` | action | 2 |  |
 | `core.auth.password_change_recorded` | action | 2 |  |
@@ -120,9 +125,12 @@
 | `core.auth.password_change_validation_rules` | filter | 2 |  |
 | `core.auth.password_expired` | action | 2 |  |
 | `core.auth.password_expiry_notice` | action | 2 |  |
+| `core.auth.password_reset_blocked` | action | 2 |  |
 | `core.auth.record_consents` | action | 4 |  |
 | `core.auth.register_validation_rules` | filter | 2 |  |
+| `core.auth.registered_credential_verifiers` | filter | 1 |  |
 | `core.auth.reset_password_validation_rules` | filter | 2 |  |
+| `core.auth.self_registration_open` | filter | 1 |  |
 | `core.auth.two_factor_requested` | action | 2 |  |
 | `core.auth.two_factor_resend_validation_rules` | filter | 2 |  |
 | `core.auth.two_factor_validation_rules` | filter | 2 |  |
@@ -610,12 +618,15 @@
 | `core.templates.updated` | action | 1 |  |
 | `core.unique_id.after_generate` | action | 2 |  |
 | `core.unique_id.before_generate` | action | 1 |  |
+| `core.user.after_block` | action | 2 |  |
 | `core.user.after_bulk_update_roles` | action | 4 |  |
 | `core.user.after_create` | action | 2 |  |
 | `core.user.after_delete` | action | 1 |  |
 | `core.user.after_list` | action | 1 |  |
 | `core.user.after_search` | action | 2 |  |
+| `core.user.after_sessions_revoked` | action | 3 |  |
 | `core.user.after_show` | action | 1 |  |
+| `core.user.after_unblock` | action | 2 |  |
 | `core.user.after_update` | action | 3 |  |
 | `core.user.after_update_roles` | action | 3 |  |
 | `core.user.after_withdraw` | action | 1 |  |
@@ -639,6 +650,7 @@
 | `core.user.list_query_extensions` | filter | 2 |  |
 | `core.user.list_validation_attributes` | filter | 2 |  |
 | `core.user.list_validation_rules` | filter | 2 |  |
+| `core.user.locked_fields` | filter | 3 |  |
 | `core.user.search_validation_rules` | filter | 2 |  |
 | `core.user.update_language_validation_rules` | filter | 2 |  |
 | `core.user.update_profile_validation_rules` | filter | 2 |  |
@@ -672,6 +684,7 @@
 | `sirsoft-pay_nhnkcp` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/extension-points.md#발행-훅) |
 | `sirsoft-pay_nicepayments` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-pay_nicepayments/docs/extension-points.md#발행-훅) |
 | `sirsoft-social_login` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-social_login/docs/extension-points.md#발행-훅) |
+| `sirsoft-sso` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-sso/docs/extension-points.md#발행-훅) |
 | `sirsoft-tosspayments` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-tosspayments/docs/extension-points.md#발행-훅) |
 | `sirsoft-totp` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-totp/docs/extension-points.md#발행-훅) |
 

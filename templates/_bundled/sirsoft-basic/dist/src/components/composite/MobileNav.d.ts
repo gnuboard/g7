@@ -25,6 +25,8 @@ interface MobileNavProps {
     boards?: Board[];
     /** 장바구니 아이템 수 */
     cartCount?: number;
+    /** 일반 회원가입을 받는지 — false 면 회원가입 버튼을 숨긴다 (기본 true, 7.2.0) */
+    registrationEnabled?: boolean;
 }
 /**
  * 모바일 네비게이션 드로어

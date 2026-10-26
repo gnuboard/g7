@@ -760,7 +760,7 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
     const message = String(formToast.params.message);
 
     // 고정 나열로 되돌리면(= 표현식이 아닌 `$t:` 리터럴 하나) 이 단언이 붉어진다.
-    expect(message, '문구가 열린 폼을 지목하지 않고 고정 나열로 되돌아갔다').toContain(':forms');
+    expect(message, '문구가 열린 폼을 지목하지 않고 고정 나열로 되돌아갔다').toContain("replace('{forms}'");
     expect(message).toContain('save_pending_form_targets.');
 
     // 이 토스트가 보는 플래그 전부가 라벨 키와 짝지어져 있어야 한다. 짝이 없으면 그 폼만
@@ -795,7 +795,7 @@ describe('페이지 [저장] — 추가 폼을 연 채 저장하면 막고 경�
     );
 
     for (const [name, lang] of [['ko', langKo], ['en', langEn], ['ja', langJa]] as [string, any][]) {
-      expect(String(lang.save_pending_form), `${name}: 문구에 :forms 치환 자리가 없다`).toContain(':forms');
+      expect(String(lang.save_pending_form), `${name}: 문구에 {forms} 치환 자리가 없다`).toContain('{forms}');
       expect(
         Object.keys(lang.save_pending_form_targets ?? {}).sort(),
         `${name}: 라벨 사전의 키 집합이 레이아웃 토큰과 다르다 — 화면에 키 원문이 나간다`,

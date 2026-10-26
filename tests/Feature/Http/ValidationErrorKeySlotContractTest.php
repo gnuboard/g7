@@ -92,6 +92,10 @@ class ValidationErrorKeySlotContractTest extends TestCase
             }
             foreach ($matches[1] as [$keyArg, $offset]) {
                 $calls++;
+                // 키를 고르는 메서드(`…MessageKey(`)는 번역 문장이 아니라 언어 키를 돌려준다 — 변수가 아니다
+                if (preg_match('/^\$[\w>\-]+MessageKey\(/', trim($keyArg)) === 1) {
+                    continue;
+                }
                 if (str_starts_with(trim($keyArg), '$')) {
                     $violations[] = $file['rel'].':'.(substr_count(substr($source, 0, $offset), "\n") + 1);
                 }

@@ -1,0 +1,203 @@
+<!-- e2e:allow Playwright 스펙 없음(이 플러그인 tests/Playwright/specs/sso-*.spec.ts 는 로그인 흐름만 덮는다) — 브라우저 실측은 F1 Chrome MCP 계획서 §10 M11·M14(W40) — P4 는 Vitest 로 덮음
+     「이력」(/admin/plugins/sirsoft-sso/logs, 권한 logs.view) — 탭 로그인 시도 / SCIM 수신. 기간, IdP, 결과로 거른다. 보는 화면이다(고치지 않는다).
+     이력에는 토큰, 어설션 원문, SCIM 본문이 없다(서버가 남기지 않는다). -->
+<layout name="sso_logs" version="1.0.0" extends="_admin_base">
+  <meta title="$t:sirsoft-sso.admin.logs.title" description="$t:sirsoft-sso.admin.logs.description"/>
+  <!-- IdP 필터 선택지 — 회원 연결 목록 응답이 IdP 목록을 함께 준다(한 행만 받는다). 회원 연결 열람 권한이 없으면 403 을 삼키고 선택지가 「전체」만 남는다 -->
+  <data-source id="ssoLogIdps" label_key="$t:sirsoft-sso.editor.data_source.admin_accounts" type="api" endpoint="/api/plugins/sirsoft-sso/admin/accounts" method="GET" :auto_fetch="true" :auth_required="true">
+    <params per_page="1"/>
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- 로그인 시도 탭 목록 — 그 탭일 때만 받고 기간·IdP·결과는 주소에서 읽는다. 403 은 빈 표 대신 오류 화면(빈 표는 「시도가 없다」로 읽힌다) -->
+  <data-source id="ssoAttempts" label_key="$t:sirsoft-sso.editor.data_source.admin_attempts" type="api" endpoint="/api/plugins/sirsoft-sso/admin/logs/attempts" method="GET" :auto_fetch="true" :auth_required="true" if="{{(query.tab || 'attempts') === 'attempts'}}" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="20" idp_id="{{query.idp_id || ''}}" outcome="{{query.outcome || ''}}" from="{{query.from || ''}}" to="{{query.to || ''}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="20"/>
+          <field name="total" :value="0"/>
+        </field>
+      </field>
+    </fallback>
+    <error-handling>
+      <on-code code="403">
+        <show-error-page target="content"/>
+      </on-code>
+    </error-handling>
+  </data-source>
+  <!-- SCIM 수신 탭 목록 — 그 탭일 때만 받는다. 기간·IdP·상태 구분은 주소에서 읽는다 -->
+  <data-source id="ssoScimEvents" label_key="$t:sirsoft-sso.editor.data_source.admin_scim_events" type="api" endpoint="/api/plugins/sirsoft-sso/admin/logs/scim" method="GET" :auto_fetch="true" :auth_required="true" if="{{query.tab === 'scim'}}" loading_strategy="progressive">
+    <params page="{{query.page || 1}}" per_page="20" idp_id="{{query.idp_id || ''}}" status_class="{{query.status_class || ''}}" from="{{query.from || ''}}" to="{{query.to || ''}}"/>
+    <fallback>
+      <field name="data">
+        <field name="data" :value="[]"/>
+        <field name="pagination">
+          <field name="current_page" :value="1"/>
+          <field name="last_page" :value="1"/>
+          <field name="per_page" :value="20"/>
+          <field name="total" :value="0"/>
+        </field>
+      </field>
+    </fallback>
+  </data-source>
+  <permissions>
+    <permission>sirsoft-sso.logs.view</permission>
+  </permissions>
+  <slot name="content">
+    <div data-ref="sso_logs_content" class="admin-page-content">
+      <div data-ref="page_header" class="mb-6">
+        <h1 class="page-title">$t:sirsoft-sso.admin.logs.title</h1>
+        <p class="text-label-subtle mt-1">$t:sirsoft-sso.admin.logs.description</p>
+      </div>
+      <tab-navigation data-type="composite" data-ref="logs_tabs" activeTabId="{{query.tab || 'attempts'}}" variant="underline">
+        <prop name="tabs">
+          <item id="attempts" label="$t:sirsoft-sso.admin.logs.tabs.attempts"/>
+          <item id="scim" label="$t:sirsoft-sso.admin.logs.tabs.scim"/>
+        </prop>
+        <on type="change" event="onTabChange">
+          <!-- audit:allow layout-list-context-navigate-merge-query 탭 전환 — 탭마다 목록이 달라 이전 탭의 쪽·조건을 물려받지 않는다 -->
+          <navigate path="/admin/plugins/sirsoft-sso/logs">
+            <query tab="{{$args[0]}}"/>
+          </navigate>
+        </on>
+      </tab-navigation>
+      <div data-ref="logs_filters" class="flex flex-wrap items-center gap-2 my-4">
+        <select data-ref="logs_filter_idp" class="w-44" value="{{query.idp_id || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.idp">
+          <option value="">$t:sirsoft-sso.admin.accounts.filters.all_idps</option>
+          <option data-each="idp in ssoLogIdps?.data?.idps ?? []" value="{{idp.id}}">{{idp.label}}</option>
+          <on type="change">
+            <!-- IdP 필터 — 주소에 담아 목록을 다시 받고 첫 쪽으로 -->
+            <navigate path="/admin/plugins/sirsoft-sso/logs" :mergeQuery="true">
+              <query idp_id="{{$event.target.value}}" :page="1"/>
+            </navigate>
+          </on>
+        </select>
+        <select data-ref="logs_filter_outcome" data-if="{{(query.tab || 'attempts') === 'attempts'}}" class="w-40" value="{{query.outcome || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.outcome">
+          <option value="">$t:sirsoft-sso.admin.logs.filters.all_outcomes</option>
+          <option data-each="outcome in ['handoff', 'pending', 'link_pending', 'linked', 'reauth', 'test', 'failed', 'denied']" value="{{outcome}}">{{$t('sirsoft-sso.admin.logs.outcomes.' + outcome)}}</option>
+          <on type="change">
+            <!-- 결과 필터(로그인 시도 탭) — 주소에 담아 첫 쪽으로 -->
+            <navigate path="/admin/plugins/sirsoft-sso/logs" :mergeQuery="true">
+              <query outcome="{{$event.target.value}}" :page="1"/>
+            </navigate>
+          </on>
+        </select>
+        <select data-ref="logs_filter_status" data-if="{{query.tab === 'scim'}}" class="w-40" value="{{query.status_class || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.status">
+          <option value="">$t:sirsoft-sso.admin.logs.filters.all_status</option>
+          <option value="success">$t:sirsoft-sso.admin.logs.status.success</option>
+          <option value="error">$t:sirsoft-sso.admin.logs.status.error</option>
+          <on type="change">
+            <!-- 상태 구분 필터(SCIM 탭) — 주소에 담아 첫 쪽으로 -->
+            <navigate path="/admin/plugins/sirsoft-sso/logs" :mergeQuery="true">
+              <query status_class="{{$event.target.value}}" :page="1"/>
+            </navigate>
+          </on>
+        </select>
+        <input data-ref="logs_filter_from" type="date" class="input w-40" value="{{query.from || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.from">
+          <on type="change">
+            <!-- 기간 시작일 — 주소에 담아 첫 쪽으로 -->
+            <navigate path="/admin/plugins/sirsoft-sso/logs" :mergeQuery="true">
+              <query from="{{$event.target.value}}" :page="1"/>
+            </navigate>
+          </on>
+        </input>
+        <input data-ref="logs_filter_to" type="date" class="input w-40" value="{{query.to || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.to">
+          <on type="change">
+            <!-- 기간 끝날 — 주소에 담아 첫 쪽으로 -->
+            <navigate path="/admin/plugins/sirsoft-sso/logs" :mergeQuery="true">
+              <query to="{{$event.target.value}}" :page="1"/>
+            </navigate>
+          </on>
+        </input>
+      </div>
+      <data-grid data-type="composite" data-ref="attempts_datagrid" data-if="{{(query.tab || 'attempts') === 'attempts'}}" data="{{ssoAttempts?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{ssoAttempts?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{ssoAttempts?.data?.pagination?.last_page ?? null}}" pageSize="20" idField="id" :selectable="false" emptyMessage="$t:sirsoft-sso.admin.logs.empty">
+        <on type="change" event="onPageChange">
+          <!-- 쪽 이동 — 다른 필터는 주소에 그대로 둔다 -->
+          <navigate path="/admin/plugins/sirsoft-sso/logs" :mergeQuery="true">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+        <column field="created_at" header="$t:sirsoft-sso.admin.logs.col.created_at" :sortable="false" width="170px">
+          <cell>
+            <span class="text-label whitespace-nowrap">{{row.created_at | datetime | default('-')}}</span>
+          </cell>
+        </column>
+        <column field="idp_id" header="$t:sirsoft-sso.admin.logs.col.idp" :sortable="false" width="140px">
+          <cell>
+            <span class="text-body">{{(ssoLogIdps?.data?.idps ?? []).find(i => i.id === row.idp_id)?.label ?? (row.idp_id ?? '-')}}</span>
+          </cell>
+        </column>
+        <column field="intent" header="$t:sirsoft-sso.admin.logs.col.intent" :sortable="false" width="100px">
+          <cell>
+            <span class="text-body">{{$t('sirsoft-sso.admin.logs.intents.' + row.intent)}}</span>
+          </cell>
+        </column>
+        <column field="guard" header="$t:sirsoft-sso.admin.logs.col.guard" :sortable="false" width="90px">
+          <cell>
+            <span class="text-body">{{$t('sirsoft-sso.admin.logs.guards.' + row.guard)}}</span>
+          </cell>
+        </column>
+        <column field="outcome" header="$t:sirsoft-sso.admin.logs.col.outcome" :sortable="false" width="110px">
+          <cell>
+            <span class="{{row.outcome === 'failed' || row.outcome === 'denied' ? 'text-red-700 dark:text-red-300' : 'text-gray-800 dark:text-gray-200'}}">{{$t('sirsoft-sso.admin.logs.outcomes.' + row.outcome)}}</span>
+          </cell>
+        </column>
+        <column field="reason_code" header="$t:sirsoft-sso.admin.logs.col.reason" :sortable="false">
+          <cell>
+            <span class="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">{{row.reason_code ?? '-'}}</span>
+          </cell>
+        </column>
+        <column field="ip_address" header="$t:sirsoft-sso.admin.logs.col.ip" :sortable="false" width="130px">
+          <cell>
+            <span class="text-xs text-gray-600 dark:text-gray-300">{{row.ip_address ?? '-'}}</span>
+          </cell>
+        </column>
+      </data-grid>
+      <data-grid data-type="composite" data-ref="scim_datagrid" data-if="{{query.tab === 'scim'}}" data="{{ssoScimEvents?.data?.data}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{ssoScimEvents?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{ssoScimEvents?.data?.pagination?.last_page ?? null}}" pageSize="20" idField="id" :selectable="false" emptyMessage="$t:sirsoft-sso.admin.logs.empty">
+        <on type="change" event="onPageChange">
+          <!-- 쪽 이동 — 다른 필터는 주소에 그대로 둔다 -->
+          <navigate path="/admin/plugins/sirsoft-sso/logs" :mergeQuery="true">
+            <query page="{{$args[0]}}"/>
+          </navigate>
+        </on>
+        <column field="created_at" header="$t:sirsoft-sso.admin.logs.col.created_at" :sortable="false" width="170px">
+          <cell>
+            <span class="text-label whitespace-nowrap">{{row.created_at | datetime | default('-')}}</span>
+          </cell>
+        </column>
+        <column field="idp_id" header="$t:sirsoft-sso.admin.logs.col.idp" :sortable="false" width="140px">
+          <cell>
+            <span class="text-body">{{(ssoLogIdps?.data?.idps ?? []).find(i => i.id === row.idp_id)?.label ?? (row.idp_id ?? '-')}}</span>
+          </cell>
+        </column>
+        <column field="method" header="$t:sirsoft-sso.admin.logs.col.request" :sortable="false" width="160px">
+          <cell>
+            <span class="text-xs font-mono text-gray-800 dark:text-gray-200">{{row.method + ' ' + row.resource}}</span>
+          </cell>
+        </column>
+        <column field="target_id" header="$t:sirsoft-sso.admin.logs.col.target" :sortable="false">
+          <cell>
+            <span class="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">{{row.target_id ?? '-'}}</span>
+          </cell>
+        </column>
+        <column field="status" header="$t:sirsoft-sso.admin.logs.col.status" :sortable="false" width="90px">
+          <cell>
+            <span class="{{row.status >= 400 ? 'text-red-700 dark:text-red-300 text-sm' : 'text-gray-800 dark:text-gray-200 text-sm'}}">{{row.status}}</span>
+          </cell>
+        </column>
+        <column field="error_code" header="$t:sirsoft-sso.admin.logs.col.reason" :sortable="false" width="160px">
+          <cell>
+            <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{row.error_code ?? '-'}}</span>
+          </cell>
+        </column>
+      </data-grid>
+    </div>
+  </slot>
+</layout>

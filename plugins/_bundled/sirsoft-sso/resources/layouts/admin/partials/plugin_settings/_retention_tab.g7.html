@@ -1,0 +1,78 @@
+<!-- 보존 탭 — 이력 보존일(로그인 시도, SCIM 수신, 끝난 세션), IdP 연속 실패 알림 기준, 인증서 만료 알림, 로그인 요청과 대기 유효 시간.
+     정책 탭과 같은 편집 칸(_local.policyForm.policy)이고 같은 저장(savePolicy)을 쓴다. -->
+<partial name="partials/plugin_settings/_retention_tab" description="보존 탭">
+  <div data-ref="retention_tab" data-if="{{_computed.activeTab === 'retention'}}" data-key="policyForm" class="mt-6 space-y-6">
+    <div data-ref="retention_section" class="admin-card space-y-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-sso.admin.settings.retention.title</h2>
+      <div data-each="field in ['attempts_retention_days', 'scim_retention_days', 'session_retention_days']" data-key="{{field}}" data-ref="retention_field_{{field}}" class="grid-3col-responsive">
+        <div class="lg:col-span-1">
+          <label class="form-label">{{$t('sirsoft-sso.admin.settings.retention.fields.' + field)}}</label>
+        </div>
+        <div class="lg:col-span-2">
+          <input type="number" class="input" :min="1" :max="3650" value="{{_local.policyForm?.policy?.[field] ?? ''}}" disabled="{{!_computed.canUpdate}}" aria-label="{{$t('sirsoft-sso.admin.settings.retention.fields.' + field)}}">
+            <on type="change">
+              <!-- 보존일 칸 — 입력값을 수로 바꿔 정책 편집값에 담는다(저장은 정책 탭과 같은 저장) -->
+              <set-state target="local" policyForm.policy="{{Object.assign({}, _local.policyForm?.policy ?? {}, Object.fromEntries([[field, Number($event.target.value)]]))}}"/>
+            </on>
+          </input>
+        </div>
+      </div>
+    </div>
+    <div data-ref="alerts_section" class="admin-card space-y-6">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-sso.admin.settings.retention.alerts</h2>
+      <div class="grid-3col-responsive">
+        <div class="lg:col-span-1">
+          <label class="form-label">$t:sirsoft-sso.admin.settings.retention.fields.failure_alert</label>
+          <p class="form-hint">$t:sirsoft-sso.admin.settings.retention.hints.failure_alert</p>
+        </div>
+        <div class="lg:col-span-2 grid grid-cols-2 gap-3">
+          <div>
+            <label class="form-label">$t:sirsoft-sso.admin.settings.retention.fields.failure_alert_count</label>
+            <!-- audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다 -->
+            <input type="number" name="policy.failure_alert_count" :min="1" :max="1000" class="input" disabled="{{!_computed.canUpdate}}"/>
+          </div>
+          <div>
+            <label class="form-label">$t:sirsoft-sso.admin.settings.retention.fields.failure_alert_window_minutes</label>
+            <!-- audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다 -->
+            <input type="number" name="policy.failure_alert_window_minutes" :min="1" :max="1440" class="input" disabled="{{!_computed.canUpdate}}"/>
+          </div>
+        </div>
+      </div>
+      <div class="grid-3col-responsive">
+        <div class="lg:col-span-1">
+          <label class="form-label">$t:sirsoft-sso.admin.settings.retention.fields.cert_expiry_notice_days</label>
+          <p class="form-hint">$t:sirsoft-sso.admin.settings.retention.hints.cert_expiry_notice_days</p>
+        </div>
+        <div class="lg:col-span-2">
+          <tag-input data-type="composite" name="policy.cert_expiry_notice_days" :creatable="true" placeholder="30" class="w-full" defaultVariant="blue" disabled="{{!_computed.canUpdate}}"/>
+        </div>
+      </div>
+      <div class="grid-3col-responsive">
+        <div class="lg:col-span-1">
+          <label class="form-label">$t:sirsoft-sso.admin.settings.retention.fields.ttl</label>
+          <p class="form-hint">$t:sirsoft-sso.admin.settings.retention.hints.ttl</p>
+        </div>
+        <div class="lg:col-span-2 grid grid-cols-2 gap-3">
+          <div>
+            <label class="form-label">$t:sirsoft-sso.admin.settings.retention.fields.state_ttl_minutes</label>
+            <!-- audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다 -->
+            <input type="number" name="policy.state_ttl_minutes" :min="1" :max="60" class="input" disabled="{{!_computed.canUpdate}}"/>
+          </div>
+          <div>
+            <label class="form-label">$t:sirsoft-sso.admin.settings.retention.fields.pending_ttl_minutes</label>
+            <!-- audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다 -->
+            <input type="number" name="policy.pending_ttl_minutes" :min="1" :max="60" class="input" disabled="{{!_computed.canUpdate}}"/>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button data-ref="retention_save_button" type="button" class="btn btn-primary text-sm" disabled="{{!_computed.canUpdate || _local.isSavingPolicy}}">
+        <on type="click">
+          <action-ref name="savePolicy"/>
+        </on>
+        <span>$t:common.save</span>
+      </button>
+    </div>
+  </div>
+</partial>

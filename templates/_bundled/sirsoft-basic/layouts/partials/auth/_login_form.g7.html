@@ -8,7 +8,7 @@
            3단계(`loginPasswordChange`)로 바꾼다. 세 액션의 `if` 는 상호배타이고, 성공 분기는 `response.password_change_required` 를 먼저 본다. -->
       <sequence>
         <set-state target="local" :isLoginAction="true"/>
-        <set-state target="global" :isLoggingIn="true" :loginError="null" :loginErrors="null"/>
+        <set-state target="global" :isLoggingIn="true" :loginError="null" :loginErrors="null" :loginAlternateUrl="null" :loginAlternateLabel="null"/>
         <!-- 1·2단계는 상호배타다. if 는 시퀀스 시작 시점 스냅샷으로 평가되므로 한 제출에 정확히 하나만 실행된다 — 이 if 가 빠지면 인증번호 단계에서 Enter 를 누를 때 새 challenge 가 발급되어 흐름이 깨진다. -->
         <login target="user" if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required}}">
           <success>
@@ -18,6 +18,10 @@
           </success>
           <fail>
             <set-state target="global" :isLoggingIn="false" loginError="{{error.message}}" loginErrors="{{error.errors}}"/>
+            <!-- 회사 계정 로그인이 강제된 계정(403 `auth.password_auth_disabled`) — 안내 문구는 위 오류 자리에, 그 수단으로 가는 버튼은 아래 자리에 싣는다(7.2.0). -->
+            <set-state if="{{error.errors?.code === 'auth.password_auth_disabled'}}" target="global" loginAlternateUrl="{{error.errors?.redirect_url ?? null}}" loginAlternateLabel="{{error.errors?.method_label ? $localized(error.errors.method_label) : null}}"/>
+            <!-- 사내 계정으로 처음 오는 사람처럼 동의·연결 확인 화면이 더 필요하다(409 `auth.external_step_required`) — 그 화면으로 이동한다. -->
+            <action if="{{error.errors?.code === 'auth.external_step_required' &amp;&amp; !!error.errors?.redirect_url}}" handler="redirect" url="{{error.errors.redirect_url}}"/>
           </fail>
           <body email="{{form.email}}" password="{{form.password}}"/>
         </login>
@@ -78,21 +82,71 @@
       <!-- 계정 잠금 해제 시각 — 언제 다시 시도할 수 있는지 알려주지 않으면 사용자는 계속 눌러 보게 된다 -->
       <p data-if="{{_global.loginErrors?.locked_until}}" class="mt-1 text-sm text-red-700 dark:text-red-400">$t:auth.locked_until|until={{_global.loginErrors?.locked_until | datetime}}</p>
       <p data-if="{{_global.loginErrors?.permanent === true}}" class="mt-1 text-sm text-red-700 dark:text-red-400">$t:auth.locked_permanent</p>
+      <!-- 비밀번호 로그인이 막힌 계정 — 그 계정의 로그인 수단으로 바로 가는 버튼(7.2.0) -->
+      <button data-if="{{!!_global.loginAlternateUrl}}" type="button" class="mt-3 w-full py-2 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer">
+        <on type="click">
+          <action handler="redirect" url="{{_global.loginAlternateUrl + (query.redirect ? (_global.loginAlternateUrl.includes('?') ? '&amp;' : '?') + 'redirect=' + encodeURIComponent(query.redirect) : '')}}"/>
+        </on>
+        <span data-if="{{!!_global.loginAlternateLabel}}">$t:auth.external.login_with|method={{_global.loginAlternateLabel}}</span>
+        <span data-if="{{!_global.loginAlternateLabel}}">$t:auth.external.login_with_company</span>
+      </button>
     </div>
     <!-- 이메일 입력 필드 (1단계) -->
     <div data-if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required}}">
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.email</label>
-      <input aria-label="$t:auth.email" type="email" name="email" placeholder="$t:auth.email_placeholder" class="{{_global.loginErrors?.email ? 'w-full px-4 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}" :required="true" disabled="{{_global.isLoggingIn}}"/>
+      <!-- 사내 아이디를 받는 외부 자격 증명(디렉터리 로그인)이 켜진 사이트는 이메일 형식을 강제하지 않는다 — 칸 이름은 email 그대로(7.2.0) -->
+      <label data-if="{{_global.appConfig?.auth?.login_identifier?.user !== 'email_or_username'}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.email</label>
+      <label data-if="{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username'}}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.external.identifier</label>
+      <input aria-label="{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username' ? $t('auth.external.identifier') : $t('auth.email')}}" type="{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username' ? 'text' : 'email'}}" name="email" placeholder="{{_global.appConfig?.auth?.login_identifier?.user === 'email_or_username' ? $t('auth.external.identifier_placeholder') : $t('auth.email_placeholder')}}" class="{{_global.loginErrors?.email ? 'w-full px-4 py-2 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200' : 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200'}}" :required="true" disabled="{{_global.isLoggingIn}}">
+        <on event="onBlur">
+          <!-- 이메일 먼저 입력(7.2.0) — 칸을 벗어날 때 값이 바뀌었으면 그 식별자의 로그인 수단을 묻는다. 회사 계정 도메인이면 비밀번호 칸 대신
+               「…(으)로 계속」 버튼을 보인다. 판정은 도메인으로만 하므로 회원 유무가 드러나지 않는다. 실패하면 지금 화면 그대로다. -->
+          <sequence if="{{!!$event.target.value &amp;&amp; $event.target.value !== _local.discoveryFor}}">
+            <set-state target="local" discoveryFor="{{$event.target.value}}"/>
+            <api-call target="/api/auth/login/discover" method="POST">
+              <success>
+                <set-state target="local" discovery="{{response.data?.method === 'external' ? response.data : null}}"/>
+              </success>
+              <fail>
+                <set-state target="local" :discovery="null"/>
+              </fail>
+              <body identifier="{{$event.target.value}}"/>
+            </api-call>
+          </sequence>
+        </on>
+      </input>
       <!-- 이메일 필드 에러 메시지 -->
       <p data-if="{{_global.loginErrors?.email}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{Array.isArray(_global.loginErrors?.email) ? _global.loginErrors.email[0] : _global.loginErrors?.email}}</p>
     </div>
+    <!-- 회사 계정으로 계속(7.2.0) — 이메일 판정이 외부 수단이면 비밀번호 칸·로그인 버튼 대신 그 수단으로 보낸다 -->
+    <div data-if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required &amp;&amp; _local.discovery?.method === 'external'}}" class="space-y-3">
+      <!-- 왜 비밀번호 칸이 사라졌는지 알린다(디자인 ②) -->
+      <p data-ref="login_discovery_notice" class="text-sm text-gray-600 dark:text-gray-300" role="status">
+        <span data-if="{{!!_local.discovery?.label &amp;&amp; !!$localized(_local.discovery.label)}}">$t:auth.external.discovered_notice|method={{$localized(_local.discovery?.label)}}</span>
+        <span data-if="{{!_local.discovery?.label || !$localized(_local.discovery.label)}}">$t:auth.external.discovered_notice_company</span>
+      </p>
+      <button type="button" class="w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
+        <on type="click">
+          <!-- 판정이 준 외부 수단 주소로 보낸다 — 돌아올 곳(redirect)이 있으면 이어 붙인다 -->
+          <action handler="redirect" url="{{_local.discovery.redirect_url + (query.redirect ? (_local.discovery.redirect_url.includes('?') ? '&amp;' : '?') + 'redirect=' + encodeURIComponent(query.redirect) : '')}}"/>
+        </on>
+        <span data-if="{{!!_local.discovery?.label &amp;&amp; !!$localized(_local.discovery.label)}}">$t:auth.external.continue_with|method={{$localized(_local.discovery?.label)}}</span>
+        <span data-if="{{!_local.discovery?.label || !$localized(_local.discovery.label)}}">$t:auth.external.continue_with_company</span>
+      </button>
+      <button type="button" class="w-full text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer">
+        <on type="click">
+          <!-- 다른 이메일로 — 판정을 지워 비밀번호 칸으로 돌아간다 -->
+          <set-state target="local" :discovery="null" :discoveryFor="null"/>
+        </on>
+        $t:auth.external.use_other_email
+      </button>
+    </div>
     <!-- 비밀번호 입력 필드 (1단계) -->
-    <div data-if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required}}">
+    <div data-if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required &amp;&amp; _local.discovery?.method !== 'external'}}">
       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">$t:auth.password</label>
       <password-input aria-label="$t:auth.password" name="password" placeholder="$t:auth.password_placeholder" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200" :required="true" disabled="{{_global.isLoggingIn}}" :showToggle="true" error="{{_global.loginErrors?.password?.[0] ?? (_global.loginErrors?.password ?? '')}}"/>
     </div>
     <!-- 로그인 버튼 (1단계) -->
-    <button data-if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required}}" type="submit" class="w-full py-3 mt-12 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_global.isLoggingIn}}">
+    <button data-if="{{!_global.twoFactor?.required &amp;&amp; !_global.passwordChange?.required &amp;&amp; _local.discovery?.method !== 'external'}}" type="submit" class="w-full py-3 mt-12 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled="{{_global.isLoggingIn}}">
       <!-- 버튼 내 스피너 -->
       <div data-if="{{_global.isLoggingIn}}" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
       <span data-if="{{!_global.isLoggingIn}}">$t:auth.login</span>

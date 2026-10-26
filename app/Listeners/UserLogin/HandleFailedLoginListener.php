@@ -74,7 +74,9 @@ class HandleFailedLoginListener implements HookListenerInterface
         // 비밀번호가 없는 회원(외부 인증 전용)은 비밀번호로 로그인할 수 없으므로 틀린 비밀번호를 세지 않는다 —
         // 세면 이메일만 아는 남이 그 계정을 잠가 소셜 로그인까지 막을 수 있다. 응답은 그대로(`invalid_credentials`)라
         // 비밀번호 부재가 드러나지 않는다.
-        if (! $user->hasPassword()) {
+        // 단 외부 자격 증명(사내 디렉터리 비밀번호) 실패는 센다(7.2.0) — 그 비밀번호는 실제 비밀이고, G7 이 먼저 잠가야
+        // 디렉터리 계정 잠금(전사 로그인 불가)을 막는다.
+        if (! $user->hasPassword() && ($context['external_credential'] ?? false) !== true) {
             return;
         }
 
@@ -100,6 +102,9 @@ class HandleFailedLoginListener implements HookListenerInterface
 
         // 잠금 시간 0(= 무한대) 은 영구 잠금이라 해제 시각이 null 이다.
         $lockedUntil = $this->userRepository->lockAccount($user, $lockoutMinutes);
+
+        // 잠긴 계정이 이미 받아 둔 토큰으로 계속 쓰지 못하게 전부 회수한다(7.2.0) — 잠금은 새 로그인만 막는다.
+        $this->userRepository->deleteAllAccessTokens($user);
 
         HookManager::doAction('core.auth.account_locked', $user, array_merge($context, [
             'attempts' => $newCount,

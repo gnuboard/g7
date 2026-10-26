@@ -13,11 +13,18 @@ use Tests\TestCase;
  * AbstractCacheDriver (CoreCacheDriver 기반) 단위 테스트
  *
  * 공통 캐시 연산(CRUD, remember, flush, 태그, withStore)을 검증합니다.
+ *
+ * @scenario-manifest tests/scenarios/cache-driver-common-operations.yaml
  */
 class AbstractCacheDriverTest extends TestCase
 {
     private CoreCacheDriver $driver;
 
+    /**
+     * 캐시를 비우고 array 저장소를 쓰는 코어 드라이버를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -25,6 +32,11 @@ class AbstractCacheDriverTest extends TestCase
         $this->driver = new CoreCacheDriver('array');
     }
 
+    /**
+     * 테스트가 남긴 캐시를 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Cache::flush();
@@ -33,12 +45,30 @@ class AbstractCacheDriverTest extends TestCase
 
     // === 키 접두사 ===
 
+    /**
+     * 코어 드라이버는 키 앞에 `g7:core:` 접두사를 붙인다.
+     *
+     * @scenario case=key_prefix
+     *
+     * @effects key_prefixed_by_scope
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function core_driver_resolves_key_with_correct_prefix(): void
     {
         $this->assertEquals('g7:core:test_key', $this->driver->resolveKey('test_key'));
     }
 
+    /**
+     * 모듈 드라이버는 키 앞에 `g7:module.{식별자}:` 접두사를 붙인다.
+     *
+     * @scenario case=key_prefix
+     *
+     * @effects key_prefixed_by_scope
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function module_driver_resolves_key_with_module_prefix(): void
     {
@@ -49,6 +79,15 @@ class AbstractCacheDriverTest extends TestCase
         );
     }
 
+    /**
+     * 플러그인 드라이버는 키 앞에 `g7:plugin.{식별자}:` 접두사를 붙인다.
+     *
+     * @scenario case=key_prefix
+     *
+     * @effects key_prefixed_by_scope
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function plugin_driver_resolves_key_with_plugin_prefix(): void
     {
@@ -61,6 +100,15 @@ class AbstractCacheDriverTest extends TestCase
 
     // === 기본 CRUD ===
 
+    /**
+     * put() 으로 둔 값을 get() 이 그대로 돌려준다.
+     *
+     * @scenario case=crud
+     *
+     * @effects value_round_trips
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function put_and_get_stores_and_retrieves_value(): void
     {
@@ -69,6 +117,15 @@ class AbstractCacheDriverTest extends TestCase
         $this->assertEquals('test_value', $this->driver->get('test_key'));
     }
 
+    /**
+     * 없는 키를 get() 하면 null 을, 기본값을 넘기면 그 기본값을 돌려준다.
+     *
+     * @scenario case=crud
+     *
+     * @effects value_round_trips
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function get_returns_default_for_missing_key(): void
     {
@@ -76,6 +133,15 @@ class AbstractCacheDriverTest extends TestCase
         $this->assertEquals('fallback', $this->driver->get('nonexistent', 'fallback'));
     }
 
+    /**
+     * has() 는 둔 키에만 true 이고 없는 키에는 false 다.
+     *
+     * @scenario case=crud
+     *
+     * @effects presence_tracked
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function has_returns_true_for_existing_key(): void
     {
@@ -85,6 +151,15 @@ class AbstractCacheDriverTest extends TestCase
         $this->assertFalse($this->driver->has('not_exists'));
     }
 
+    /**
+     * forget() 으로 지운 키는 has() 가 false 가 된다.
+     *
+     * @scenario case=crud
+     *
+     * @effects presence_tracked
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function forget_removes_key(): void
     {
@@ -97,6 +172,15 @@ class AbstractCacheDriverTest extends TestCase
 
     // === Remember 패턴 ===
 
+    /**
+     * remember() 는 첫 호출에만 콜백을 실행하고 두 번째 호출은 저장된 값을 돌려준다.
+     *
+     * @scenario case=remember
+     *
+     * @effects callback_runs_once
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function remember_caches_callback_result(): void
     {
@@ -118,6 +202,15 @@ class AbstractCacheDriverTest extends TestCase
         $this->assertEquals(1, $callCount);
     }
 
+    /**
+     * rememberQuery() 결과가 `query:{해시}` 키로 저장된다.
+     *
+     * @scenario case=remember
+     *
+     * @effects query_prefix_applied
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function remember_query_uses_query_prefix(): void
     {
@@ -129,6 +222,15 @@ class AbstractCacheDriverTest extends TestCase
 
     // === 벌크 연산 ===
 
+    /**
+     * putMany() 로 둔 세 값을 many() 가 모두 돌려준다.
+     *
+     * @scenario case=bulk
+     *
+     * @effects bulk_round_trips
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function put_many_and_many_bulk_operations(): void
     {
@@ -146,6 +248,15 @@ class AbstractCacheDriverTest extends TestCase
 
     // === Refresh ===
 
+    /**
+     * refresh() 는 기존 값을 콜백 결과로 바꾸고 그 값을 돌려준다.
+     *
+     * @scenario case=refresh
+     *
+     * @effects refresh_overwrites
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function refresh_replaces_cached_value(): void
     {
@@ -159,6 +270,15 @@ class AbstractCacheDriverTest extends TestCase
 
     // === withStore 불변 복제 ===
 
+    /**
+     * withStore() 는 원본의 저장소(array)를 그대로 두고 다른 저장소(file)를 쓰는 새 인스턴스를 돌려준다.
+     *
+     * @scenario case=with_store
+     *
+     * @effects with_store_immutable_clone
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function with_store_creates_new_instance(): void
     {
@@ -172,6 +292,15 @@ class AbstractCacheDriverTest extends TestCase
 
     // === Flush (태그 미지원 드라이버 — array 기반 인덱스 전략) ===
 
+    /**
+     * 태그 미지원 저장소(array)에서 flush() 가 remember() 로 색인된 드라이버 키를 모두 지운다.
+     *
+     * @scenario case=flush
+     *
+     * @effects flush_removes_indexed_keys
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function flush_removes_all_driver_keys_via_index(): void
     {
@@ -188,6 +317,15 @@ class AbstractCacheDriverTest extends TestCase
         $this->assertFalse($this->driver->has('key2'));
     }
 
+    /**
+     * flushTags() 는 지정한 태그(group_a) 키만 지우고 다른 태그(group_b) 키는 남긴다.
+     *
+     * @scenario case=flush
+     *
+     * @effects flush_tags_scoped
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function flush_tags_removes_only_tagged_keys(): void
     {
@@ -203,6 +341,15 @@ class AbstractCacheDriverTest extends TestCase
 
     // === 드라이버 격리 ===
 
+    /**
+     * 코어 드라이버와 모듈 드라이버에 같은 이름으로 둔 키가 서로 덮어쓰지 않는다.
+     *
+     * @scenario case=isolation
+     *
+     * @effects drivers_isolated
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function different_drivers_have_isolated_keys(): void
     {
@@ -216,6 +363,15 @@ class AbstractCacheDriverTest extends TestCase
         $this->assertEquals('module_value', $moduleDriver->get('shared_name'));
     }
 
+    /**
+     * 모듈 드라이버의 flush() 는 모듈 키만 지우고 코어 키는 남긴다.
+     *
+     * @scenario case=isolation
+     *
+     * @effects drivers_isolated
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function module_flush_does_not_affect_core(): void
     {
@@ -233,12 +389,30 @@ class AbstractCacheDriverTest extends TestCase
 
     // === 메타 ===
 
+    /**
+     * getStore() 가 생성할 때 지정한 저장소 이름(array)을 돌려준다.
+     *
+     * @scenario case=meta
+     *
+     * @effects store_meta_exposed
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function get_store_returns_current_store_name(): void
     {
         $this->assertEquals('array', $this->driver->getStore());
     }
 
+    /**
+     * supportsTags() 가 bool 값을 돌려준다.
+     *
+     * @scenario case=meta
+     *
+     * @effects store_meta_exposed
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function supports_tags_returns_boolean(): void
     {

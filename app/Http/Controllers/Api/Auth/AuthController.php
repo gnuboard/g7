@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Exceptions\Auth\AccountLockedException;
+use App\Exceptions\Auth\ExternalStepRequiredException;
+use App\Exceptions\Auth\PasswordAuthDisallowedException;
 use App\Exceptions\Auth\PasswordChangeUnavailableException;
 use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
 use App\Exceptions\Auth\TwoFactorEnrollmentRequiredException;
@@ -11,6 +13,7 @@ use App\Http\Controllers\Concerns\BuildsAuthFailureResponses;
 use App\Http\Requests\Auth\AuthenticatedRequest;
 use App\Http\Requests\Auth\CompletePasswordChangeRequest;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
+use App\Http\Requests\Auth\LoginDiscoverRequest;
 use App\Http\Requests\Auth\LoginHandoffRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\PostponePasswordChangeRequest;
@@ -20,6 +23,7 @@ use App\Http\Requests\Auth\TwoFactorChallengeRequest;
 use App\Http\Requests\Auth\TwoFactorResendRequest;
 use App\Http\Requests\Auth\ValidateResetTokenRequest;
 use App\Http\Resources\UserResource;
+use App\Services\Auth\LoginEntryService;
 use App\Services\Auth\LoginHandoffService;
 use App\Services\AuthService;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -35,10 +39,12 @@ class AuthController extends AuthBaseController
      *
      * @param  AuthService  $authService  인증 서비스
      * @param  LoginHandoffService  $loginHandoffService  로그인 인계 코드 서비스
+     * @param  LoginEntryService  $loginEntryService  로그인 진입 판정 서비스
      */
     public function __construct(
         private AuthService $authService,
         private LoginHandoffService $loginHandoffService,
+        private LoginEntryService $loginEntryService,
     ) {
         // 부모 생성자 호출하지 않음 - 인증 미들웨어를 수동으로 설정
         // parent::__construct();
@@ -48,6 +54,8 @@ class AuthController extends AuthBaseController
             'login',
             // 로그인 인계 교환도 아직 토큰이 없는 상태에서 호출된다 — 주체는 인계 코드가 식별한다
             'loginHandoff',
+            // 로그인 진입 판정도 로그인 전 화면이 부른다 — 식별자의 도메인만 본다
+            'discover',
             // 2단계 인증 확인·재발송은 아직 토큰이 없는 상태에서 호출된다 — 주체는 challenge 가 식별한다
             'verifyTwoFactor',
             'resendTwoFactor',
@@ -76,6 +84,10 @@ class AuthController extends AuthBaseController
             );
 
             return $this->loginStepResponse($data);
+        } catch (PasswordAuthDisallowedException $e) {
+            return $this->passwordAuthDisabledResponse($e);
+        } catch (ExternalStepRequiredException $e) {
+            return $this->externalStepRequiredResponse($e);
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
         } catch (TwoFactorEnrollmentRequiredException $e) {
@@ -90,18 +102,33 @@ class AuthController extends AuthBaseController
     }
 
     /**
+     * 로그인 진입 판정 — 입력한 식별자의 로그인 수단을 돌려줍니다.
+     *
+     * 응답은 항상 `{method, label, redirect_url}` 이고 회원 유무와 무관하다(확장이 도메인으로만 답한다). 확장이 없으면 `password`.
+     *
+     * @param  LoginDiscoverRequest  $request  진입 판정 요청
+     * @return JsonResponse 판정 결과
+     *
+     * @since 7.2.0
+     */
+    public function discover(LoginDiscoverRequest $request): JsonResponse
+    {
+        return $this->success('auth.login_discovery_success', $this->loginEntryService->discover((string) $request->validated()['identifier'], 'user'));
+    }
+
+    /**
      * 로그인 인계 코드를 교환해 로그인시킵니다.
      *
      * 외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원에 대해 발급한 일회용 코드다. 코드를 꺼내는 순간 지워지고,
      * 코어가 잠금·회원 상태·2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리한다 — 응답도
-     * `login` 과 같은 모양이라 로그인 화면이 같은 분기를 그대로 쓴다. 관리자 경로 인계는 아직 열지 않았다(422).
+     * `login` 과 같은 모양이라 로그인 화면이 같은 분기를 그대로 쓴다. 관리자 경로 코드는 관리자 인계 라우트에서만 통한다(여기선 422). 발급 브라우저의 묶음 쿠키가 없으면 422.
      *
      * @param  LoginHandoffRequest  $request  인계 코드 교환 요청
      * @return JsonResponse `login` 과 같은 모양의 응답, 코드 무효는 422, 상태 거절은 401, 잠금은 423
      */
     public function loginHandoff(LoginHandoffRequest $request): JsonResponse
     {
-        $handoff = $this->loginHandoffService->redeem((string) $request->validated()['code'], 'user');
+        $handoff = $this->loginHandoffService->redeem((string) $request->validated()['code'], 'user', $request);
 
         // 없음·만료·재사용·관리자 경로·회원 삭제 — 전부 같은 응답으로 답한다(상태를 캐내지 못하게).
         if ($handoff === null) {
@@ -286,6 +313,11 @@ class AuthController extends AuthBaseController
      */
     public function register(RegisterRequest $request): JsonResponse
     {
+        // 「일반 회원가입 받지 않음」(7.2.0) — 공개 가입만 닫는다. 확장 내부 가입(회사 계정 자동 생성 등)은 서비스를 직접 부르므로 계속된다.
+        if (! $this->authService->isSelfRegistrationOpen()) {
+            return $this->forbidden('auth.registration_disabled');
+        }
+
         try {
             $data = $this->authService->register($request->validated());
 
@@ -306,9 +338,10 @@ class AuthController extends AuthBaseController
      */
     public function logout(AuthenticatedRequest $request): JsonResponse
     {
-        $this->authService->logout($request->user());
+        // 로그아웃 뒤 갈 곳(외부 인증의 IdP 로그아웃 등) — 없으면 null, 화면이 로그인 화면으로 간다(7.2.0)
+        $redirectUrl = $this->authService->logout($request->user(), 'user');
 
-        return $this->success('auth.logout_success');
+        return $this->success('auth.logout_success', ['redirect_url' => $redirectUrl]);
     }
 
     /**
@@ -376,10 +409,15 @@ class AuthController extends AuthBaseController
     public function validateResetToken(ValidateResetTokenRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $result = $this->authService->validateResetToken(
-            $validated['token'],
-            $validated['email']
-        );
+
+        try {
+            $result = $this->authService->validateResetToken(
+                $validated['token'],
+                $validated['email']
+            );
+        } catch (PasswordAuthDisallowedException $e) {
+            return $this->passwordAuthDisabledResponse($e, 422);
+        }
 
         if (! $result['valid']) {
             return $this->validationError(
@@ -407,6 +445,9 @@ class AuthController extends AuthBaseController
             );
 
             return $this->success('auth.password_reset_email_sent');
+        } catch (PasswordAuthDisallowedException $e) {
+            // 식별자(도메인) 기준 정책 — 회원 유무와 무관한 판정이라 화면에 바로 안내한다
+            return $this->passwordAuthDisabledResponse($e, 422);
         } catch (ValidationException $e) {
             return $this->validationError($e->errors(), 'auth.password_reset_failed');
         }
@@ -429,6 +470,8 @@ class AuthController extends AuthBaseController
             );
 
             return $this->success('auth.password_reset_success');
+        } catch (PasswordAuthDisallowedException $e) {
+            return $this->passwordAuthDisabledResponse($e, 422);
         } catch (ValidationException $e) {
             return $this->validationError($e->errors(), 'auth.password_reset_failed');
         }

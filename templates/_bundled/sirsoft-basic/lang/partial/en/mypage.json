@@ -149,10 +149,13 @@
         "verify_password_placeholder": "Enter your password",
         "verify_password_button": "Verify",
         "reauth_notice": "This account has no password. Verify yourself with a code sent to your sign-up email. Once you set a password, you can verify with it instead.",
-        "reauth_unavailable": "This account cannot receive a verification code at its sign-up email. Please contact the administrator.",
+        "reauth_unavailable": "This account cannot receive a verification code at its sign-up email. If Continue verification does not work either, please contact the administrator.",
         "reauth_request_code": "Get code",
         "reauth_resend_code": "Resend code",
         "reauth_code_sent": "We sent a verification code to your email.",
+        "reauth_code_sent_generic": "We sent you a verification code.",
+        "reauth_continue": "Continue verification",
+        "reauth_external_failed": "We could not open the verification page. Please try again later or contact the administrator.",
         "reauth_code_label": "Verification code",
         "reauth_code_placeholder": "6-digit code",
         "reauth_valid_until": "Valid until {{until}}",
@@ -176,7 +179,8 @@
             "expired": "Expired",
             "other_devices_logged_out": "You have been logged out on other devices. This device stays logged in.",
             "changed_toast": "Your password has been changed. You have been logged out on other devices."
-        }
+        },
+        "locked_by_company": "Managed by your company account"
     },
     "orders": {
         "title": "Order History",

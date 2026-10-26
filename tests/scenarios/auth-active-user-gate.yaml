@@ -1,0 +1,25 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다(#798 A1).
+
+feature: "공통 회원 상태 관문 `EnsureActiveUser` (#798 K14 · P9)"
+
+description: |
+  공통 회원 상태 관문 `EnsureActiveUser` (#798 K14 · P9)
+  api 그룹 전체에 붙어 인증 미들웨어 뒤에서 돈다 — 확장(모듈·플러그인) 라우트가 회원 상태 검사를 따로 붙이지 않아도 비활성 회원을 막는다.
+  인증 필수 라우트는 403, 선택 인증 라우트는 손님으로 낮춰 200, `check.user_status` 가 있는 라우트는 그 판정 1회, 본인인증 경로는 통과.
+
+axes:
+  route: [auth_required, optional, check_user_status, identity, public]
+  status: [pending_verification, active, dormant]
+  user: [guest]
+
+effects:
+  - required_route_blocks_inactive
+  - active_passes
+  - optional_route_downgrades_to_guest
+  - check_user_status_judges_once
+  - identity_routes_allow_inactive
+  - guest_passes
+  - unauthenticated_route_untouched
+
+test_files:
+  - tests/Feature/Middleware/EnsureActiveUserTest.php

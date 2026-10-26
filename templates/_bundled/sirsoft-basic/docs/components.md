@@ -241,6 +241,8 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다.
 | `TabNavigation` | 탭 네비게이션 (underline/pills/enclosed) — 탭 항목에 `href` 를 주면 `<a role="tab">` 로 그려 새 탭으로 열 수 있다(보통 클릭은 onTabChange) | tabs, activeTabId, variant, onTabChange, hiddenTabIds, tabHrefMergeQuery(탭 주소에 현재 쿼리를 합침) |
 | `Pagination` | 페이지네이션 — `pageHref`(`{page}` 자리표시자)를 주면 번호·이전·다음이 링크(현재 쪽 `aria-current`), `pageHrefMergeQuery` 면 현재 쿼리 합침 | currentPage, totalPages, maxVisiblePages, showFirstLast, prevText, nextText, pageHref, pageHrefMergeQuery |
 
+> **TabNavigation 넘침 (1.3.0)**: 탭은 줄어들지 않으므로(`shrink-0`·`whitespace-nowrap`) 데스크톱 분기(기본 768px 이상)에서 탭 줄이 화면보다 넓으면 nav(`overflow-x-auto`)만 가로로 스크롤됩니다 — 페이지 전체가 밀리지 않습니다. 마운트·활성 탭 변경 때 활성 탭이 보이도록 탭 줄의 가로 위치만 옮깁니다(페이지 세로 스크롤은 그대로).
+
 > **TabNavigation `hiddenTabIds`**: 특정 조건에서 탭을 동적으로 숨길 때 사용합니다. 탭 아이템의 `id` 배열을 전달하면 해당 탭이 렌더링에서 제외됩니다.
 > ```json
 > {

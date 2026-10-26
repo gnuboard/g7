@@ -401,6 +401,27 @@
                 "form.password_confirmation": "",
                 "form.current_password": ""
             }
+        },
+        {
+            "comment": "외부 수단으로 재확인하고 돌아왔다(7.2.0) — 받은 확인 토큰을 저장 본문에 싣고(비밀번호 없는 관리자 본인 수정), 한 번 쓰는 토큰을\n         주소에서 지운다(회원 정보 수정·앱 키 창과 같은 정리 — 남기면 이력·새로고침으로 쓴 토큰이 다시 실린다)",
+            "handler": "sequence",
+            "if": "{{!!route?.id && !!query?.verification_token}}",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "form.verification_token": "{{query.verification_token}}"
+                    }
+                },
+                {
+                    "comment": "audit:allow layout-list-context-navigate-merge-query 한 번 쓰는 확인 토큰을 주소에서 지우는 정리라 지금 쿼리를 물려받지 않는다.",
+                    "handler": "replaceUrl",
+                    "params": {
+                        "path": "{{'/admin/users/' + route.id + '/edit'}}"
+                    }
+                }
+            ]
         }
     ],
     "slots": {
@@ -716,8 +737,18 @@
                                                                     "type": "text",
                                                                     "name": "name",
                                                                     "placeholder": "$t:admin.users.form.fields.name",
+                                                                    "disabled": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('name')}}",
                                                                     "className": ""
                                                                 }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('name')}}",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.locked_by_company"
                                                             },
                                                             {
                                                                 "type": "basic",
@@ -750,8 +781,18 @@
                                                                     "type": "text",
                                                                     "name": "nickname",
                                                                     "placeholder": "$t:admin.users.form.fields.nickname",
+                                                                    "disabled": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('nickname')}}",
                                                                     "className": ""
                                                                 }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('nickname')}}",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.locked_by_company"
                                                             }
                                                         ]
                                                     }
@@ -884,9 +925,10 @@
                                                         "text": "$t:admin.users.detail.password.state"
                                                     },
                                                     {
+                                                        "comment": "수정 모드는 서버 값, 추가 모드는 「비밀번호 없이 만들기」(7.2.0)를 따른다 — 켜면 비밀번호 없이 만들어지므로 「미설정」",
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "if": "{{!!route?.id && user?.data?.has_password === false}}",
+                                                        "if": "{{!!route?.id ? user?.data?.has_password === false : _local.form?.create_without_password === true}}",
                                                         "props": {
                                                             "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                                                         },
@@ -895,7 +937,7 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "if": "{{!route?.id || user?.data?.has_password !== false}}",
+                                                        "if": "{{!!route?.id ? user?.data?.has_password !== false : _local.form?.create_without_password !== true}}",
                                                         "props": {
                                                             "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                                                         },
@@ -946,9 +988,81 @@
                                                 ]
                                             },
                                             {
+                                                "comment": "「비밀번호 없이 만들기」(7.2.0) — 외부 인증(회사 계정)으로만 로그인할 회원을 미리 만든다. 켜면 비밀번호 칸을 숨기고 보내지 않는다. 등록 화면에만 있다.",
+                                                "id": "field_create_without_password",
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "if": "{{!route?.id}}",
+                                                "props": {
+                                                    "className": "flex items-start gap-2"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Checkbox",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "자동 바인딩을 끄고 boolean 을 직접 담는다(빈 문자열이 실리면 null 로 굳는다). 켤 때는 이미 적은 비밀번호도 비운다 — 서버는 둘을 함께 받으면 422 로 거절한다.",
+                                                                "type": "change",
+                                                                "handler": "sequence",
+                                                                "actions": [
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.create_without_password": "{{$event.target.checked}}",
+                                                                            "hasChanges": true
+                                                                        }
+                                                                    },
+                                                                    {
+                                                                        "handler": "setState",
+                                                                        "if": "{{$event.target.checked}}",
+                                                                        "params": {
+                                                                            "target": "local",
+                                                                            "form.password": "",
+                                                                            "form.password_confirmation": ""
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "name": "create_without_password",
+                                                            "autoBinding": false,
+                                                            "checked": "{{_local.form?.create_without_password === true}}",
+                                                            "aria-label": "$t:admin.users.form.fields.create_without_password",
+                                                            "className": "mt-0.5"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "form-label mb-0"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.create_without_password"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.create_without_password_hint"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
                                                 "id": "field_password_group",
                                                 "type": "basic",
                                                 "name": "Div",
+                                                "if": "{{!!route?.id || !_local.form?.create_without_password}}",
                                                 "props": {
                                                     "className": "grid-2col-responsive"
                                                 },
@@ -1049,6 +1163,7 @@
                                                 "id": "password_rules_hint",
                                                 "type": "basic",
                                                 "name": "P",
+                                                "if": "{{!!route?.id || !_local.form?.create_without_password}}",
                                                 "props": {
                                                     "className": "flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400 -mt-2"
                                                 },
@@ -1186,12 +1301,23 @@
                                                 },
                                                 "children": [
                                                     {
+                                                        "comment": "메일을 받을 수 없는 관리자(대체 이메일)에게는 「이메일로 받은 인증번호」 대신 일반 안내 — 서버가 회사 계정 다시 로그인 등을 고른다",
                                                         "type": "basic",
                                                         "name": "P",
+                                                        "if": "{{(user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) !== false}}",
                                                         "props": {
                                                             "className": "text-xs text-gray-500 dark:text-gray-400"
                                                         },
                                                         "text": "$t:admin.users.form.password_policy.reauth_notice"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{(user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) === false}}",
+                                                        "props": {
+                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        },
+                                                        "text": "$t:admin.users.form.password_policy.reauth_notice_other"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -1216,7 +1342,7 @@
                                                                 "name": "Button",
                                                                 "actions": [
                                                                     {
-                                                                        "comment": "인증번호 받기 — 본인(로그인 관리자) 대상 재확인 요청을 메일 수단으로 보낸다.",
+                                                                        "comment": "인증번호 받기 — 본인(로그인 관리자) 대상 재확인 요청을 보낸다. 수단은 고정하지 않고 서버가 이 관리자에게 쓸 수 있는 수단을 고른다(7.2.0).",
                                                                         "type": "click",
                                                                         "handler": "sequence",
                                                                         "actions": [
@@ -1228,6 +1354,7 @@
                                                                                 }
                                                                             },
                                                                             {
+                                                                                "comment": "외부 수단이 확인을 마치고 돌려보낼 곳(같은 출처 경로만) — 이 화면 init 이 `verification_token` 을 폼 값으로 옮긴다",
                                                                                 "handler": "apiCall",
                                                                                 "target": "/api/identity/challenges",
                                                                                 "auth_required": true,
@@ -1235,12 +1362,38 @@
                                                                                     "method": "POST",
                                                                                     "body": {
                                                                                         "purpose": "sensitive_action",
-                                                                                        "provider_id": "g7:core.mail"
+                                                                                        "return_path": "{{'/admin/users/' + route.id + '/edit'}}"
                                                                                     }
                                                                                 },
                                                                                 "onSuccess": [
                                                                                     {
+                                                                                        "comment": "서버가 이 관리자에게 맞는 수단을 고른다(7.2.0) — 외부 수단(회사 계정 다시 로그인 등)이면 그 화면으로 갔다가 확인 토큰을 들고 돌아온다",
+                                                                                        "handler": "redirect",
+                                                                                        "if": "{{response.data?.render_hint === 'external_redirect' && !!response.data?.redirect_url}}",
+                                                                                        "params": {
+                                                                                            "url": "{{response.data.redirect_url}}"
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "comment": "외부 수단인데 갈 주소가 없으면 진행 표시를 풀고 안내한다 — 두면 버튼이 눌리지 않는 채로 남는다",
                                                                                         "handler": "setState",
+                                                                                        "if": "{{response.data?.render_hint === 'external_redirect' && !response.data?.redirect_url}}",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "isRequestingReauthCode": false
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "toast",
+                                                                                        "if": "{{response.data?.render_hint === 'external_redirect' && !response.data?.redirect_url}}",
+                                                                                        "params": {
+                                                                                            "type": "error",
+                                                                                            "message": "$t:admin.users.form.password_policy.reauth_external_failed"
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "if": "{{response.data?.render_hint !== 'external_redirect'}}",
                                                                                         "params": {
                                                                                             "target": "local",
                                                                                             "isRequestingReauthCode": false,
@@ -1250,9 +1403,18 @@
                                                                                     },
                                                                                     {
                                                                                         "handler": "toast",
+                                                                                        "if": "{{response.data?.render_hint !== 'external_redirect' && (user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) !== false}}",
                                                                                         "params": {
                                                                                             "type": "info",
                                                                                             "message": "$t:admin.users.form.password_policy.reauth_code_sent"
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "toast",
+                                                                                        "if": "{{response.data?.render_hint !== 'external_redirect' && (user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) === false}}",
+                                                                                        "params": {
+                                                                                            "type": "info",
+                                                                                            "message": "$t:admin.users.form.password_policy.reauth_code_sent_generic"
                                                                                         }
                                                                                     }
                                                                                 ],
@@ -1285,7 +1447,7 @@
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
-                                                                        "text": "{{_local.reauthChallengeId ? '$t:admin.users.form.password_policy.reauth_resend_code' : '$t:admin.users.form.password_policy.reauth_request_code'}}"
+                                                                        "text": "{{_local.reauthChallengeId ? '$t:admin.users.form.password_policy.reauth_resend_code' : ((user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) === false ? '$t:admin.users.form.password_policy.reauth_start' : '$t:admin.users.form.password_policy.reauth_request_code')}}"
                                                                     }
                                                                 ]
                                                             },
@@ -1449,6 +1611,16 @@
                                                                 }
                                                             },
                                                             {
+                                                                "comment": "수정 모드 이메일은 늘 잠겨 있다(계정 식별자). 회사 계정이 관리하는 값이면 그 사유를 함께 적는다(7.2.0)",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('email')}}",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.locked_by_company"
+                                                            },
+                                                            {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "if": "{{_local.errors?.email}}",
@@ -1513,8 +1685,18 @@
                                                                     "type": "tel",
                                                                     "name": "mobile",
                                                                     "placeholder": "$t:admin.users.form.fields.mobile",
+                                                                    "disabled": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('mobile')}}",
                                                                     "className": ""
                                                                 }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('mobile')}}",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.locked_by_company"
                                                             }
                                                         ]
                                                     },
@@ -1538,8 +1720,18 @@
                                                                     "type": "tel",
                                                                     "name": "phone",
                                                                     "placeholder": "$t:admin.users.form.fields.phone",
+                                                                    "disabled": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('phone')}}",
                                                                     "className": ""
                                                                 }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('phone')}}",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.locked_by_company"
                                                             }
                                                         ]
                                                     }
@@ -1639,9 +1831,19 @@
                                                                 "props": {
                                                                     "name": "language",
                                                                     "className": "w-full",
+                                                                    "disabled": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('language')}}",
                                                                     "defaultValue": "{{$locale}}",
                                                                     "options": "{{($locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"
                                                                 }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!!route?.id && (user?.data?.locked_fields ?? []).includes('language')}}",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                                },
+                                                                "text": "$t:admin.users.form.fields.locked_by_company"
                                                             }
                                                         ]
                                                     },

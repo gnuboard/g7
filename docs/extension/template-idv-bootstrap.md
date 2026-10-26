@@ -232,6 +232,13 @@ KCP / PortOne / 토스인증 / Stripe Identity 등 외부 SDK 를 추가할 때 
 }
 ```
 
+## 외부 수단의 이동 주소 규칙 (7.2.0)
+
+`render_hint=external_redirect` 인 challenge 의 `redirect_url` 은 **같은 출처 경로**(`/` 로 시작, 예 `/plugins/{식별자}/reauth/start?...`)만 준다.
+외부 공급자(회사 계정 로그인 화면 등)로 나가는 이동은 수단(확장)의 같은 출처 시작 라우트가 서버에서 302 한다. 레이아웃의 `redirect`
+동작은 다른 출처 주소를 따르지 않으므로(열린 이동 차단), 절대 외부 주소를 주면 화면이 진행 표시를 켠 채 멈춘다. 확인을 마친 뒤
+돌아올 화면은 challenge 요청 본문 `return_path`(같은 출처 경로)로 넘기고, 수단은 그 경로에 `verification_token` 을 붙여 돌려보낸다.
+
 ## launcher 미등록 시 코어 폴백 동작
 
 외부 템플릿이 launcher 를 호출하지 않으면 코어 `defaultLauncher` 가 동작:

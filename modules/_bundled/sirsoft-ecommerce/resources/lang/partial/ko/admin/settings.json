@@ -24,7 +24,7 @@
   "save_success": "설정이 저장되었습니다.",
   "save_error": "설정 저장에 실패했습니다.",
   "save_pending_currency": "추가 중인 통화를 먼저 확정(체크 버튼)하거나 취소한 뒤 저장하세요.",
-  "save_pending_form": "추가 중인 :forms 폼을 먼저 추가 버튼으로 확정하거나 취소한 뒤 저장하세요.",
+  "save_pending_form": "추가 중인 {forms} 폼을 먼저 추가 버튼으로 확정하거나 취소한 뒤 저장하세요.",
   "save_pending_form_targets": {
     "exchange_reason": "교환 사유",
     "return_reason": "반품 사유",

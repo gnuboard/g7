@@ -147,10 +147,13 @@
     "verify_password_placeholder": "パスワードを入力してください",
     "verify_password_button": "確認",
     "reauth_notice": "パスワードのないアカウントです。登録したメールアドレスに届く認証番号で本人確認をしてください。パスワードを設定すると、パスワードで確認できます。",
-    "reauth_unavailable": "このアカウントは登録したメールアドレスで認証番号を受け取れません。管理者にお問い合わせください。",
+    "reauth_unavailable": "このアカウントは登録したメールアドレスで認証番号を受け取れません。「本人確認を続ける」でも確認できない場合は、管理者にお問い合わせください。",
     "reauth_request_code": "認証番号を受け取る",
     "reauth_resend_code": "認証番号を再送する",
     "reauth_code_sent": "認証番号をメールで送信しました。",
+    "reauth_code_sent_generic": "認証番号を送信しました。",
+    "reauth_continue": "本人確認を続ける",
+    "reauth_external_failed": "本人確認画面に移動できません。しばらくしてから再度お試しいただくか、管理者にお問い合わせください。",
     "reauth_code_label": "認証番号",
     "reauth_code_placeholder": "6桁の認証番号",
     "reauth_valid_until": "{{until}} まで有効です",
@@ -176,7 +179,8 @@
       "changed_toast": "パスワードが変更されました。他の端末ではログアウトされました。"
     },
     "verify_identity_title": "本人確認",
-    "verify_identity_message": "自分の情報を修正するには本人確認が必要です"
+    "verify_identity_message": "自分の情報を修正するには本人確認が必要です",
+    "locked_by_company": "会社アカウントで管理している項目です"
   },
   "orders": {
     "title": "注文履歴",

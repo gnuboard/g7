@@ -1505,6 +1505,9 @@ return [
         // Security settings (additional)
         'force_https' => 'force HTTPS',
         'login_attempt_enabled' => 'login attempt limit',
+        'registration_enabled' => 'accept public registration',
+        // Identity challenge — screen to return to after an external method finishes (7.2.0)
+        'return_path' => 'return path',
         'auth_token_lifetime' => 'auth token lifetime',
         'max_login_attempts' => 'max login attempts',
         'login_lockout_time' => 'login lockout time',

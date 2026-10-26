@@ -5,6 +5,10 @@ namespace Tests\Unit\Cache\Migration;
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\CoreVersionChecker;
+use App\Seo\SeoCacheManager;
+use App\Services\GeoIpService;
+use App\Services\LayoutService;
+use App\Services\NotificationDefinitionService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use PHPUnit\Framework\Attributes\Test;
@@ -15,11 +19,18 @@ use Tests\TestCase;
  *
  * 모든 캐시 서비스가 g7_core_settings('cache.*_ttl') 또는 'cache.*_enabled' 를
  * 추종하는지 검증합니다.
+ *
+ * @scenario-manifest tests/scenarios/cache-ttl-settings.yaml
  */
 class CacheSettingsTest extends TestCase
 {
     private CoreCacheDriver $cache;
 
+    /**
+     * 각 테스트 전에 캐시를 비우고 array 저장소 코어 캐시 드라이버를 CacheInterface 로 바인딩합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -29,6 +40,11 @@ class CacheSettingsTest extends TestCase
         $this->app->instance(CacheInterface::class, $this->cache);
     }
 
+    /**
+     * 각 테스트 뒤에 캐시를 비우고 g7_settings.core.cache 설정을 빈 배열로 되돌립니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Cache::flush();
@@ -39,6 +55,12 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-1: AbstractCacheDriver 기본 TTL 이 g7_core_settings('cache.default_ttl') 추종.
+     *
+     * @scenario case=default_ttl
+     *
+     * @effects default_ttl_follows_setting
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_1_default_ttl_follows_settings(): void
@@ -53,6 +75,12 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-2: g7_core_settings 변경 시 TTL 즉시 반영.
+     *
+     * @scenario case=default_ttl
+     *
+     * @effects default_ttl_follows_setting, ttl_change_applies_immediately
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_2_settings_change_reflects_immediately(): void
@@ -72,13 +100,19 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-3: 레이아웃 캐시 TTL 이 cache.layout_ttl 추종.
+     *
+     * @scenario case=layout_ttl
+     *
+     * @effects service_ttl_follows_setting
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_3_layout_ttl_follows_settings(): void
     {
         Config::set('g7_settings.core.cache.layout_ttl', 1800);
 
-        $service = app(\App\Services\LayoutService::class);
+        $service = app(LayoutService::class);
         $reflection = new \ReflectionMethod($service, 'getCacheTtl');
         $reflection->setAccessible(true);
 
@@ -87,13 +121,19 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-4: SEO 캐시 TTL 이 cache.seo_ttl 추종.
+     *
+     * @scenario case=seo_ttl
+     *
+     * @effects service_ttl_follows_setting
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_4_seo_ttl_follows_settings(): void
     {
         Config::set('g7_settings.core.cache.seo_ttl', 3600);
 
-        $manager = new \App\Seo\SeoCacheManager($this->cache);
+        $manager = new SeoCacheManager($this->cache);
         $reflection = new \ReflectionMethod($manager, 'getCacheTtl');
         $reflection->setAccessible(true);
 
@@ -102,13 +142,19 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-5: 알림 캐시 TTL 이 cache.notification_ttl 추종.
+     *
+     * @scenario case=notification_ttl
+     *
+     * @effects service_ttl_follows_setting
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_5_notification_ttl_follows_settings(): void
     {
         Config::set('g7_settings.core.cache.notification_ttl', 7200);
 
-        $service = app(\App\Services\NotificationDefinitionService::class);
+        $service = app(NotificationDefinitionService::class);
         $reflection = new \ReflectionMethod($service, 'getCacheTtl');
         $reflection->setAccessible(true);
 
@@ -117,6 +163,12 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-6: GeoIP 캐시 TTL 이 cache.geoip_ttl 추종.
+     *
+     * @scenario case=geoip_ttl
+     *
+     * @effects geoip_lookup_result_cached, ttl_setting_value_read
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_6_geoip_ttl_follows_settings(): void
@@ -126,7 +178,7 @@ class CacheSettingsTest extends TestCase
         Config::set('geoip.cache.enabled', true);
         Config::set('geoip.database_path', '/nonexistent');
 
-        $service = app(\App\Services\GeoIpService::class);
+        $service = app(GeoIpService::class);
         $service->getTimezoneByIp('1.2.3.4', ['Asia/Seoul']);
 
         // 빈 문자열이 캐시되었는지 + TTL 설정 값 반영 (간접 검증)
@@ -139,6 +191,12 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-7: 버전 검증 캐시 TTL 이 cache.version_check_ttl 추종.
+     *
+     * @scenario case=version_check_ttl
+     *
+     * @effects service_ttl_follows_setting
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_7_version_check_ttl_follows_settings(): void
@@ -150,6 +208,12 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-8: 확장 상태 캐시 TTL 이 cache.extension_status_ttl 추종.
+     *
+     * @scenario case=extension_status_ttl
+     *
+     * @effects ttl_setting_value_read
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_8_extension_status_ttl_follows_settings(): void
@@ -164,6 +228,12 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-9: Sitemap 캐시 TTL 이 cache.seo_sitemap_ttl 추종.
+     *
+     * @scenario case=sitemap_ttl
+     *
+     * @effects ttl_setting_value_read
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_9_sitemap_ttl_follows_settings(): void
@@ -178,13 +248,19 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-10: SEO 캐시 비활성화 시 저장 안 함.
+     *
+     * @scenario case=seo_disabled
+     *
+     * @effects disabled_cache_not_stored
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_10_seo_disable_does_not_store(): void
     {
         Config::set('g7_settings.core.cache.seo_enabled', false);
 
-        $manager = new \App\Seo\SeoCacheManager($this->cache);
+        $manager = new SeoCacheManager($this->cache);
         $manager->put('/page', 'ko', '<html/>');
 
         $this->assertNull($manager->get('/page', 'ko'));
@@ -192,6 +268,12 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-11: GeoIP 캐시 비활성화 시 저장 안 함.
+     *
+     * @scenario case=geoip_disabled
+     *
+     * @effects disabled_cache_not_stored
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_11_geoip_disable_does_not_store(): void
@@ -200,7 +282,7 @@ class CacheSettingsTest extends TestCase
         Config::set('g7_settings.core.cache.geoip_enabled', false);
         Config::set('geoip.database_path', '/nonexistent');
 
-        $service = app(\App\Services\GeoIpService::class);
+        $service = app(GeoIpService::class);
         $service->getTimezoneByIp('5.6.7.8', ['Asia/Seoul']);
 
         $this->assertFalse($this->cache->has('geoip.timezone.5.6.7.8'));
@@ -208,6 +290,12 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-12: 레이아웃 캐시 비활성화 시 캐시 미사용.
+     *
+     * @scenario case=layout_disabled
+     *
+     * @effects layout_cache_disabled_read
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_12_layout_disable_skips_cache(): void
@@ -222,6 +310,12 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-13: remember() 명시적 TTL 이 g7_core_settings 기본값보다 우선.
+     *
+     * @scenario case=explicit_ttl
+     *
+     * @effects explicit_ttl_put_stored
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_13_explicit_ttl_overrides_settings(): void
@@ -238,6 +332,12 @@ class CacheSettingsTest extends TestCase
 
     /**
      * S-14: defaults.json 미설정 시 하드코딩 fallback 사용.
+     *
+     * @scenario case=missing_setting
+     *
+     * @effects missing_setting_uses_fallback
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function s_14_missing_setting_uses_hardcoded_fallback(): void
@@ -245,7 +345,7 @@ class CacheSettingsTest extends TestCase
         // 명시적으로 미설정
         Config::set('g7_settings.core.cache.notification_ttl', null);
 
-        $service = app(\App\Services\NotificationDefinitionService::class);
+        $service = app(NotificationDefinitionService::class);
         $reflection = new \ReflectionMethod($service, 'getCacheTtl');
         $reflection->setAccessible(true);
 

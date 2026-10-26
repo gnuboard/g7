@@ -127,6 +127,15 @@
             }
         },
         {
+            "comment": "로그인 화면 자동 이동(7.2.0) — 사이트가 회사 계정 로그인으로 바로 보내도록 정했으면 이동한다. `?local=1`(비상 계정 진입로)이거나\n         인계 교환·외부 인증 오류·동의 대기·연결 확인 대기로 돌아온 화면이면 이동하지 않는다 — 오류 화면이 다시 IdP 로 튕기면 무한 왕복이 된다.",
+            "handler": "redirect",
+            "if": "{{!!_global.appConfig?.auth?.auto_redirect?.user && !query?.local && !query?.login_handoff && !query?.sso_error && !query?.sso_pending && !query?.sso_link}}",
+            "params": {
+                "replace": true,
+                "url": "{{_global.appConfig.auth.auto_redirect.user + (query?.redirect ? (_global.appConfig.auth.auto_redirect.user.includes('?') ? '&' : '?') + 'redirect=' + encodeURIComponent(query.redirect) : '')}}"
+            }
+        },
+        {
             "comment": "로그인 인계 — 외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원을 `/login?login_handoff={코드}` 로 보낸다. 코드를 교환하면\n         비밀번호 로그인과 같은 응답이 와서 2단계 인증·비밀번호 변경·휴면 해제 안내를 그대로 쓴다. 코드는 한 번만 통하므로\n         교환 뒤에는 주소에서 지운다(새로고침해도 다시 교환하지 않게). 실패(만료·재사용·상태 거절)는 오류 자리에 싣는다.",
             "handler": "sequence",
             "if": "{{!!query?.login_handoff}}",
@@ -240,6 +249,18 @@
                                 "text": "$t:auth.login"
                             },
                             {
+                                "comment": "비상 계정 진입(`?local=1`, 7.2.0) — 자동 이동을 건너뛴 비밀번호 화면임을 알린다(디자인 ⑤)",
+                                "id": "login_local_notice",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!!query.local}}",
+                                "props": {
+                                    "className": "mb-6 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200",
+                                    "role": "note"
+                                },
+                                "text": "$t:auth.external.local_notice"
+                            },
+                            {
                                 "partial": "partials/auth/_login_form.json"
                             },
                             {
@@ -247,6 +268,32 @@
                                 "id": "auth_login_extensions_slot",
                                 "type": "extension_point",
                                 "name": "auth_login_extensions"
+                            },
+                            {
+                                "comment": "자동 이동이 켜진 사이트에서도 이 화면(비밀번호 로그인)에 닿는 길 — 비상 계정용(7.2.0)",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!!_global.appConfig?.auth?.auto_redirect?.user}}",
+                                "props": {
+                                    "className": "mt-4 text-center text-sm"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "A",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate"
+                                            }
+                                        ],
+                                        "props": {
+                                            "href": "/login?local=1",
+                                            "className": "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:underline cursor-pointer"
+                                        },
+                                        "text": "$t:auth.external.other_method"
+                                    }
+                                ]
                             },
                             {
                                 "comment": "하단 링크 영역",
@@ -272,8 +319,10 @@
                                         "text": "$t:auth.forgot_password_link"
                                     },
                                     {
+                                        "comment": "「일반 회원가입 받지 않음」이면 숨긴다(7.2.0)",
                                         "type": "basic",
                                         "name": "A",
+                                        "if": "{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}",
                                         "actions": [
                                             {
                                                 "type": "click",

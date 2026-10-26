@@ -1,0 +1,332 @@
+{
+    "comment": "e2e:allow Playwright 스펙 없음(이 플러그인 tests/Playwright/specs/sso-*.spec.ts 는 로그인 흐름만 덮는다) — 브라우저 실측은 F1 Chrome MCP 계획서 §10 M10·M14(W40) — P4 는 Vitest 로 덮음\n     SSO 연동 설정 — 탭 「IdP」(목록 → 같은 화면 편집 보기, ?idp={id} 로 새로고침 유지), 「정책」(강제, 비상 계정, 자동 이동, 세션 상한), 「보존」(이력 보존일, 알림 기준).\n     정책과 IdP 설정은 코어 플러그인 설정 API 가 아니라 플러그인 API(admin/idps, admin/policy)로 읽고 쓴다(W38) — 코어 설정 「저장」 버튼은 두지 않는다.\n     최고관리자 전용 칸(사이트 전체 강제, 역할 강제, 비상 계정, 관리자 역할 매핑)은 응답의 abilities.is_super 로 잠근다(서버가 403 으로도 막는다).\n     파일명이 계약이다 — `plugin_settings` 라야 코어 「플러그인 관리 → 설정」(/admin/plugins/sirsoft-sso/settings)이 띄운다.",
+    "version": "1.0.0",
+    "layout_name": "plugin_settings",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-sso.admin.settings.title",
+        "description": "$t:sirsoft-sso.admin.settings.description"
+    },
+    "data_sources": [
+        {
+            "id": "ssoIdps",
+            "label_key": "$t:sirsoft-sso.editor.data_source.admin_idps",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-sso/admin/idps",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "IdP 목록과 추가할 수 있는 프로토콜 — 추가, 수정, 삭제 뒤 다시 받는다"
+        },
+        {
+            "id": "ssoIdp",
+            "label_key": "$t:sirsoft-sso.editor.data_source.admin_idp",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{!!query.idp}}",
+            "initLocal": "idpForm",
+            "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패 — 빈 편집 칸이 저장되지 않게 본문 오류 화면",
+                    "handler": "showErrorPage",
+                    "params": {
+                        "errorCode": "{{error.status}}",
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "편집 중인 IdP — 주소의 idp 가 있을 때만 받는다. 받은 값은 편집 칸(_local.idpForm)의 초기값이다(비밀값은 가린 값으로 온다)"
+        },
+        {
+            "id": "ssoPolicy",
+            "label_key": "$t:sirsoft-sso.editor.data_source.admin_policy",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-sso/admin/policy",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "initLocal": "policyForm",
+            "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "받기 실패 — 기본값 정책이 저장되지 않게 본문 오류 화면",
+                    "handler": "showErrorPage",
+                    "params": {
+                        "errorCode": "{{error.status}}",
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "사이트 정책 — 정책, 보존 탭의 편집 칸(_local.policyForm)이 함께 쓴다"
+        }
+    ],
+    "initLocal": {
+        "idpTab": "basic",
+        "idpErrors": null,
+        "isSavingIdp": false,
+        "testResult": null,
+        "scimToken": null,
+        "ldapTestId": "",
+        "ldapTestPw": "",
+        "showAddIdp": false,
+        "newIdp": {
+            "protocol": "oidc",
+            "key": "",
+            "label": {}
+        },
+        "newIdpErrors": null,
+        "policyErrors": null,
+        "isSavingPolicy": false,
+        "policyImpact": null,
+        "emergencySearch": "",
+        "emergencyCandidates": []
+    },
+    "computed": {
+        "canUpdate": "{{ssoIdps?.data?.abilities?.can_update === true}}",
+        "isSuper": "{{ssoIdps?.data?.abilities?.is_super === true}}",
+        "activeTab": "{{query.idp ? 'idps' : (query.tab || 'idps')}}"
+    },
+    "permissions": [
+        "sirsoft-sso.settings.view",
+        "core.plugins.read"
+    ],
+    "named_actions": {
+        "saveIdp": {
+            "comment": "IdP 저장 — 편집 칸 전체를 보낸다(서버는 저장 칸만 고른다). 비밀값은 가린 값이면 유지된다",
+            "handler": "sequence",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "isSavingIdp": true,
+                        "idpErrors": null
+                    }
+                },
+                {
+                    "handler": "apiCall",
+                    "target": "/api/plugins/sirsoft-sso/admin/idps/{{query.idp}}",
+                    "auth_required": true,
+                    "params": {
+                        "method": "PUT",
+                        "body": "{{_local.idpForm}}"
+                    },
+                    "onSuccess": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "isSavingIdp": false,
+                                "idpForm": "{{response.data}}"
+                            }
+                        },
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "success",
+                                "message": "$t:sirsoft-sso.admin.settings.idp.saved"
+                            }
+                        },
+                        {
+                            "handler": "refetchDataSource",
+                            "params": {
+                                "dataSourceId": "ssoIdps"
+                            }
+                        }
+                    ],
+                    "onError": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "isSavingIdp": false,
+                                "idpErrors": "{{error.errors?.fields ?? error.errors}}"
+                            }
+                        },
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "savePolicy": {
+            "comment": "정책 저장 — 정책, 보존 탭이 함께 쓴다. 새로 강제 대상이 된 회원의 비밀번호 로그인 토큰이 회수되면 그 수를 알린다(W34)",
+            "handler": "sequence",
+            "actions": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "isSavingPolicy": true,
+                        "policyErrors": null
+                    }
+                },
+                {
+                    "handler": "apiCall",
+                    "target": "/api/plugins/sirsoft-sso/admin/policy",
+                    "auth_required": true,
+                    "params": {
+                        "method": "PUT",
+                        "body": "{{_local.policyForm?.policy ?? {}}}"
+                    },
+                    "onSuccess": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "isSavingPolicy": false,
+                                "policyImpact": null,
+                                "policyForm": "{{response.data}}"
+                            }
+                        },
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "success",
+                                "message": "$t:sirsoft-sso.admin.settings.policy.saved|revoked={{response.data?.revoked_tokens ?? 0}}"
+                            }
+                        }
+                    ],
+                    "onError": [
+                        {
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "isSavingPolicy": false,
+                                "policyErrors": "{{error.errors}}"
+                            }
+                        },
+                        {
+                            "handler": "toast",
+                            "params": {
+                                "type": "error",
+                                "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    "slots": {
+        "content": [
+            {
+                "id": "sso_settings_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content-responsive"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:sirsoft-sso.admin.settings.title",
+                            "description": "$t:sirsoft-sso.admin.settings.description",
+                            "backPath": "/admin/plugins",
+                            "backLabel": "$t:admin.plugins.back_to_list"
+                        }
+                    },
+                    {
+                        "id": "sso_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!_computed.canUpdate && !!ssoIdps?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mt-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-amber-800 dark:text-amber-200"
+                                },
+                                "text": "$t:sirsoft-sso.admin.settings.read_only"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "settings_tabs",
+                        "type": "composite",
+                        "name": "TabNavigation",
+                        "actions": [
+                            {
+                                "comment": "탭 전환은 주소의 tab 만 바꾼다(편집 중인 idp 는 빠진다) — 새로고침, 뒤로 가기에도 같은 탭이 열린다",
+                                "type": "change",
+                                "event": "onTabChange",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/plugins/sirsoft-sso/settings",
+                                    "query": {
+                                        "tab": "{{$args[0]}}"
+                                    }
+                                }
+                            }
+                        ],
+                        "props": {
+                            "className": "mt-6",
+                            "activeTabId": "{{_computed.activeTab}}",
+                            "variant": "underline",
+                            "tabs": [
+                                {
+                                    "id": "idps",
+                                    "label": "$t:sirsoft-sso.admin.settings.tabs.idps"
+                                },
+                                {
+                                    "id": "policy",
+                                    "label": "$t:sirsoft-sso.admin.settings.tabs.policy"
+                                },
+                                {
+                                    "id": "retention",
+                                    "label": "$t:sirsoft-sso.admin.settings.tabs.retention"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "partial": "partials/plugin_settings/_idp_list.json"
+                    },
+                    {
+                        "partial": "partials/plugin_settings/_idp_edit.json"
+                    },
+                    {
+                        "partial": "partials/plugin_settings/_policy_tab.json"
+                    },
+                    {
+                        "partial": "partials/plugin_settings/_retention_tab.json"
+                    }
+                ]
+            }
+        ]
+    }
+}

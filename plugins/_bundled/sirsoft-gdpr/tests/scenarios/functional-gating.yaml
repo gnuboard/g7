@@ -68,6 +68,7 @@ effects:
   - middleware_preserves_strictly_necessary_cookies
   - middleware_passes_cleared_cookies_even_without_consent
   - middleware_full_pass_under_consent
+  - middleware_passes_response_when_dependency_missing
 
   # GdprCookieConsentController::store (등록 표 제거로 cookie 추가 발송 없음)
   - controller_does_not_dispatch_extra_cookies_on_functional_decline

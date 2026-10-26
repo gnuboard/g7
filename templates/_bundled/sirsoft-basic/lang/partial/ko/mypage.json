@@ -149,10 +149,13 @@
         "verify_password_placeholder": "비밀번호를 입력하세요",
         "verify_password_button": "확인",
         "reauth_notice": "비밀번호가 없는 계정입니다. 가입한 이메일로 인증번호를 받아 본인임을 확인해 주세요. 비밀번호를 설정하면 비밀번호로 확인할 수 있습니다.",
-        "reauth_unavailable": "이 계정은 가입한 이메일로 인증번호를 받을 수 없습니다. 관리자에게 문의해 주세요.",
+        "reauth_unavailable": "이 계정은 가입한 이메일로 인증번호를 받을 수 없습니다. 「본인 확인 계속하기」로도 확인할 수 없으면 관리자에게 문의해 주세요.",
         "reauth_request_code": "인증번호 받기",
         "reauth_resend_code": "인증번호 다시 받기",
         "reauth_code_sent": "인증번호를 이메일로 보냈습니다.",
+        "reauth_code_sent_generic": "인증번호를 보냈습니다.",
+        "reauth_continue": "본인 확인 계속하기",
+        "reauth_external_failed": "본인 확인 화면으로 이동할 수 없습니다. 잠시 뒤 다시 시도하거나 관리자에게 문의해 주세요.",
         "reauth_code_label": "인증번호",
         "reauth_code_placeholder": "6자리 인증번호",
         "reauth_valid_until": "{{until}} 까지 유효합니다",
@@ -176,7 +179,8 @@
             "expired": "만료됨",
             "other_devices_logged_out": "다른 기기에서는 로그아웃되었습니다. 이 기기는 로그인 상태가 유지됩니다.",
             "changed_toast": "비밀번호가 변경되었습니다. 다른 기기에서는 로그아웃되었습니다."
-        }
+        },
+        "locked_by_company": "회사 계정에서 관리하는 항목입니다"
     },
     "orders": {
         "title": "주문내역",

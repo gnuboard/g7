@@ -1,0 +1,6 @@
+# sirsoft-sso — openssl 최소 설정.
+# PHP 의 openssl 이 기본 설정 파일을 찾지 못할 때(OPENSSL_CONF 미설정) 키 생성에만 쓴다.
+[ req ]
+distinguished_name = req_distinguished_name
+
+[ req_distinguished_name ]

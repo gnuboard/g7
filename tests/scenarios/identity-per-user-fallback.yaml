@@ -1,0 +1,26 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다(#798 A1).
+
+feature: "목적별 본인인증 수단의 회원별 폴백 (#798 K17 · W17)"
+
+description: |
+  목적별 본인인증 수단의 회원별 폴백 (#798 K17 · W17)
+  받을 메일이 없는 회원(대체 주소 `…@….invalid`)에게는 메일 인증번호를 보낼 수 없다. 대상 회원을 아는 경로에서 해석된 수단이 그 회원에게
+  쓸 수 없으면(`UserScopedIdentityProviderInterface::canChallengeUser()` 거짓) 같은 목적을 지원하는 다음 수단으로 넘어간다.
+
+axes:
+  return_path: [same_origin, external, absent]
+  provider: [mail]
+  user: [deliverable, undeliverable, unspecified]
+  providers: [mail_only]
+
+effects:
+  - challenge_return_path_reaches_provider
+  - challenge_external_return_path_dropped
+  - mail_provider_user_scoped
+  - deliverable_uses_mail
+  - undeliverable_falls_back
+  - no_alternative_keeps_existing
+  - no_user_keeps_existing
+
+test_files:
+  - tests/Feature/Identity/IdentityPerUserFallbackTest.php

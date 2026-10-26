@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Concerns;
 
 use App\Enums\IdentityVerificationChannel;
 use App\Exceptions\Auth\AccountLockedException;
+use App\Exceptions\Auth\ExternalStepRequiredException;
+use App\Exceptions\Auth\PasswordAuthDisallowedException;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
+use App\Helpers\ResponseHelper;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -38,6 +41,53 @@ trait BuildsAuthFailureResponses
             ],
             // `count` 로 「1 minute」/「2 minutes」 를 고른다(영구 잠금은 null — 고르지 않음).
             ['minutes' => $e->remainingMinutes, 'count' => $e->remainingMinutes]
+        );
+    }
+
+    /**
+     * 비밀번호 인증 정책 거절 응답을 구성합니다 (로그인 403, 재설정 422 등 호출자가 상태 코드를 고른다).
+     *
+     * 다른 로그인 실패처럼 사유를 버리지 않는다 — 화면이 「회사 계정으로 로그인」 안내와 그 수단으로 가는 버튼을 그린다.
+     * 회원 정보는 싣지 않고 수단 이름과 같은 출처 이동 경로만 싣는다.
+     *
+     * @param  PasswordAuthDisallowedException  $e  정책 거절 예외
+     * @param  int  $status  HTTP 상태 코드
+     * @return JsonResponse `{success:false, message, errors:{code}, data:{method_label, redirect_url}}`
+     *
+     * @since 7.2.0
+     */
+    protected function passwordAuthDisabledResponse(PasswordAuthDisallowedException $e, int $status = 403): JsonResponse
+    {
+        [$messageKey, $params] = PasswordAuthDisallowedException::messageKeyAndParams($e->decision);
+
+        return ResponseHelper::error(
+            $messageKey,
+            $status,
+            // 레이아웃은 오류 문맥의 `errors` 만 읽는다(규정 — `error.data` 는 바인딩 경로가 아니다) — 안내 데이터를 `errors` 에도 싣는다
+            ['code' => PasswordAuthDisallowedException::ERROR_CODE] + $e->decision->toResponseData(),
+            $params,
+            'core',
+            $e->decision->toResponseData(),
+        );
+    }
+
+    /**
+     * 외부 자격 증명 로그인의 추가 단계 응답(409)을 구성합니다.
+     *
+     * @param  ExternalStepRequiredException  $e  추가 단계 예외
+     * @return JsonResponse `{success:false, message, errors:{code}, data:{redirect_url}}`
+     *
+     * @since 7.2.0
+     */
+    protected function externalStepRequiredResponse(ExternalStepRequiredException $e): JsonResponse
+    {
+        return ResponseHelper::error(
+            'auth.external_step_required',
+            409,
+            ['code' => ExternalStepRequiredException::ERROR_CODE, 'redirect_url' => $e->redirectUrl],
+            [],
+            'core',
+            ['redirect_url' => $e->redirectUrl],
         );
     }
 

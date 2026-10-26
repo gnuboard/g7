@@ -1,0 +1,35 @@
+feature: generic_notification_via
+
+description: |
+  GenericNotification::via() 의 채널 결정. 채널 후보는 코어 단일 진입점 NotificationChannelService::resolveChannelCandidates()
+  (core.notification.channels → {hookPrefix}.notification.channels)가 정하고, 그 뒤 사용 가능 목록·확장 토글·readiness·활성 템플릿
+  존재 순으로 거른다. 채널을 지정한 발송(template 별)은 게스트·메일 주소·확장 토글·readiness 를 본다.
+
+axes:
+  path:
+    - multichannel   # 정의의 채널 목록으로 자동 결정
+    - explicit       # 채널 지정 발송
+  gate:
+    - extension_toggle
+    - readiness
+    - template
+    - available
+    - definition
+
+exclusions:
+  - { path: explicit, gate: template, reason: "채널 지정 경로는 템플릿 존재를 via() 에서 보지 않는다 — 발송 단계 몫" }
+  - { path: explicit, gate: readiness, reason: "채널 지정 readiness 는 같은 분기 코드 — 다채널 readiness 사례로 덮음" }
+  - { path: explicit, gate: definition, reason: "채널 지정 경로는 정의를 읽지 않는다" }
+
+effects:
+  - disabled_channel_excluded              # 확장 토글이 끈 채널은 빠진다(전부 끄면 빈 배열)
+  - explicit_channel_toggle_honored        # 채널 지정 발송도 확장 토글을 따른다
+  - both_channels_returned                 # 모든 관문을 통과하면 정의의 채널 전부
+  - not_ready_excluded                     # readiness 실패 채널은 빠진다
+  - missing_template_excluded              # 활성 템플릿이 없는 채널은 빠진다(빈 제목·본문 방지)
+  - inactive_template_excluded             # 비활성 템플릿은 없는 것으로 본다
+  - unknown_type_empty                     # 정의 없는 유형은 기본 mail 이지만 템플릿이 없어 빈 배열
+  - unavailable_channel_excluded_silently  # 사용 가능 목록에 없는 채널은 로그 없이 빠진다
+
+test_files:
+  - tests/Unit/Notifications/GenericNotificationViaTest.php

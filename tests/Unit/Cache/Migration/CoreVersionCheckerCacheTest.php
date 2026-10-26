@@ -16,6 +16,8 @@ use Tests\TestCase;
  * - 호환성 검사 캐시 키가 새 접두사(`g7:core:ext.version_check.{type}.{version}`)로 이관됨
  * - clearCache() 가 3종 타입(modules/plugins/templates) 키를 모두 무효화함
  * - 코어 버전 변경 시 캐시 키가 자동 분리됨
+ *
+ * @scenario-manifest tests/scenarios/core-version-checker-cache.yaml
  */
 class CoreVersionCheckerCacheTest extends TestCase
 {
@@ -23,6 +25,11 @@ class CoreVersionCheckerCacheTest extends TestCase
 
     private ?string $originalEnvVersion = null;
 
+    /**
+     * 캐시를 비우고 코어 드라이버를 바인딩한 뒤, config 로 버전을 바꿀 수 있게 env APP_VERSION 을 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,6 +45,11 @@ class CoreVersionCheckerCacheTest extends TestCase
         putenv('APP_VERSION');
     }
 
+    /**
+     * 캐시를 비우고 비웠던 env APP_VERSION 을 되돌립니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Cache::flush();
@@ -51,6 +63,12 @@ class CoreVersionCheckerCacheTest extends TestCase
 
     /**
      * F-1-1: 호환성 검사 캐시 키 형식 검증.
+     *
+     * @scenario case=key_format
+     *
+     * @effects version_check_key_prefixed
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function f_1_1_cache_key_uses_new_prefix(): void
@@ -66,6 +84,12 @@ class CoreVersionCheckerCacheTest extends TestCase
 
     /**
      * F-1-2: 호환성 검사 결과 저장 → 같은 키로 조회 시 캐시 히트.
+     *
+     * @scenario case=cache_hit
+     *
+     * @effects cached_result_hit
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function f_1_2_compatibility_cache_hit(): void
@@ -81,6 +105,12 @@ class CoreVersionCheckerCacheTest extends TestCase
 
     /**
      * F-1-3: clearCache() 호출 시 modules/plugins/templates 3개 키 모두 무효화.
+     *
+     * @scenario case=clear_cache
+     *
+     * @effects clear_cache_removes_three_types
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function f_1_3_clear_cache_invalidates_all_three_types(): void
@@ -100,6 +130,12 @@ class CoreVersionCheckerCacheTest extends TestCase
 
     /**
      * F-1-4: 코어 버전 변경 시 새 키로 분리 — 기존 키와 충돌 없음.
+     *
+     * @scenario case=version_change
+     *
+     * @effects version_change_separates_keys
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function f_1_4_version_change_separates_keys(): void

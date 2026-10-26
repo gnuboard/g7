@@ -147,6 +147,11 @@ class ExtensionManager
      */
     public function reregisterRuntimeAutoload(): void
     {
+        // 시험이 실제 캐시로 재등록하면 src_classmap 이 _bundled PSR-4 를 이겨 설치본을 읽는다(tests/bootstrap.php 가 _bundled 우선으로 이미 등록).
+        if ($this->writesRealCacheFileDuringTests()) {
+            return;
+        }
+
         if (! class_exists(ClassLoader::class, false)) {
             return;
         }

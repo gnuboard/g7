@@ -70,6 +70,10 @@ class CoreActivityLogListener implements HookListenerInterface
             'core.user.after_bulk_update_roles' => ['method' => 'handleUserAfterBulkUpdateRoles', 'priority' => 20],
             // 회원 등록·수정 화면에서 역할·최고관리자 지정이 바뀐 경우(#736 D23) — 권한 부여·변경 기록이라 3년 보관 대상
             'core.user.after_update_roles' => ['method' => 'handleUserAfterUpdateRoles', 'priority' => 20],
+            // 회원 차단·해제·강제 로그아웃 공개 진입점(7.2.0) — 행위자 없는 시스템 경로(프로비저닝 등)도 남긴다
+            'core.user.after_block' => ['method' => 'handleUserAfterBlock', 'priority' => 20, 'sync' => true],
+            'core.user.after_unblock' => ['method' => 'handleUserAfterUnblock', 'priority' => 20, 'sync' => true],
+            'core.user.after_sessions_revoked' => ['method' => 'handleUserAfterSessionsRevoked', 'priority' => 20, 'sync' => true],
 
             // ─── Auth ───
             'core.auth.after_login' => ['method' => 'handleAuthAfterLogin', 'priority' => 20],
@@ -705,6 +709,70 @@ class CoreActivityLogListener implements HookListenerInterface
             ],
             'user_id' => $user->id,
             'ip_address' => $context['ip_address'] ?? null,
+        ]);
+    }
+
+    /**
+     * 회원 차단 후 로그 기록 (7.2.0 — `UserService::blockUser()`)
+     *
+     * @param  User  $user  차단된 회원
+     * @param  array{reason_key?: string|null, source?: string|null}  $context  사유와 출처
+     * @return void 반환값 없음
+     */
+    public function handleUserAfterBlock(User $user, array $context = []): void
+    {
+        $this->logActivity('user.block', [
+            'loggable' => $user,
+            'description_key' => 'activity_log.description.user_block',
+            'description_params' => ['user_id' => (string) $user->uuid, 'reason' => (string) ($context['reason_key'] ?? '')],
+            'properties' => [
+                'user_uuid' => (string) $user->uuid,
+                'reason_key' => $context['reason_key'] ?? null,
+                'source' => $context['source'] ?? null,
+            ],
+        ]);
+    }
+
+    /**
+     * 회원 차단 해제 후 로그 기록 (7.2.0 — `UserService::unblockUser()`)
+     *
+     * @param  User  $user  차단이 풀린 회원
+     * @param  array{reason_key?: string|null, source?: string|null}  $context  사유와 출처
+     * @return void 반환값 없음
+     */
+    public function handleUserAfterUnblock(User $user, array $context = []): void
+    {
+        $this->logActivity('user.unblock', [
+            'loggable' => $user,
+            'description_key' => 'activity_log.description.user_unblock',
+            'description_params' => ['user_id' => (string) $user->uuid, 'reason' => (string) ($context['reason_key'] ?? '')],
+            'properties' => [
+                'user_uuid' => (string) $user->uuid,
+                'reason_key' => $context['reason_key'] ?? null,
+                'source' => $context['source'] ?? null,
+            ],
+        ]);
+    }
+
+    /**
+     * 회원 강제 로그아웃 후 로그 기록 (7.2.0 — `UserService::revokeAllSessions()`)
+     *
+     * @param  User  $user  대상 회원
+     * @param  User|null  $actor  행위자 (시스템이면 null)
+     * @param  array{count?: int}  $context  지운 토큰 수
+     * @return void 반환값 없음
+     */
+    public function handleUserAfterSessionsRevoked(User $user, ?User $actor = null, array $context = []): void
+    {
+        $this->logActivity('user.sessions_revoked', [
+            'loggable' => $user,
+            'description_key' => 'activity_log.description.user_sessions_revoked',
+            'description_params' => ['user_id' => (string) $user->uuid, 'count' => (int) ($context['count'] ?? 0)],
+            'properties' => [
+                'user_uuid' => (string) $user->uuid,
+                'revoked_count' => (int) ($context['count'] ?? 0),
+                'actor_uuid' => $actor?->uuid,
+            ],
         ]);
     }
 

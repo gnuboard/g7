@@ -172,14 +172,16 @@
                 <span>$t:mypage.profile.name</span>
                 <span class="text-red-600 dark:text-red-400 ml-0.5">*</span>
               </label>
-              <input type="text" name="name" aria-label="$t:mypage.profile.name" value="{{user.data?.name ?? ''}}" placeholder="$t:mypage.profile.name_placeholder" :required="true" class="{{_local.profileErrors?.name ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'}}"/>
+              <input type="text" name="name" readOnly="{{(user.data?.locked_fields ?? []).includes('name')}}" aria-label="$t:mypage.profile.name" value="{{user.data?.name ?? ''}}" placeholder="$t:mypage.profile.name_placeholder" :required="true" class="{{_local.profileErrors?.name ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'}}"/>
               <p data-if="{{_local.profileErrors?.name}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.name?.[0] ?? ''}}</p>
+              <p data-if="{{(user.data?.locked_fields ?? []).includes('name')}}" class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.locked_by_company</p>
             </div>
             <!-- 닉네임 -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.nickname</label>
-              <input type="text" name="nickname" aria-label="$t:mypage.profile.nickname" value="{{user.data?.nickname ?? ''}}" placeholder="$t:mypage.profile.nickname_placeholder" class="{{_local.profileErrors?.nickname ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'}}"/>
+              <input type="text" name="nickname" readOnly="{{(user.data?.locked_fields ?? []).includes('nickname')}}" aria-label="$t:mypage.profile.nickname" value="{{user.data?.nickname ?? ''}}" placeholder="$t:mypage.profile.nickname_placeholder" class="{{_local.profileErrors?.nickname ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-900 dark:focus:ring-white focus:border-transparent'}}"/>
               <p data-if="{{_local.profileErrors?.nickname}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.nickname?.[0] ?? ''}}</p>
+              <p data-if="{{(user.data?.locked_fields ?? []).includes('nickname')}}" class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.locked_by_company</p>
             </div>
           </div>
         </div>
@@ -195,14 +197,16 @@
             <!-- 휴대폰번호 -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.mobile</label>
-              <input type="tel" name="mobile" aria-label="$t:mypage.profile.mobile" value="{{user.data?.mobile ?? ''}}" placeholder="$t:mypage.profile.mobile_placeholder" class="{{_local.profileErrors?.mobile ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
+              <input type="tel" name="mobile" readOnly="{{(user.data?.locked_fields ?? []).includes('mobile')}}" aria-label="$t:mypage.profile.mobile" value="{{user.data?.mobile ?? ''}}" placeholder="$t:mypage.profile.mobile_placeholder" class="{{_local.profileErrors?.mobile ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
               <p data-if="{{_local.profileErrors?.mobile}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.mobile?.[0] ?? ''}}</p>
+              <p data-if="{{(user.data?.locked_fields ?? []).includes('mobile')}}" class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.locked_by_company</p>
             </div>
             <!-- 전화번호 -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.phone</label>
-              <input type="tel" name="phone" aria-label="$t:mypage.profile.phone" value="{{user.data?.phone ?? ''}}" placeholder="$t:mypage.profile.phone_placeholder" class="{{_local.profileErrors?.phone ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
+              <input type="tel" name="phone" readOnly="{{(user.data?.locked_fields ?? []).includes('phone')}}" aria-label="$t:mypage.profile.phone" value="{{user.data?.phone ?? ''}}" placeholder="$t:mypage.profile.phone_placeholder" class="{{_local.profileErrors?.phone ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}}"/>
               <p data-if="{{_local.profileErrors?.phone}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.phone?.[0] ?? ''}}</p>
+              <p data-if="{{(user.data?.locked_fields ?? []).includes('phone')}}" class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.locked_by_company</p>
             </div>
             <!-- 홈페이지 -->
             <div class="space-y-1">
@@ -226,8 +230,9 @@
             <!-- 언어 -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">$t:mypage.profile.language</label>
-              <select name="language" aria-label="$t:mypage.profile.language" value="{{user.data?.language ?? ''}}" class="w-full" options="{{[{ label: $t('mypage.profile.language_placeholder'), value: '' }].concat((_global.appConfig?.supportedLocales ?? []).map(l => ({ value: l, label: $t('languages.' + l) })))}}"/>
+              <select name="language" disabled="{{(user.data?.locked_fields ?? []).includes('language')}}" aria-label="$t:mypage.profile.language" value="{{user.data?.language ?? ''}}" class="w-full" options="{{[{ label: $t('mypage.profile.language_placeholder'), value: '' }].concat((_global.appConfig?.supportedLocales ?? []).map(l => ({ value: l, label: $t('languages.' + l) })))}}"/>
               <p data-if="{{_local.profileErrors?.language}}" class="text-sm text-red-600 dark:text-red-400">{{_local.profileErrors?.language?.[0] ?? ''}}</p>
+              <p data-if="{{(user.data?.locked_fields ?? []).includes('language')}}" class="text-xs text-gray-500 dark:text-gray-400">$t:mypage.profile.locked_by_company</p>
             </div>
             <!-- 시간대 -->
             <div class="space-y-1">

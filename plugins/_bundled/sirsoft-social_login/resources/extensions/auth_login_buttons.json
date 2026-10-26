@@ -48,7 +48,7 @@
                     "type": "basic",
                     "name": "A",
                     "props": {
-                        "href": "{{((socialProviders?.data ?? []).find(p => p.key === query.provider)?.start_url ?? '') + '?reconsent=1' + (typeof query.redirect === 'string' && query.redirect.startsWith('/') && !query.redirect.startsWith('//') ? '&redirect=' + encodeURIComponent(query.redirect) : '')}}",
+                        "href": "{{((socialProviders?.data ?? []).find(p => p.key === query.provider)?.start_url ?? '') + '?reconsent=1' + (typeof query.redirect === 'string' && query.redirect.startsWith('/') && !query.redirect.startsWith('/', 1) && !query.redirect.startsWith('\\\\', 1) ? '&redirect=' + encodeURIComponent(query.redirect) : '')}}",
                         "className": "mt-3 inline-flex items-center justify-center w-full px-4 py-3 sm:py-2 text-sm font-medium rounded-lg bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-gray-900"
                     },
                     "text": "$t:sirsoft-social_login.buttons.reconsent_with|provider={{(socialProviders?.data ?? []).find(p => p.key === query.provider)?.label ?? ''}}"

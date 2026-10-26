@@ -93,7 +93,8 @@ function flatten(node: any): any[] {
 const namedActions = (loginPage as any).named_actions;
 
 /** 로그인 화면 진입 시 인계 시퀀스 */
-const handoffSequence = asArray<any>((loginPage as any).init_actions).find((a) => String(a.if ?? '').includes('login_handoff'));
+// 7.2.0 자동 이동 액션(redirect)도 `if` 에 `!query?.login_handoff`(우회 쿼리)를 품는다 — 조건 문자열이 아니라 `loginHandoff` 를 담은 시퀀스로 찾는다.
+const handoffSequence = asArray<any>((loginPage as any).init_actions).find((a) => a.handler === 'sequence' && asArray<any>(a.actions).some((x) => x.handler === 'loginHandoff'));
 const handoffAction = asArray<any>(handoffSequence?.actions).find((a) => a.handler === 'loginHandoff');
 
 /** 하네스에 없는 템플릿 커스텀 핸들러를 뺀 명명 액션 — 성공 분기가 중간에 끊기지 않게 */

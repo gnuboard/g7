@@ -1,0 +1,30 @@
+feature: cache_extension_status_migration
+
+description: |
+  확장 상태 캐시 trait 4종(CachesModuleStatus, CachesPluginStatus, CachesTemplateStatus, ClearsTemplateCaches)의
+  키가 코어 캐시 드라이버의 새 접두사(`g7:core:ext.*`)로 옮겨졌는지 고정한다(계획서 §13 A-1 ~ A-4).
+  활성 식별자와 설치 식별자 목록은 넣은 값 그대로 읽히고(빈 배열 포함), invalidate*StatusCache() 는 해당 종류의
+  활성 키와 설치 키를 모두 지운다(템플릿은 admin, user 구분 키까지 4개). 확장 캐시 버전은 증가 호출마다 커지고,
+  키가 없으면 0 대신 현재 시각으로 새 버전을 만들어 저장한다(`?v=0` 으로 에셋이 고착되던 결함의 회귀 방지).
+
+axes:
+  case:
+    - module_status          # 모듈 활성, 설치 식별자 캐시
+    - plugin_status          # 플러그인 활성, 설치 식별자 캐시
+    - template_status        # 템플릿 활성(전체, admin, user), 설치 식별자 캐시
+    - empty_array            # 빈 배열 식별자 목록
+    - cache_version          # 확장 캐시 버전 증가
+    - cache_version_unset    # 확장 캐시 버전 키 없음
+
+exclusions:
+  - { case: module_status, reason: "제외 없음 — 사례 단일 축(확장 종류와 키 상태 조합은 사례로 고정)" }
+
+effects:
+  - key_uses_core_prefix              # resolveKey() 가 g7:core:ext.* 형식의 키를 돌려준다
+  - status_value_cached               # 넣은 식별자 목록이 has, get 으로 그대로 읽힌다(재조회도 같은 값)
+  - status_keys_invalidated           # invalidate*StatusCache() 뒤 해당 활성 키와 설치 키가 모두 없다
+  - cache_version_incremented         # 증가 호출 뒤 확장 캐시 버전이 이전 값보다 크거나 같다
+  - cache_version_regenerated         # 키가 없으면 현재 시각 버전을 만들어 저장하고 다음 호출도 같은 값을 준다
+
+test_files:
+  - tests/Unit/Cache/Migration/ExtensionStatusCacheTest.php

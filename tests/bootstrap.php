@@ -1,6 +1,7 @@
 <?php
 
 use Composer\Autoload\ClassLoader;
+use Tests\Support\ExtensionVendorAutoloadMap;
 
 /**
  * PHPUnit 테스트용 부트스트랩 파일
@@ -468,82 +469,27 @@ if (file_exists($extensionAutoloadFile)) {
 | 등록되어 있으므로 append 로 걸어 루트 vendor 가 우선하게 둔다(같은 패키지 중복 선언 방지).
 |
 */
+require_once __DIR__.'/Support/ExtensionVendorAutoloadMap.php';
+
 $extensionVendorLoader = new ClassLoader;
-$extensionVendorClassMap = [];
-$extensionVendorFiles = [];
-$isExtensionOwnSymbol = static fn (string $symbol): bool => str_starts_with($symbol, 'Modules\\')
-    || str_starts_with($symbol, 'Plugins\\');
+$extensionVendorMap = ExtensionVendorAutoloadMap::collect(dirname(__DIR__));
 
-foreach (['modules', 'plugins'] as $extensionType) {
-    foreach ([__DIR__.'/../'.$extensionType, __DIR__.'/../'.$extensionType.'/_bundled'] as $searchDir) {
-        if (! is_dir($searchDir)) {
-            continue;
-        }
-
-        foreach (scandir($searchDir) ?: [] as $entry) {
-            if ($entry === '.' || $entry === '..' || $entry === '_bundled' || $entry === '_pending') {
-                continue;
-            }
-
-            $vendorDir = $searchDir.'/'.$entry.'/vendor';
-            $classmapFile = $vendorDir.'/composer/autoload_classmap.php';
-
-            if (! is_dir($vendorDir) || ! file_exists($classmapFile)) {
-                continue;
-            }
-
-            // 먼저 발견한 것(활성 디렉토리)이 이긴다 — 같은 클래스를 뒤에서 덮어쓰지 않는다.
-            foreach (require $classmapFile as $fqcn => $path) {
-                if (! $isExtensionOwnSymbol($fqcn) && ! isset($extensionVendorClassMap[$fqcn])) {
-                    $extensionVendorClassMap[$fqcn] = $path;
-                }
-            }
-
-            $psr4File = $vendorDir.'/composer/autoload_psr4.php';
-            if (file_exists($psr4File)) {
-                foreach (require $psr4File as $prefix => $paths) {
-                    if (! $isExtensionOwnSymbol($prefix)) {
-                        $extensionVendorLoader->addPsr4($prefix, $paths);
-                    }
-                }
-            }
-
-            // PSR-0 으로만 등록하는 패키지도 있다(HTMLPurifier). 최적화하지 않은 오토로드 — 번들 vendor
-            // 압축본을 풀어 깐 vendor 가 그렇다 — 에서는 classmap 이 비어 있어, 이 맵을 읽지 않으면
-            // 그 패키지 클래스가 통째로 오토로드되지 않는다.
-            $psr0File = $vendorDir.'/composer/autoload_namespaces.php';
-            if (file_exists($psr0File)) {
-                foreach (require $psr0File as $prefix => $paths) {
-                    if (! $isExtensionOwnSymbol($prefix)) {
-                        $extensionVendorLoader->add($prefix, $paths);
-                    }
-                }
-            }
-
-            // 패키지가 요구하는 부트스트랩 파일(HTMLPurifier 의 HTMLPURIFIER_PREFIX 정의 등).
-            // vendor 디렉토리 바깥의 항목(확장 자신의 helpers)은 제외한다.
-            $filesFile = $vendorDir.'/composer/autoload_files.php';
-            if (file_exists($filesFile)) {
-                $vendorReal = realpath($vendorDir) ?: $vendorDir;
-
-                foreach (require $filesFile as $file) {
-                    if (str_starts_with(realpath($file) ?: $file, $vendorReal)) {
-                        $extensionVendorFiles[] = $file;
-                    }
-                }
-            }
-        }
-    }
+foreach ($extensionVendorMap['psr4'] as $prefix => $paths) {
+    $extensionVendorLoader->addPsr4($prefix, $paths);
 }
 
-if ($extensionVendorClassMap !== []) {
-    $extensionVendorLoader->addClassMap($extensionVendorClassMap);
+foreach ($extensionVendorMap['psr0'] as $prefix => $paths) {
+    $extensionVendorLoader->add($prefix, $paths);
+}
+
+if ($extensionVendorMap['classmap'] !== []) {
+    $extensionVendorLoader->addClassMap($extensionVendorMap['classmap']);
 }
 
 // vendorDir 를 주지 않았으므로 register() 가 registeredLoaders 를 건드리지 않는다.
 $extensionVendorLoader->register();
 
-foreach ($extensionVendorFiles as $extensionVendorFile) {
+foreach ($extensionVendorMap['files'] as $extensionVendorFile) {
     require_once $extensionVendorFile;
 }
 

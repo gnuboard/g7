@@ -17,9 +17,21 @@
       <!-- 회원가입 폼 -->
       <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:auth.register.title</h2>
-        <!-- 확장 영역 — 소셜 계정으로 가입하기 버튼처럼 다른 가입 수단을 확장이 붙이는 자리(가입 폼 위). 붙인 확장이 없으면 아무것도 그리지 않는다. -->
-        <extension-point name="auth_register_extensions" data-ref="auth_register_extensions_slot"/>
-        <include src="partials/auth/_register_form.g7.html"/>
+        <!-- 「일반 회원가입 받지 않음」(7.2.0) — 폼·가입 확장 칸 대신 안내 카드와 로그인 버튼. 회사가 만드는 계정(회사 계정 자동 생성·관리자 추가)은 이 화면을 거치지 않는다. -->
+        <div data-if="{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) === false}}" data-ref="registration_closed_card" class="p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 space-y-4">
+          <p class="text-sm text-gray-700 dark:text-gray-300">$t:auth.register.closed_notice</p>
+          <a href="/login" class="inline-flex items-center justify-center w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer">
+            <on type="click">
+              <navigate/>
+            </on>
+            $t:auth.login
+          </a>
+        </div>
+        <div data-if="{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}">
+          <!-- 확장 영역 — 소셜 계정으로 가입하기 버튼처럼 다른 가입 수단을 확장이 붙이는 자리(가입 폼 위). 붙인 확장이 없으면 아무것도 그리지 않는다. -->
+          <extension-point name="auth_register_extensions" data-ref="auth_register_extensions_slot"/>
+          <include src="partials/auth/_register_form.g7.html"/>
+        </div>
         <div class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           <span>$t:auth.already_member</span>
           <span> </span>

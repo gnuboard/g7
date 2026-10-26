@@ -150,6 +150,7 @@
         "provider_unknown": "Sign-in with this provider is not available now.",
         "admin_blocked": "Administrator accounts cannot use social sign-in. Please sign in with your password.",
         "signup_disabled": "New sign-ups are not allowed with this provider. If you already have an account, sign in and link it from My Page.",
+        "registration_closed": "Sign-up is currently closed. If you already have an account, sign in with it and link this account from My Page.",
         "email_required": "An email is required to sign up. Use the button below to reopen the provider consent screen and allow email sharing.",
         "account_missing": "The linked member cannot be found. Please sign up again.",
         "already_linked_other_user": "This social account is linked to another member.",

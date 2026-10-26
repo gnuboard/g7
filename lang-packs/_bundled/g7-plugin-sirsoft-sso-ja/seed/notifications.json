@@ -1,0 +1,110 @@
+{
+  "sso_emergency_login": {
+    "definition": {
+      "name": "SSO 緊急アカウントログイン",
+      "description": "SSO 強制が有効な間に緊急アカウントがパスワードでログインすると、管理者に通知します。"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 緊急アカウント {user_name} がパスワードでログインしました",
+        "body": "<p>{name}様、SSO 強制が有効な間に、緊急アカウント {user_name} がパスワードと2段階認証でログインしました。</p><p>日時 {login_at}、IP {ip_address}</p><p>想定外のログインである場合は、すぐにパスワードを変更し、アクティビティログを確認してください。</p><p><a href=\"{settings_url}\">SSO 設定を開く</a></p>"
+      },
+      "database": {
+        "subject": "緊急アカウント {user_name} のパスワードログイン",
+        "body": "SSO 強制中に緊急アカウントがログインしました — {login_at}、IP {ip_address}"
+      }
+    }
+  },
+  "sso_idp_failures": {
+    "definition": {
+      "name": "SSO IdP 連続失敗",
+      "description": "1つの IdP のログイン失敗がポリシーの基準(既定は10分以内に5回)に達すると、管理者に1日1回通知します。"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] {idp_label} のログイン失敗が続いています",
+        "body": "<p>{name}様、{idp_label} の会社アカウントログインが直近 {failure_count}回失敗しました(最終エラー {last_error_code})。</p><p>IdP の証明書、接続情報、サーバーの時計を確認してください。</p><p><a href=\"{settings_url}\">診断画面を開く</a></p>"
+      },
+      "database": {
+        "subject": "{idp_label} ログイン連続失敗",
+        "body": "直近 {failure_count}回失敗 — 最終エラー {last_error_code}"
+      }
+    }
+  },
+  "sso_cert_expiring": {
+    "definition": {
+      "name": "SSO IdP 証明書の有効期限切れ予定",
+      "description": "IdP 署名証明書の有効期限が近づくと(既定は30日前、7日前)、管理者に通知します。"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] {idp_label} の証明書が{days_left}日後に有効期限切れになります",
+        "body": "<p>{name}様、{idp_label} の署名証明書が {expires_at} に有効期限切れになります(残り{days_left}日)。</p><p>有効期限が切れると、この IdP では誰もログインできなくなります。IdP で新しい証明書を発行し、メタデータを更新してください。</p><p><a href=\"{settings_url}\">IdP 設定を開く</a></p>"
+      },
+      "database": {
+        "subject": "{idp_label} 証明書が{days_left}日後に有効期限切れ",
+        "body": "有効期限 {expires_at}"
+      }
+    }
+  },
+  "sso_email_conflict": {
+    "definition": {
+      "name": "SSO メールアドレス同期の競合",
+      "description": "IdP から通知された新しいメールアドレスを別の会員が使用しているため変更できない場合、管理者に通知します。"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] {user_name} 会員の IdP メールアドレスを反映できませんでした",
+        "body": "<p>{name}様、{idp_label} から {user_name} 会員のメールアドレスが {idp_email} と通知されましたが、そのアドレスを別の会員が使用しているため変更しませんでした。</p><p><a href=\"{user_url}\">会員詳細を開く</a></p>"
+      },
+      "database": {
+        "subject": "{user_name} IdP メールアドレスの競合",
+        "body": "{idp_label} のメールアドレス {idp_email} を別の会員が使用中"
+      }
+    }
+  },
+  "sso_super_admin_deprovisioned": {
+    "definition": {
+      "name": "SSO 最高管理者の退職処理",
+      "description": "最高管理者の会社アカウントが退職処理されると通知します。最高管理者は自動でブロックせず、ログイントークンのみ回収します — 直接確認してください。"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 最高管理者 {user_name} の会社アカウントが退職処理されました",
+        "body": "<p>{name}様、{idp_label} で最高管理者 {user_name} のアカウントが無効化されました({source})。</p><p>ログイントークンはすべて回収しましたが、最高管理者アカウントは自動でブロックしません。アカウントを整理するかどうかを直接判断してください。</p><p><a href=\"{user_url}\">会員詳細を開く</a></p>"
+      },
+      "database": {
+        "subject": "最高管理者 {user_name} の退職処理",
+        "body": "{idp_label} — トークンのみ回収、アカウントはそのまま"
+      }
+    }
+  },
+  "sso_admin_withdraw_skipped": {
+    "definition": {
+      "name": "SSO 管理者の自動退会スキップ",
+      "description": "退職処理された会員を設定日数の経過後に自動退会させるとき、管理者アカウントは退会させず、最高管理者に1回通知します。退会するかどうかは直接判断してください。"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] 管理者 {user_name} は自動退会されませんでした",
+        "body": "<p>{name}様、{idp_label} で退職処理された {user_name} アカウントは退会期限を過ぎましたが、管理者アカウントのため自動では退会させていません。</p><p>アカウントの役割と状態を確認し、退会するかどうかを直接判断してください。</p><p><a href=\"{user_url}\">会員詳細を開く</a></p>"
+      },
+      "database": {
+        "subject": "管理者 {user_name} の自動退会スキップ",
+        "body": "{idp_label} 退職処理 — 退会するかどうかを直接判断してください"
+      }
+    }
+  },
+  "sso_password_reset_redirect": {
+    "definition": {
+      "name": "SSO パスワード再設定の案内",
+      "description": "会社アカウントでログインすべき会員がパスワードの再設定を要求すると、再設定リンクの代わりに会社アカウントでのログイン方法を案内します。"
+    },
+    "templates": {
+      "mail": {
+        "subject": "[{app_name}] このアカウントは会社アカウントでログインします",
+        "body": "<p>{name}様、パスワードの再設定をご要求いただきましたが、このアカウントは {idp_label} でのみログインします。パスワードは会社で管理しています。</p><p>ログイン画面で「{idp_label} でログイン」を押してください。</p><p><a href=\"{login_url}\">ログイン画面を開く</a></p><p>ご自身で要求していない場合は、このメールを無視してかまいません。</p>"
+      }
+    }
+  }
+}

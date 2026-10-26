@@ -2,6 +2,7 @@
 
 namespace App\Models\Concerns;
 
+use App\Notifications\NotificationVariables;
 use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -83,9 +84,10 @@ trait NotificationContentBehavior
     /**
      * 변수를 치환하여 제목과 본문을 반환합니다.
      *
-     * {key} 형식의 변수를 실제 값으로 치환합니다.
+     * {key} 형식의 변수를 실제 값으로 치환합니다. 언어별 값(`{로케일: 문자열}`)은 같은 로케일로 고른다
+     * (`NotificationVariables`) — 틀만 받는 사람 언어이고 값은 요청 언어로 고정되던 문제를 막는다.
      *
-     * @param  array  $data  key => value 변수 맵
+     * @param  array  $data  key => value 변수 맵 (값은 문자열·숫자 또는 언어별 값)
      * @param  string|null  $locale  로케일 (null이면 현재 앱 로케일)
      * @return array{subject: string, body: string} 치환된 제목과 본문
      */
@@ -94,10 +96,7 @@ trait NotificationContentBehavior
         $subject = $this->getLocalizedSubject($locale);
         $body = $this->getLocalizedBody($locale);
 
-        $replacements = [];
-        foreach ($data as $key => $value) {
-            $replacements['{'.$key.'}'] = (string) $value;
-        }
+        $replacements = NotificationVariables::replacements($data, $locale);
 
         return [
             'subject' => strtr($subject, $replacements),
@@ -144,21 +143,16 @@ trait NotificationContentBehavior
     /**
      * 단일 문자열의 변수를 치환합니다.
      *
-     * click_url 등 다국어가 아닌 단일 문자열에 {key} 패턴을 치환합니다.
+     * click_url 등 다국어가 아닌 단일 문자열에 {key} 패턴을 치환합니다. 언어별 값은 `$locale` 로 고르고,
+     * null·구조 값은 치환하지 않는다.
      *
      * @param  string  $template  치환 대상 문자열 (예: /mypage/orders/{order_number})
      * @param  array  $data  변수 데이터
+     * @param  string|null  $locale  언어별 값을 고를 로케일 (null이면 현재 앱 로케일)
      * @return string 치환된 문자열
      */
-    public function replaceVariablesInString(string $template, array $data): string
+    public function replaceVariablesInString(string $template, array $data, ?string $locale = null): string
     {
-        $replacements = [];
-        foreach ($data as $key => $value) {
-            if (is_string($value) || is_numeric($value)) {
-                $replacements['{'.$key.'}'] = (string) $value;
-            }
-        }
-
-        return strtr($template, $replacements);
+        return strtr($template, NotificationVariables::replacements($data, $locale, includeNull: false));
     }
 }

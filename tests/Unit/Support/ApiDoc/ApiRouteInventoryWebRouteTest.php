@@ -19,6 +19,15 @@ use Tests\TestCase;
  */
 class ApiRouteInventoryWebRouteTest extends TestCase
 {
+    /**
+     * 플러그인 범위 수집에 토스페이먼츠 웹훅 web 라우트가 포함된다.
+     *
+     * @scenario scope=plugin, source=web_route, route_kind=webhook
+     *
+     * @effects plugin_webhook_web_routes_collected
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 플러그인_웹훅_web_라우트가_수집된다(): void
     {
@@ -30,6 +39,15 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         $this->assertContains('web.plugins.sirsoft-tosspayments.webhook.payment-status', $names);
     }
 
+    /**
+     * 플러그인 범위 수집에 결제 성공과 실패 콜백 web 라우트가 포함된다.
+     *
+     * @scenario scope=plugin, source=web_route, route_kind=payment_callback
+     *
+     * @effects plugin_payment_callback_web_routes_collected
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 플러그인_결제_콜백_web_라우트가_수집된다(): void
     {
@@ -41,6 +59,15 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         $this->assertContains('web.plugins.sirsoft-tosspayments.payment.fail', $names);
     }
 
+    /**
+     * 수집된 web 라우트의 메서드, URI, 소유 확장, 컨트롤러가 원본 그대로 담긴다.
+     *
+     * @scenario scope=plugin, source=web_route, route_kind=webhook
+     *
+     * @effects web_route_owner_and_uri_preserved
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 수집된_web_라우트는_확장_소유와_uri_를_정확히_보존한다(): void
     {
@@ -59,6 +86,15 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         );
     }
 
+    /**
+     * web 라우트도 라우트명 첫 세그먼트로 도메인 그룹이 정해진다.
+     *
+     * @scenario scope=plugin, source=web_route, route_kind=payment_callback
+     *
+     * @effects web_route_domain_group_classified
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function web_라우트도_도메인_그룹으로_분류된다(): void
     {
@@ -71,6 +107,15 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         $this->assertSame('payment', $byName['web.plugins.sirsoft-tosspayments.payment.success']['domain_group']);
     }
 
+    /**
+     * 코어 범위에는 api/ 라우트만 수집되고 코어 web 라우트는 빠진다.
+     *
+     * @scenario scope=core, source=api_route, route_kind=core_web
+     *
+     * @effects core_web_routes_excluded
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 코어_web_라우트는_수집되지_않는다(): void
     {
@@ -86,19 +131,30 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         }
     }
 
+    /**
+     * 확장의 관리자 화면 web 라우트는 수집되지 않고 같은 기능의 JSON API 만 수집된다.
+     *
+     * @scenario scope=module, source=api_route, route_kind=admin_screen
+     *
+     * @effects extension_admin_screen_web_routes_excluded
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 확장의_관리자_화면_web_라우트는_수집되지_않는다(): void
     {
-        // hello_module 의 admin CRUD 는 사람이 브라우저로 여는 화면(web.modules.{id}.admin.*)이라
-        // machine-facing 엔드포인트가 아니므로 API 레퍼런스 대상이 아니다.
+        // 사람이 브라우저로 여는 관리자 화면(web.modules.{id}.admin.*)은 machine-facing 엔드포인트가
+        // 아니므로 API 레퍼런스 대상이 아니다. hello_module 의 관리자 CRUD 는 api.php 의 JSON API 로
+        // 옮겨졌으므로 api/ 쪽으로 수집되고, web 쪽 관리자 경로는 하나도 수집되지 않아야 한다.
         $routes = app(ApiRouteInventory::class)->collect('module:gnuboard7-hello_module');
 
         $names = array_column($routes, 'name');
 
         $this->assertNotContains('web.modules.gnuboard7-hello_module.admin.memos.index', $names);
         $this->assertNotContains('web.modules.gnuboard7-hello_module.admin.memos.store', $names);
+        $this->assertContains('api.modules.gnuboard7-hello_module.admin.memos.index', $names);
 
-        foreach ($routes as $route) {
+        foreach (array_filter($routes, fn (array $route): bool => ! str_starts_with($route['uri'], '/api/')) as $route) {
             $this->assertStringNotContainsString(
                 '/admin/',
                 $route['uri'],
@@ -107,6 +163,15 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         }
     }
 
+    /**
+     * 플러그인 범위에는 그 플러그인 소유 라우트만 담기고 다른 플러그인의 web 라우트는 섞이지 않는다.
+     *
+     * @scenario scope=plugin, source=web_route, route_kind=other_plugin
+     *
+     * @effects other_plugin_web_routes_not_mixed
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function 타_플러그인_web_라우트는_범위에_섞이지_않는다(): void
     {

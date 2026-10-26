@@ -1,0 +1,34 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: SCIM 꺼짐과 PATCH 연산)이 대부분이라 명목상이다.
+feature: sso_attribute_sync
+description: |
+  속성 동기화와 칸 잠금 — sync_lock·sync·first_only·ignore, 추가 속성, 값 없음 보존, 언어 정규화, 이메일(소유 도메인·충돌 건너뜀·알림 1회), 활성 연결의 잠금 칸 합집합과 마이페이지 422.
+axes:
+  mode: ["sync_lock|sync|first_only|ignore", sync_lock, sync, first_only, ignore]
+  created: ["false|true", "false", "true"]
+  value: ["missing|unchanged", missing, unchanged, "different|same", different, same]
+  rule: [none]
+  idp_email: [different]
+  language: ["en-US|xx", en-US, xx]
+  domain: ["owned|foreign", owned, foreign]
+  target_email: [used_by_other]
+  links: ["two_active+one_inactive"]
+  surface: [profile]
+effects:
+  - core_fields_written
+  - first_only_on_create
+  - ignore_untouched
+  - attribute_saved
+  - field_kept
+  - no_write
+  - email_unchanged
+  - language_normalized
+  - email_synced
+  - foreign_skipped
+  - conflict_hook_once
+  - union_of_sync_lock
+  - rejected_422_field_locked
+  - unlocked_field_saved
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Attributes/AttributeSyncTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Attributes/EmailSyncConflictTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Attributes/LockedFieldsListenerTest.php

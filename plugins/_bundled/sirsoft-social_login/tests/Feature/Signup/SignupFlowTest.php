@@ -121,10 +121,24 @@ class SignupFlowTest extends PluginTestCase
         $this->assertSame('signup', SocialLoginAttempt::query()->latest('id')->value('outcome'));
         $this->pending($signup['token'])->assertStatus(404)->assertJsonPath('errors.code', 'expired');
 
+        // 가입 완료는 API 응답이라 인계 코드의 묶음 쿠키를 응답에 직접 싣는다(코어 7.2.0 브라우저 묶기). 그 쿠키로 교환하면 로그인된다.
+        $bind = $done->getCookie(LoginHandoffService::BIND_COOKIE, false);
+        $this->assertNotNull($bind, '가입 완료 응답이 인계 코드의 묶음 쿠키를 싣는다');
+
+        $methods = [];
+        HookManager::addAction('core.auth.after_login', function (User $u, array $context) use (&$methods) {
+            $methods[] = $context['login_method'] ?? null;
+        }, 99);
+        config(['g7_settings.core.security.two_factor_auth' => true, 'g7_settings.core.security.two_factor_scope' => 'all']);
+
         parse_str((string) parse_url($handoff, PHP_URL_QUERY), $q);
-        $context = app(LoginHandoffService::class)->consume($q['login_handoff'])['context'];
-        $this->assertTrue($context['skip_two_factor'], '가입 직후 로그인은 코어 일반 가입과 같게 2단계 인증 없이');
-        $this->assertSame('social:kakao', $context['login_method']);
+        $this->app['auth']->forgetGuards();
+        $this->withCredentials()
+            ->withUnencryptedCookie(LoginHandoffService::BIND_COOKIE, (string) $bind->getValue())
+            ->postJson('/api/auth/login/handoff', ['code' => $q['login_handoff']])
+            ->assertOk()
+            ->assertJsonPath('data.token_type', 'Bearer'); // 가입 직후 로그인은 코어 일반 가입과 같게 2단계 인증 없이
+        $this->assertSame(['social:kakao'], $methods);
     }
 
     /**
@@ -144,6 +158,75 @@ class SignupFlowTest extends PluginTestCase
 
         $this->assertSame('signup_disabled', $this->redirectQuery($response)['social_error']);
         $this->assertSame('denied', SocialLoginAttempt::query()->latest('id')->value('outcome'));
+    }
+
+    /**
+     * 사이트가 「일반 회원가입 받기」를 끄면(코어 7.2.0) 소셜 신규 가입도 닫힌다 — 연결 없는 처음 보는 계정은 가입 대기 없이
+     * 로그인 화면 오류로 돌아가고 회원이 생기지 않는다.
+     *
+     * @scenario core_registration=closed, account=new
+     *
+     * @effects core_registration_closed_refuses_new_social_signup
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_registration_closed_refuses_new_social_signup(): void
+    {
+        config(['g7_settings.core.security.registration_enabled' => false]);
+        $before = User::query()->count();
+
+        $response = $this->kakaoRoundTrip($this->kakaoProfile('k-closed', $this->uniqueEmail()));
+
+        $this->assertSame('/login', $this->redirectPath($response));
+        $this->assertSame('registration_closed', $this->redirectQuery($response)['social_error']);
+        $this->assertSame('denied', SocialLoginAttempt::query()->latest('id')->value('outcome'));
+        $this->assertSame($before, User::query()->count());
+    }
+
+    /**
+     * 가입 대기를 만든 뒤에 가입이 닫히면 가입 완료도 거절한다 — 대기 화면을 열어 둔 채 운영자가 닫은 경우.
+     *
+     * @scenario core_registration=closed_after_pending, account=new
+     *
+     * @effects core_registration_closed_refuses_pending_completion
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_registration_closed_refuses_pending_completion(): void
+    {
+        $email = $this->uniqueEmail('closed-later');
+        $signup = $this->beginSignup($this->kakaoProfile('k-closed-later', $email));
+
+        config(['g7_settings.core.security.registration_enabled' => false]);
+
+        $this->complete($signup['token'])
+            ->assertForbidden()
+            ->assertJsonPath('message', __('sirsoft-social_login::exceptions.flow.registration_closed'));
+        $this->assertFalse(User::query()->where('email', $email)->exists());
+        $this->assertFalse(SocialAccount::query()->where('provider_user_id', 'k-closed-later')->exists());
+    }
+
+    /**
+     * 가입이 닫혀도 이미 있는 회원은 그대로다 — 연결된 회원은 소셜로 로그인하고, 같은 이메일의 기존 회원은 연결 확인 단계로 간다.
+     *
+     * @scenario core_registration=closed, account=linked|existing_email
+     *
+     * @effects core_registration_closed_keeps_existing_members
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_registration_closed_keeps_existing_members(): void
+    {
+        config(['g7_settings.core.security.registration_enabled' => false]);
+
+        $linked = User::factory()->create(['email' => $this->uniqueEmail('closed-linked')]);
+        SocialAccount::query()->create(['user_id' => $linked->id, 'provider_key' => 'kakao', 'provider_user_id' => 'k-closed-linked', 'linked_at' => now()]);
+        $login = $this->redirectQuery($this->kakaoRoundTrip($this->kakaoProfile('k-closed-linked', $this->uniqueEmail())));
+        $this->assertArrayHasKey('login_handoff', $login);
+
+        $existing = User::factory()->create(['email' => $this->uniqueEmail('closed-exist')]);
+        $arrive = $this->redirectQuery($this->kakaoRoundTrip($this->kakaoProfile('k-closed-exist', $existing->email)));
+        $this->assertSame('existing', $arrive['social_step']);
     }
 
     /**

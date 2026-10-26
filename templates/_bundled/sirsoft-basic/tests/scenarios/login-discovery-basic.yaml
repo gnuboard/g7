@@ -1,0 +1,30 @@
+feature: 로그인 화면 식별자 칸 · 이메일 먼저 입력 (sirsoft-basic 1.3.0, 코어 7.2.0 B1①②)
+
+description: |
+  회사 계정(SSO·디렉터리) 로그인을 붙이는 사이트를 위한 로그인 화면 변경(`partials/auth/_login_form`).
+    - 식별자 칸: `_global.appConfig.auth.login_identifier.user` 가 `email_or_username` 이면 `type=text` + 「이메일 또는 사내 아이디」,
+      아니면 `type=email` + 「이메일」.
+    - 이메일 먼저 입력: 칸을 벗어날 때 값이 바뀌었으면(빈 값 제외) `POST /api/auth/login/discover`(`{identifier}`). `method=external` 이면
+      `_local.discovery` 로 비밀번호 칸·로그인 버튼을 숨기고 「{label}(으)로 계속」(redirect 쿼리 전달, 이름 없으면 「회사 계정으로 계속」)과
+      「다른 이메일로 로그인」(판정·기준값 초기화)을 보인다. `password` 판정이나 실패면 지금 화면.
+
+axes:
+  identifier_mode: [email, email_or_username]
+  discovery: [none, external, password, failed]
+
+exclusions:
+  - { identifier_mode: email_or_username, discovery: [external, password, failed], reason: "식별자 칸 종류(type·라벨)와 발견 판정 분기는 서로 독립이다 — 판정 분기는 email 칸에서 잰다" }
+
+effects:
+  - discovered_notice_shown
+  - identifier_field_is_email_by_default
+  - identifier_field_accepts_username
+  - discovery_external_swaps_password_for_continue
+  - discovery_continue_carries_redirect
+  - discovery_reset_restores_password_step
+  - discovery_password_keeps_current_screen
+  - discovery_skips_unchanged_value
+  - discovery_label_falls_back_across_locales
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/login-discovery.test.tsx

@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Drivers;
 
+use App\Support\LocalizedValue;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
@@ -83,7 +84,7 @@ abstract class AbstractOAuth2Driver implements ProviderDriverInterface
         $locale ??= app()->getLocale();
         $label = $this->config['label'] ?? [];
 
-        return (string) ($label[$locale] ?? $label['ko'] ?? $this->key());
+        return LocalizedValue::pick($label, $locale, false) ?? $this->key();
     }
 
     /**

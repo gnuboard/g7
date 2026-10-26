@@ -300,7 +300,7 @@ cleanup 로직은 정적 + 동적 식별자를 병합한 expected 목록을 기�
 `uninstallModule() / uninstallPlugin()` 은 `$deleteData` 파라미터로 데이터 삭제 범위를 분기한다:
 
 - `$deleteData=false` (기본): 권한·메뉴·역할 **보존** (재설치 시 사용자 역할 할당 복원 가능). 테이블/vendor/storage 도 보존.
-- `$deleteData=true`: 권한·메뉴·역할 + 테이블 + vendor + storage 전수 삭제.
+- `$deleteData=true`: 권한·메뉴·역할 + 테이블 + vendor + storage 전수 삭제. 그 확장이 소유한 역할은 다른 확장이 붙인 권한(`roles: ['*']` 등)·메뉴·회원 연결이 남아 있어도 떼고 지운다(7.2.0).
 
 동적 권한/역할/메뉴가 있는 모듈은 이 정책이 특히 중요하다. 사용자가 의도적으로 "데이터도 함께 삭제" 를 체크하지 않는 한 동적 엔티티는 유지된다.
 

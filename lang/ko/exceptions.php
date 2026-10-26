@@ -9,6 +9,7 @@ return [
     'cannot_delete_self' => '본인 계정은 관리자 화면에서 삭제할 수 없습니다. 탈퇴는 마이페이지에서 진행하세요.',
     'role_active_state_locked' => '최고관리자 역할은 사용 여부를 바꿀 수 없습니다. 끄면 모든 운영자의 관리 권한이 회수됩니다.',
     'login_method_required' => '외부 인증 로그인에는 로그인 수단 이름(login_method, 예 social:kakao)이 필요합니다.',
+    'external_step_redirect_not_same_origin' => '외부 자격 증명 검증자의 다음 단계 경로는 이 사이트 안의 경로(/로 시작)여야 합니다.',
 
     'circular_reference' => '레이아웃 순환 참조 감지: :trace',
     'max_depth_exceeded' => '레이아웃 중첩 깊이가 최대 허용 깊이(:max)를 초과했습니다.',

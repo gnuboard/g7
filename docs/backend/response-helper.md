@@ -65,7 +65,8 @@ ResponseHelper::error(
     int $statusCode = 400,
     mixed $errors = null,
     array $messageParams = [],
-    string $domain = 'core'
+    string $domain = 'core',
+    ?array $data = null                       // 7.2.0: 오류 응답에도 `data` 를 싣는다(안내 데이터 — 화면은 `errors` 쪽을 읽는다)
 );
 
 // 검증 오류

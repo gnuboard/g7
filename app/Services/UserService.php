@@ -6,8 +6,10 @@ use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enums\PasswordChangeSource;
 use App\Enums\UserStatus;
+use App\Exceptions\Auth\PasswordAuthDisallowedException;
 use App\Exceptions\CannotDeleteSelfException;
 use App\Exceptions\CannotDeleteSuperAdminException;
+use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\PermissionEscalationException;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
@@ -15,6 +17,7 @@ use App\Helpers\TimezoneHelper;
 use App\Models\ActivityLog;
 use App\Models\Attachment;
 use App\Models\User;
+use App\Services\Auth\PasswordAuthPolicyService;
 use App\Support\PermissionEscalationGuard;
 use App\Support\UserGradeGuard;
 use Exception;
@@ -91,10 +94,20 @@ class UserService
             HookManager::doAction('core.user.before_create', $data);
 
             // Filter 훅: 모듈이 자신의 데이터를 추출하고 코어 데이터에서 제거
+            $requestedSuper = $data['is_super'] ?? null;
             $data = HookManager::applyFilters('core.user.filter_create_data', $data);
 
+            // 최고관리자 지정은 요청한 값만 따른다 — 확장 필터가 끼워 넣은 `is_super` 는 되돌린다(7.2.0)
+            $data = $this->revertInjectedSuperFlag($data, $requestedSuper, 'core.user.filter_create_data', null);
+
+            // 「비밀번호 없이 만들기」 — 외부 인증(회사 계정)으로만 로그인할 회원을 미리 만든다(7.2.0). 검증이 비밀번호를 금지했다.
+            $withoutPassword = (bool) ($data['create_without_password'] ?? false);
+            unset($data['create_without_password']);
+
             // 비밀번호 해싱
-            if (isset($data['password'])) {
+            if ($withoutPassword) {
+                $data['password'] = null;
+            } elseif (isset($data['password'])) {
                 $data['password'] = Hash::make($data['password']);
             }
 
@@ -205,7 +218,25 @@ class UserService
             HookManager::doAction('core.user.before_update', $user, $data);
 
             // Filter 훅: 모듈이 자신의 데이터를 추출하고 코어 데이터에서 제거
+            $requestedSuper = $data['is_super'] ?? null;
             $data = HookManager::applyFilters('core.user.filter_update_data', $data, $user);
+
+            // 최고관리자 지정은 요청한 값만 따른다 — 확장 필터가 끼워 넣은 `is_super` 는 되돌린다(7.2.0)
+            $data = $this->revertInjectedSuperFlag($data, $requestedSuper, 'core.user.filter_update_data', $user);
+
+            // 비밀번호를 정하는 요청은 비밀번호 인증 정책을 묻는다(7.2.0) — 회사 계정 로그인이 강제된 회원에게 비밀번호를 만들어
+            // 주면 강제를 우회하는 길이 된다. 본인이면 `set_password`, 관리자가 남의 비밀번호를 정하면 `admin_set_password`.
+            if (! empty($data['password'])) {
+                $actor = Auth::user();
+                $byOther = $actor instanceof User && (int) $actor->getKey() !== (int) $user->getKey();
+
+                app(PasswordAuthPolicyService::class)->assertAllowed([
+                    'identifier' => (string) $user->email,
+                    'user' => $user,
+                    'guard' => $byOther ? 'admin' : 'user',
+                    'purpose' => $byOther ? 'admin_set_password' : 'set_password',
+                ]);
+            }
 
             // 비밀번호 만료 설정(#736)을 비워 보내면 저장하지 않는다 — 컬럼은 NOT NULL 기본 'inherit' 이고, null 은 "바꾸지 않음" 이다.
             if (array_key_exists('password_expiry_policy', $data) && $data['password_expiry_policy'] === null) {
@@ -390,6 +421,11 @@ class UserService
                 throw $e;
             }
 
+            // 비밀번호 인증 정책 거절은 그대로 전파해 화면이 「회사 계정으로 로그인」 안내를 그리게 한다(403).
+            if ($e instanceof PasswordAuthDisallowedException) {
+                throw $e;
+            }
+
             // 권한 상승 상한 위반은 그대로 전파해 컨트롤러가 403 으로 매핑하도록 한다
             // (일반 실패로 감싸면 422 로 잘못 내려간다).
             if ($e instanceof PermissionEscalationException) {
@@ -524,6 +560,11 @@ class UserService
             }
 
             if ($e instanceof CannotDeleteSuperAdminException) {
+                throw $e;
+            }
+
+            // 비밀번호 인증 정책 거절은 그대로 전파해 화면이 「회사 계정으로 로그인」 안내를 그리게 한다(403).
+            if ($e instanceof PasswordAuthDisallowedException) {
                 throw $e;
             }
 
@@ -827,6 +868,169 @@ class UserService
         ]);
 
         return $user;
+    }
+
+    /**
+     * 회원을 차단합니다 — 이미 차단된 회원이어도 남은 토큰을 전부 회수한다.
+     *
+     * 외부 인증 확장(프로비저닝·퇴사 처리)과 운영 도구가 쓰는 공개 진입점이다. 행위자가 없는 시스템 경로(스케줄·외부 API)도
+     * 부를 수 있고, 최고관리자는 대상이 될 수 없다. 액션 `core.user.after_block` 으로 활동 로그가 남는다.
+     *
+     * @param  User  $user  차단할 회원
+     * @param  array{reason_key?: string, source?: string}  $context  사유 문구 키와 출처 (활동 로그·훅에 실린다)
+     * @return User 갱신된 회원
+     *
+     * @throws CannotModifySuperAdminException 대상이 최고관리자이거나 행위자가 대상보다 낮은 등급일 때
+     *
+     * @since 7.2.0
+     */
+    public function blockUser(User $user, array $context = []): User
+    {
+        $this->assertNotSuperAdminTarget($user);
+
+        $context = $this->normalizeBlockContext($context);
+
+        DB::transaction(function () use ($user) {
+            if ($user->status !== UserStatus::Blocked->value) {
+                $this->userRepository->update($user, array_merge(
+                    ['status' => UserStatus::Blocked->value],
+                    UserStatus::Blocked->transitionTimestamps(),
+                ));
+            }
+
+            // 이미 차단이어도 회수한다 — 차단 뒤에 남은 토큰(다른 경로로 받은 것)으로 계속 쓰지 못하게.
+            $this->userRepository->deleteAllAccessTokens($user);
+        });
+
+        $user = $user->fresh();
+
+        HookManager::doAction('core.user.after_block', $user, $context);
+
+        return $user;
+    }
+
+    /**
+     * 회원 차단을 풉니다 — 활성 상태로 되돌리고 차단 시각을 비운다.
+     *
+     * @param  User  $user  차단을 풀 회원
+     * @param  array{reason_key?: string, source?: string}  $context  사유 문구 키와 출처
+     * @return User 갱신된 회원
+     *
+     * @throws CannotModifySuperAdminException 행위자가 대상보다 낮은 등급일 때
+     *
+     * @since 7.2.0
+     */
+    public function unblockUser(User $user, array $context = []): User
+    {
+        UserGradeGuard::assertActorMayModify($user);
+
+        $context = $this->normalizeBlockContext($context);
+
+        $this->userRepository->update($user, array_merge(
+            ['status' => UserStatus::Active->value],
+            UserStatus::Active->transitionTimestamps(),
+        ));
+
+        $user = $user->fresh();
+
+        HookManager::doAction('core.user.after_unblock', $user, $context);
+
+        return $user;
+    }
+
+    /**
+     * 회원을 모든 기기에서 로그아웃시킵니다 (관리자의 강제 로그아웃).
+     *
+     * 토큰을 전부 지운다 — 개발자 화면 웹 세션은 짝 토큰이 사라지면 다음 요청에서 스스로 무효가 된다(`ScreenAuth::user()`).
+     * 하위 관리자는 최고관리자를 대상으로 하지 못한다(등급 가드).
+     *
+     * @param  User  $user  대상 회원
+     * @param  User|null  $actor  행위자 (null 이면 시스템 — 외부 인증 확장의 퇴사 처리 등)
+     * @return int 지운 토큰 수
+     *
+     * @throws CannotModifySuperAdminException 행위자가 대상보다 낮은 등급일 때
+     *
+     * @since 7.2.0
+     */
+    public function revokeAllSessions(User $user, ?User $actor = null): int
+    {
+        UserGradeGuard::assertActorMayModify($user, $actor);
+
+        $count = $this->userRepository->deleteAllAccessTokens($user);
+
+        HookManager::doAction('core.user.after_sessions_revoked', $user, $actor, ['count' => $count]);
+
+        return $count;
+    }
+
+    /**
+     * 최고관리자는 차단 대상이 될 수 없음을 확인합니다 (등급 가드 포함).
+     *
+     * @param  User  $user  대상 회원
+     * @return void
+     *
+     * @throws CannotModifySuperAdminException 대상이 최고관리자이거나 행위자가 대상보다 낮은 등급일 때
+     */
+    private function assertNotSuperAdminTarget(User $user): void
+    {
+        UserGradeGuard::assertActorMayModify($user);
+
+        if ((bool) $user->is_super) {
+            throw new CannotModifySuperAdminException;
+        }
+    }
+
+    /**
+     * 확장 필터가 바꿔 넣은 최고관리자 지정(`is_super`)을 요청한 값으로 되돌립니다.
+     *
+     * `is_super` 는 모델의 대량 할당 대상이라 회원 생성·수정 데이터 필터를 거치면 확장이 최고관리자를 만들 수 있다. 최고관리자
+     * 지정은 관리자 화면 요청(검증·권한·등급 가드를 거친 값)만 정한다 — 필터 결과가 다르면 되돌리고 경고를 남긴다.
+     *
+     * @param  array<string, mixed>  $data  필터를 거친 데이터
+     * @param  mixed  $requested  필터 전 `is_super` (요청에 없으면 null)
+     * @param  string  $filter  필터 이름 (경고 기록용)
+     * @param  User|null  $user  수정 대상 회원 (생성이면 null)
+     * @return array<string, mixed> 되돌린 데이터
+     */
+    private function revertInjectedSuperFlag(array $data, mixed $requested, string $filter, ?User $user): array
+    {
+        if (! array_key_exists('is_super', $data)) {
+            return $data;
+        }
+
+        if ($requested !== null && (bool) $data['is_super'] === (bool) $requested) {
+            return $data;
+        }
+
+        Log::warning('회원 데이터 필터가 최고관리자 지정을 바꿔 넣어 되돌렸습니다', [
+            'filter' => $filter,
+            'user_id' => $user?->getKey(),
+        ]);
+
+        if ($requested === null) {
+            unset($data['is_super']);
+        } else {
+            $data['is_super'] = $requested;
+        }
+
+        return $data;
+    }
+
+    /**
+     * 차단 문맥을 정리합니다 (알려진 키만, 문자열 길이 제한).
+     *
+     * @param  array<string, mixed>  $context  호출자 문맥
+     * @return array{reason_key: string|null, source: string|null} 정리한 문맥
+     */
+    private function normalizeBlockContext(array $context): array
+    {
+        $reason = $context['reason_key'] ?? null;
+        $source = $context['source'] ?? null;
+
+        return [
+            'reason_key' => is_string($reason) && $reason !== '' ? mb_substr($reason, 0, 100) : null,
+            'source' => is_string($source) && $source !== '' ? mb_substr($source, 0, 100) : null,
+        ];
     }
 
     /**

@@ -61,6 +61,8 @@ interface MobileNavProps {
   boards?: Board[];
   /** 장바구니 아이템 수 */
   cartCount?: number;
+  /** 일반 회원가입을 받는지 — false 면 회원가입 버튼을 숨긴다 (기본 true, 7.2.0) */
+  registrationEnabled?: boolean;
 }
 
 /**
@@ -86,6 +88,7 @@ const MobileNav: React.FC<MobileNavProps> = ({
   user,
   boards = [],
   cartCount = 0,
+  registrationEnabled = true,
 }) => {
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -190,13 +193,15 @@ const MobileNav: React.FC<MobileNavProps> = ({
               >
                 {t('auth.login')}
               </LinkButton>
-              <LinkButton
-                href={'/register'}
-                onNavigate={() => { onClose(); navigate('/register'); }}
-                className="flex-1 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer"
-              >
-                {t('auth.register')}
-              </LinkButton>
+              {registrationEnabled && (
+                <LinkButton
+                  href={'/register'}
+                  onNavigate={() => { onClose(); navigate('/register'); }}
+                  className="flex-1 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer"
+                >
+                  {t('auth.register')}
+                </LinkButton>
+              )}
             </Div>
           </Div>
         )}

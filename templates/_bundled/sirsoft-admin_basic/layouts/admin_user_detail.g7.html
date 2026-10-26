@@ -65,6 +65,14 @@
             <icon name="unlock" class="text-base"/>
             <span>$t:admin.users.detail.unlock</span>
           </button>
+          <!-- 모든 기기에서 로그아웃(7.2.0) — 그 회원의 로그인 토큰을 전부 지운다. 확인 창을 거친다. 회원 수정 권한이 있어야 누를 수 있다. -->
+          <button type="button" data-ref="header_revoke_sessions_button" disabled="{{user?.data?.abilities?.can_update !== true}}" class="flex-center gap-2 btn btn-secondary">
+            <on type="click">
+              <open-modal target="revoke_sessions_confirm_modal"/>
+            </on>
+            <icon name="arrow-right-from-bracket" class="text-base"/>
+            <span>$t:admin.users.detail.revoke_sessions.button</span>
+          </button>
         </div>
       </div>
       <tab-navigation-scroll data-type="composite" data-ref="user_detail_tabs" class="sticky-tab-nav tab-nav-default" activeTabId="{{_local.activeTab ?? 'basic_info'}}" :enableScrollSpy="true" :scrollSpyOffset="56" sectionIdPrefix="">
@@ -363,4 +371,42 @@
       <div data-ref="extension_tab_content" class="tab-content mt-6"/>
     </div>
   </slot>
+  <modal>
+    <!-- 모든 기기에서 로그아웃 확인 창(7.2.0). 성공하면 그 회원의 다음 요청부터 로그인이 풀린다. -->
+    <modal data-type="composite" data-ref="revoke_sessions_confirm_modal" title="$t:admin.users.detail.revoke_sessions.confirm_title" size="sm">
+      <meta editor_label="$t:admin.users.detail.revoke_sessions.confirm_title"/>
+      <div class="py-2">
+        <p class="text-gray-700 dark:text-gray-300">$t:admin.users.detail.revoke_sessions.confirm_message</p>
+      </div>
+      <div class="modal-footer-buttons">
+        <button type="button" class="btn btn-secondary" disabled="{{_global.isRevokingSessions}}">
+          <on type="click">
+            <close-modal/>
+          </on>
+          <span>$t:common.cancel</span>
+        </button>
+        <button type="button" data-ref="revoke_sessions_confirm_button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white dark:text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRevokingSessions}}">
+          <on type="click">
+            <!-- 모든 세션을 끊고 모달을 닫는다 — 진행 표시는 성공·실패 양쪽에서 끈다 -->
+            <sequence>
+              <set-state target="global" :isRevokingSessions="true"/>
+              <api-call :auth_required="true" target="/api/admin/users/{{route?.id}}/sessions/revoke" method="POST">
+                <success>
+                  <set-state target="global" :isRevokingSessions="false"/>
+                  <toast type="success" message="$t:admin.users.detail.revoke_sessions.success"/>
+                  <close-modal/>
+                </success>
+                <fail>
+                  <set-state target="global" :isRevokingSessions="false"/>
+                  <toast type="error" message="{{error.message}}"/>
+                </fail>
+              </api-call>
+            </sequence>
+          </on>
+          <icon data-if="{{_global.isRevokingSessions}}" name="spinner" :spin="true" class="text-sm"/>
+          <span>$t:admin.users.detail.revoke_sessions.confirm</span>
+        </button>
+      </div>
+    </modal>
+  </modal>
 </layout>

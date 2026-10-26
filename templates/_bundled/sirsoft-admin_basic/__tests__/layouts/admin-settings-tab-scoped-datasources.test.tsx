@@ -107,7 +107,12 @@ describe('admin_settings — 데이터소스 탭 스코프 게이팅', () => {
       if (n.handler === 'sequence' && callbacksOf(n, 'actions').length > 0) seqs.push(n);
       Object.values(n).forEach(walk);
     };
-    walk(layout);
+    // 사용자가 탭을 바꾸는 이벤트만 모은다 — 진입 때 init 의 정리 시퀀스는 탭 전환이 아니다. 앱 키 재생성 창 복귀(7.2.0)는
+    // 주소에 이미 `tab=security` 가 있어 탭 전용 소스의 if 가 처음부터 참이고, `replace-url` 은 한 번 쓰는 토큰만 주소에서 지운다.
+    // 여기서 navigate 로 다시 이동하면 본문이 다시 마운트돼 다시 연 창의 토큰이 지워진다(M0 실측 — 재마운트 정리). init 쪽 탭
+    // 정정(알 수 없는 탭 키)은 아래 별도 시험이 navigate replace:true 를 잠근다.
+    const { init_actions: _init, ...userSurface } = layout;
+    walk(userSurface);
 
     const tabSwitches = seqs.filter(s =>
       (callbacksOf(s, 'actions') as AnyJson[]).some(

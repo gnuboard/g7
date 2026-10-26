@@ -1,0 +1,79 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: SCIM 꺼짐과 PATCH 연산)이 대부분이라 명목상이다.
+feature: sso_deprovisioning
+description: |
+  퇴사와 재활성 — 차단+토큰 회수, 겸직 보존, 최고관리자 토큰만 회수, 재활성(SCIM·주기 점검·로그인, 다시 차단한 회원 보존), 주기 점검(LDAP·OIDC·SAML 보조 디렉터리, 상한, 장애 오판 금지), N일 뒤 탈퇴, 시스템 작업 문맥, 스케줄·표 선언, 회원 삭제 정리, 보존 정리.
+axes:
+  other_active_link: [none, exists]
+  member_status: [already_blocked]
+  protocol: [ldap, oidc, saml]
+  entry: ["missing|disabled|active", missing, disabled, active]
+  directory: [unavailable]
+  batch: [2]
+  accounts: [3]
+  refresh: ["ok|invalid_grant", ok, invalid_grant]
+  periodic: ["off|no_refresh_token", "off", no_refresh_token]
+  lookup_directory: [none, "disabled|not_ldap", disabled, not_ldap]
+  declaration: [schedules, tables]
+  user_action: [delete]
+  retention: [default]
+  path: [scim, periodic, login, "scim_patch|deprovision|withdraw", scim_patch, deprovision, withdraw, attribute_sync]
+  blocked_by: [this_link, admin_after]
+  deprovision_reason: [periodic]
+  lookup_match: [email, subject]
+  target: [super_admin, admin]
+  days: [1]
+  as_of: ["before|after", before, after]
+  state: ["reactivated|reblocked|disabled_idp", reactivated, reblocked, disabled_idp]
+  env: [production]
+  option: [as_of]
+effects:
+  - member_blocked
+  - tokens_zero
+  - blocked_user_at_recorded
+  - after_deprovision_once
+  - member_kept_active
+  - idp_sessions_ended
+  - other_idp_session_kept
+  - blocked_user_at_null
+  - deprovisioned_periodic
+  - kept_active
+  - idp_checked_at
+  - no_deprovision
+  - failed_counted
+  - split_over_runs
+  - refresh_rotated
+  - no_token_stored
+  - not_judged
+  - not_checked
+  - four_schedules
+  - provisioning_tables_before_core
+  - provisioning_rows_deleted
+  - no_fk_error
+  - old_rows_pruned
+  - recent_rows_kept
+  - member_unblocked
+  - account_active
+  - member_still_blocked
+  - account_inactive
+  - handoff_issued
+  - deprovisioned_by_directory
+  - lookup_by_subject
+  - member_not_blocked
+  - super_admin_hook_once
+  - system_operation_active
+  - member_withdrawn
+  - link_removed
+  - member_kept
+  - admin_skipped
+  - notice_once
+  - no_super_admin_notice
+  - command_refused
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Provisioning/DeprovisionServiceTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Provisioning/PeriodicCheckTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Provisioning/ProvisioningMaintenanceTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Provisioning/ReactivationTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Provisioning/SamlLookupDirectoryPeriodicTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Provisioning/SuperAdminDeprovisionTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Provisioning/SystemOperationScopeTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Provisioning/WithdrawAfterDaysTest.php

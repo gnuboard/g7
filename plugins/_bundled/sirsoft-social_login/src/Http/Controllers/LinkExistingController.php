@@ -6,6 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
 use Plugins\Sirsoft\SocialLogin\Exceptions\SocialFlowException;
+use Plugins\Sirsoft\SocialLogin\Http\Controllers\Concerns\AttachesHandoffCookie;
 use Plugins\Sirsoft\SocialLogin\Http\Controllers\Concerns\RespondsWithFlowErrors;
 use Plugins\Sirsoft\SocialLogin\Http\Requests\LinkExistingRequest;
 use Plugins\Sirsoft\SocialLogin\Http\Requests\PendingSignupRequest;
@@ -24,6 +25,7 @@ use Plugins\Sirsoft\SocialLogin\Services\SignupFlowService;
  */
 class LinkExistingController extends PublicBaseController
 {
+    use AttachesHandoffCookie;
     use RespondsWithFlowErrors;
 
     /**
@@ -49,7 +51,7 @@ class LinkExistingController extends PublicBaseController
             if ($request->validated('method') === 'password') {
                 $data = $this->linkExisting->confirmWithPassword($request->pendingToken(), (string) $request->validated('password'));
 
-                return ResponseHelper::pluginSuccess('sirsoft-social_login', 'messages.link_existing.linked', $data);
+                return $this->successWithHandoffCookie('messages.link_existing.linked', $data);
             }
 
             $data = $this->linkExisting->requestEmailCode($request->pendingToken());
@@ -71,7 +73,7 @@ class LinkExistingController extends PublicBaseController
         try {
             $data = $this->linkExisting->confirmWithEmailCode($request->pendingToken(), (string) $request->validated('challenge_id'), (string) $request->validated('code'));
 
-            return ResponseHelper::pluginSuccess('sirsoft-social_login', 'messages.link_existing.linked', $data);
+            return $this->successWithHandoffCookie('messages.link_existing.linked', $data);
         } catch (SocialFlowException $e) {
             return $this->flowError($e);
         }

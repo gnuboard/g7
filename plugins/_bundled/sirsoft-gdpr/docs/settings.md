@@ -39,7 +39,7 @@
 "설정이 저장되지 않는다" 는 증상만 보입니다. 그래서 화면의 안내 박스가 이 사실과 항목 이름을
 찾는 방법을 함께 설명합니다.
 
-`necessary_storage_locked`(`auth_token` · `XSRF-TOKEN` · 세션 쿠키 · `gdpr_session`)는 **설정이
+`necessary_storage_locked`(`auth_token` · `XSRF-TOKEN` · 세션 쿠키 · `gdpr_session` · 코어 로그인 인계 묶음 쿠키 `g7_login_bind`)는 **설정이
 아닙니다.** 스키마에 없으므로 저장 요청에 담아도 반영되지 않고, 코드가 판정 시점에 운영자
 목록과 합쳐 적용합니다. 없으면 사이트가 서지 못하는 항목이라 지울 수 있으면 안 되기 때문이며,
 세션 쿠키 이름은 `session.cookie` 설정에서 런타임 해석됩니다.

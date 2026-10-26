@@ -1,0 +1,42 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: SCIM 꺼짐과 PATCH 연산)이 대부분이라 명목상이다.
+feature: sso_role_mapping
+description: |
+  IdP 그룹 → 역할 매핑 — managed_only·authoritative·first_only, 수동 역할 보존, 최고관리자 불변, 그룹 비교(대소문자, LDAP DN), 로그인 적용, 최고관리자 전용 설정 검사, 일괄 역할 훅만 발화.
+axes:
+  change: ["add|remove", add, remove]
+  actor: ["delegate|super", delegate, super]
+  rule_role: ["admin|plain", admin, plain]
+  linked_admin: ["yes|no", "yes", "no"]
+  field: ["role_sync_mode|group_source", role_sync_mode, group_source]
+  mode: [managed_only, authoritative, first_only]
+  manual_role: ["none|same", none, same]
+  trigger: ["created|update", created, update, login]
+  target: [super_admin]
+  group_case_sensitive: ["false|true", "false", "true"]
+  group: [DN]
+  groups: [assertion]
+effects:
+  - bulk_hooks_fired
+  - single_hook_not_fired
+  - after_sync_identifiers
+  - after_sync_idp
+  - forbidden_for_delegate_admin_rule
+  - allowed_plain_rule
+  - forbidden_for_delegate
+  - allowed_without_admin
+  - role_added_and_recorded
+  - role_removed
+  - manual_role_kept
+  - manual_role_removed
+  - base_role_kept
+  - added_on_create_only
+  - roles_unchanged
+  - skip_activity_logged
+  - matched_case_insensitive
+  - not_matched_case_sensitive
+  - dn_cn_matched
+  - role_added_on_login
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Roles/BulkRolesHookTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Roles/RoleSyncModeSuperOnlyTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Roles/RoleSyncTest.php

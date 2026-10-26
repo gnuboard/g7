@@ -791,7 +791,7 @@
       "editor_label": "ショップの個人情報保有期間の職権実行"
     }
   },
-  "save_pending_form": "追加中の :forms フォームを先に追加ボタンで確定するか、キャンセルしてから保存してください。",
+  "save_pending_form": "追加中の {forms} フォームを先に追加ボタンで確定するか、キャンセルしてから保存してください。",
   "save_pending_form_targets": {
     "exchange_reason": "交換理由",
     "return_reason": "返品理由",

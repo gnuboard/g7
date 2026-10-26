@@ -331,7 +331,10 @@
         "ip_address": "IP Address",
         "country_select": "Select Country",
         "country_search": "Search country...",
-        "lock_status": "Account lock status"
+        "lock_status": "Account lock status",
+        "create_without_password": "Create without password (external sign-in only)",
+        "create_without_password_hint": "Creates the member without a password. The member signs in through external authentication and can set a password later with Forgot Password if needed.",
+        "locked_by_company": "Managed by your company account"
       },
       "verification": {
         "method": "Verification Method",
@@ -392,6 +395,10 @@
         "reauth_confirm": "Verify",
         "reauth_verified": "Verified. Saving will set the password.",
         "reauth_code_sent": "We sent a verification code to your email.",
+        "reauth_code_sent_generic": "We sent you a verification code.",
+        "reauth_notice_other": "This account has no password. To set a password for the first time, click Start verification and verify yourself with a method available to this account (such as signing in again with your company account).",
+        "reauth_start": "Start verification",
+        "reauth_external_failed": "We could not open the verification page. Please try again later.",
         "expiry": "Password expiry",
         "expiry_inherit": "Follow role and site settings",
         "expiry_apply": "Apply",
@@ -466,6 +473,13 @@
         "not_set": "Not set",
         "not_set_hint": "This member signed up only with external sign-in (such as social login) and has no password. Password expiry does not apply.",
         "policy": "Expiry setting"
+      },
+      "revoke_sessions": {
+        "button": "Sign out of all devices",
+        "confirm_title": "Sign out of all devices",
+        "confirm_message": "This signs the member out on every device. The member will need to sign in again. Continue?",
+        "confirm": "Sign out",
+        "success": "Signed the member out of all devices"
       }
     },
     "filter": {
@@ -2196,6 +2210,11 @@
         "days_hint": "{{min}}–{{max}} days. It cannot be shorter than the legal minimum.",
         "legal_notice": "Legal minimum: access records 1 year (2 years with 50,000+ members or when processing unique identifiers or sensitive data) · Permission and role change records are kept at least 3 years regardless of this value.",
         "schedule_notice": "Activity logs past the period are removed by a cleanup schedule."
+      },
+      "registration": {
+        "title": "Sign-up",
+        "enabled": "Allow self sign-up",
+        "enabled_desc": "When off, the sign-up page, public sign-up and new social sign-ups are closed. Existing members can still sign in and link social accounts, and accounts added by administrators or created by external authentication extensions are still created."
       }
     },
     "identity": {
@@ -2776,6 +2795,11 @@
       "reauth_request_code": "Get code",
       "reauth_resend_code": "Resend code",
       "reauth_code_sent": "We sent a verification code to your email.",
+      "reauth_code_sent_generic": "We sent you a verification code.",
+      "reauth_notice_other": "This account has no password. Click Start verification and verify yourself with a method available to this account (such as signing in again with your company account) before regenerating.",
+      "reauth_start": "Start verification",
+      "reauth_external_failed": "We could not open the verification page. Please try again later.",
+      "reauth_verified": "Verification complete. Click [Regenerate Key] to create a new app key.",
       "reauth_code_placeholder": "6-digit code",
       "cache_delete_title": "Confirm Cache Deletion",
       "cache_delete_confirm": "Are you sure you want to clear all cache?",

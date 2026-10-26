@@ -238,7 +238,8 @@ HTTP/1.1 200
 | name | body | string | 예 | max 255 | 대상의 이름/명칭 |
 | nickname | body | string | 아니오 | max 50 | 닉네임 |
 | email | body | email | 예 | max 255 | 이메일 주소 |
-| password | body | string | 예 | 보안 설정의 작성 규칙 | 비밀번호 — 관리자가 정해 준 비밀번호라 재사용 검사를 하지 않고, 회원은 다음 로그인 때 바꿔야 한다(#736) |
+| create_without_password | body | boolean | 아니오 | — | 비밀번호 없이 만들기(7.2.0 — 외부 인증 전용 회원). 참이면 `password` 를 보내면 422(`prohibited`), 회원은 `has_password=false` 로 만들어진다 |
+| password | body | string | `create_without_password` 가 거짓이면 예 | 보안 설정의 작성 규칙 | 비밀번호 — 관리자가 정해 준 비밀번호라 재사용 검사를 하지 않고, 회원은 다음 로그인 때 바꿔야 한다(#736) |
 | password_expiry_policy | body | string | 아니오 | `inherit`, `apply`, `exempt` | 비밀번호 만료 개별 설정 (따름·적용·제외, 미지정 시 따름 — #736) |
 | language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
@@ -339,6 +340,7 @@ _단건 응답: `data` 객체의 필드 (생성된 사용자 — `UserResource::
 | last_login_at | string\|null | `null` | 마지막 로그인 일시 (신규 생성 시 null) |
 | email_verified_at | string\|null | `null` | 이메일 인증 일시 (미인증 시 null) |
 | has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked` |
 | email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 |
 | created_at | string | `2026-07-08 10:41:24` | 생성 일시 |
@@ -700,6 +702,7 @@ _단건 응답: `data` 객체의 필드._
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
 | has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked` |
 | email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | created_at | string | `2026-07-30 23:37:44` | 생성 일시 |
@@ -816,6 +819,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | last_login_at | null | `null` | last login 일시 |
 | email_verified_at | string | `2026-08-04 16:57:08` | email verified 일시 |
 | has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked` |
 | email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | created_at | string | `2026-08-04 16:57:09` | 생성 일시 |
@@ -970,6 +974,7 @@ _목록 응답: `data[]` 배열 항목의 필드 (페이지네이션 없는 단�
 | last_login_at | string\|null | `2026-07-07 10:41:24` | 마지막 로그인 일시 (미로그인 시 null) |
 | email_verified_at | string\|null | `2026-07-08 10:41:24` | 이메일 인증 일시 (미인증 시 null) |
 | has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked` |
 | email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 |
 | created_at | string | `2026-07-08 10:41:24` | 생성 일시 |
@@ -1224,6 +1229,7 @@ _단건 응답: `data` 객체의 필드._
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
 | has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked`. 상세 응답에만 싣는다 — 관리자 회원 목록 행에는 없다(행마다 필터를 부르지 않게) |
 | email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | modules_count | integer | `0` | modules 개수 (집계) |
@@ -1538,6 +1544,7 @@ _단건 응답: `data` 객체의 필드 (수정된 사용자 — `UserResource::
 | last_login_at | string\|null | `2026-07-07 10:41:24` | 마지막 로그인 일시 (미로그인 시 null) |
 | email_verified_at | string\|null | `2026-07-08 10:41:24` | 이메일 인증 일시 (미인증 시 null) |
 | has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked` |
 | email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 |
 | created_at | string | `2026-07-08 10:41:24` | 생성 일시 |
@@ -1610,6 +1617,51 @@ HTTP/1.1 200
 기존 사용자 정보를 수정합니다(경로 파라미터는 UUID 로 바인딩). `name`, `email` 은 필수이며 `email` 은 해당 사용자를 제외한 고유성 검사를 거친다. `password` 는 선택이며 값을 주면 보안 설정의 작성 규칙·`password_confirmation` 확인을 요구한다(미전송 시 기존 비밀번호 유지). 역할은 `roles` 또는 `role_ids` 중 하나로 지정하고 둘 다 오면 `role_ids` 가 우선한다. 성공 시 갱신된 사용자를 `UserResource` 로 반환한다. `notify_*`/`marketing_consent`/`third_party_consent`/`info_disclosure`/`email_subscription` 파라미터는 확장(sirsoft-marketing)이 검증 규칙을 주입한 필드로, 상세는 해당 확장 문서를 참조한다. `ecommerce_preferred_currency`(결제 통화)·`ecommerce_preferred_shipping_country`(배송국가)는 sirsoft-ecommerce 가 같은 방식으로 주입한 필드로, 관리자 회원 수정 화면이 이 요청 한 번에 함께 보낸다 — 이커머스가 검증(등록 통화·활성 국가, 값이 바뀔 때만 이커머스 관리 권한)과 저장을 같은 요청 안에서 처리하고, 오류는 그 필드 이름 키로 돌아온다.
 
 
+### POST /api/admin/users/{user}/sessions/revoke
+<!-- @generated:start:api.admin.users.sessions.revoke -->
+- **라우트명**: `api.admin.users.sessions.revoke`
+- **컨트롤러**: `AppHttpControllersApiAdminUserController@revokeSessions`
+- **인증/권한**: `auth:sanctum` + `permission:core.users.update`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| user | path | string | 예 | — | 대상 user 의 UUID |
+
+**요청 예시**
+
+```http
+POST /api/admin/users/a26219fc-94a0-4f63-9404-04c2a6ac99e4/sessions/revoke HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "그 회원을 모든 기기에서 로그아웃시켰습니다.",
+    "data": null
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthorized | 인증 토큰 없음·무효 |
+| 403 | Forbidden | 권한 없음, 또는 하위 관리자가 최고관리자를 대상으로 함(등급 검사) |
+| 404 | Not Found | 회원 없음 |
+
+<!-- @generated:end -->
+
+**설명**
+
+회원 상세 「모든 기기에서 로그아웃」(7.2.0). 그 회원의 토큰을 전부 지운다 — 대상의 다음 API 요청은 401 이고, 같은 서버 개발자 화면의 웹 세션도 짝 토큰이 사라져 다음 요청에서 무효가 된다. 액션 `core.user.after_sessions_revoked`, 활동 로그 `user.sessions_revoked`.
+
 ### POST /api/admin/users/{user}/unlock
 <!-- @generated:start:api.admin.users.unlock -->
 - **라우트명**: `api.admin.users.unlock`
@@ -1660,6 +1712,7 @@ _단건 응답: `data` 객체의 필드._
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
 | has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| locked_fields | array | `[]` | 외부 인증 확장이 관리하는 칸 이름(7.2.0 — `core.user.locked_fields`, 허용 이름 `name`·`nickname`·`mobile`·`phone`·`language`·`email`). 이 칸을 다른 값으로 보내면 422 `user.field_locked` |
 | email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | created_at | string | `2026-07-30 23:37:44` | 생성 일시 |

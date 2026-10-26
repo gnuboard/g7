@@ -241,6 +241,25 @@ class RoleRepository implements RoleRepositoryInterface
     }
 
     /**
+     * 역할의 권한·메뉴·회원 연결을 모두 떼고 역할을 삭제합니다.
+     *
+     * 연결 해제와 삭제를 한 트랜잭션으로 묶는다 — 중간에 실패하면 회원이 권한만 잃고 역할이 남는다(CASCADE 에 기대지 않는다).
+     *
+     * @param  Role  $role  삭제할 역할 모델
+     * @return bool 삭제 성공 여부
+     */
+    public function deleteWithRelations(Role $role): bool
+    {
+        return DB::transaction(function () use ($role) {
+            $role->permissions()->detach();
+            $role->menus()->detach();
+            $role->users()->detach();
+
+            return (bool) $role->delete();
+        });
+    }
+
+    /**
      * 확장이 소유한 역할을 식별자로 찾습니다.
      *
      * @param  string  $identifier  역할 식별자

@@ -9,6 +9,7 @@ return [
     'cannot_delete_self' => 'You cannot delete your own account from the admin screen. Withdraw from My Page instead.',
     'role_active_state_locked' => 'The administrator role cannot be turned off. Turning it off would revoke the admin permissions of every operator.',
     'login_method_required' => 'External authentication login requires a login method name (login_method, e.g. social:kakao).',
+    'external_step_redirect_not_same_origin' => 'The next-step path of an external credential verifier must be a path on this site (starting with /).',
 
     'circular_reference' => 'Layout circular reference detected: :trace',
     'max_depth_exceeded' => 'Layout nesting depth exceeds maximum allowed depth (:max).',

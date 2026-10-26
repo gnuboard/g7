@@ -365,7 +365,7 @@ return [
         'list_record_updated' => 'Record file updated (:count not placed).',
         'place_done' => 'Placed: :label',
         'place_already' => 'Already on disk, skipped: :label',
-        'place_summary' => 'Placed :count bundles. Install them from the admin screen or with php artisan {module|plugin|template}:install.',
+        'place_summary' => 'Placed :count bundles. Install them from the admin screen or with php artisan module:install, plugin:install or template:install.',
         'prune_preview_title' => 'Prune preview (nothing deleted — use --force to delete):',
         'prune_none' => 'There are no bundles to prune.',
         'prune_removed' => 'Deleted: :label',
@@ -377,10 +377,10 @@ return [
         'prune_protected_dependency' => 'Kept as a dependency: :label (:required_by)',
         'prune_no_release_for_modified' => 'No release is available to check for modifications — add --include-modified to delete regardless of modifications.',
         'prune_summary' => 'Deleted :count bundles.',
-        'unknown_action' => 'Unknown action: :action (list|place|prune)',
+        'unknown_action' => 'Unknown action: :action (list, place, prune)',
 
         'errors' => [
-            'unknown_type' => 'Unknown bundle type: :type (module|plugin|template|language_pack)',
+            'unknown_type' => 'Unknown bundle type: :type (module, plugin, template, language_pack)',
             'not_in_release' => 'Not an official bundle in the release: :identifier',
             'ambiguous' => 'Identifier :identifier exists in several types. Specify it with a type: :candidates',
             'version_mismatch' => 'The release core version (:source) differs from the current core version (:current). Specify a release of the same version.',

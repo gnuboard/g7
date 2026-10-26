@@ -23,6 +23,7 @@ use App\Models\User;
 use App\Services\IdentityPolicyService;
 use App\Services\IdentityVerificationService;
 use App\Support\LocalizedValue;
+use App\Support\SameOriginPath;
 use App\Support\ScreenUrl;
 use App\Support\SiteUrl;
 use Illuminate\Http\JsonResponse;
@@ -85,6 +86,8 @@ class IdentityVerificationController extends PublicBaseController
                 'origin_type' => IdentityOriginType::Api->value,
                 'origin_identifier' => '/api/identity/challenges',
                 'origin_policy_key' => $originPolicy?->key,
+                // 외부 화면을 거치는 수단이 확인 뒤 돌려보낼 경로 — 같은 출처 경로만(그 밖은 null)
+                'return_path' => SameOriginPath::normalize($validated['return_path'] ?? null),
             ],
             providerId: $providerId,
         );
