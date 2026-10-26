@@ -1,3 +1,4 @@
+// e2e:allow 결제창 과세 구분(#820) — PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않는다. Vitest 가 PC tax·taxfree / 모바일 P_TAX·P_TAXFREE 금액을 잠그고, 「부가세 업체정함」 계약 MID 가 없어 KG 매출 구분은 실측 불가.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { toApiClientPath } from '../apiPath';
@@ -36,6 +37,50 @@ interface PgPaymentData {
      * 없으면 KG 기본 기한으로 계좌가 열린다.
      */
     vbank_due_at?: string;
+    /**
+     * 결제 금액 중 면세분(최소 화폐단위 정수, 청구액 이하). 면세분이 없으면 null.
+     * 면세분이 있을 때만 서버가 과세 합계(부가세 포함 `tax_amount`)·부가세(`vat_amount`)를 함께 싣는다(이커머스 1.3.3+).
+     */
+    tax_free_amount?: number | null;
+    tax_amount?: number | null;
+    vat_amount?: number | null;
+}
+
+/** 과세 합계를 받지 못했을 때의 부가세율(%) — 이커머스 `VatCalculator::DEFAULT_RATE` 와 같다. */
+const DEFAULT_VAT_RATE = 10;
+
+/**
+ * 면세분이 섞인 결제의 부가세·비과세 금액을 계산합니다 (PC `tax`·`taxfree` / 모바일 `P_TAX`·`P_TAXFREE`).
+ *
+ * KG 매뉴얼(stdpay_pc·stdpay_m): 두 필드는 「부가세 업체정함」 계약 가맹점만 설정한다 — 그래서 면세분이 있는 결제에만
+ * 싣고 전부 과세면 보내지 않는다(PG 가 결제액에서 부가세를 계산). 종전에는 면세분이 있어도 보내지 않아 면세 상품이
+ * 과세로 등록됐다(#820). 비과세 = 면세분(결제액 안으로 자름), 부가세 = 나머지 과세분을 주문 부가세 비율로 나눈 값 —
+ * NHN KCP·나이스 플러그인과 같은 규칙이다. 과세 합계를 받지 못하면(구버전 서버) 기본 세율로 나눈다.
+ *
+ * @param pgPaymentData 서버 결제 데이터
+ * @returns 부가세·비과세 금액, 면세분이 없으면 null
+ */
+export function buildInicisTaxAmounts(pgPaymentData: PgPaymentData): { tax: number; taxFree: number } | null {
+    const toAmount = (value: unknown): number => {
+        const n = Math.round(Number(value ?? 0));
+        return Number.isFinite(n) && n > 0 ? n : 0;
+    };
+
+    const paymentAmt = toAmount(pgPaymentData.amount);
+    const taxFree = Math.min(toAmount(pgPaymentData.tax_free_amount), paymentAmt);
+    if (taxFree <= 0) {
+        return null;
+    }
+
+    const taxable = paymentAmt - taxFree;
+    const hasOrderTax = pgPaymentData.tax_amount !== undefined && pgPaymentData.tax_amount !== null;
+    const orderTax = toAmount(pgPaymentData.tax_amount);
+    const orderVat = toAmount(pgPaymentData.vat_amount);
+    const vatRatio = hasOrderTax
+        ? (orderTax > 0 ? orderVat / orderTax : 0)
+        : DEFAULT_VAT_RATE / (100 + DEFAULT_VAT_RATE);
+
+    return { tax: Math.min(taxable, Math.round(taxable * vatRatio)), taxFree };
 }
 
 /**
@@ -495,6 +540,12 @@ async function requestMobileKoreanPayment(
         fields.P_HPP_METHOD = '2';
     }
 
+    const taxAmounts = buildInicisTaxAmounts(pgPaymentData);
+    if (taxAmounts) {
+        fields.P_TAX = String(taxAmounts.tax);
+        fields.P_TAXFREE = String(taxAmounts.taxFree);
+    }
+
     // 가상계좌 결제 시 P_NOTI_URL 필수 (manual.inicis.com/pay/stdpay_m.html).
     // PC 가상계좌는 KG 이니시스 가맹점 어드민의 등록 URL 로 통보되지만, 모바일은
     // 요청에 P_NOTI_URL 을 명시해야 입금통보를 받을 수 있다.
@@ -625,6 +676,12 @@ async function requestKoreanPayment(
         use_chkfake:  'Y',
         charset:      'UTF-8',
     };
+
+    const taxAmounts = buildInicisTaxAmounts(pgPaymentData);
+    if (taxAmounts) {
+        fields.tax = String(taxAmounts.tax);
+        fields.taxfree = String(taxAmounts.taxFree);
+    }
 
     for (const [name, value] of Object.entries(fields)) {
         const input = document.createElement('input');

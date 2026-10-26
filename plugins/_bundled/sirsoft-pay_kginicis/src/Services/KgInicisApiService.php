@@ -771,6 +771,7 @@ class KgInicisApiService
      * @param  string|null  $msg  취소 사유 (null 이면 화면 언어의 기본 문구)
      * @param  int|null  $totalAmount  원결제 금액 (부분취소 시 confirmPrice 계산용)
      * @param  array|null  $refundAccount  가상계좌 환불계좌 {bank_code, account_number, holder}
+     * @param  array{tax: int, taxFree: int}|null  $taxSplit  부분취소분의 부가세·비과세 (승인 때 과세 구분을 실은 결제만, 그 외 null)
      * @return array PG 응답 데이터
      *
      * @throws \Exception API 호출 실패 시
@@ -782,6 +783,7 @@ class KgInicisApiService
         ?string $msg = null,
         ?int $totalAmount = null,
         ?array $refundAccount = null,
+        ?array $taxSplit = null,
     ): array {
         $msg ??= __('sirsoft-pay_kginicis::messages.refund.admin_cancel_reason');
         $type = $cancelPrice === null ? 'refund' : 'partialRefund';
@@ -798,8 +800,8 @@ class KgInicisApiService
             $detail['price'] = (string) $cancelPrice;
             $detail['confirmPrice'] = (string) $confirmPrice;
             $detail['currency'] = 'WON';
-            // 과세 분리(`tax`·`taxFree`)는 선택 필드다(P-D8). 승인 때 과세 분리를 보내지 않으므로 취소에도 싣지 않는다 —
-            // 예전의 `tax='0'`·`taxfree='0'` 고정값은 문서 키(`taxFree`)와도 달랐다.
+            // 과세 분리(`tax`·`taxFree`)는 선택 필드다(P-D8). 승인 때 과세 구분을 실은 결제에만 같은 구분을 싣는다(아래) —
+            // 가상계좌 환불(`/vacct`)에는 이 필드가 없다. 예전의 `tax='0'`·`taxfree='0'` 고정값은 문서 키(`taxFree`)와도 달랐다.
         }
 
         // 입금완료된 가상계좌는 **환불받을 계좌**가 없으면 PG 가 취소를 거절한다(P5).
@@ -820,6 +822,11 @@ class KgInicisApiService
             $detail['refundBankCode'] = (string) $refundAccount['bank_code'];
             $detail['refundAcctName'] = (string) ($refundAccount['holder'] ?? '');
             $isVacctRefund = true;
+        }
+
+        if ($cancelPrice !== null && $taxSplit !== null && ! $isVacctRefund) {
+            $detail['tax'] = (string) $taxSplit['tax'];
+            $detail['taxFree'] = (string) $taxSplit['taxFree'];
         }
 
         $detailJson = str_replace('\\/', '/', json_encode($detail, JSON_UNESCAPED_UNICODE));

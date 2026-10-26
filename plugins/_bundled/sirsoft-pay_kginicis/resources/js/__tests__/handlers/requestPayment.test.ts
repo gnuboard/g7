@@ -8,7 +8,7 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { assertTrustedSdkUrl, KNOWN_SDK_HOSTS, requestPaymentHandler } from '../../handlers/requestPayment';
+import { assertTrustedSdkUrl, buildInicisTaxAmounts, KNOWN_SDK_HOSTS, requestPaymentHandler } from '../../handlers/requestPayment';
 import {
     clearMobilePaymentReturnPending,
     consumeMobilePaymentReturnPending,
@@ -346,6 +346,23 @@ describe('requestPaymentHandler — PC closeUrl', () => {
             params: { pgPaymentData: { ...PG_PAYMENT, payment_method: 'card', vbank_due_at: '2026-10-10T13:39:23+09:00' } },
         });
         expect(getLastPaymentFormFields().acceptmethod).not.toContain('vbank(');
+    });
+    /**
+     * 면세분이 섞인 결제는 매뉴얼(stdpay_pc)의 tax(부가세)·taxfree(비과세)를 싣는다 — 종전에는 보내지 않아
+     * 면세 상품이 과세로 등록됐다(#820). 전부 과세면 보내지 않는다(「부가세 업체정함」 계약 가맹점 전용 필드).
+     */
+    // @scenario flow=pc_standard
+    // @effects tax_split_follows_manual
+    it('PC 결제는 면세분이 있을 때만 tax·taxfree 를 싣는다', async () => {
+        await requestPaymentHandler({
+            params: { pgPaymentData: { ...PG_PAYMENT, amount: 24000, tax_free_amount: 5000, tax_amount: 22000, vat_amount: 2000 } },
+        });
+        expect(getLastPaymentFormFields()).toMatchObject({ price: '24000', tax: '1727', taxfree: '5000' });
+
+        await requestPaymentHandler({ params: { pgPaymentData: { ...PG_PAYMENT, tax_free_amount: null } } });
+        const fields = getLastPaymentFormFields();
+        expect(fields.tax).toBeUndefined();
+        expect(fields.taxfree).toBeUndefined();
     });
 });
 
@@ -968,6 +985,41 @@ describe('requestPaymentHandler — 모바일 P_INI_PAYMENT 매핑', () => {
                 `?orderId=${encodeURIComponent(PG_PAYMENT.order_number)}` +
                 '&selectedPaymentMethod=kginicis_naverpay',
         );
+    });
+    // @scenario flow=mobile
+    // @effects tax_split_follows_manual
+    it('모바일 결제는 면세분이 있을 때만 P_TAX·P_TAXFREE 를 싣는다', async () => {
+        await requestPaymentHandler({
+            params: { pgPaymentData: { ...PG_PAYMENT, amount: 16000, tax_free_amount: 5000 } },
+        });
+        expect(getLastSubmittedFormFields()).toMatchObject({ P_AMT: '16000', P_TAX: '1000', P_TAXFREE: '5000' });
+
+        await requestPaymentHandler({ params: { pgPaymentData: { ...PG_PAYMENT } } });
+        const fields = getLastSubmittedFormFields();
+        expect(fields.P_TAX).toBeUndefined();
+        expect(fields.P_TAXFREE).toBeUndefined();
+    });
+});
+
+describe('buildInicisTaxAmounts — 부가세·비과세 분할', () => {
+    const base = { order_number: 'ORD-1', order_name: '주문', amount: 15000 };
+
+    // @scenario flow=pc_standard
+    // @effects tax_split_follows_manual
+    it('과세분을 주문 부가세 비율로 나누고, 과세 합계가 없으면 기본 세율·0 이면 부가세 0', () => {
+        expect(buildInicisTaxAmounts({ ...base, tax_free_amount: 4000, tax_amount: 11000, vat_amount: 1000 }))
+            .toEqual({ tax: 1000, taxFree: 4000 });
+        expect(buildInicisTaxAmounts({ ...base, tax_free_amount: 4000 })).toEqual({ tax: 1000, taxFree: 4000 });
+        expect(buildInicisTaxAmounts({ ...base, tax_free_amount: 4000, tax_amount: 0, vat_amount: 0 }))
+            .toEqual({ tax: 0, taxFree: 4000 });
+    });
+
+    // @scenario flow=pc_standard
+    // @effects tax_split_follows_manual
+    it('면세분이 결제액보다 크면 결제액으로 자르고, 면세분이 없으면 null', () => {
+        expect(buildInicisTaxAmounts({ ...base, amount: 3000, tax_free_amount: 5000 })).toEqual({ tax: 0, taxFree: 3000 });
+        expect(buildInicisTaxAmounts({ ...base, tax_free_amount: 0 })).toBeNull();
+        expect(buildInicisTaxAmounts(base)).toBeNull();
     });
 });
 

@@ -357,6 +357,18 @@ trait HandlesOrderCreation
                 ->resolveSnapshotPaymentCharge($taxFreeBase, $order->currency_snapshot ?? [])
             : null;
 
+        // 면세분이 있으면 과세 합계(부가세 포함)·부가세도 같은 규칙으로 싣는다.
+        // 공급가액·부가세를 나눠 받는 PG(NHN KCP comm_tax_mny·comm_vat_mny, 나이스 SupplyAmt·GoodsVat)는
+        // 결제액을 이 비율로 나눈다 — 싣지 않으면 부가세가 0 으로 가 과세분 전액이 공급가액으로 등록된다.
+        $taxCharge = null;
+        $vatCharge = null;
+        if ($taxFreeCharge !== null) {
+            $taxCharge = app(CurrencyConversionService::class)
+                ->resolveSnapshotPaymentCharge((float) ($order->total_tax_amount ?? 0), $order->currency_snapshot ?? []);
+            $vatCharge = app(CurrencyConversionService::class)
+                ->resolveSnapshotPaymentCharge((float) ($order->total_vat_amount ?? 0), $order->currency_snapshot ?? []);
+        }
+
         // 가상계좌 입금 기한 — 주문이 정한 기한(설정 `order_settings.auto_cancel_days`)을 결제창에 그대로 넘긴다.
         // 넘기지 않으면 PG 가 자기 기본 기한(KG 10~30일·나이스 10일)으로 계좌를 열고, 콜백이 그 값으로 주문 기한을
         // 덮어써 주문서 안내와 자동취소 시점이 결제사마다 달라진다. PG 는 한국 시각으로 받으므로 KST 로 싣는다.
@@ -368,7 +380,15 @@ trait HandlesOrderCreation
             'amount' => $charge['minor_unit_amount'],
             'currency' => $charge['currency'],
             // 면세분이 없으면 키를 싣지 않는다 — 과세 전용 상점에서 0 을 보내면 불필요한 계약 분기를 탄다.
-            'tax_free_amount' => $taxFreeCharge['minor_unit_amount'] ?? null,
+            // 면세 합계는 쿠폰 할인 뒤·마일리지 차감 전 값이라, 마일리지를 과세분보다 많이 쓰면 청구액을 넘는다.
+            // PG 는 면세 금액이 결제 금액 안에 있어야 받으므로(토스 totalAmount = taxFreeAmount + suppliedAmount + vat)
+            // 청구액으로 자른다.
+            'tax_free_amount' => $taxFreeCharge !== null
+                ? min($taxFreeCharge['minor_unit_amount'], $charge['minor_unit_amount'])
+                : null,
+            // 면세분이 있을 때만: 과세 합계(부가세 포함)·부가세 — 공급가액·부가세 분할 비율용
+            'tax_amount' => $taxCharge['minor_unit_amount'] ?? null,
+            'vat_amount' => $vatCharge['minor_unit_amount'] ?? null,
             'customer_name' => $shippingAddress?->orderer_name,
             'customer_email' => $shippingAddress?->orderer_email,
             'customer_phone' => preg_replace('/[^0-9]/', '', $shippingAddress?->orderer_phone ?? ''),

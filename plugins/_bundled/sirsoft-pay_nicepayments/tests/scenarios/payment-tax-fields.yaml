@@ -1,0 +1,25 @@
+feature: 결제창 과세·면세 지정 — 나이스 사양 필드 이름으로, 네 필드 합 = 결제 금액
+
+description: |
+  나이스 결제창(goPay) 사양의 과세·면세 지정 옵션은 SupplyAmt(공급가액)·GoodsVat(부가세)·ServiceAmt(봉사료)·TaxFreeAmt(면세)
+  네 필드이고, 쓰면 네 필드의 합이 Amt 와 같아야 한다. MID 에 복합과세를 협의한 상점만 쓰는 옵션이라 협의 없이 보내면
+  결제·취소가 실패할 수 있다. 승인 취소 API(cancel_process.jsp)에는 과세 구분 필드가 없다.
+
+  수정 이력 (#820):
+    - 종전에는 사양에 없는 TaxAmt·VatAmt 에 마일리지·쿠폰 차감 전 주문 합계(부가세 포함 과세 금액)를 넣어,
+      나이스가 과세 구분을 받지 못했고 TaxAmt + VatAmt + TaxFreeAmt 가 결제 금액보다 컸다.
+    - 면세분이 있는 결제에만 사양 필드를 싣는다. 면세분은 결제액 안으로 자르고, 나머지 과세분을 주문의 부가세 비율로
+      공급가액·부가세로 나눈다(NHN KCP 플러그인 buildKcpTaxFields 와 같은 방식). 주문 합계가 없으면 기본 세율 10%.
+
+axes:
+  tax: [mixed, tax_free_only, discount_exceeds_taxable, taxable_only]
+
+effects:
+  - tax_fields_use_spec_names_and_sum_to_amt   # SupplyAmt + GoodsVat + ServiceAmt + TaxFreeAmt = Amt, TaxAmt·VatAmt 없음
+  - taxable_only_sends_no_tax_fields           # 면세분 없음: 과세 필드를 하나도 싣지 않음(복합과세 미협의 MID 보호)
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/handlers/requestPayment.test.ts
+
+validation:
+  browser_check: 복합과세 협의 MID 가 있을 때만 — 면세·과세 상품을 함께 담아 마일리지 일부를 쓰고 카드 결제 후 나이스 상점관리자 거래 상세에 면세분이 구분되는지

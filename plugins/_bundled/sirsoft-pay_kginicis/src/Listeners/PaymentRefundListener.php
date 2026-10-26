@@ -8,11 +8,22 @@ use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
+use Plugins\Sirsoft\PayKginicis\Concerns\SplitsInicisTax;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 class PaymentRefundListener implements HookListenerInterface
 {
+    use SplitsInicisTax;
+
     private const PG_PROVIDER_ID = 'kginicis';
+
+    /**
+     * @param  OrderPaymentRepositoryInterface  $orderPaymentRepository  주문 결제 Repository (과세 구분 소진액 기록)
+     */
+    public function __construct(
+        private readonly OrderPaymentRepositoryInterface $orderPaymentRepository,
+    ) {}
 
     /**
      * 구독할 훅 매핑을 반환합니다.
@@ -131,6 +142,10 @@ class PaymentRefundListener implements HookListenerInterface
             $isPartial = $previousCancelled > 0 || $cancelAmt < $paidAmount;
 
             $isCbt = $this->isCbtPayment($payment);
+            // 승인 때 과세 구분을 실은 결제의 부분취소만 같은 구분을 싣는다(#820). 가상계좌 환불 경로(/vacct)에는 필드가 없다.
+            $taxSplit = $isPartial && ! $isCbt && ! $payment->isVirtualAccount()
+                ? $this->resolvePartialTaxSplit($order, $payment, $cancelAmt)
+                : null;
             if ($isCbt) {
                 $this->useStoredCbtCredentials($apiService, $payment);
             } else {
@@ -158,7 +173,12 @@ class PaymentRefundListener implements HookListenerInterface
                         'account_number' => $payment->refund_bank_account,
                         'holder' => $payment->refund_bank_holder,
                     ] : null,
+                    $taxSplit,
                 );
+
+            if ($taxSplit !== null) {
+                $this->recordTaxFreeCancelledSafely($payment, $taxSplit['taxFree'], $tid);
+            }
 
             Log::info('KG Inicis: refund success', [
                 'order_id' => $order->id,
@@ -189,6 +209,33 @@ class PaymentRefundListener implements HookListenerInterface
                 'error_message' => $e->getMessage(),
                 'transaction_id' => null,
             ];
+        }
+    }
+
+    /**
+     * 성립한 부분취소의 비과세분을 승인 표식의 소진액에 더해 저장합니다. 실패해도 환불 판정에 번지지 않게 합니다.
+     *
+     * 이 시점에 PG 취소는 이미 성립했다 — 저장 실패를 환불 실패로 돌려주면 재시도가 같은 금액을 한 번 더 취소하러 간다
+     * (토스 `syncCancelSnapshotSafely` 와 같은 판단). 소진액이 낡으면 다음 회차의 비과세 상한이 실제보다 커지므로 크게 남긴다.
+     *
+     * @param  OrderPayment  $payment  결제 레코드
+     * @param  int  $taxFree  이번 회차에 취소한 비과세 금액
+     * @param  string  $tid  원거래 번호 (로그 문맥)
+     * @return void 반환값 없음
+     */
+    private function recordTaxFreeCancelledSafely(OrderPayment $payment, int $taxFree, string $tid): void
+    {
+        try {
+            $this->orderPaymentRepository->savePendingChanges(
+                $payment->forceFill(['payment_meta' => $this->withTaxFreeCancelled($payment, $taxFree)]),
+            );
+        } catch (\Throwable $e) {
+            Log::error('KG Inicis: 비과세 소진액 기록 실패 — 취소는 성립, 다음 부분취소의 비과세 상한이 낡음', [
+                'order_payment_id' => $payment->id,
+                'tid' => $tid,
+                'tax_free' => $taxFree,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
