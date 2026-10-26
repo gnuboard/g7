@@ -2290,6 +2290,9 @@ _단건 응답: `data` 객체의 필드 (HTTP 201). 회원은 `order` 에 `Order
 | customer_email | string | `ji792@mail.test` | 주문자 이메일 |
 | customer_phone | string | `01055144949` | 주문자 휴대전화 (숫자만) |
 | customer_key | string \| null | `user_12` | 회원 식별 키 (비회원은 `null`) |
+| tax_free_amount | integer \| null | `5000` | 주문 면세 합계를 청구액과 같은 규칙으로 환산한 최소 화폐단위 정수. 면세분이 없으면 `null` |
+| tax_amount | integer \| null | `22000` | 면세분이 있을 때만: 주문 과세 합계(부가세 포함), 같은 환산 규칙. 없으면 `null` |
+| vat_amount | integer \| null | `2000` | 면세분이 있을 때만: 주문 부가세 합계, 같은 환산 규칙. 없으면 `null` — 공급가액·부가세를 나눠 받는 PG 가 결제액을 `vat_amount / tax_amount` 비율로 나눈다 |
 | escrow_products | array | `[{"id":12,"name":"코튼 후드티 #12","code":"YD1JTVLJEMKAUTKS","unitPrice":31000,"quantity":1}]` | 에스크로 결제(가상계좌·계좌이체)용 상품 상세 (`unitPrice` 는 개당가, 비에스크로는 무시) |
 
 **응답 예시**

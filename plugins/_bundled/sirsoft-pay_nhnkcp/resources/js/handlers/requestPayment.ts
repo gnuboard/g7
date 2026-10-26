@@ -1,4 +1,4 @@
-// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다).
+// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다). 복합과세 분할(#820)은 Vitest 금액 단언으로 잠근다 — 복합과세 협의 사이트코드가 없어 KCP 매출 구분은 실측 불가.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {
@@ -27,10 +27,13 @@ interface PgPaymentData {
     customer_name?: string;
     customer_email?: string;
     customer_phone?: string;
-    /** 복합과세 분할용 */
-    tax_amount?: number;
-    vat_amount?: number;
-    tax_free_amount?: number;
+    /**
+     * 복합과세 분할용 — 서버는 면세분이 있을 때만 싣는다(없으면 null). `tax_amount` 는 부가세 포함 과세 합계.
+     * 구버전 서버는 `tax_free_amount` 만 실었다 — 그때는 기본 세율로 부가세를 나눈다.
+     */
+    tax_amount?: number | null;
+    vat_amount?: number | null;
+    tax_free_amount?: number | null;
     /**
      * 클레임 추가결제일 때만 서버가 싣는 「결제창을 닫으면 돌아갈 신청서 상세」 주소
      * (`ClaimPaymentRedirect::cancelled`). 있으면 이 결제는 주문이 아니라 클레임 결제다 —
@@ -156,6 +159,9 @@ function unsupportedCurrencyMessage(currency?: string): string {
     return t('payment.error.krw_only', 'NHN KCP는 KRW 결제만 지원합니다. ({{currency}})', { currency: normalized ?? '' });
 }
 
+/** 과세 합계를 받지 못했을 때의 부가세율(%) — 이커머스 `VatCalculator::DEFAULT_RATE` 와 같다. */
+const DEFAULT_VAT_RATE = 10;
+
 export function buildKcpTaxFields(pgPaymentData: PgPaymentData): Record<string, string> {
     const paymentAmount = Math.max(0, Math.round(Number(pgPaymentData.amount ?? 0)));
     const taxFreeAmt = Math.min(
@@ -167,11 +173,17 @@ export function buildKcpTaxFields(pgPaymentData: PgPaymentData): Record<string, 
         return {};
     }
 
+    const taxablePaymentAmt = Math.max(0, paymentAmount - taxFreeAmt);
+    // 과세 합계를 받지 못하면(구버전 서버) 기본 세율로 나눈다 — 종전에는 이때 부가세가 0 으로 가
+    // 과세분 전액이 공급가액(comm_tax_mny)으로 등록됐다(#820).
+    const hasOrderTax = pgPaymentData.tax_amount !== undefined && pgPaymentData.tax_amount !== null;
     const taxTotalAmt = Math.max(0, Math.round(Number(pgPaymentData.tax_amount ?? 0)));
     const originalVatAmt = Math.max(0, Math.round(Number(pgPaymentData.vat_amount ?? 0)));
-    const taxablePaymentAmt = Math.max(0, paymentAmount - taxFreeAmt);
-    const vatAmt = taxablePaymentAmt > 0 && taxTotalAmt > 0 && originalVatAmt > 0
-        ? Math.min(taxablePaymentAmt, Math.round(taxablePaymentAmt * (originalVatAmt / taxTotalAmt)))
+    const vatRatio = hasOrderTax
+        ? (taxTotalAmt > 0 ? originalVatAmt / taxTotalAmt : 0)
+        : DEFAULT_VAT_RATE / (100 + DEFAULT_VAT_RATE);
+    const vatAmt = taxablePaymentAmt > 0
+        ? Math.min(taxablePaymentAmt, Math.round(taxablePaymentAmt * vatRatio))
         : 0;
     const supplyAmt = taxablePaymentAmt - vatAmt;
 

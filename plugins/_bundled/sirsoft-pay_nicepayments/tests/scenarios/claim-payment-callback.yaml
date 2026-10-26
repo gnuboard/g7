@@ -17,6 +17,7 @@ axes:
     - callback_routing
     - approved_amount
     - sign_data
+    - window_close_return
 
 effects:
   - nice_claim_callback_confirms_the_claim_payment_without_an_order         # CP 콜백 → 클레임 결제 확정 + 신청서 상세
@@ -24,6 +25,9 @@ effects:
   - nice_claim_auth_failure_returns_to_the_claim_detail                     # 인증 단계 실패 → 오류 없이 복귀
   - nice_claim_sign_data_is_gated_by_the_claim_payment                      # SignData 발급의 결제 건 금액 검증
   - nice_claim_sign_data_rejects_a_payment_whose_order_cannot_be_read       # 부모 주문 부재 → 403
+  - nice_claim_window_close_returns_to_the_claim_detail                     # 결제창 닫음 → 서버가 준 신청서 상세(claim_cancel_return_url)
+  - nice_order_window_close_stays_on_the_page                               # 주문 결제창 닫음 → 이동 없음
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/ClaimPaymentCallbackTest.php
+  - plugins/_bundled/sirsoft-pay_nicepayments/resources/js/__tests__/handlers/requestPayment.test.ts
