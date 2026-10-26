@@ -274,7 +274,7 @@
       "shipping_fee_tax_proportional": "Proportional (default)",
       "shipping_fee_tax_taxable": "Fully taxable",
       "shipping_fee_tax_follow_main_item": "Follow the main item",
-      "shipping_fee_tax_help": "Proportional splits the shipping fee by the taxable and tax-free product amounts.",
+      "shipping_fee_tax_help": "Proportional splits the shipping fee by the taxable, zero-rated and tax-free product amounts. Main item follows the largest group (ties: taxable > zero-rated > tax-free).",
       "self_issue_label": "Enable self-issuance",
       "self_issue_help": "Automatically issues receipts for bank transfer orders even when the buyer did not request one (income deduction only).",
       "self_issue_mandatory_help": "Businesses required to issue cash receipts must do so even without a buyer request. Turn this on if that applies to you.",

@@ -439,4 +439,59 @@ class ProductControllerCopyTest extends ModuleTestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors(['copy_images']);
     }
+
+    /**
+     * 판매 정보를 복사하면 세율도 원본 값으로 내려온다
+     *
+     * 수정 전에는 폼 조회가 세율을 싣지 않아, 복사 화면이 세율 없이 등록 요청을 보냈고
+     * 복사한 상품의 세율이 기본값 10% 로 바뀌었다.
+     *
+     * @scenario case=c16
+     *
+     * @effects product_copy_data_filtered_by_options
+     *
+     * @return void 반환값 없음
+     */
+    public function test_show_for_copy_keeps_tax_rate_when_sales_info_copied(): void
+    {
+        $user = $this->createAdminUser(['sirsoft-ecommerce.products.read']);
+        $product = Product::factory()->create([
+            'tax_status' => 'taxable',
+            'tax_rate' => 5,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson("/api/modules/sirsoft-ecommerce/admin/products/{$product->id}/copy");
+
+        $response->assertOk();
+        $this->assertEquals(5, $response->json('data.tax_rate'));
+    }
+
+    /**
+     * 판매 정보를 복사하지 않으면 과세 기본값(과세·기본 세율·판매중)으로 내려온다
+     *
+     * 수정 전에는 판매 상태를 존재하지 않는 값('active')으로, 세율은 아예 싣지 않았다.
+     *
+     * @scenario case=c17
+     *
+     * @effects product_copy_data_filtered_by_options
+     *
+     * @return void 반환값 없음
+     */
+    public function test_show_for_copy_resets_tax_fields_when_sales_info_disabled(): void
+    {
+        $user = $this->createAdminUser(['sirsoft-ecommerce.products.read']);
+        $product = Product::factory()->create([
+            'tax_status' => 'tax_free',
+            'tax_rate' => 5,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson("/api/modules/sirsoft-ecommerce/admin/products/{$product->id}/copy?copy_sales_info=0");
+
+        $response->assertOk();
+        $this->assertSame('taxable', $response->json('data.tax_status'));
+        $this->assertEquals(10, $response->json('data.tax_rate'));
+        $this->assertSame('on_sale', $response->json('data.sales_status'));
+    }
 }

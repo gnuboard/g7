@@ -238,6 +238,28 @@ class ProductSeeder extends Seeder
             'category_slug' => 'fruits',
             'brand_slug' => null,
         ],
+        // 옵션별 과세 종류 시연 (#612) — 상품 기본값은 과세, 「수출용」 옵션만 영세(세율 0%)
+        [
+            'name' => ['ko' => '배 1박스 (5kg)', 'en' => 'Pear Box (5kg)'],
+            'product_code' => 'FR-003',
+            'sku' => 'FR-003-5KG',
+            'list_price' => 35000,
+            'selling_price' => 30000,
+            'stock_quantity' => 40,
+            'safe_stock_quantity' => 5,
+            'sales_status' => 'on_sale',
+            'display_status' => 'visible',
+            'tax_status' => 'taxable',
+            'description' => ['ko' => '<p>국산 배 5kg 박스입니다. 수출용 옵션은 영세율(0%)로 판매됩니다.</p>', 'en' => '<p>A 5kg box of Korean pears. The export option is sold zero-rated (0%).</p>'],
+            'has_options' => true,
+            'option_groups' => [
+                ['name' => ['ko' => '구분', 'en' => 'Type'], 'values' => [['ko' => '국내용', 'en' => 'Domestic'], ['ko' => '수출용', 'en' => 'Export']]],
+            ],
+            // 옵션 조합 순서대로의 과세 종류 (null = 상품 기본값 따름)
+            'option_tax_statuses' => [null, 'zero_rated'],
+            'category_slug' => 'fruits',
+            'brand_slug' => null,
+        ],
         // === 중가 상품 (30,000~50,000원) - 5개 ===
         [
             'name' => ['ko' => '플로럴 롱 원피스', 'en' => 'Floral Long Dress'],
@@ -740,7 +762,7 @@ class ProductSeeder extends Seeder
             $this->attachCategory($product, $category->slug);
 
             // 옵션 생성 (모든 상품에 필수) — 무게(g)·부피(cm³)는 무게·부피 배송정책 시연에 쓰인다
-            $this->createOptions($product, $optionGroups, $sku, rand(1, 30) * 100, rand(1, 40) * 500);
+            $this->createOptions($product, $optionGroups, $sku, rand(1, 30) * 100, rand(1, 40) * 500, $template['option_tax_statuses'] ?? []);
 
             // 추가옵션 그룹·선택지 생성 (40% 확률) — 추가옵션 시스템 데모 데이터
             if (rand(1, 100) <= 40) {
@@ -1046,9 +1068,10 @@ class ProductSeeder extends Seeder
      * @param  string  $productSku  상품 SKU (옵션 SKU 생성 기준)
      * @param  int  $weightGram  옵션 무게 (g)
      * @param  int  $volumeCubicCm  옵션 부피 (cm³)
+     * @param  array<int, string|null>  $optionTaxStatuses  조합 순서대로의 옵션 과세 종류 (없거나 null = 상품 따름, #612)
      * @return void 반환값 없음
      */
-    private function createOptions(Product $product, array $optionGroups, string $productSku, int $weightGram = 500, int $volumeCubicCm = 1000): void
+    private function createOptions(Product $product, array $optionGroups, string $productSku, int $weightGram = 500, int $volumeCubicCm = 1000, array $optionTaxStatuses = []): void
     {
         // 옵션 조합 생성
         $combinations = $this->generateOptionCombinations($optionGroups);
@@ -1082,6 +1105,7 @@ class ProductSeeder extends Seeder
                 'volume' => $volumeCubicCm,
                 'is_default' => $sortOrder === 0,
                 'is_active' => true,
+                'tax_status' => isset($optionTaxStatuses[$sortOrder]) ? ProductTaxStatus::from($optionTaxStatuses[$sortOrder]) : null,
                 'sort_order' => $sortOrder++,
             ]);
         }

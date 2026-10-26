@@ -14,6 +14,7 @@ return [
     'tax_status' => [
         'taxable' => '課税',
         'tax_free' => '非課税',
+        'zero_rated' => 'ゼロ税率',
     ],
     'image_collection' => [
         'main' => 'メイン画像',

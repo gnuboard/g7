@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.2.2] - 2026-10-26
+
+### Added
+
+- sirsoft-basic 1.2.4 의 주문서·장바구니 세금 상세 「영세 금액」(ゼロ税率金額) 일본어 번역을 추가했습니다.
+
 ## [1.2.1] - 2026-10-21
 
 ### Added

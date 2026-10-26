@@ -44,6 +44,7 @@
     "supply_amount": "供給価額",
     "vat_amount": "付加価値税",
     "tax_free_amount": "非課税金額",
+    "zero_rated_amount": "ゼロ税率金額",
     "escrow_badge": "エスクロー",
     "loading": "読み込み中...",
     "vbank_amount": "入金金額",

@@ -78,7 +78,7 @@ URL로 결과를 POST 하면 결제 완료 처리됩니다.
 |---|---|
 | 그누보드7 코어 | `>=7.1.1` |
 | PHP | `^8.2` |
-| 의존 모듈 | `sirsoft-ecommerce` `>=1.3.0` |
+| 의존 모듈 | `sirsoft-ecommerce` `>=1.3.3` |
 | 외부 스크립트 호스트 | `web.nicepay.co.kr` |
 <!-- @generated:requirements END -->
 
@@ -194,7 +194,7 @@ https://your-domain.com/plugins/sirsoft-pay_nicepayments/payment/vbank-notify
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `sirsoft-ecommerce` | 모듈 | `>=1.3.0` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.3.3` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 

@@ -21,13 +21,16 @@ class Summary
      * @param  int  $extraShippingTotal  추가 배송비(도서산간) 합계
      * @param  int  $totalShipping  총 배송비 (기본 + 추가)
      * @param  int  $shippingDiscount  배송비 할인
-     * @param  int  $taxableAmount  과세 금액 합계
+     * @param  int  $taxableAmount  과세 금액 합계 (과세표준 — 영세 포함)
      * @param  int  $taxFreeAmount  면세 금액 합계
      * @param  int  $vatAmount  부가세 합계 (옵션별 세율 반영, 과세표준에 내재된 금액)
      * @param  int  $pointsEarning  적립 예정 마일리지 합계
      * @param  int  $pointsUsed  사용 마일리지 합계
      * @param  int  $paymentAmount  결제금액 (마일리지 사용 전)
      * @param  int  $finalAmount  최종 지불금액
+     * @param  int  $zeroRatedAmount  영세 금액 합계 (과세 금액에 포함, 부가세 0)
+     * @param  bool  $vatAmountKnown  부가세가 계산 결과에 실려 있었는가 — 부가세 합산 도입 이전 임시주문을
+     *                                복원하면 false (주문 생성이 이때만 과세표준으로 다시 채운다)
      * @param  MultiCurrencyPrices|null  $multiCurrency  다중 통화 변환 금액
      * @param  string|null  $selectedPaymentCurrency  선택된 결제 통화
      * @param  array<string, mixed>  $metadata  플러그인 확장용 메타데이터
@@ -52,6 +55,8 @@ class Summary
         public int $pointsUsed = 0,
         public int $paymentAmount = 0,
         public int $finalAmount = 0,
+        public int $zeroRatedAmount = 0,
+        public bool $vatAmountKnown = true,
         public ?MultiCurrencyPrices $multiCurrency = null,
         public ?string $selectedPaymentCurrency = null,
         public array $metadata = [],
@@ -127,6 +132,8 @@ class Summary
             'taxable_amount' => $this->taxableAmount,
             'tax_free_amount' => $this->taxFreeAmount,
             'vat_amount' => $this->vatAmount,
+            'zero_rated_amount' => $this->zeroRatedAmount,
+            'zero_rated_amount_formatted' => ecommerce_format_price($this->zeroRatedAmount),
             'points_earning' => $this->pointsEarning,
             'total_mileage' => $this->pointsEarning,
             // 적립 표기는 공용 포맷터 한 곳이다(단위 글자는 다국어 키) — 주문 응답·신청 미리보기와 같은 문자열.
@@ -186,6 +193,9 @@ class Summary
             pointsUsed: $data['points_used'] ?? 0,
             paymentAmount: $data['payment_amount'] ?? 0,
             finalAmount: $data['final_amount'] ?? 0,
+            // 영세 도입(#612) 이전 임시주문에는 키가 없다 — 그때는 영세가 없었으므로 0 이 맞다
+            zeroRatedAmount: $data['zero_rated_amount'] ?? 0,
+            vatAmountKnown: array_key_exists('vat_amount', $data),
             multiCurrency: isset($data['multi_currency'])
                 ? MultiCurrencyPrices::fromArray($data['multi_currency'])
                 : null,

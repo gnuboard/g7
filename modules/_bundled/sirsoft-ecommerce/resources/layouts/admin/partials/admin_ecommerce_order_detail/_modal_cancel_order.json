@@ -1755,6 +1755,41 @@
                                     ]
                                 },
                                 {
+                                    "comment": "영세금액 — 과세금액에 포함된 세율 0% 몫. 취소 전·후 어느 쪽이든 있을 때만 (#612)",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_local.refundEstimate?.original_snapshot?.total_zero_rated_amount ?? 0) > 0 || (_local.refundEstimate?.recalculated_snapshot?.total_zero_rated_amount ?? 0) > 0}}",
+                                    "props": {
+                                        "className": "grid grid-cols-3 gap-2 py-1.5 text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-secondary"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.order.detail.modal.cancel.zero_rated_amount"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-right text-gray-900 dark:text-gray-100"
+                                            },
+                                            "text": "{{_local.refundEstimate?.original_snapshot?.formatted?.total_zero_rated_amount ?? (_local.refundEstimate?.original_snapshot?.total_zero_rated_amount ?? 0).toLocaleString()}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-right {{(_local.refundEstimate?.original_snapshot?.total_zero_rated_amount ?? 0) !== (_local.refundEstimate?.recalculated_snapshot?.total_zero_rated_amount ?? 0) ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-900 dark:text-gray-100'}}"
+                                            },
+                                            "text": "{{_local.refundEstimate?.recalculated_snapshot?.formatted?.total_zero_rated_amount ?? (_local.refundEstimate?.recalculated_snapshot?.total_zero_rated_amount ?? 0).toLocaleString()}}"
+                                        }
+                                    ]
+                                },
+                                {
                                     "comment": "실결제금액 (+ 다통화)",
                                     "type": "basic",
                                     "name": "Div",

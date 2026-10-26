@@ -1,0 +1,19 @@
+feature: 사용자 화면 — 면세·영세 표시 (#612)
+
+description: |
+  사용자 화면은 과세를 표시하지 않고 면세·영세만 보인다.
+  회원·비회원 주문상세 품목 배지(공용 `_items`), 상품 상세 가격 옆 배지(모든 옵션의 실효 과세 종류가 같을 때),
+  「선택한 상품」 줄 배지(고른 옵션의 옵션 지정 ?? 상품 기본값), 주문서·장바구니 세금 상세의 「영세 금액」 줄.
+  레이아웃 JSON 의 실제 `if` 식을 엔진으로 평가해 잠근다. 라이브 렌더는 Chrome MCP 실측(T8·T9)이 잰다.
+
+axes:
+  surface: [order_items, product_detail, checkout_cart_summary]
+
+effects:
+  - order_item_badge_only_for_tax_free_or_zero_rated
+  - product_price_badge_when_all_options_share_tax_free_or_zero_rated
+  - selected_option_badge_follows_effective_tax_status
+  - summary_zero_rated_line_when_present
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/zeroRatedTaxBadges.test.tsx

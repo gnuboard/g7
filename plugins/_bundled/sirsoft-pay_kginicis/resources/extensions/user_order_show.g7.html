@@ -1,6 +1,6 @@
 <!-- 내 주문 상세에 KG이니시스 결제 블록(간편결제 이름 · 가상계좌/일본 편의점 입금 안내 · 영수증 · 부가세 내역)을 덧붙이는 조각 — KG이니시스로 결제한 주문에서만 뜬다. target_layout(mypage/orders/show) 대신 공용 확장 슬롯을 겨냥한다 — 이 결제 정보 카드(partials/mypage/orders/_payment)는 주문 상세 말고도 비회원 주문 상세와 클레임 신청서 상세(회원·비회원)가 그대로 재사용한다. 레이아웃 이름을 겨냥하면 그 한 화면에서만 뜨고 나머지 화면은 카드는 나오는데 이 블록만 빠진 채 열린다(오류·경고 없음). 슬롯은 partial 을 따라간다. 2026-09-01 확정. 주문번호는 주소가 아니라 불러온 주문(order.data.order_number)에서 읽는다 — 신청서 상세의 주소에는 클레임 번호가 실린다. 예전에는 주입 스크립트(mypageOrderShowInjector·vbankInfoInjector)가 같은 일을 화면 주소 글자를 보고 했다(#639 에서 이 조각으로 옮김). -->
 <extension extension-point="mypage_order_payment_provider_slot" mode="append" priority="100">
-    <div data-if="{{order.data.payment?.pg_provider === 'kginicis' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0)}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
+    <div data-if="{{order.data.payment?.pg_provider === 'kginicis' &amp;&amp; (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0 || order.data.total_zero_rated_amount > 0)}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5">
       <p class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">$t:sirsoft-pay_kginicis.user.tax_breakdown_title</p>
       <div class="flex-between text-sm">
         <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.user.supply_amount</span>
@@ -13,6 +13,10 @@
       <div data-if="{{order.data.total_tax_free_amount > 0}}" class="flex-between text-sm">
         <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.user.tax_free_amount</span>
         <span class="text-gray-900 dark:text-white font-medium">{{order.data.total_tax_free_amount_formatted}}</span>
+      </div>
+      <div data-if="{{order.data.total_zero_rated_amount > 0}}" class="flex-between text-sm">
+        <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_kginicis.user.zero_rated_amount</span>
+        <span class="text-gray-900 dark:text-white font-medium">{{order.data.total_zero_rated_amount_formatted}}</span>
       </div>
     </div>
     <!-- 거래번호가 있는 KG이니시스 주문 — 그려질 때 영수증 조회 API 를 한 번 불러 응답을 화면 상태에 담고, 아래 블록이 그 값을 나눠 쓴다. 영수증 주소는 플러그인 API 가 내려준다 — 레이아웃에 결제사 외부 주소를 적으면 편집기 저장 게이트(외부 URL 금지)가 거절한다. 회원은 토큰(선택 인증), 비회원은 조회 토큰 헤더로 같은 API 를 부른다 -->

@@ -462,6 +462,18 @@
                                                                 "text": "{{row.option_name}}"
                                                             },
                                                             {
+                                                                "comment": "품목 과세 종류 — 주문 시점에 확정한 값(옵션 지정 ?? 상품 기본값). 과세 회색·면세 파랑·영세 초록 (#612)",
+                                                                "type": "composite",
+                                                                "name": "Badge",
+                                                                "if": "{{row.tax_status}}",
+                                                                "props": {
+                                                                    "size": "sm",
+                                                                    "color": "{{row.tax_status === 'zero_rated' ? 'green' : (row.tax_status === 'tax_free' ? 'blue' : 'gray')}}",
+                                                                    "className": "mt-1"
+                                                                },
+                                                                "text": "{{row.tax_status_label}}"
+                                                            },
+                                                            {
                                                                 "comment": "선택된 추가옵션 (스냅샷 — 옵션명 아래 별행, D14)",
                                                                 "type": "basic",
                                                                 "name": "Div",
@@ -760,9 +772,10 @@
                                                         "text": "{{row.final_amount_formatted}}"
                                                     },
                                                     {
+                                                        "comment": "품목별 과세 구분 — 과세 행은 과세 금액·부가세, 영세 행은 영세 금액(부가세 0)을 보인다 (#612 S7: 종전엔 리소스 미노출로 늘 숨었다)",
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "if": "{{row.subtotal_tax_amount > 0}}",
+                                                        "if": "{{row.tax_status === 'taxable' && row.subtotal_tax_amount > 0}}",
                                                         "props": {
                                                             "className": "text-tertiary block"
                                                         },
@@ -776,6 +789,15 @@
                                                             "className": "text-tertiary block"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.vat: {{row.subtotal_vat_amount_formatted}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{row.subtotal_zero_rated_amount > 0}}",
+                                                        "props": {
+                                                            "className": "text-tertiary block"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.zero_rated: {{row.subtotal_zero_rated_amount_formatted}}"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -1163,6 +1185,16 @@
                                                             "className": "text-tertiary block"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.vat: {{order.data?.total_vat_amount_formatted}}"
+                                                    },
+                                                    {
+                                                        "comment": "합계 줄 영세 금액 — 과세 금액에 포함된 몫(부가세 0) (#612)",
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "if": "{{order.data?.total_zero_rated_amount > 0}}",
+                                                        "props": {
+                                                            "className": "text-tertiary block"
+                                                        },
+                                                        "text": "$t:sirsoft-ecommerce.admin.order.detail.order_info.price_details.zero_rated: {{order.data?.total_zero_rated_amount_formatted}}"
                                                     },
                                                     {
                                                         "type": "basic",

@@ -274,6 +274,7 @@
     "product_amount": "商品金額",
     "taxable_amount": "課税金額",
     "tax_free_amount": "非課税金額",
+    "zero_rated_amount": "ゼロ税率金額",
     "discount_total": "割引",
     "coupon_discount": "クーポン割引",
     "code_discount": "割引コード割引",

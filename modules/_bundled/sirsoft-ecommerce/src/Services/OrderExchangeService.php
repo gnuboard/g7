@@ -3374,11 +3374,14 @@ class OrderExchangeService
             $successor->subtotal_volume = ($target->volume ?? 0) * $successor->quantity;
 
             // 스냅샷의 정체는 신규 옵션, 가격은 원 행 — 재계산이 원 금액을 재현해야 한다.
+            // 과세 종류도 원 행을 잇는다(#612): 과세·면세·영세 금액이 원 행에서 그대로 복사되므로,
+            // 신규 옵션의 지정값을 스냅샷에 실으면 이후 부분취소 재계산이 같은 금액을 다른 갈래로 다시 나눈다.
             $originalSnapshot = $original->option_snapshot ?? [];
             $successor->option_snapshot = array_merge($target->toSnapshotArray(), [
                 'price_adjustment' => $originalSnapshot['price_adjustment'] ?? $target->price_adjustment,
                 'list_price' => $originalSnapshot['list_price'] ?? $target->list_price,
                 'selling_price' => $originalSnapshot['selling_price'] ?? $target->selling_price,
+                'tax_status' => $originalSnapshot['tax_status'] ?? null,
             ]);
         }
 
@@ -4062,6 +4065,27 @@ class OrderExchangeService
     }
 
     /**
+     * 「교환 후」 재계산 입력 스냅샷의 과세 종류를 원 주문상품 행 값으로 맞춥니다 (#612).
+     *
+     * 실제 후속 행은 원 행의 과세 종류를 잇는다(`ensureNewOrderOption`) — 미리보기만 신규 옵션 값을 쓰면
+     * 영세 → 과세 교환이 화면에서는 부가세가 붙은 금액으로 보이고 실제 장부는 영세로 남는다.
+     *
+     * @param  array  $snapshot  치환 옵션 스냅샷
+     * @param  OrderOption|null  $original  원 주문상품 행
+     * @return array 과세 종류를 맞춘 스냅샷
+     */
+    protected function withOriginalTaxStatus(array $snapshot, ?OrderOption $original): array
+    {
+        if ($original === null) {
+            return $snapshot;
+        }
+
+        $snapshot['tax_status'] = $original->option_snapshot['tax_status'] ?? $original->tax_status?->value;
+
+        return $snapshot;
+    }
+
+    /**
      * 신청 계획을 재계산 엔진의 옵션 치환 입력으로 바꿉니다. ("교환 후" 열의 표시용 2-패스)
      *
      * 옵션을 바꾸는 교환은 신규 옵션 스냅샷(정가·조정액·적립 규칙·옵션값 요약)을, 같은 옵션에서
@@ -4084,9 +4108,9 @@ class OrderExchangeService
                 'quantity' => (int) $plan['quantity'],
                 'product_option_id' => $plan['is_option_change'] ? (int) $plan['target']->id : null,
                 'unit_price' => (int) round((float) $plan['new_unit_price']),
-                'option_snapshot' => $plan['is_option_change']
+                'option_snapshot' => $this->withOriginalTaxStatus($plan['is_option_change']
                     ? $newSnapshot
-                    : array_merge($option->option_snapshot ?? [], $newSnapshot),
+                    : array_merge($option->option_snapshot ?? [], $newSnapshot), $option),
                 'additional_options_snapshot' => $plan['new_additional_options_snapshot'] ?? [],
             ];
         }
@@ -4116,9 +4140,9 @@ class OrderExchangeService
                 'quantity' => (int) $item->exchange_quantity,
                 'product_option_id' => $item->new_product_option_id ? (int) $item->new_product_option_id : null,
                 'unit_price' => (int) round((float) $item->new_unit_price),
-                'option_snapshot' => $item->new_product_option_id
+                'option_snapshot' => $this->withOriginalTaxStatus($item->new_product_option_id
                     ? $newSnapshot
-                    : array_merge($orderOption?->option_snapshot ?? [], $newSnapshot),
+                    : array_merge($orderOption?->option_snapshot ?? [], $newSnapshot), $orderOption),
                 'additional_options_snapshot' => $newSnapshot['additional_options_snapshot'] ?? [],
             ];
         }

@@ -25,8 +25,8 @@ trait SplitsInicisTax
     /**
      * 승인 결제에 남길 과세 구분 표식을 만듭니다.
      *
-     * 결제창이 실은 값과 같은 규칙이다 — 주문 면세 합계를 청구액과 같은 스냅샷 환산 규칙으로 바꾸고 승인액으로 자른다
-     * (이커머스 `buildPgPaymentData` 의 `tax_free_amount`).
+     * 결제창이 실은 값과 같은 규칙이다 — 주문 면세 합계(면세 + 영세, `Order::pgTaxFreeAmount()`)를 청구액과 같은
+     * 스냅샷 환산 규칙으로 바꾸고 승인액으로 자른다(이커머스 `buildPgPaymentData` 의 `tax_free_amount`, 1.3.3 #612).
      *
      * @param  Order  $order  승인한 주문
      * @param  int  $approvedAmount  승인 금액(결제 통화 최소 단위)
@@ -34,7 +34,7 @@ trait SplitsInicisTax
      */
     private function buildTaxSplitApprovalMeta(Order $order, int $approvedAmount): array
     {
-        $taxFreeBase = (float) ($order->total_tax_free_amount ?? 0);
+        $taxFreeBase = $this->pgTaxFreeOf($order);
         if ($taxFreeBase <= 0 || $approvedAmount <= 0) {
             return [];
         }
@@ -69,8 +69,9 @@ trait SplitsInicisTax
         }
 
         $budget = max(0, (int) ($split['tax_free_amount'] ?? 0) - (int) ($split['tax_free_cancelled'] ?? 0));
-        $taxFreeTotal = (int) round((float) ($order->total_tax_free_amount ?? 0));
-        $taxableTotal = (int) round((float) ($order->total_tax_amount ?? 0));
+        // 승인 때와 같은 분류 — 면세 = 면세 + 영세, 과세 = 영세를 뺀 과세 합계(#612)
+        $taxFreeTotal = (int) round($this->pgTaxFreeOf($order));
+        $taxableTotal = (int) round($this->pgTaxableOf($order));
         $classified = $taxFreeTotal + $taxableTotal;
 
         $share = match (true) {
@@ -107,5 +108,34 @@ trait SplitsInicisTax
         $meta['tax_split']['tax_free_cancelled'] = (int) ($meta['tax_split']['tax_free_cancelled'] ?? 0) + max(0, $taxFree);
 
         return $meta;
+    }
+
+    /**
+     * 결제사에 면세로 넘길 주문 금액(면세 + 영세)을 읽습니다.
+     *
+     * 이커머스 1.3.3 의 `Order::pgTaxFreeAmount()` 를 쓰고, 그 메서드가 없는 구버전(영세 없음)은 면세 합계로 떨어진다 —
+     * 플러그인 갱신은 이커머스 의존 버전을 다시 검사하지 않아 구버전과 함께 돌 수 있다.
+     *
+     * @param  Order  $order  주문
+     * @return float 면세 + 영세
+     */
+    private function pgTaxFreeOf(Order $order): float
+    {
+        return method_exists($order, 'pgTaxFreeAmount')
+            ? $order->pgTaxFreeAmount()
+            : (float) ($order->total_tax_free_amount ?? 0);
+    }
+
+    /**
+     * 결제사에 과세로 넘길 주문 금액(영세를 뺀 과세 합계, 부가세 포함)을 읽습니다.
+     *
+     * @param  Order  $order  주문
+     * @return float 과세 합계(영세 제외)
+     */
+    private function pgTaxableOf(Order $order): float
+    {
+        return method_exists($order, 'pgTaxableAmount')
+            ? $order->pgTaxableAmount()
+            : (float) ($order->total_tax_amount ?? 0);
     }
 }

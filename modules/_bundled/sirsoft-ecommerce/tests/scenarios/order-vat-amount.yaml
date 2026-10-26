@@ -18,14 +18,21 @@ description: |
     - `classifyTaxStatus()` 가 옵션별 `tax_rate` / `vat_amount` 를 산출 (스냅샷 모드는 주문 시점 세율 고정)
     - 합산은 **옵션별 부가세의 합** — 전체 과세표준에 단일 세율을 적용하면 세율 혼합 주문에서 어긋난다
 
+  #612 영세(zero_rated) 추가:
+    - 영세 = 과세 대상·세율 0%. 과세표준(`total_tax_amount`)에 들어가고 부가세는 0,
+      그 몫은 `total_zero_rated_amount` 에 따로 기록한다. 옵션의 과세 종류가 상품 기본값을 덮는다.
+    - 주문 생성이 「계산 부가세 0」을 구버전 임시주문으로 오인해 과세표준/11 로 다시 채우던 폴백은
+      계산 결과에 부가세 키가 아예 없을 때만 돈다(그때도 영세분은 기준에서 뺀다).
+
 axes:
-  tax_status: [taxable, tax_free]
-  tax_rate: [standard_10, reduced_5, missing]
-  order_composition: [single_rate, mixed_rate, taxable_plus_free]
-  write_point: [order_create, payment_record, partial_cancel_recalc, upgrade_backfill]
+  tax_status: [taxable, tax_free, zero_rated]
+  tax_rate: [standard_10, reduced_5, zero, missing]
+  order_composition: [single_rate, mixed_rate, taxable_plus_free, zero_rated_only, taxable_free_zero_mixed]
+  write_point: [order_create, payment_record, partial_cancel_recalc, payment_cancelled_vat, upgrade_backfill]
 
 exclusions:
   - { tax_status: tax_free, tax_rate: reduced_5, reason: "면세 상품의 세율은 부가세에 반영되지 않음" }
+  - { tax_status: zero_rated, tax_rate: reduced_5, reason: "영세는 상품 세율과 무관하게 0% — 세율 값은 무시된다" }
 
 effects:
   - vat_calculated_for_taxable_items
@@ -39,10 +46,21 @@ effects:
   - zero_rate_yields_zero_vat
   - snapshot_rate_freezes_order_time_value
   - upgrade_backfills_only_zero_vat_orders
+  - zero_vat_calculation_not_refilled_at_creation      # #612 S1 — 계산 부가세 0 을 주문 생성이 10% 로 다시 채우지 않는다
+  - zero_rated_only_order_records_zero_vat_and_ledger  # #612 — 영세만 주문: vat 0 · zero_rated = 과세표준 · 결제 vat 0 · 품목 tax_status
+  - mixed_zero_rated_order_splits_ledger               # #612 — 과세·면세·영세 혼합: 장부 4값과 PG 면세(면세+영세)
+  - zero_rated_partial_cancel_recalculates_ledger      # #612 — 영세 품목 부분취소: 재계산이 행의 확정 과세 종류로 갈래를 다시 나눔
+  - payment_cancelled_vat_accumulates_on_partial_refund  # #612 ④ — 결제 행 취소 부가세 = 재계산 전 − 후 누적(승인 부가세 상한)
+  - zero_rated_classified_after_product_coupon         # #612 — 상품쿠폰 할인 뒤 금액으로 과세·영세를 나눈다(영세 몫·부가세 모두 할인 후 기준)
+  - shipping_vat_from_taxable_share_only               # #612 — 배송비 부가세는 배송비 과세 몫(Ts)에서만, 영세 몫은 영세 금액에 더한다(주문 생성 통합)
+  - zero_rated_full_cancel_zeroes_ledger               # #612 — 전액취소는 영세 금액(base·mc)도 과세·면세·부가세와 함께 0
+  - snapshot_unknown_tax_status_falls_back_to_taxable  # #612 W12 — 상품 스냅샷의 손상·미지 tax_status 는 과세로 해석
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/VatCalculatorTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Order/OrderVatTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Order/ZeroRatedClaimLedgerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/DTO/SnapshotProductTaxStatusTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Upgrade/OrderVatBackfillTest.php
 
 rules_layer_coverage:

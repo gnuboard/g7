@@ -56,7 +56,8 @@
   },
   "tax_status": {
     "taxable": "課税",
-    "tax_free": "免税"
+    "tax_free": "免税",
+    "zero_rated": "ゼロ税率"
   },
   "target_screen": {
     "products": "商品",
