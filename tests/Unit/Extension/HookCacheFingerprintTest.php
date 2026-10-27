@@ -36,6 +36,13 @@ class HookCacheFingerprintTest extends TestCase
     private string $tempDir;
 
     /**
+     * 시험 시작 때 등록돼 있던 Composer 로더의 vendor 경로 목록.
+     *
+     * @var array<int, string>
+     */
+    private array $loadersBefore = [];
+
+    /**
      * 지문 대상 시험 모듈 디렉터리와 임시 디렉터리를 만듭니다.
      *
      * @return void 반환값 없음
@@ -54,15 +61,27 @@ class HookCacheFingerprintTest extends TestCase
         ExtensionFingerprint::forget();
         LifecycleWarnings::current()->clear();
         $this->resetHookCacheMemo();
+        $this->loadersBefore = array_keys(ClassLoader::getRegisteredLoaders());
     }
 
     /**
      * 시험 디렉터리를 지우고 훅 캐시 메모를 비웁니다.
      *
+     * 오토로드 재등록(`healStaleAutoload` → `reregisterRuntimeAutoload`)이 시험 DB 에 설치 행이 남은 확장의
+     * `vendor/autoload.php` 를 불러오면, Composer 가 그 로더를 맨 앞에 끼워 넣어 `Application::inferBasePath()` 가
+     * 그 확장 디렉터리가 된다 — 같은 프로세스의 다음 시험이 전부 `bootstrap/app.php` 를 못 찾는다. 시험이 새로 등록한
+     * 로더만 떼어 등록 순서를 시험 전으로 돌린다.
+     *
      * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
+        foreach (ClassLoader::getRegisteredLoaders() as $vendorDir => $loader) {
+            if (! in_array($vendorDir, $this->loadersBefore, true)) {
+                $loader->unregister();
+            }
+        }
+
         File::deleteDirectory($this->moduleDir);
         File::deleteDirectory($this->tempDir);
         ExtensionFingerprint::forget();
