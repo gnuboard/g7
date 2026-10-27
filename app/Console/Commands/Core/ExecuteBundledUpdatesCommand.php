@@ -13,6 +13,7 @@ use App\Extension\Vendor\VendorMode;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
+use App\Support\ExtensionDependencies;
 use App\Support\UpdateChildEnv;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -400,8 +401,8 @@ class ExecuteBundledUpdatesCommand extends Command
         }
 
         $manifest = json_decode((string) File::get($path), true);
-        $dependencies = is_array($manifest) ? ($manifest['dependencies'][$type] ?? []) : [];
 
-        return is_array($dependencies) ? array_map('strval', array_keys($dependencies)) : [];
+        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 읽으면 식별자 자리에 0·1 이 들어간다(#822 D6)
+        return is_array($manifest) ? ExtensionDependencies::identifiers($manifest['dependencies'] ?? [], $type) : [];
     }
 }

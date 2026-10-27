@@ -367,6 +367,7 @@ return [
         'prune_extra_only_kept' => '배포본에 없는 파일만 다름, 보존: :label (배포본에 없는 파일 :count개)',
         'prune_extra_only_hint' => '배포본에 없는 파일만 다른 폴더는 이전 판에서 남은 파일일 수 있습니다(기본 업데이트는 새 판에서 지워진 파일을 지우지 않습니다). 확인한 뒤 지우려면 --include-modified 를 함께 지정하세요.',
         'prune_protected_dependency' => '의존 대상이라 보존: :label (:required_by)',
+        'prune_protected_integration' => '켜져 있는 확장의 연동 대상이라 보존: :label (:integrated_by)',
         'prune_no_release_for_modified' => '배포본이 없어 수정 여부를 확인할 수 없습니다 — 수정 여부와 무관하게 지우려면 --include-modified 를 지정하세요.',
         'prune_summary' => ':count개를 삭제했습니다.',
         'unknown_action' => '알 수 없는 동작입니다: :action (list|place|prune)',

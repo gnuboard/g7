@@ -733,6 +733,11 @@ ini_set(\'zlib.output_compression\', \'off\');
     'dep_lock_message' => ':names 이(가) 이 항목을 필요로 합니다. 먼저 해당 확장을 해제해주세요.',
     'dep_version_required' => '필요 버전',
     'dep_version_available' => '설치 가능 버전',
+    'integrations' => '연동',
+    'integration_auto_badge_label' => '연동',
+    'integration_version_mismatch' => '연동 버전 미달',
+    'integration_template_hint' => '템플릿은 직접 선택',
+    'integration_selection_notice' => '「연동」 표시는 고른 확장과 함께 쓰면 연동되는 확장입니다. 고른 순간 자동으로 체크되지만, 해제해도 설치할 수 있습니다.',
     'author' => '제작자',
     'retry' => '재시도',
     'select_all' => '전체 선택',
@@ -851,6 +856,7 @@ ini_set(\'zlib.output_compression\', \'off\');
     // save-extensions.php 다국어 키
     'log_extensions_selected' => '확장 기능 선택 완료: 관리자 템플릿 :admin개, 사용자 템플릿 :user개, 모듈 :modules개, 플러그인 :plugins개, 언어팩 :language_packs개',
     'log_extensions_saved' => '확장 기능 선택이 저장되었습니다.',
+    'log_install_order_cycle' => '설치 순서 정렬을 건너뜁니다(:type 순환 의존: :cycle). 선택한 순서대로 설치합니다.',
     'error_admin_template_required' => '관리자 템플릿을 최소 1개 이상 선택해주세요.',
     'error_invalid_extension_identifier' => '확장 식별자 ":identifier" 가 허용된 형식이 아닙니다 (그룹: :group). 영문/숫자/`._-` 만 사용할 수 있습니다.',
 

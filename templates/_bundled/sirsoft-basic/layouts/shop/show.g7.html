@@ -76,8 +76,9 @@
     </fallback>
   </data-source>
   <!-- 상품 문의 탭. 응답의 `meta` 가 이 상품의 문의 게시판 설정(비밀글 허용·첨부 한도·글자수 제한)을
-       함께 실어 오고, 문의 작성 창의 검증이 그 값을 그대로 쓴다 — 그래서 목록과 설정이 한 소스다 -->
-  <data-source id="qna" label_key="$t:editor.data_source.qna" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/{{route.product_code}}/inquiries" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+       함께 실어 오고, 문의 작성 창의 검증이 그 값을 그대로 쓴다 — 그래서 목록과 설정이 한 소스다.
+       문의는 게시판 글로 저장되므로 게시판 모듈이 꺼져 있으면 부르지 않는다(탭도 숨는다) -->
+  <data-source id="qna" label_key="$t:editor.data_source.qna" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/{{route.product_code}}/inquiries" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive" if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}">
     <params page="{{_local.qnaPage ?? 1}}" :per_page="10" exclude_secret="{{_local.qnaExcludeSecret ?? false}}"/>
     <fallback>
       <field name="items" :value="[]"/>
@@ -191,7 +192,7 @@
         </div>
       </div>
       <!-- 탭 네비게이션 -->
-      <tab-navigation data-type="composite" :tabHrefMergeQuery="true" hiddenTabIds="{{_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug ? [] : ['qna']}}" activeTabId="{{_local.activeTab ?? 'info'}}" variant="underline">
+      <tab-navigation data-type="composite" :tabHrefMergeQuery="true" hiddenTabIds="{{(_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug &amp;&amp; (_global.activeModules?.includes('sirsoft-board') ?? true)) ? [] : ['qna']}}" activeTabId="{{_local.activeTab ?? 'info'}}" variant="underline">
         <prop name="tabs">
           <item id="info" href="{{route.path}}?tab=info" label="$t:shop.tabs.detail_info" iconName="file-text"/>
           <item id="reviews" href="{{route.path}}?tab=reviews" label="$t:shop.tabs.reviews" badge="{{reviews.data?.total_count ?? 0}}" iconName="star"/>

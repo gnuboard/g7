@@ -14,7 +14,7 @@
         {
             "type": "basic",
             "name": "Select",
-            "if": "{{query?.type === 'posts'}}",
+            "if": "{{query?.type === 'posts' && (_global.activeModules?.includes('sirsoft-board') ?? true)}}",
             "actions": [
                 {
                     "comment": "같은 검색 안에서 범위만 좁히는 이동이라 mergeQuery 로 검색어·탭·정렬을 승계한다. 결과 집합이 달라지므로 페이지·커서는 빈 값으로 지운다 — '전체 게시판'(빈 값)을 고르면 board_slug 키 자체가 주소에서 사라진다",
@@ -104,7 +104,7 @@
         {
             "type": "basic",
             "name": "Select",
-            "if": "{{query?.type === 'products'}}",
+            "if": "{{query?.type === 'products' && (_global.activeModules?.includes('sirsoft-ecommerce') ?? true)}}",
             "actions": [
                 {
                     "comment": "같은 결과 집합의 순서만 바꾸는 이동이라 mergeQuery 로 검색어·탭·게시판필터를 승계한다. 순서가 바뀌면 지금 페이지의 내용이 달라지므로 페이지·커서는 빈 값으로 지운다",

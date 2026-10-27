@@ -2131,6 +2131,20 @@
     /** 의존성에 의해 자동 선택된 확장 identifier 집합 */
     const autoSelectedSet = new Set();
 
+    /**
+     * 선택 연동(integrations)으로 자동 체크한 대상 — owner 식별자 → Set(대상 식별자).
+     *
+     * 연동은 「있으면 연동되고 없어도 동작한다」라서 의존성과 달리 해제를 막지 않고 「다음」도 막지 않는다.
+     * 사용자가 직접 고른 확장의 연동 대상만 한 단계 자동 체크한다(자동 체크된 확장의 연동은 따라가지 않는다).
+     */
+    const autoSelectedByIntegration = {};
+
+    /** 사용자가 직접 해제한 연동 자동 체크 대상 — 다시 자동 체크하지 않는다 */
+    const userDeselectedIntegrations = new Set();
+
+    /** 연동 자동 체크 대상 유형 — 템플릿은 단일 선택이라 안내만 한다 */
+    const INTEGRATION_SELECTABLE_TYPES = ['modules', 'plugins'];
+
     async function loadExtensions() {
         const form = document.getElementById('extension-form');
         const loadingEl = document.getElementById('extensions-loading');
@@ -2318,7 +2332,7 @@
         const author = item.author || '';
 
         // 의존성 표시 (identifier → name 변환, 모듈/플러그인 아이콘 추가)
-        let depsHtml = '';
+        let depsBlock = '';
         if (item.dependencies && item.dependencies.length > 0) {
             const depsText = item.dependencies.map(function(depId) {
                 const depInfo = findExtensionById(depId);
@@ -2326,9 +2340,16 @@
                 const depIcon = depInfo ? (depInfo.type === 'plugin' ? 'fa-plug' : 'fa-cube') : 'fa-cube';
                 return '<span class="dep-tag"><i class="fas ' + depIcon + '"></i> ' + escapeHtml(depName) + '</span>';
             }).join(' ');
-            depsHtml = '<div class="extension-card-footer"><div class="extension-card-dependencies">' +
-                '<span class="dep-label">' + (window.EXTENSION_LABELS?.dependencies || lang('dependencies')) + ':</span> ' + depsText + '</div></div>';
+            depsBlock = '<div class="extension-card-dependencies">' +
+                '<span class="dep-label">' + (window.EXTENSION_LABELS?.dependencies || lang('dependencies')) + ':</span> ' + depsText + '</div>';
         }
+
+        // 선택 연동 표시 (「연동: 게시판 · 쇼핑몰 …」, 번들 버전 미달 경고 포함)
+        const integrationsBlock = buildIntegrationsLineHtml(item);
+
+        const depsHtml = (depsBlock || integrationsBlock)
+            ? '<div class="extension-card-footer">' + depsBlock + integrationsBlock + '</div>'
+            : '';
 
         // 선택 표시 아이콘 (단일 선택은 라디오, 다중 선택은 체크박스)
         const selectIcon = isSingleSelect
@@ -2352,6 +2373,72 @@
         });
 
         return card;
+    }
+
+    /**
+     * 연동 대상 유형 키(scan-extensions 의 integrations_detailed.type)로 번들 항목을 찾습니다.
+     *
+     * @param {string} integrationType - modules | plugins | templates
+     * @param {string} identifier - 대상 식별자
+     * @returns {object|null} 번들 항목 또는 null
+     */
+    function findIntegrationTarget(integrationType, identifier) {
+        if (!extensionsData) return null;
+        const categories = integrationType === 'templates'
+            ? ['admin_templates', 'user_templates']
+            : [integrationType];
+        for (let i = 0; i < categories.length; i++) {
+            const found = (extensionsData[categories[i]] || []).find(function(e) { return e.identifier === identifier; });
+            if (found) return found;
+        }
+        return null;
+    }
+
+    /**
+     * owner 카드의 「연동: …」 줄 HTML 을 만듭니다.
+     *
+     * - 템플릿 대상은 자동 체크하지 않으므로 「직접 선택」 안내를 붙인다.
+     * - 번들 버전이 선언한 제약에 못 미치면 「연동 버전 미달」을 붙인다(선택은 막지 않음).
+     *
+     * @param {object} item - 확장 항목 (integrations_detailed 포함)
+     * @returns {string} HTML, 연동 선언이 없으면 빈 문자열
+     */
+    function buildIntegrationsLineHtml(item) {
+        const list = (item && item.integrations_detailed) || [];
+        if (list.length === 0) return '';
+
+        const tags = list.map(function(it) {
+            if (!it || !it.id) return '';
+            const target = findIntegrationTarget(it.type, it.id);
+            const targetName = target ? (getLocalizedText(target.name) || it.id) : it.id;
+            const icon = it.type === 'plugins' ? 'fa-plug' : (it.type === 'templates' ? 'fa-palette' : 'fa-cube');
+            const isTemplate = it.type === 'templates';
+            const mismatch = !!(target && it.version && it.version !== '*' &&
+                !satisfiesVersionConstraint(target.version || '0.0.0', it.version));
+
+            let cls = 'integration-tag';
+            if (isTemplate) cls += ' integration-tag-template';
+            if (mismatch) cls += ' integration-version-mismatch';
+
+            let html = '<span class="' + cls + '" data-integration-type="' + escapeHtml(it.type) + '"' +
+                ' data-integration-id="' + escapeHtml(it.id) + '">' +
+                '<i class="fas ' + icon + '"></i> ' + escapeHtml(targetName);
+            if (isTemplate) {
+                html += ' <span class="integration-template-hint">(' + escapeHtml(lang('integration_template_hint')) + ')</span>';
+            }
+            if (mismatch) {
+                html += ' <span class="integration-version-warning">' +
+                    escapeHtml(lang('integration_version_mismatch')) + ' (' +
+                    escapeHtml(lang('dep_version_required')) + ': ' + escapeHtml(it.version) + ', ' +
+                    escapeHtml(lang('dep_version_available')) + ': ' + escapeHtml(target.version || '') + ')</span>';
+            }
+            html += '</span>';
+            return html;
+        }).join(' ');
+
+        return '<div class="extension-card-integrations">' +
+            '<span class="integration-label">' + escapeHtml(window.EXTENSION_LABELS?.integrations || lang('integrations')) + ':</span> ' +
+            tags + '</div>';
     }
 
     /**
@@ -2688,11 +2775,15 @@
             }
         }
 
+        // 이번 호출로 새로 선택되는가 — 사용자가 직접 고른 순간에만 연동 대상을 자동 체크한다
+        let becameSelected = false;
+
         if (isSingleSelect) {
             // 단일 선택 모드 — 이전 템플릿 해제 시 자동 선택 항목도 정리
             if (isCurrentlySelected && !isRequired) {
                 // 사용자 템플릿: 이미 선택된 항목 클릭 시 선택 해제
                 clearAutoSelectedByOwner(type, identifier);
+                clearIntegrationAutoSelectedByOwner(identifier);
                 selectedExtensions[type] = [];
                 card.classList.remove('selected');
                 const selectEl = card.querySelector('.extension-card-select');
@@ -2702,7 +2793,9 @@
                 const prevId = selectedExtensions[type][0];
                 if (prevId && prevId !== identifier) {
                     clearAutoSelectedByOwner(type, prevId);
+                    clearIntegrationAutoSelectedByOwner(prevId);
                 }
+                becameSelected = !isCurrentlySelected;
                 const allCards = document.querySelectorAll('.extension-card[data-type="' + type + '"]');
                 allCards.forEach(function(c) {
                     c.classList.remove('selected');
@@ -2723,7 +2816,14 @@
                 card.classList.add('selected');
                 const selectEl = card.querySelector('.extension-card-select');
                 if (selectEl) selectEl.innerHTML = '<i class="fas fa-check-square"></i>';
+                becameSelected = true;
             } else {
+                // 사용자가 연동 자동 체크 항목을 직접 해제했으면 기억해 다시 체크하지 않는다
+                if (!_isAutoSelect && isIntegrationAutoSelected(identifier)) {
+                    userDeselectedIntegrations.add(identifier);
+                }
+                forgetIntegrationAutoSelection(identifier);
+
                 // 해제 시 자동 선택 표시 제거
                 autoSelectedSet.delete(identifier);
                 removeAutoSelectedUI(identifier);
@@ -2731,7 +2831,15 @@
                 card.classList.remove('selected');
                 const selectEl = card.querySelector('.extension-card-select');
                 if (selectEl) selectEl.innerHTML = '<i class="far fa-square"></i>';
+
+                // 이 항목이 연동 owner 였다면 그 owner 가 자동 체크한 항목 중 다른 근거 없는 것을 해제
+                clearIntegrationAutoSelectedByOwner(identifier);
             }
+        }
+
+        // 사용자가 직접 고른 순간에만 연동 대상을 한 단계 자동 체크한다(D8 — 자동 선택은 연쇄하지 않음)
+        if (becameSelected && !_isAutoSelect) {
+            autoSelectIntegrations(type, identifier);
         }
 
         updateSelectionSummary();
@@ -3087,6 +3195,233 @@
                     }
                 }
             });
+        });
+    }
+
+    /**
+     * 식별자가 어떤 owner 의 연동으로 자동 체크된 상태인지 반환합니다.
+     *
+     * @param {string} identifier - 대상 식별자
+     * @returns {boolean}
+     */
+    function isIntegrationAutoSelected(identifier) {
+        return Object.keys(autoSelectedByIntegration).some(function(owner) {
+            return autoSelectedByIntegration[owner].has(identifier);
+        });
+    }
+
+    /**
+     * 대상을 모든 owner 의 연동 자동 체크 기록에서 지우고 「연동」 배지를 뗍니다.
+     *
+     * @param {string} identifier - 대상 식별자
+     */
+    function forgetIntegrationAutoSelection(identifier) {
+        Object.keys(autoSelectedByIntegration).forEach(function(owner) {
+            autoSelectedByIntegration[owner].delete(identifier);
+            if (autoSelectedByIntegration[owner].size === 0) delete autoSelectedByIntegration[owner];
+        });
+        removeIntegrationAutoUI(identifier);
+    }
+
+    /**
+     * 사용자가 고른 owner 의 연동 대상(모듈·플러그인)을 한 번 자동 체크합니다.
+     *
+     * - 대상 유형이 템플릿이면 자동 체크하지 않는다(단일 선택이라 사용자가 고른 템플릿이 바뀐다 — 카드에 안내만).
+     * - 번들 목록에 없거나, 이미 선택됐거나, 사용자가 전에 해제한 대상은 건드리지 않는다.
+     * - 자동 체크한 대상의 dependencies 는 뒤이은 autoSelectMissingDependencies() 가 채우고,
+     *   그 대상의 integrations 는 따라가지 않는다(toggleExtension 의 _isAutoSelect 경로).
+     * - 선택 검증·해제 잠금(validateExtensionSelection·computeDependents)에는 관여하지 않는다.
+     *
+     * @param {string} ownerType - owner 카테고리 (admin_templates·user_templates·modules·plugins)
+     * @param {string} ownerIdentifier - owner 식별자
+     * @returns {Array<string>} 이번에 자동 체크한 대상 식별자
+     */
+    function autoSelectIntegrations(ownerType, ownerIdentifier) {
+        if (!extensionsData) return [];
+        const owner = (extensionsData[ownerType] || []).find(function(e) { return e.identifier === ownerIdentifier; });
+        if (!owner) return [];
+
+        const ownerName = getLocalizedText(owner.name) || ownerIdentifier;
+        const picked = [];
+
+        (owner.integrations_detailed || []).forEach(function(it) {
+            if (!it || !it.id || it.id === ownerIdentifier) return;
+            if (INTEGRATION_SELECTABLE_TYPES.indexOf(it.type) === -1) return;
+
+            const targetCat = it.type;
+            const exists = (extensionsData[targetCat] || []).some(function(e) { return e.identifier === it.id; });
+            if (!exists) return;
+            if (selectedExtensions[targetCat].indexOf(it.id) !== -1) return;
+            if (userDeselectedIntegrations.has(it.id)) return;
+
+            window.toggleExtension(targetCat, it.id, false, true);
+            if (selectedExtensions[targetCat].indexOf(it.id) === -1) return; // 카드가 없어 선택되지 않음
+
+            if (!autoSelectedByIntegration[ownerIdentifier]) {
+                autoSelectedByIntegration[ownerIdentifier] = new Set();
+            }
+            autoSelectedByIntegration[ownerIdentifier].add(it.id);
+            applyIntegrationAutoUI(targetCat, it.id, ownerName);
+            picked.push(it.id);
+        });
+
+        return picked;
+    }
+
+    /**
+     * 대상이 계속 선택돼 있을 근거(제외 집합 밖의 선택된 확장이 연동·의존으로 가리킴)를 찾습니다.
+     *
+     * 우선순위: 의존 > 사용자가 직접 고른 확장의 연동 > 자동 체크된 확장의 연동.
+     *
+     * @param {string} identifier - 대상 식별자
+     * @param {Set<string>} excluded - 근거로 치지 않을 식별자 (해제되는 owner 등)
+     * @param {Set<string>} [alsoAuto] - 자동 체크된 것으로 볼 식별자 (기록을 옮기는 중인 후보)
+     * @returns {{kind: string, owner: object, ownerType: string}|null}
+     */
+    function findSelectionBasis(identifier, excluded, alsoAuto) {
+        const categories = ['admin_templates', 'user_templates', 'modules', 'plugins'];
+        let integrationBasis = null;
+        let autoIntegrationBasis = null;
+        for (let c = 0; c < categories.length; c++) {
+            const cat = categories[c];
+            const items = extensionsData[cat] || [];
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.identifier === identifier || excluded.has(item.identifier)) continue;
+                if (selectedExtensions[cat].indexOf(item.identifier) === -1) continue;
+
+                const depends = (item.dependencies_detailed || []).some(function(d) { return d && d.identifier === identifier; });
+                if (depends) return { kind: 'dependency', owner: item, ownerType: cat };
+
+                const integrates = (item.integrations_detailed || []).some(function(it) {
+                    return it && it.id === identifier && INTEGRATION_SELECTABLE_TYPES.indexOf(it.type) !== -1;
+                });
+                if (!integrates) continue;
+                const basis = { kind: 'integration', owner: item, ownerType: cat };
+                if (isIntegrationAutoSelected(item.identifier) || autoSelectedSet.has(item.identifier) ||
+                    (alsoAuto && alsoAuto.has(item.identifier))) {
+                    if (!autoIntegrationBasis) autoIntegrationBasis = basis;
+                } else if (!integrationBasis) {
+                    integrationBasis = basis;
+                }
+            }
+        }
+        return integrationBasis || autoIntegrationBasis;
+    }
+
+    /**
+     * owner 를 해제할 때 그 owner 가 연동으로 자동 체크한 항목 중 다른 선택 근거가 없는 것만 해제합니다.
+     *
+     * 다른 근거 = 여전히 선택된 다른 확장이 그 항목을 의존하거나 연동으로 선언함. 함께 해제되는 항목끼리는
+     * 서로의 근거가 되지 않도록 고정점까지 반복한다. 남는 항목은 근거가 된 owner 로 기록을 옮긴다.
+     * 해제한 항목이 의존성으로 자동 선택해 둔 확장도 clearAutoSelectedByOwner() 로 함께 정리한다.
+     *
+     * @param {string} ownerIdentifier - 해제되는 owner 식별자
+     * @returns {Array<string>} 해제한 대상 식별자
+     */
+    function clearIntegrationAutoSelectedByOwner(ownerIdentifier) {
+        if (!extensionsData || !autoSelectedByIntegration[ownerIdentifier]) return [];
+
+        const candidates = Array.from(autoSelectedByIntegration[ownerIdentifier]);
+        delete autoSelectedByIntegration[ownerIdentifier];
+
+        const isSelected = function(id) {
+            return INTEGRATION_SELECTABLE_TYPES.some(function(t) { return selectedExtensions[t].indexOf(id) !== -1; });
+        };
+
+        // 남길 후보를 고정점까지 넓힌다 — 근거는 「후보 밖 선택 확장」 또는 「이미 남기기로 한 후보」만 인정한다.
+        // (게시판↔쇼핑몰처럼 서로를 연동으로 선언한 후보끼리 서로를 붙잡아 둘 다 남는 것을 막는다)
+        const kept = new Set();
+        let changed = true;
+        while (changed) {
+            changed = false;
+            candidates.forEach(function(id) {
+                if (kept.has(id) || !isSelected(id)) return;
+                const excluded = new Set([ownerIdentifier]);
+                candidates.forEach(function(c) { if (!kept.has(c)) excluded.add(c); });
+                if (isIntegrationAutoSelected(id) || findSelectionBasis(id, excluded)) {
+                    kept.add(id);
+                    changed = true;
+                }
+            });
+        }
+
+        const released = candidates.filter(function(id) { return !kept.has(id) && isSelected(id); });
+        const candidateSet = new Set(candidates);
+        const removed = new Set([ownerIdentifier].concat(released));
+
+        released.forEach(function(id) {
+            removeIntegrationAutoUI(id);
+            ['modules', 'plugins'].forEach(function(cat) {
+                const idx = selectedExtensions[cat].indexOf(id);
+                if (idx === -1) return;
+                selectedExtensions[cat].splice(idx, 1);
+                const card = document.querySelector('.extension-card[data-type="' + cat + '"][data-identifier="' + id + '"]');
+                if (card) {
+                    card.classList.remove('selected');
+                    const selectEl = card.querySelector('.extension-card-select');
+                    if (selectEl) selectEl.innerHTML = '<i class="far fa-square"></i>';
+                }
+                clearAutoSelectedByOwner(cat, id);
+            });
+            // 풀린 항목이 다른 항목의 연동 근거로 기록돼 있었다면(근거 이전) 그것도 같은 규칙으로 정리
+            clearIntegrationAutoSelectedByOwner(id);
+        });
+
+        // 남은 후보 — 근거가 연동이면 그 owner 로 기록·배지를 옮기고, 의존이면 연동 표시만 뗀다
+        candidates.forEach(function(id) {
+            if (removed.has(id) || isIntegrationAutoSelected(id)) return;
+            const basis = findSelectionBasis(id, removed, candidateSet);
+            if (basis && basis.kind === 'integration') {
+                if (!autoSelectedByIntegration[basis.owner.identifier]) {
+                    autoSelectedByIntegration[basis.owner.identifier] = new Set();
+                }
+                autoSelectedByIntegration[basis.owner.identifier].add(id);
+                removeIntegrationAutoUI(id);
+                const cat = INTEGRATION_SELECTABLE_TYPES.find(function(t) { return selectedExtensions[t].indexOf(id) !== -1; });
+                if (cat) applyIntegrationAutoUI(cat, id, getLocalizedText(basis.owner.name) || basis.owner.identifier);
+            } else {
+                removeIntegrationAutoUI(id);
+            }
+        });
+
+        return released;
+    }
+
+    /**
+     * 연동으로 자동 체크된 카드에 「연동」 배지와 CSS 클래스를 붙입니다(필수 의존성 배지와 다른 색).
+     *
+     * @param {string} type - 카드 카테고리 (modules·plugins)
+     * @param {string} identifier - 대상 식별자
+     * @param {string} ownerName - 연동을 선언한 확장 이름
+     */
+    function applyIntegrationAutoUI(type, identifier, ownerName) {
+        const card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
+        if (!card) return;
+        card.classList.add('integration-auto-selected');
+
+        const existing = card.querySelector('.integration-auto-badge');
+        if (existing) existing.remove();
+
+        const badge = document.createElement('span');
+        badge.className = 'integration-auto-badge';
+        badge.innerHTML = '<i class="fas fa-puzzle-piece"></i> ' +
+            escapeHtml(window.EXTENSION_LABELS?.integration_auto_badge_label || lang('integration_auto_badge_label')) +
+            ' <span class="integration-auto-badge-owner">(' + escapeHtml(ownerName) + ')</span>';
+        const infoEl = card.querySelector('.extension-card-info');
+        if (infoEl) infoEl.appendChild(badge);
+    }
+
+    /**
+     * 「연동」 자동 체크 표시를 제거합니다.
+     *
+     * @param {string} identifier - 대상 식별자
+     */
+    function removeIntegrationAutoUI(identifier) {
+        document.querySelectorAll('.extension-card[data-identifier="' + identifier + '"]').forEach(function(card) {
+            card.classList.remove('integration-auto-selected');
+            const badge = card.querySelector('.integration-auto-badge');
+            if (badge) badge.remove();
         });
     }
 

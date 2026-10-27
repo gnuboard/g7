@@ -109,7 +109,9 @@
             </div>
           </div>
           <!-- 함께 쓰면 연동되는 확장 (#639) — manifest `integrations`. 의존(dependencies)과 달리 없어도 이 확장은 동작하므로
-            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다. -->
+            설치를 막지 않고 알려만 준다. 미설치·비활성 대상은 배지로 표시한다. 선언이 없으면 절을 그리지 않는다.
+            요구 버전(`required_version`, 무제약 `*` 은 감춘다)·설치 버전을 보이고, 설치됐는데 제약을 못 맞추면(`is_met === false`) 「버전 미달」 배지를 단다(#822).
+            옛 코어는 `is_met` 을 싣지 않으므로 `false` 일 때만 단다 — `!is_met` 이면 옛 코어에서 모든 항목에 배지가 붙는다. -->
           <div data-ref="integrations_section" data-if="{{(_global.selectedPlugin?.integrations ?? []).length > 0}}">
             <div class="flex-center gap-2 mb-3">
               <icon name="plug" class="text-xl text-gray-500" aria-hidden="true"/>
@@ -122,8 +124,11 @@
                 <icon data-if="{{item.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
                 <icon data-if="{{item.type === 'template'}}" name="palette" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
                 <span class="text-heading">{{item.name}} ({{item.identifier}})</span>
+                <span data-if="{{item.required_version &amp;&amp; item.required_version !== '*'}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-mono">$t:admin.extension_integrations.required_version|version={{item.required_version}}</span>
+                <span data-if="{{item.installed_version}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded font-mono">$t:admin.extension_integrations.installed_version|version={{item.installed_version}}</span>
                 <span data-if="{{!item.is_installed}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.extension_integrations.not_installed</span>
                 <span data-if="{{item.is_installed &amp;&amp; !item.is_active}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.extension_integrations.inactive</span>
+                <span data-if="{{item.is_installed &amp;&amp; item.is_met === false}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.extension_integrations.version_mismatch</span>
               </div>
             </div>
           </div>

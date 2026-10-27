@@ -75,8 +75,16 @@ interface FooterProps {
   copyrightText?: string;
   /** 소셜 미디어 링크 */
   socialLinks?: SocialLinks;
-  /** 링크 그룹 (미지정 시 기본값 사용) */
+  /** 링크 그룹 (미지정 시 기본값 사용 — 직접 넘기면 아래 모듈 플래그와 무관하게 그대로 그린다) */
   linkGroups?: FooterLinkGroup[];
+  /**
+   * 게시판 모듈이 켜져 있는가 — false 면 기본 링크 그룹에서 「커뮤니티」 묶음을 뺀다.
+   * 기본값 true: 레이아웃이 `_global.activeModules` 로 판정해 넘긴다. 값이 오지 않는 경우(루트 레이아웃을 keep 으로
+   * 업데이트해 새 바인딩이 없는 사이트)에는 지금처럼 보인다(#822).
+   */
+  boardEnabled?: boolean;
+  /** 페이지 모듈이 켜져 있는가 — false 면 기본 링크 그룹에서 「정보」·「정책」 묶음(모두 페이지 모듈 문서)을 뺀다. 기본값 true(위와 같은 이유) */
+  pageEnabled?: boolean;
   /** 추가 CSS 클래스 */
   className?: string;
   /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */
@@ -111,6 +119,8 @@ const Footer: React.FC<FooterProps> = ({
   copyrightText,
   socialLinks = {},
   linkGroups,
+  boardEnabled = true,
+  pageEnabled = true,
   className = '',
   editorAttrs,
 }) => {
@@ -129,16 +139,16 @@ const Footer: React.FC<FooterProps> = ({
   // 링크 그룹 그리드 컬럼 — 모바일 1열 / 태블릿 2열 / 데스크톱 5열.
   const gridColumns = isMobile ? 1 : isDesktop ? 5 : 2;
 
-  // 기본 링크 그룹
-  const defaultLinkGroups: FooterLinkGroup[] = [
-    {
-      title: t('footer.community'),
-      links: [
-        { label: t('nav.home'), href: '/' },
-        { label: t('nav.popular'), href: '/boards/popular' },
-        { label: t('footer.all_boards'), href: '/boards' },
-      ],
-    },
+  // 기본 링크 그룹 — 커뮤니티는 게시판 모듈, 정보·정책은 페이지 모듈 문서라 꺼진 모듈의 묶음은 뺀다
+  const communityGroup: FooterLinkGroup = {
+    title: t('footer.community'),
+    links: [
+      { label: t('nav.home'), href: '/' },
+      { label: t('nav.popular'), href: '/boards/popular' },
+      { label: t('footer.all_boards'), href: '/boards' },
+    ],
+  };
+  const pageGroups: FooterLinkGroup[] = [
     {
       title: t('footer.info'),
       links: [
@@ -155,6 +165,11 @@ const Footer: React.FC<FooterProps> = ({
         { label: t('footer.refund'), href: '/page/refund' },
       ],
     },
+  ];
+
+  const defaultLinkGroups: FooterLinkGroup[] = [
+    ...(boardEnabled ? [communityGroup] : []),
+    ...(pageEnabled ? pageGroups : []),
   ];
 
   const groups = linkGroups || defaultLinkGroups;

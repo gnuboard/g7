@@ -33,6 +33,8 @@
                 <set-state target="global" :isTemplateActivating="false"/>
                 <close-modal/>
                 <toast type="success" message="$t:admin.templates.activate_success"/>
+                <!-- 함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 막지 않는 안내라 창을 열지 않는다. -->
+                <toast if="{{(response?.data?.integration_notices ?? []).length !== 0}}" type="info" message="$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + ')').join(', ')}}"/>
                 <refetch-data-source dataSourceId="templates"/>
                 <!-- 호환성 배너도 다시 받는다 — 켠 템플릿이 새로 고치기 전까지 배너에 남지 않게 한다(#145 F8). -->
                 <refetch-data-source dataSourceId="auto_deactivated_banner"/>

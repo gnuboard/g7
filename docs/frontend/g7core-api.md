@@ -1125,7 +1125,7 @@ useEffect(() => {
 
 계약은 두 가지에서 모입니다.
 
-- **코어 예약 계약**: `consent`, `identityChallenge`, `currentUser`, `settings`, `plugins`, `modules`, `appConfig`
+- **코어 예약 계약**: `consent`, `identityChallenge`, `currentUser`, `settings`, `plugins`, `modules`, `appConfig`, `activeModules`·`activePlugins`(코어 7.1.4+)
 - **활성 확장의 선언**: 모듈, 플러그인, 템플릿 manifest 의 `state_contracts`
 
 ### API 목록

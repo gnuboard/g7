@@ -522,7 +522,35 @@ export class TemplateApp {
                 this.globalState.appConfig = g7Config.appConfig;
                 logger.log('Loaded appConfig from G7Config:', Object.keys(g7Config.appConfig));
             }
+
+            // 활성 모듈·플러그인 식별자 목록 (engine-v1.84.0)
+            // `_global.modules` 는 공개 설정이 있는 활성 모듈만 담아 「켜져 있나」를 판정할 수 없다. 레이아웃은
+            // `{{_global.activeModules?.includes('id') ?? true}}` 로 판정한다 — 이 키가 없는 옛 코어에서는 `?? true` 로
+            // 「켜짐」이 된다. 원본 G7Config.activeModules(메타 객체 배열)는 편집기·핸들러 대기가 읽으므로 그대로 둔다.
+            this.loadActiveExtensionIdentifiers(g7Config, 'activeModules');
+            this.loadActiveExtensionIdentifiers(g7Config, 'activePlugins');
         }
+    }
+
+    /**
+     * G7Config 의 활성 확장 메타 배열에서 식별자만 뽑아 같은 이름의 전역 상태로 싣는다.
+     *
+     * 배열이 아니면(옛 서버·키 없음) 전역 상태를 만들지 않는다 — 가드 식의 `?? true` 가 「켜짐」으로 읽게.
+     * 빈 배열은 「켜진 확장 없음」이므로 빈 배열로 싣는다.
+     *
+     * @param g7Config window.G7Config
+     * @param key activeModules | activePlugins
+     * @since engine-v1.84.0
+     */
+    private loadActiveExtensionIdentifiers(g7Config: any, key: 'activeModules' | 'activePlugins'): void {
+        const list = g7Config?.[key];
+        if (!Array.isArray(list)) {
+            return;
+        }
+
+        this.globalState[key] = list
+            .map((meta: any) => (typeof meta === 'string' ? meta : meta?.identifier))
+            .filter((identifier: unknown): identifier is string => typeof identifier === 'string' && identifier !== '');
     }
 
     /**

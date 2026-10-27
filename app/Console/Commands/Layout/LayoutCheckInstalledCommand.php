@@ -105,6 +105,14 @@ class LayoutCheckInstalledCommand extends Command
     private array $unroutedPluginUserLayouts = [];
 
     /**
+     * routes.json `requires` 형식 오류 (`{template, path, source, code, type, reason}`) — 공개 라우트 필터는 이 조건을
+     * 무시하고 라우트를 남긴다(fail-open).
+     *
+     * @var array<int, array<string, string|null>>
+     */
+    private array $routeRequiresWarnings = [];
+
+    /**
      * 읽기 실패를 이미 보고한 출처·조각 키 — 템플릿마다 반복하지 않는다.
      *
      * @var array<string, true>
@@ -144,12 +152,13 @@ class LayoutCheckInstalledCommand extends Command
         $this->includeWarnings = [];
         $this->includeSkipped = [];
         $this->unroutedPluginUserLayouts = [];
+        $this->routeRequiresWarnings = [];
         $this->reportedUnreadable = [];
 
         $templates = $this->targetTemplates();
 
         if ($templates === []) {
-            $this->line($this->option('json') ? json_encode(['templates' => [], 'rows' => [], 'registration' => [], 'include_warnings' => [], 'include_skipped' => [], 'unrouted_plugin_user_layouts' => [], 'ok' => true]) : __('layouts.console.check_no_templates'));
+            $this->line($this->option('json') ? json_encode(['templates' => [], 'rows' => [], 'registration' => [], 'include_warnings' => [], 'include_skipped' => [], 'unrouted_plugin_user_layouts' => [], 'route_requires_warnings' => [], 'ok' => true]) : __('layouts.console.check_no_templates'));
 
             return self::SUCCESS;
         }
@@ -162,6 +171,7 @@ class LayoutCheckInstalledCommand extends Command
 
         $this->checkIncludeWarnings($templates);
         $this->checkUnroutedPluginUserLayouts();
+        $this->checkRouteRequires($templates);
 
         return $this->report(array_map(static fn (Template $t): string => (string) $t->identifier, $templates));
     }
@@ -356,7 +366,7 @@ class LayoutCheckInstalledCommand extends Command
      * 「라우트에 연결되지 않은 플러그인 사용자 화면」 — 활성 플러그인의 `layouts/user` 화면을 활성 사용자 템플릿 라우트와 대조합니다.
      *
      * 라우트는 서빙과 같은 병합({@see TemplateService::getRoutesDataWithModules()} — 필터 `core.routes.filter_merged`
-     * 반영)으로 얻는다. 활성 사용자 템플릿이 없으면 대조할 라우트가 없어 건너뛴다. 화면을 읽지 못한 플러그인은 이 절의
+     * 반영)으로 얻되, 라우트 `requires` 로는 거르지 않는다(꺼진 모듈이 요구하는 라우트도 선언으로 센다). 활성 사용자 템플릿이 없으면 대조할 라우트가 없어 건너뛴다. 화면을 읽지 못한 플러그인은 이 절의
      * 대상이 아니다(「조각 참조 점검 건너뜀」 이 이미 알린다).
      *
      * @return void 반환값 없음
@@ -372,7 +382,8 @@ class LayoutCheckInstalledCommand extends Command
         $routed = [];
         $templateService = app(TemplateService::class);
         foreach ($userTemplates as $template) {
-            $routes = $templateService->getRoutesDataWithModules((string) $template->identifier)['data']['routes'] ?? [];
+            // 선언 전체를 대조한다 — 꺼진 모듈의 `requires` 라우트도 「연결됨」으로 본다
+            $routes = $templateService->getRoutesDataWithModules((string) $template->identifier, applyRequires: false)['data']['routes'] ?? [];
 
             foreach ($routes as $route) {
                 if (is_string($route['layout'] ?? null)) {
@@ -404,6 +415,44 @@ class LayoutCheckInstalledCommand extends Command
 
                 if (! isset($routed[$name])) {
                     $this->unroutedPluginUserLayouts[] = ['plugin' => $plugin->getIdentifier(), 'layout' => $name];
+                }
+            }
+        }
+    }
+
+    /**
+     * 「routes.json requires 형식 오류」 — 점검 대상 템플릿의 라우트(템플릿·활성 모듈 선언, `requires` 로 거르지 않음)에서
+     * 형식이 틀린 `requires` 를 모읍니다.
+     *
+     * 판정은 공개 라우트 필터와 같은 {@see TemplateService::describeRouteRequiresProblems()} 다. 활성이 아닌 템플릿은
+     * 라우트를 병합할 수 없어 건너뛴다.
+     *
+     * @param  array<int, Template>  $templates  점검 대상 템플릿
+     * @return void 반환값 없음
+     */
+    private function checkRouteRequires(array $templates): void
+    {
+        $templateService = app(TemplateService::class);
+
+        foreach ($templates as $template) {
+            $result = $templateService->getRoutesDataWithModules((string) $template->identifier, applyRequires: false);
+
+            foreach ($result['data']['routes'] ?? [] as $route) {
+                if (! is_array($route) || ! array_key_exists('requires', $route)) {
+                    continue;
+                }
+
+                foreach ($templateService->describeRouteRequiresProblems($route) as $problem) {
+                    $source = $route['source'] ?? [];
+
+                    $this->routeRequiresWarnings[] = [
+                        'template' => (string) $template->identifier,
+                        'path' => is_string($route['path'] ?? null) ? $route['path'] : null,
+                        'source' => trim(($source['kind'] ?? '').':'.($source['identifier'] ?? ''), ':'),
+                        'code' => $problem['code'],
+                        'type' => $problem['type'],
+                        'reason' => __('layouts.console.requires_reasons.'.$problem['code'], ['type' => (string) $problem['type']]),
+                    ];
                 }
             }
         }
@@ -515,6 +564,7 @@ class LayoutCheckInstalledCommand extends Command
                 'include_warnings' => $this->includeWarnings,
                 'include_skipped' => $this->includeSkipped,
                 'unrouted_plugin_user_layouts' => $this->unroutedPluginUserLayouts,
+                'route_requires_warnings' => $this->routeRequiresWarnings,
                 'ok' => $ok,
             ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
@@ -546,6 +596,7 @@ class LayoutCheckInstalledCommand extends Command
         $this->reportBudget();
         $this->reportIncludeWarnings();
         $this->reportUnroutedPluginUserLayouts();
+        $this->reportRouteRequiresWarnings();
 
         $counts = array_count_values(array_column($this->rows, 'verdict'));
         $registrationCounts = array_count_values(array_column($this->registration, 'kind'));
@@ -609,6 +660,26 @@ class LayoutCheckInstalledCommand extends Command
             array_map(static fn (array $item): array => [$item['plugin'], $item['layout']], $this->unroutedPluginUserLayouts),
         );
         $this->line('  '.__('layouts.console.unrouted_hint'));
+    }
+
+    /**
+     * 「routes.json requires 형식 오류」 절을 표로 보고합니다 (경고 — 종료 코드에 반영하지 않는다).
+     *
+     * @return void 반환값 없음
+     */
+    private function reportRouteRequiresWarnings(): void
+    {
+        if ($this->routeRequiresWarnings === []) {
+            return;
+        }
+
+        $this->newLine();
+        $this->line('<comment>'.__('layouts.console.requires_header').'</comment>');
+        $this->table(
+            array_values(__('layouts.console.requires_headers')),
+            array_map(static fn (array $item): array => [$item['template'], $item['path'] ?? '-', $item['source'], $item['reason']], $this->routeRequiresWarnings),
+        );
+        $this->line('  '.__('layouts.console.requires_hint'));
     }
 
     /**

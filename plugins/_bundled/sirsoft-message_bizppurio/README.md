@@ -249,10 +249,10 @@ https://your-domain.com/api/plugins/sirsoft-message_bizppurio/webhook
 
 **함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
 
-| 확장 | 유형 | 번들 |
-|---|---|---|
-| `sirsoft-board` | 모듈 | ✅ |
-| `sirsoft-ecommerce` | 모듈 | ✅ |
+| 확장 | 유형 | 버전 제약 | 번들 |
+|---|---|---|---|
+| `sirsoft-board` | 모듈 | `*` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `*` | ✅ |
 <!-- @generated:integrations END -->
 
 ## 문서

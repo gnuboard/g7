@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 
 class DeactivateTemplateCommand extends Command
 {
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
 
     /**
@@ -72,6 +74,7 @@ class DeactivateTemplateCommand extends Command
             if ($result) {
                 // 성공 메시지
                 $this->info($this->lifecycleDoneIcon().' '.__('templates.commands.deactivate.success', ['template' => $identifier]));
+                $this->reportIntegratedBy('template', $identifier);
 
                 // 경고 메시지
                 $this->warn('⚠️  '.__('templates.commands.deactivate.no_active_warning', [

@@ -90,19 +90,24 @@ abstract class BaseApiController extends Controller
             return $response;
         }
 
-        $payload = $response->getData(true);
-        if (! is_array($payload)) {
+        // 객체(stdClass)로 풀어 고친다 — 연관 배열로 풀면 빈 객체 `{}` 가 다시 쓸 때 `[]` 로 바뀐다(#758 같은 결함군, #822)
+        $payload = $response->getData();
+        if (! is_object($payload)) {
             return $response;
         }
 
-        $data = $payload['data'] ?? [];
-        if (! is_array($data) || (array_is_list($data) && $data !== [])) {
-            // 목록 응답은 모양을 바꾸지 않는다 — 생명주기 응답은 객체(연관 배열)다
+        $data = $payload->data ?? null;
+        if ($data === null || $data === []) {
+            $data = new \stdClass;
+        }
+
+        if (! is_object($data)) {
+            // 목록 응답은 모양을 바꾸지 않는다 — 생명주기 응답은 객체다
             return $response;
         }
 
-        $data['warnings'] = $warnings->all();
-        $payload['data'] = $data;
+        $data->warnings = $warnings->all();
+        $payload->data = $data;
 
         return $response->setData($payload);
     }

@@ -367,6 +367,7 @@ return [
         'prune_extra_only_kept' => 'Only files missing from the release differ, kept: :label (files not in the release: :count)',
         'prune_extra_only_hint' => 'Folders that differ only by files missing from the release may hold files left over from an earlier version (a default update does not delete files removed in the new version). After checking, add --include-modified to remove them.',
         'prune_protected_dependency' => 'Kept as a dependency: :label (:required_by)',
+        'prune_protected_integration' => 'Kept as an integration of an active extension: :label (:integrated_by)',
         'prune_no_release_for_modified' => 'No release is available to check for modifications — add --include-modified to delete regardless of modifications.',
         'prune_summary' => 'Deleted :count bundles.',
         'unknown_action' => 'Unknown action: :action (list|place|prune)',

@@ -9,12 +9,18 @@
       <og type="website"/>
     </seo>
   </meta>
-  <!-- 헤더 상단 메뉴와 모바일 드로어의 게시판 목록 — 게시판 모듈이 없거나 응답이 실패하면 fallback 빈 배열이라 메뉴만 비고 화면은 선다.
+  <!-- 헤더 상단 메뉴와 모바일 드로어의 게시판 목록 — 게시판 모듈이 꺼져 있으면 부르지 않고(if), 응답이 실패하면 fallback 빈 배열이라 메뉴만 비고 화면은 선다.
+    활성 목록이 없는 옛 코어에서는 가드가 늘 참이라 꺼진 모듈에도 요청이 나가므로 404 는 삼킨다(토스트 없음).
     메뉴는 보는 사람이 열람할 수 있는 게시판만 돌려주므로 로그인했으면 토큰을 함께 보낸다(auth_mode optional — 빠지면 회원에게도 비회원 메뉴가 나온다). -->
-  <data-source id="boards" label_key="$t:editor.data_source.boards" type="api" endpoint="/api/modules/sirsoft-board/boards/board-menu" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+  <data-source id="boards" label_key="$t:editor.data_source.boards" type="api" endpoint="/api/modules/sirsoft-board/boards/board-menu" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive" if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
+    <error-handling>
+      <on-code code="404">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 로그인 사용자 — initGlobal 로 _global.currentUser 에 올라가 헤더·드로어·본문의 로그인 분기가 전부 이 값을 본다. 비회원도 매 페이지 호출하며 401 은 아래에서 정상 흐름으로 삼킨다. -->
   <data-source id="current_user" label_key="$t:editor.data_source.current_user" type="api" endpoint="/api/auth/user" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive" initGlobal="currentUser">
@@ -23,9 +29,9 @@
     </fallback>
     <success>
       <!-- 로그인 유저 로드 후 선호 통화 재해석 (D-LOGIN-CUR). current_user 는 비동기 data_source 라 init_actions 의 통화 초기화 시점엔 currentUser 가 비어 localStorage 세션값으로 폴백된다. 로드 완료 후 갓 받은 응답값(accountCurrency)을 직접 넘겨 재실행하면 계정 영속 통화(ecommerce_preferred_currency)가 1순위로 덮어쓴다(로그인/새로고침 모두). 핸들러는 이커머스 모듈 소유. -->
-      <action handler="sirsoft-ecommerce.initPreferredCurrency" accountCurrency="{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}" defaultCurrency="{{_global.defaultCurrency}}"/>
+      <action handler="sirsoft-ecommerce.initPreferredCurrency" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" accountCurrency="{{response.data?.data?.ecommerce_preferred_currency ?? response.data?.ecommerce_preferred_currency}}" defaultCurrency="{{_global.defaultCurrency}}"/>
       <!-- 로그인 유저 로드 후 선호 배송국가 재해석 (MP08 후속). 계정 영속 배송국가(ecommerce_preferred_shipping_country)를 1순위로 덮어쓴다. -->
-      <action handler="sirsoft-ecommerce.initPreferredShippingCountry" accountCountry="{{response.data?.data?.ecommerce_preferred_shipping_country ?? response.data?.ecommerce_preferred_shipping_country}}" defaultCountry="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
+      <action handler="sirsoft-ecommerce.initPreferredShippingCountry" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" accountCountry="{{response.data?.data?.ecommerce_preferred_shipping_country ?? response.data?.ecommerce_preferred_shipping_country}}" defaultCountry="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
     </success>
     <error-handling>
       <on-code code="401">
@@ -34,8 +40,9 @@
       </on-code>
     </error-handling>
   </data-source>
-  <!-- 헤더 장바구니 배지 수량 — 비회원도 세야 하므로 인증 대신 카트 키 헤더로 식별한다(auth_mode=optional). 담기/빼기 화면이 refetch 로 다시 부른다. -->
-  <data-source id="cart" label_key="$t:editor.data_source.cart" type="api" endpoint="/api/modules/sirsoft-ecommerce/cart/count" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
+  <!-- 헤더 장바구니 배지 수량 — 비회원도 세야 하므로 인증 대신 카트 키 헤더로 식별한다(auth_mode=optional). 담기/빼기 화면이 refetch 로 다시 부른다.
+    쇼핑몰 모듈이 꺼져 있으면 부르지 않는다(if). 옛 코어에서 꺼진 모듈로 나간 요청의 404 는 삼킨다. -->
+  <data-source id="cart" label_key="$t:editor.data_source.cart" type="api" endpoint="/api/modules/sirsoft-ecommerce/cart/count" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}">
     <headers X-Cart-Key="{{_global.cartKey}}"/>
     <init-global>
       <field name="key" value="cartCount"/>
@@ -46,6 +53,11 @@
         <field name="count" :value="0"/>
       </field>
     </fallback>
+    <error-handling>
+      <on-code code="404">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 알림 배지 숫자만 따로 받는다 — 목록(notifications)은 드롭다운을 열 때 쓰는 무거운 응답이라 배지 갱신마다 그것을 다시 부르지 않기 위해 분리했다. 읽음 처리·삭제·웹소켓 수신이 이것만 refetch 한다. -->
   <data-source id="notification_unread_count" label_key="$t:editor.data_source.notification_unread_count" type="api" endpoint="/api/user/notifications/unread-count" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
@@ -105,15 +117,16 @@
   </transition-overlay>
   <init>
     <action handler="initTheme"/>
-    <action handler="initCartKey"/>
+    <!-- 장바구니 키 발급 — 쇼핑몰 모듈이 꺼져 있으면 발급 API 를 부르지 않는다. -->
+    <action handler="initCartKey" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}"/>
     <!-- 기본 통화(default_currency)를 코어 _global.modules 노출값에서 _global 에 주입 (A1-③). loadFromLocalStorage 의 fallback 기준값. -->
     <set-state target="global" defaultCurrency="{{_global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"/>
     <!-- 선호(표시) 통화를 _global 에 동기 주입. 우선순위 = 로그인 유저 계정 영속 통화(currentUser.ecommerce_preferred_currency, D-LOGIN-CUR) > localStorage 세션값(g7_preferred_currency, ISO형식) > 게스트 사이트 언어(g7_locale) 기반 통화 추정(currencies[].locales 매핑, 회원가입 통화 부여와 동일 입력·우선순위) > default_currency > KRW. 핸들러는 이커머스 모듈 소유(sirsoft-ecommerce.initPreferredCurrency) — 통화=커머스 책임. 모듈 미설치 시 미등록 핸들러로 무동작(통화 globals 자체가 빈 값). -->
-    <action handler="sirsoft-ecommerce.initPreferredCurrency" defaultCurrency="{{_global.defaultCurrency}}"/>
+    <action handler="sirsoft-ecommerce.initPreferredCurrency" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" defaultCurrency="{{_global.defaultCurrency}}"/>
     <!-- 셀렉터 통화 목록 주입 (A1-①). is_default 또는 환율>0 인 통화만 (U11-B 미설정 통화 숨김, 백엔드 buildMultiCurrencyPrices 규칙과 1:1 일치). -->
     <set-state target="global" availableCurrencies="{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0)}}"/>
     <!-- 선호 배송국가를 _global 에 동기 주입 (MP08 후속). 우선순위 = 계정 영속(currentUser.ecommerce_preferred_shipping_country) > localStorage(g7_preferred_shipping_country) > default_country > KR. 핸들러는 이커머스 모듈 소유 — 배송국가=커머스 책임. 모듈 미설치 시 무동작. -->
-    <action handler="sirsoft-ecommerce.initPreferredShippingCountry" defaultCountry="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
+    <action handler="sirsoft-ecommerce.initPreferredShippingCountry" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" defaultCountry="{{_global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}"/>
     <!-- 헤더 배송국가 셀렉터 목록 주입 (MP08 후속). 활성 국가만 {code, name(현지화), flag_class(fi fi-xx)} 형태로. 해외배송 OFF 시 KR 만 활성이라 셀렉터 자연 숨김(2개↑ 게이트). 국가명 $localized(name, fallbackKey): 활성 로케일 키는 서버(localize_catalog_field)가 settings.countries.{code}.name 으로 미리 보강해 통상 즉시 hit 한다. fallbackKey 와 || c.code 는 보강이 실패한 경우의 방어선. -->
     <set-state target="global" availableShippingCountries="{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ code: c.code, name: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code), flag_class: ('fi fi-' + (c.code ?? '').toLowerCase()) }))}}"/>
     <!-- 비회원 주문 조회 토큰 (30분 유효) — 커스텀 핸들러가 localStorage 의 g7_guest_order_token 을 G7Core.state.set 으로 _global.guestOrderToken 에 직접 저장. 표준 loadFromLocalStorage 는 context.setState 를 통해 _local 에만 영향을 주므로 _global 에 토큰이 안 들어가는 문제 회피. initCartKey 패턴 동일. -->
@@ -251,8 +264,8 @@
             </sequence>
           </on>
         </notification-center>
-        <!-- 장바구니 — PC와 동일 순서 (알림 → 장바구니) -->
-        <a href="{{_global.shopBase}}/cart" data-ref="mobile_cart_btn" aria-label="$t:nav.cart_with_count|count={{_global.cartCount ?? 0}}" class="inline-flex items-center justify-center p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer">
+        <!-- 장바구니 — PC와 동일 순서 (알림 → 장바구니). 쇼핑몰 모듈이 꺼져 있으면 그리지 않는다. -->
+        <a href="{{_global.shopBase}}/cart" data-ref="mobile_cart_btn" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" aria-label="$t:nav.cart_with_count|count={{_global.cartCount ?? 0}}" class="inline-flex items-center justify-center p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative cursor-pointer">
           <on type="click">
             <navigate/>
           </on>
@@ -292,8 +305,8 @@
           <icon name="x" size="md"/>
         </button>
       </div>
-      <!-- 검색바 -->
-      <div class="p-4">
+      <!-- 검색바 — 검색 공급자(게시판·쇼핑몰·페이지)가 모두 꺼졌을 때만 숨긴다(데스크톱 머리글 검색칸과 같은 기준). -->
+      <div data-ref="mobile_drawer_search" data-if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}" class="p-4">
         <div class="relative">
           <icon name="search" size="sm" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400"/>
           <input type="text" name="q" placeholder="$t:user.search_placeholder" class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
@@ -374,8 +387,8 @@
               <icon name="user" size="sm"/>
               <span>$t:common.mypage</span>
             </a>
-            <!-- 주문 내역 -->
-            <a href="/mypage/orders" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
+            <!-- 주문 내역 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
+            <a href="/mypage/orders" data-ref="mobile_drawer_orders_link" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
               <on type="click">
                 <set-state target="global" :mobileMenuOpen="false" :mobileUserMenuOpen="false"/>
                 <navigate path="/mypage/orders"/>
@@ -383,8 +396,8 @@
               <icon name="shopping-bag" size="sm"/>
               <span>$t:mypage.tabs.orders</span>
             </a>
-            <!-- 위시리스트 -->
-            <a href="/mypage/wishlist" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
+            <!-- 위시리스트 — 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
+            <a href="/mypage/wishlist" data-ref="mobile_drawer_wishlist_link" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" class="w-full flex items-center justify-start gap-3 px-4 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer">
               <on type="click">
                 <set-state target="global" :mobileMenuOpen="false" :mobileUserMenuOpen="false"/>
                 <navigate path="/mypage/wishlist"/>
@@ -431,8 +444,8 @@
             $t:auth.register_link
           </a>
         </div>
-        <!-- 비회원 주문 조회 진입 — 비로그인일 때만 노출 (모바일 nav) -->
-        <a href="/login?redirect=/mypage/orders" class="block w-full mt-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
+        <!-- 비회원 주문 조회 진입 — 비로그인일 때만 노출 (모바일 nav). 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
+        <a href="/login?redirect=/mypage/orders" data-ref="mobile_drawer_guest_order_link" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" class="block w-full mt-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white cursor-pointer">
           <on type="click">
             <set-state target="global" :mobileMenuOpen="false"/>
             <!-- 주문조회 — 로그인 페이지로 진입 후 redirect 분기. 헤더와 동일 흐름. -->
@@ -454,7 +467,7 @@
           <icon name="home" size="md"/>
           <span>$t:user.nav.home</span>
         </a>
-        <a href="/boards/popular" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
+        <a href="/boards/popular" data-ref="mobile_drawer_popular_link" data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
           <on type="click">
             <!-- 인기글 모아보기로 — 특정 게시판이 아니라 전 게시판 통합 목록이다. -->
             <sequence>
@@ -466,8 +479,8 @@
           <span>$t:user.nav.popular</span>
         </a>
       </div>
-      <!-- 메뉴 섹션 - 게시판 -->
-      <div class="px-4 pb-4">
+      <!-- 메뉴 섹션 - 게시판 (제목 + 목록). 게시판 모듈이 꺼져 있으면 제목까지 통째로 숨긴다. -->
+      <div data-ref="mobile_drawer_boards_section" data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="px-4 pb-4">
         <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3">$t:user.nav.boards</div>
         <div data-each="board in {{boards.data ?? []}}">
           <a href="/board/{{board.slug}}" class="w-full flex items-center justify-between px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
@@ -483,8 +496,8 @@
           </a>
         </div>
       </div>
-      <!-- 메뉴 섹션 - 쇼핑 -->
-      <div class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+      <!-- 메뉴 섹션 - 쇼핑. 쇼핑몰 모듈이 꺼져 있으면 숨긴다. -->
+      <div data-ref="mobile_drawer_shop_section" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" class="px-4 pb-4 border-b border-gray-200 dark:border-gray-700">
         <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 px-3">$t:user.nav.shop</div>
         <a href="{{_global.shopBase}}/products" class="w-full flex items-center justify-start gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer">
           <on type="click">
@@ -512,8 +525,8 @@
           <span data-if="{{_global.cartCount > 0}}" class="px-2 py-0.5 bg-red-600 dark:bg-red-600 text-white text-xs font-bold rounded-full">{{_global.cartCount}}</span>
         </a>
       </div>
-      <!-- 메뉴 섹션 - 정보/정책 -->
-      <div class="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+      <!-- 메뉴 섹션 - 정보/정책. 여섯 링크 모두 페이지 모듈 문서라 페이지 모듈이 꺼져 있으면 묶음째 숨긴다. -->
+      <div data-ref="mobile_drawer_info_section" data-if="{{_global.activeModules?.includes('sirsoft-page') ?? true}}" class="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
         <div class="grid grid-cols-2 gap-x-4">
           <div>
             <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">$t:user.footer.info</div>
@@ -584,8 +597,10 @@
         </div>
       </div>
     </div>
-    <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 === -->
-    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
+    <!-- === 데스크톱 헤더 (Header 컴포넌트) - 모바일에서 숨김 ===
+         shopProductsHref 는 봇 화면(seo-config header_nav)의 「쇼핑」 링크 전용이다 — 값과 글자가 섞인 attrs 패턴({shopBase}/products)을
+         옛 코어(7.1.3 이하)의 봇 렌더가 치환하지 못해 완성된 주소 하나를 prop 으로 넘긴다. 컴포넌트는 이 prop 을 읽지 않는다. -->
+    <header data-type="composite" data-ref="desktop_header" logo="{{_global.settings?.general?.site_logo_url}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" user="{{_global.currentUser}}" cartCount="{{_global.cartCount ?? 0}}" notificationCount="{{_global.notificationCount ?? 0}}" shopBase="{{_global.shopBase ?? '/shop'}}" shopProductsHref="{{_global.shopBase ?? '/shop'}}/products" boards="{{boards.data ?? []}}" :maxVisibleBoards="5" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" shopEnabled="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" searchEnabled="{{(_global.activeModules?.includes('sirsoft-board') ?? true) || (_global.activeModules?.includes('sirsoft-ecommerce') ?? true) || (_global.activeModules?.includes('sirsoft-page') ?? true)}}" availableLocales="{{$locales}}" currentLocale="{{$locale}}" availableCurrencies="{{_global.availableCurrencies ?? []}}" preferredCurrency="{{_global.preferredCurrency ?? _global.defaultCurrency}}" class="hidden" notifications="{{(notifications?.data?.data ?? []).map(n => ({ id: n.id, title: n.subject ?? '', message: n.body ?? '', time: n.created_at ?? '', read: !!n.read_at, url: n.url ?? '', data: n.data ?? {} }))}}" notificationHasMore="{{_global.notificationsHasMore ?? notifications?.data?.pagination?.has_more_pages ?? false}}" notificationLoading="{{_global.notificationsLoadingMore ?? (notifications === undefined)}}" notificationUnreadOnly="{{_global.notificationsUnreadOnly ?? true}}" notificationCanUpdate="{{notifications?.data?.abilities?.can_update === true}}" notificationCanDelete="{{notifications?.data?.abilities?.can_delete === true}}">
       <responsive on="desktop" class="block"/>
       <on event="onNotificationClose">
         <!-- 데스크톱 드롭다운을 닫을 때 노출된 알림 일괄 읽음 — 드롭다운이 닫혀도 목록 데이터는 남아 다음에 열 때 그대로 쓰이므로, 배지뿐 아니라 목록도 처음부터 다시 받아 읽음 상태를 맞춘다. -->
@@ -682,7 +697,7 @@
       </container>
     </div>
     <!-- === 푸터 (Footer 컴포넌트) === -->
-    <footer data-type="composite" data-ref="footer" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}">
+    <footer data-type="composite" data-ref="footer" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" pageEnabled="{{_global.activeModules?.includes('sirsoft-page') ?? true}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}">
       <prop name="socialLinks">
         <field name="github" value="{{_global.settings?.social?.github}}"/>
         <field name="twitter" value="{{_global.settings?.social?.twitter}}"/>

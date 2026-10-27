@@ -105,6 +105,7 @@ class DashboardController extends AdminBaseController
                 'items' => PendingInquiryResource::collection($result['items']),
                 'total' => $result['total'],
                 'board_slug' => $result['board_slug'],
+                'board_active' => $result['board_active'],
             ],
         );
     }

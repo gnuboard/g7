@@ -3,7 +3,20 @@
     "title": "一緒に使うと連携する拡張機能",
     "hint": "以下の拡張機能がインストールされていると、機能が相互に連携します。なくてもこの拡張機能はそのまま動作します。",
     "not_installed": "未インストール",
-    "inactive": "無効"
+    "inactive": "無効",
+    "required_version": "要求 {{version}}",
+    "installed_version": "インストール済み {{version}}",
+    "version_mismatch": "バージョン不足",
+    "active": "使用中",
+    "install_title": "一緒に使うと連携する拡張機能(任意)",
+    "install_hint": "チェックした拡張機能をこの拡張機能より先にインストール・有効化します。チェックを外してもこの拡張機能はそのままインストールされます。",
+    "cannot_select": "ここではインストールできません",
+    "integrated_by_label": "連携中の拡張機能",
+    "deactivate_notice_title": "連携中の拡張機能の確認",
+    "deactivate_notice_body": "{{name}}を無効にすると、以下の拡張機能でこの拡張機能を使っていたメニュー・画面が消えます。以下の拡張機能は引き続き動作します。",
+    "deactivate_confirm": "無効化",
+    "uninstall_notice": "以下の拡張機能がこの拡張機能と連携しています — 削除するとこの拡張機能を使っていたメニュー・画面が消えます。",
+    "notice_toast": "一緒に使うと連携する拡張機能のお知らせ: {{items}}"
   },
   "sidebar": {
     "no_accessible_menus": "アクセス可能なメニューがありません",
@@ -3430,6 +3443,7 @@
       "extension_license_modal": "拡張ライセンス全文",
       "module_force_activate_modal": "モジュール強制有効化",
       "module_force_deactivate_modal": "モジュール強制無効化",
+      "module_deactivate_integrations_modal": "モジュール無効化の連携案内",
       "module_install_modal": "モジュールインストール",
       "module_manual_install_modal": "モジュール手動インストール",
       "module_reactivate_language_packs_modal": "言語パック一括有効化",
@@ -3450,6 +3464,7 @@
       "plugin_extension_license_modal": "プラグインライセンス全文",
       "plugin_force_activate_modal": "プラグイン強制有効化",
       "plugin_force_deactivate_modal": "プラグイン強制無効化",
+      "plugin_deactivate_integrations_modal": "プラグイン無効化の連携案内",
       "plugin_install_modal": "プラグインインストール確認",
       "plugin_manifest_preview_drawer": "プラグイン マニフェスト プレビュー"
     },

@@ -17,7 +17,7 @@
     </div>
     <div data-ref="cascade_dependencies_section" data-if="{{_global.installPreview?.dependencies &amp;&amp; _global.installPreview.dependencies.length > 0}}" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
       <div class="flex-center gap-2 mb-2">
-        <icon name="link" class="text-base text-gray-500"/>
+        <icon name="link" class="text-base text-gray-500 dark:text-gray-400"/>
         <span class="text-primary text-sm font-semibold">$t:admin.templates.modals.cascade_dependencies_title</span>
       </div>
       <p class="text-tertiary mb-2">$t:admin.templates.modals.cascade_dependencies_hint</p>
@@ -30,8 +30,8 @@
             <set-state target="global" installSelectedDeps="{{ $event.target.checked ? [ ...((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier), dep.identifier ] : ((_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier))).filter(id => id !== dep.identifier) }}"/>
           </on>
         </input>
-        <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-base text-gray-500"/>
-        <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500"/>
+        <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400"/>
+        <icon data-if="{{dep.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400"/>
         <span class="text-primary text-sm">{{dep.name || dep.identifier}} ({{dep.identifier}})</span>
         <span class="text-tertiary font-mono">{{dep.required_version}}</span>
         <span data-if="{{dep.is_met}}" class="text-success-soft px-2 py-0.5 bg-green-50 dark:bg-green-900 rounded">$t:admin.templates.modals.dependency_met</span>
@@ -40,9 +40,40 @@
         <span data-if="{{dep.available &amp;&amp; dep.can_select !== true}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.templates.modals.cascade_no_permission</span>
       </label>
     </div>
+    <!-- 함께 쓰면 연동되는 확장(선택, #822) — 미리보기 `integrations`. 의존과 달리 없어도 이 확장은 동작하므로 해제해도 설치는 진행된다.
+         체크한 항목은 서버가 의존 다음·본체 이전에 설치·활성화한다(실패해도 본체 설치는 계속, 결과 안내로 알린다).
+         선택값 규칙은 의존 체크리스트와 같다 — 고른 적이 없으면(`null`) 서버 기본 선택(`default_selected`)에서 시작한다.
+         같은 식별자가 모듈·플러그인 양쪽에 있을 수 있어 `유형:식별자` 로 든다.
+         잠금: 서버가 고를 수 없다고 한 것(`can_select` — 템플릿 대상·권한 없음)과 이미 켜져 있는 것은 표시만 한다.
+         옛 코어는 `integrations` 를 싣지 않으므로 절이 그려지지 않는다. -->
+    <div data-ref="cascade_integrations_section" data-if="{{(_global.installPreview?.integrations ?? []).length &gt; 0}}" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+      <div class="flex-center gap-2 mb-2">
+        <icon name="plug" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+        <span class="text-primary text-sm font-semibold">$t:admin.extension_integrations.install_title</span>
+      </div>
+      <p class="text-tertiary mb-2">$t:admin.extension_integrations.install_hint</p>
+      <label data-each="item in _global.installPreview.integrations" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 mb-1 cursor-pointer">
+        <input type="checkbox" aria-label="{{item.name || item.identifier}} ({{item.identifier}})" checked="{{item.can_select === true &amp;&amp; item.status !== 'active' &amp;&amp; ((_global.installSelectedIntegrations ?? []).includes(item.type + ':' + item.identifier) || ((_global.installSelectedIntegrations === undefined || _global.installSelectedIntegrations === null) &amp;&amp; item.default_selected))}}" disabled="{{item.can_select !== true || item.status === 'active'}}" class="w-4 h-4">
+          <on type="change">
+            <!-- 연동 확장 체크. 선택값이 아직 없으면 서버 기본 선택에서 시작해 이 항목만 더하거나 뺀다(의존 체크와 같은 형태). -->
+            <set-state target="global" installSelectedIntegrations="{{ $event.target.checked ? [ ...((_global.installSelectedIntegrations ?? (_global.installPreview?.integrations ?? []).filter(x => x.default_selected).map(x => x.type + ':' + x.identifier))).filter(k => k !== item.type + ':' + item.identifier), item.type + ':' + item.identifier ] : ((_global.installSelectedIntegrations ?? (_global.installPreview?.integrations ?? []).filter(x => x.default_selected).map(x => x.type + ':' + x.identifier))).filter(k => k !== item.type + ':' + item.identifier) }}"/>
+          </on>
+        </input>
+        <icon data-if="{{item.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+        <icon data-if="{{item.type === 'plugin'}}" name="puzzle-piece" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+        <icon data-if="{{item.type === 'template'}}" name="palette" class="text-base text-gray-500 dark:text-gray-400" aria-hidden="true"/>
+        <span class="text-primary text-sm">{{item.name || item.identifier}} ({{item.identifier}})</span>
+        <span data-if="{{item.required_version &amp;&amp; item.required_version !== '*'}}" class="text-tertiary font-mono">{{item.required_version}}</span>
+        <span data-if="{{item.status === 'not_installed'}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.extension_integrations.not_installed</span>
+        <span data-if="{{item.status === 'inactive'}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.extension_integrations.inactive</span>
+        <span data-if="{{item.status === 'active'}}" class="text-success-soft px-2 py-0.5 bg-green-50 dark:bg-green-900 rounded">$t:admin.extension_integrations.active</span>
+        <span data-if="{{item.is_installed &amp;&amp; item.is_met === false}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.extension_integrations.version_mismatch</span>
+        <span data-if="{{item.can_select !== true &amp;&amp; item.status !== 'active'}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.extension_integrations.cannot_select</span>
+      </label>
+    </div>
     <div data-ref="cascade_language_packs_section" data-if="{{_global.installPreview?.language_packs &amp;&amp; _global.installPreview.language_packs.length > 0}}" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
       <div class="flex-center gap-2 mb-2">
-        <icon name="language" class="text-base text-gray-500"/>
+        <icon name="language" class="text-base text-gray-500 dark:text-gray-400"/>
         <span class="text-primary text-sm font-semibold">$t:admin.templates.modals.cascade_language_packs_title</span>
       </div>
       <p class="text-tertiary mb-2">$t:admin.templates.modals.cascade_language_packs_hint</p>
@@ -118,8 +149,10 @@
             <set-state target="global" :isTemplateInstalling="true"/>
             <api-call :auth_required="true" target="/api/admin/templates/install" method="POST">
               <success>
-                <set-state target="global" :isTemplateInstalling="false" :installSelectedDeps="null" :installSelectedLPs="null"/>
+                <set-state target="global" :isTemplateInstalling="false" :installSelectedDeps="null" :installSelectedLPs="null" :installSelectedIntegrations="null"/>
                 <toast type="success" message="$t:admin.templates.install_success"/>
+                <!-- 함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 막지 않는 안내라 창을 열지 않는다. -->
+                <toast if="{{(response?.data?.integration_notices ?? []).length !== 0}}" type="info" message="$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + ')').join(', ')}}"/>
                 <!-- 함께 고른 언어팩 중 설치하지 못한 것이 있으면 식별자와 첫 사유를 알린다(응답 language_pack_failures). -->
                 <toast if="{{(response.data?.language_pack_failures ?? []).length !== 0}}" type="warning" message="$t:extensions.alerts.language_pack_install_failed|names={{(response.data?.language_pack_failures ?? []).map(f =&gt; f.identifier).join(', ')}}|reason={{response.data?.language_pack_failures?.[0]?.reason ?? ''}}"/>
                 <!-- 이 확장이 아직 꺼져 있어 꺼진 채 설치된 언어팩은 실패가 아니다 — 확장을 켜면 함께 켜진다고 알린다(응답 language_packs_awaiting_host). -->
@@ -138,7 +171,7 @@
                 <set-state target="global" :isTemplateInstalling="false"/>
                 <toast type="error" message="{{error.message}}"/>
               </fail>
-              <body template_name="{{_global.selectedTemplate.identifier}}" dependencies="{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}" language_packs="{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}" layout_source="{{_global.templateLayoutSource ?? 'auto'}}"/>
+              <body template_name="{{_global.selectedTemplate.identifier}}" dependencies="{{ ((_global.installPreview?.dependencies ?? []).filter(d => (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(d.identifier)).map(d => ({ type: d.type, identifier: d.identifier }))) }}" language_packs="{{ ((_global.installPreview?.language_packs ?? []).filter(lp => (_global.installSelectedLPs ?? (_global.installPreview?.language_packs ?? []).filter(x => x.default_selected).map(x => x.bundled_identifier)).includes(lp.bundled_identifier) &amp;&amp; (!lp.depends_on_extension || (_global.installSelectedDeps ?? (_global.installPreview?.dependencies ?? []).filter(x => x.default_selected).map(x => x.identifier)).includes(lp.depends_on_extension))).map(lp => lp.bundled_identifier)) }}" integrations="{{ (_global.installPreview?.integrations ?? []).filter(i => i.can_select === true &amp;&amp; i.status !== 'active' &amp;&amp; (_global.installSelectedIntegrations ?? (_global.installPreview?.integrations ?? []).filter(x => x.default_selected).map(x => x.type + ':' + x.identifier)).includes(i.type + ':' + i.identifier)).map(i => ({ type: i.type, identifier: i.identifier })) }}" layout_source="{{_global.templateLayoutSource ?? 'auto'}}"/>
             </api-call>
           </sequence>
         </on>

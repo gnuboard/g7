@@ -340,6 +340,7 @@ class InstallerIncludeOrderTest extends TestCase
                     'public/install/includes/installer-state.php',
                     'public/install/includes/functions.php',
                     'public/install/includes/installer-ownership.php',
+                    'public/install/includes/install-order.php',
                 ],
                 [
                     'getInstallationState',
@@ -347,6 +348,9 @@ class InstallerIncludeOrderTest extends TestCase
                     'installer_require_owner',
                     'installer_require_csrf',
                     'installer_json_error',
+                    'installerSortSameTypeByDependencies',
+                    'installerLoadBundledDependencyMap',
+                    'addLog',
                 ],
             ],
             'index.php (Step3 폼 / 완료 감지)' => [

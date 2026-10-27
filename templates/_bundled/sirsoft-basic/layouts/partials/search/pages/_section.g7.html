@@ -1,6 +1,6 @@
-<!-- 문서 결과 묶음 — 전체 탭에서는 다섯 건 미리보기 + «전체보기», 문서 탭에서는 전부를 펼친다. 한 파일이 두 쓰임을 겸한다. -->
+<!-- 문서 결과 묶음 — 전체 탭에서는 다섯 건 미리보기 + «전체보기», 문서 탭에서는 전부를 펼친다. 한 파일이 두 쓰임을 겸한다. 페이지 모듈이 꺼져 있으면 묶음째 숨긴다. -->
 <partial description="페이지 섹션 (전체 탭: 5개 미리보기, 페이지 탭: 전체 목록)">
-  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div data-if="{{_global.activeModules?.includes('sirsoft-page') ?? true}}" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
     <!-- 섹션 헤더 (전체 탭에서만 표시) -->
     <div data-if="{{(query?.type ?? 'all') === 'all'}}" class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50">
       <div class="flex items-center gap-2">

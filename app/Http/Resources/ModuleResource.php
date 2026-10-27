@@ -4,12 +4,14 @@ namespace App\Http\Resources;
 
 use App\Extension\CoreVersionChecker;
 use App\Helpers\TimezoneHelper;
+use App\Http\Resources\Traits\ExposesIntegratedBy;
 use App\Http\Resources\Traits\ExposesUpdateCoreCompatibility;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ModuleResource extends BaseApiResource
 {
+    use ExposesIntegratedBy;
     use ExposesUpdateCoreCompatibility;
 
     /**
@@ -28,6 +30,8 @@ class ModuleResource extends BaseApiResource
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
+            // 이 모듈을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
+            'integrated_by' => $this->integratedBy('module'),
             'status' => $this->getValue('status'),
             // 멈춘 업데이트 — 관리자 카드가 「업데이트 멈춤」 표시와 정리(다시 업데이트)·활성화 단추를 보인다
             'stuck_update' => (bool) $this->getValue('stuck_update', false),
@@ -109,6 +113,8 @@ class ModuleResource extends BaseApiResource
             'requires_core' => $this->getValue('requires_core'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
+            // 이 모듈을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
+            'integrated_by' => $this->integratedBy('module'),
             'status' => $this->getValue('status'),
             'is_installed' => $this->getValue('is_installed', false),
             // 상세 정보

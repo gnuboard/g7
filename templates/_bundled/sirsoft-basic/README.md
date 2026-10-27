@@ -5,14 +5,10 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.4-0066FF?style=flat-square" alt="version 1.2.4">
+  <img src="https://img.shields.io/badge/version-1.3.0-0066FF?style=flat-square" alt="version 1.3.0">
   <img src="https://img.shields.io/badge/type-%ED%85%9C%ED%94%8C%EB%A6%BF-555555?style=flat-square" alt="type 템플릿">
   <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.1-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.1">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
-  <img src="https://img.shields.io/badge/requires-sirsoft--board-BF8700?style=flat-square" alt="requires sirsoft-board">
-  <img src="https://img.shields.io/badge/requires-sirsoft--ecommerce-BF8700?style=flat-square" alt="requires sirsoft-ecommerce">
-  <img src="https://img.shields.io/badge/requires-sirsoft--page-BF8700?style=flat-square" alt="requires sirsoft-page">
-  <img src="https://img.shields.io/badge/requires-sirsoft--daum__postcode-BF8700?style=flat-square" alt="requires sirsoft-daum_postcode">
 </p>
 <!-- @generated:badges END -->
 
@@ -35,8 +31,10 @@
 다크 모드·반응형·다국어·다중 통화를 기본으로 지원하며, 상점 경로처럼 운영자가 환경설정에서
 바꾸는 값은 화면과 주소에 자동으로 반영됩니다.
 
-이 템플릿만으로는 동작하지 않습니다 — 게시판·이커머스·페이지 모듈과 주소 검색 플러그인이
-함께 설치·활성화되어 있어야 합니다.
+게시판·이커머스·페이지 모듈과 주소 검색 플러그인은 **선택 연동**입니다 — 게시판만, 또는 쇼핑몰만
+켠 사이트에서도 이 템플릿을 쓸 수 있고, 꺼진 모듈의 메뉴·링크·화면은 보이지 않습니다. 모듈을 하나도
+켜지 않은 사이트에서도 홈·로그인·회원가입·마이페이지(회원정보·알림)는 동작합니다. 이 단독 사용은
+그누보드7 코어 7.1.4 이상에서 적용됩니다(그 아래 코어에서는 지금처럼 네 확장이 모두 켜져 있다고 보고 그립니다).
 <!-- @intent END -->
 
 ## 주요 기능
@@ -93,10 +91,6 @@ flowchart LR
 |---|---|
 | 그누보드7 코어 | `>=7.1.1` |
 | PHP | `^8.2` |
-| 의존 모듈 | `sirsoft-board` `>=1.2.1` |
-| 의존 모듈 | `sirsoft-ecommerce` `>=1.3.0` |
-| 의존 모듈 | `sirsoft-page` `>=1.2.0` |
-| 의존 플러그인 | `sirsoft-daum_postcode` `>=1.0.0` |
 <!-- @generated:requirements END -->
 
 ## 설치
@@ -144,8 +138,18 @@ php artisan template:update sirsoft-basic --force
 
 <!-- @intent START -->
 **도입**: 템플릿을 설치·활성화하면 사이트의 방문자 화면이 이 템플릿으로 바뀝니다. 게시판·
-이커머스·페이지 모듈과 주소 검색 플러그인이 함께 활성화되어 있어야 모든 화면이 정상 동작합니다 —
-예를 들어 이커머스가 없으면 상점 메뉴로 들어갔을 때 데이터를 받지 못합니다.
+이커머스·페이지 모듈과 주소 검색 플러그인은 필요한 것만 켜면 됩니다(코어 7.1.4 이상).
+
+| 꺼 둔 확장 | 화면에서 달라지는 것 |
+|---|---|
+| 게시판 | 상단 인기글·게시판 탭, 홈의 통계·최근 글·인기 게시판·게시판 요약, 마이페이지 게시글·스크랩·문의 탭, 회원 프로필의 글 통계가 빠지고 `/boards`·`/board/…` 주소는 404 입니다 |
+| 이커머스 | 상단 쇼핑 탭·장바구니, 회원 메뉴의 주문내역·위시리스트, 홈의 쇼핑 안내·상품 섹션, 마이페이지 주문·클레임·위시리스트·배송지·적립금·문의 탭이 빠지고 상점 주소는 404 입니다 |
+| 페이지 | 하단·모바일 메뉴의 「정보·정책」 링크, 홈 환영 카드의 「자세히」, 회원가입 약관의 「보기」 단추가 빠지고 `/page/…` 주소는 404 입니다. 약관 동의 체크박스는 그대로 있습니다 |
+| 주소 검색 플러그인 | 우편번호·주소 칸을 직접 입력합니다(회원정보 수정·배송지 관리·주문 배송지 변경) |
+
+쇼핑몰만 켠 사이트의 홈에는 「인기 상품」「신상품」 줄이 나옵니다(게시판이 켜져 있으면 게시판 카드 아래).
+상단·하단 메뉴를 레이아웃 편집기로 고쳐 둔 사이트는 그 고친 레이아웃에 새 조건이 없으므로, 꺼진 모듈의
+링크가 계속 보일 수 있습니다 — 레이아웃을 기본값으로 되돌리거나 편집기에서 같은 조건을 넣으면 적용됩니다.
 
 **상점 주소 바꾸기**: 이커머스 환경설정에서 상점 경로를 바꾸면(`shop` → `store`) 이 템플릿의
 상점 화면 주소도 함께 바뀝니다. 상점을 사이트 첫 화면으로 쓰려면 같은 설정에서 "경로 없음"
@@ -172,16 +176,20 @@ php artisan template:update sirsoft-basic --force
 <!-- @generated:integrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 **이 확장이 의존하는 확장**
 
+없음 — 코어만으로 동작합니다.
+
+**이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
+
+없음.
+
+**함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
+
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
 | `sirsoft-board` | 모듈 | `>=1.2.1` | ✅ |
 | `sirsoft-ecommerce` | 모듈 | `>=1.3.0` | ✅ |
 | `sirsoft-page` | 모듈 | `>=1.2.0` | ✅ |
 | `sirsoft-daum_postcode` | 플러그인 | `>=1.0.0` | ✅ |
-
-**이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
-
-없음.
 <!-- @generated:integrations END -->
 
 ## 문서
@@ -203,7 +211,8 @@ php artisan template:update sirsoft-basic --force
 <!-- @intent START -->
 | 증상 | 원인 | 조치 |
 |---|---|---|
-| 상점 메뉴로 들어가면 화면이 비어 있음 | 이커머스 모듈이 비활성이거나 상품이 없음 | 모듈 활성화 여부와 상품 진열 상태를 확인합니다 |
+| 상점 메뉴로 들어가면 화면이 비어 있음 | 상품이 없거나, 코어 7.1.3 이하에서 이커머스 모듈이 비활성 | 상품 진열 상태와 코어 버전을 확인합니다(7.1.4 이상은 모듈이 꺼지면 상점 메뉴 자체가 사라집니다) |
+| 쇼핑·게시판 메뉴가 사라짐 | 그 모듈이 비활성(코어 7.1.4 이상은 꺼진 모듈의 메뉴를 숨김) | 관리자 → 확장 → 모듈에서 활성화합니다 |
 | 상점 주소가 예전 경로 그대로 | 브라우저에 저장된 예전 링크 | 이 템플릿의 상점 주소는 이커머스 설정을 따릅니다. 메뉴를 통해 다시 들어가면 새 주소가 적용됩니다 |
 | 게시판 메뉴는 보이는데 글 목록이 안 나옴 | 게시판 모듈이 비활성이거나 그 게시판의 접근 권한이 제한됨 | 모듈 활성화와 게시판별 권한 설정을 확인합니다 |
 | 주소 검색 버튼이 없거나 눌러도 반응이 없음 | 주소 검색 플러그인이 비활성이거나 외부 접속이 차단됨 | 플러그인 활성화를 확인합니다. 검색을 불러오지 못하면 주소를 직접 입력할 수 있습니다 |

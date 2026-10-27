@@ -805,10 +805,11 @@ class ExtensionDocScaffolder
             $sections[] = '**함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)';
             $sections[] = '';
             $sections[] = $this->table(
-                ['확장', '유형', '번들'],
+                ['확장', '유형', '버전 제약', '번들'],
                 array_map(fn (array $d): array => [
                     $this->code($d['id']),
                     ExtensionInventory::typeLabel(rtrim($d['type'], 's')),
+                    $this->code($d['constraint'] ?? '*'),
                     $d['bundled'] ? '✅' : '—',
                 ], $integrates),
             );
@@ -820,10 +821,11 @@ class ExtensionDocScaffolder
             $sections[] = '**이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)';
             $sections[] = '';
             $sections[] = $this->table(
-                ['확장', '유형'],
+                ['확장', '유형', '요구 버전'],
                 array_map(fn (array $d): array => [
                     $this->code($d['id']),
                     ExtensionInventory::typeLabel($d['type']),
+                    $this->code($d['constraint'] ?? '*'),
                 ], $integratedBy),
             );
         }

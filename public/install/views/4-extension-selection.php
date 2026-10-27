@@ -16,6 +16,12 @@
 
     <?php require __DIR__.'/partials/recovery-token-notice.php'; ?>
 
+    <!-- 선택 연동 안내 — 「연동」 배지 뜻 (필수 의존성과 달리 해제해도 설치 가능) -->
+    <p class="integration-selection-notice">
+        <i class="fas fa-puzzle-piece"></i>
+        <?= htmlspecialchars(lang('integration_selection_notice')) ?>
+    </p>
+
     <!-- 로딩 표시 -->
     <div id="extensions-loading" class="extension-loading">
         <div class="spinner"></div>
@@ -229,6 +235,10 @@ window.EXTENSION_LABELS = {
     dep_lock_message: <?= installer_json_encode(lang('dep_lock_message')) ?>,
     dep_version_required: <?= installer_json_encode(lang('dep_version_required')) ?>,
     dep_version_available: <?= installer_json_encode(lang('dep_version_available')) ?>,
+    integrations: <?= installer_json_encode(lang('integrations')) ?>,
+    integration_auto_badge_label: <?= installer_json_encode(lang('integration_auto_badge_label')) ?>,
+    integration_version_mismatch: <?= installer_json_encode(lang('integration_version_mismatch')) ?>,
+    integration_template_hint: <?= installer_json_encode(lang('integration_template_hint')) ?>,
     language_pack_disabled_by_extension: <?= installer_json_encode(lang('language_pack_disabled_by_extension')) ?>,
     language_pack_scope_core: <?= installer_json_encode(lang('language_pack_scope_core')) ?>,
     language_pack_scope_module: <?= installer_json_encode(lang('language_pack_scope_module')) ?>,

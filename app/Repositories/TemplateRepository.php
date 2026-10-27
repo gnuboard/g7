@@ -7,6 +7,8 @@ use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
 use App\Models\Template;
+use App\Support\ExtensionDependencies;
+use App\Support\ExtensionIntegrations;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Schema;
 
@@ -204,8 +206,8 @@ class TemplateRepository implements TemplateRepositoryInterface
                 return false;
             }
 
-            $dependencies = $templateData['dependencies'] ?? [];
-            $moduleDependencies = $dependencies['modules'] ?? [];
+            // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
+            $moduleDependencies = ExtensionDependencies::constraints($templateData['dependencies'] ?? [])['modules'];
 
             // 해당 모듈이 의존성에 포함되어 있는지 확인
             return array_key_exists($moduleIdentifier, $moduleDependencies);
@@ -245,11 +247,44 @@ class TemplateRepository implements TemplateRepositoryInterface
                 return false;
             }
 
-            $dependencies = $templateData['dependencies'] ?? [];
-            $pluginDependencies = $dependencies['plugins'] ?? [];
+            // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
+            $pluginDependencies = ExtensionDependencies::constraints($templateData['dependencies'] ?? [])['plugins'];
 
             // 해당 플러그인이 의존성에 포함되어 있는지 확인
             return array_key_exists($pluginIdentifier, $pluginDependencies);
+        })->values();
+    }
+
+    /**
+     * 지정한 확장을 선택 연동(`integrations`)으로 선언한 활성 템플릿을 조회합니다 (7.1.4).
+     *
+     * 연동은 필수 의존과 달리 대상이 꺼져도 동작하지만, 대상을 끄거나 지울 때 「연동 중인 확장」으로 안내합니다.
+     *
+     * @param  string  $type  연동 대상 유형 (module|plugin|template, 복수형도 받음)
+     * @param  string  $identifier  연동 대상 식별자
+     * @return Collection 그 확장을 연동으로 선언한 활성 템플릿 컬렉션
+     */
+    public function findActiveByIntegration(string $type, string $identifier): Collection
+    {
+        $pluralType = ExtensionIntegrations::pluralType($type);
+        if ($pluralType === null) {
+            return new Collection;
+        }
+
+        $activeTemplates = Template::where('status', ExtensionStatus::Active->value)->get();
+        if ($activeTemplates->isEmpty()) {
+            return new Collection;
+        }
+
+        $templateManager = app(TemplateManagerInterface::class);
+        // 콘솔 부팅은 템플릿 로딩을 건너뛴다 — 의존 역조회와 같은 이유로 먼저 불러온다(#145 F4)
+        $templateManager->ensureLoaded();
+
+        return $activeTemplates->filter(function (Template $template) use ($templateManager, $pluralType, $identifier) {
+            $templateData = $templateManager->getTemplate($template->identifier);
+
+            return is_array($templateData)
+                && in_array($identifier, ExtensionIntegrations::normalize($templateData['integrations'] ?? [])[$pluralType], true);
         })->values();
     }
 

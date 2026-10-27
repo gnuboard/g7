@@ -4,6 +4,7 @@ namespace App\Console\Commands\Plugin;
 
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
@@ -16,6 +17,7 @@ class UninstallPluginCommand extends Command
 {
     use HasProgressBar;
     use HasUnifiedConfirm;
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
 
     /**
@@ -114,6 +116,7 @@ class UninstallPluginCommand extends Command
 
             if ($result) {
                 $this->info($this->lifecycleDoneIcon().' '.__('plugins.commands.uninstall.success', ['plugin' => $identifier]));
+                $this->reportIntegratedBy('plugin', $identifier);
                 $this->info('   - '.trans_choice('plugins.commands.uninstall.roles_deleted', $rolesCount));
                 $this->info('   - '.trans_choice('plugins.commands.uninstall.permissions_deleted', $permissionsCount));
                 $this->info('   - '.trans_choice('plugins.commands.uninstall.layouts_deleted', $layoutsCount));

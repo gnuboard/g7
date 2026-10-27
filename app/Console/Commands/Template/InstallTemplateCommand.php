@@ -5,6 +5,7 @@ namespace App\Console\Commands\Template;
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\TemplateManager;
@@ -17,6 +18,7 @@ class InstallTemplateCommand extends Command
 {
     use HasProgressBar;
     use RendersLayoutSyncResult;
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
     use SelectsLayoutInstallSource;
 
@@ -100,6 +102,7 @@ class InstallTemplateCommand extends Command
 
                 // 성공 메시지
                 $this->info($this->lifecycleDoneIcon().' '.__('templates.commands.install.success', ['template' => $identifier]));
+                $this->reportIntegrationNotices('template', $identifier);
                 $this->info('   - '.__('templates.commands.install.type', ['type' => __('templates.types.'.$template->type)]));
                 $this->info('   - '.__('templates.commands.install.version', ['version' => $template->version]));
                 $this->info('   - '.trans_choice('templates.commands.install.layouts_created', $template->layouts()->count()));

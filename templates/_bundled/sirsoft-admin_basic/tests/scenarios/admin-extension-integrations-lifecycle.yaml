@@ -1,0 +1,38 @@
+# 시나리오 매니페스트 — 함께 쓰면 연동되는 확장(integrations)의 관리자 화면 표시·설치 선택·끄기/삭제 안내 (코어 7.1.4)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: admin_extension_integrations_lifecycle
+
+description: >-
+  integrations 가 의존(dependencies)과 같은 수준의 스펙이 되면서 관리자 화면이 연동 확장을 의존처럼 다룬다 — 상세 창에 요구 버전과
+  「버전 미달」, 설치 창에 「함께 쓰면 연동되는 확장(선택)」 체크목록(기본 체크·잠금·요청 본문), 연동 중인 확장이 있는 모듈·플러그인을
+  끌 때의 안내 창(막지 않음, 409 강제 창으로 이어짐), 템플릿 끄기·세 삭제 창의 연동 안내, 설치·활성화 결과의 연동 안내 토스트.
+  옛 코어(필드 없음)에서는 모두 그려지지 않거나 종전 흐름을 탄다. 모듈·플러그인·템플릿 레이아웃 JSON 을 렌더·평가해 잠근다.
+  연동 대상 상태(미설치·비활성·활성·버전 미달)는 축으로 나누지 않고 각 시험의 입력 목록 하나에 모두 담아 함께 검사한다 —
+  상태마다 화면 갈래가 갈리는 것이 아니라 같은 목록 안의 배지·잠금 차이이기 때문이다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-integrations-lifecycle.test.tsx
+
+axes:
+  extension_type:
+    - module
+    - plugin
+    - template
+  core_version:
+    - with_integration_fields   # 코어 7.1.4 — is_met·integrated_by·integrations 미리보기·integration_notices
+    - legacy_core               # 필드 없음
+
+effects:
+  - detail_shows_required_version_and_mismatch_badge               # 상세 창: 요구 버전(무제약 * 감춤)·설치 버전·「버전 미달」(is_met === false 일 때만)
+  - install_modal_lists_integrations_with_default_selection        # 설치 창: 기본 체크 = default_selected, can_select=false·활성은 잠금, 옛 코어는 절 없음
+  - install_request_carries_selected_integrations                  # 요청 본문 integrations = 고른 module·plugin [{type, identifier}], 해제하면 빠짐
+  - install_selection_resets_when_modal_opens                      # 설치 창을 열 때 직전 선택(의존·언어팩·연동)을 비운다
+  - deactivate_with_integrated_by_opens_notice_modal               # 연동 중인 확장이 있으면 스위치가 안내 창을 열고, 없으면 곧바로 부른다
+  - notice_modal_deactivates_and_hands_409_to_force_modal          # 안내 창: 같은 비활성 호출, 409 는 강제 비활성 창, 성공은 경고 창 연결
+  - uninstall_and_template_deactivate_show_integrated_by           # 삭제 창 3종·템플릿 끄기 창의 연동 안내 블록
+  - lifecycle_success_shows_integration_notice_toast               # 설치·활성화 성공 갈래 전수가 integration_notices 안내 토스트를 띄운다
+  - integration_keys_exist_in_all_locales                          # 쓰인 extension_integrations 키가 ko·en·ja 에 모두 있다
+
+validation:
+  audit_rule: frontend-change-requires-e2e

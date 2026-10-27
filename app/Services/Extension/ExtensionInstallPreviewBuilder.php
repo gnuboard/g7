@@ -45,7 +45,7 @@ class ExtensionInstallPreviewBuilder
      *
      * @param  LanguagePackScope  $scope  대상 스코프 (module/plugin/template)
      * @param  string  $identifier  대상 확장 식별자
-     * @return array<string, mixed> {target, dependencies[], language_packs[]}
+     * @return array<string, mixed> {target, dependencies[], integrations[], language_packs[]}
      *
      * @throws RuntimeException 대상 확장을 찾을 수 없을 때
      */
@@ -66,6 +66,7 @@ class ExtensionInstallPreviewBuilder
         }
         $dependencies = $this->buildDependencies($rawDependencies);
         $languagePacks = $this->buildLanguagePacks($scope, $identifier, $dependencies);
+        $integrations = $this->buildIntegrations($info);
 
         return [
             'target' => [
@@ -77,8 +78,53 @@ class ExtensionInstallPreviewBuilder
                 'icon_source' => $info['icon_source'] ?? 'none',
             ],
             'dependencies' => $dependencies,
+            // 함께 쓰면 연동되는 확장(선택, 7.1.4) — 설치를 막지 않는다. 고른 항목은 install API 의 `integrations[]` 로 온다
+            'integrations' => $integrations,
             'language_packs' => $languagePacks,
         ];
+    }
+
+    /**
+     * 선택 연동 선언을 설치 창 체크목록용 메타로 변환합니다 (7.1.4, P12·D9).
+     *
+     * 미설치·비활성 항목은 기본 체크(`default_selected`)이고 해제해도 본체 설치는 진행된다. 대상 유형이 템플릿인 연동은
+     * 표시만 하고 고를 수 없다(`can_select=false`) — 템플릿은 유형마다 하나만 켜므로 고르면 사용 중인 템플릿이 바뀐다.
+     * 권한은 의존 확장과 같은 판정({@see CascadeInstallAuthorizer::canSelectDependency()})을 쓴다.
+     *
+     * @param  array<string, mixed>  $info  대상 확장 정보 (모듈·플러그인은 보강된 `integrations`, 템플릿은 `integration_constraints`)
+     * @return array<int, array<string, mixed>> 연동 체크목록 항목
+     */
+    private function buildIntegrations(array $info): array
+    {
+        $raw = $info['integration_constraints'] ?? ($info['integrations'] ?? []);
+        $enriched = is_array($raw) && array_is_list($raw) && isset($raw[0]['identifier'])
+            ? $raw
+            : DependencyEnricher::enrichIntegrations($raw);
+
+        $result = [];
+        foreach ($enriched as $item) {
+            $type = (string) ($item['type'] ?? 'module');
+            $isInstalled = (bool) ($item['is_installed'] ?? false);
+            $isActive = (bool) ($item['is_active'] ?? false);
+            $status = ! $isInstalled ? 'not_installed' : ($isActive ? 'active' : 'inactive');
+            $canSelect = $type !== 'template' && $this->authorizer->canSelectDependency($type, $isInstalled);
+
+            $result[] = [
+                'type' => $type,
+                'identifier' => (string) ($item['identifier'] ?? ''),
+                'name' => $item['name'] ?? null,
+                'status' => $status,
+                'required_version' => $item['required_version'] ?? '*',
+                'installed_version' => $item['installed_version'] ?? null,
+                'is_installed' => $isInstalled,
+                'is_active' => $isActive,
+                'is_met' => (bool) ($item['is_met'] ?? false),
+                'can_select' => $canSelect,
+                'default_selected' => $status !== 'active' && $canSelect,
+            ];
+        }
+
+        return $result;
     }
 
     /**

@@ -33,7 +33,7 @@
                   <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.marketing_consent_desc</span>
                 </div>
               </label>
-              <button data-if="{{(_local.form?.marketing_consent_terms_slug_set ?? (marketing_settings?.data?.marketing_consent_terms_slug ? true : false)) === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5">
+              <button data-if="{{(_local.form?.marketing_consent_terms_slug_set ?? (marketing_settings?.data?.marketing_consent_terms_slug ? true : false)) === true &amp;&amp; (_global.activeModules?.includes('sirsoft-page') ?? true)}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5">
                 <on type="click">
                   <!-- 약관 본문 보기 — 어떤 약관인지 전역에 심고 창을 먼저 띄운 뒤 본문을 받아 채운다 -->
                   <sequence>
@@ -67,7 +67,7 @@
                     <span class="block text-sm font-medium text-gray-900 dark:text-white">{{$localized(channel.label_i18n) || channel.label}}</span>
                   </div>
                 </label>
-                <button data-if="{{channel.terms_slug_set === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5">
+                <button data-if="{{channel.terms_slug_set === true &amp;&amp; (_global.activeModules?.includes('sirsoft-page') ?? true)}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5">
                   <on type="click">
                     <!-- 약관 본문 보기 — 채널별 수신 동의 약관 -->
                     <sequence>
@@ -101,7 +101,7 @@
                 <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.third_party_consent_desc</span>
               </div>
             </label>
-            <button data-if="{{(_local.form?.third_party_consent_terms_slug_set ?? (marketing_settings?.data?.third_party_consent_terms_slug ? true : false)) === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5">
+            <button data-if="{{(_local.form?.third_party_consent_terms_slug_set ?? (marketing_settings?.data?.third_party_consent_terms_slug ? true : false)) === true &amp;&amp; (_global.activeModules?.includes('sirsoft-page') ?? true)}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5">
               <on type="click">
                 <!-- 약관 본문 보기 — 제3자 제공 동의 약관 -->
                 <sequence>
@@ -134,7 +134,7 @@
                 <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.info_disclosure_warning</span>
               </div>
             </label>
-            <button data-if="{{(_local.form?.info_disclosure_terms_slug_set ?? (marketing_settings?.data?.info_disclosure_terms_slug ? true : false)) === true}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5">
+            <button data-if="{{(_local.form?.info_disclosure_terms_slug_set ?? (marketing_settings?.data?.info_disclosure_terms_slug ? true : false)) === true &amp;&amp; (_global.activeModules?.includes('sirsoft-page') ?? true)}}" type="button" class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline flex-shrink-0 mt-0.5">
               <on type="click">
                 <!-- 약관 본문 보기 — 정보 공개 동의 약관 -->
                 <sequence>

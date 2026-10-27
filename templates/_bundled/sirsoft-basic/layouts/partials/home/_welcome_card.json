@@ -122,8 +122,11 @@
                     ]
                 },
                 {
+                    "comment": "소개 문서(/page/about)는 페이지 모듈 문서라 페이지 모듈이 꺼져 있으면 단추를 숨긴다.",
+                    "id": "welcome_learn_more",
                     "type": "basic",
                     "name": "A",
+                    "if": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
                     "actions": [
                         {
                             "type": "click",

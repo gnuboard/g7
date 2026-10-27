@@ -4,6 +4,7 @@ namespace App\Console\Commands\Template;
 
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\TemplateManager;
@@ -14,6 +15,7 @@ class UninstallTemplateCommand extends Command
 {
     use HasProgressBar;
     use HasUnifiedConfirm;
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
 
     /**
@@ -102,6 +104,7 @@ class UninstallTemplateCommand extends Command
             if ($result) {
                 // 성공 메시지
                 $this->info($this->lifecycleDoneIcon().' '.__('templates.commands.uninstall.success', ['template' => $identifier]));
+                $this->reportIntegratedBy('template', $identifier);
                 $this->info('   - '.trans_choice('templates.commands.uninstall.layouts_deleted', $layoutsCount));
 
                 // 운영자가 넣은 `custom/` 은 삭제 전에 사본을 남긴다 — 그 경로를 알리지 않으면

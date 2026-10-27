@@ -290,7 +290,7 @@ class DashboardBadgeOrderCountTest extends ModuleTestCase
     }
 
     /**
-     * 배지 7개의 링크(`admin_dashboard_commerce.json` 의 navigate 경로)에서 상태 조건을 읽어 배지 키별로 돌려줍니다.
+     * 배지 7개의 링크(`admin_dashboard_commerce.json` 의 href — 옛 모양은 navigate 경로)에서 상태 조건을 읽어 배지 키별로 돌려줍니다.
      *
      * 날짜·기준 인자(`NON_STATUS_KEYS`)는 빼고, 배열 인자 이름의 `[]` 를 떼어 목록 API 필터 키로 맞춘다.
      *
@@ -310,7 +310,10 @@ class DashboardBadgeOrderCountTest extends ModuleTestCase
                     if (($action['handler'] ?? null) !== 'navigate') {
                         continue;
                     }
-                    $query = explode('?', (string) $action['params']['path'], 2)[1] ?? '';
+                    // 배지는 링크다(#757) — 주소는 `props.href` 에 있고 navigate 는 path 없이 그 href 로 간다.
+                    // 옛 모양(navigate params.path)도 함께 읽는다.
+                    $path = $action['params']['path'] ?? $node['props']['href'] ?? '';
+                    $query = explode('?', (string) $path, 2)[1] ?? '';
                     $conditions = [];
                     foreach (explode('&', $query) as $pair) {
                         [$name, $value] = array_pad(explode('=', $pair, 2), 2, '');

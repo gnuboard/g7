@@ -6,8 +6,10 @@ use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Helpers\DependencyEnricher;
+use App\Http\Resources\Traits\ExposesIntegratedBy;
 use App\Http\Resources\Traits\ExposesUpdateCoreCompatibility;
 use App\Services\ExtensionStaticCacheService;
+use App\Support\ExtensionDependencies;
 use App\Support\LocalizedValue;
 use App\Support\TemplateExternals;
 use Composer\Semver\Semver;
@@ -21,6 +23,7 @@ use Illuminate\Support\Facades\App;
  */
 class TemplateResource extends BaseApiResource
 {
+    use ExposesIntegratedBy;
     use ExposesUpdateCoreCompatibility;
 
     /**
@@ -42,7 +45,10 @@ class TemplateResource extends BaseApiResource
             'stuck_update' => (bool) $this->getValue('stuck_update', false),
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getDependenciesSummary(),
-            'integrations' => DependencyEnricher::enrichIntegrations($this->getValue('integrations', [])),
+            // 버전 제약(7.1.4)이 실린 `integration_constraints` 를 우선한다 — 없으면(옛 정보 배열) 식별자 목록으로 보강
+            'integrations' => DependencyEnricher::enrichIntegrations($this->getValue('integration_constraints') ?? $this->getValue('integrations', [])),
+            // 이 템플릿을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
+            'integrated_by' => $this->integratedBy('template'),
             'dependencies_met' => $this->areDependenciesMet(),
             'icon_url' => $this->getValue('icon_url'),
             'icon_source' => $this->getValue('icon_source', 'none'),
@@ -159,7 +165,10 @@ class TemplateResource extends BaseApiResource
             ),
             // 의존성 상세 정보
             'dependencies' => $this->getDetailedDependencies(),
-            'integrations' => DependencyEnricher::enrichIntegrations($this->getValue('integrations', [])),
+            // 버전 제약(7.1.4)이 실린 `integration_constraints` 를 우선한다 — 없으면(옛 정보 배열) 식별자 목록으로 보강
+            'integrations' => DependencyEnricher::enrichIntegrations($this->getValue('integration_constraints') ?? $this->getValue('integrations', [])),
+            // 이 템플릿을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
+            'integrated_by' => $this->integratedBy('template'),
             // 타임스탬프
             'created_at' => $this->getValue('created_at'),
             'updated_at' => $this->getValue('updated_at'),
@@ -241,7 +250,8 @@ class TemplateResource extends BaseApiResource
      */
     protected function getDependenciesSummary(): array
     {
-        $dependencies = $this->getValue('dependencies', []);
+        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
+        $dependencies = ExtensionDependencies::constraints($this->getValue('dependencies', []));
 
         $moduleRepository = app(ModuleRepositoryInterface::class);
         $pluginRepository = app(PluginRepositoryInterface::class);
@@ -288,10 +298,11 @@ class TemplateResource extends BaseApiResource
      */
     protected function areDependenciesMet(): bool
     {
-        $dependencies = $this->getValue('dependencies', []);
+        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
+        $dependencies = ExtensionDependencies::constraints($this->getValue('dependencies', []));
 
         // 의존성이 없으면 충족으로 간주
-        if (empty($dependencies)) {
+        if ($dependencies['modules'] === [] && $dependencies['plugins'] === []) {
             return true;
         }
 
@@ -338,7 +349,8 @@ class TemplateResource extends BaseApiResource
      */
     protected function getDetailedDependencies(): array
     {
-        $dependencies = $this->getValue('dependencies', []);
+        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
+        $dependencies = ExtensionDependencies::constraints($this->getValue('dependencies', []));
 
         $moduleRepository = app(ModuleRepositoryInterface::class);
         $pluginRepository = app(PluginRepositoryInterface::class);
