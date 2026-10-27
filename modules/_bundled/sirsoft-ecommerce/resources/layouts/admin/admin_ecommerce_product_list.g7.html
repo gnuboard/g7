@@ -338,10 +338,10 @@
             $t:sirsoft-ecommerce.admin.product.bulk_apply
           </button>
         </div>
-        <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
-          <span class="text-label">$t:sirsoft-ecommerce.admin.product.total_count|count={{products?.data?.pagination?.total || 0}}</span>
+        <div data-ref="table_header_bar" class="ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4">
+          <span class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.product.total_count|count={{products?.data?.pagination?.total || 0}}</span>
           <!-- 정렬·쪽당 개수·내보내기 — 좁은 화면에서는 내보내기 묶음이 다음 줄로 내려간다 -->
-          <div class="flex-center flex-wrap justify-end gap-3">
+          <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:justify-end ecommerce:gap-3">
             <!-- 정렬 선택. 값 하나에 필드와 방향이 함께 담겨 있고, 바꿀 때 펼침 상태를 비운 뒤 주소를 바꾼다 — 두 일을 함께 해야 해서 아래 블록이 두 액션으로 나뉜다 -->
             <select name="sortBy" aria-label="$t:common.sort_order" class="ecommerce:w-32 ecommerce:px-3 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:text-sm" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}">
               <options>
@@ -387,11 +387,11 @@
             </button>
             <!-- 내보내기(#787) — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 목록 응답의 `abilities.can_export`(내보내기 요청 권한 — 목록 API 가 이미 조회 권한을 요구한다)가 참인
                  운영자에게만 보인다. 창은 상품·주문·마일리지 목록이 함께 쓰는 공용 창이다 -->
-            <div data-ref="ecommerce_export_product_actions" class="flex flex-wrap items-center justify-end gap-3">
+            <div data-ref="ecommerce_export_product_actions" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-end ecommerce:gap-3">
               <include src="partials/admin_ecommerce_export/_partial_tracking_status.g7.html"/>
               <!-- 내보내기 — 상품 목록의 지금 조건으로 파일을 만든다. 창은 별도 컨텍스트라 지금 검색 조건(데이터 소스와 같은 매개변수)·선택 id·보이는 컬럼을 전역에 실어 건넨다. 중복 방지 키는 열 때마다 새로 만든다.
                  조건은 통째로 바꾼다(merge="shallow") — 깊은 병합이면 지운 검색어·다른 목록의 조건이 남아 화면과 다른 파일이 된다 -->
-              <button data-ref="ecommerce_export_product_button" data-if="{{products?.data?.abilities?.can_export === true}}" type="button" class="btn btn-outline whitespace-nowrap">
+              <button data-ref="ecommerce_export_product_button" data-if="{{products?.data?.abilities?.can_export === true}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:whitespace-nowrap">
                 <on type="click">
                   <sequence>
                     <set-state target="global" merge="shallow" ecommerceExportContext="{{ { type: 'products', label: $t('sirsoft-ecommerce.enums.export_type.products'), filters: Object.fromEntries(Object.entries({ search_field: query.search_field, search_keyword: query.search_keyword, category_id: query.category_id4 || query.category_id3 || query.category_id2 || query.category_id1, no_category: query.no_category === 'true' ? true : undefined, sales_status: [].concat(query['sales_status[]'] ?? []), display_status: query.display_status, brand_id: query.brand_id, no_brand: query.no_brand === 'true' ? true : undefined, tax_status: query.tax_status, date_type: query.date_type, start_date: query.start_date, end_date: query.end_date, price_type: query.price_type, min_price: query.min_price, max_price: query.max_price, min_stock: query.min_stock, max_stock: query.max_stock, shipping_policy_id: query.shipping_policy_id }).filter(([k, v]) => v !== undefined &amp;&amp; v !== null &amp;&amp; v !== '' &amp;&amp; !(Array.isArray(v) &amp;&amp; v.length === 0))), selected_ids: (_local.selectedItems ?? []), total: (products?.data?.pagination?.total ?? 0), screen_columns: (_local.visibleColumns ?? null) } }}" ecommerceExportIdempotencyKey="{{$uuid()}}" :ecommerceExportCatalog="null" :ecommerceExportEstimate="null" :ecommerceExportErrors="null" :ecommerceExportIsRequesting="false" :ecommerceExportIsEstimating="false" :ecommerceExportEstimateFailed="false"/>
@@ -420,7 +420,7 @@
                     <refetch-data-source dataSourceId="ecommerceExportCatalog"/>
                   </sequence>
                 </on>
-                <icon name="file-export" class="text-base"/>
+                <icon name="file-export" class="ecommerce:text-base"/>
                 <span>$t:sirsoft-ecommerce.admin.export.button</span>
               </button>
             </div>

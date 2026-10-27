@@ -170,7 +170,7 @@
         "serverHasMorePages": "{{exports?.data?.pagination?.has_more_pages ?? false}}",
         "pageSize": "{{+(query.per_page || 20)}}",
         "alwaysShowPagination": true,
-        "subRowClassName": "px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 whitespace-normal shadow-sm",
+        "subRowClassName": "ecommerce:px-4 ecommerce:py-3 ecommerce:rounded-lg ecommerce:bg-gray-100 ecommerce:dark:bg-gray-800 ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-normal ecommerce:shadow-sm",
         "rowActions": [
             {
                 "id": "download",
@@ -212,7 +212,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-body whitespace-nowrap"
+                            "className": "ecommerce-text-body ecommerce:whitespace-nowrap"
                         },
                         "text": "{{row.requested_at ?? '-'}}"
                     }
@@ -286,7 +286,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-2 min-w-0 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer"
+                                    "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:min-w-0 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:rounded-lg ecommerce:px-1 ecommerce:py-0.5 ecommerce:transition-colors ecommerce:cursor-pointer"
                                 },
                                 "children": [
                                     {
@@ -294,21 +294,21 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "fa-regular fa-user",
-                                            "className": "text-gray-400 dark:text-gray-500 flex-shrink-0"
+                                            "className": "ecommerce:text-gray-400 ecommerce:dark:text-gray-500 ecommerce:flex-shrink-0"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex flex-col min-w-0"
+                                            "className": "ecommerce:flex ecommerce:flex-col ecommerce:min-w-0"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-body font-medium truncate"
+                                                    "className": "ecommerce-text-body ecommerce:font-medium ecommerce:truncate"
                                                 },
                                                 "text": "{{row.requester?.name ?? '-'}}"
                                             },
@@ -317,7 +317,7 @@
                                                 "name": "Span",
                                                 "if": "{{row.requester?.email}}",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-400 truncate"
+                                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:truncate"
                                                 },
                                                 "text": "{{row.requester?.email}}"
                                             }
@@ -333,14 +333,14 @@
                         "name": "Div",
                         "if": "{{!row.requester?.uuid}}",
                         "props": {
-                            "className": "flex flex-col min-w-0"
+                            "className": "ecommerce:flex ecommerce:flex-col ecommerce:min-w-0"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-body truncate"
+                                    "className": "ecommerce-text-body ecommerce:truncate"
                                 },
                                 "text": "{{row.requester?.name ?? '-'}}"
                             },
@@ -349,7 +349,7 @@
                                 "name": "Span",
                                 "if": "{{row.requester?.email}}",
                                 "props": {
-                                    "className": "text-xs text-gray-500 dark:text-gray-400 truncate"
+                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:truncate"
                                 },
                                 "text": "{{row.requester?.email}}"
                             }
@@ -366,7 +366,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex items-center gap-2 flex-wrap min-w-0"
+                            "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap ecommerce:min-w-0"
                         },
                         "children": [
                             {
@@ -435,7 +435,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "text-left text-sm text-blue-600 dark:text-blue-400 hover:underline break-all disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "className": "ecommerce:text-left ecommerce:text-sm ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline ecommerce:break-all ecommerce-break-all ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                     "disabled": "{{_global.ecommerceExportDownloadingId === row.id}}"
                                 },
                                 "children": [
@@ -445,7 +445,7 @@
                                         "if": "{{_global.ecommerceExportDownloadingId === row.id}}",
                                         "props": {
                                             "name": "spinner",
-                                            "className": "spinner-sm"
+                                            "className": "ecommerce-spinner-sm"
                                         }
                                     },
                                     {
@@ -460,7 +460,7 @@
                                 "name": "Span",
                                 "if": "{{!(row.abilities?.can_download === true && row.file_name)}}",
                                 "props": {
-                                    "className": "text-sm text-gray-600 dark:text-gray-400 break-all"
+                                    "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:break-all ecommerce-break-all"
                                 },
                                 "text": "{{row.file_name ?? $t('sirsoft-ecommerce.admin.export.table.file_waiting')}}"
                             },
@@ -469,7 +469,7 @@
                                 "name": "Span",
                                 "if": "{{row.contains_personal_data}}",
                                 "props": {
-                                    "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                                    "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:px-1.5 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:bg-red-100 ecommerce:text-red-800 ecommerce:dark:bg-red-900/30 ecommerce:dark:text-red-300"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.table.personal_badge"
                             },
@@ -500,7 +500,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "text-xs text-gray-500 dark:text-gray-400 hover:underline whitespace-nowrap"
+                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:hover:underline ecommerce:whitespace-nowrap"
                                 },
                                 "text": "$t:defer:sirsoft-ecommerce.admin.export.table.download_count|count={{row.download_count ?? 0}}"
                             }
@@ -517,7 +517,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-body"
+                            "className": "ecommerce-text-body"
                         },
                         "text": "{{row.type_label}}"
                     }
@@ -532,14 +532,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex flex-col gap-1"
+                            "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "{{row.status === 'completed' ? 'inline-flex w-fit items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : row.status === 'processing' ? 'inline-flex w-fit items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' : row.status === 'failed' ? 'inline-flex w-fit items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'inline-flex w-fit items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'}}"
+                                    "className": "{{row.status === 'completed' ? 'ecommerce:inline-flex ecommerce:w-fit ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-green-100 ecommerce:text-green-800 ecommerce:dark:bg-green-900/30 ecommerce:dark:text-green-300' : row.status === 'processing' ? 'ecommerce:inline-flex ecommerce:w-fit ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-blue-100 ecommerce:text-blue-800 ecommerce:dark:bg-blue-900/30 ecommerce:dark:text-blue-300' : row.status === 'failed' ? 'ecommerce:inline-flex ecommerce:w-fit ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-red-100 ecommerce:text-red-800 ecommerce:dark:bg-red-900/30 ecommerce:dark:text-red-300' : 'ecommerce:inline-flex ecommerce:w-fit ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ecommerce:bg-gray-200 ecommerce:text-gray-700 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300'}}"
                                 },
                                 "text": "{{row.status_label}}"
                             },
@@ -548,21 +548,21 @@
                                 "name": "Div",
                                 "if": "{{row.status === 'processing'}}",
                                 "props": {
-                                    "className": "flex items-center gap-2"
+                                    "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "w-24 h-1.5 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"
+                                            "className": "ecommerce:w-24 ecommerce:h-1.5 ecommerce:rounded-full ecommerce:bg-gray-200 ecommerce:dark:bg-gray-700 ecommerce:overflow-hidden"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "h-full bg-blue-500 dark:bg-blue-400",
+                                                    "className": "ecommerce:h-full ecommerce:bg-blue-500 ecommerce:dark:bg-blue-400",
                                                     "style": {
                                                         "width": "{{row.progress_percent ?? 0}}%"
                                                     }
@@ -574,7 +574,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                            "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                         },
                                         "text": "{{row.progress_percent ?? 0}}%"
                                     }
@@ -585,7 +585,7 @@
                                 "name": "Span",
                                 "if": "{{row.status === 'completed'}}",
                                 "props": {
-                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                 },
                                 "text": "$t:defer:sirsoft-ecommerce.admin.export.table.rows|count={{(row.processed_rows ?? 0).toLocaleString()}}"
                             },
@@ -594,7 +594,7 @@
                                 "name": "Span",
                                 "if": "{{row.status === 'failed' && row.error_message}}",
                                 "props": {
-                                    "className": "text-xs text-red-600 dark:text-red-400 whitespace-normal"
+                                    "className": "ecommerce:text-xs ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:whitespace-normal"
                                 },
                                 "text": "{{row.error_message}}"
                             }
@@ -608,21 +608,21 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "flex flex-wrap gap-x-6 gap-y-1.5"
+                    "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:gap-x-6 ecommerce:gap-y-1.5"
                 },
                 "children": [
                     {
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "flex gap-1"
+                            "className": "ecommerce:flex ecommerce:gap-1"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-gray-500 dark:text-gray-400"
+                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.scope"
                             },
@@ -643,14 +643,14 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "flex gap-1"
+                            "className": "ecommerce:flex ecommerce:gap-1"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-gray-500 dark:text-gray-400"
+                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.period"
                             },
@@ -665,14 +665,14 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "flex gap-1"
+                            "className": "ecommerce:flex ecommerce:gap-1"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-gray-500 dark:text-gray-400"
+                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.row_unit"
                             },
@@ -687,14 +687,14 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "flex gap-1"
+                            "className": "ecommerce:flex ecommerce:gap-1"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-gray-500 dark:text-gray-400"
+                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.fields"
                             },
@@ -709,14 +709,14 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "flex gap-1"
+                            "className": "ecommerce:flex ecommerce:gap-1"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-gray-500 dark:text-gray-400"
+                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.locale_mode"
                             },
@@ -731,14 +731,14 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "flex gap-1"
+                            "className": "ecommerce:flex ecommerce:gap-1"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-gray-500 dark:text-gray-400"
+                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.totals"
                             },
@@ -754,14 +754,14 @@
                         "name": "Span",
                         "if": "{{row.cutoff_at}}",
                         "props": {
-                            "className": "flex gap-1"
+                            "className": "ecommerce:flex ecommerce:gap-1"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-gray-500 dark:text-gray-400"
+                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.cutoff_at"
                             },
@@ -777,14 +777,14 @@
                         "name": "Span",
                         "if": "{{row.completed_at}}",
                         "props": {
-                            "className": "flex gap-1"
+                            "className": "ecommerce:flex ecommerce:gap-1"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-gray-500 dark:text-gray-400"
+                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.completed_at"
                             },
@@ -800,14 +800,14 @@
                         "name": "Span",
                         "if": "{{row.file_size_label}}",
                         "props": {
-                            "className": "flex gap-1"
+                            "className": "ecommerce:flex ecommerce:gap-1"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-gray-500 dark:text-gray-400"
+                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.file_size"
                             },
@@ -823,14 +823,14 @@
                         "name": "Span",
                         "if": "{{row.expires_at}}",
                         "props": {
-                            "className": "flex gap-1"
+                            "className": "ecommerce:flex ecommerce:gap-1"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-gray-500 dark:text-gray-400"
+                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.export.sub_row.expires_at"
                             },
@@ -848,14 +848,14 @@
                 "name": "Div",
                 "if": "{{row.reason}}",
                 "props": {
-                    "className": "mt-2 flex gap-1"
+                    "className": "ecommerce:mt-2 ecommerce:flex ecommerce:gap-1"
                 },
                 "children": [
                     {
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-gray-500 dark:text-gray-400 shrink-0"
+                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:shrink-0"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.export.sub_row.reason"
                     },
@@ -863,7 +863,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "whitespace-pre-line break-all"
+                            "className": "ecommerce:whitespace-pre-line ecommerce:break-all ecommerce-break-all"
                         },
                         "text": "{{row.reason}}"
                     }
@@ -874,14 +874,14 @@
                 "name": "Div",
                 "if": "{{(row.warnings ?? []).length > 0}}",
                 "props": {
-                    "className": "mt-2 flex items-center gap-2 flex-wrap"
+                    "className": "ecommerce:mt-2 ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap"
                 },
                 "children": [
                     {
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-gray-500 dark:text-gray-400"
+                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.export.sub_row.warnings"
                     },
@@ -893,7 +893,7 @@
                             "item_var": "warning"
                         },
                         "props": {
-                            "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                            "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:px-1.5 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:bg-yellow-100 ecommerce:text-yellow-800 ecommerce:dark:bg-yellow-900/30 ecommerce:dark:text-yellow-300"
                         },
                         "text": "{{warning.label}}"
                     }
@@ -904,14 +904,14 @@
                 "name": "Div",
                 "if": "{{row.error_message}}",
                 "props": {
-                    "className": "mt-2 flex gap-1"
+                    "className": "ecommerce:mt-2 ecommerce:flex ecommerce:gap-1"
                 },
                 "children": [
                     {
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-gray-500 dark:text-gray-400 shrink-0"
+                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:shrink-0"
                         },
                         "text": "$t:sirsoft-ecommerce.admin.export.sub_row.error"
                     },
@@ -919,7 +919,7 @@
                         "type": "basic",
                         "name": "Span",
                         "props": {
-                            "className": "text-red-600 dark:text-red-400"
+                            "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400"
                         },
                         "text": "{{row.error_message}}"
                     }

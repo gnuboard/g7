@@ -20,7 +20,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-gray-700 dark:text-gray-300"
+                        "className": "ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.export.modal_delete.message"
                 },
@@ -28,14 +28,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4"
+                        "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/50 ecommerce:rounded-lg ecommerce:p-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-primary font-medium break-all"
+                                "className": "ecommerce-text-primary ecommerce:font-medium ecommerce:break-all ecommerce-break-all"
                             },
                             "text": "{{_global.ecommerceExportTarget?.file_name ?? (_global.ecommerceExportTarget?.type_label + ' #' + _global.ecommerceExportTarget?.id)}}"
                         }
@@ -45,7 +45,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "alert-warning"
+                        "className": "ecommerce-alert-warning"
                     },
                     "children": [
                         {
@@ -53,14 +53,14 @@
                             "name": "Icon",
                             "props": {
                                 "name": "triangle-exclamation",
-                                "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                                "className": "ecommerce:text-xl ecommerce:text-amber-600 ecommerce:dark:text-amber-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "text-xs text-yellow-700 dark:text-yellow-300"
+                                "className": "ecommerce:text-xs ecommerce:text-yellow-700 ecommerce:dark:text-yellow-300"
                             },
                             "children": [
                                 {
@@ -78,7 +78,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "ecommerce-modal-footer-buttons"
             },
             "children": [
                 {
@@ -92,7 +92,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{_global.ecommerceExportIsDeleting}}"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.export.common.cancel"
@@ -169,7 +169,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-500 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{_global.ecommerceExportIsDeleting}}"
                     },
                     "children": [
@@ -179,7 +179,7 @@
                             "if": "{{_global.ecommerceExportIsDeleting}}",
                             "props": {
                                 "name": "spinner",
-                                "className": "spinner-sm"
+                                "className": "ecommerce-spinner-sm"
                             }
                         },
                         {

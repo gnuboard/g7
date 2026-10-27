@@ -11,7 +11,7 @@
     "if": "{{_computed.activeTab === 'policy'}}",
     "dataKey": "policyForm",
     "props": {
-        "className": "mt-6 space-y-6"
+        "className": "sso:mt-6 sso:space-y-6"
     },
     "children": [
         {
@@ -21,7 +21,7 @@
             "if": "{{!!_local.policyForm && _local.policyForm?.abilities?.is_super !== true}}",
             "props": {
                 "role": "status",
-                "className": "alert-info"
+                "className": "sso-alert-info"
             },
             "children": [
                 {
@@ -29,14 +29,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "lock",
-                        "className": "text-blue-600 dark:text-blue-400 flex-shrink-0"
+                        "className": "sso:text-blue-600 sso:dark:text-blue-400 sso:flex-shrink-0"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-sm text-blue-800 dark:text-blue-200"
+                        "className": "sso:text-sm sso:text-blue-800 sso:dark:text-blue-200"
                     },
                     "text": "$t:sirsoft-sso.admin.settings.policy.super_only_notice"
                 }
@@ -49,7 +49,7 @@
             "name": "Div",
             "props": {
                 "role": "note",
-                "className": "alert-warning"
+                "className": "sso-alert-warning"
             },
             "children": [
                 {
@@ -57,14 +57,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "triangle-exclamation",
-                        "className": "text-yellow-600 dark:text-yellow-400 flex-shrink-0"
+                        "className": "sso:text-yellow-600 sso:dark:text-yellow-400 sso:flex-shrink-0"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-sm text-yellow-800 dark:text-yellow-200"
+                        "className": "sso:text-sm sso:text-yellow-800 sso:dark:text-yellow-200"
                     },
                     "text": "$t:sirsoft-sso.admin.settings.policy.deactivate_notice"
                 }
@@ -75,14 +75,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card space-y-6"
+                "className": "sso-admin-card sso:space-y-6"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H2",
                     "props": {
-                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                        "className": "sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white"
                     },
                     "text": "$t:sirsoft-sso.admin.settings.policy.enforcement"
                 },
@@ -90,7 +90,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-start gap-3"
+                        "className": "sso-flex-start sso:gap-3"
                     },
                     "children": [
                         {
@@ -111,7 +111,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sso-form-label"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.fields.enforce_site"
                                 },
@@ -119,7 +119,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "sso-form-hint"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.hints.enforce_site"
                                 },
@@ -129,7 +129,7 @@
                                     "if": "{{_local.policyForm?.policy?.enforce_site === true}}",
                                     "props": {
                                         "role": "alert",
-                                        "className": "form-error"
+                                        "className": "sso-form-error"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.warnings.enforce_site"
                                 }
@@ -141,21 +141,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid-3col-responsive"
+                        "className": "sso-grid-3col-responsive"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-1"
+                                "className": "sso:lg:col-span-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sso-form-label"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.fields.enforce_roles"
                                 },
@@ -163,7 +163,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "sso-form-hint"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.hints.enforce_roles"
                                 }
@@ -173,7 +173,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-2"
+                                "className": "sso:lg:col-span-2"
                             },
                             "children": [
                                 {
@@ -183,7 +183,7 @@
                                         "name": "policy.enforce_roles",
                                         "creatable": true,
                                         "placeholder": "manager",
-                                        "className": "w-full",
+                                        "className": "sso:w-full",
                                         "defaultVariant": "blue",
                                         "disabled": "{{!_computed.canUpdate || _local.policyForm?.abilities?.is_super !== true}}"
                                     }
@@ -193,7 +193,7 @@
                                     "name": "P",
                                     "if": "{{!!_local.policyErrors && Object.keys(_local.policyErrors).some(k => k.startsWith('enforce_roles'))}}",
                                     "props": {
-                                        "className": "form-error"
+                                        "className": "sso-form-error"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.errors.enforce_roles"
                                 }
@@ -205,7 +205,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-start gap-3"
+                        "className": "sso-flex-start sso:gap-3"
                     },
                     "children": [
                         {
@@ -226,7 +226,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sso-form-label"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.fields.enforce_linked"
                                 },
@@ -234,7 +234,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "sso-form-hint"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.hints.enforce_linked"
                                 }
@@ -246,21 +246,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid-3col-responsive"
+                        "className": "sso-grid-3col-responsive"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-1"
+                                "className": "sso:lg:col-span-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sso-form-label"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.fields.auto_redirect_idp"
                                 },
@@ -268,7 +268,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "sso-form-hint"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.hints.auto_redirect_idp"
                                 }
@@ -278,7 +278,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-2"
+                                "className": "sso:lg:col-span-2"
                             },
                             "children": [
                                 {
@@ -286,7 +286,7 @@
                                     "name": "Select",
                                     "props": {
                                         "name": "policy.auto_redirect_idp",
-                                        "className": "w-full",
+                                        "className": "sso:w-full",
                                         "disabled": "{{!_computed.canUpdate}}"
                                     },
                                     "children": [
@@ -324,14 +324,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card space-y-4"
+                "className": "sso-admin-card sso:space-y-4"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H2",
                     "props": {
-                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                        "className": "sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white"
                     },
                     "text": "$t:sirsoft-sso.admin.settings.policy.emergency"
                 },
@@ -339,7 +339,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "form-hint"
+                        "className": "sso-form-hint"
                     },
                     "text": "$t:sirsoft-sso.admin.settings.policy.hints.emergency"
                 },
@@ -348,7 +348,7 @@
                     "type": "basic",
                     "name": "Ul",
                     "props": {
-                        "className": "divide-y divide-gray-100 dark:divide-gray-700"
+                        "className": "sso:divide-y sso:divide-gray-100 sso:dark:divide-gray-700"
                     },
                     "children": [
                         {
@@ -361,21 +361,21 @@
                             },
                             "dataKey": "{{emergency.id}}",
                             "props": {
-                                "className": "py-2 flex items-center gap-3"
+                                "className": "sso:py-2 sso:flex sso:items-center sso:gap-3"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-1 min-w-0"
+                                        "className": "sso:flex-1 sso:min-w-0"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white"
+                                                "className": "sso:text-sm sso:text-gray-900 sso:dark:text-white"
                                             },
                                             "text": "{{emergency.name}}"
                                         },
@@ -383,7 +383,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 break-all"
+                                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all"
                                             },
                                             "text": "{{emergency.email ?? ''}}"
                                         },
@@ -392,7 +392,7 @@
                                             "name": "P",
                                             "if": "{{emergency.has_password === false}}",
                                             "props": {
-                                                "className": "text-xs text-red-600 dark:text-red-400"
+                                                "className": "sso:text-xs sso:text-red-600 sso:dark:text-red-400"
                                             },
                                             "text": "$t:sirsoft-sso.admin.settings.policy.emergency_no_password"
                                         }
@@ -415,7 +415,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-icon",
+                                        "className": "sso-btn-icon",
                                         "title": "$t:sirsoft-sso.admin.common.remove_row",
                                         "aria-label": "$t:sirsoft-sso.admin.settings.policy.remove_emergency|name={{emergency.name}}",
                                         "disabled": "{{!_computed.canUpdate || _local.policyForm?.abilities?.is_super !== true || (_local.policyForm?.policy?.emergency_user_ids ?? []).length <= 1}}"
@@ -426,7 +426,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "fa-solid fa-trash",
-                                                "className": "text-sm"
+                                                "className": "sso:text-sm"
                                             }
                                         }
                                     ]
@@ -441,7 +441,7 @@
                     "name": "Div",
                     "if": "{{_local.policyForm?.abilities?.is_super === true}}",
                     "props": {
-                        "className": "flex flex-col sm:flex-row gap-2"
+                        "className": "sso:flex sso:flex-col sso:sm:flex-row sso:gap-2"
                     },
                     "children": [
                         {
@@ -461,7 +461,7 @@
                             "props": {
                                 "type": "text",
                                 "name": "emergencySearchBox",
-                                "className": "input flex-1 min-w-0",
+                                "className": "sso-input sso:flex-1 sso:min-w-0",
                                 "value": "{{_local.emergencySearch}}",
                                 "placeholder": "$t:sirsoft-sso.admin.settings.policy.emergency_search_placeholder",
                                 "aria-label": "$t:sirsoft-sso.admin.settings.policy.emergency_search_placeholder"
@@ -503,7 +503,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary text-sm",
+                                "className": "sso-btn sso-btn-secondary sso:text-sm",
                                 "disabled": "{{!_local.emergencySearch}}"
                             },
                             "children": [
@@ -522,7 +522,7 @@
                     "name": "Ul",
                     "if": "{{(_local.emergencyCandidates ?? []).length > 0}}",
                     "props": {
-                        "className": "divide-y divide-gray-100 dark:divide-gray-700"
+                        "className": "sso:divide-y sso:divide-gray-100 sso:dark:divide-gray-700"
                     },
                     "children": [
                         {
@@ -534,21 +534,21 @@
                             },
                             "dataKey": "{{candidate.uuid}}",
                             "props": {
-                                "className": "py-2 flex items-center gap-3"
+                                "className": "sso:py-2 sso:flex sso:items-center sso:gap-3"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-1 min-w-0"
+                                        "className": "sso:flex-1 sso:min-w-0"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white"
+                                                "className": "sso:text-sm sso:text-gray-900 sso:dark:text-white"
                                             },
                                             "text": "{{candidate.name}}"
                                         },
@@ -556,7 +556,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 break-all"
+                                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:break-all sso-break-all"
                                             },
                                             "text": "{{candidate.email ?? ''}}"
                                         }
@@ -579,7 +579,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn btn-secondary text-xs",
+                                        "className": "sso-btn sso-btn-secondary sso:text-xs",
                                         "disabled": "{{(_local.policyForm?.policy?.emergency_user_ids ?? []).includes(candidate.id)}}"
                                     },
                                     "children": [
@@ -602,14 +602,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card space-y-6"
+                "className": "sso-admin-card sso:space-y-6"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H2",
                     "props": {
-                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                        "className": "sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white"
                     },
                     "text": "$t:sirsoft-sso.admin.settings.policy.session"
                 },
@@ -617,21 +617,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid-3col-responsive"
+                        "className": "sso-grid-3col-responsive"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-1"
+                                "className": "sso:lg:col-span-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sso-form-label"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.fields.session_max_minutes"
                                 },
@@ -639,7 +639,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "sso-form-hint"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.hints.session_max_minutes"
                                 }
@@ -649,7 +649,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-2"
+                                "className": "sso:lg:col-span-2"
                             },
                             "children": [
                                 {
@@ -661,7 +661,7 @@
                                         "name": "policy.session_max_minutes",
                                         "min": 0,
                                         "max": 10080,
-                                        "className": "input",
+                                        "className": "sso-input",
                                         "disabled": "{{!_computed.canUpdate}}"
                                     }
                                 }
@@ -673,7 +673,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-start gap-3"
+                        "className": "sso-flex-start sso:gap-3"
                     },
                     "children": [
                         {
@@ -694,7 +694,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sso-form-label"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.fields.discovery_enabled"
                                 },
@@ -702,7 +702,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "sso-form-hint"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.policy.hints.discovery_enabled"
                                 }
@@ -720,14 +720,14 @@
             "if": "{{!!_local.policyImpact}}",
             "props": {
                 "role": "status",
-                "className": "{{(_local.policyImpact?.password_users ?? 0) > 0 ? 'alert-warning' : 'alert-info'}} flex-col items-start gap-1"
+                "className": "{{(_local.policyImpact?.password_users ?? 0) > 0 ? 'sso-alert-warning' : 'sso-alert-info'}} sso:flex-col sso:items-start sso:gap-1"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm"
+                        "className": "sso:text-sm"
                     },
                     "text": "$t:sirsoft-sso.admin.settings.policy.impact_users|count={{_local.policyImpact?.password_users ?? 0}}"
                 },
@@ -735,7 +735,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm"
+                        "className": "sso:text-sm"
                     },
                     "text": "$t:sirsoft-sso.admin.settings.policy.impact_sessions|count={{_local.policyImpact?.password_sessions ?? 0}}"
                 }
@@ -748,14 +748,14 @@
             "if": "{{!!_local.policyErrors?.code}}",
             "props": {
                 "role": "alert",
-                "className": "alert-error"
+                "className": "sso-alert-error"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-sm text-red-800 dark:text-red-200"
+                        "className": "sso:text-sm sso:text-red-800 sso:dark:text-red-200"
                     },
                     "text": "{{$t('sirsoft-sso.admin.settings.policy.errors.' + _local.policyErrors.code)}}"
                 }
@@ -766,7 +766,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex flex-wrap gap-2"
+                "className": "sso:flex sso:flex-wrap sso:gap-2"
             },
             "children": [
                 {
@@ -807,7 +807,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-secondary text-sm"
+                        "className": "sso-btn sso-btn-secondary sso:text-sm"
                     },
                     "children": [
                         {
@@ -829,7 +829,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-primary text-sm",
+                        "className": "sso-btn sso-btn-primary sso:text-sm",
                         "disabled": "{{!_computed.canUpdate || _local.isSavingPolicy}}"
                     },
                     "children": [

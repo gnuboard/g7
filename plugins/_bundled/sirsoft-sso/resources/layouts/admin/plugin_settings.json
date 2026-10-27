@@ -233,7 +233,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content-responsive"
+                    "className": "sso-admin-page-content-responsive"
                 },
                 "children": [
                     {
@@ -254,7 +254,7 @@
                         "if": "{{!_computed.canUpdate && !!ssoIdps?.data}}",
                         "props": {
                             "role": "status",
-                            "className": "alert-warning mt-4"
+                            "className": "sso-alert-warning sso:mt-4"
                         },
                         "children": [
                             {
@@ -262,14 +262,14 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "lock",
-                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                    "className": "sso:text-xl sso:text-amber-600 sso:dark:text-amber-400 sso:flex-shrink-0"
                                 }
                             },
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-sm text-amber-800 dark:text-amber-200"
+                                    "className": "sso:text-sm sso:text-amber-800 sso:dark:text-amber-200"
                                 },
                                 "text": "$t:sirsoft-sso.admin.settings.read_only"
                             }
@@ -294,7 +294,7 @@
                             }
                         ],
                         "props": {
-                            "className": "mt-6",
+                            "className": "sso:mt-6",
                             "activeTabId": "{{_computed.activeTab}}",
                             "variant": "underline",
                             "tabs": [

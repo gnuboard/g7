@@ -836,14 +836,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-between flex-wrap gap-3 mb-4"
+                                    "className": "ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-label"
+                                            "className": "ecommerce-text-label"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.product.total_count|count={{products?.data?.pagination?.total || 0}}"
                                     },
@@ -852,7 +852,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center flex-wrap justify-end gap-3"
+                                            "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:justify-end ecommerce:gap-3"
                                         },
                                         "children": [
                                             {
@@ -1017,7 +1017,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex flex-wrap items-center justify-end gap-3"
+                                                    "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-end ecommerce:gap-3"
                                                 },
                                                 "children": [
                                                     {
@@ -1095,7 +1095,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-outline whitespace-nowrap"
+                                                            "className": "ecommerce-btn ecommerce-btn-outline ecommerce:whitespace-nowrap"
                                                         },
                                                         "children": [
                                                             {
@@ -1103,7 +1103,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "file-export",
-                                                                    "className": "text-base"
+                                                                    "className": "ecommerce:text-base"
                                                                 }
                                                             },
                                                             {

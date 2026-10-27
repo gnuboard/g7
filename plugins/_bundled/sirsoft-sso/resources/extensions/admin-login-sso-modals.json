@@ -130,7 +130,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "space-y-5"
+                        "className": "sso:space-y-5"
                     },
                     "children": [
                         {
@@ -139,14 +139,14 @@
                             "name": "Div",
                             "if": "{{_global.ssoPendingExpired === true}}",
                             "props": {
-                                "className": "space-y-4 text-center"
+                                "className": "sso:space-y-4 sso:text-center"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "sso:text-sm sso:text-gray-700 sso:dark:text-gray-300"
                                     },
                                     "text": "$t:sirsoft-sso.consent.expired"
                                 },
@@ -173,7 +173,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "w-full px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer"
+                                        "className": "sso:w-full sso:px-4 sso:py-2.5 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer"
                                     },
                                     "text": "$t:sirsoft-sso.common.retry"
                                 }
@@ -185,14 +185,14 @@
                             "name": "Div",
                             "if": "{{_global.ssoPendingExpired !== true && !!_global.ssoPending}}",
                             "props": {
-                                "className": "space-y-5"
+                                "className": "sso:space-y-5"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                        "className": "sso:text-sm sso:text-gray-600 sso:dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-sso.consent.intro"
                                 },
@@ -200,7 +200,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "grid grid-cols-3 gap-x-4 gap-y-1 text-sm"
+                                        "className": "sso:grid sso:grid-cols-3 sso:gap-x-4 sso:gap-y-1 sso:text-sm"
                                     },
                                     "children": [
                                         {
@@ -208,7 +208,7 @@
                                             "name": "Span",
                                             "if": "{{!!_global.ssoPending?.name}}",
                                             "props": {
-                                                "className": "font-medium text-gray-700 dark:text-gray-300"
+                                                "className": "sso:font-medium sso:text-gray-700 sso:dark:text-gray-300"
                                             },
                                             "text": "$t:sirsoft-sso.consent.name"
                                         },
@@ -217,7 +217,7 @@
                                             "name": "Span",
                                             "if": "{{!!_global.ssoPending?.name}}",
                                             "props": {
-                                                "className": "col-span-2 text-gray-900 dark:text-white"
+                                                "className": "sso:col-span-2 sso:text-gray-900 sso:dark:text-white"
                                             },
                                             "text": "{{_global.ssoPending?.name}}"
                                         },
@@ -226,7 +226,7 @@
                                             "name": "Span",
                                             "if": "{{!!_global.ssoPending?.email}}",
                                             "props": {
-                                                "className": "font-medium text-gray-700 dark:text-gray-300"
+                                                "className": "sso:font-medium sso:text-gray-700 sso:dark:text-gray-300"
                                             },
                                             "text": "$t:sirsoft-sso.consent.email"
                                         },
@@ -235,7 +235,7 @@
                                             "name": "Span",
                                             "if": "{{!!_global.ssoPending?.email}}",
                                             "props": {
-                                                "className": "col-span-2 text-gray-900 dark:text-white"
+                                                "className": "sso:col-span-2 sso:text-gray-900 sso:dark:text-white"
                                             },
                                             "text": "{{_global.ssoPending?.email}}"
                                         }
@@ -245,14 +245,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "space-y-2"
+                                        "className": "sso:space-y-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-2"
+                                                "className": "sso:flex sso:items-center sso:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -281,7 +281,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                        "className": "sso:text-sm sso:text-gray-700 sso:dark:text-gray-300"
                                                     },
                                                     "text": "$t:sirsoft-sso.consent.agree_terms"
                                                 }
@@ -291,7 +291,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-2"
+                                                "className": "sso:flex sso:items-center sso:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -320,7 +320,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                        "className": "sso:text-sm sso:text-gray-700 sso:dark:text-gray-300"
                                                     },
                                                     "text": "$t:sirsoft-sso.consent.agree_privacy"
                                                 }
@@ -335,7 +335,7 @@
                                     "if": "{{!!_global.ssoError}}",
                                     "props": {
                                         "role": "alert",
-                                        "className": "text-sm text-red-600 dark:text-red-400"
+                                        "className": "sso:text-sm sso:text-red-600 sso:dark:text-red-400"
                                     },
                                     "text": "{{_global.ssoError}}"
                                 },
@@ -442,7 +442,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "w-full px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "sso:w-full sso:px-4 sso:py-3 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed",
                                         "disabled": "{{_global.ssoBusy || !_global.ssoForm?.agree_terms || !_global.ssoForm?.agree_privacy}}"
                                     },
                                     "text": "$t:sirsoft-sso.consent.submit"
@@ -468,7 +468,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "space-y-5"
+                        "className": "sso:space-y-5"
                     },
                     "children": [
                         {
@@ -477,14 +477,14 @@
                             "name": "Div",
                             "if": "{{_global.ssoLinkExpired === true}}",
                             "props": {
-                                "className": "space-y-4 text-center"
+                                "className": "sso:space-y-4 sso:text-center"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "sso:text-sm sso:text-gray-700 sso:dark:text-gray-300"
                                     },
                                     "text": "$t:sirsoft-sso.link.expired"
                                 },
@@ -511,7 +511,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "w-full px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer"
+                                        "className": "sso:w-full sso:px-4 sso:py-2.5 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer"
                                     },
                                     "text": "$t:sirsoft-sso.common.retry"
                                 }
@@ -523,14 +523,14 @@
                             "name": "Div",
                             "if": "{{_global.ssoLinkExpired !== true && !!_global.ssoLink}}",
                             "props": {
-                                "className": "space-y-5"
+                                "className": "sso:space-y-5"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                        "className": "sso:text-sm sso:text-gray-600 sso:dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-sso.link.intro|idp={{_global.ssoLink?.idp?.label ?? ''}}|email={{_global.ssoLink?.email ?? ''}}"
                                 },
@@ -541,7 +541,7 @@
                                     "if": "{{(_global.ssoLink?.methods ?? []).length > 1}}",
                                     "props": {
                                         "role": "tablist",
-                                        "className": "flex gap-2"
+                                        "className": "sso:flex sso:gap-2"
                                     },
                                     "children": [
                                         {
@@ -564,7 +564,7 @@
                                                 "type": "button",
                                                 "role": "tab",
                                                 "aria-selected": "{{_global.ssoLinkMethod === 'password'}}",
-                                                "className": "flex-1 px-3 py-2 rounded-lg border text-sm cursor-pointer {{_global.ssoLinkMethod === 'password' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white font-medium' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}}"
+                                                "className": "sso:flex-1 sso:px-3 sso:py-2 sso:rounded-lg sso:border sso:text-sm sso:cursor-pointer {{_global.ssoLinkMethod === 'password' ? 'sso:border-gray-900 sso:dark:border-white sso:text-gray-900 sso:dark:text-white sso:font-medium' : 'sso:border-gray-300 sso:dark:border-gray-600 sso:text-gray-600 sso:dark:text-gray-400'}}"
                                             },
                                             "text": "$t:sirsoft-sso.link.method_password"
                                         },
@@ -588,7 +588,7 @@
                                                 "type": "button",
                                                 "role": "tab",
                                                 "aria-selected": "{{_global.ssoLinkMethod === 'email'}}",
-                                                "className": "flex-1 px-3 py-2 rounded-lg border text-sm cursor-pointer {{_global.ssoLinkMethod === 'email' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white font-medium' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}}"
+                                                "className": "sso:flex-1 sso:px-3 sso:py-2 sso:rounded-lg sso:border sso:text-sm sso:cursor-pointer {{_global.ssoLinkMethod === 'email' ? 'sso:border-gray-900 sso:dark:border-white sso:text-gray-900 sso:dark:text-white sso:font-medium' : 'sso:border-gray-300 sso:dark:border-gray-600 sso:text-gray-600 sso:dark:text-gray-400'}}"
                                             },
                                             "text": "$t:sirsoft-sso.link.method_email"
                                         }
@@ -600,7 +600,7 @@
                                     "name": "Div",
                                     "if": "{{_global.ssoLinkMethod === 'password'}}",
                                     "props": {
-                                        "className": "space-y-2"
+                                        "className": "sso:space-y-2"
                                     },
                                     "children": [
                                         {
@@ -608,7 +608,7 @@
                                             "name": "Label",
                                             "props": {
                                                 "htmlFor": "sso_link_password",
-                                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                                "className": "sso:block sso:text-sm sso:font-medium sso:text-gray-700 sso:dark:text-gray-300"
                                             },
                                             "text": "$t:sirsoft-sso.link.password"
                                         },
@@ -633,7 +633,7 @@
                                                 "value": "{{_global.ssoForm?.password ?? ''}}",
                                                 "autoComplete": "current-password",
                                                 "maxLength": "255",
-                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                "className": "sso:w-full sso:px-3 sso:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:bg-white sso:dark:bg-gray-700 sso:text-gray-900 sso:dark:text-white",
                                                 "disabled": "{{_global.ssoBusy}}"
                                             }
                                         }
@@ -645,7 +645,7 @@
                                     "name": "Div",
                                     "if": "{{_global.ssoLinkMethod === 'email'}}",
                                     "props": {
-                                        "className": "space-y-2"
+                                        "className": "sso:space-y-2"
                                     },
                                     "children": [
                                         {
@@ -705,7 +705,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "sso:w-full sso:px-3 sso:py-3 sso:sm:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed",
                                                 "disabled": "{{_global.ssoBusy}}"
                                             },
                                             "children": [
@@ -747,7 +747,7 @@
                                                 "maxLength": "10",
                                                 "aria-label": "$t:sirsoft-sso.link.code",
                                                 "placeholder": "$t:sirsoft-sso.link.code",
-                                                "className": "w-full px-3 py-2 text-center tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                "className": "sso:w-full sso:px-3 sso:py-2 sso:text-center sso:tracking-widest sso:font-mono sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:bg-white sso:dark:bg-gray-700 sso:text-gray-900 sso:dark:text-white",
                                                 "disabled": "{{_global.ssoBusy}}"
                                             }
                                         }
@@ -760,7 +760,7 @@
                                     "if": "{{!!_global.ssoError}}",
                                     "props": {
                                         "role": "alert",
-                                        "className": "text-sm text-red-600 dark:text-red-400"
+                                        "className": "sso:text-sm sso:text-red-600 sso:dark:text-red-400"
                                     },
                                     "text": "{{_global.ssoError}}"
                                 },
@@ -872,7 +872,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "w-full px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "sso:w-full sso:px-4 sso:py-3 sso:bg-gray-900 sso:dark:bg-white sso:text-white sso:dark:text-gray-900 sso:rounded-lg sso:font-medium sso:cursor-pointer sso:disabled:opacity-50 sso:disabled:cursor-not-allowed",
                                         "disabled": "{{_global.ssoBusy || (_global.ssoLinkMethod === 'password' ? !_global.ssoForm?.password : (!_global.ssoLinkChallengeId || !_global.ssoForm?.code))}}"
                                     },
                                     "text": "$t:sirsoft-sso.link.submit"

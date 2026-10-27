@@ -32,14 +32,14 @@
             "name": "Div",
             "if": "{{query.social_error === 'email_required' && (socialProviders?.data ?? []).some(p => p.key === query.provider)}}",
             "props": {
-                "className": "mt-6 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4"
+                "className": "sl:mt-6 sl:rounded-lg sl:border sl:border-amber-200 sl:dark:border-amber-800 sl:bg-amber-50 sl:dark:bg-amber-900/20 sl:p-4"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm text-amber-800 dark:text-amber-200"
+                        "className": "sl:text-sm sl:text-amber-800 sl:dark:text-amber-200"
                     },
                     "text": "$t:sirsoft-social_login.notices.reconsent"
                 },
@@ -49,7 +49,7 @@
                     "name": "A",
                     "props": {
                         "href": "{{((socialProviders?.data ?? []).find(p => p.key === query.provider)?.start_url ?? '') + '?reconsent=1' + (typeof query.redirect === 'string' && query.redirect.startsWith('/') && !query.redirect.startsWith('/', 1) && !query.redirect.startsWith('\\\\', 1) ? '&redirect=' + encodeURIComponent(query.redirect) : '')}}",
-                        "className": "mt-3 inline-flex items-center justify-center w-full px-4 py-3 sm:py-2 text-sm font-medium rounded-lg bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-gray-900"
+                        "className": "sl:mt-3 sl:inline-flex sl:items-center sl:justify-center sl:w-full sl:px-4 sl:py-3 sl:sm:py-2 sl:text-sm sl:font-medium sl:rounded-lg sl:bg-amber-600 sl:hover:bg-amber-700 sl:text-white sl:dark:bg-amber-500 sl:dark:hover:bg-amber-600 sl:dark:text-gray-900"
                     },
                     "text": "$t:sirsoft-social_login.buttons.reconsent_with|provider={{(socialProviders?.data ?? []).find(p => p.key === query.provider)?.label ?? ''}}"
                 }

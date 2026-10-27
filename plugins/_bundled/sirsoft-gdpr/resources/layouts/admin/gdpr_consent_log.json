@@ -1479,14 +1479,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-2"
+                                                "className": "gdpr-flex-center gdpr:gap-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-sm font-mono text-gray-600 dark:text-gray-400"
+                                                        "className": "gdpr:text-sm gdpr:font-mono gdpr:text-gray-600 gdpr:dark:text-gray-400"
                                                     },
                                                     "text": "{{row.policy_version ?? '-'}}"
                                                 },
@@ -1522,7 +1522,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors",
+                                                        "className": "gdpr:px-2 gdpr:py-0.5 gdpr:text-xs gdpr:font-medium gdpr:text-blue-700 gdpr:dark:text-blue-300 gdpr:bg-blue-50 gdpr:dark:bg-blue-900/30 gdpr:border gdpr:border-blue-200 gdpr:dark:border-blue-700 gdpr:rounded gdpr:hover:bg-blue-100 gdpr:dark:hover:bg-blue-900/50 gdpr:transition-colors",
                                                         "title": "$t:defer:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{row.policy_version}}"
                                                     },
                                                     "children": [

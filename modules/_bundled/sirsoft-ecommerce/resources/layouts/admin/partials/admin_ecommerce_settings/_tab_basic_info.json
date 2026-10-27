@@ -1162,7 +1162,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card"
+                "className": "ecommerce-admin-card"
             },
             "children": [
                 {
@@ -1170,7 +1170,7 @@
                     "type": "basic",
                     "name": "H3",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.export_retention.title"
                 },
@@ -1179,7 +1179,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "card-description"
+                        "className": "ecommerce-card-description"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.export_retention.description"
                 },
@@ -1188,14 +1188,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center gap-2 flex-wrap"
+                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-body"
+                                "className": "ecommerce-text-body"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.export_retention.prefix"
                         },
@@ -1209,7 +1209,7 @@
                                 "max": "{{_local.form?._meta?.limits?.export_retention_days_max ?? 30}}",
                                 "step": "1",
                                 "aria-label": "$t:sirsoft-ecommerce.admin.settings.basic_info.export_retention.title",
-                                "className": "{{_local.errors?.['basic_info.export_retention_days'] ? 'input input-error w-20' : 'input w-20'}}",
+                                "className": "{{_local.errors?.['basic_info.export_retention_days'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-20' : 'ecommerce-input ecommerce:w-20'}}",
                                 "disabled": "{{_computed.isReadOnly}}"
                             }
                         },
@@ -1217,7 +1217,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-body"
+                                "className": "ecommerce-text-body"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.export_retention.suffix"
                         },
@@ -1226,7 +1226,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['basic_info.export_retention_days']}}",
                             "props": {
-                                "className": "form-error-xs w-full mt-1"
+                                "className": "ecommerce-form-error-xs ecommerce:w-full ecommerce:mt-1"
                             },
                             "text": "{{_local.errors?.['basic_info.export_retention_days']?.[0] ?? ''}}"
                         }
@@ -1236,7 +1236,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "form-hint mt-2"
+                        "className": "ecommerce-form-hint ecommerce:mt-2"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.export_retention.help"
                 }
@@ -1247,7 +1247,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card"
+                "className": "ecommerce-admin-card"
             },
             "children": [
                 {
@@ -1255,7 +1255,7 @@
                     "type": "basic",
                     "name": "H3",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.title"
                 },
@@ -1264,7 +1264,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "card-description"
+                        "className": "ecommerce-card-description"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.inquiry_settings.description"
                 },

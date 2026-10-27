@@ -11,7 +11,7 @@
     "if": "{{_computed.activeTab === 'retention'}}",
     "dataKey": "policyForm",
     "props": {
-        "className": "mt-6 space-y-6"
+        "className": "sso:mt-6 sso:space-y-6"
     },
     "children": [
         {
@@ -19,14 +19,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card space-y-6"
+                "className": "sso-admin-card sso:space-y-6"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H2",
                     "props": {
-                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                        "className": "sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white"
                     },
                     "text": "$t:sirsoft-sso.admin.settings.retention.title"
                 },
@@ -40,21 +40,21 @@
                     },
                     "dataKey": "{{field}}",
                     "props": {
-                        "className": "grid-3col-responsive"
+                        "className": "sso-grid-3col-responsive"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-1"
+                                "className": "sso:lg:col-span-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sso-form-label"
                                     },
                                     "text": "{{$t('sirsoft-sso.admin.settings.retention.fields.' + field)}}"
                                 }
@@ -64,7 +64,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-2"
+                                "className": "sso:lg:col-span-2"
                             },
                             "children": [
                                 {
@@ -83,7 +83,7 @@
                                     ],
                                     "props": {
                                         "type": "number",
-                                        "className": "input",
+                                        "className": "sso-input",
                                         "min": 1,
                                         "max": 3650,
                                         "value": "{{_local.policyForm?.policy?.[field] ?? ''}}",
@@ -102,14 +102,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card space-y-6"
+                "className": "sso-admin-card sso:space-y-6"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H2",
                     "props": {
-                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                        "className": "sso:text-lg sso:font-semibold sso:text-gray-900 sso:dark:text-white"
                     },
                     "text": "$t:sirsoft-sso.admin.settings.retention.alerts"
                 },
@@ -117,21 +117,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid-3col-responsive"
+                        "className": "sso-grid-3col-responsive"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-1"
+                                "className": "sso:lg:col-span-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sso-form-label"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.retention.fields.failure_alert"
                                 },
@@ -139,7 +139,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "sso-form-hint"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.retention.hints.failure_alert"
                                 }
@@ -149,7 +149,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-2 grid grid-cols-2 gap-3"
+                                "className": "sso:lg:col-span-2 sso:grid sso:grid-cols-2 sso:gap-3"
                             },
                             "children": [
                                 {
@@ -160,7 +160,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "sso-form-label"
                                             },
                                             "text": "$t:sirsoft-sso.admin.settings.retention.fields.failure_alert_count"
                                         },
@@ -173,7 +173,7 @@
                                                 "name": "policy.failure_alert_count",
                                                 "min": 1,
                                                 "max": 1000,
-                                                "className": "input",
+                                                "className": "sso-input",
                                                 "disabled": "{{!_computed.canUpdate}}"
                                             }
                                         }
@@ -187,7 +187,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "sso-form-label"
                                             },
                                             "text": "$t:sirsoft-sso.admin.settings.retention.fields.failure_alert_window_minutes"
                                         },
@@ -200,7 +200,7 @@
                                                 "name": "policy.failure_alert_window_minutes",
                                                 "min": 1,
                                                 "max": 1440,
-                                                "className": "input",
+                                                "className": "sso-input",
                                                 "disabled": "{{!_computed.canUpdate}}"
                                             }
                                         }
@@ -214,21 +214,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid-3col-responsive"
+                        "className": "sso-grid-3col-responsive"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-1"
+                                "className": "sso:lg:col-span-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sso-form-label"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.retention.fields.cert_expiry_notice_days"
                                 },
@@ -236,7 +236,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "sso-form-hint"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.retention.hints.cert_expiry_notice_days"
                                 }
@@ -246,7 +246,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-2"
+                                "className": "sso:lg:col-span-2"
                             },
                             "children": [
                                 {
@@ -256,7 +256,7 @@
                                         "name": "policy.cert_expiry_notice_days",
                                         "creatable": true,
                                         "placeholder": "30",
-                                        "className": "w-full",
+                                        "className": "sso:w-full",
                                         "defaultVariant": "blue",
                                         "disabled": "{{!_computed.canUpdate}}"
                                     }
@@ -269,21 +269,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid-3col-responsive"
+                        "className": "sso-grid-3col-responsive"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-1"
+                                "className": "sso:lg:col-span-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sso-form-label"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.retention.fields.ttl"
                                 },
@@ -291,7 +291,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "sso-form-hint"
                                     },
                                     "text": "$t:sirsoft-sso.admin.settings.retention.hints.ttl"
                                 }
@@ -301,7 +301,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "lg:col-span-2 grid grid-cols-2 gap-3"
+                                "className": "sso:lg:col-span-2 sso:grid sso:grid-cols-2 sso:gap-3"
                             },
                             "children": [
                                 {
@@ -312,7 +312,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "sso-form-label"
                                             },
                                             "text": "$t:sirsoft-sso.admin.settings.retention.fields.state_ttl_minutes"
                                         },
@@ -325,7 +325,7 @@
                                                 "name": "policy.state_ttl_minutes",
                                                 "min": 1,
                                                 "max": 60,
-                                                "className": "input",
+                                                "className": "sso-input",
                                                 "disabled": "{{!_computed.canUpdate}}"
                                             }
                                         }
@@ -339,7 +339,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "sso-form-label"
                                             },
                                             "text": "$t:sirsoft-sso.admin.settings.retention.fields.pending_ttl_minutes"
                                         },
@@ -352,7 +352,7 @@
                                                 "name": "policy.pending_ttl_minutes",
                                                 "min": 1,
                                                 "max": 60,
-                                                "className": "input",
+                                                "className": "sso-input",
                                                 "disabled": "{{!_computed.canUpdate}}"
                                             }
                                         }
@@ -368,7 +368,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex flex-wrap gap-2"
+                "className": "sso:flex sso:flex-wrap sso:gap-2"
             },
             "children": [
                 {
@@ -383,7 +383,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-primary text-sm",
+                        "className": "sso-btn sso-btn-primary sso:text-sm",
                         "disabled": "{{!_computed.canUpdate || _local.isSavingPolicy}}"
                     },
                     "children": [

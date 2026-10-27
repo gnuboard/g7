@@ -417,14 +417,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex flex-wrap items-center justify-between gap-4 mb-4"
+                            "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-4"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-primary font-bold"
+                                    "className": "ecommerce-text-primary ecommerce:font-bold"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.mileage_transactions.table.total_count|count={{transactions?.data?.pagination?.total ?? 0}}"
                             },
@@ -433,7 +433,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-center justify-end gap-3"
+                                    "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-end ecommerce:gap-3"
                                 },
                                 "children": [
                                     {
@@ -459,7 +459,7 @@
                                         ],
                                         "props": {
                                             "aria-label": "$t:sirsoft-ecommerce.admin.mileage_transactions.sort.label",
-                                            "className": "w-40 text-sm",
+                                            "className": "ecommerce:w-40 ecommerce:text-sm",
                                             "value": "{{query.sort || 'created_at_desc'}}",
                                             "options": [
                                                 {
@@ -532,7 +532,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex flex-wrap items-center justify-end gap-3"
+                                            "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-end ecommerce:gap-3"
                                         },
                                         "children": [
                                             {
@@ -610,7 +610,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "btn btn-outline whitespace-nowrap"
+                                                    "className": "ecommerce-btn ecommerce-btn-outline ecommerce:whitespace-nowrap"
                                                 },
                                                 "children": [
                                                     {
@@ -618,7 +618,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "file-export",
-                                                            "className": "text-base"
+                                                            "className": "ecommerce:text-base"
                                                         }
                                                     },
                                                     {

@@ -165,7 +165,7 @@ Listener · Layout · 컴포넌트 · 스타일시트(순수 CSS) · Test · 다
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 7개 | `modules/_bundled/gnuboard7-hello_module/tests` |
-| Vitest | 7개 | `vitest.config.ts` |
+| Vitest | 8개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
 | 시나리오 매니페스트 | 13개 | `tests/scenarios` |
 

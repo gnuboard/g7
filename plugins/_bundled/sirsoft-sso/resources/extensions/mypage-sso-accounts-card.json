@@ -55,14 +55,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "space-y-4"
+                        "className": "sso:space-y-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                "className": "sso:text-sm sso:text-gray-700 sso:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-sso.mypage.unlink_confirm|idp={{_global.ssoUnlinkTarget?.idp_label ?? ''}}"
                         },
@@ -70,7 +70,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex gap-2"
+                                "className": "sso:flex sso:gap-2"
                             },
                             "children": [
                                 {
@@ -84,7 +84,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                                        "className": "sso:flex-1 sso:px-3 sso:py-2 sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:rounded-lg sso:text-sm sso:text-gray-700 sso:dark:text-gray-300 sso:cursor-pointer"
                                     },
                                     "text": "$t:common.cancel"
                                 },
@@ -157,7 +157,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "flex-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm cursor-pointer disabled:opacity-50",
+                                        "className": "sso:flex-1 sso:px-3 sso:py-2 sso:bg-red-600 sso:text-white sso:rounded-lg sso:text-sm sso:cursor-pointer sso:disabled:opacity-50",
                                         "disabled": "{{_global.ssoUnlinking}}"
                                     },
                                     "text": "$t:sirsoft-sso.mypage.unlink"
@@ -182,26 +182,26 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
+                                "className": "sso:bg-white sso:dark:bg-gray-800 sso:rounded-lg sso:shadow-sm sso:border sso:border-gray-200 sso:dark:border-gray-700 sso:p-4"
                             }
                         }
                     },
                     "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+                        "className": "sso:bg-white sso:dark:bg-gray-800 sso:rounded-lg sso:shadow-sm sso:border sso:border-gray-200 sso:dark:border-gray-700 sso:p-6"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+                                "className": "sso:mb-4 sso:pb-3 sso:border-b sso:border-gray-200 sso:dark:border-gray-700"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "H2",
                                     "props": {
-                                        "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                        "className": "sso:text-base sso:font-semibold sso:text-gray-900 sso:dark:text-white"
                                     },
                                     "text": "$t:sirsoft-sso.mypage.title"
                                 }
@@ -213,7 +213,7 @@
                             "name": "P",
                             "if": "{{ssoMyAccounts?.data?.enforced === true}}",
                             "props": {
-                                "className": "mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300"
+                                "className": "sso:mb-4 sso:p-3 sso:rounded-lg sso:bg-blue-50 sso:dark:bg-blue-900/20 sso:border sso:border-blue-200 sso:dark:border-blue-800 sso:text-sm sso:text-blue-700 sso:dark:text-blue-300"
                             },
                             "text": "$t:sirsoft-sso.mypage.enforced"
                         },
@@ -222,7 +222,7 @@
                             "name": "P",
                             "if": "{{(ssoMyAccounts?.data?.accounts ?? []).length === 0}}",
                             "props": {
-                                "className": "py-2 text-sm text-gray-500 dark:text-gray-400"
+                                "className": "sso:py-2 sso:text-sm sso:text-gray-500 sso:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-sso.mypage.empty"
                         },
@@ -232,7 +232,7 @@
                             "name": "Ul",
                             "if": "{{(ssoMyAccounts?.data?.accounts ?? []).length > 0}}",
                             "props": {
-                                "className": "divide-y divide-gray-200 dark:divide-gray-700"
+                                "className": "sso:divide-y sso:divide-gray-200 sso:dark:divide-gray-700"
                             },
                             "children": [
                                 {
@@ -244,21 +244,21 @@
                                     },
                                     "dataKey": "{{account.id}}",
                                     "props": {
-                                        "className": "py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3"
+                                        "className": "sso:py-3 sso:flex sso:flex-col sso:gap-2 sso:sm:flex-row sso:sm:items-center sso:sm:gap-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-1 min-w-0"
+                                                "className": "sso:flex-1 sso:min-w-0"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                        "className": "sso:text-sm sso:font-medium sso:text-gray-900 sso:dark:text-white"
                                                     },
                                                     "text": "{{account.idp_label}}"
                                                 },
@@ -266,7 +266,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
                                                     },
                                                     "children": [
                                                         {
@@ -285,7 +285,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
                                                     },
                                                     "children": [
                                                         {
@@ -312,7 +312,7 @@
                                                     "name": "P",
                                                     "if": "{{account.active === false}}",
                                                     "props": {
-                                                        "className": "text-xs text-red-600 dark:text-red-400"
+                                                        "className": "sso:text-xs sso:text-red-600 sso:dark:text-red-400"
                                                     },
                                                     "text": "$t:sirsoft-sso.mypage.inactive"
                                                 }
@@ -345,7 +345,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "shrink-0 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer disabled:opacity-50",
+                                                "className": "sso:shrink-0 sso:px-3 sso:py-1.5 sso:text-xs sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:text-gray-700 sso:dark:text-gray-300 sso:rounded sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700 sso:cursor-pointer sso:disabled:opacity-50",
                                                 "disabled": "{{!!account.unlink_block}}",
                                                 "aria-label": "$t:sirsoft-sso.mypage.unlink_named|idp={{account.idp_label}}"
                                             },
@@ -356,7 +356,7 @@
                                             "name": "P",
                                             "if": "{{!!account.unlink_block}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 md:max-w-xs"
+                                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400 sso:md:max-w-xs"
                                             },
                                             "text": "{{$t('sirsoft-sso.mypage.unlink_block.' + account.unlink_block)}}"
                                         }
@@ -369,7 +369,7 @@
                             "name": "P",
                             "if": "{{!!_global.ssoUnlinkError}}",
                             "props": {
-                                "className": "mt-3 text-sm text-red-600 dark:text-red-400",
+                                "className": "sso:mt-3 sso:text-sm sso:text-red-600 sso:dark:text-red-400",
                                 "role": "alert"
                             },
                             "text": "{{_global.ssoUnlinkError ?? ''}}"
@@ -381,14 +381,14 @@
                             "name": "Div",
                             "if": "{{(ssoMyAccounts?.data?.linkable ?? []).length > 0}}",
                             "props": {
-                                "className": "mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+                                "className": "sso:mt-4 sso:pt-4 sso:border-t sso:border-gray-200 sso:dark:border-gray-700"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "mb-3 text-sm text-gray-600 dark:text-gray-400"
+                                        "className": "sso:mb-3 sso:text-sm sso:text-gray-600 sso:dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-sso.mypage.linkable"
                                 },
@@ -396,7 +396,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex flex-col gap-2 sm:flex-row flex-wrap"
+                                        "className": "sso:flex sso:flex-col sso:gap-2 sso:sm:flex-row sso:flex-wrap"
                                     },
                                     "children": [
                                         {
@@ -421,7 +421,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                                "className": "sso:inline-flex sso:items-center sso:justify-center sso:gap-2 sso:px-4 sso:py-2 sso:text-sm sso:font-medium sso:rounded-lg sso:border sso:border-gray-300 sso:dark:border-gray-600 sso:text-gray-800 sso:dark:text-gray-200 sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700 sso:cursor-pointer"
                                             },
                                             "children": [
                                                 {
@@ -429,7 +429,7 @@
                                                     "name": "Span",
                                                     "props": {
                                                         "aria-hidden": "true",
-                                                        "className": "inline-flex items-center justify-center w-5 h-5 rounded-full ring-1 ring-current text-xs font-semibold"
+                                                        "className": "sso:inline-flex sso:items-center sso:justify-center sso:w-5 sso:h-5 sso:rounded-full sso:ring-1 sso:ring-current sso:text-xs sso:font-semibold"
                                                     },
                                                     "text": "{{idp.initial}}"
                                                 },

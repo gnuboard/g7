@@ -35,28 +35,28 @@
             "name": "Div",
             "if": "{{(ssoPublicIdps?.data ?? []).length > 0}}",
             "props": {
-                "className": "mt-6"
+                "className": "sso:mt-6"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center gap-3 mb-4"
+                        "className": "sso:flex sso:items-center sso:gap-3 sso:mb-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-1 h-px bg-gray-200 dark:bg-gray-700"
+                                "className": "sso:flex-1 sso:h-px sso:bg-gray-200 sso:dark:bg-gray-700"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "sso:text-xs sso:text-gray-500 sso:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-sso.buttons.company_account"
                         },
@@ -64,7 +64,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-1 h-px bg-gray-200 dark:bg-gray-700"
+                                "className": "sso:flex-1 sso:h-px sso:bg-gray-200 sso:dark:bg-gray-700"
                             }
                         }
                     ]
@@ -74,7 +74,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex flex-col gap-2"
+                        "className": "sso:flex sso:flex-col sso:gap-2"
                     },
                     "children": [
                         {
@@ -98,7 +98,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "w-full inline-flex items-center justify-center gap-3 px-4 py-3 sm:py-2 text-sm font-medium rounded-lg border cursor-pointer {{idp.button_style?.bg ? '' : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}}",
+                                "className": "sso:w-full sso:inline-flex sso:items-center sso:justify-center sso:gap-3 sso:px-4 sso:py-3 sso:sm:py-2 sso:text-sm sso:font-medium sso:rounded-lg sso:border sso:cursor-pointer {{idp.button_style?.bg ? '' : 'sso:bg-white sso:dark:bg-gray-800 sso:text-gray-900 sso:dark:text-white sso:border-gray-300 sso:dark:border-gray-600 sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700'}}",
                                 "style": "{{idp.button_style?.bg ? 'background-color:' + idp.button_style.bg + ';color:' + (idp.button_style.fg ?? '#ffffff') + ';border-color:' + (idp.button_style.border ?? idp.button_style.bg) : ''}}",
                                 "aria-label": "$t:sirsoft-sso.buttons.login_with|idp={{idp.label}}"
                             },
@@ -108,7 +108,7 @@
                                     "name": "Span",
                                     "props": {
                                         "aria-hidden": "true",
-                                        "className": "inline-flex items-center justify-center w-6 h-6 rounded-full ring-1 ring-current text-xs font-semibold"
+                                        "className": "sso:inline-flex sso:items-center sso:justify-center sso:w-6 sso:h-6 sso:rounded-full sso:ring-1 sso:ring-current sso:text-xs sso:font-semibold"
                                     },
                                     "text": "{{idp.initial}}"
                                 },

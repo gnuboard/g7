@@ -19,6 +19,8 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'node',
+        // DOM 단언(toHaveClass·toHaveAttribute)을 등록한다 — 루트 설정은 setup 에서 싣지만 이 설정으로 돌면 빠져 「Invalid Chai property」로 실패했다
+        setupFiles: ['resources/js/vitest.setup.ts'],
         include: ['resources/js/**/*.{test,spec}.{ts,tsx}'],
         exclude: ['node_modules/', 'dist/'],
     },

@@ -55,6 +55,7 @@ axes:
     - class_prefix_c02
     - class_prefix_c03
     - class_prefix_c04
+    - class_prefix_c05
     # tests/Unit/Extension/BundledManifestAssetDeclarationTest.php — 번들 확장 manifest 의 자산 선언이 실제 파일을 가리키고 CSS 확장은 고유 namespace 선언
     - manifest_asset_c01
     - manifest_asset_c02

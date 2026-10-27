@@ -18,7 +18,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "sso:text-sm sso:text-gray-700 sso:dark:text-gray-300"
                                     },
                                     "text": "{{row.sso_department ?? '-'}}"
                                 }
@@ -33,7 +33,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        "className": "sso:text-sm sso:text-gray-700 sso:dark:text-gray-300"
                                     },
                                     "text": "{{row.sso_title ?? '-'}}"
                                 }

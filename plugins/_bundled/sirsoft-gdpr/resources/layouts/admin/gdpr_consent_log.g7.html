@@ -405,9 +405,9 @@
         <column field="policy_version" header="$t:sirsoft-gdpr.admin.consent_log.col.policy_version" :sortable="false" width="150px">
           <cell>
             <!-- policy_version 셀 — 평문 Span + 본문 보기 버튼 분리. row.policy_version 이 null 인 옛 행은 '-' 만 표시. -->
-            <div class="flex-center gap-2">
-              <span class="text-sm font-mono text-gray-600 dark:text-gray-400">{{row.policy_version ?? '-'}}</span>
-              <button data-if="{{row.policy_version}}" type="button" class="px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors" title="$t:defer:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{row.policy_version}}">
+            <div class="gdpr-flex-center gdpr:gap-2">
+              <span class="gdpr:text-sm gdpr:font-mono gdpr:text-gray-600 gdpr:dark:text-gray-400">{{row.policy_version ?? '-'}}</span>
+              <button data-if="{{row.policy_version}}" type="button" class="gdpr:px-2 gdpr:py-0.5 gdpr:text-xs gdpr:font-medium gdpr:text-blue-700 gdpr:dark:text-blue-300 gdpr:bg-blue-50 gdpr:dark:bg-blue-900/30 gdpr:border gdpr:border-blue-200 gdpr:dark:border-blue-700 gdpr:rounded gdpr:hover:bg-blue-100 gdpr:dark:hover:bg-blue-900/50 gdpr:transition-colors" title="$t:defer:sirsoft-gdpr.settings.policy_version.snapshot_modal.view_button|version={{row.policy_version}}">
                 <on type="click">
                   <!-- 그 행이 동의받던 시점의 정책 본문 보기 — 볼 버전을 전역에 심고 스냅샷을 다시 받은 뒤 창을 연다 -->
                   <sequence>

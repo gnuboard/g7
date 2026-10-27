@@ -107,7 +107,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "sso-admin-page-content"
                 },
                 "children": [
                     {
@@ -115,14 +115,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mb-6"
+                            "className": "sso:mb-6"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "H1",
                                 "props": {
-                                    "className": "page-title"
+                                    "className": "sso-page-title"
                                 },
                                 "text": "$t:sirsoft-sso.admin.logs.title"
                             },
@@ -130,7 +130,7 @@
                                 "type": "basic",
                                 "name": "P",
                                 "props": {
-                                    "className": "text-label-subtle mt-1"
+                                    "className": "sso-text-label-subtle sso:mt-1"
                                 },
                                 "text": "$t:sirsoft-sso.admin.logs.description"
                             }
@@ -174,7 +174,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex flex-wrap items-center gap-2 my-4"
+                            "className": "sso:flex sso:flex-wrap sso:items-center sso:gap-2 sso:my-4"
                         },
                         "children": [
                             {
@@ -197,7 +197,7 @@
                                     }
                                 ],
                                 "props": {
-                                    "className": "w-44",
+                                    "className": "sso:w-44",
                                     "value": "{{query.idp_id || ''}}",
                                     "aria-label": "$t:sirsoft-sso.admin.logs.filters.idp"
                                 },
@@ -245,7 +245,7 @@
                                     }
                                 ],
                                 "props": {
-                                    "className": "w-40",
+                                    "className": "sso:w-40",
                                     "value": "{{query.outcome || ''}}",
                                     "aria-label": "$t:sirsoft-sso.admin.logs.filters.outcome"
                                 },
@@ -293,7 +293,7 @@
                                     }
                                 ],
                                 "props": {
-                                    "className": "w-40",
+                                    "className": "sso:w-40",
                                     "value": "{{query.status_class || ''}}",
                                     "aria-label": "$t:sirsoft-sso.admin.logs.filters.status"
                                 },
@@ -345,7 +345,7 @@
                                 ],
                                 "props": {
                                     "type": "date",
-                                    "className": "input w-40",
+                                    "className": "sso-input sso:w-40",
                                     "value": "{{query.from || ''}}",
                                     "aria-label": "$t:sirsoft-sso.admin.logs.filters.from"
                                 }
@@ -371,7 +371,7 @@
                                 ],
                                 "props": {
                                     "type": "date",
-                                    "className": "input w-40",
+                                    "className": "sso-input sso:w-40",
                                     "value": "{{query.to || ''}}",
                                     "aria-label": "$t:sirsoft-sso.admin.logs.filters.to"
                                 }
@@ -419,7 +419,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label whitespace-nowrap"
+                                                "className": "sso-text-label sso:whitespace-nowrap"
                                             },
                                             "text": "{{row.created_at | datetime | default('-')}}"
                                         }
@@ -435,7 +435,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body"
+                                                "className": "sso-text-body"
                                             },
                                             "text": "{{(ssoLogIdps?.data?.idps ?? []).find(i => i.id === row.idp_id)?.label ?? (row.idp_id ?? '-')}}"
                                         }
@@ -451,7 +451,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body"
+                                                "className": "sso-text-body"
                                             },
                                             "text": "{{$t('sirsoft-sso.admin.logs.intents.' + row.intent)}}"
                                         }
@@ -467,7 +467,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body"
+                                                "className": "sso-text-body"
                                             },
                                             "text": "{{$t('sirsoft-sso.admin.logs.guards.' + row.guard)}}"
                                         }
@@ -483,7 +483,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "{{row.outcome === 'failed' || row.outcome === 'denied' ? 'text-red-700 dark:text-red-300' : 'text-gray-800 dark:text-gray-200'}}"
+                                                "className": "{{row.outcome === 'failed' || row.outcome === 'denied' ? 'sso:text-red-700 sso:dark:text-red-300' : 'sso:text-gray-800 sso:dark:text-gray-200'}}"
                                             },
                                             "text": "{{$t('sirsoft-sso.admin.logs.outcomes.' + row.outcome)}}"
                                         }
@@ -498,7 +498,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs font-mono text-gray-700 dark:text-gray-300 break-all"
+                                                "className": "sso:text-xs sso:font-mono sso:text-gray-700 sso:dark:text-gray-300 sso:break-all sso-break-all"
                                             },
                                             "text": "{{row.reason_code ?? '-'}}"
                                         }
@@ -514,7 +514,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs text-gray-600 dark:text-gray-300"
+                                                "className": "sso:text-xs sso:text-gray-600 sso:dark:text-gray-300"
                                             },
                                             "text": "{{row.ip_address ?? '-'}}"
                                         }
@@ -564,7 +564,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-label whitespace-nowrap"
+                                                "className": "sso-text-label sso:whitespace-nowrap"
                                             },
                                             "text": "{{row.created_at | datetime | default('-')}}"
                                         }
@@ -580,7 +580,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body"
+                                                "className": "sso-text-body"
                                             },
                                             "text": "{{(ssoLogIdps?.data?.idps ?? []).find(i => i.id === row.idp_id)?.label ?? (row.idp_id ?? '-')}}"
                                         }
@@ -596,7 +596,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs font-mono text-gray-800 dark:text-gray-200"
+                                                "className": "sso:text-xs sso:font-mono sso:text-gray-800 sso:dark:text-gray-200"
                                             },
                                             "text": "{{row.method + ' ' + row.resource}}"
                                         }
@@ -611,7 +611,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs font-mono text-gray-700 dark:text-gray-300 break-all"
+                                                "className": "sso:text-xs sso:font-mono sso:text-gray-700 sso:dark:text-gray-300 sso:break-all sso-break-all"
                                             },
                                             "text": "{{row.target_id ?? '-'}}"
                                         }
@@ -627,7 +627,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "{{row.status >= 400 ? 'text-red-700 dark:text-red-300 text-sm' : 'text-gray-800 dark:text-gray-200 text-sm'}}"
+                                                "className": "{{row.status >= 400 ? 'sso:text-red-700 sso:dark:text-red-300 sso:text-sm' : 'sso:text-gray-800 sso:dark:text-gray-200 sso:text-sm'}}"
                                             },
                                             "text": "{{row.status}}"
                                         }
@@ -643,7 +643,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs font-mono text-gray-700 dark:text-gray-300"
+                                                "className": "sso:text-xs sso:font-mono sso:text-gray-700 sso:dark:text-gray-300"
                                             },
                                             "text": "{{row.error_code ?? '-'}}"
                                         }

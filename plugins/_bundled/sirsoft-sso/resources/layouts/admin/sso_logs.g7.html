@@ -51,10 +51,10 @@
     <permission>sirsoft-sso.logs.view</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="sso_logs_content" class="admin-page-content">
-      <div data-ref="page_header" class="mb-6">
-        <h1 class="page-title">$t:sirsoft-sso.admin.logs.title</h1>
-        <p class="text-label-subtle mt-1">$t:sirsoft-sso.admin.logs.description</p>
+    <div data-ref="sso_logs_content" class="sso-admin-page-content">
+      <div data-ref="page_header" class="sso:mb-6">
+        <h1 class="sso-page-title">$t:sirsoft-sso.admin.logs.title</h1>
+        <p class="sso-text-label-subtle sso:mt-1">$t:sirsoft-sso.admin.logs.description</p>
       </div>
       <tab-navigation data-type="composite" data-ref="logs_tabs" activeTabId="{{query.tab || 'attempts'}}" variant="underline">
         <prop name="tabs">
@@ -68,8 +68,8 @@
           </navigate>
         </on>
       </tab-navigation>
-      <div data-ref="logs_filters" class="flex flex-wrap items-center gap-2 my-4">
-        <select data-ref="logs_filter_idp" class="w-44" value="{{query.idp_id || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.idp">
+      <div data-ref="logs_filters" class="sso:flex sso:flex-wrap sso:items-center sso:gap-2 sso:my-4">
+        <select data-ref="logs_filter_idp" class="sso:w-44" value="{{query.idp_id || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.idp">
           <option value="">$t:sirsoft-sso.admin.accounts.filters.all_idps</option>
           <option data-each="idp in ssoLogIdps?.data?.idps ?? []" value="{{idp.id}}">{{idp.label}}</option>
           <on type="change">
@@ -79,7 +79,7 @@
             </navigate>
           </on>
         </select>
-        <select data-ref="logs_filter_outcome" data-if="{{(query.tab || 'attempts') === 'attempts'}}" class="w-40" value="{{query.outcome || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.outcome">
+        <select data-ref="logs_filter_outcome" data-if="{{(query.tab || 'attempts') === 'attempts'}}" class="sso:w-40" value="{{query.outcome || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.outcome">
           <option value="">$t:sirsoft-sso.admin.logs.filters.all_outcomes</option>
           <option data-each="outcome in ['handoff', 'pending', 'link_pending', 'linked', 'reauth', 'test', 'failed', 'denied']" value="{{outcome}}">{{$t('sirsoft-sso.admin.logs.outcomes.' + outcome)}}</option>
           <on type="change">
@@ -89,7 +89,7 @@
             </navigate>
           </on>
         </select>
-        <select data-ref="logs_filter_status" data-if="{{query.tab === 'scim'}}" class="w-40" value="{{query.status_class || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.status">
+        <select data-ref="logs_filter_status" data-if="{{query.tab === 'scim'}}" class="sso:w-40" value="{{query.status_class || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.status">
           <option value="">$t:sirsoft-sso.admin.logs.filters.all_status</option>
           <option value="success">$t:sirsoft-sso.admin.logs.status.success</option>
           <option value="error">$t:sirsoft-sso.admin.logs.status.error</option>
@@ -100,7 +100,7 @@
             </navigate>
           </on>
         </select>
-        <input data-ref="logs_filter_from" type="date" class="input w-40" value="{{query.from || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.from">
+        <input data-ref="logs_filter_from" type="date" class="sso-input sso:w-40" value="{{query.from || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.from">
           <on type="change">
             <!-- 기간 시작일 — 주소에 담아 첫 쪽으로 -->
             <navigate path="/admin/plugins/sirsoft-sso/logs" :mergeQuery="true">
@@ -108,7 +108,7 @@
             </navigate>
           </on>
         </input>
-        <input data-ref="logs_filter_to" type="date" class="input w-40" value="{{query.to || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.to">
+        <input data-ref="logs_filter_to" type="date" class="sso-input sso:w-40" value="{{query.to || ''}}" aria-label="$t:sirsoft-sso.admin.logs.filters.to">
           <on type="change">
             <!-- 기간 끝날 — 주소에 담아 첫 쪽으로 -->
             <navigate path="/admin/plugins/sirsoft-sso/logs" :mergeQuery="true">
@@ -126,37 +126,37 @@
         </on>
         <column field="created_at" header="$t:sirsoft-sso.admin.logs.col.created_at" :sortable="false" width="170px">
           <cell>
-            <span class="text-label whitespace-nowrap">{{row.created_at | datetime | default('-')}}</span>
+            <span class="sso-text-label sso:whitespace-nowrap">{{row.created_at | datetime | default('-')}}</span>
           </cell>
         </column>
         <column field="idp_id" header="$t:sirsoft-sso.admin.logs.col.idp" :sortable="false" width="140px">
           <cell>
-            <span class="text-body">{{(ssoLogIdps?.data?.idps ?? []).find(i => i.id === row.idp_id)?.label ?? (row.idp_id ?? '-')}}</span>
+            <span class="sso-text-body">{{(ssoLogIdps?.data?.idps ?? []).find(i => i.id === row.idp_id)?.label ?? (row.idp_id ?? '-')}}</span>
           </cell>
         </column>
         <column field="intent" header="$t:sirsoft-sso.admin.logs.col.intent" :sortable="false" width="100px">
           <cell>
-            <span class="text-body">{{$t('sirsoft-sso.admin.logs.intents.' + row.intent)}}</span>
+            <span class="sso-text-body">{{$t('sirsoft-sso.admin.logs.intents.' + row.intent)}}</span>
           </cell>
         </column>
         <column field="guard" header="$t:sirsoft-sso.admin.logs.col.guard" :sortable="false" width="90px">
           <cell>
-            <span class="text-body">{{$t('sirsoft-sso.admin.logs.guards.' + row.guard)}}</span>
+            <span class="sso-text-body">{{$t('sirsoft-sso.admin.logs.guards.' + row.guard)}}</span>
           </cell>
         </column>
         <column field="outcome" header="$t:sirsoft-sso.admin.logs.col.outcome" :sortable="false" width="110px">
           <cell>
-            <span class="{{row.outcome === 'failed' || row.outcome === 'denied' ? 'text-red-700 dark:text-red-300' : 'text-gray-800 dark:text-gray-200'}}">{{$t('sirsoft-sso.admin.logs.outcomes.' + row.outcome)}}</span>
+            <span class="{{row.outcome === 'failed' || row.outcome === 'denied' ? 'sso:text-red-700 sso:dark:text-red-300' : 'sso:text-gray-800 sso:dark:text-gray-200'}}">{{$t('sirsoft-sso.admin.logs.outcomes.' + row.outcome)}}</span>
           </cell>
         </column>
         <column field="reason_code" header="$t:sirsoft-sso.admin.logs.col.reason" :sortable="false">
           <cell>
-            <span class="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">{{row.reason_code ?? '-'}}</span>
+            <span class="sso:text-xs sso:font-mono sso:text-gray-700 sso:dark:text-gray-300 sso:break-all sso-break-all">{{row.reason_code ?? '-'}}</span>
           </cell>
         </column>
         <column field="ip_address" header="$t:sirsoft-sso.admin.logs.col.ip" :sortable="false" width="130px">
           <cell>
-            <span class="text-xs text-gray-600 dark:text-gray-300">{{row.ip_address ?? '-'}}</span>
+            <span class="sso:text-xs sso:text-gray-600 sso:dark:text-gray-300">{{row.ip_address ?? '-'}}</span>
           </cell>
         </column>
       </data-grid>
@@ -169,32 +169,32 @@
         </on>
         <column field="created_at" header="$t:sirsoft-sso.admin.logs.col.created_at" :sortable="false" width="170px">
           <cell>
-            <span class="text-label whitespace-nowrap">{{row.created_at | datetime | default('-')}}</span>
+            <span class="sso-text-label sso:whitespace-nowrap">{{row.created_at | datetime | default('-')}}</span>
           </cell>
         </column>
         <column field="idp_id" header="$t:sirsoft-sso.admin.logs.col.idp" :sortable="false" width="140px">
           <cell>
-            <span class="text-body">{{(ssoLogIdps?.data?.idps ?? []).find(i => i.id === row.idp_id)?.label ?? (row.idp_id ?? '-')}}</span>
+            <span class="sso-text-body">{{(ssoLogIdps?.data?.idps ?? []).find(i => i.id === row.idp_id)?.label ?? (row.idp_id ?? '-')}}</span>
           </cell>
         </column>
         <column field="method" header="$t:sirsoft-sso.admin.logs.col.request" :sortable="false" width="160px">
           <cell>
-            <span class="text-xs font-mono text-gray-800 dark:text-gray-200">{{row.method + ' ' + row.resource}}</span>
+            <span class="sso:text-xs sso:font-mono sso:text-gray-800 sso:dark:text-gray-200">{{row.method + ' ' + row.resource}}</span>
           </cell>
         </column>
         <column field="target_id" header="$t:sirsoft-sso.admin.logs.col.target" :sortable="false">
           <cell>
-            <span class="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">{{row.target_id ?? '-'}}</span>
+            <span class="sso:text-xs sso:font-mono sso:text-gray-700 sso:dark:text-gray-300 sso:break-all sso-break-all">{{row.target_id ?? '-'}}</span>
           </cell>
         </column>
         <column field="status" header="$t:sirsoft-sso.admin.logs.col.status" :sortable="false" width="90px">
           <cell>
-            <span class="{{row.status >= 400 ? 'text-red-700 dark:text-red-300 text-sm' : 'text-gray-800 dark:text-gray-200 text-sm'}}">{{row.status}}</span>
+            <span class="{{row.status >= 400 ? 'sso:text-red-700 sso:dark:text-red-300 sso:text-sm' : 'sso:text-gray-800 sso:dark:text-gray-200 sso:text-sm'}}">{{row.status}}</span>
           </cell>
         </column>
         <column field="error_code" header="$t:sirsoft-sso.admin.logs.col.reason" :sortable="false" width="160px">
           <cell>
-            <span class="text-xs font-mono text-gray-700 dark:text-gray-300">{{row.error_code ?? '-'}}</span>
+            <span class="sso:text-xs sso:font-mono sso:text-gray-700 sso:dark:text-gray-300">{{row.error_code ?? '-'}}</span>
           </cell>
         </column>
       </data-grid>

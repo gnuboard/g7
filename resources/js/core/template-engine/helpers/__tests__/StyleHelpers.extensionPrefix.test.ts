@@ -47,4 +47,15 @@ describe('splitExtensionClassPrefix / mergeClasses — 확장 앞글자', () => 
     expect(mergeClasses('dark:bg-gray-800 bg-gray-50', 'ecommerce:bg-blue-50')).toBe('dark:bg-gray-800 ecommerce:bg-blue-50');
     expect(mergeClasses('hover:bg-gray-100', 'ecommerce:hover:bg-blue-100')).toBe('ecommerce:hover:bg-blue-100');
   });
+
+  // 7.1.3 의 상위 그룹 덮기(engine-v1.83.0 CONFLICTING_CLASS_GROUPS)와 앞글자 해석이 만나는 자리 — 리베이스로
+  // 처음 한 함수에 모였다. 앞글자 붙은 상위 그룹도 같은 변형의 하위 축을 덮고, 반대 방향은 덮지 않는다.
+  // @scenario case=class_prefix_c05
+  // @effects extension_class_prefix_read_as_template_class
+  it('mergeClasses — 확장 앞글자 붙은 상위 그룹도 하위 축을 덮는다(반대 방향은 남긴다)', () => {
+    expect(mergeClasses('px-4 pt-2 text-sm', 'ecommerce:p-0')).toBe('text-sm ecommerce:p-0');
+    expect(mergeClasses('ecommerce:px-4 ecommerce:mt-2', 'm-0')).toBe('ecommerce:px-4 m-0');
+    expect(mergeClasses('p-4', 'ecommerce:px-2')).toBe('p-4 ecommerce:px-2');
+    expect(mergeClasses('dark:px-4 px-4', 'ecommerce:p-0')).toBe('dark:px-4 ecommerce:p-0');
+  });
 });

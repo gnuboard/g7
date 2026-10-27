@@ -1,46 +1,46 @@
 <!-- IdP 탭 목록 — 이름, 프로토콜, 상태, 소유 도메인, 마지막 성공·오류, 연결 회원 수. 「IdP 추가」는 프로토콜을 고르는 칸을 연다.
      서버에서 쓸 수 없는 프로토콜(예: PHP LDAP 확장 없음 — W9)은 배지로 알리고 추가 선택지에서 고를 수 없다. 행의 [편집]은 ?idp={id} 로 같은 화면 편집 보기를 연다. -->
 <partial name="partials/plugin_settings/_idp_list" description="IdP 목록">
-  <div data-ref="idp_list_tab" data-if="{{_computed.activeTab === 'idps' &amp;&amp; !query.idp}}" class="mt-6 space-y-4">
-    <div data-ref="idp_list_header" class="flex flex-wrap items-center justify-between gap-2">
-      <p class="text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-sso.admin.settings.idp.list_hint|count={{ssoIdps?.data?.limits?.count ?? 0}}|max={{ssoIdps?.data?.limits?.max ?? 20}}</p>
-      <button data-ref="add_idp_button" type="button" class="btn btn-primary text-sm" disabled="{{!_computed.canUpdate || (ssoIdps?.data?.limits?.count ?? 0) >= (ssoIdps?.data?.limits?.max ?? 20)}}">
+  <div data-ref="idp_list_tab" data-if="{{_computed.activeTab === 'idps' &amp;&amp; !query.idp}}" class="sso:mt-6 sso:space-y-4">
+    <div data-ref="idp_list_header" class="sso:flex sso:flex-wrap sso:items-center sso:justify-between sso:gap-2">
+      <p class="sso:text-sm sso:text-gray-600 sso:dark:text-gray-400">$t:sirsoft-sso.admin.settings.idp.list_hint|count={{ssoIdps?.data?.limits?.count ?? 0}}|max={{ssoIdps?.data?.limits?.max ?? 20}}</p>
+      <button data-ref="add_idp_button" type="button" class="sso-btn sso-btn-primary sso:text-sm" disabled="{{!_computed.canUpdate || (ssoIdps?.data?.limits?.count ?? 0) >= (ssoIdps?.data?.limits?.max ?? 20)}}">
         <on type="click">
           <!-- 추가 칸을 연다 — 고를 수 있는 첫 프로토콜을 기본으로 둔다 -->
           <set-state target="local" :showAddIdp="true" :newIdpErrors="null" newIdp="{{({ protocol: ((ssoIdps?.data?.protocols ?? []).find(p => p.available)?.key ?? 'oidc'), key: '', label: {} })}}"/>
         </on>
-        <icon name="fa-solid fa-plus" class="text-xs"/>
+        <icon name="fa-solid fa-plus" class="sso:text-xs"/>
         <span>$t:sirsoft-sso.admin.settings.idp.add</span>
       </button>
     </div>
-    <div data-ref="protocol_badges" class="flex flex-wrap gap-2">
-      <span data-each="protocol in ssoIdps?.data?.protocols ?? []" data-key="{{protocol.key}}" class="{{protocol.available ? 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'}}">{{protocol.label + (protocol.available ? '' : ' — ' + $t('sirsoft-sso.admin.settings.idp.protocol_unavailable'))}}</span>
+    <div data-ref="protocol_badges" class="sso:flex sso:flex-wrap sso:gap-2">
+      <span data-each="protocol in ssoIdps?.data?.protocols ?? []" data-key="{{protocol.key}}" class="{{protocol.available ? 'sso:inline-flex sso:items-center sso:px-2 sso:py-0.5 sso:rounded-full sso:text-xs sso:font-medium sso:bg-gray-100 sso:text-gray-700 sso:dark:bg-gray-700 sso:dark:text-gray-300' : 'sso:inline-flex sso:items-center sso:px-2 sso:py-0.5 sso:rounded-full sso:text-xs sso:font-medium sso:bg-amber-100 sso:text-amber-800 sso:dark:bg-amber-900/30 sso:dark:text-amber-300'}}">{{protocol.label + (protocol.available ? '' : ' — ' + $t('sirsoft-sso.admin.settings.idp.protocol_unavailable'))}}</span>
     </div>
     <!-- IdP 추가 칸 -->
-    <div data-ref="idp_add_form" data-if="{{_local.showAddIdp}}" data-key="newIdp" class="admin-card space-y-4">
-      <h2 class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-sso.admin.settings.idp.add_title</h2>
-      <div class="grid-2col-responsive">
+    <div data-ref="idp_add_form" data-if="{{_local.showAddIdp}}" data-key="newIdp" class="sso-admin-card sso:space-y-4">
+      <h2 class="sso:text-base sso:font-semibold sso:text-gray-900 sso:dark:text-white">$t:sirsoft-sso.admin.settings.idp.add_title</h2>
+      <div class="sso-grid-2col-responsive">
         <div>
-          <label class="form-label">$t:sirsoft-sso.admin.settings.idp.fields.protocol</label>
-          <select name="protocol" class="w-full">
+          <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.protocol</label>
+          <select name="protocol" class="sso:w-full">
             <option data-each="protocol in ssoIdps?.data?.protocols ?? []" value="{{protocol.key}}" disabled="{{!protocol.available}}">{{protocol.label}}</option>
           </select>
-          <p data-if="{{!!_local.newIdpErrors?.protocol}}" class="form-error">{{_local.newIdpErrors?.protocol?.[0] ?? ''}}</p>
+          <p data-if="{{!!_local.newIdpErrors?.protocol}}" class="sso-form-error">{{_local.newIdpErrors?.protocol?.[0] ?? ''}}</p>
         </div>
         <div>
-          <label class="form-label">$t:sirsoft-sso.admin.settings.idp.fields.key</label>
-          <input type="text" name="key" class="input" placeholder="hq" autoComplete="off"/>
-          <p class="form-hint">$t:sirsoft-sso.admin.settings.idp.hints.key</p>
-          <p data-if="{{!!_local.newIdpErrors?.key}}" class="form-error">{{_local.newIdpErrors?.key?.[0] ?? ''}}</p>
+          <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.key</label>
+          <input type="text" name="key" class="sso-input" placeholder="hq" autoComplete="off"/>
+          <p class="sso-form-hint">$t:sirsoft-sso.admin.settings.idp.hints.key</p>
+          <p data-if="{{!!_local.newIdpErrors?.key}}" class="sso-form-error">{{_local.newIdpErrors?.key?.[0] ?? ''}}</p>
         </div>
       </div>
       <div>
-        <label class="form-label">$t:sirsoft-sso.admin.settings.idp.fields.label</label>
+        <label class="sso-form-label">$t:sirsoft-sso.admin.settings.idp.fields.label</label>
         <multilingual-input data-type="composite" name="label" :maxLength="100"/>
-        <p data-if="{{!!_local.newIdpErrors?.label}}" class="form-error">{{_local.newIdpErrors?.label?.[0] ?? ''}}</p>
+        <p data-if="{{!!_local.newIdpErrors?.label}}" class="sso-form-error">{{_local.newIdpErrors?.label?.[0] ?? ''}}</p>
       </div>
-      <div class="flex flex-wrap gap-2">
-        <button data-ref="add_idp_submit" type="button" class="btn btn-primary text-sm" disabled="{{!_computed.canUpdate}}">
+      <div class="sso:flex sso:flex-wrap sso:gap-2">
+        <button data-ref="add_idp_submit" type="button" class="sso-btn sso-btn-primary sso:text-sm" disabled="{{!_computed.canUpdate}}">
           <on type="click">
             <!-- 꺼진 채로 만든다 — 연결 정보를 채우고 연결 테스트를 한 뒤 편집 보기에서 켠다 -->
             <api-call :auth_required="true" target="/api/plugins/sirsoft-sso/admin/idps" method="POST" body="{{_local.newIdp}}">
@@ -59,7 +59,7 @@
           </on>
           <span>$t:sirsoft-sso.admin.settings.idp.create</span>
         </button>
-        <button type="button" class="btn btn-secondary text-sm">
+        <button type="button" class="sso-btn sso-btn-secondary sso:text-sm">
           <on type="click">
             <!-- 추가 칸만 닫는다 — 입력한 값은 지우지 않는다 -->
             <set-state target="local" :showAddIdp="false"/>
@@ -68,53 +68,53 @@
         </button>
       </div>
     </div>
-    <p data-ref="idp_list_loading" data-if="{{!ssoIdps?.data}}" class="text-sm text-gray-500 dark:text-gray-400">$t:common.loading</p>
-    <p data-ref="idp_list_empty" data-if="{{!!ssoIdps?.data &amp;&amp; (ssoIdps?.data?.idps ?? []).length === 0}}" class="text-hint">$t:sirsoft-sso.admin.settings.idp.empty</p>
+    <p data-ref="idp_list_loading" data-if="{{!ssoIdps?.data}}" class="sso:text-sm sso:text-gray-500 sso:dark:text-gray-400">$t:common.loading</p>
+    <p data-ref="idp_list_empty" data-if="{{!!ssoIdps?.data &amp;&amp; (ssoIdps?.data?.idps ?? []).length === 0}}" class="sso-text-hint">$t:sirsoft-sso.admin.settings.idp.empty</p>
     <data-grid data-type="composite" data-ref="idp_datagrid" data-if="{{(ssoIdps?.data?.idps ?? []).length > 0}}" data="{{ssoIdps?.data?.idps ?? []}}" :pagination="false" idField="id" :selectable="false" emptyMessage="$t:sirsoft-sso.admin.settings.idp.empty">
       <column field="display_label" header="$t:sirsoft-sso.admin.settings.idp.col.label" :sortable="false">
         <cell>
-          <div class="flex flex-col">
-            <span class="text-sm font-medium text-gray-900 dark:text-white">{{row.display_label}}</span>
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{row.key}}</span>
+          <div class="sso:flex sso:flex-col">
+            <span class="sso:text-sm sso:font-medium sso:text-gray-900 sso:dark:text-white">{{row.display_label}}</span>
+            <span class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">{{row.key}}</span>
           </div>
         </cell>
       </column>
       <column field="protocol" header="$t:sirsoft-sso.admin.settings.idp.col.protocol" :sortable="false" width="110px">
         <cell>
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{row.protocol_label}}</span>
+          <span class="sso:text-sm sso:text-gray-700 sso:dark:text-gray-300">{{row.protocol_label}}</span>
         </cell>
       </column>
       <column field="enabled" header="$t:sirsoft-sso.admin.settings.idp.col.status" :sortable="false" width="130px">
         <cell>
-          <div class="flex flex-wrap gap-1">
-            <span data-if="{{row.enabled}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">$t:sirsoft-sso.admin.settings.idp.enabled</span>
-            <span data-if="{{!row.enabled}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-sso.admin.settings.idp.disabled</span>
-            <span data-if="{{!row.available}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:sirsoft-sso.admin.settings.idp.unavailable</span>
-            <span data-if="{{row.enforce_owned_domains}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">$t:sirsoft-sso.admin.settings.idp.enforced</span>
+          <div class="sso:flex sso:flex-wrap sso:gap-1">
+            <span data-if="{{row.enabled}}" class="sso:inline-flex sso:items-center sso:px-2 sso:py-0.5 sso:rounded-full sso:text-xs sso:font-medium sso:bg-green-100 sso:text-green-800 sso:dark:bg-green-900/30 sso:dark:text-green-300">$t:sirsoft-sso.admin.settings.idp.enabled</span>
+            <span data-if="{{!row.enabled}}" class="sso:inline-flex sso:items-center sso:px-2 sso:py-0.5 sso:rounded-full sso:text-xs sso:font-medium sso:bg-gray-100 sso:text-gray-700 sso:dark:bg-gray-700 sso:dark:text-gray-300">$t:sirsoft-sso.admin.settings.idp.disabled</span>
+            <span data-if="{{!row.available}}" class="sso:inline-flex sso:items-center sso:px-2 sso:py-0.5 sso:rounded-full sso:text-xs sso:font-medium sso:bg-amber-100 sso:text-amber-800 sso:dark:bg-amber-900/30 sso:dark:text-amber-300">$t:sirsoft-sso.admin.settings.idp.unavailable</span>
+            <span data-if="{{row.enforce_owned_domains}}" class="sso:inline-flex sso:items-center sso:px-2 sso:py-0.5 sso:rounded-full sso:text-xs sso:font-medium sso:bg-indigo-100 sso:text-indigo-800 sso:dark:bg-indigo-900/30 sso:dark:text-indigo-300">$t:sirsoft-sso.admin.settings.idp.enforced</span>
           </div>
         </cell>
       </column>
       <column field="owned_domains" header="$t:sirsoft-sso.admin.settings.idp.col.domains" :sortable="false">
         <cell>
-          <span class="text-xs text-gray-700 dark:text-gray-300 break-all">{{(row.owned_domains ?? []).join(', ') || '-'}}</span>
+          <span class="sso:text-xs sso:text-gray-700 sso:dark:text-gray-300 sso:break-all sso-break-all">{{(row.owned_domains ?? []).join(', ') || '-'}}</span>
         </cell>
       </column>
       <column field="last_success_at" header="$t:sirsoft-sso.admin.settings.idp.col.last" :sortable="false" width="190px">
         <cell>
-          <div class="flex flex-col text-xs">
-            <span class="text-gray-700 dark:text-gray-300">{{$t('sirsoft-sso.admin.settings.idp.last_success')}}: {{row.last_success_at | datetime | default('-')}}</span>
-            <span class="{{row.last_error_at ? 'text-red-700 dark:text-red-300' : 'text-gray-500 dark:text-gray-400'}}">{{$t('sirsoft-sso.admin.settings.idp.last_error')}}: {{row.last_error_at | datetime | default('-')}}{{row.last_error_at &amp;&amp; row.last_error_code ? ' (' + row.last_error_code + ')' : ''}}</span>
+          <div class="sso:flex sso:flex-col sso:text-xs">
+            <span class="sso:text-gray-700 sso:dark:text-gray-300">{{$t('sirsoft-sso.admin.settings.idp.last_success')}}: {{row.last_success_at | datetime | default('-')}}</span>
+            <span class="{{row.last_error_at ? 'sso:text-red-700 sso:dark:text-red-300' : 'sso:text-gray-500 sso:dark:text-gray-400'}}">{{$t('sirsoft-sso.admin.settings.idp.last_error')}}: {{row.last_error_at | datetime | default('-')}}{{row.last_error_at &amp;&amp; row.last_error_code ? ' (' + row.last_error_code + ')' : ''}}</span>
           </div>
         </cell>
       </column>
       <column field="accounts_active" header="$t:sirsoft-sso.admin.settings.idp.col.accounts" :sortable="false" width="90px">
         <cell>
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{row.accounts_active}}</span>
+          <span class="sso:text-sm sso:text-gray-700 sso:dark:text-gray-300">{{row.accounts_active}}</span>
         </cell>
       </column>
       <column field="id" header="" :sortable="false" width="90px">
         <cell>
-          <button data-ref="edit_idp_{{row.id}}" type="button" class="btn btn-secondary text-xs" aria-label="$t:defer:sirsoft-sso.admin.settings.idp.edit_named|idp={{row.display_label}}">
+          <button data-ref="edit_idp_{{row.id}}" type="button" class="sso-btn sso-btn-secondary sso:text-xs" aria-label="$t:defer:sirsoft-sso.admin.settings.idp.edit_named|idp={{row.display_label}}">
             <on type="click">
               <!-- 같은 화면의 편집 보기 — 주소에 idp 를 실어 새로고침에도 유지한다 -->
               <navigate path="/admin/plugins/sirsoft-sso/settings">
