@@ -21,15 +21,16 @@
 1. [Laravel Sanctum 토큰 전용 인증](#laravel-sanctum-토큰-전용-인증)
 2. [StartApiSession 미들웨어](#startapisession-미들웨어)
 3. [외부 인증 로그인 · 로그인 인계](#외부-인증-로그인--로그인-인계-720)
-4. [비밀번호 없는 회원](#비밀번호-없는-회원-720)
-5. [토큰 슬라이딩 만료](#토큰-슬라이딩-만료)
-6. [로그아웃 구현 원칙](#로그아웃-구현-원칙)
-7. [401 응답 시 세션 쿠키 정리](#401-응답-시-세션-쿠키-정리)
-8. [Laravel Sanctum plainTextToken 구조](#laravel-sanctum-plaintexttoken-구조)
-9. [세션 존재 확인](#세션-존재-확인)
-10. [세션 무효화 3단계](#세션-무효화-3단계)
-11. [완전한 로그아웃 구현 예시](#완전한-로그아웃-구현-예시)
-12. [안티 패턴](#안티-패턴)
+4. [외부 인증 확장점](#외부-인증-확장점-720) (예제: 헤더 인증 확장)
+5. [비밀번호 없는 회원](#비밀번호-없는-회원-720)
+6. [토큰 슬라이딩 만료](#토큰-슬라이딩-만료)
+7. [로그아웃 구현 원칙](#로그아웃-구현-원칙)
+8. [401 응답 시 세션 쿠키 정리](#401-응답-시-세션-쿠키-정리)
+9. [Laravel Sanctum plainTextToken 구조](#laravel-sanctum-plaintexttoken-구조)
+10. [세션 존재 확인](#세션-존재-확인)
+11. [세션 무효화 3단계](#세션-무효화-3단계)
+12. [완전한 로그아웃 구현 예시](#완전한-로그아웃-구현-예시)
+13. [안티 패턴](#안티-패턴)
 
 ---
 
@@ -128,15 +129,98 @@ Route::post('logout', ...)->middleware('start.api.session');
 | 항목 | 값 |
 | --- | --- |
 | 코드 | 32바이트 난수(base64url), **120초**, 한 번만 통한다. 캐시 키는 코드 원문이 아니라 해시다 |
+| 브라우저 묶기 | 코드는 **발급한 브라우저에서만** 교환된다. `issue()` 가 HTTP 요청 안에서 불리면 묶음 쿠키 `g7_login_bind`(HttpOnly, SameSite=Lax, Path `/api/auth`, 120초, HTTPS 면 Secure)를 쿠키 대기열에 넣고, 교환 때 그 쿠키를 대조한다. 다르거나 없으면 코드를 소비하고 같은 422 — 가로챈 코드를 다른 브라우저에서 쓸 수 없다 |
+| 발급 메서드 | web 라우트(콜백 → 302)는 `issue()`. **api 라우트에서 인계 코드를 응답으로 줄 때**는 `issueTicket()` 이 돌려주는 `HandoffTicket{code, cookie}` 를 받아 `->withCookie($ticket->cookie)` 로 직접 싣는다(api 그룹에는 쿠키 대기열 미들웨어가 없다). 묶지 않은 코드 `issueUnbound()` 는 실측 명령 `php artisan auth:handoff-issue {email} --guard=user\|admin`(운영 환경 거절)과 시험만 쓴다 |
 | `context.login_method` | 로그인 수단 이름(**필수** — 예 `social:kakao`, 비면 `issue()`·`loginVerifiedUser()` 가 `InvalidArgumentException`). 로그인 완료 훅 `core.auth.after_login` 둘째 인자의 `login_method` 로 실린다 — 2단계 인증(인증번호 재발송 포함)·비밀번호 변경을 거쳐도 이어진다. 비밀번호 로그인은 `password` |
 | `context.skip_two_factor` | `true` 면 2단계 인증 단계만 건너뛴다(운영자가 그 수단에 2단계 인증을 끈 경우). 잠금·상태·비밀번호 변경·휴면은 그대로 |
-| 실패 | 코드 없음·만료·재사용·관리자 경로 코드·회원 삭제 → 같은 **422** (`errors.code`, `auth.login_handoff_invalid`). 회원 상태 거절 → **401** + `errors.email`(상태 문구). 잠금 → **423** |
-| 관리자 경로 | 아직 지원하지 않는다 — `issue(..., 'admin')` 로 발급한 코드는 교환 시 422 |
+| `context.max_session_minutes` | 정수 1~10080. 이 로그인의 세션 수명 상한 — 토큰 만료가 상한을 넘지 않고, 사용 중 연장·토큰 갱신(`refresh`)도 넘지 못한다. 상한이 지난 토큰의 갱신은 401 |
+| `context.external_ref` | 문자열 ≤100. 외부 세션 참조(IdP 세션 id 등). 로그인 완료 훅 문맥에 실린다(`token_id` 와 함께) |
+| 실패 | 코드 없음·만료·재사용·다른 경로 코드·묶음 쿠키 불일치·회원 삭제 → 같은 **422** (`errors.code`, `auth.login_handoff_invalid`). 회원 상태 거절 → **401** + `errors.email`(상태 문구). 잠금 → **423** |
+| 관리자 경로 | `issue($user, $context, 'admin')` → `/admin/login?login_handoff={코드}` → 관리자 로그인 화면이 `POST /api/auth/admin/login/handoff` 로 교환한다. 응답은 관리자 비밀번호 로그인과 같은 세 형태, 관리자가 아니면 403 `auth.admin_required`(휴면 상태 유지). 사용자 코드를 관리자 경로에(또는 반대로) 쓰면 422 |
+| 문맥 값 | 범위 밖 값은 버린다(없는 것과 같다). 공개 정규화 `AuthService::normalizeLoginContext(array)` |
 
 - 서버 쪽에서 바로 로그인 결과가 필요하면 `AuthService::loginVerifiedUser(User $user, array $context = [], string $guard = 'user')` 를
   부를 수 있다. 본인 확인 책임은 호출자에게 있다 — 이 메서드는 「이 회원이 본인이다」를 믿고 관문만 적용한다.
 - 관리자 로그인 경로(`guard = admin`)는 관리자가 아닌 회원을 **세션을 열기 전에** 거절한다(휴면 해제·로그인 완료 훅·2단계 인증 메일보다 앞).
 - 이메일이 없거나 받을 수 없는 대체 주소(`.invalid`)인 회원은 메일 2단계 인증 대상이 아니다(인증 앱을 등록했으면 인증 앱으로 진행).
+
+## 외부 인증 확장점 (7.2.0)
+
+회사 계정 로그인(SSO), 사내 디렉터리 로그인, 인증 프록시 헤더처럼 **사이트 밖에서 본인을 확인하는 확장**이 코어 관문을 고치지 않고
+붙는 자리다. 코어는 수단 이름(SSO·SAML·LDAP 등)을 모른다 — 확장이 아래 계약에 답한다. 확장이 없으면 모두 지금 동작 그대로다.
+훅 인자 표는 [훅 문서 — 외부 인증 확장점 훅](../extension/hooks.md#외부-인증-확장점-훅-720)에 있다.
+
+| 확장점 | 무엇을 | 코어 동작 |
+| --- | --- | --- |
+| 로그인 인계 | 본인 확인을 마친 회원을 로그인시킨다 | 위 「외부 인증 로그인 · 로그인 인계」(사용자·관리자, 브라우저 묶기) |
+| 비밀번호 인증 정책 `core.auth.password_auth_decision` | 회사 계정 회원의 비밀번호 로그인·재설정·설정을 막는다 | 식별자만으로 1차 판정(계정 잠금 판정·비밀번호 확인 전 — 막힌 시도는 실패 횟수에 들지 않는다), 비밀번호가 맞은 뒤 회원 기준 2차 판정(그 전에 세션을 닫는다). 막히면 로그인 **403**·재설정 **422** `errors.code = auth.password_auth_disabled` + `errors.method_label`·`errors.redirect_url`(같은 내용이 `data` 에도). 재설정 요청이 회원 기준으로 막히면 계정 열거를 막으려고 일반 성공 응답 + 액션 `core.auth.password_reset_blocked`. 허용 판정에 `requireTwoFactor` 를 주면 사이트 설정과 무관하게 2단계 인증을 탄다(수단이 없으면 422 `auth.two_factor_means_required`). 막힌 회원은 비밀번호 만료 요구에서도 빠진다 |
+| 외부 자격 증명 검증자 `ExternalCredentialVerifierInterface` | 로그인 폼의 아이디·비밀번호를 사이트 밖(디렉터리 등)에서 검증한다 | 필터 `core.auth.registered_credential_verifiers` 로 등록. `login()` 맨 앞에서 등록 순서대로 `match()` → 잠긴 회원이면 `verify()` 를 부르지 않고 423 → `ExternalCredentialResult::authenticated()` 면 `loginVerifiedUser()` / `rejected($reasonKey, $countsAsFailure)` 면 비밀번호 실패와 같은 401(실패 횟수는 `countsAsFailure` 일 때, 비밀번호 없는 회원도 센다) / `stepRequired($path)` 면 409 `errors.code = auth.external_step_required` + `errors.redirect_url`(동의·연결 확인 화면). 일치하는 검증자가 없으면 비밀번호 경로. 아이디를 받는 검증자가 있으면 로그인 요청의 `email` 칸이 이메일 형식을 강제하지 않고, 화면에는 `appConfig.auth.login_identifier.{user,admin} = email_or_username` 으로 알린다 |
+| 진입 판정 `core.auth.login_discovery` | 이메일 칸을 벗어날 때 「이 주소는 회사 계정으로」 안내 | `POST /api/auth/login/discover`·`/api/auth/admin/login/discover` `{identifier}` → `{method: password\|external, label, redirect_url}`. 회원 유무와 상관없이 같은 모양이 나가야 한다(식별자 모양으로만 판정) |
+| 자동 이동 `core.auth.login_auto_redirect` | 로그인 화면에 오면 바로 회사 계정 로그인으로 | `appConfig.auth.auto_redirect.{user,admin}`. 화면은 `?local=1`(비상 계정 진입로)·`login_handoff`·`sso_error`·`sso_pending`·`sso_link` 쿼리가 있으면 이동하지 않는다(오류로 돌아온 화면이 다시 떠나면 무한 왕복) |
+| 로그아웃 이동 `core.auth.logout_redirect_url` | 로그아웃 뒤 IdP 로그아웃 등으로 보낸다 | 두 로그아웃 API 의 `data.redirect_url`(같은 출처 경로만, 토큰 삭제 전에 계산). 엔진은 그 경로로, 없으면 로그인 화면으로 |
+| 칸 잠금 `core.user.locked_fields` | 회사가 관리하는 이름·연락처 등을 회원·관리자 화면에서 못 바꾸게 | 응답 `locked_fields`, 다른 값이 오면 422 `user.field_locked`. 확장의 동기화(서비스 직접 호출)는 막지 않는다 |
+| 가입 닫기 `core.auth.self_registration_open` | 직원 전용 사이트 | 환경설정 「일반 회원가입 받기」(`security.registration_enabled`)와 이 필터. 닫히면 공개 가입 API 403 `auth.registration_disabled`. 확장 내부 가입(`register()` 직접 호출 — 회사 계정 자동 생성·관리자 추가)은 막지 않는다. 화면에는 두 값을 따로 싣는다 — 실효값 `appConfig.auth.registration_open`(설정 + 이 필터, 가입 폼·가입 링크가 읽는다)과 원 설정값 `settings.security.registration_enabled`(관리자 스위치가 저장값을 보인다) |
+| 확장 내부 가입 | 회사가 만드는 계정 | `AuthService::register($data, ['issue_token' => false, 'identity_policy' => 'skip', 'identity_policy_reason' => '…', 'record_consents' => false])` — 본인인증 정책 생략은 사유 필수(활동 로그 `user.register_identity_policy_skipped`). 공개 가입 API 는 이 옵션을 받지 않는다 |
+| 회원 차단·강제 로그아웃 | 퇴사·계정 정지 | `UserService::blockUser($user, ['reason_key' => …, 'source' => …])`(이미 차단이어도 토큰 전량 회수)·`unblockUser()`·`revokeAllSessions($user, ?$actor)`. 최고관리자는 대상이 될 수 없다 |
+| 시스템 작업 문맥 `SystemOperation::run($reason, $fn)` | 행위자 없는 동기화가 본인인증 정책(428)에 막히지 않게 | 안에서는 회원 수정·탈퇴·삭제 훅의 본인인증 정책을 건너뛰고 기록을 남긴다. **사람이 행위자인 요청에서는 쓰지 않는다** |
+
+공통 규칙:
+
+- **회원 상태는 공통 관문이 본다.** api 그룹 전체에 붙은 `EnsureActiveUser` 가 인증된 회원의 상태(차단·탈퇴·휴면·가입 후 인증 대기)를
+  다시 본다 — `auth:sanctum` 라우트는 403, `optional.sanctum` 라우트는 손님으로 낮춰 통과. 확장 라우트에 상태 검사를 따로 붙이지 않는다.
+  비활성 회원이 써야 하는 경로만 표식 `allow.inactive_user` 를 붙인다(코어는 `api.identity.*` 하나).
+- 계정 잠금이 걸리는 순간 그 회원의 토큰을 모두 회수한다(다른 기기에 남은 로그인도 끝난다).
+- 확장이 요청 필터로 최고관리자 지정(`is_super`)을 바꾸면 코어가 되돌리고 경고를 남긴다.
+- 화면에 돌려주는 경로는 모두 같은 출처 경로만 남는다(`App\Support\SameOriginPath::normalize()`).
+
+### 예제: 헤더 인증 확장
+
+사내 인증 프록시가 본인을 확인한 뒤 `X-Remote-User` 헤더에 이메일을 실어 보내는 사이트에 붙이는 확장의 핵심이다. 국내 상용 SSO 에이전트처럼
+헤더·쿠키로 신원을 넘기는 제품도 같은 모양이다. 이 코드는 `tests/Feature/Docs/HeaderAuthExampleTest` 가 그대로 돌린다(예제 클래스
+`tests/Support/Docs/HeaderAuthExample.php`).
+
+```php
+// 서비스 프로바이더 boot() — 확장 웹 라우트는 화면 catch-all 이 비켜 가는 /plugins/{식별자}/… 아래에 둔다
+Route::middleware('web')->get('/plugins/header-auth/login', [HeaderAuthController::class, 'login']);
+HookManager::addFilter('core.auth.password_auth_decision', [HeaderAuthController::class, 'passwordAuthDecision'], 10, 2);
+
+public function login(Request $request, UserRepositoryInterface $users, AuthService $auth, LoginHandoffService $handoff): RedirectResponse
+{
+    // ① 헤더는 신뢰 프록시(TRUSTED_PROXIES)가 붙인 것만 믿는다 — 직접 들어온 요청의 헤더는 누구나 위조할 수 있다
+    abort_unless($request->isFromTrustedProxy(), 403);
+
+    $email = mb_strtolower(trim((string) $request->header('X-Remote-User', '')));
+    abort_unless(filter_var($email, FILTER_VALIDATE_EMAIL) !== false, 401);
+
+    // ② 회원을 찾거나 만든다 — 회사가 만드는 계정이라 본인인증 정책·동의 기록을 건너뛴다(사유 필수)
+    $user = $users->findByEmail($email) ?? $auth->register(
+        ['name' => strstr($email, '@', true), 'email' => $email],
+        ['issue_token' => false, 'identity_policy' => 'skip', 'identity_policy_reason' => 'external:header', 'record_consents' => false],
+    )['user'];
+
+    // ③ 토큰을 직접 만들지 않는다 — 인계 코드를 받아 로그인 화면이 교환한다(잠금·상태·2단계 인증·휴면은 코어가 처리)
+    $code = $handoff->issue($user, ['login_method' => 'external:header']);
+
+    return redirect('/login?login_handoff='.urlencode($code));
+}
+
+// ④ 회사 도메인의 비밀번호 로그인·재설정을 막고 헤더 인증 진입으로 안내한다
+public static function passwordAuthDecision(?PasswordAuthDecision $decision, array $subject): ?PasswordAuthDecision
+{
+    if ($decision !== null || ! str_ends_with(mb_strtolower((string) ($subject['identifier'] ?? '')), '@corp.example')) {
+        return $decision;
+    }
+
+    return PasswordAuthDecision::deny(
+        basis: PasswordAuthDecision::BASIS_IDENTIFIER,
+        methodLabel: ['ko' => '회사 계정', 'en' => 'Company account'],
+        redirectUrl: '/plugins/header-auth/login',
+    );
+}
+```
+
+- 콜백이 web 라우트이므로 `issue()` 가 묶음 쿠키를 쿠키 대기열에 넣고 302 응답에 실린다. api 라우트에서 코드를 준다면 `issueTicket()` + `withCookie()`.
+- 확장이 GDPR 같은 쿠키 동의 확장과 함께 쓰여도 `g7_login_bind` 는 필수 쿠키로 다뤄진다(동의 확장의 잠금 목록). 확장이 따로 굽는 쿠키는 그 확장이 동의 확장의 계약으로 필수 여부를 알린다.
 
 ## 비밀번호 없는 회원 (7.2.0)
 
@@ -158,8 +242,11 @@ Route::post('logout', ...)->middleware('start.api.session');
 
 - 비밀번호 회원: 종전대로 `password`.
 - 비밀번호 없는 회원: 코어 본인인증으로 확인한 토큰 `verification_token` — 화면은 `POST /api/identity/challenges`
-  (`purpose: sensitive_action`, `provider_id: g7:core.mail`)로 인증번호를 받고, `POST /api/identity/challenges/{id}/verify` 로 확인해
+  (`purpose: sensitive_action`, **`provider_id` 를 보내지 않는다**)로 확인을 시작하고, `POST /api/identity/challenges/{id}/verify` 로 확인해
   받은 토큰을 관문 요청에 싣는다. 토큰은 그 회원 본인 것·그 목적·미소비·미만료여야 하고, 관문을 통과하면 소비된다.
+- 수단은 서버가 회원별로 고른다(7.2.0). 목적에 정해진 제공자가 그 회원에게 쓸 수 없으면(예: 메일 제공자인데 받을 수 없는 대체 이메일 회원)
+  같은 목적을 지원하는 다음 제공자로 넘어간다 — 제공자가 `UserScopedIdentityProviderInterface::canChallengeUser(User)` 로 답한다.
+  응답 `render_hint=external_redirect` 면 화면은 `redirect_url`(회사 계정 다시 로그인 등)로 갔다가 `?verification_token=` 을 들고 돌아와 원래 요청을 다시 보낸다.
 - 비밀번호 없는 회원이 `password` 를 보내면 **422** `user.password_not_set`, 토큰이 무효면 **422** `user.reauthentication_invalid`.
 
 ---

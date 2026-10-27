@@ -100,7 +100,7 @@ return [
         'unrouted_hint' => 'For customers to reach these screens, the plugin must inject user routes with the `core.routes.filter_merged` filter. Ignore this if they are only used as modals or partial screens.',
         // `layout:audit-expressions`, `layout-versions:recalculate-diffs`, `layout-previews:cleanup` command output
         'audit_expressions' => [
-            'invalid_source' => '--source must be one of db|files|all.',
+            'invalid_source' => '--source must be one of db, files, all.',
             'summary' => 'Layouts scanned: :scanned · Violations: :violations',
             'headers' => [
                 'source' => 'Source',

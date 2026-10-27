@@ -1,0 +1,24 @@
+feature: 일반 회원가입 받지 않음 — 가입 화면 안내 카드와 가입 링크 숨김 (sirsoft-basic 1.3.0, 코어 7.2.0 B1⑦·B2)
+
+description: |
+  환경설정 `security.registration_enabled` 가 거짓이면(`_global.settings.security.registration_enabled === false`)
+    - `/register` 는 가입 폼·가입 확장 칸 대신 안내 카드(data-ref `registration_closed_card`)와 로그인 버튼.
+    - 가입 링크 숨김: 로그인 화면 하단, `_user_base` 모바일 드로어, `partials/home/_welcome_card`.
+    - 데스크톱 헤더(Header 컴포넌트)에는 레이아웃이 `registrationEnabled` prop 을 넘긴다. MobileNav 컴포넌트는 레이아웃에 마운트되지 않는다.
+  값이 없거나 참이면 지금처럼 가입을 받는다(`!== false`).
+  판정은 서버 실효값 `_global.appConfig.auth.registration_open`(확장 필터 `core.auth.self_registration_open` 반영)을 먼저 보고, 없을 때만 원 설정값을 본다(W37).
+
+axes:
+  registration: [closed, open, unset, closed_by_extension]
+  surface: [register, login_footer, mobile_drawer, welcome_card]
+
+effects:
+  - register_closed_shows_notice_card
+  - register_closed_login_button_navigates
+  - register_open_keeps_form
+  - register_links_hidden_when_closed
+  - header_receives_registration_flag
+  - effective_flag_closes_register_screens
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/register-disabled.test.tsx

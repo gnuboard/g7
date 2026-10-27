@@ -3,10 +3,12 @@
 namespace App\Extension\IdentityVerification;
 
 use App\Contracts\Extension\IdentityVerificationInterface;
+use App\Contracts\Extension\UserScopedIdentityProviderInterface;
 use App\Enums\IdentityPolicySourceType;
 use App\Enums\IdentityVerificationChannel;
 use App\Enums\IdentityVerificationPurpose;
 use App\Extension\HookManager;
+use App\Models\User;
 use InvalidArgumentException;
 
 /**
@@ -99,6 +101,7 @@ class IdentityVerificationManager
      * 프로바이더를 등록합니다.
      *
      * @param  IdentityVerificationInterface  $provider  IDV 프로바이더 인스턴스
+     * @return void
      */
     public function register(IdentityVerificationInterface $provider): void
     {
@@ -109,6 +112,7 @@ class IdentityVerificationManager
      * 프로바이더 등록을 해제합니다.
      *
      * @param  string  $id  프로바이더 식별자 (예: g7:core.mail)
+     * @return void
      */
     public function unregister(string $id): void
     {
@@ -212,11 +216,58 @@ class IdentityVerificationManager
      * $providerId 가 등록되지 않았거나 purpose 미지원이면 silent fallback (1~4 단계 진행).
      * 운영자가 정책에 명시한 provider 가 비활성화/미설치된 상태에서도 가입 흐름이 중단되지 않도록 한다.
      *
+     * 대상 회원을 알면(7.2.0) 해석된 수단이 그 회원에게 쓸 수 없을 때(`UserScopedIdentityProviderInterface::canChallengeUser()` 거짓 —
+     * 예: 받을 메일이 없는 회원의 메일 수단) 같은 목적을 지원하고 그 회원에게 쓸 수 있는 다음 수단(등록 순서)으로 넘어간다. 그런
+     * 수단이 없으면 해석된 수단을 그대로 돌려준다(기존 동작·기존 오류 경로).
+     *
      * @param  string  $purpose  IDV 목적 (signup, password_reset, sensitive_action 등)
      * @param  string|null  $providerId  호출자 명시 provider id (Mode A controller 요청 / Mode B 정책)
+     * @param  User|null  $user  대상 회원 (모르면 null — 회원별 폴백을 하지 않는다)
      * @return IdentityVerificationInterface 해석된 provider
      */
-    public function resolveForPurpose(string $purpose, ?string $providerId = null): IdentityVerificationInterface
+    public function resolveForPurpose(string $purpose, ?string $providerId = null, ?User $user = null): IdentityVerificationInterface
+    {
+        $resolved = $this->resolveForPurposeIgnoringUser($purpose, $providerId);
+
+        if ($user === null || $this->canChallenge($resolved, $user)) {
+            return $resolved;
+        }
+
+        foreach ($this->all() as $provider) {
+            if ($provider === $resolved || ! $provider->supportsPurpose($purpose) || ! $provider->isAvailable()) {
+                continue;
+            }
+
+            if ($this->canChallenge($provider, $user)) {
+                return $provider;
+            }
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * 수단이 이 회원에게 challenge 를 낼 수 있는지 판정합니다 — 보조 계약을 구현하지 않은 수단은 가능으로 본다.
+     *
+     * @param  IdentityVerificationInterface  $provider  수단
+     * @param  User  $user  대상 회원
+     * @return bool 가능하면 true
+     */
+    private function canChallenge(IdentityVerificationInterface $provider, User $user): bool
+    {
+        return ! $provider instanceof UserScopedIdentityProviderInterface || $provider->canChallengeUser($user);
+    }
+
+    /**
+     * 회원과 무관하게 목적의 수단을 해석합니다 (기존 해석 순서).
+     *
+     * @param  string  $purpose  IDV 목적
+     * @param  string|null  $providerId  호출자 명시 provider id
+     * @return IdentityVerificationInterface 해석된 provider
+     *
+     * @throws InvalidArgumentException 목적을 지원하는 수단이 없을 때
+     */
+    private function resolveForPurposeIgnoringUser(string $purpose, ?string $providerId): IdentityVerificationInterface
     {
         $providers = $this->all();
 
@@ -259,6 +310,7 @@ class IdentityVerificationManager
      * @param  array<string, array<string, mixed>>  $purposes  key => metadata 매핑
      * @param  string|null  $sourceType  'module' | 'plugin' | 'admin' (미명시 시 'admin' 으로 마킹)
      * @param  string|null  $sourceIdentifier  source 식별자 (module/plugin id; 미명시 시 'admin')
+     * @return void
      */
     public function registerDeclaredPurposes(array $purposes, ?string $sourceType = null, ?string $sourceIdentifier = null): void
     {
@@ -293,6 +345,7 @@ class IdentityVerificationManager
      * @param  array<string, mixed>  $meta  label/description/allowed_channels 등 메타데이터
      * @param  string|null  $sourceType  'module' | 'plugin' | 'admin' (미명시 시 'admin')
      * @param  string|null  $sourceIdentifier  source 식별자 (미명시 시 'admin')
+     * @return void
      */
     public function registerPurpose(string $key, array $meta, ?string $sourceType = null, ?string $sourceIdentifier = null): void
     {

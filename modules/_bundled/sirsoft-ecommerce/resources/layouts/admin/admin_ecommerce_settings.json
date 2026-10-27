@@ -853,7 +853,7 @@
                                                 "if": "{{_local.isAddingExchangeReason === true || _local.isAddingReturnReason === true || _local.isAddingRefundReason === true || _local.isAddingCarrier === true || _local.isAddingShippingType === true || _local.isAddingCountry === true}}",
                                                 "params": {
                                                     "type": "error",
-                                                    "message": "{{$t('sirsoft-ecommerce.admin.settings.save_pending_form').replace(':forms', [[_local.isAddingExchangeReason, 'exchange_reason'], [_local.isAddingReturnReason, 'return_reason'], [_local.isAddingRefundReason, 'refund_reason'], [_local.isAddingCarrier, 'carrier'], [_local.isAddingShippingType, 'shipping_type'], [_local.isAddingCountry, 'country']].filter(pair => pair[0] === true).map(pair => $t('sirsoft-ecommerce.admin.settings.save_pending_form_targets.' + pair[1])).join(', '))}}"
+                                                    "message": "{{$t('sirsoft-ecommerce.admin.settings.save_pending_form').replace('{forms}', [[_local.isAddingExchangeReason, 'exchange_reason'], [_local.isAddingReturnReason, 'return_reason'], [_local.isAddingRefundReason, 'refund_reason'], [_local.isAddingCarrier, 'carrier'], [_local.isAddingShippingType, 'shipping_type'], [_local.isAddingCountry, 'country']].filter(pair => pair[0] === true).map(pair => $t('sirsoft-ecommerce.admin.settings.save_pending_form_targets.' + pair[1])).join(', '))}}"
                                                 }
                                             },
                                             {

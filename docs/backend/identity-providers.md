@@ -5,7 +5,7 @@
 ## TL;DR (5초 요약)
 
 ```text
-1. VerificationProviderInterface 구현 + IdentityProviderManager 에 등록
+1. IdentityVerificationInterface 구현 + 필터 훅 core.identity.registered_providers 로 등록 (회원마다 쓸 수 있는지 다르면 UserScopedIdentityProviderInterface 도)
 2. verify() 성공 시 IdentityVerificationLog 에 status=Verified + verification_token + target_hash 기록 필수
 3. target_hash = SHA256(lower(이메일 또는 동등한 식별자)) — listener/middleware 가 이 키로 매칭
 4. 외부 SDK 토큰은 metadata/properties 에 저장하고 verification_token 은 우리가 생성 (절대 외부 토큰 그대로 사용 X)
@@ -28,12 +28,12 @@ provider 가 자기 저장소에만 토큰을 두고 `IdentityVerificationLog` �
 ```php
 namespace Plugins\Vendor\IdentitySms;
 
-use App\Contracts\Extension\VerificationProviderInterface;
+use App\Contracts\Extension\IdentityVerificationInterface;
 use App\Enums\IdentityVerificationStatus;
 use App\Models\IdentityVerificationLog;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 
-final class SmsIdentityProvider implements VerificationProviderInterface
+final class SmsIdentityProvider implements IdentityVerificationInterface
 {
     public const ID = 'g7:plugin.sms';
 
@@ -41,7 +41,10 @@ final class SmsIdentityProvider implements VerificationProviderInterface
         protected IdentityVerificationLogRepositoryInterface $logRepository,
     ) {}
 
-    public function startChallenge(mixed $target, array $context = []): VerificationChallenge
+    // getId()·getLabel()·getChannels()·getChannelLabels()·getRenderHint()·supportsPurpose()·isAvailable()·cancel()·
+    // getSettingsSchema()·withConfig() 도 구현한다 — 계약 전문은 app/Contracts/Extension/IdentityVerificationInterface.php
+
+    public function requestChallenge(User|array $target, array $context = []): VerificationChallenge
     {
         // ... 외부 SDK 호출 또는 코드 발급 ...
 
@@ -156,18 +159,37 @@ protected function generateVerificationToken(string $purpose, string $targetHash
 
 ## 5. provider 등록
 
-`IdentityProviderManager` 에 등록되어야 합니다 (모듈/플러그인 부트스트랩 시점):
+코어 레지스트리(`AppExtensionIdentityVerificationIdentityVerificationManager`)는 `all()` 을 부를 때마다 필터 훅
+`core.identity.registered_providers` 를 통과시킨다. 확장은 이 필터를 구독하는 리스너에서 `$providers[$id] = $provider` 로 더해 돌려준다
+(계약 미구현 값은 버려진다). 설정을 매 요청 읽으므로 설정을 바꾸면 다음 요청부터 반영된다.
 
 ```php
-// modules/_bundled/vendor-identity-sms/src/Module.php
-public function boot(): void
+// plugins/_bundled/vendor-identity_sms/src/Listeners/RegisterSmsProviderListener.php
+public static function getSubscribedHooks(): array
 {
-    parent::boot();
+    return [
+        'core.identity.registered_providers' => ['method' => 'register', 'priority' => 20, 'type' => 'filter', 'sync' => true],
+    ];
+}
 
-    app(\App\Services\IdentityProviderManager::class)
-        ->register(new SmsIdentityProvider(app(IdentityVerificationLogRepositoryInterface::class)));
+public function register(array $providers): array
+{
+    $provider = app()->makeWith(SmsIdentityProvider::class, ['config' => (array) app(PluginSettingsService::class)->get(self::IDENTIFIER)]);
+    $providers[$provider->getId()] = $provider;
+
+    return $providers;
 }
 ```
+
+번들 선례: `plugins/_bundled/sirsoft-verification_nhnkcp/src/Listeners/RegisterKcpProviderListener.php`.
+
+### 5.1 회원마다 쓸 수 있는지 다른 수단 (7.2.0)
+
+목적별 제공자를 고를 때(`IdentityVerificationManager::resolveForPurpose($purpose, $providerId, $user)`) 대상 회원을 알면, 고른 제공자가
+`UserScopedIdentityProviderInterface` 이고 `canChallengeUser($user)` 가 거짓일 때 **같은 목적을 지원하고 그 회원에게 쓸 수 있는 다음
+제공자**(등록 순서)로 넘어간다. 코어 메일 제공자는 받을 수 없는 대체 이메일(`.invalid`) 회원에게 거짓을 답한다 — 그래서 화면은
+challenge 요청에 `provider_id` 를 고정하지 않는다. 판정은 조회만 해야 한다(로그를 남기거나 challenge 를 만들지 않는다).
+외부 화면을 거치는 수단은 `getRenderHint()` 가 `external_redirect` 를 돌려주고 challenge 응답의 `redirect_url` 로 보낸다.
 
 ## 6. provider 추가 후 검증 매트릭스 (MANDATORY)
 
@@ -195,7 +217,7 @@ public static function providerMatrix(): array
 
 각 provider 는 다음 케이스를 담은 자체 테스트를 작성:
 
-- `startChallenge` 가 `IdentityVerificationLog` 에 올바른 target_hash + provider_id 로 row 생성
+- `requestChallenge` 가 `IdentityVerificationLog` 에 올바른 target_hash + provider_id 로 row 생성
 - `verify` 성공 시 status=Verified + verification_token != null + verified_at != null
 - `verify` 실패 시 status 변화 없음 또는 attempts 증가 + token 미발급
 - challenge expires_at 만료 처리
@@ -219,7 +241,9 @@ public static function providerMatrix(): array
 
 ## 8. 관련 코드 진입점
 
-- **VerificationProviderInterface**: `app/Contracts/Extension/VerificationProviderInterface.php`
+- **IdentityVerificationInterface**: `app/Contracts/Extension/IdentityVerificationInterface.php`
+- **UserScopedIdentityProviderInterface**: `app/Contracts/Extension/UserScopedIdentityProviderInterface.php`
+- **IdentityVerificationManager (레지스트리)**: `app/Extension/IdentityVerification/IdentityVerificationManager.php`
 - **MailIdentityProvider (reference 구현)**: `app/Extension/IdentityVerification/Providers/MailIdentityProvider.php`
 - **IdentityVerificationLog**: `app/Models/IdentityVerificationLog.php`
 - **IdentityVerificationLogRepository**: `app/Repositories/IdentityVerificationLogRepository.php`

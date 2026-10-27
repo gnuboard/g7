@@ -7,6 +7,7 @@ use Illuminate\Cache\Lock;
 use Illuminate\Cache\Repository;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -20,6 +21,15 @@ use Illuminate\Support\Facades\Log;
  */
 abstract class AbstractCacheDriver implements CacheInterface
 {
+    /**
+     * 키 인덱스 조각 수
+     *
+     * 인덱스를 한 값에 두면 쓸 때마다 전체를 읽고 다시 써서, 키가 많은 확장(게시판 조회수 중복 방지 —
+     * 글×방문자마다 하루짜리 키)에서 put 한 번이 수십 ms 가 됐다(실측: 5만 항목 84ms). 키 해시로 나눠
+     * 한 조각만 고친다.
+     */
+    private const INDEX_SHARDS = 64;
+
     /**
      * 사용할 캐시 스토어 이름
      */
@@ -127,12 +137,18 @@ abstract class AbstractCacheDriver implements CacheInterface
         $ttl = $ttl ?? $this->getDefaultTtl();
 
         try {
-            return $this->store()->put($resolvedKey, $value, $ttl);
+            $stored = $this->store()->put($resolvedKey, $value, $ttl);
         } catch (\Throwable $e) {
             $this->warnWriteFailure('put', $resolvedKey, $e);
 
             return false;
         }
+
+        if ($stored) {
+            $this->recordPlainWrites([$resolvedKey], $ttl);
+        }
+
+        return $stored;
     }
 
     /**
@@ -201,7 +217,7 @@ abstract class AbstractCacheDriver implements CacheInterface
 
         try {
             $this->store()->put($resolvedKey, $result, $ttl);
-            $this->recordKeyTags($resolvedKey, $allTags);
+            $this->recordKeyTags([$resolvedKey], $allTags, $ttl);
         } catch (\Throwable $e) {
             $this->warnWriteFailure('remember', $resolvedKey, $e);
         }
@@ -271,12 +287,18 @@ abstract class AbstractCacheDriver implements CacheInterface
         }
 
         try {
-            return $this->store()->putMany($resolved, $ttl);
+            $stored = $this->store()->putMany($resolved, $ttl);
         } catch (\Throwable $e) {
             $this->warnWriteFailure('putMany', implode(',', array_keys($resolved)), $e);
 
             return false;
         }
+
+        if ($stored) {
+            $this->recordPlainWrites(array_keys($resolved), $ttl);
+        }
+
+        return $stored;
     }
 
     // === 무효화 ===
@@ -368,25 +390,110 @@ abstract class AbstractCacheDriver implements CacheInterface
     }
 
     /**
+     * put()·putMany() 로 둔 키를 키 인덱스에 기록할지 반환합니다.
+     *
+     * flush() 는 인덱스에 적힌 키만 지운다. 모듈·플러그인은 비활성·제거 때 flush() 로 자기 캐시를 비우므로
+     * put() 키도 적어야 한다. 코어 드라이버는 flush() 호출처가 없고 put() 키가 IP·URL·코드마다 고유라,
+     * 적으면 인덱스 쓰기만 늘어난다 — CoreCacheDriver 가 false 로 끈다.
+     *
+     * @return bool 기록 여부
+     */
+    protected function recordsPlainWrites(): bool
+    {
+        return true;
+    }
+
+    /**
+     * put()·putMany() 로 둔 키를 소속 태그(확장 접두사)로 인덱스에 기록합니다.
+     *
+     * 값은 이미 저장됐으므로 인덱스 쓰기 실패는 경고만 남기고 저장 결과를 바꾸지 않는다.
+     *
+     * @param  array<int, string>  $resolvedKeys  접두사 적용된 전체 키 목록
+     * @param  int  $ttl  값의 TTL (초)
+     * @return void 반환값 없음
+     */
+    private function recordPlainWrites(array $resolvedKeys, int $ttl): void
+    {
+        if (! $this->recordsPlainWrites() || $ttl <= 0) {
+            return;
+        }
+
+        try {
+            $this->recordKeyTags($resolvedKeys, [$this->getPrefix()], $ttl);
+        } catch (\Throwable $e) {
+            $this->warnWriteFailure('index', implode(',', $resolvedKeys), $e);
+        }
+    }
+
+    /**
      * 키-태그 매핑을 인덱스에 기록합니다.
      *
-     * file/database 드라이버처럼 태그를 지원하지 않는 경우,
-     * flush()와 flushTags()를 위해 키-태그 매핑을 별도 캐시 키에 기록합니다.
+     * flush()와 flushTags()는 저장소의 태그 지원 여부와 관계없이 이 인덱스로 지운다.
+     * 항목은 `['tags' => [...], 'expires' => 만료 시각]` 이고, 기록할 때마다 만료 시각이 지난 항목을 정리해
+     * 인덱스 크기를 살아 있는 키 수로 묶는다(키마다 고유한 put() 키가 쌓이지 않게). 인덱스는 키 해시로
+     * INDEX_SHARDS 조각에 나눠 두고, 키가 속한 조각만 잠그고 고친다.
      *
-     * @param  string  $resolvedKey  접두사 적용된 전체 키
+     * @param  array<int, string>  $resolvedKeys  접두사 적용된 전체 키 목록
      * @param  array  $tags  태그 배열
-     * @return void
+     * @param  int  $ttl  값의 TTL (초)
+     * @return void 반환값 없음
      */
-    private function recordKeyTags(string $resolvedKey, array $tags): void
+    private function recordKeyTags(array $resolvedKeys, array $tags, int $ttl): void
     {
-        $this->withIndexLock(function () use ($resolvedKey, $tags): void {
-            $indexKey = $this->getIndexKey();
-            $index = $this->store()->get($indexKey, []);
-            $index[$resolvedKey] = array_values(array_unique(
-                array_merge($index[$resolvedKey] ?? [], $tags)
-            ));
-            $this->store()->put($indexKey, $index, 86400 * 30); // 30일
-        });
+        $byShard = [];
+        foreach ($resolvedKeys as $resolvedKey) {
+            $byShard[$this->shardIndexKey($resolvedKey)][] = $resolvedKey;
+        }
+
+        foreach ($byShard as $indexKey => $keys) {
+            $this->withIndexLock($indexKey, function () use ($indexKey, $keys, $tags, $ttl): void {
+                $now = Carbon::now()->getTimestamp();
+                $index = $this->pruneExpiredEntries($this->store()->get($indexKey, []), $now);
+
+                foreach ($keys as $resolvedKey) {
+                    $index[$resolvedKey] = [
+                        'tags' => array_values(array_unique(
+                            array_merge(isset($index[$resolvedKey]) ? $this->entryTags($index[$resolvedKey]) : [], $tags)
+                        )),
+                        'expires' => $now + $ttl,
+                    ];
+                }
+
+                $this->store()->put($indexKey, $index, 86400 * 30); // 30일
+            });
+        }
+    }
+
+    /**
+     * 만료 시각이 지난 인덱스 항목을 뺍니다. 만료 시각이 없는 옛 형식 항목은 그대로 둔다.
+     *
+     * @param  array  $index  키 인덱스
+     * @param  int  $now  현재 시각 (유닉스 초)
+     * @return array 정리한 키 인덱스
+     */
+    private function pruneExpiredEntries(array $index, int $now): array
+    {
+        return array_filter(
+            $index,
+            fn ($entry) => ! is_array($entry) || ! isset($entry['expires']) || $entry['expires'] > $now
+        );
+    }
+
+    /**
+     * 인덱스 항목의 태그 목록을 반환합니다.
+     *
+     * 옛 형식(태그 배열 그대로)과 새 형식(`['tags' => [...], 'expires' => …]`)을 모두 읽는다.
+     *
+     * @param  mixed  $entry  인덱스 항목
+     * @return array<int, string> 태그 목록
+     */
+    private function entryTags(mixed $entry): array
+    {
+        if (! is_array($entry)) {
+            return [];
+        }
+
+        return array_key_exists('tags', $entry) && is_array($entry['tags']) ? $entry['tags'] : $entry;
     }
 
     /**
@@ -400,10 +507,11 @@ abstract class AbstractCacheDriver implements CacheInterface
      * 경고를 남기고 잠금 없이 진행한다 — 캐시 쓰기 실패와 같은 fail-soft 태도다(잠금 장애가
      * 화면 장애가 되면 안 된다).
      *
+     * @param  string  $indexKey  고칠 인덱스(조각) 키 — 잠금은 조각마다 따로 건다
      * @param  callable  $mutate  인덱스를 읽고 고쳐 쓰는 콜백
      * @return mixed 콜백 반환값
      */
-    private function withIndexLock(callable $mutate): mixed
+    private function withIndexLock(string $indexKey, callable $mutate): mixed
     {
         $store = $this->store()->getStore();
 
@@ -412,9 +520,9 @@ abstract class AbstractCacheDriver implements CacheInterface
         }
 
         try {
-            $lock = $store->lock($this->getIndexKey().':lock', 5);
+            $lock = $store->lock($indexKey.':lock', 5);
         } catch (\Throwable $e) {
-            $this->warnWriteFailure('index-lock', $this->getIndexKey(), $e);
+            $this->warnWriteFailure('index-lock', $indexKey, $e);
 
             return $mutate();
         }
@@ -440,7 +548,7 @@ abstract class AbstractCacheDriver implements CacheInterface
 
             return $lock->block(2, $guarded);
         } catch (LockTimeoutException $e) {
-            $this->warnWriteFailure('index-lock', $this->getIndexKey(), $e);
+            $this->warnWriteFailure('index-lock', $indexKey, $e);
 
             return $mutate();
         } catch (\Throwable $e) {
@@ -448,7 +556,7 @@ abstract class AbstractCacheDriver implements CacheInterface
                 throw $e;
             }
 
-            $this->warnWriteFailure('index-lock', $this->getIndexKey(), $e);
+            $this->warnWriteFailure('index-lock', $indexKey, $e);
 
             return $done ? $result : $mutate();
         }
@@ -457,25 +565,30 @@ abstract class AbstractCacheDriver implements CacheInterface
     /**
      * 키 인덱스 기반으로 전체 캐시를 삭제합니다.
      *
+     * 모든 조각과 옛 단일 인덱스를 본다. 빈 조각은 잠그지 않고 건너뛴다.
+     *
      * @return bool 삭제 성공 여부
      */
     private function flushByIndex(): bool
     {
         try {
-            return $this->withIndexLock(function (): bool {
-                $indexKey = $this->getIndexKey();
-                $index = $this->store()->get($indexKey, []);
-
-                foreach (array_keys($index) as $key) {
-                    $this->store()->forget($key);
+            foreach ($this->allIndexKeys() as $indexKey) {
+                if ($this->store()->get($indexKey, []) === []) {
+                    continue;
                 }
 
-                $this->store()->forget($indexKey);
+                $this->withIndexLock($indexKey, function () use ($indexKey): void {
+                    foreach (array_keys($this->store()->get($indexKey, [])) as $key) {
+                        $this->store()->forget($key);
+                    }
 
-                return true;
-            });
+                    $this->store()->forget($indexKey);
+                });
+            }
+
+            return true;
         } catch (\Throwable $e) {
-            $this->warnWriteFailure('flush', $this->getIndexKey(), $e);
+            $this->warnWriteFailure('flush', $this->legacyIndexKey(), $e);
 
             return false;
         }
@@ -489,23 +602,33 @@ abstract class AbstractCacheDriver implements CacheInterface
      */
     private function flushTagsByIndex(array $tags): bool
     {
-        try {
-            return $this->withIndexLock(function () use ($tags): bool {
-                $indexKey = $this->getIndexKey();
-                $index = $this->store()->get($indexKey, []);
-                $tagsSet = array_flip($tags);
+        $tagsSet = array_flip($tags);
 
-                foreach ($index as $key => $keyTags) {
-                    if (array_intersect_key(array_flip($keyTags), $tagsSet)) {
-                        $this->store()->forget($key);
-                        unset($index[$key]);
-                    }
+        try {
+            foreach ($this->allIndexKeys() as $indexKey) {
+                if ($this->store()->get($indexKey, []) === []) {
+                    continue;
                 }
 
-                $this->store()->put($indexKey, $index, 86400 * 30);
+                $this->withIndexLock($indexKey, function () use ($indexKey, $tagsSet): void {
+                    $index = $this->store()->get($indexKey, []);
+                    $changed = false;
 
-                return true;
-            });
+                    foreach ($index as $key => $entry) {
+                        if (array_intersect_key(array_flip($this->entryTags($entry)), $tagsSet)) {
+                            $this->store()->forget($key);
+                            unset($index[$key]);
+                            $changed = true;
+                        }
+                    }
+
+                    if ($changed) {
+                        $this->store()->put($indexKey, $index, 86400 * 30);
+                    }
+                });
+            }
+
+            return true;
         } catch (\Throwable $e) {
             $this->warnWriteFailure('flushTags', implode(',', $tags), $e);
 
@@ -514,12 +637,42 @@ abstract class AbstractCacheDriver implements CacheInterface
     }
 
     /**
-     * 키 인덱스의 캐시 키를 반환합니다.
+     * 옛 단일 키 인덱스의 캐시 키를 반환합니다.
+     *
+     * 조각으로 나누기 전의 인덱스다. 새 기록은 하지 않고, flush()·flushTags() 가 남은 항목을 지울 때만 읽는다.
      *
      * @return string 인덱스 캐시 키
      */
-    private function getIndexKey(): string
+    private function legacyIndexKey(): string
     {
         return 'g7:_idx:'.$this->getPrefix();
+    }
+
+    /**
+     * 키가 속한 인덱스 조각의 캐시 키를 반환합니다.
+     *
+     * @param  string  $resolvedKey  접두사 적용된 전체 키
+     * @return string 조각 인덱스 캐시 키 (`g7:_idx:{접두사}:{0..INDEX_SHARDS-1}`)
+     */
+    private function shardIndexKey(string $resolvedKey): string
+    {
+        // crc32 는 선형이라 숫자 몇 자만 다른 키(글 번호·방문자)가 하위 비트를 덜 바꿔 조각의 절반만 쓴다(실측 200키 → 32조각) — md5 앞 4자리로 고르게 나눈다
+        return $this->legacyIndexKey().':'.(hexdec(substr(md5($resolvedKey), 0, 4)) % self::INDEX_SHARDS);
+    }
+
+    /**
+     * 모든 인덱스 조각과 옛 단일 인덱스의 캐시 키를 반환합니다.
+     *
+     * @return array<int, string> 인덱스 캐시 키 목록
+     */
+    private function allIndexKeys(): array
+    {
+        $keys = [];
+        for ($shard = 0; $shard < self::INDEX_SHARDS; $shard++) {
+            $keys[] = $this->legacyIndexKey().':'.$shard;
+        }
+        $keys[] = $this->legacyIndexKey();
+
+        return $keys;
     }
 }

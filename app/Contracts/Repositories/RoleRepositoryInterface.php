@@ -121,6 +121,16 @@ interface RoleRepositoryInterface
     public function delete(Role $role): bool;
 
     /**
+     * 역할의 권한·메뉴·회원 연결을 모두 떼고 역할을 삭제합니다.
+     *
+     * 확장을 데이터까지 삭제할 때 그 확장이 소유한 역할을 지우는 경로다. 다른 확장이 붙인 권한(`roles: ['*']`)이 남아 있어도 지운다.
+     *
+     * @param  Role  $role  삭제할 역할 모델
+     * @return bool 삭제 성공 여부
+     */
+    public function deleteWithRelations(Role $role): bool;
+
+    /**
      * 확장이 소유한 역할을 식별자로 찾습니다.
      *
      * @param  string  $identifier  역할 식별자

@@ -283,6 +283,31 @@ auto·접힘으로 되돌립니다 — 한 곳이라도 빠지면 직전에 고�
 아니라 템플릿 부트스트랩(`src/index.ts`)에서 직접 호출됩니다. `_admin_base` 를 고칠 때 이
 문서의 낡은 구조를 그대로 믿지 말고 실제 JSON 을 확인하세요.
 
+### 외부 인증과 관리자 화면 (코어 7.2.0)
+
+코어 7.2.0 이 연 외부 인증 확장점을 관리자 화면이 받는 자리입니다. 확장이 없으면 모두 지금 화면 그대로입니다.
+
+- `admin_login` — 로그인 성공 분기를 이름 붙은 액션 `applyAdminLoginResult` 하나로 모았습니다. 폼 제출(`login`)과
+  `<init>` 의 로그인 인계 교환(`?login_handoff={코드}` → `loginHandoff`, 관리자 경로)이 같은 분기를 씁니다 — 두 곳에 복제하지
+  않습니다. 인계 교환은 상태 초기화 **뒤**에 하고, 코드는 한 번만 통하므로 주소에서 지웁니다.
+- 같은 화면의 나머지 분기: 이메일 칸을 벗어날 때 `POST /api/auth/admin/login/discover` 로 수단을 묻고 외부 수단이면 비밀번호 칸 대신
+  「…(으)로 계속」(`_global.adminLoginDiscovery`·`adminLoginDiscoveryFor` — 폼 저장소 `_local` 과 분리해, 판정 요청 중 친 비밀번호가 응답 처리에 지워지지 않게 한다) / 403 `auth.password_auth_disabled` 는 오류 아래 그 수단으로 가는 버튼(`_local.loginAlternate*`) /
+  409 `auth.external_step_required` 는 그 주소로 이동 / 칸 종류는 `_global.appConfig.auth.login_identifier.admin` / 자동 이동은
+  `_global.appConfig.auth.auto_redirect.admin`(쿼리 `local`·`login_handoff`·`sso_error`·`sso_pending`·`sso_link` 가 있으면 멈춤 — 오류로 돌아온
+  화면이 다시 떠나면 무한 왕복이 된다), 켜진 사이트면 하단에 `?local=1` 링크(비상 계정 진입로).
+- 판정이 외부 수단이면 「…(으)로 계속」 위에 「…(으)로 로그인하는 이메일입니다」 안내(`login_discovery_notice`)를, `?local=1` 로 들어오면 폼 위에 비상 계정 로그인 화면 안내(`login_local_notice`)를 보입니다.
+- 오류 안내 데이터는 `error.errors.*`(`code`, `redirect_url`, `method_label`)로 읽습니다 — `error.data` 는 audit 규칙이 막습니다.
+- 확장점 `admin_login_extensions` — 로그인 폼 아래 빈 슬롯. 다른 관리자 로그인 수단(회사 계정 버튼 등)을 확장이 붙입니다.
+- `admin_user_form` — 등록 화면 「비밀번호 없이 만들기」(`create_without_password`, 켜면 비밀번호 두 칸을 숨기고 이미 적은 값도 비운다).
+  수정 화면은 응답 `locked_fields` 에 든 칸을 `disabled` 로 두고 안내를 붙입니다(서버도 다른 값이면 422 `user.field_locked`).
+- `admin_user_detail` — 상단 「모든 기기에서 로그아웃」 + 확인 모달 → `POST /api/admin/users/{uuid}/sessions/revoke`.
+- 보안 탭 첫 카드 「회원가입」 — 「일반 회원가입 받기」(`security.registration_enabled`).
+- 재확인 관문(회원 수정 화면의 본인 비밀번호 첫 설정, 앱 키 재생성 모달)은 수단을 고정하지 않습니다 — 응답이 `render_hint=external_redirect`
+  면 그 주소로 갔다가 `?verification_token=` 을 들고 돌아옵니다(`admin_user_form` 의 `<init>` 이 폼 값으로 옮긴다).
+- `admin_forgot_password`·`admin_reset_password` — 비밀번호 인증이 막힌 계정은 오류 아래 그 수단으로 가는 버튼(`forgotAlternate*`·`resetAlternate*`).
+- 회원 목록 열은 확장이 오버레이 `inject_props` `_append` 로 늘립니다 — 대상은 표 `users_data_grid` 의 `columns` 와 열 선택기
+  **`column_selector`**(`id="admin_user_list_columns"` 는 저장 키 prop 이라 대상이 아니다)의 `columns`·`defaultColumns`.
+
 ### `admin_login.json` 의 2단계 인증(인증번호) 단계
 
 보안 설정에서 2단계 인증을 켠 사이트에서는 관리자 로그인 응답도 두 형태로 갈립니다 — 정상
@@ -349,7 +374,9 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 관리자(외부 인증으로만 가입, `current_user.data.has_password === false`)에게는 비밀번호 칸 대신 이메일 인증번호 칸
 (`app_key_reauth_section`, 코어 본인인증 `sensitive_action`)이 보이고, 창 제목도 「비밀번호 확인」 대신 「본인 확인」
 (`admin.settings.modals.identity_confirm_title`)입니다. 관리자 화면에는 `_global.currentUser` 가 없으므로 판정은 관리자 기반 레이아웃의
-데이터소스 `current_user` 를 읽습니다.
+데이터소스 `current_user` 를 읽습니다. 수단은 서버가 고르며(7.2.0), 메일을 받을 수 없는 관리자(`current_user.data.email_deliverable === false`)에게는
+「이메일로 받은 인증번호」 안내 대신 일반 안내(`reauth_notice_other`)와 「본인 확인 시작」(`reauth_start`)이 보입니다. 자기 정보 수정의
+비밀번호 첫 설정(`admin_user_form` `password_reauth_verification`)도 같은 규칙입니다.
 
 ### 회원 등록·수정·상세 / 역할 폼의 비밀번호 칸 (#736)
 
@@ -741,6 +768,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │   ├── partials/_modal_changelog.g7.html
 │   ├── partials/_modal_license.g7.html
 │   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달)
+│   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트 부분 실패 경고 결과 창 — 대시보드·모듈·플러그인·언어팩·환경설정 공유)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html
 │
 ├── 에러 페이지

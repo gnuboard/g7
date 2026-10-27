@@ -120,8 +120,12 @@ class SmsChannelDriver
             );
         }
 
+        // 알림 변수는 받는 사람 언어로 해석해 쓴다 — 언어별 값({ko: …, en: …})이 그대로 배열로 남으면 치환되지 않는다(#798).
+        //    전화번호 같은 문자열 변수는 그대로 남는다.
+        $data = $notification->getDataFor($notifiable);
+
         // 2. 전화번호 해석 (회원=mobile, 비회원=data 의 _recipient_phone)
-        $to = $this->resolvePhone($notifiable, $notification->getData());
+        $to = $this->resolvePhone($notifiable, $data);
         if ($to === null) {
             throw new NotificationSendSkippedException(
                 __('sirsoft-message_bizppurio::messages.send_skipped.recipient_phone_missing', ['type' => $this->resolveTypeLabel($type)])
@@ -133,7 +137,7 @@ class SmsChannelDriver
         $locale = BaseNotification::resolveNotifiableLocale($notifiable);
         $message = $this->payloadMapper->substituteText(
             trim($template->getLocalizedSmsBody($locale)),
-            $notification->getData()
+            $data
         );
         if (trim($message) === '') {
             throw new NotificationSendSkippedException(

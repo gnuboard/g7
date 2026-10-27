@@ -12,6 +12,9 @@
 - 메일을 받을 수 없는 회원(대체 이메일)의 본인 확인·비밀번호 첫 설정 안내 일본어 번역을 추가했습니다(`mypage.profile.reauth_unavailable`·`mypage.profile.change_password_reauth_unavailable`).
 - 비밀번호 없는 회원의 정보 수정 확인 칸 제목과 안내 일본어 번역을 추가했습니다(`mypage.profile.verify_identity_title`·`mypage.profile.verify_identity_message`).
 - 템플릿 1.3.0 에 맞춰 버전을 올렸습니다.
+- 외부 인증(회사 계정 로그인)과 회원가입 받기 설정 문구의 일본어 번역을 추가했습니다 — 로그인 화면의 이메일 먼저 입력·「{수단}(으)로 계속」·「다른 방법으로 로그인」(`auth.external.*`), 회원가입이 닫혔을 때의 안내(`auth.register.closed_notice`), 회사 계정이 관리하는 항목 안내(`mypage.profile.locked_by_company`), 외부 수단 본인 확인 화면으로 이동하지 못했을 때의 안내(`mypage.profile.reauth_external_failed`).
+- 메일을 받을 수 없는 회원이 회사 계정 등 다른 수단으로 본인 확인을 이어 가는 버튼과 안내의 일본어 번역을 추가하고, 그 회원의 안내 문구를 고쳤습니다(`mypage.profile.reauth_continue`·`mypage.profile.reauth_code_sent_generic`·`mypage.profile.reauth_unavailable`).
+- 로그인 화면의 회사 계정 이메일 판정 안내와 비상 계정 로그인(`?local=1`) 안내 일본어 번역을 추가했습니다(`auth.external.discovered_notice`·`auth.external.discovered_notice_company`·`auth.external.local_notice`).
 
 ## [1.2.1] - 2026-10-21
 

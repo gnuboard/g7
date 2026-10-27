@@ -9,7 +9,8 @@ description: |
 
   - 언어 선택(LanguageSelector): 관리자가 상단바에서 언어를 바꿀 때
   - 프로필 메뉴(UserProfile): 로그아웃을 누를 때. 로그아웃 뒤 이동 주소(`redirectPath`)도 prop 이라
-    실행 스킴 주소면 관리자 화면에서 스크립트가 돌았다(KVE-2026-2348 과 같은 원인)
+    실행 스킴 주소면 관리자 화면에서 스크립트가 돌았다(KVE-2026-2348 과 같은 원인). 7.2.0 부터 서버 로그아웃
+    응답의 `data.redirect_url`(외부 인증의 IdP 로그아웃 등)도 같은 규칙으로 따른다
   - 본인인증 launcher: 교차 출처 서버가 428 을 흉내 내 자기 주소를 `challenge_start_url` 로 넣을 때
 
   토큰은 동일 출처 대상에만 싣는다(요청 자체는 막지 않는다). #639 부터 세 경로 모두 요청을 코어
@@ -19,12 +20,16 @@ description: |
   `src/support/sameOriginRequest.ts`(코어 `G7Core.api.isSameOriginUrl` 위임)가 맡는다.
 
 axes:
-  sink: [identity_launcher, language_selector, user_profile_logout, user_profile_redirect]
-  target: [same_origin, cross_origin]
+  sink: [identity_launcher, language_selector, user_profile_logout, user_profile_redirect, user_profile_server_redirect]
+  target: [same_origin, cross_origin, none]
+
+exclusions:
+  - { sink: [identity_launcher, language_selector, user_profile_logout, user_profile_redirect], target: none, reason: "대상 주소가 없는 경우는 서버 로그아웃 응답(redirect_url 없음)에만 있다" }
 
 effects:
   - extension_token_same_origin_only              # 교차 출처 대상에는 Bearer 를 싣지 않고, 동일 출처는 종전대로 싣는다
   - cross_origin_redirect_falls_back_to_default   # 동일 출처가 아닌 이동 주소(실행 스킴 포함)는 기본 경로로 대체된다
+  - server_logout_redirect_same_origin_only       # 로그아웃 응답 data.redirect_url(7.2.0)은 같은 출처 경로일 때만 따르고, 아니거나 없으면 종전 경로
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/support/__tests__/sameOriginRequest.test.ts

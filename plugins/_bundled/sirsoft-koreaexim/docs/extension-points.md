@@ -103,5 +103,5 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:notifications END -->
 
 <!-- @intent START -->
-koreaexim_update_failed 정의의 소유자는 이 플러그인입니다. 제목·본문·수신자는 공통 알림 템플릿 저장소와 API를 사용하며 플러그인 환경설정에서 편집합니다. 코어 환경설정의 알림 탭은 확장 필터 없이 조회하므로 이 정의도 함께 표시하며, 두 화면은 같은 API 를 쓰므로 어느 쪽에서 고쳐도 같은 값입니다. 플러그인 화면은 자기 정의만 보이도록 extension_type=plugin·extension_identifier=sirsoft-koreaexim 으로 필터합니다. 업데이트는 사용자 수정값을 보존합니다.
+koreaexim_update_failed 정의의 소유자는 이 플러그인입니다. 제목·본문·수신자는 공통 알림 템플릿 저장소와 API를 사용하며 플러그인 환경설정에서 편집합니다. 코어 환경설정의 알림 탭은 확장 필터 없이 조회하므로 이 정의도 함께 표시하며, 두 화면은 같은 API 를 쓰므로 어느 쪽에서 고쳐도 같은 값입니다. 플러그인 화면은 자기 정의만 보이도록 extension_type=plugin·extension_identifier=sirsoft-koreaexim 으로 필터합니다. 업데이트는 사용자 수정값을 보존합니다. 받는 사람은 관리자 역할뿐이라 운영자 수신 알림(`audience: staff`)이고, 메일 본문이 쓰는 `{app_name}`(사이트명)·`{name}`(받는 관리자 이름)도 실패 유형·사유·조회일·설정 주소와 함께 변수 목록에 있습니다.
 <!-- @intent END -->

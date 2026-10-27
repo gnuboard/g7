@@ -10,6 +10,7 @@ use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\User;
 use App\Services\Auth\LoginHandoffService;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Plugins\Sirsoft\SocialLogin\Models\SocialAccount;
 use Plugins\Sirsoft\SocialLogin\Models\SocialLoginAttempt;
@@ -28,6 +29,9 @@ class SocialLoginServiceTest extends PluginTestCase
 {
     use CapturesSentMail;
     use PasswordPolicyFixtures;
+
+    /** @var array<string, string> 발급한 인계 코드 → 묶음 쿠키 값 */
+    private array $binds = [];
 
     /**
      * 카카오를 켜고 메일을 막습니다.
@@ -71,7 +75,38 @@ class SocialLoginServiceTest extends PluginTestCase
         $response = $this->kakaoRoundTrip($this->kakaoProfile($uid, $email));
         $this->assertSame('/login', $this->redirectPath($response));
 
-        return $this->redirectQuery($response)['login_handoff'];
+        return $this->rememberBind($response);
+    }
+
+    /**
+     * 콜백 응답의 인계 코드와 묶음 쿠키를 기억합니다 (코어 7.2.0 — 인계 코드는 발급한 브라우저의 쿠키로만 교환된다).
+     *
+     * @param  TestResponse  $response  콜백 응답
+     * @return string 인계 코드
+     */
+    private function rememberBind(TestResponse $response): string
+    {
+        $code = $this->redirectQuery($response)['login_handoff'];
+        $cookie = $response->getCookie(LoginHandoffService::BIND_COOKIE, false);
+        $this->assertNotNull($cookie, '콜백 응답이 인계 코드의 묶음 쿠키를 싣는다');
+        $this->binds[$code] = (string) $cookie->getValue();
+
+        return $code;
+    }
+
+    /**
+     * 발급한 브라우저의 묶음 쿠키로 인계 코드를 교환합니다.
+     *
+     * @param  string  $code  인계 코드
+     * @return TestResponse 응답
+     */
+    private function exchange(string $code): TestResponse
+    {
+        $this->app['auth']->forgetGuards();
+
+        return $this->withCredentials()
+            ->withUnencryptedCookie(LoginHandoffService::BIND_COOKIE, $this->binds[$code] ?? '')
+            ->postJson('/api/auth/login/handoff', ['code' => $code]);
     }
 
     /**
@@ -102,7 +137,7 @@ class SocialLoginServiceTest extends PluginTestCase
         $this->assertSame([[$user->id, $account->id]], $fired);
         $this->assertSame('handoff', SocialLoginAttempt::query()->latest('id')->value('outcome'));
 
-        $exchange = $this->postJson('/api/auth/login/handoff', ['code' => $query['login_handoff']])->assertOk();
+        $exchange = $this->exchange($this->rememberBind($response))->assertOk();
         $this->assertNotEmpty($exchange->json('data.token'));
         $this->assertSame($user->uuid, $exchange->json('data.user.uuid'));
     }
@@ -146,13 +181,13 @@ class SocialLoginServiceTest extends PluginTestCase
         $user = User::factory()->create(['email' => $this->uniqueEmail()]);
         $this->link($user, 'k-2fa');
 
-        $step = $this->postJson('/api/auth/login/handoff', ['code' => $this->handoffCode('k-2fa')])->assertOk();
+        $step = $this->exchange($this->handoffCode('k-2fa'))->assertOk();
         $this->assertTrue((bool) $step->json('data.two_factor_required'));
         $this->assertNull($step->json('data.token'));
 
         $this->setPluginSettings(['two_factor_enabled' => false]);
-        $code = $this->handoffCode('k-2fa');
-        $this->assertTrue(app(LoginHandoffService::class)->consume($code)['context']['skip_two_factor']);
+        $skipped = $this->exchange($this->handoffCode('k-2fa'))->assertOk();
+        $this->assertNotEmpty($skipped->json('data.token'), '플러그인 설정으로 끄면 교환에서 2단계 인증을 건너뛴다');
     }
 
     /**
@@ -177,7 +212,7 @@ class SocialLoginServiceTest extends PluginTestCase
         $provider->enroll($enrolled);
         $this->link($enrolled, 'k-app');
 
-        $step = $this->postJson('/api/auth/login/handoff', ['code' => $this->handoffCode('k-app')])->assertOk();
+        $step = $this->exchange($this->handoffCode('k-app'))->assertOk();
         $this->assertTrue((bool) $step->json('data.two_factor_required'));
         $this->assertSame(AuthenticatorAppProvider::ID, $step->json('data.provider_id'));
         $this->assertNull($step->json('data.token'));
@@ -185,7 +220,7 @@ class SocialLoginServiceTest extends PluginTestCase
         $notEnrolled = User::factory()->passwordless()->create(['email' => 'kakao_'.substr(sha1(uniqid('', true)), 0, 12).'@social.invalid']);
         $this->link($notEnrolled, 'k-app-none');
 
-        $login = $this->postJson('/api/auth/login/handoff', ['code' => $this->handoffCode('k-app-none')])->assertOk();
+        $login = $this->exchange($this->handoffCode('k-app-none'))->assertOk();
         $this->assertNotEmpty($login->json('data.token'));
     }
 
@@ -225,7 +260,7 @@ class SocialLoginServiceTest extends PluginTestCase
             $user->forceFill(['password_changed_at' => now()->subDays(200)])->save();
         }
 
-        $response = $this->postJson('/api/auth/login/handoff', ['code' => $this->handoffCode('k-'.$case)]);
+        $response = $this->exchange($this->handoffCode('k-'.$case));
 
         match ($case) {
             'blocked', 'locked' => $this->assertNull($response->json('data.token'), $case.' 회원은 토큰을 받지 못한다'),

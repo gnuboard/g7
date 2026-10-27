@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Concerns\LoginHandoffBinding;
 use Tests\Concerns\PasswordPolicyFixtures;
 use Tests\Support\Concerns\CapturesSentMail;
 use Tests\TestCase;
@@ -27,7 +28,11 @@ class LoginHandoffTest extends TestCase
 {
     use CapturesSentMail;
     use DatabaseTransactions;
+    use LoginHandoffBinding;
     use PasswordPolicyFixtures;
+
+    /** 발급한 코드 → 묶음 쿠키 값 */
+    private array $binds = [];
 
     /**
      * 메일 발송을 막고 로그인 시도 제한을 초기화합니다.
@@ -63,11 +68,14 @@ class LoginHandoffTest extends TestCase
      */
     private function issue(User $user, string $guard = 'user'): string
     {
-        return app(LoginHandoffService::class)->issue($user, ['login_method' => 'social:kakao'], $guard);
+        $ticket = $this->issueBoundHandoff($user, ['login_method' => 'social:kakao'], $guard);
+        $this->binds[$ticket['code']] = $ticket['bind'];
+
+        return $ticket['code'];
     }
 
     /**
-     * 코드를 교환합니다.
+     * 코드를 발급한 브라우저의 묶음 쿠키로 교환합니다 (#798 K2 — 코드는 발급 브라우저에 묶인다).
      *
      * @param  string  $code  인계 코드
      * @param  array<string, string>  $headers  요청 헤더
@@ -75,7 +83,7 @@ class LoginHandoffTest extends TestCase
      */
     private function exchange(string $code, array $headers = []): TestResponse
     {
-        return $this->withHeaders($headers)->postJson('/api/auth/login/handoff', ['code' => $code]);
+        return $this->exchangeHandoff($code, $this->binds[$code] ?? null, 'user', $headers);
     }
 
     /**
@@ -195,7 +203,7 @@ class LoginHandoffTest extends TestCase
         $this->exchange($this->issue($this->member(), 'admin'))->assertStatus(422);
 
         $ghost = (new User)->forceFill(['id' => 2_000_000_000]);
-        $this->exchange(app(LoginHandoffService::class)->issue($ghost, ['login_method' => 'social:kakao']))->assertStatus(422);
+        $this->exchange($this->issue($ghost))->assertStatus(422);
     }
 
     /**

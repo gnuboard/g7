@@ -25,6 +25,8 @@ axes:
   action: [discard]
   provider: [mock_kakao]
   variant: [no_email]
+  core_registration: [closed, closed_after_pending]
+  account: [new, linked, existing_email]
   mail: [failed]
   viewport: ['390']
 effects:
@@ -38,6 +40,9 @@ effects:
   - pending_deleted_after_signup
   - attempt_signup_recorded
   - signup_disabled_refused
+  - core_registration_closed_refuses_new_social_signup
+  - core_registration_closed_refuses_pending_completion
+  - core_registration_closed_keeps_existing_members
   - email_policy_decides_signup_email
   - signup_requires_identity_token
   - signup_passes_with_identity_token

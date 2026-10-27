@@ -268,6 +268,7 @@ HTTP/1.1 200
 | seo.sitemap_cache_ttl | body | integer | 아니오 | min 3600, max 604800 | sitemap 캐시 유효 시간 (초) |
 | seo.generator_enabled | body | boolean | 아니오 | — | SEO 페이지 생성기 사용 여부 |
 | seo.generator_content | body | string | 아니오 | max 200 | SEO 렌더링 본문 생성 방식 |
+| security.registration_enabled | body | boolean | 아니오 | — | 일반 회원가입 받기(7.2.0, 기본 true). 끄면 공개 가입 API 가 403 `auth.registration_disabled` 이고 소셜 로그인 플러그인의 신규 가입도 닫힌다. 관리자 추가·외부 인증 확장의 회원 생성은 계속된다. 다른 보안 칸 없이 보내도 된다(부분 저장) |
 | security.force_https | body | boolean | 아니오 | — | HTTPS 강제 리다이렉트 여부 |
 | security.login_attempt_enabled | body | boolean | 아니오 | — | 로그인 시도 제한 사용 여부 |
 | security.auth_token_lifetime | body | integer | 아니오 | min 0, max 3600 | 인증 토큰 유효 시간 (분) |

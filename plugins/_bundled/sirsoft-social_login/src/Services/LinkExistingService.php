@@ -14,6 +14,7 @@ use Plugins\Sirsoft\SocialLogin\Enums\AttemptIntent;
 use Plugins\Sirsoft\SocialLogin\Enums\AttemptOutcome;
 use Plugins\Sirsoft\SocialLogin\Exceptions\SocialFlowException;
 use Plugins\Sirsoft\SocialLogin\Services\Concerns\EnsuresCodeDelivered;
+use Symfony\Component\HttpFoundation\Cookie;
 
 /**
  * 「이미 가입된 이메일」 — 기존 계정 주인임을 확인한 뒤 소셜 계정을 연결합니다.
@@ -55,7 +56,7 @@ class LinkExistingService
      *
      * @param  string  $token  대기 토큰
      * @param  string  $password  기존 계정 비밀번호
-     * @return array{handoff_url: string} 로그인 인계 경로
+     * @return array{handoff_url: string, handoff_cookie: Cookie} 로그인 인계 경로와 묶음 쿠키(컨트롤러가 응답에 싣는다)
      *
      * @throws SocialFlowException 비밀번호 없는 계정(`password_not_available`), 틀림(`password_mismatch`), 만료
      */
@@ -106,7 +107,7 @@ class LinkExistingService
      * @param  string  $token  대기 토큰
      * @param  string  $challengeId  인증 요청 ID
      * @param  string  $code  인증번호
-     * @return array{handoff_url: string} 로그인 인계 경로
+     * @return array{handoff_url: string, handoff_cookie: Cookie} 로그인 인계 경로와 묶음 쿠키(컨트롤러가 응답에 싣는다)
      *
      * @throws SocialFlowException 다른 요청·틀림·만료
      */
@@ -146,7 +147,7 @@ class LinkExistingService
      * @param  string  $token  대기 토큰
      * @param  array<string, mixed>  $data  가입 대기
      * @param  User  $user  기존 회원
-     * @return array{handoff_url: string} 로그인 인계 경로
+     * @return array{handoff_url: string, handoff_cookie: Cookie} 로그인 인계 경로와 묶음 쿠키(컨트롤러가 응답에 싣는다)
      *
      * @throws SocialFlowException 관리자 차단·이미 연결됨
      */
@@ -161,11 +162,15 @@ class LinkExistingService
         $account = $this->links->attach($user, $key, $profile, $tokens, 'existing', loggedIn: true);
         $this->pending->forget($token);
 
-        $code = $this->login->issueHandoff($user, $key);
+        // API 응답이라 묶음 쿠키를 함께 돌려준다(컨트롤러가 응답에 싣는다 — 응답 본문에는 나가지 않는다).
+        $ticket = $this->login->issueHandoffTicket($user, $key);
         HookManager::doAction(SocialLoginService::ACTION_AFTER_SOCIAL_LOGIN, $user, $account);
         $this->attempts->record($key, AttemptIntent::Login->value, AttemptOutcome::Link, (int) $user->getKey());
 
-        return ['handoff_url' => SocialLoginService::handoffPath($code, (string) ($data['redirect'] ?? '/'))];
+        return [
+            'handoff_url' => SocialLoginService::handoffPath($ticket->code, (string) ($data['redirect'] ?? '/')),
+            'handoff_cookie' => $ticket->cookie,
+        ];
     }
 
     /**

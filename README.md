@@ -469,6 +469,7 @@ The setup wizard creates the application key, configures the database connection
 | **sirsoft-verification_nhnkcp** | NHN KCP mobile identity verification (Korean identity verification) |
 | **sirsoft-totp** | Authenticator app two-factor login (RFC 6238 TOTP) |
 | **sirsoft-social_login** | Social login (Kakao, Naver, Google, Facebook, generic OIDC) |
+| **sirsoft-sso** | Enterprise single sign-on (SAML 2.0, OpenID Connect, LDAP/Active Directory, SCIM 2.0 provisioning) |
 | **sirsoft-daum_postcode** | Daum postcode lookup (Korean address search) |
 | **sirsoft-marketing** | Marketing tools |
 | **sirsoft-koreaexim** | Korea Eximbank exchange rate updates and history |
@@ -503,6 +504,7 @@ Official language packs you can install alongside the initial setup, so the core
 | **g7-plugin-sirsoft-pay_nicepayments-ja** | NICE Payments plugin, Japanese |
 | **g7-plugin-sirsoft-pay_nhnkcp-ja** | NHN KCP payment plugin, Japanese |
 | **g7-plugin-sirsoft-social_login-ja** | Social login plugin, Japanese |
+| **g7-plugin-sirsoft-sso-ja** | Single Sign-On plugin, Japanese |
 | **g7-plugin-sirsoft-tosspayments-ja** | Toss Payments plugin, Japanese |
 | **g7-plugin-sirsoft-totp-ja** | Authenticator app (TOTP) two-factor plugin, Japanese |
 | **g7-plugin-sirsoft-verification_kginicis-ja** | KG Inicis identity verification plugin, Japanese |

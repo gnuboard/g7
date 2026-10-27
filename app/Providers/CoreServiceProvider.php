@@ -63,6 +63,7 @@ use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserPasswordHistoryRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Contracts\UniqueIdServiceInterface;
+use App\Extension\Auth\CredentialVerifierManager;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Consent\ConsentManager;
 use App\Extension\CoreVersionChecker;
@@ -356,6 +357,9 @@ class CoreServiceProvider extends ServiceProvider
 
         // 동의 제공자 매니저 — 확장은 `core.consent.registered_providers` 필터로 제공자를 등록한다 (#639)
         $this->app->singleton(ConsentManager::class);
+
+        // 외부 자격 증명 검증자 레지스트리 — 확장은 `core.auth.registered_credential_verifiers` 필터로 검증자를 등록한다 (7.2.0)
+        $this->app->singleton(CredentialVerifierManager::class);
 
         // 스케줄 보안 유효 정책 해석기 — 저장 검증·실행기·조회 API 가 같은 인스턴스(파일 해석 메모)를 쓴다 (#17)
         $this->app->singleton(ScheduleSecurityPolicy::class);

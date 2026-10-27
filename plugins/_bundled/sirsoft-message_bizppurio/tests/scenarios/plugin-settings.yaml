@@ -81,6 +81,10 @@ effects:
   # 설정 화면이 알림톡 템플릿 쓰기 버튼을 잠그는 근거 — 응답 abilities.can_manage_messaging 이 messaging.manage 권한을 따른다(7.1.0 abilities 게이트)
   - report_url_reports_messaging_manage_ability
   - report_section_shows_readonly_url_with_copy_button
+  # 복사 버튼 핸들러 — 플러그인 소유 sirsoft-message_bizppurio.copyToClipboard (handlers/copyToClipboard.test.ts)
+  - copy_button_copies_report_url_to_clipboard
+  - copy_button_ignores_empty_text
+  - copy_button_falls_back_when_clipboard_api_missing
   # 저장
   - save_button_disabled_without_changes
   - save_puts_to_core_plugin_settings_api
@@ -113,6 +117,7 @@ effects:
 
 test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/layouts/plugin_settings.test.tsx
+  - plugins/_bundled/sirsoft-message_bizppurio/resources/js/__tests__/handlers/copyToClipboard.test.ts
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Settings/BizppurioLiveModeSettingsValidationTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Settings/ReportUrlEndpointTest.php
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Settings/TokenCheckEndpointTest.php

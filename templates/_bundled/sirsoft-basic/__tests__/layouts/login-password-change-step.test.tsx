@@ -51,7 +51,13 @@ describe('sirsoft-basic 로그인 폼 — 비밀번호 변경 단계 구조', ()
    * @effects three_steps_are_mutually_exclusive
    */
   it('세 단계의 블록 조건이 상보적이다', () => {
-    expect(nodes.filter((n) => n.if === STEP_ONE).length).toBe(3);
+    // 1단계 블록은 넷이다(7.2.0 이메일 먼저 입력): 식별자 칸은 1단계 조건 그대로, 비밀번호 칸·로그인 버튼은 외부 수단 판정이
+    // 아닐 때만, 「…(으)로 계속」 블록은 외부 수단 판정일 때만 — 넷 모두 1단계 조건을 앞에 둔다.
+    const stepOneBody = '!_global.twoFactor?.required && !_global.passwordChange?.required';
+    expect(nodes.filter((n) => n.if === STEP_ONE).length).toBe(1);
+    expect(nodes.filter((n) => n.if === `{{${stepOneBody} && _local.discovery?.method !== 'external'}}`).length).toBe(2);
+    expect(nodes.filter((n) => n.if === `{{${stepOneBody} && _local.discovery?.method === 'external'}}`).length).toBe(1);
+    expect(nodes.filter((n) => String(n.if ?? '').startsWith(`{{${stepOneBody}`)).length).toBe(4);
     expect(nodes.filter((n) => n.if === STEP_TWO).length).toBe(1);
     expect(nodes.filter((n) => n.if === STEP_THREE).length).toBe(1);
   });

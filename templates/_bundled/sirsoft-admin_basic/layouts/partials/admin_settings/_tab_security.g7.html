@@ -12,6 +12,22 @@
   (settings-security-outbound-toggle · settings-ip-restriction)가 그 경로를 지난다 -->
 <partial description="환경설정 보안 탭 콘텐츠">
   <div data-ref="tab_content_security" data-if="{{(_global.activeSettingsTab || query.tab) === 'security'}}" class="card-stack">
+    <!-- 회원가입(7.2.0) — 끄면 본인이 스스로 하는 가입(공개 가입·소셜 가입)이 닫힌다. 회사가 만드는 계정(관리자 추가·회사 계정 자동 생성)은 계속된다. -->
+    <div data-ref="card_registration" class="card-stack-item">
+      <h3 class="card-title">$t:admin.settings.security.registration.title</h3>
+      <div class="row-stack">
+        <div data-ref="toggle_registration_enabled" class="flex-between">
+          <div>
+            <div class="flex-center">
+              <span class="text-heading">$t:admin.settings.security.registration.enabled</span>
+            </div>
+            <p class="text-label-subtle">$t:admin.settings.security.registration.enabled_desc</p>
+            <span data-if="{{_local.errors?.['security.registration_enabled']}}" class="form-error">{{_local.errors?.['security.registration_enabled']?.[0] ?? ''}}</span>
+          </div>
+          <toggle data-type="composite" name="security.registration_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+        </div>
+      </div>
+    </div>
     <div data-ref="card_security_settings" class="card-stack-item">
       <h3 class="card-title">$t:admin.settings.security.title</h3>
       <div class="card-description">$t:admin.settings.security.desc</div>
@@ -106,7 +122,11 @@
           <button type="button" disabled="{{_computed.isReadOnly}}" class="px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors whitespace-nowrap">
             <responsive on="portable" class="w-full px-4 py-2 bg-white dark:bg-gray-700 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"/>
             <on type="click">
-              <open-modal target="settings_password_confirm_modal"/>
+              <!-- 버튼으로 여는 창은 늘 처음부터 — 외부 수단에서 돌아와 받아 둔 확인 토큰(7.2.0)이 남아 있으면 비우고 연다 -->
+              <sequence>
+                <set-state target="global" :appKeyReauthToken="null"/>
+                <open-modal target="settings_password_confirm_modal"/>
+              </sequence>
             </on>
             <span>$t:admin.settings.security.regenerate_key</span>
           </button>

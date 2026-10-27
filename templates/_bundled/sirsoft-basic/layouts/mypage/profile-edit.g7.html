@@ -76,6 +76,19 @@
   </defines>
   <init>
     <set-state target="local" :isPasswordVerified="false" verifyPassword="" :isVerifyingPassword="false" :verifyPasswordError="false"/>
+    <!-- 외부 수단(회사 계정 다시 로그인 등)으로 재확인하고 돌아왔다(7.2.0) — 받은 확인 토큰으로 재확인을 마치고 주소에서 토큰을 지운다 -->
+    <sequence if="{{!!query?.verification_token}}">
+      <api-call :auth_required="true" target="/api/me/verify-password" method="POST">
+        <success>
+          <set-state target="local" :isPasswordVerified="true"/>
+        </success>
+        <fail>
+          <set-state target="local" reauthError="{{error.message}}"/>
+        </fail>
+        <body verification_token="{{query.verification_token}}"/>
+      </api-call>
+      <replace-url path="/mypage/profile/edit"/>
+    </sequence>
   </init>
   <slot name="content">
     <div class="min-h-screen bg-gray-50 dark:bg-gray-900">

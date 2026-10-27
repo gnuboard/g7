@@ -2,25 +2,25 @@
   "post": {
     "title": {
       "required": "Title is required.",
-      "min": "Title must be at least :min characters.",
-      "max": "Title can be up to :max characters."
+      "min": "Title must be at least {min} characters.",
+      "max": "Title can be up to {max} characters."
     },
     "content": {
       "required": "Content is required.",
-      "min": "Content must be at least :min characters.",
-      "max": "Content can be up to :max characters."
+      "min": "Content must be at least {min} characters.",
+      "max": "Content can be up to {max} characters."
     },
     "category": {
-      "max": "Category can be up to :max characters."
+      "max": "Category can be up to {max} characters."
     },
     "status": {
       "in": "Invalid status."
     },
     "author_name": {
-      "max": "Author name can be up to :max characters."
+      "max": "Author name can be up to {max} characters."
     },
     "password": {
-      "min": "Password must be at least :min characters."
+      "min": "Password must be at least {min} characters."
     },
     "parent_id": {
       "not_found": "Original post not found.",
@@ -30,17 +30,17 @@
     },
     "files": {
       "array": "Files must be an array.",
-      "max": "You can upload up to :max files.",
+      "max": "You can upload up to {max} files.",
       "file": "Must be a valid file.",
-      "file_max": "File size cannot exceed :maxKB.",
+      "file_max": "File size cannot exceed {max}KB.",
       "mimes": "File extension not allowed."
     }
   },
   "comment": {
     "content": {
       "required": "Comment content is required.",
-      "min": "Comment must be at least :min characters.",
-      "max": "Comment can be up to :max characters."
+      "min": "Comment must be at least {min} characters.",
+      "max": "Comment can be up to {max} characters."
     },
     "post_id": {
       "not_found": "Post not found.",
@@ -57,10 +57,10 @@
       "exists": "User does not exist."
     },
     "author_name": {
-      "max": "Author name can be up to :max characters."
+      "max": "Author name can be up to {max} characters."
     },
     "password": {
-      "min": "Password must be at least :min characters."
+      "min": "Password must be at least {min} characters."
     }
   },
   "board": {
@@ -84,12 +84,12 @@
     "invalid_status_transition": "Cannot change to this status from current status."
   },
   "max_reply_depth": {
-    "min": "Max reply depth must be at least :min.",
-    "max": "Max reply depth can be up to :max."
+    "min": "Max reply depth must be at least {min}.",
+    "max": "Max reply depth can be up to {max}."
   },
   "max_comment_depth": {
-    "min": "Max comment depth must be at least :min.",
-    "max": "Max comment depth can be up to :max."
+    "min": "Max comment depth must be at least {min}.",
+    "max": "Max comment depth can be up to {max}."
   },
   "settings": {
     "category": {

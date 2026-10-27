@@ -1,3 +1,4 @@
+// e2e:allow 단위·레이아웃 시험 파일 — 실화면 측정은 같은 엔진 변경의 브라우저 매트릭스
 /**
  * @file layoutTestUtils.ts
  * @description 레이아웃 파일 렌더링 테스트 유틸리티

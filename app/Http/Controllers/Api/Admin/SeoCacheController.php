@@ -21,6 +21,14 @@ use Illuminate\Support\Facades\Auth;
  */
 class SeoCacheController extends AdminBaseController
 {
+    /**
+     * SEO 캐시·사이트맵 서비스를 주입받습니다.
+     *
+     * @param  SeoCacheStatsService  $statsService  캐시 통계
+     * @param  SeoCacheManagerInterface  $cacheManager  캐시 저장소
+     * @param  SitemapManager  $sitemapManager  사이트맵 관리
+     * @param  SitemapProgress  $sitemapProgress  사이트맵 재생성 진행 상황
+     */
     public function __construct(
         private SeoCacheStatsService $statsService,
         private SeoCacheManagerInterface $cacheManager,
@@ -134,7 +142,7 @@ class SeoCacheController extends AdminBaseController
      */
     public function sitemapStatus(): JsonResponse
     {
-        return $this->success('messages.success', $this->sitemapManager->getStatus());
+        return $this->success('common.success', $this->sitemapManager->getStatus());
     }
 
     /**

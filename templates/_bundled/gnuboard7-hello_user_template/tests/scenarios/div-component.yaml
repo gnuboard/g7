@@ -1,0 +1,17 @@
+feature: Hello 사용자 템플릿 기본 컴포넌트 Div — 렌더·className·ref·HTML 속성 전달
+
+description: |
+  예제 사용자 템플릿의 기본 컴포넌트 Div 가 자식을 그리고, className·임의 HTML 속성을 그대로 넘기고,
+  forwardRef 로 DOM 요소를 내준다. 축 case 는 검증하는 전달 경로다.
+
+axes:
+  case: [children, class_name, ref, html_attributes]
+
+effects:
+  - div_renders_children        # 자식 노드를 그대로 그린다
+  - div_passes_class_name       # className 을 div 에 붙인다
+  - div_forwards_ref            # ref 로 실제 DIV 요소를 내준다
+  - div_passes_html_attributes  # id·aria-* 같은 속성을 div 에 그대로 넘긴다
+
+test_files:
+  - templates/_bundled/gnuboard7-hello_user_template/__tests__/components/Div.test.tsx

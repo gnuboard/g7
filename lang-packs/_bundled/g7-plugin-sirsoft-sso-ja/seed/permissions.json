@@ -1,0 +1,42 @@
+{
+  "sirsoft-sso": {
+    "name": "SSO 連携",
+    "description": "SSO 連携プラグインが提供する権限"
+  },
+  "sirsoft-sso.settings": {
+    "name": "SSO 設定",
+    "description": "IdP と SSO ポリシーの設定"
+  },
+  "sirsoft-sso.settings.view": {
+    "name": "SSO 設定の閲覧",
+    "description": "IdP 一覧、接続情報、ポリシーを閲覧します(シークレットは非表示)"
+  },
+  "sirsoft-sso.settings.update": {
+    "name": "SSO 設定の変更",
+    "description": "IdP の追加、編集、削除、接続テスト、ポリシーの保存"
+  },
+  "sirsoft-sso.accounts": {
+    "name": "会員連携",
+    "description": "会員と会社アカウントの連携管理"
+  },
+  "sirsoft-sso.accounts.view": {
+    "name": "会員連携の閲覧",
+    "description": "会員連携一覧と会員詳細の SSO 情報を閲覧します"
+  },
+  "sirsoft-sso.accounts.unlink": {
+    "name": "会員連携の強制解除",
+    "description": "会員と会社アカウントの連携を管理者が解除します"
+  },
+  "sirsoft-sso.accounts.provision": {
+    "name": "会員連携の追加と事前登録",
+    "description": "連携の追加、パスワードなし会員の事前登録、CSV インポート"
+  },
+  "sirsoft-sso.logs": {
+    "name": "SSO 履歴",
+    "description": "ログイン試行と SCIM 受信履歴"
+  },
+  "sirsoft-sso.logs.view": {
+    "name": "SSO 履歴の閲覧",
+    "description": "ログイン試行と SCIM 受信履歴を閲覧します"
+  }
+}

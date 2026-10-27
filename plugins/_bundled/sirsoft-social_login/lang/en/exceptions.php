@@ -9,6 +9,7 @@ return [
         'email_not_verified' => 'Only the email confirmed with a verification code can be used.',
         'challenge_mismatch' => 'The verification request does not match. Please request a new code.',
         'invalid_code' => 'The verification code is wrong or has expired.',
+        'registration_closed' => 'Sign-up is currently closed. If you already have an account, please sign in with it.',
         'name_required' => 'Please enter your name.',
         'existing_account_pending' => 'An account with the same email exists. Choose to link it or to sign up as a new account.',
         'not_existing_step' => 'This is not the existing-account step.',

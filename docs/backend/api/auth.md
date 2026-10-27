@@ -62,6 +62,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+> 7.2.0: 응답 `data.redirect_url`(string|null) — 외부 인증 확장(`core.auth.logout_redirect_url`)이 정한 로그아웃 뒤 이동 경로. 같은 출처 경로만 실리고 없으면 `null`. 엔진은 값이 있으면 그 경로로, 없으면 로그인 화면으로 간다.
+
 **설명**
 
 현재 관리자의 Sanctum 토큰을 폐기해 로그아웃한다. `AuthService::logout()` 이 3단계(토큰 삭제 → 세션 무효화 → `Auth::logout()`)를 수행하며, `data` 는 없고 `message` 만 `auth.logout_success` 로 내려온다. 프론트는 응답 후 저장된 Bearer 토큰을 폐기하고 로그인 화면으로 전환한다.
@@ -346,6 +348,9 @@ HTTP/1.1 200
 | 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우 (`auth.account_locked` — `error.locked_until`, `error.retry_after_seconds` 포함) |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
 | 503 | Service Unavailable | 2단계 인증이 켜져 있고 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`), 또는 비밀번호 변경 단계가 필요한데 그 단계 식별자를 저장하지 못한 경우 (`auth.password_change_unavailable` — #736) |
+| 403 | Forbidden | (관리자 아님 `auth.admin_required` 와 별개) 비밀번호 로그인이 막힌 계정(7.2.0 — 외부 인증 확장의 `core.auth.password_auth_decision`): `errors.code = auth.password_auth_disabled`, `errors.method_label`(로케일별 수단 이름)·`errors.redirect_url`(그 수단으로 갈 같은 출처 경로) — 같은 값이 `data` 에도 실린다. 식별자만으로 막히면 비밀번호를 확인하기 전에 거절되어 실패 횟수에 들지 않는다 |
+| 409 | Conflict | 외부 자격 증명 검증자가 다음 화면(동의·연결 확인)을 요구(7.2.0): `errors.code = auth.external_step_required`, `errors.redirect_url` |
+| 422 | Unprocessable Entity | 외부 인증 확장이 2단계 인증을 요구했는데 회원에게 쓸 수 있는 수단이 없음(`auth.two_factor_means_required`, 7.2.0) |
 
 <!-- @generated:end -->
 
@@ -359,6 +364,67 @@ HTTP/1.1 200
 
 **비밀번호를 바꿔야 하는 관리자 (#736)**: 사용자 로그인과 같은 변경 단계 응답(`password_change_required: true` — 필드 정의는 `POST /api/auth/login` 의 같은 절)을 돌려주고, 식별자는 관리자 경로에 묶여 `POST /api/auth/admin/login/password-change` 로만 완료된다. **비관리자가 관리자 로그인으로 오면 변경 단계를 열지 않는다** — 종전대로 토큰 발급 → 회수 + `403` 이라, 비관리자의 비밀번호가 관리자 경로로 바뀌지 않는다. 식별자를 저장하지 못하면 `503 auth.password_change_unavailable` 이다.
 
+
+### POST /api/auth/admin/login/discover
+<!-- @generated:start:api.auth.admin.login.discover -->
+- **라우트명**: `api.auth.admin.login.discover`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\AuthController@discover`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | body | string | 예 | 최대 255자 | 관리자 로그인 칸에 적은 이메일 또는 사내 아이디 |
+
+**응답 필드** (`data` 내부)
+
+_`POST /api/auth/login/discover` 와 같다(`method`·`label`·`redirect_url`). 확장 필터에는 `guard = admin` 이 넘어간다._
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | `identifier` 없음·형식 위반 |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 |
+
+<!-- @generated:end -->
+
+**설명**
+
+관리자 로그인 화면의 수단 판정(7.2.0). 사용자 판정과 같은 규칙이고 확장은 `guard` 로 둘을 가른다.
+
+### POST /api/auth/admin/login/handoff
+<!-- @generated:start:api.auth.admin.login.handoff -->
+- **라우트명**: `api.auth.admin.login.handoff`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\AuthController@loginHandoff`
+- **인증/권한**: 공개 (인증 불필요 — 주체는 인계 코드가 식별)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| code | body | string | 예 | 최대 128자 | 외부 인증 확장이 `LoginHandoffService::issue($user, $context, 'admin')` 로 발급해 `/admin/login?login_handoff=` 로 넘긴 일회용 코드 |
+
+**응답 필드** (`data` 내부)
+
+_`POST /api/auth/admin/login` 과 **같은 세 형태**다 — 인증 완료(`user`·`token`·`token_type`), 2단계 인증(`two_factor_required`·`challenge_id`·`provider_id`·`expires_at`), 비밀번호 변경(`password_change_required`·…)._
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | 교환할 수 없는 코드(`auth.login_handoff_invalid`, `errors.code`) — 없음 / 만료 / 이미 사용 / 사용자 경로로 발급 / 묶음 쿠키 불일치 / 회원 삭제. 사유를 구분하지 않는다 |
+| 403 | Forbidden | 관리자가 아닌 회원(`auth.admin_required`) — 휴면 상태는 그대로 둔다 |
+| 401 | Unauthorized | 회원 상태가 로그인을 허용하지 않음 |
+| 423 | Locked | 계정이 잠겨 있음 |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 |
+
+<!-- @generated:end -->
+
+**설명**
+
+관리자 로그인 인계 교환 창구다(7.2.0). 사용자 인계(`POST /api/auth/login/handoff`)와 같은 규칙에 관리자 비밀번호 로그인과 같은 응답 빌더·예외 매핑을 쓴다. 관리자 로그인 화면이 진입 때 엔진 액션 `loginHandoff`(target `admin`)로 부른다.
 
 ### POST /api/auth/admin/login/password-change
 <!-- @generated:start:api.auth.admin.login.password-change -->
@@ -831,6 +897,9 @@ HTTP/1.1 200
 | 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우 (`auth.account_locked` — `error.locked_until`, `error.retry_after_seconds` 포함) |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts` — `Retry-After` 헤더 동반) |
 | 503 | Service Unavailable | 2단계 인증이 켜져 있고 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`), 또는 비밀번호 변경 단계가 필요한데 그 단계 식별자를 저장하지 못한 경우 (`auth.password_change_unavailable` — #736) |
+| 403 | Forbidden | 비밀번호 로그인이 막힌 계정(7.2.0 — 외부 인증 확장의 `core.auth.password_auth_decision`): `errors.code = auth.password_auth_disabled`, `errors.method_label`(로케일별 수단 이름)·`errors.redirect_url`(그 수단으로 갈 같은 출처 경로) — 같은 값이 `data` 에도 실린다. 식별자만으로 막히면 비밀번호를 확인하기 전에 거절되어 실패 횟수에 들지 않는다 |
+| 409 | Conflict | 외부 자격 증명 검증자가 다음 화면(동의·연결 확인)을 요구(7.2.0): `errors.code = auth.external_step_required`, `errors.redirect_url` |
+| 422 | Unprocessable Entity | 외부 인증 확장이 2단계 인증을 요구했는데 회원에게 쓸 수 있는 수단이 없음(`auth.two_factor_means_required`, 7.2.0) |
 
 <!-- @generated:end -->
 
@@ -871,6 +940,72 @@ HTTP/1.1 200
 
 **쓸 수 있는 수단이 하나도 없는 경우**: 갈림길은 그것이 **운영자의 결정인지** 다. 인증 앱 플러그인 설정에서 메일 폴백을 명시적으로 껐다면 `401 auth.two_factor_enrollment_required` 로 로그인을 차단한다 — 그냥 통과시키면 운영자가 끈 결과가 "2단계 인증이 아예 없는 로그인" 이 되어 정반대가 되기 때문이다. 구제는 관리자의 등록 해제(`DELETE /api/plugins/sirsoft-totp/admin/credentials/{user}`) 또는 `totp:reset` artisan 이다. 반면 운영자의 결정이 아닌 이유(메일 설정이 깨진 경우 등)로 수단이 없을 때는 차단하지 않고 경고 로그만 남긴다 — 차단하면 아무도 로그인하지 못해 설정을 되돌릴 수단까지 사라진다.
 
+
+### POST /api/auth/login/discover
+<!-- @generated:start:api.auth.login.discover -->
+- **라우트명**: `api.auth.login.discover`
+- **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@discover`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | body | string | 예 | 최대 255자 | 로그인 칸에 적은 이메일 또는 사내 아이디 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.login_discover_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/auth/login/discover HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "identifier": "hong@corp.example"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| method | string | `password` | `password`(지금 화면 그대로) 또는 `external`(다른 수단으로 안내) |
+| label | object\|null | `null` | `external` 일 때 수단 이름(로케일별, 예 `{"ko":"회사 계정"}`) |
+| redirect_url | string\|null | `null` | `external` 일 때 갈 같은 출처 경로 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "로그인 방법을 확인했습니다.",
+    "data": {
+        "method": "password",
+        "label": null,
+        "redirect_url": null
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | `identifier` 없음·형식 위반 |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 |
+
+<!-- @generated:end -->
+
+**설명**
+
+로그인 화면이 이메일 칸을 벗어날 때 그 식별자의 로그인 수단을 묻는다(7.2.0). 판정은 필터 `core.auth.login_discovery` 를 구독한 외부 인증 확장이 하고, 없으면 항상 `password` 다. 회원 유무와 상관없이 같은 모양으로 답해(확장은 도메인 같은 식별자 모양으로만 판정) 계정 열거에 쓰이지 않는다. 같은 출처가 아닌 주소는 `password` 로 낮춘다. 관리자 로그인 화면은 `POST /api/auth/admin/login/discover`.
 
 ### POST /api/auth/login/handoff
 <!-- @generated:start:api.auth.login.handoff -->
@@ -935,7 +1070,7 @@ HTTP/1.1 200
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 코드 없음·형식 위반, 또는 교환할 수 없는 코드(`auth.login_handoff_invalid`, `errors.code`) — 없음 / 120초 만료 / 이미 사용 / 관리자 경로로 발급 / 회원 삭제. **사유를 구분하지 않는다** |
+| 422 | Unprocessable Entity | 코드 없음·형식 위반, 또는 교환할 수 없는 코드(`auth.login_handoff_invalid`, `errors.code`) — 없음 / 120초 만료 / 이미 사용 / 관리자 경로로 발급 / 발급한 브라우저의 묶음 쿠키(`g7_login_bind`)가 없거나 다름 / 회원 삭제. **사유를 구분하지 않는다** |
 | 401 | Unauthorized | 회원 상태가 로그인을 허용하지 않음(차단·탈퇴·비활성) — `errors.email` 에 상태 문구 |
 | 423 | Locked | 계정이 잠겨 있음. 응답 형태는 `POST /api/auth/login` 의 423 과 같다 |
 | 428 | Precondition Required | 2단계 인증 수단을 등록해야 함(`POST /api/auth/login` 과 같다) |
@@ -946,7 +1081,7 @@ HTTP/1.1 200
 
 **설명**
 
-외부 인증(소셜 로그인 등)으로 본인 확인을 마친 회원을 로그인 화면이 로그인시키는 교환 창구다(7.2.0). 확장은 토큰을 직접 만들지 않고 코드만 발급하며, 이 엔드포인트가 코드를 꺼내는 순간 지운 뒤(한 번만 통한다) `AuthService::loginVerifiedUser()` 로 계정 잠금·회원 상태·2단계 인증(인증 앱 포함)·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리한다. 응답이 `POST /api/auth/login` 과 같아 로그인 화면은 같은 분기를 쓴다(엔진 액션 `loginHandoff`). 로그인과 같은 요청 제한·세션 시작(`start.api.session`)이 걸린다. 관리자 로그인 인계는 아직 지원하지 않는다.
+외부 인증(소셜 로그인 등)으로 본인 확인을 마친 회원을 로그인 화면이 로그인시키는 교환 창구다(7.2.0). 확장은 토큰을 직접 만들지 않고 코드만 발급하며, 이 엔드포인트가 코드를 꺼내는 순간 지운 뒤(한 번만 통한다) `AuthService::loginVerifiedUser()` 로 계정 잠금·회원 상태·2단계 인증(인증 앱 포함)·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리한다. 응답이 `POST /api/auth/login` 과 같아 로그인 화면은 같은 분기를 쓴다(엔진 액션 `loginHandoff`). 로그인과 같은 요청 제한·세션 시작(`start.api.session`)이 걸린다. 코드는 발급한 브라우저에 묶여 있어 요청에 묶음 쿠키 `g7_login_bind` 가 함께 와야 한다(브라우저가 자동으로 싣는다 — 쿠키 Path `/api/auth`). 관리자 인계는 `POST /api/auth/admin/login/handoff`.
 
 
 ### POST /api/auth/login/password-change
@@ -1329,6 +1464,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+> 7.2.0: 응답 `data.redirect_url`(string|null) — 외부 인증 확장(`core.auth.logout_redirect_url`)이 정한 로그아웃 뒤 이동 경로. 같은 출처 경로만 실리고 없으면 `null`. 엔진은 값이 있으면 그 경로로, 없으면 로그인 화면으로 간다.
+
 **설명**
 
 현재 사용자 토큰을 폐기해 로그아웃한다(`message: auth.logout_success`). 현재 요청에 사용된 토큰만 폐기하며, 모든 기기에서 로그아웃하려면 `/api/user/auth/logout-all-devices` 를 사용한다.
@@ -1441,6 +1578,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`auth.register_failed` — `error.errors` 에 필드별 메시지) |
 | 428 | Precondition Required | 가입 전 본인인증 정책이 매칭되었으나 유효한 `verification_token` 이 없는 경우 (`core.auth.before_register` 훅) |
+| 403 | Forbidden | 사이트가 일반 회원가입을 받지 않음(7.2.0 — 환경설정 「일반 회원가입 받기」 꺼짐 또는 `core.auth.self_registration_open` 필터): `auth.registration_disabled` |
 
 <!-- @generated:end -->
 
@@ -1758,6 +1896,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`core.auth.logout`)이 없는 경우 |
 
 <!-- @generated:end -->
+
+> 7.2.0: 응답 `data.redirect_url`(string|null) — 외부 인증 확장(`core.auth.logout_redirect_url`)이 정한 로그아웃 뒤 이동 경로. 같은 출처 경로만 실리고 없으면 `null`. 엔진은 값이 있으면 그 경로로, 없으면 로그인 화면으로 간다.
 
 **설명**
 

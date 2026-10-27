@@ -74,11 +74,17 @@ const SHARED_DATA_SOURCE_IDS = ['bizppurioTemplates', 'bizppurioCategories', 'bi
 // _footer_actions.json)이 소유한다(제품 결정 2026-08-23 — 편집 모달 통합). 오버레이는 모달을 등록하지 않는다.
 
 describe.each(FIXTURES)('$label 오버레이 — 3면 패리티', ({ label, overlay, targetLayout, targetId, idPrefix }) => {
+    /**
+     * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs
+     */
     it(`target_layout=${targetLayout} 이고 extension_point 키가 없다(overlay 전용)`, () => {
         expect((overlay as { target_layout?: string }).target_layout).toBe(targetLayout);
         expect((overlay as Record<string, unknown>).extension_point).toBeUndefined();
     });
 
+    /**
+     * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs
+     */
     it(`배너·안내박스는 target_id=${targetId} 에 prepend_child 로 주입된다`, () => {
         const injections = (overlay as { injections?: Array<Record<string, unknown>> }).injections ?? [];
         expect(injections).toHaveLength(1);
@@ -86,6 +92,9 @@ describe.each(FIXTURES)('$label 오버레이 — 3면 패리티', ({ label, over
         expect(injections[0].position).toBe('prepend_child');
     });
 
+    /**
+     * @effects bizppurio_tab_replaces_sms_and_alimtalk_tabs, row_footer_shows_status_summary_only
+     */
     it('면 고유 토큰(target_layout/target_id/id 접두)만 치환하면 코어 오버레이와 완전 동일하다(comment 제외)', () => {
         const normalized = JSON.stringify(stripComments(overlay))
             .split(targetLayout).join('admin_settings')
@@ -94,11 +103,17 @@ describe.each(FIXTURES)('$label 오버레이 — 3면 패리티', ({ label, over
         expect(normalized, `${label} 오버레이가 코어와 구조 불일치`).toBe(normalizedCore);
     });
 
+    /**
+     * @effects edit_modal_hosts_alimtalk_and_sms_sections
+     */
     it('데이터소스는 오버레이가 아니라 [편집] 모달 섹션 확장점이 싣는다(오버레이 선언 0, 코어와 같음)', () => {
         const ids = ((overlay as { data_sources?: Array<{ id: string }> }).data_sources ?? []).map((d) => d.id);
         expect(ids).toEqual([]);
     });
 
+    /**
+     * @effects edit_modal_hosts_alimtalk_and_sms_sections
+     */
     it('오버레이는 모달을 등록하지 않고, 면 전용 전역 상태(bz_board_* 등)도 만들지 않는다', () => {
         expect((overlay as { modals?: AnyNode[] }).modals, `${label} 오버레이 modals`).toBeUndefined();
         const raw = JSON.stringify(overlay);
@@ -108,6 +123,9 @@ describe.each(FIXTURES)('$label 오버레이 — 3면 패리티', ({ label, over
 });
 
 describe('3면 패리티 — 공유 축 교차 검증', () => {
+    /**
+     * @effects edit_modal_hosts_alimtalk_and_sms_sections
+     */
     it('코어 오버레이도 데이터소스·모달이 없고, 공유 데이터소스 3종은 섹션 확장점이 싣는다(패리티 기준점 고정)', () => {
         const dsIds = ((coreOverlay as { data_sources?: Array<{ id: string }> }).data_sources ?? []).map((d) => d.id);
         expect(dsIds).toEqual([]);
@@ -115,6 +133,9 @@ describe('3면 패리티 — 공유 축 교차 검증', () => {
         expect((coreOverlay as { modals?: AnyNode[] }).modals).toBeUndefined();
     });
 
+    /**
+     * @effects row_footer_shows_status_summary_only
+     */
     it('세 오버레이의 init_actions(탭 진입 요약 맵 조회)가 comment 제외 완전 동일하다', () => {
         const pick = (o: unknown) => JSON.stringify(stripComments((o as { init_actions?: unknown }).init_actions ?? []));
         expect(pick(boardOverlay)).toBe(pick(coreOverlay));

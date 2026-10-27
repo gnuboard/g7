@@ -13,6 +13,93 @@
     },
     "children": [
         {
+            "comment": "회원가입(7.2.0) — 끄면 본인이 스스로 하는 가입(공개 가입·소셜 가입)이 닫힌다. 회사가 만드는 계정(관리자 추가·회사 계정 자동 생성)은 계속된다.",
+            "id": "card_registration",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "card-stack-item"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.security.registration.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "toggle_registration_enabled",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-heading"
+                                                    },
+                                                    "text": "$t:admin.settings.security.registration.enabled"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.security.registration.enabled_desc"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['security.registration_enabled']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['security.registration_enabled']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "Toggle",
+                                    "props": {
+                                        "name": "security.registration_enabled",
+                                        "size": "md",
+                                        "disabled": "{{_computed.isReadOnly}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "id": "card_security_settings",
             "type": "basic",
             "name": "Div",
@@ -574,9 +661,22 @@
                                     },
                                     "actions": [
                                         {
+                                            "comment": "버튼으로 여는 창은 늘 처음부터 — 외부 수단에서 돌아와 받아 둔 확인 토큰(7.2.0)이 남아 있으면 비우고 연다",
                                             "type": "click",
-                                            "handler": "openModal",
-                                            "target": "settings_password_confirm_modal"
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "appKeyReauthToken": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "settings_password_confirm_modal"
+                                                }
+                                            ]
                                         }
                                     ],
                                     "props": {

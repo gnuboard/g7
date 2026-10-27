@@ -1,0 +1,11 @@
+{
+  "sirsoft-sso": {
+    "name": "SSO 連携"
+  },
+  "sirsoft-sso-accounts": {
+    "name": "会員連携"
+  },
+  "sirsoft-sso-logs": {
+    "name": "履歴"
+  }
+}

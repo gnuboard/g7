@@ -1,0 +1,25 @@
+# audit:allow test-scenario-coverage[cross_product] reason: target × prop × overlay 는 주입 대상 노드와 props 를 열거한 것이고 시험은
+# 레이아웃 JSON 계약과 선례 오버레이 적용 결과를 본다. 서버 병합 자체는 PHPUnit(LayoutExtensionService) 영역.
+# 회귀 가드는 effects 이며 전부 test_files 에 @effects 로 귀속.
+
+feature: 회원 목록 확장 열 주입 계약 (sirsoft-admin_basic 1.2.0, 7.2.0 A6t)
+
+description: |
+  확장 오버레이가 inject_props _append 로 표 users_data_grid 의 columns 와 열 선택기 노드 column_selector 의 columns, defaultColumns 를
+  늘릴 수 있다(prop id="admin_user_list_columns" 는 저장 키라 대상이 아니다). 두 노드가 그 id 로 있고, 대상 props 가 리터럴 배열이며,
+  열 모양 {field, header, …cellChildren}, 선택기 field 집합 == 표 field 집합. 선례(sirsoft-social_login) _append 적용 시 두 곳 모두 +1.
+
+axes:
+  target: [users_data_grid, column_selector]
+  prop: [columns, defaultColumns]
+  overlay: [sirsoft-social_login, synthetic_default_column]
+
+effects:
+  - ext_column_targets_exist_by_id
+  - ext_column_props_are_literal_arrays
+  - ext_column_shapes_and_field_sets_match
+  - precedent_overlay_appends_one_column_each
+  - default_columns_appendable_for_visible_ext_column
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-list-ext-columns.test.ts

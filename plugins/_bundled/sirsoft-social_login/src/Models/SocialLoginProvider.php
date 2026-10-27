@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Models;
 
+use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Model;
 use Plugins\Sirsoft\SocialLogin\Enums\ProviderType;
 
@@ -90,13 +91,13 @@ class SocialLoginProvider extends Model
      * 표시 이름을 로케일에 맞춰 반환합니다.
      *
      * @param  string|null  $locale  로케일 (null 이면 현재 앱 로케일)
-     * @return string 표시 이름 (해당 로케일이 없으면 ko → 키)
+     * @return string 표시 이름 (코어 다국어 값 기준 — 받는 로케일 → 사이트 기본 → en, 모두 없으면 키)
      */
     public function localizedLabel(?string $locale = null): string
     {
         $locale ??= app()->getLocale();
         $label = $this->label ?? [];
 
-        return (string) ($label[$locale] ?? $label['ko'] ?? $this->key);
+        return LocalizedValue::pick($label, $locale, false) ?? (string) $this->key;
     }
 }

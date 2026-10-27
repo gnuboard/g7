@@ -209,19 +209,22 @@ class PasswordPolicySettingsTest extends TestCase
     }
 
     /**
-     * 화면에는 비밀번호 작성·재사용 규칙 10키만 내보낸다 — 만료·IP·2FA·토큰은 내보내지 않는다.
+     * 화면에는 비밀번호 작성·재사용 규칙 10키와 회원가입 받기 여부만 내보낸다 — 만료·IP·2FA·토큰은 내보내지 않는다.
+     *
+     * 회원가입 받기(`registration_enabled`, 7.2.0)는 가입 링크·폼을 감추려고 화면이 읽는 공개 값이다.
      *
      * @effects frontend_exposes_only_ten_password_keys
      *
      * @return void 반환값 없음
      */
     #[Test]
-    public function the_frontend_receives_only_the_ten_composition_keys(): void
+    public function the_frontend_receives_only_the_composition_keys_and_registration_flag(): void
     {
         $security = app(SettingsService::class)->getFrontendSettings()['security'] ?? null;
 
         $this->assertIsArray($security);
         $this->assertEqualsCanonicalizing([
+            'registration_enabled',
             'password_min_length',
             'require_password_special_char',
             'password_require_char_types',

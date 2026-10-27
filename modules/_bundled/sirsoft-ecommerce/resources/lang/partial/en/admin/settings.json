@@ -24,7 +24,7 @@
   "save_success": "Settings saved successfully.",
   "save_error": "Failed to save settings.",
   "save_pending_currency": "Confirm (check button) or cancel the currency you are adding before saving.",
-  "save_pending_form": "Confirm the open :forms form with its Add button, or cancel it, before saving.",
+  "save_pending_form": "Confirm the open {forms} form with its Add button, or cancel it, before saving.",
   "save_pending_form_targets": {
     "exchange_reason": "exchange reason",
     "return_reason": "return reason",

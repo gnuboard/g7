@@ -172,11 +172,20 @@ class CoreActivityLogListenerTest extends TestCase
         // #736 비밀번호 정책 — after_password_changed 구독을 password_change_recorded 로 옮기고(±0)
         // password_change_postponed·password_expired 를 더함 +2 → 84.
         // #736 D23 회원 등록·수정의 역할 변경(core.user.after_update_roles) +1 → 85.
-        $this->assertCount(85, $hooks);
+        // #798 외부 인증 — 회원 차단·차단 해제·모든 기기 로그아웃(core.user.after_block·after_unblock·
+        // after_sessions_revoked) +3 → 88.
+        $this->assertCount(88, $hooks);
         $this->assertSame(
             ['method' => 'handleUserAfterUpdateRoles', 'priority' => 20],
             $hooks['core.user.after_update_roles'] ?? null,
         );
+        foreach ([
+            'core.user.after_block' => 'handleUserAfterBlock',
+            'core.user.after_unblock' => 'handleUserAfterUnblock',
+            'core.user.after_sessions_revoked' => 'handleUserAfterSessionsRevoked',
+        ] as $hook => $method) {
+            $this->assertSame(['method' => $method, 'priority' => 20, 'sync' => true], $hooks[$hook] ?? null, $hook);
+        }
     }
 
     /**

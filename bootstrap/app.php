@@ -1,5 +1,7 @@
 <?php
 
+use App\Exceptions\Auth\PasswordAuthDisallowedException;
+use App\Exceptions\Auth\TwoFactorMeansRequiredException;
 use App\Exceptions\CannotModifyProtectedRoleException;
 use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\CoreVersionMismatchException;
@@ -7,6 +9,7 @@ use App\Exceptions\IdentityVerificationRequiredException;
 use App\Exceptions\PermissionEscalationException;
 use App\Helpers\ResponseHelper;
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\AllowInactiveUser;
 use App\Http\Middleware\Analytics\EnsureArchiveFresh;
 use App\Http\Middleware\Analytics\TrackBotHit;
 use App\Http\Middleware\Analytics\TrackServerVisit;
@@ -16,6 +19,7 @@ use App\Http\Middleware\Custom\RequireScreenAdmin;
 use App\Http\Middleware\Custom\RequireScreenUser;
 use App\Http\Middleware\DatabaseCredentialGuard;
 use App\Http\Middleware\EnforceIdentityPolicy;
+use App\Http\Middleware\EnsureActiveUser;
 use App\Http\Middleware\EnsureDebugMode;
 use App\Http\Middleware\ExtensionMiddlewareGate;
 use App\Http\Middleware\GzipEncodeResponse;
@@ -36,6 +40,7 @@ use App\Seo\SeoMiddleware;
 use App\Support\TrustedHosts;
 use App\Support\UmaskHelper;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -149,7 +154,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // 따로 방문을 열어 전체 로드마다 방문이 둘로 갈라진다. 담긴 값은 뜻 없는 난수다.
         // 이 지점은 설정이 아직 올라오기 전이라 `config()` 를 쓸 수 없다 — 이름을 그대로 적는다
         // (`config/analytics.php` 의 `cookies.opt_out`·`cookies.visitor` 기본값과 같아야 한다).
-        $middleware->encryptCookies(except: ['g7_analytics_optout', 'g7_vid']);
+        // 로그인 인계 묶음 쿠키(`g7_login_bind`)와 외부 인증 확장의 묶음 쿠키(`g7_sso_bind`)도 암호화하지 않는다 —
+        // web 라우트(외부 인증 콜백)가 굽고 api 라우트(인계 교환·동의 완료)가 읽는다. 암호화하면 api 쪽이 암호문을
+        // 읽어 늘 불일치가 된다. 값은 sha256 대조용 난수라 평문이어도 잃는 것이 없다.
+        $middleware->encryptCookies(except: ['g7_analytics_optout', 'g7_vid', 'g7_login_bind', 'g7_sso_bind']);
 
         // 토큰 만료 시간 슬라이딩 갱신 미들웨어 (API 요청 시 토큰 만료 시간 자동 연장)
         $middleware->appendToGroup('api', [
@@ -162,6 +170,15 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('api', [
             EnforceIdentityPolicy::class,
         ]);
+
+        // 공통 회원 상태 관문(7.2.0) — 코어·모듈·플러그인 API 전부가 같은 회원 상태 재검사를 받는다. 확장 라우트에 따로 붙이지
+        // 않는다. 인증 미들웨어(`auth:sanctum`, `optional.sanctum`) **뒤**에서 돌아야 회원을 안다 — 그룹 미들웨어는 라우트 미들웨어보다
+        // 앞에 놓이므로 우선순위 목록으로 순서를 보장한다(인증 → 선택 인증 → 상태 관문).
+        $middleware->appendToGroup('api', [
+            EnsureActiveUser::class,
+        ]);
+        $middleware->appendToPriorityList(AuthenticatesRequests::class, OptionalSanctumMiddleware::class);
+        $middleware->appendToPriorityList(OptionalSanctumMiddleware::class, EnsureActiveUser::class);
 
         // 확장 선언 미들웨어 self-gate 래퍼 — 확장이 getMiddleware() 로 선언한 미들웨어를
         // 요청 시점에 라우트명·URI 매칭으로 실행. web/api × before_core/after_core 로 4회 등록.
@@ -195,6 +212,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => AdminMiddleware::class,
             'check.user_status' => CheckUserStatus::class,
+            // 공통 회원 상태 관문 통과 표식 — 가입 후 인증 대기 회원의 본인인증 경로(`api.identity.*`)에만 붙인다(7.2.0)
+            'allow.inactive_user' => AllowInactiveUser::class,
             'permission' => PermissionMiddleware::class,
             'role' => RoleMiddleware::class,
             // 최고관리자 전용 — 판정은 회원의 최고관리자 표지(is_super). 코어에 최고관리자 역할은 없다.
@@ -261,6 +280,24 @@ $app = Application::configure(basePath: dirname(__DIR__))
                     'success' => false,
                     'message' => $e->getMessage(),
                 ], 403);
+            }
+        });
+
+        // 비밀번호 인증 정책 거절 → 403 + `errors.code = auth.password_auth_disabled` + `data{method_label, redirect_url}` (7.2.0).
+        // 로그인·재설정 컨트롤러는 직접 잡아 상태 코드를 고른다. 비밀번호 설정·관리자 지정처럼 회원 서비스 안에서 나는 경로는
+        // 여기서 같은 모양으로 답한다 — 화면이 「회사 계정으로 로그인」 안내를 한 분기로 그린다.
+        $exceptions->render(function (PasswordAuthDisallowedException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                [$messageKey, $params] = PasswordAuthDisallowedException::messageKeyAndParams($e->decision);
+
+                return ResponseHelper::error($messageKey, 403, ['code' => PasswordAuthDisallowedException::ERROR_CODE] + $e->decision->toResponseData(), $params, 'core', $e->decision->toResponseData());
+            }
+        });
+
+        // 정책이 요구한 2단계 인증의 수단이 없음 → 422 (7.2.0)
+        $exceptions->render(function (TwoFactorMeansRequiredException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return ResponseHelper::error('auth.two_factor_means_required', 422, ['code' => 'auth.two_factor_means_required']);
             }
         });
 

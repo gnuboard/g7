@@ -10,11 +10,11 @@
     "update_failed": "商品編集に失敗しました",
     "deleted": "商品が削除されました",
     "delete_failed": "商品削除に失敗しました",
-    "bulk_updated": ":count個の商品が一括編集されました",
+    "bulk_updated": "{count}個の商品が一括編集されました",
     "bulk_update_failed": "商品一括編集に失敗しました",
-    "bulk_price_updated": ":count個の商品の価格が一括変更されました",
+    "bulk_price_updated": "{count}個の商品の価格が一括変更されました",
     "bulk_price_update_failed": "商品価格一括変更に失敗しました",
-    "bulk_stock_updated": ":count個の商品の在庫が一括変更されました",
+    "bulk_stock_updated": "{count}個の商品の在庫が一括変更されました",
     "bulk_stock_update_failed": "商品在庫一括変更に失敗しました",
     "bulk": {
       "no_selection": "選択された項目がありません",
@@ -26,9 +26,9 @@
     }
   },
   "options": {
-    "bulk_price_updated": ":count個のオプションの販売価格が一括変更されました",
+    "bulk_price_updated": "{count}個のオプションの販売価格が一括変更されました",
     "bulk_price_update_failed": "オプション販売価格一括変更に失敗しました",
-    "bulk_stock_updated": ":count個のオプションの在庫が一括変更されました",
+    "bulk_stock_updated": "{count}個のオプションの在庫が一括変更されました",
     "bulk_stock_update_failed": "オプション在庫一括変更に失敗しました",
     "bulk_update_success": "オプション {count}個が編集されました",
     "bulk_update_error": "オプション一括アップデートに失敗しました",

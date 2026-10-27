@@ -97,7 +97,8 @@
               "cookie": [
                 "XSRF-TOKEN",
                 "laravel_session",
-                "gdpr_session"
+                "gdpr_session",
+                "g7_login_bind"
               ]
             },
             "annual_notice": {

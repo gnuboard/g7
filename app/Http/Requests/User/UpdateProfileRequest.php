@@ -6,6 +6,7 @@ use App\Extension\HookManager;
 use App\Http\Requests\Concerns\ChecksPasswordReuse;
 use App\Models\User;
 use App\Rules\PasswordPolicy;
+use App\Services\UserLockedFieldsService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -71,6 +72,10 @@ class UpdateProfileRequest extends FormRequest
             'signature' => ['nullable', 'string', 'max:1000'],
             'bio' => ['nullable', 'string', 'max:5000'],
         ];
+
+        // 외부(회사 계정)가 관리하는 칸은 현재 값과 같아야 한다 — 요청에 그 칸이 없으면 통과(7.2.0)
+        $user = $this->user();
+        $rules = app(UserLockedFieldsService::class)->applyRules($rules, $user instanceof User ? $user : null, UserLockedFieldsService::SURFACE_PROFILE);
 
         // 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 훅 제공
         return HookManager::applyFilters('core.user.update_profile_validation_rules', $rules, $this);

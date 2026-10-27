@@ -1,3 +1,4 @@
+// e2e:allow 엔진 변경(engine-v1.85.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
 /**
  * NOTE: @since versions (engine-v1.x.x) refer to internal template engine
  * development iterations, not G7 platform release versions.
@@ -2461,20 +2462,11 @@ export class ActionDispatcher {
           linkHref,
         };
 
-        // 확인 메시지 표시
+        // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.85.0, resolveConfirmMessage)
         if (action.confirm) {
-          let message = this.resolveValue(action.confirm, context.data);
+          const message = this.resolveConfirmMessage(action.confirm, context.data);
 
-          // $t: 다국어 구문 처리
-          if (this.translationEngine && this.translationContext && message.startsWith('$t:')) {
-            message = this.translationEngine.resolveTranslations(
-              message,
-              this.translationContext,
-              context.data
-            );
-          }
-
-          if (!confirm(message)) {
+          if (message !== null && !confirm(message)) {
             return undefined;
           }
         }
@@ -4578,7 +4570,7 @@ export class ActionDispatcher {
    * 서버가 2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리하므로, 반환 모양도 `login` 액션과
    * 같다 — 로그인 화면은 같은 `onSuccess` 분기(2단계 인증 블록·비밀번호 변경 블록·휴면 해제 안내)를 그대로 쓴다.
    *
-   * @param target 인증 타입 (지금은 user 만 — admin 은 서버가 인계를 지원하지 않는다)
+   * @param target 인증 타입 (admin 또는 user — admin 은 관리자 인계 경로로 교환한다, engine-v1.85.0)
    * @param params 요청 파라미터 (body에 code 포함)
    * @param context 액션 컨텍스트
    * @since engine-v1.83.0
@@ -4598,8 +4590,10 @@ export class ActionDispatcher {
 
     const authType = this.resolveAuthType(target);
     // ApiClient 는 baseURL 이 '/api' 이므로 globalHeaders 패턴 매칭용 경로에 '/api' 를 붙인다 — `login` 과 같은
-    // `/api/auth/*` 패턴의 헤더(장바구니 키 등)가 그대로 실린다.
-    const endpoint = '/api/auth/login/handoff';
+    // `/api/auth/*` 패턴의 헤더(장바구니 키 등)가 그대로 실린다. 관리자 인계는 관리자 경로로 교환한다(engine-v1.85.0).
+    const endpoint = authType === 'admin'
+      ? '/api/auth/admin/login/handoff'
+      : '/api/auth/login/handoff';
 
     try {
       const result = await AuthManager.getInstance().loginWithHandoff(
@@ -8536,20 +8530,11 @@ export class ActionDispatcher {
       },
     };
 
-    // 확인 메시지 표시
+    // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.85.0, resolveConfirmMessage)
     if (action.confirm) {
-      let message = this.resolveValue(action.confirm, mergedContext.data);
+      const message = this.resolveConfirmMessage(action.confirm, mergedContext.data);
 
-      // $t: 다국어 구문 처리
-      if (this.translationEngine && this.translationContext && message.startsWith('$t:')) {
-        message = this.translationEngine.resolveTranslations(
-          message,
-          this.translationContext,
-          mergedContext.data
-        );
-      }
-
-      if (!confirm(message)) {
+      if (message !== null && !confirm(message)) {
         return { success: false };
       }
     }
@@ -8585,6 +8570,26 @@ export class ActionDispatcher {
         error: error instanceof Error ? error : new Error(String(error)),
       };
     }
+  }
+
+  /**
+   * 동작의 `confirm` 문구를 풀어 번역한 결과를 반환합니다 (engine-v1.85.0).
+   *
+   * 풀린 문구가 비었으면(빈 문자열·공백 — 문자열 보간이 null·undefined 를 빈 문자열로 푼다) null 을 돌려 확인창을 띄우지
+   * 않는다 — 조건에 따라 묻는 식(`{{hasToken ? '$t:…' : ''}}`)이 묻지 않을 때 빈 확인창이 떴다(종전에는 식 원문의 유무로 판정).
+   *
+   * @param confirmDef 동작 정의의 confirm 값(문자열·`{{}}` 식·`$t:` 키)
+   * @param data 바인딩 데이터 컨텍스트
+   * @returns 확인창 문구, 묻지 않으면 null
+   */
+  private resolveConfirmMessage(confirmDef: string, data: Record<string, any>): string | null {
+    let message = String(this.resolveValue(confirmDef, data) ?? '');
+    // $t: 다국어 구문 처리
+    if (this.translationEngine && this.translationContext && message.startsWith('$t:')) {
+      message = this.translationEngine.resolveTranslations(message, this.translationContext, data);
+    }
+
+    return message.trim() === '' ? null : message;
   }
 
   /**

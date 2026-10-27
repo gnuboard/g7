@@ -18,6 +18,10 @@
 - 스케줄 관리 화면의 상태 일괄 변경 확인 창·스케줄 보안 정책(읽기 전용) 창·큐 탭 정렬과 현황 카드, 환경설정 탭의 「스케줄 관리에서 변경」 안내(다음 실행 일시·비활성 안내)와 편집기 데이터 소스 이름의 일본어 번역을 추가했습니다.
 - 회원 상세 「비밀번호」 배지(`admin.users.detail.password.state`·`set`·`not_set`·`not_set_hint`)와, 비밀번호 없는 관리자의 이메일 인증번호 확인 문구(앱 키 재생성 창 `admin.settings.modals.reauth_*`, 자기 정보 수정 `admin.users.form.password_policy.reauth_*`)의 일본어 번역을 추가했습니다.
 - 비밀번호 없는 관리자에게 보이는 앱 키 재생성 창 제목(`admin.settings.modals.identity_confirm_title`)의 일본어 번역을 추가했습니다.
+- 외부 인증(회사 계정 로그인)과 회원 관리 문구의 일본어 번역을 추가했습니다 — 관리자 로그인 화면의 이메일 먼저 입력·「{수단}(으)로 계속」(`auth.login.external.*`), 회원 추가 「비밀번호 없이 만들기」(`admin.users.form.fields.create_without_password*`), 회사 계정이 관리하는 항목 안내(`admin.users.form.fields.locked_by_company`), 환경설정 > 보안 「회원가입」 카드(`admin.settings.security.registration.*`), 회원 상세 「모든 기기에서 로그아웃」과 확인 창(`admin.users.detail.revoke_sessions.*`).
+- 외부 수단으로 본인을 확인하는 관리자의 안내 일본어 번역을 추가했습니다 — 본인 확인 화면으로 이동하지 못했을 때(`admin.settings.modals.reauth_external_failed`·`admin.users.form.password_policy.reauth_external_failed`), 확인을 마치고 앱 키 재생성 창으로 돌아왔을 때(`admin.settings.modals.reauth_verified`).
+- 이메일로 인증번호를 받을 수 없는 비밀번호 없는 관리자가 회사 계정 등 다른 수단으로 본인 확인을 시작하는 버튼과 안내의 일본어 번역을 추가했습니다(앱 키 재생성 창 `admin.settings.modals.reauth_start`·`reauth_notice_other`·`reauth_code_sent_generic`, 자기 정보 수정 `admin.users.form.password_policy.` 같은 세 키).
+- 관리자 로그인 화면의 회사 계정 이메일 판정 안내와 비상 계정 로그인(`?local=1`) 안내 일본어 번역을 추가했습니다(`auth.login.external.discovered_notice`·`auth.login.external.discovered_notice_company`·`auth.login.external.local_notice`).
 
 ### Changed
 

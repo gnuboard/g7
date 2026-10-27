@@ -126,7 +126,9 @@ describe('sirsoft-admin_basic 비밀번호 없는 회원 (#40)', () => {
     }
 
     const request = flattenActions(flatten(section).flatMap((n) => n.actions ?? [])).find((a) => a.target === '/api/identity/challenges');
-    expect(request?.params?.body).toEqual({ purpose: 'sensitive_action', provider_id: 'g7:core.mail' });
+    // 7.2.0(A7t, K17) — 수단을 메일로 고정하지 않는다. 서버가 이 관리자에게 쓸 수 있는 수단을 고르고, 메일이면 종전 인증번호 흐름이다
+    // (외부 수단 갈래와 돌아올 화면 return_path 는 admin-reauth-external.test.ts 가 잠근다).
+    expect(request?.params?.body).toEqual({ purpose: 'sensitive_action', return_path: '/admin/settings?tab=security&reauth=app_key' });
 
     const regenerate = nodes.find((n) => n.id === 'app_key_reauth_regenerate_button');
     const verify = flattenActions(regenerate?.actions).find((a) => String(a.target).includes('/verify'));

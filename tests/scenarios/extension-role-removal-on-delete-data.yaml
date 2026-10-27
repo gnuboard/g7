@@ -1,0 +1,18 @@
+feature: extension_role_removal_on_delete_data
+
+description: |
+  확장 제거의 「데이터까지 삭제」 갈래는 그 확장의 권한을 지운 뒤 확장이 소유한 역할을 지운다. 종전에는 「역할에 권한이 하나도
+  없을 때만」 지워, 다른 확장이 사용자 권한을 `roles: ['*']`(모든 활성 역할)로 붙이면(이커머스) 그 역할에 권한이 남아 역할이
+  지워지지 않았다(실측: SSO 역할). 데이터까지 삭제할 때는 그 확장 소유 역할의 권한·메뉴·회원 연결을 떼고 역할을
+  지운다(플러그인·모듈 같은 규칙). 다른 확장의 역할·권한·회원은 건드리지 않는다. 데이터 유지 제거는 역할을 건드리지 않는다.
+
+axes:
+  owner: [plugin, module]
+
+effects:
+  - extension_role_deleted_with_foreign_links   # 다른 확장 권한·회원이 붙은 소유 역할도 지워지고 pivot 0
+  - other_extension_role_untouched              # 다른 확장 역할·권한·회원은 그대로
+  - role_removal_only_on_delete_data            # 역할 제거는 권한 제거(데이터 삭제 갈래) 안에서만 불린다
+
+test_files:
+  - tests/Unit/Extension/ExtensionRoleRemovalOnDeleteDataTest.php

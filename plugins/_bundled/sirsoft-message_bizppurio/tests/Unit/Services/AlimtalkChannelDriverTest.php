@@ -634,6 +634,62 @@ class AlimtalkChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 알림 변수가 언어별 값(`{ko: …, en: …}`)이면 승인 스냅샷 본문을 수신자 언어의 값으로 치환한다 (#798).
+     *
+     * getData() 를 그대로 읽으면 배열이라 치환되지 않고 `#{idp_label}` 이 본문에 남는다.
+     *
+     * @effects alimtalk_resolves_localized_variables_for_recipient
+     *
+     * @return void 반환값 없음
+     */
+    public function test_스냅샷_본문의_언어별_변수는_수신자_언어로_치환된다(): void
+    {
+        Bus::fake();
+        $guest = new GuestNotifiable('guest@example.com', '홍길동', 'ko');
+        $builder = $this->spyBuilder();
+
+        $this->makeDriver(
+            $this->templateRow(approved: ['templateContent' => '#{idp_label} 연결이 실패했습니다.']),
+            $builder,
+        )->send($guest, $this->notification([
+            'idp_label' => ['ko' => '사내 계정', 'en' => 'Company account'],
+            AlimtalkChannelDriver::RECIPIENT_PHONE_KEY => '010-9999-0000',
+        ]));
+
+        $this->assertSame('사내 계정 연결이 실패했습니다.', $builder->calls[0]['message']);
+    }
+
+    /**
+     * 대체발송 SMS 본문도 언어별 변수를 수신자 언어의 값으로 치환한다 (#798).
+     *
+     * @effects alimtalk_resolves_localized_variables_for_recipient, fallback_on_merges_resend_recontent_from_sms_body
+     *
+     * @return void 반환값 없음
+     */
+    public function test_대체발송_본문의_언어별_변수는_수신자_언어로_치환된다(): void
+    {
+        Bus::fake();
+        $guest = new GuestNotifiable('guest@example.com', 'John', 'en');
+
+        $this->makeDriver($this->templateRow(fallback: true, smsBody: [
+            'ko' => '[샵] #{idp_label} 연결 실패',
+            'en' => '[Shop] #{idp_label} connection failed',
+        ]))->send($guest, $this->notification([
+            'idp_label' => ['ko' => '사내 계정', 'en' => 'Company account'],
+            AlimtalkChannelDriver::RECIPIENT_PHONE_KEY => '010-9999-0000',
+        ]));
+
+        Bus::assertDispatched(SendMessageJob::class, function (SendMessageJob $job) {
+            $this->assertSame(
+                '[Shop] Company account connection failed',
+                $job->payload['recontent']['sms']['message'] ?? null,
+            );
+
+            return true;
+        });
+    }
+
+    /**
      * 대체발송 on이라도 sms body가 비어있으면 resend를 병합하지 않는다.
      *
      * @effects fallback_on_with_empty_sms_body_skips_merge

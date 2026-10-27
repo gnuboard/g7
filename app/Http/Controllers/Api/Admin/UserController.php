@@ -4,6 +4,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Exceptions\Auth\PasswordAuthDisallowedException;
 use App\Exceptions\CannotDeleteSelfException;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Exceptions\CannotModifySuperAdminException;
@@ -110,10 +111,13 @@ class UserController extends AdminBaseController
             // withAdminInfo()를 호출하여 관리자용 상세 정보 및 모듈 훅 데이터 포함
             $resource = new UserResource($user);
 
-            // 비밀번호 상태(만료 판정)는 상세에서만 덧붙인다 — withAdminInfo() 는 목록도 행마다 부른다(A13).
+            // 비밀번호 상태(만료 판정)·잠긴 칸은 상세에서만 덧붙인다 — withAdminInfo() 는 목록도 행마다 부른다(A13, 7.2.0).
             return $this->success(
                 'user.fetch_success',
-                array_merge($resource->withAdminInfo(), ['password_status' => $resource->passwordStatusArray()])
+                array_merge($resource->withAdminInfo(), [
+                    'password_status' => $resource->passwordStatusArray(),
+                    'locked_fields' => $resource->adminLockedFields(),
+                ])
             );
         } catch (Exception $e) {
             return $this->error('user.fetch_failed', 500, $e->getMessage());
@@ -142,6 +146,9 @@ class UserController extends AdminBaseController
             return $this->error('exceptions.cannot_grant_unheld_permission', 403);
         } catch (ValidationException $e) {
             return $this->error('user.update_failed', 422, $e->errors());
+        } catch (PasswordAuthDisallowedException $e) {
+            // 비밀번호 인증 정책 거절(회사 계정 전용 회원에게 비밀번호 지정) — 전역 렌더러가 403 + 안내 데이터로 답한다
+            throw $e;
         } catch (Exception $e) {
             return $this->error('user.update_failed', 500, $e);
         }
@@ -166,6 +173,30 @@ class UserController extends AdminBaseController
                 'auth.account_unlocked',
                 new UserResource($unlocked)
             );
+        } catch (CannotModifySuperAdminException $e) {
+            return $this->error('exceptions.cannot_modify_super_admin', 403);
+        } catch (Exception $e) {
+            return $this->error('user.update_failed', 500, $e);
+        }
+    }
+
+    /**
+     * 회원을 모든 기기에서 로그아웃시킵니다 (강제 로그아웃).
+     *
+     * 그 회원의 인증 토큰을 전부 지운다 — 다음 API 요청부터 401 이다. 하위 관리자는 최고관리자를 대상으로 하지 못한다.
+     *
+     * @param  User  $user  대상 회원
+     * @return JsonResponse 지운 토큰 수 (`data.revoked_count`)
+     *
+     * @since 7.2.0
+     */
+    public function revokeSessions(User $user): JsonResponse
+    {
+        try {
+            $actor = request()->user();
+            $count = $this->userService->revokeAllSessions($user, $actor instanceof User ? $actor : null);
+
+            return $this->success('user.sessions_revoked', ['revoked_count' => $count]);
         } catch (CannotModifySuperAdminException $e) {
             return $this->error('exceptions.cannot_modify_super_admin', 403);
         } catch (Exception $e) {

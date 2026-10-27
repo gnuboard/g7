@@ -325,6 +325,8 @@ class Plugin extends AbstractPlugin
                         'recipients' => $member,
                         'subject' => ['ko' => '{provider_label} 연결이 해제되었습니다', 'en' => 'Your {provider_label} link was removed'],
                         'body' => ['ko' => '관리자가 {provider_label} 계정 연결을 해제했습니다.', 'en' => 'An administrator removed your {provider_label} account link.'],
+                        // 소셜 연결 카드가 있는 마이페이지 프로필로 — 다시 연결하거나 남은 연결을 확인한다
+                        'click_url' => '/mypage/profile',
                     ],
                     [
                         'channel' => 'mail',

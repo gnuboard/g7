@@ -76,6 +76,8 @@
 이 플러그인의 채널 구현이 그 작업을 받음 → 알림톡이면 승인된 템플릿 내용으로, 문자면 본문
 길이에 따라 SMS/LMS 를 골라 비즈뿌리오 발송 API 호출 → 발송 기록(`bizppurio_dispatches`)
 적재. 알림톡 발송이 불가하거나 실패하면 설정에 따라 대체 SMS 로 내려갑니다.
+본문의 `#{변수}` 는 알림 data 를 받는 사람 언어로 해석한 값(`GenericNotification::getDataFor($notifiable)`)으로
+바꾼다 — `getData()` 를 그대로 쓰면 언어별 값(`{ko: …, en: …}`)이 배열로 남아 치환되지 않는다(코어 7.2.0).
 
 **결과 수신**: 비즈뿌리오가 `POST /webhook` 으로 결과 통보 →
 `BizppurioWebhookIpWhitelist` 미들웨어가 발신 IP 를 검사 → `WebhookReportService` 가 결과

@@ -1,0 +1,30 @@
+{
+    "schema_version": "1.0",
+    "generated_at": "2026-10-25T02:38:14+00:00",
+    "generator": "g7 vendor-bundle:build",
+    "target": "plugin:sirsoft-sso",
+    "composer_json_sha256": "e3fd3e1dea94535d3d2c64a664d1e93c6322f7f1653abc2436ad1dd1f043dfbc",
+    "composer_lock_sha256": "a72892a36f0ac561c287ceb4703add0bc455577a602881b3971a0e0718771806",
+    "zip_sha256": "9802e62b76b4c404f33c9f4ab735f62f23fd36a245419f3e3145e32ea1a544f7",
+    "zip_size": 173327,
+    "package_count": 3,
+    "php_requirement": "^8.2",
+    "g7_version": "7.2.0",
+    "packages": [
+        {
+            "name": "firebase/php-jwt",
+            "version": "v7.2.1",
+            "type": "library"
+        },
+        {
+            "name": "onelogin/php-saml",
+            "version": "4.3.2",
+            "type": "library"
+        },
+        {
+            "name": "robrichards/xmlseclibs",
+            "version": "3.1.5",
+            "type": "library"
+        }
+    ]
+}

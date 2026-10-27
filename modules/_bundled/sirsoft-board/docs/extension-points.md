@@ -667,7 +667,7 @@ Repository 로만 합니다 — 역할 사용자는 `RoleRepositoryInterface::ge
 
 ## 활동 로그 훅
 
-> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 33개입니다.
+> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 34개입니다.
 > 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다(#601) —
 > 확장이 훅을 더할 때 코어 문서를 고쳐야 하던 역방향 의존을 없애기 위해서입니다. 코어 문서에는
 > 총계와 이 문서로의 링크만 남습니다.
@@ -679,14 +679,14 @@ Repository 로만 합니다 — 역할 사용자는 `RoleRepositoryInterface::ge
 ### 게시판 모듈 훅 (BoardActivityLogListener)
 
 **파일**: `modules/_bundled/sirsoft-board/src/Listeners/BoardActivityLogListener.php`
-**총 30훅**
+**총 31훅**
 
 > 이 표에 `before_*` 훅이 없는 것은 누락이 아닙니다. 수정 전 스냅샷은 이 리스너가
 > `before_*` 훅으로 직접 잡지 않고 **Service 가 잡아 `after_*` 훅의 인자로 넘깁니다**
 > (`ChangeDetector::detect($model, $snapshot)`). `before_*` 훅 자체는 발행되며 그 목록은
 > 위 「발행 훅」 절에 있습니다.
 
-#### Board (7훅)
+#### Board (8훅)
 
 | 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
 |---------|----------------|-------------|---------|----------|
@@ -695,6 +695,7 @@ Repository 로만 합니다 — 역할 사용자는 `RoleRepositoryInterface::ge
 | `sirsoft-board.board.after_delete` | `handleBoardAfterDelete` | `board.delete` | Admin | Board |
 | `sirsoft-board.board.after_add_to_menu` | `handleBoardAfterAddToMenu` | `board.add_to_menu` | Admin | Board |
 | `sirsoft-board.board.after_remove_from_menu` | `handleBoardAfterRemoveFromMenu` | `board.remove_from_menu` | Admin | Board |
+| `sirsoft-board.board.after_reorder` | `handleBoardAfterReorder` | `board.reorder` | Admin | - |
 | `sirsoft-board.settings.after_bulk_apply` | `handleSettingsAfterBulkApply` | `board_settings.bulk_apply` | Admin | - |
 | `sirsoft-board.settings.after_bulk_apply_aborted` | `handleSettingsAfterBulkApplyAborted` | `board_settings.bulk_apply_aborted` | Admin | - |
 

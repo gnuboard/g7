@@ -17,8 +17,8 @@ class ValidateP4MigrationsTest extends TestCase
     /** 활동 로그 i18n 전환 마이그레이션. */
     private const ACTIVITY_LOG_I18N = 'database/migrations/2026_04_01_000657_update_i18n_fields_in_activity_logs_table.php';
 
-    /** 레이아웃 확장 조각 식별자 마이그레이션. */
-    private const LAYOUT_FRAGMENT_KEY = 'database/migrations/2026_09_11_000001_add_fragment_key_to_template_layout_extensions_table.php';
+    /** 레이아웃 확장 조각 식별자 고유 키를 거는 마이그레이션(조각 키 컬럼은 그 앞 마이그레이션이 만든다). */
+    private const LAYOUT_FRAGMENT_UNIQUE = 'database/migrations/2026_09_29_000001_add_override_target_key_to_template_layout_extensions_table.php';
 
     /** 전환 전 활동 로그의 공통 컬럼 (마이그레이션이 after()·인덱스로 참조하는 것). */
     private const BASE_COLUMNS = ['action', 'properties', 'loggable_type', 'loggable_id', 'log_type', 'created_at'];
@@ -103,8 +103,10 @@ class ValidateP4MigrationsTest extends TestCase
      */
     public function test_layout_fragment_key_unique_index_is_guarded_on_rerun_and_rollback(): void
     {
-        $source = (string) file_get_contents(base_path(self::LAYOUT_FRAGMENT_KEY));
-        $guard = "Schema::hasIndex('template_layout_extensions', 'uk_layout_extension_fragment')";
+        // 고유 키는 조각 키 마이그레이션이 아니라 다음 마이그레이션(오버라이드 대상 포함)이 건다 — 그 파일의 가드를 잰다
+        $source = (string) file_get_contents(base_path(self::LAYOUT_FRAGMENT_UNIQUE));
+        $this->assertStringContainsString("const INDEX = 'uk_layout_extension_fragment'", $source);
+        $guard = "Schema::hasIndex('template_layout_extensions', self::INDEX)";
 
         $up = substr($source, (int) strpos($source, 'function up()'), (int) strpos($source, 'function down()') - (int) strpos($source, 'function up()'));
         $down = substr($source, (int) strpos($source, 'function down()'));

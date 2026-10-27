@@ -1,0 +1,30 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다(#798 A1).
+
+feature: "회원 칸 수정 잠금 `core.user.locked_fields` (#798 K8 · D8)"
+
+description: |
+  회원 칸 수정 잠금 `core.user.locked_fields` (#798 K8 · D8)
+  확장(예: 회사 IdP 가 관리하는 이름)이 잠근 칸은 마이페이지·관리자 화면·언어 변경 경로에서 「현재 값과 같아야 함」이다. 요청에 그 칸이
+  없으면 통과하고, 허용 목록 밖 이름은 무시하며, 서비스 직접 호출(확장의 동기화)은 잠금을 받지 않는다. 회원 응답에 `locked_fields` 가 실린다.
+
+axes:
+  filter: [none]
+  surface: [profile, admin, admin_list, language_endpoint, service_direct]
+  value: [same, different, absent]
+  field: [allowed, unknown]
+
+effects:
+  - no_filter_regression
+  - resource_locked_fields_empty
+  - locked_same_value_passes
+  - locked_different_value_422
+  - locked_absent_passes
+  - unknown_field_ignored
+  - resource_lists_locked_fields
+  - admin_surface_locked
+  - admin_list_never_calls_locked_fields_filter
+  - language_endpoint_locked
+  - service_direct_bypasses_lock
+
+test_files:
+  - tests/Feature/User/LockedFieldsTest.php

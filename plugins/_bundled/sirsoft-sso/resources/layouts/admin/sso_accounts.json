@@ -1,0 +1,1686 @@
+{
+    "comment": "e2e:allow Playwright 스펙 없음(이 플러그인 tests/Playwright/specs/sso-*.spec.ts 는 로그인 흐름만 덮는다) — 브라우저 실측은 F1 Chrome MCP 계획서 §10 M11·M14(W40) — P4 는 Vitest 로 덮음\n     「회원 연결」(/admin/plugins/sirsoft-sso/accounts, 권한 accounts.view) — 연결 목록(회원, IdP, 고유 식별자 일부, 방식, 상태, 마지막 로그인) + 필터(IdP, 상태, 방식, 검색).\n     「연결 추가」(accounts.provision): 기존 회원 검색 → IdP → 고유 식별자, 회원이 없으면 「새 회원으로 사전 등록」(이름, 이메일 → 비밀번호 없이 생성).\n     「CSV 가져오기」(accounts.provision): 열 email,name,idp_key,subject — 미리보기 표(만들기/연결/충돌/오류 건수) → [가져오기] → 결과 내려받기.\n     행 「연결 해제」(accounts.unlink): 비밀번호 없고 연결 1개인 회원은 마지막 수단 경고 뒤 확인해야 지운다. 관리자, 최고관리자 대상 연결은 최고관리자만(W26 — 서버 403, CSV 는 그 행을 건너뜀).",
+    "version": "1.0.0",
+    "layout_name": "sso_accounts",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-sso.admin.accounts.title",
+        "description": "$t:sirsoft-sso.admin.accounts.description"
+    },
+    "data_sources": [
+        {
+            "id": "ssoAccounts",
+            "label_key": "$t:sirsoft-sso.editor.data_source.admin_accounts",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-sso/admin/accounts",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.page || 1}}",
+                "per_page": "20",
+                "idp_id": "{{query.idp_id || ''}}",
+                "status": "{{query.status || ''}}",
+                "via": "{{query.via || ''}}",
+                "q": "{{query.q || ''}}"
+            },
+            "fallback": {
+                "data": {
+                    "idps": [],
+                    "data": [],
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 20,
+                        "total": 0
+                    }
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "연결 목록 — 필터·쪽은 모두 주소(query.*)에서 읽는다. 응답이 가능한 일(abilities)과 IdP 목록도 함께 준다. 403 은 빈 표 대신 오류 화면으로 바꾼다(빈 표는 「연결이 없다」로 읽힌다)"
+        }
+    ],
+    "initLocal": {
+        "showAdd": false,
+        "addForm": {
+            "idp_id": "",
+            "subject": "",
+            "mode": "existing",
+            "user_search": "",
+            "user_id": null,
+            "user_label": "",
+            "new_name": "",
+            "new_email": ""
+        },
+        "userCandidates": [],
+        "addErrors": null,
+        "showCsv": false,
+        "csvText": "",
+        "csvPreview": null,
+        "csvResult": null,
+        "isImporting": false,
+        "unlinkTarget": null,
+        "unlinkLastMethod": false
+    },
+    "computed": {
+        "canProvision": "{{ssoAccounts?.data?.abilities?.can_provision === true}}"
+    },
+    "permissions": [
+        "sirsoft-sso.accounts.view"
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "sso_accounts_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "admin-page-content"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex flex-wrap items-start justify-between gap-3 mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "props": {
+                                            "className": "page-title"
+                                        },
+                                        "text": "$t:sirsoft-sso.admin.accounts.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-label-subtle mt-1"
+                                        },
+                                        "text": "$t:sirsoft-sso.admin.accounts.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-wrap gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "open_add_link",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "연결 추가 칸을 열고 CSV 칸은 닫는다 — 지난 오류·후보는 비운다",
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "showAdd": true,
+                                                    "showCsv": false,
+                                                    "addErrors": null,
+                                                    "userCandidates": []
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-primary text-sm",
+                                            "disabled": "{{!_computed.canProvision}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fa-solid fa-plus",
+                                                    "className": "text-xs"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-sso.admin.accounts.add"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "open_csv_import",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "CSV 칸을 열고 연결 추가 칸은 닫는다 — 지난 미리보기·결과는 비운다",
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "showCsv": true,
+                                                    "showAdd": false,
+                                                    "csvPreview": null,
+                                                    "csvResult": null
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary text-sm",
+                                            "disabled": "{{!_computed.canProvision}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fa-solid fa-file-csv",
+                                                    "className": "text-xs"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-sso.admin.accounts.csv.open"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "연결 추가",
+                        "id": "add_link_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.showAdd}}",
+                        "dataKey": "addForm",
+                        "props": {
+                            "className": "admin-card mb-6 space-y-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "H2",
+                                "props": {
+                                    "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                },
+                                "text": "$t:sirsoft-sso.admin.accounts.add_title"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "form-hint"
+                                },
+                                "text": "$t:sirsoft-sso.admin.accounts.add_hint"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "grid-2col-responsive"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "form-label"
+                                                },
+                                                "text": "$t:sirsoft-sso.admin.accounts.fields.idp"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "props": {
+                                                    "name": "idp_id",
+                                                    "className": "w-full"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": ""
+                                                        },
+                                                        "text": "$t:sirsoft-sso.admin.accounts.select_idp"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "iteration": {
+                                                            "source": "ssoAccounts?.data?.idps ?? []",
+                                                            "item_var": "idp"
+                                                        },
+                                                        "props": {
+                                                            "value": "{{idp.id}}"
+                                                        },
+                                                        "text": "{{idp.label}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "form-label"
+                                                },
+                                                "text": "$t:sirsoft-sso.admin.accounts.fields.subject"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "name": "subject",
+                                                    "className": "input",
+                                                    "autoComplete": "off"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "form-hint"
+                                                },
+                                                "text": "$t:sirsoft-sso.admin.accounts.hints.subject"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-wrap gap-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "inline-flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "actions": [
+                                                    {
+                                                        "comment": "기존 회원에 연결. 라디오는 폼 자동 바인딩을 끄고 checked 식과 이 액션으로 addForm.mode 를 직접 다룬다",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "addForm.mode": "existing"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "radio",
+                                                    "autoBinding": false,
+                                                    "name": "mode",
+                                                    "value": "existing",
+                                                    "checked": "{{(_local.addForm?.mode ?? 'existing') === 'existing'}}",
+                                                    "className": "h-4 w-4"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-sso.admin.accounts.mode_existing"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Label",
+                                        "props": {
+                                            "className": "inline-flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "actions": [
+                                                    {
+                                                        "comment": "새 회원으로 사전 등록. 라디오는 폼 자동 바인딩을 끄고 checked 식과 이 액션으로 addForm.mode 를 직접 다룬다",
+                                                        "type": "change",
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "_local",
+                                                            "addForm.mode": "new"
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "radio",
+                                                    "autoBinding": false,
+                                                    "name": "mode",
+                                                    "value": "new",
+                                                    "checked": "{{(_local.addForm?.mode ?? 'existing') === 'new'}}",
+                                                    "className": "h-4 w-4"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-sso.admin.accounts.mode_new"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "add_existing_user",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{(_local.addForm?.mode ?? 'existing') === 'existing'}}",
+                                "props": {
+                                    "className": "space-y-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "flex flex-col sm:flex-row gap-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "name": "user_search",
+                                                    "className": "input flex-1 min-w-0",
+                                                    "placeholder": "$t:sirsoft-sso.admin.accounts.user_search_placeholder",
+                                                    "aria-label": "$t:sirsoft-sso.admin.accounts.user_search_placeholder"
+                                                }
+                                            },
+                                            {
+                                                "id": "add_user_search_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "회원 검색 — 코어 관리자 회원 목록 검색을 쓴다",
+                                                        "type": "click",
+                                                        "handler": "apiCall",
+                                                        "target": "/api/admin/users",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "GET",
+                                                            "query": {
+                                                                "search": "{{_local.addForm?.user_search}}",
+                                                                "per_page": 5
+                                                            }
+                                                        },
+                                                        "onSuccess": {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "userCandidates": "{{response.data?.data ?? []}}"
+                                                            }
+                                                        },
+                                                        "onError": {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "btn btn-secondary text-sm",
+                                                    "disabled": "{{!_local.addForm?.user_search}}"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Span",
+                                                        "text": "$t:sirsoft-sso.admin.common.search"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{!!_local.addForm?.user_id}}",
+                                        "props": {
+                                            "className": "text-sm text-gray-800 dark:text-gray-200"
+                                        },
+                                        "text": "$t:sirsoft-sso.admin.accounts.selected_user|name={{_local.addForm?.user_label ?? ''}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Ul",
+                                        "if": "{{(_local.userCandidates ?? []).length > 0}}",
+                                        "props": {
+                                            "className": "divide-y divide-gray-100 dark:divide-gray-700"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Li",
+                                                "iteration": {
+                                                    "source": "_local.userCandidates ?? []",
+                                                    "item_var": "candidate"
+                                                },
+                                                "dataKey": "{{candidate.uuid}}",
+                                                "props": {
+                                                    "className": "py-2 flex items-center gap-3"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "flex-1 min-w-0"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-sm text-gray-900 dark:text-white"
+                                                                },
+                                                                "text": "{{candidate.name}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "text-xs text-gray-500 dark:text-gray-400 break-all"
+                                                                },
+                                                                "text": "{{candidate.email ?? ''}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "이 후보를 연결할 회원으로 고르고 후보 목록을 닫는다",
+                                                                "type": "click",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "addForm.user_id": "{{candidate.id}}",
+                                                                    "addForm.user_label": "{{candidate.name + ' (' + (candidate.email ?? '') + ')'}}",
+                                                                    "userCandidates": []
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "className": "btn btn-secondary text-xs"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-sso.admin.accounts.choose"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "add_new_user",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{_local.addForm?.mode === 'new'}}",
+                                "props": {
+                                    "className": "grid-2col-responsive"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "form-label"
+                                                },
+                                                "text": "$t:sirsoft-sso.admin.accounts.fields.new_name"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "text",
+                                                    "name": "new_name",
+                                                    "className": "input"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "form-label"
+                                                },
+                                                "text": "$t:sirsoft-sso.admin.accounts.fields.new_email"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "email",
+                                                    "name": "new_email",
+                                                    "className": "input"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "form-hint"
+                                                },
+                                                "text": "$t:sirsoft-sso.admin.accounts.hints.new_user"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "if": "{{!!_local.addErrors}}",
+                                "props": {
+                                    "role": "alert",
+                                    "className": "form-error"
+                                },
+                                "text": "{{_local.addErrors}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-wrap gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "add_link_submit",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "연결 추가 — 기존 회원이면 user_id, 새 회원이면 new_user 를 보낸다",
+                                                "type": "click",
+                                                "handler": "apiCall",
+                                                "target": "/api/plugins/sirsoft-sso/admin/accounts",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "POST",
+                                                    "body": "{{_local.addForm?.mode === 'new' ? { idp_id: Number(_local.addForm.idp_id), subject: _local.addForm.subject, new_user: { name: _local.addForm.new_name, email: _local.addForm.new_email } } : { idp_id: Number(_local.addForm?.idp_id), subject: _local.addForm?.subject, user_id: _local.addForm?.user_id }}}"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "showAdd": false,
+                                                            "addErrors": null
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:sirsoft-sso.admin.accounts.created"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "ssoAccounts"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "addErrors": "{{error.message}}"
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-primary text-sm",
+                                            "disabled": "{{!_local.addForm?.idp_id || !_local.addForm?.subject}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-sso.admin.accounts.add_submit"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "연결 추가 칸만 닫는다 — 입력한 값은 지우지 않는다",
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "showAdd": false
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary text-sm"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:common.cancel"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "CSV 가져오기",
+                        "id": "csv_import_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.showCsv}}",
+                        "props": {
+                            "className": "admin-card mb-6 space-y-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "H2",
+                                "props": {
+                                    "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                },
+                                "text": "$t:sirsoft-sso.admin.accounts.csv.title"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "form-hint"
+                                },
+                                "text": "$t:sirsoft-sso.admin.accounts.csv.hint"
+                            },
+                            {
+                                "id": "csv_file_input",
+                                "type": "basic",
+                                "name": "Input",
+                                "actions": [
+                                    {
+                                        "comment": "파일을 글자로 읽어 아래 칸에 넣는다(서버에는 글자로 보낸다)",
+                                        "type": "change",
+                                        "handler": "sirsoft-sso.readCsvFile"
+                                    }
+                                ],
+                                "props": {
+                                    "type": "file",
+                                    "accept": ".csv,text/csv",
+                                    "className": "text-sm",
+                                    "aria-label": "$t:sirsoft-sso.admin.accounts.csv.file"
+                                }
+                            },
+                            {
+                                "id": "csv_text",
+                                "type": "basic",
+                                "name": "Textarea",
+                                "actions": [
+                                    {
+                                        "comment": "글이 바뀌면 지난 미리보기·결과는 맞지 않으므로 비운다",
+                                        "type": "change",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "csvText": "{{$event.target.value}}",
+                                            "csvPreview": null,
+                                            "csvResult": null
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "input font-mono text-xs",
+                                    "rows": "6",
+                                    "value": "{{_local.csvText}}",
+                                    "placeholder": "email,name,idp_key,subject",
+                                    "aria-label": "$t:sirsoft-sso.admin.accounts.csv.text"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-wrap gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "csv_preview_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "미리보기 — 아무것도 바꾸지 않고 행마다 결과를 보인다",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isImporting": true
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "/api/plugins/sirsoft-sso/admin/accounts/import",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "POST",
+                                                            "body": "{{({ csv: _local.csvText, mode: 'preview' })}}"
+                                                        },
+                                                        "onSuccess": {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "isImporting": false,
+                                                                "csvPreview": "{{response.data}}",
+                                                                "csvResult": null
+                                                            }
+                                                        },
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isImporting": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message ?? '$t:sirsoft-sso.admin.accounts.csv.failed'}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary text-sm",
+                                            "disabled": "{{!_local.csvText || _local.isImporting}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-sso.admin.accounts.csv.preview"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "csv_execute_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "가져오기 — 만들기, 연결 행만 처리한다. 나머지 행은 건너뛴다",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isImporting": true
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "apiCall",
+                                                        "target": "/api/plugins/sirsoft-sso/admin/accounts/import",
+                                                        "auth_required": true,
+                                                        "params": {
+                                                            "method": "POST",
+                                                            "body": "{{({ csv: _local.csvText, mode: 'execute' })}}"
+                                                        },
+                                                        "onSuccess": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isImporting": false,
+                                                                    "csvResult": "{{response.data}}",
+                                                                    "csvPreview": null
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "success",
+                                                                    "message": "$t:sirsoft-sso.admin.accounts.csv.done"
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "refetchDataSource",
+                                                                "params": {
+                                                                    "dataSourceId": "ssoAccounts"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "onError": [
+                                                            {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "isImporting": false
+                                                                }
+                                                            },
+                                                            {
+                                                                "handler": "toast",
+                                                                "params": {
+                                                                    "type": "error",
+                                                                    "message": "{{error.message ?? '$t:sirsoft-sso.admin.accounts.csv.failed'}}"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                ],
+                                                "confirm": "$t:sirsoft-sso.admin.accounts.csv.execute_confirm"
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-primary text-sm",
+                                            "disabled": "{{!_local.csvPreview || _local.isImporting || ((_local.csvPreview?.counts?.create ?? 0) + (_local.csvPreview?.counts?.link ?? 0)) === 0}}"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-sso.admin.accounts.csv.execute"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "csv_download_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "if": "{{!!_local.csvResult}}",
+                                        "actions": [
+                                            {
+                                                "comment": "가져오기 결과(행마다 처리 결과)를 CSV 로 내려받는다",
+                                                "type": "click",
+                                                "handler": "sirsoft-sso.downloadCsvResult",
+                                                "params": {
+                                                    "rows": "{{_local.csvResult?.rows ?? []}}",
+                                                    "filename": "sso-import-result.csv"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary text-sm"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "fa-solid fa-download",
+                                                    "className": "text-xs"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-sso.admin.accounts.csv.download"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "csv_counts",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{!!(_local.csvResult ?? _local.csvPreview)}}",
+                                "props": {
+                                    "className": "flex flex-wrap gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "iteration": {
+                                            "source": "['create', 'link', 'exists', 'conflict', 'admin_target_manual_only', 'error']",
+                                            "item_var": "outcome"
+                                        },
+                                        "dataKey": "{{outcome}}",
+                                        "props": {
+                                            "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                        },
+                                        "text": "{{$t('sirsoft-sso.admin.accounts.csv.outcomes.' + outcome) + ' ' + ((_local.csvResult ?? _local.csvPreview)?.counts?.[outcome] ?? 0)}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "csv_rows",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{((_local.csvResult ?? _local.csvPreview)?.rows ?? []).length > 0}}",
+                                "props": {
+                                    "className": "overflow-x-auto"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Table",
+                                        "props": {
+                                            "className": "w-full text-xs"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Thead",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Tr",
+                                                        "props": {
+                                                            "className": "text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Th",
+                                                                "props": {
+                                                                    "className": "py-2 pr-3"
+                                                                },
+                                                                "text": "$t:sirsoft-sso.admin.accounts.csv.col.line"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Th",
+                                                                "props": {
+                                                                    "className": "py-2 pr-3"
+                                                                },
+                                                                "text": "$t:sirsoft-sso.admin.accounts.csv.col.email"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Th",
+                                                                "props": {
+                                                                    "className": "py-2 pr-3"
+                                                                },
+                                                                "text": "$t:sirsoft-sso.admin.accounts.csv.col.idp"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Th",
+                                                                "props": {
+                                                                    "className": "py-2 pr-3"
+                                                                },
+                                                                "text": "$t:sirsoft-sso.admin.accounts.csv.col.outcome"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Th",
+                                                                "props": {
+                                                                    "className": "py-2 pr-3"
+                                                                },
+                                                                "text": "$t:sirsoft-sso.admin.accounts.csv.col.reason"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Tbody",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Tr",
+                                                        "iteration": {
+                                                            "source": "(_local.csvResult ?? _local.csvPreview)?.rows ?? []",
+                                                            "item_var": "row"
+                                                        },
+                                                        "dataKey": "{{row.line}}",
+                                                        "props": {
+                                                            "className": "border-b border-gray-100 dark:border-gray-700"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Td",
+                                                                "props": {
+                                                                    "className": "py-1.5 pr-3 text-gray-500 dark:text-gray-400"
+                                                                },
+                                                                "text": "{{row.line}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Td",
+                                                                "props": {
+                                                                    "className": "py-1.5 pr-3 text-gray-800 dark:text-gray-200 break-all"
+                                                                },
+                                                                "text": "{{row.email}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Td",
+                                                                "props": {
+                                                                    "className": "py-1.5 pr-3 text-gray-800 dark:text-gray-200"
+                                                                },
+                                                                "text": "{{row.idp_key}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Td",
+                                                                "props": {
+                                                                    "className": "py-1.5 pr-3 {{row.outcome === 'error' || row.outcome === 'conflict' ? 'text-red-700 dark:text-red-300' : 'text-gray-800 dark:text-gray-200'}}"
+                                                                },
+                                                                "text": "{{$t('sirsoft-sso.admin.accounts.csv.outcomes.' + row.outcome)}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Td",
+                                                                "props": {
+                                                                    "className": "py-1.5 pr-3 text-gray-600 dark:text-gray-300"
+                                                                },
+                                                                "text": "{{row.reason ? $t('sirsoft-sso.admin.accounts.csv.reasons.' + row.reason) : ''}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "필터",
+                        "id": "accounts_filters",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "flex flex-wrap items-center gap-2 mb-4"
+                        },
+                        "children": [
+                            {
+                                "id": "filter_idp",
+                                "type": "basic",
+                                "name": "Select",
+                                "actions": [
+                                    {
+                                        "comment": "IdP 필터 — 주소에 담아 목록을 다시 받고 첫 쪽으로",
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/plugins/sirsoft-sso/accounts",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "idp_id": "{{$event.target.value}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "w-44",
+                                    "value": "{{query.idp_id || ''}}",
+                                    "aria-label": "$t:sirsoft-sso.admin.accounts.fields.idp"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Option",
+                                        "props": {
+                                            "value": ""
+                                        },
+                                        "text": "$t:sirsoft-sso.admin.accounts.filters.all_idps"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Option",
+                                        "iteration": {
+                                            "source": "ssoAccounts?.data?.idps ?? []",
+                                            "item_var": "idp"
+                                        },
+                                        "props": {
+                                            "value": "{{idp.id}}"
+                                        },
+                                        "text": "{{idp.label}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "filter_status",
+                                "type": "basic",
+                                "name": "Select",
+                                "actions": [
+                                    {
+                                        "comment": "상태 필터 — 주소에 담아 목록을 다시 받고 첫 쪽으로",
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/plugins/sirsoft-sso/accounts",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "status": "{{$event.target.value}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "w-36",
+                                    "value": "{{query.status || ''}}",
+                                    "aria-label": "$t:sirsoft-sso.admin.accounts.col.status"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Option",
+                                        "props": {
+                                            "value": ""
+                                        },
+                                        "text": "$t:sirsoft-sso.admin.accounts.filters.all_status"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Option",
+                                        "props": {
+                                            "value": "active"
+                                        },
+                                        "text": "$t:sirsoft-sso.admin.accounts.status.active"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Option",
+                                        "props": {
+                                            "value": "inactive"
+                                        },
+                                        "text": "$t:sirsoft-sso.admin.accounts.status.deprovisioned"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "filter_via",
+                                "type": "basic",
+                                "name": "Select",
+                                "actions": [
+                                    {
+                                        "comment": "방식 필터 — 주소에 담아 목록을 다시 받고 첫 쪽으로",
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/plugins/sirsoft-sso/accounts",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "via": "{{$event.target.value}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "className": "w-40",
+                                    "value": "{{query.via || ''}}",
+                                    "aria-label": "$t:sirsoft-sso.admin.accounts.col.via"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Option",
+                                        "props": {
+                                            "value": ""
+                                        },
+                                        "text": "$t:sirsoft-sso.admin.accounts.filters.all_via"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Option",
+                                        "iteration": {
+                                            "source": "['jit', 'domain', 'verify', 'admin', 'csv', 'scim']",
+                                            "item_var": "via"
+                                        },
+                                        "props": {
+                                            "value": "{{via}}"
+                                        },
+                                        "text": "{{$t('sirsoft-sso.admin.accounts.via.' + via)}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "filter_q",
+                                "type": "basic",
+                                "name": "Input",
+                                "actions": [
+                                    {
+                                        "comment": "검색어 — 주소에 담아 목록을 다시 받고 첫 쪽으로",
+                                        "type": "change",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/plugins/sirsoft-sso/accounts",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "q": "{{$event.target.value}}",
+                                                "page": 1
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "type": "search",
+                                    "className": "input w-56",
+                                    "value": "{{query.q || ''}}",
+                                    "placeholder": "$t:sirsoft-sso.admin.accounts.filters.search",
+                                    "aria-label": "$t:sirsoft-sso.admin.accounts.filters.search"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "unlink_last_method_alert",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_local.unlinkLastMethod === true && !!_local.unlinkTarget}}",
+                        "props": {
+                            "role": "alert",
+                            "className": "alert-warning mb-4 flex-col items-start gap-2"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "text-sm text-amber-800 dark:text-amber-200"
+                                },
+                                "text": "$t:sirsoft-sso.admin.accounts.last_method_warning|name={{_local.unlinkTarget?.user?.name ?? ''}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "unlink_last_method_confirm",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "마지막 수단이라는 경고를 확인하고 해제한다",
+                                                "type": "click",
+                                                "handler": "apiCall",
+                                                "target": "/api/plugins/sirsoft-sso/admin/accounts/{{_local.unlinkTarget?.id}}",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "DELETE",
+                                                    "body": "{{({ confirm_last_method: true })}}"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "unlinkTarget": null,
+                                                            "unlinkLastMethod": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:sirsoft-sso.admin.accounts.unlinked"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "ssoAccounts"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"
+                                                    }
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-danger text-xs"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:sirsoft-sso.admin.accounts.unlink_anyway"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "마지막 수단 경고를 닫고 해제하지 않는다",
+                                                "type": "click",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "unlinkTarget": null,
+                                                    "unlinkLastMethod": false
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "btn btn-secondary text-xs"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "text": "$t:common.cancel"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "accounts_datagrid",
+                        "type": "composite",
+                        "name": "DataGrid",
+                        "actions": [
+                            {
+                                "comment": "쪽 이동 — 다른 필터는 주소에 그대로 둔다",
+                                "type": "change",
+                                "event": "onPageChange",
+                                "handler": "navigate",
+                                "params": {
+                                    "path": "/admin/plugins/sirsoft-sso/accounts",
+                                    "mergeQuery": true,
+                                    "query": {
+                                        "page": "{{$args[0]}}"
+                                    }
+                                }
+                            }
+                        ],
+                        "props": {
+                            "data": "{{ssoAccounts?.data?.data}}",
+                            "pagination": true,
+                            "serverSidePagination": true,
+                            "serverCurrentPage": "{{ssoAccounts?.data?.pagination?.current_page ?? 1}}",
+                            "serverTotalPages": "{{ssoAccounts?.data?.pagination?.last_page ?? null}}",
+                            "pageSize": "20",
+                            "idField": "id",
+                            "selectable": false,
+                            "emptyMessage": "$t:sirsoft-sso.admin.accounts.empty",
+                            "columns": [
+                                {
+                                    "field": "user",
+                                    "header": "$t:sirsoft-sso.admin.accounts.col.user",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex flex-col"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "A",
+                                                    "props": {
+                                                        "href": "/admin/users/{{row.user?.uuid}}",
+                                                        "className": "text-sm font-medium text-blue-700 dark:text-blue-300"
+                                                    },
+                                                    "text": "{{row.user?.name ?? '-'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400 break-all"
+                                                    },
+                                                    "text": "{{row.user?.email ?? ''}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "idp",
+                                    "header": "$t:sirsoft-sso.admin.accounts.col.idp",
+                                    "sortable": false,
+                                    "width": "140px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-800 dark:text-gray-200"
+                                            },
+                                            "text": "{{row.idp?.label ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "subject_masked",
+                                    "header": "$t:sirsoft-sso.admin.accounts.col.subject",
+                                    "sortable": false,
+                                    "width": "140px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs font-mono text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{row.subject_masked}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "linked_via",
+                                    "header": "$t:sirsoft-sso.admin.accounts.col.via",
+                                    "sortable": false,
+                                    "width": "110px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "{{$t('sirsoft-sso.admin.accounts.via.' + row.linked_via)}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "active",
+                                    "header": "$t:sirsoft-sso.admin.accounts.col.status",
+                                    "sortable": false,
+                                    "width": "110px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{row.active ? 'text-green-700 dark:text-green-300 text-sm' : 'text-red-700 dark:text-red-300 text-sm'}}"
+                                            },
+                                            "text": "{{row.active ? $t('sirsoft-sso.admin.accounts.status.active') : $t('sirsoft-sso.admin.accounts.status.deprovisioned')}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "last_login_at",
+                                    "header": "$t:sirsoft-sso.admin.accounts.col.last_login_at",
+                                    "sortable": false,
+                                    "width": "170px",
+                                    "cellChildren": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                            },
+                                            "text": "{{row.last_login_at | datetime | default('-')}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "id",
+                                    "header": "",
+                                    "sortable": false,
+                                    "width": "100px",
+                                    "cellChildren": [
+                                        {
+                                            "comment": "표 셀 렌더 문맥에서는 레이아웃 계산값(computed)이 비어 있으므로 데이터소스 응답의 권한을 직접 읽는다",
+                                            "id": "unlink_{{row.id}}",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "연결 해제 — 마지막 로그인 수단이면 서버가 409 last_method 로 막고 화면이 경고를 띄운다",
+                                                    "type": "click",
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-sso/admin/accounts/{{row.id}}",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "DELETE"
+                                                    },
+                                                    "confirm": "$t:sirsoft-sso.admin.accounts.unlink_confirm",
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "success",
+                                                                "message": "$t:sirsoft-sso.admin.accounts.unlinked"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "refetchDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "ssoAccounts"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "onError": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "unlinkTarget": "{{error.errors?.code === 'last_method' ? row : null}}",
+                                                                "unlinkLastMethod": "{{error.errors?.code === 'last_method'}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "toast",
+                                                            "if": "{{error.errors?.code !== 'last_method'}}",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "{{error.message ?? '$t:sirsoft-sso.admin.settings.save_failed'}}"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-secondary text-xs",
+                                                "disabled": "{{ssoAccounts?.data?.abilities?.can_unlink !== true}}",
+                                                "aria-label": "$t:defer:sirsoft-sso.admin.accounts.unlink_named|name={{row.user?.name ?? ''}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:sirsoft-sso.admin.accounts.unlink"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

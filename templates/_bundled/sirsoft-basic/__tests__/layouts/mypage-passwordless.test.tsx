@@ -141,7 +141,8 @@ describe('sirsoft-basic 비밀번호 없는 회원 마이페이지 (#40)', () =>
 
     const actions = flattenActions(flatten(codeSection).flatMap((n) => asArray<any>(n.actions)));
     const request = actions.find((a) => a.handler === 'apiCall' && a.target === '/api/identity/challenges');
-    expect(request?.params?.body).toEqual({ purpose: 'sensitive_action', provider_id: 'g7:core.mail' });
+    // 7.2.0 B6 — 수단을 고정하지 않는다(서버 K17 이 회원에게 쓸 수 있는 수단을 고른다). 외부 수단 분기는 mypage-reauth-external.test.tsx 가 잰다.
+    expect(request?.params?.body).toEqual({ purpose: 'sensitive_action', return_path: '/mypage/profile/edit' });
 
     const verify = actions.find((a) => a.handler === 'apiCall' && String(a.target).includes('/verify'));
     const gate = flattenActions(verify?.onSuccess).find((a) => a.handler === 'apiCall' && a.target === '/api/me/verify-password');

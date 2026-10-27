@@ -79,10 +79,13 @@ describe('sirsoft-basic 로그인 2단계 인증 단계', () => {
     // 두 블록이 같은 조건을 쓰면 인증번호 단계에서 이메일·비밀번호가 함께 보인다.
     // #736 이후 1단계는 2단계 인증·비밀번호 변경 두 단계가 모두 아닐 때만 보인다(세 단계 상보 — 변경 단계 쪽은
     // login-password-change-step.test.tsx 가 잠근다).
-    const stepOne = nodes.filter((n) => n.if === '{{!_global.twoFactor?.required && !_global.passwordChange?.required}}');
+    // 7.2.0 이메일 먼저 입력 이후 1단계 블록(식별자 칸·비밀번호 칸·로그인 버튼·「…(으)로 계속」)은 1단계 조건을 앞에 두고
+    // 외부 수단 판정(`_local.discovery`)으로 다시 갈린다 — 넷 모두 2단계 인증 중에는 숨는다.
+    const stepOne = nodes.filter((n) => String(n.if ?? '').startsWith('{{!_global.twoFactor?.required && !_global.passwordChange?.required'));
     const stepTwo = nodes.filter((n) => n.if === '{{_global.twoFactor?.required}}');
 
-    expect(stepOne.length).toBeGreaterThanOrEqual(3);
+    expect(stepOne.length).toBe(4);
+    expect(stepOne.filter((n) => n.if === '{{!_global.twoFactor?.required && !_global.passwordChange?.required}}').length).toBe(1);
     expect(stepTwo.length).toBe(1);
   });
 

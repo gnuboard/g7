@@ -1,4 +1,5 @@
-import React from 'react';
+// e2e:allow 탭 줄 넘침 처리 클래스 한 곳(overflow-x-auto) — 단위 회귀는 TabNavigation.test.tsx, 768px 브라우저 재측정은 F1(M14).
+import React, { useEffect, useRef } from 'react';
 import { Nav } from '../basic/Nav';
 import { Button } from '../basic/Button';
 import { Icon } from '../basic/Icon';
@@ -126,6 +127,23 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     ? tabs.filter((tab) => !hiddenTabIds.includes(tab.id))
     : tabs;
 
+  // 탭 줄이 가로로 스크롤될 때 활성 탭이 보이는 자리에 오게 한다 — 끝 탭이 활성이어도 처음 위치(scrollLeft 0)면 그 탭이 탭 줄 밖에
+  // 있었다(768px en·ja). scrollIntoView 는 페이지 세로 스크롤까지 움직이므로 쓰지 않고, 탭 줄의 가로 위치만 가장 가까운 쪽으로 옮긴다.
+  const navRef = useRef<HTMLElement>(null);
+  const activeIndex = visibleTabs.findIndex((tab) => tab.id === activeTabId);
+  useEffect(() => {
+    const nav = navRef.current;
+    const active = activeIndex >= 0 ? (nav?.children[activeIndex] as HTMLElement | undefined) : undefined;
+    if (!nav || !active) return;
+    const navRect = nav.getBoundingClientRect();
+    const tabRect = active.getBoundingClientRect();
+    if (tabRect.left < navRect.left) {
+      nav.scrollLeft += tabRect.left - navRect.left;
+    } else if (tabRect.right > navRect.right) {
+      nav.scrollLeft += tabRect.right - navRect.right;
+    }
+  }, [activeIndex, isMobile, visibleTabs.length]);
+
   // 모바일: Select 드롭다운 단일 렌더
   // 데스크톱 분기와 동일하게 id/editorAttrs 를 루트에 spread 해야 레이아웃 편집기가
   // 모바일 디바이스 미리보기에서도 이 노드를 선택/측정할 수 있다(모든 렌더 분기 패리티 —
@@ -175,10 +193,12 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     }
   };
 
+  // 탭은 줄어들지 않으므로(shrink-0·whitespace-nowrap) 화면보다 넓어지면 탭 줄만 가로로 스크롤한다 — 두지 않으면
+  // 페이지 전체가 가로로 밀린다(768px 마이페이지 탭 9개). 밑줄은 탭 상자 안의 border-b-2 라 잘리지 않는다.
   const navClasses =
     variant === 'underline'
-      ? 'flex gap-0 border-b border-gray-200 dark:border-gray-700'
-      : 'flex gap-2';
+      ? 'flex gap-0 overflow-x-auto border-b border-gray-200 dark:border-gray-700'
+      : 'flex gap-2 overflow-x-auto';
 
   /** 탭 링크 주소 — `tabHrefMergeQuery` 면 현재 쿼리를 합친다 */
   const tabLink = (tab: Tab) =>
@@ -190,7 +210,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   // 데스크톱: 탭 버튼 단일 렌더
   return (
     <Div className={`relative ${className}`} style={style} id={id} {...editorAttrs}>
-      <Nav className={navClasses} role={hasLinkTabs ? 'tablist' : undefined}>
+      <Nav ref={navRef} className={navClasses} role={hasLinkTabs ? 'tablist' : undefined}>
         {visibleTabs.map((tab) => {
           const tabContent = (
             <>

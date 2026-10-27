@@ -61,6 +61,22 @@ return [
     'reset_token_expired' => 'Password reset token has expired. Please request again.',
     'password_reset_email_sent' => 'Password reset email has been sent.',
     'email_send_failed' => 'Failed to send email. Please try again later.',
+    // External authentication extension points (7.2.0)
+    'identifier' => 'Email or username',
+    'login_discovery_success' => 'Sign-in method checked.',
+    'password_auth_disabled' => 'This account cannot sign in with a password. Please sign in with your company account.',
+    'password_auth_disabled_with_method' => 'This account cannot sign in with a password. Please sign in with :method.',
+    'external_step_required' => 'One more step is needed to finish signing in.',
+    'two_factor_means_required' => 'This account requires two-factor authentication, but no verification method is available. Please contact an administrator.',
+    'session_cap_reached' => 'Your sign-in time has ended. Please sign in again.',
+    'registration_disabled' => 'This site is not accepting new sign-ups.',
+    // `auth:handoff-issue` command output
+    'handoff_issue_command' => [
+        'production_refused' => 'Unbound sign-in handoff codes cannot be issued in production (APP_ENV=production).',
+        'invalid_guard' => 'The sign-in guard must be user or admin. (given: :guard)',
+        'user_not_found' => 'No member has that email.',
+        'issued' => 'Sign-in handoff URL created. Open it in a browser within :seconds seconds.',
+    ],
     // `auth:process-password-expiry` command output
     'console' => [
         'process_password_expiry' => [

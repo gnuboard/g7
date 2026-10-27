@@ -153,6 +153,8 @@ A 등급 화면에서 처음 펼쳐 둘 기본 필터(`defaultFilters`)는 **거
 | ③ 검증 | FormRequest 가 원소 형식을 1차 방어하고 `ext.{확장id}.{키}` 로 편다 | `core.user.list_validation_rules` 에 키별 규칙을, `core.user.list_validation_attributes` 에 항목명을 더한다 |
 | ④ 쿼리 | Service 가 `core.user.filter_list_params`(조건 정규화) 뒤 `core.user.list_query_extensions` 를 발화하고 저장소가 코어 조건 뒤에 클로저를 적용한다 | `core.user.list_query_extensions` 에 `fn(Builder $query, array $filters)` 클로저를 더한다(권한 없으면 무적용) |
 
+걸러진 목록에 확장 열 값을 보여야 하면 `core.user.filter_list_rows` 필터로 현재 페이지 회원을 **한 번에** 조회해 각 행에 붙인다 — 행마다 따로 조회하지 않는다.
+
 코어가 여는 것은 API 형식(`ext_filters[]`)이고, 값을 모으는 핸들러는 화면을 그리는 쪽의 몫이다. 관리자 템플릿은 자기 화면용 핸들러를 갖고, 확장 조각은 어느 관리자 템플릿에 주입될지 모르므로 같은 계약의 핸들러를 자기 네임스페이스로 등록해 부른다. 템플릿과 확장이 공유하는 것은 상태 칸 `_local.userFilterExtraQuery` 와 원소 형식뿐이다.
 
 확장 행은 **기본/상세 이동 대상이 아니다** — 코어가 모르는 키라 `visibleFilters` 순서에 넣을 수 없다. 엔진의 navigate `<query>` 와 데이터소스 `params` 는 속성 맵이라 확장이 키를 늘릴 수 없어서 배열 칸 하나를 쓰는 것이다. 서버 훅은 [hooks.md](../extension/hooks.md#관리자-회원-목록-확장-필터-훅), 조각 예시는 [layout-extensions.md](../extension/layout-extensions.md#예시-관리자-회원-목록-필터에-행-추가) 를 본다.

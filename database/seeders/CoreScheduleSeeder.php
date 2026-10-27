@@ -51,7 +51,7 @@ class CoreScheduleSeeder extends Seeder
             $this->command?->warn(__('common.console.seeders.core_schedule.skipped', ['name' => $name, 'errors' => implode(' / ', $errors)]));
         }
         if ($result['removed'] > 0) {
-            $this->command?->line(__('common.console.seeders.core_schedule.removed', ['count' => $result['removed']]));
+            $this->command?->line(trans_count('common.console.seeders.core_schedule.removed', ['count' => $result['removed']]));
         }
 
         $this->command?->info(__('common.console.seeders.core_schedule.done', ['count' => count($result['synced'])]));

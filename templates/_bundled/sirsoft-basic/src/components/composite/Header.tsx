@@ -91,6 +91,8 @@ interface HeaderProps {
   currentLocale?: string;
   /** 쇼핑몰 기본 경로 (예: "/shop", "/") */
   shopBase?: string;
+  /** 일반 회원가입을 받는지 — false 면 비로그인 헤더의 회원가입 버튼을 숨긴다 (기본 true, 7.2.0) */
+  registrationEnabled?: boolean;
   /** 추가 CSS 클래스 */
   className?: string;
   /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */
@@ -172,6 +174,7 @@ const Header: React.FC<HeaderProps> = ({
   availableLocales = [],
   currentLocale = 'ko',
   shopBase = '/shop',
+  registrationEnabled = true,
   className = '',
   editorAttrs,
   // 알림센터
@@ -619,13 +622,15 @@ const Header: React.FC<HeaderProps> = ({
                 >
                   {t('auth.login')}
                 </LinkButton>
-                <LinkButton
-                  href="/register"
-                  onNavigate={() => navigate('/register')}
-                  className="ml-1 px-3 py-2 text-sm font-medium text-white bg-emerald-700 dark:bg-emerald-700 rounded-lg hover:bg-emerald-800 dark:hover:bg-emerald-800 cursor-pointer"
-                >
-                  {t('auth.register_link')}
-                </LinkButton>
+                {registrationEnabled && (
+                  <LinkButton
+                    href="/register"
+                    onNavigate={() => navigate('/register')}
+                    className="ml-1 px-3 py-2 text-sm font-medium text-white bg-emerald-700 dark:bg-emerald-700 rounded-lg hover:bg-emerald-800 dark:hover:bg-emerald-800 cursor-pointer"
+                  >
+                    {t('auth.register_link')}
+                  </LinkButton>
+                )}
               </Div>
             )}
 

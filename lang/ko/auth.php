@@ -63,6 +63,22 @@ return [
     'reset_token_expired' => '비밀번호 재설정 토큰이 만료되었습니다. 다시 요청해주세요.',
     'password_reset_email_sent' => '비밀번호 재설정 이메일이 발송되었습니다.',
     'email_send_failed' => '이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.',
+    // 외부 인증 확장점 (7.2.0)
+    'identifier' => '이메일 또는 아이디',
+    'login_discovery_success' => '로그인 방법을 확인했습니다.',
+    'password_auth_disabled' => '이 계정은 비밀번호로 로그인할 수 없습니다. 회사 계정으로 로그인하세요.',
+    'password_auth_disabled_with_method' => '이 계정은 비밀번호로 로그인할 수 없습니다. :method(으)로 로그인하세요.',
+    'external_step_required' => '로그인을 마치려면 다음 단계가 필요합니다.',
+    'two_factor_means_required' => '이 계정은 2단계 인증을 거쳐야 하지만 사용할 수 있는 인증 수단이 없습니다. 관리자에게 문의하세요.',
+    'session_cap_reached' => '로그인 유지 시간이 끝났습니다. 다시 로그인해 주세요.',
+    'registration_disabled' => '이 사이트는 회원가입을 받지 않습니다.',
+    // `auth:handoff-issue` 명령 출력
+    'handoff_issue_command' => [
+        'production_refused' => '운영 환경(APP_ENV=production)에서는 브라우저에 묶지 않은 로그인 인계 코드를 만들 수 없습니다.',
+        'invalid_guard' => '로그인 경로는 user 또는 admin 이어야 합니다. (입력: :guard)',
+        'user_not_found' => '그 이메일의 회원이 없습니다.',
+        'issued' => '로그인 인계 주소를 만들었습니다. :seconds초 안에 브라우저로 여세요.',
+    ],
     // `auth:process-password-expiry` 명령 출력
     'console' => [
         'process_password_expiry' => [

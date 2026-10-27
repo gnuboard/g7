@@ -5,6 +5,22 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.85.0] - 2026-10-27
+
+### Added
+
+- 관리자 로그인 인계. `loginHandoff` 액션과 `AuthManager.loginWithHandoff()` 가 관리자 인증 타입(`target="admin"`)도 받아 `POST /api/auth/admin/login/handoff` 로 교환합니다(코어 7.2.0 의 관리자 인계 경로). 종전에는 관리자 타입이 요청 없이 오류였습니다. 반환 모양과 `/api/auth/*` globalHeaders 는 사용자 인계와 같습니다 (auth/AuthManager.ts `defaultConfigs.admin.handoffEndpoint`, ActionDispatcher.ts `handleLoginHandoff`, 회귀: `auth/__tests__/AuthManager.handoff.test.ts` 관리자 3건·`__tests__/actions/loginHandoff.test.ts` 관리자 분기)
+- 로그아웃 뒤 서버가 정한 곳으로 이동. 로그아웃 응답 `data.redirect_url` 이 같은 출처 경로(`sanitizeNavPath` 통과)면 로그인 화면 대신 그 경로로 갑니다(외부 인증의 IdP 로그아웃 등은 서버의 같은 출처 라우트가 이어서 보낸다). 없거나 다른 출처 주소면 종전대로 로그인 화면입니다 (auth/AuthManager.ts `logout`, 회귀: `auth/__tests__/AuthManager.logout.test.ts`)
+
+### Changed
+
+- 로그인·인계 액션의 실패 결과가 서버 응답의 `errors`(`code`·`redirect_url`·`method_label`)를 레이아웃 오류 분기(`{{error.errors.*}}`)에 그대로 넘기는 것을 시험으로 잠갔습니다 — 코어 7.2.0 의 403 `auth.password_auth_disabled`·409 `auth.external_step_required` 안내용. 엔진 코드 변경은 없습니다(기존 오류 문맥이 이미 넘김) (회귀: `__tests__/actions/loginHandoff.test.ts`)
+
+### Fixed
+
+- DataGrid 셀(`cellChildren`·`subRowChildren`)과 확장 행(`expandChildren`) 안의 `{{_computed.x}}` 가 늘 undefined 이던 문제(engine-v1.19.1 부모 문맥 병합 때부터). `G7Core.renderItemChildren` 이 셀 문맥에 빈 `_computed` 를 먼저 넣어 셀 렌더 함수의 부모 문맥 병합(없는 키만)이 막혔고, `renderExpandContent` 는 expandContext 평가에만 최신 계산값을 쓰고 자식 문맥에는 빈 객체를 넣었습니다. 셀 문맥의 `_computed` 기본값을 부모 컴포넌트의 최신 계산값(`componentContext.computedRef.current`, 없으면 `parentDataContext._computed`)으로 둡니다. 셀 문맥이 `_computed` 를 직접 주면 그 값이 이기고, 부모 문맥이 없는 호출(CardGrid)은 종전처럼 빈 객체입니다. 영향 화면: 통계 리포트 표(`_computed.reportName`), 이커머스 상품 목록 통화 열(`_computed.currencyDisplayColumns`) (G7CoreGlobals.ts. 잠금: `__tests__/G7CoreGlobals.itemChildrenComputed.test.ts` — 수정 전 3 red · 대조군 2)
+- 동작의 `confirm` 식이 빈 문구로 풀려도 빈 확인창이 뜨던 문제. 식 원문의 유무로 판정해 `confirm="{{hasToken ? '$t:…' : ''}}"` 가 묻지 않을 때도 `confirm('')` 을 불렀습니다. 이벤트 핸들러 경로와 `dispatchAction` 경로 모두 문구를 풀고 번역한 뒤 비었으면(빈 문자열·공백) 확인창 없이 실행합니다. 묻지 않으려면 식이 `''` 를 돌려줍니다(`false` 는 보간이 문자열 "false" 로 푼다) (ActionDispatcher.ts `resolveConfirmMessage`. 잠금: `__tests__/ActionDispatcher.emptyConfirm.test.ts` — 수정 전 8 red · 대조군 4)
+
 ## [engine-v1.84.0] - 2026-10-23
 
 ### Added

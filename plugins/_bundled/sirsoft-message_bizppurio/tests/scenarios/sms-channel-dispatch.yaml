@@ -43,6 +43,8 @@ exclusions:
   - { readiness_state: missing_sender, channel: alimtalk, reason: "alimtalk readiness 는 자체 키(api_key/sender_key) 부족을 별도 판정 — sender 축은 sms 로 대표" }
 
 effects:
+  # 언어별 알림 변수 (#798 — GenericNotification::getDataFor)
+  - sms_body_resolves_localized_variables_for_recipient   # {ko,en} 값 변수를 수신자 언어로 치환
   # 채널 등록 (filter_available_channels)
   - sms_channel_exposed_in_available_channels
   - alimtalk_channel_exposed_in_available_channels

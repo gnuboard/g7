@@ -21,6 +21,7 @@ use Plugins\Sirsoft\SocialLogin\Enums\EmailTrust;
 use Plugins\Sirsoft\SocialLogin\Enums\ExtraInfoMode;
 use Plugins\Sirsoft\SocialLogin\Exceptions\SocialFlowException;
 use Plugins\Sirsoft\SocialLogin\Services\Concerns\EnsuresCodeDelivered;
+use Symfony\Component\HttpFoundation\Cookie;
 
 /**
  * 연결된 회원이 없는 소셜 계정의 가입 흐름.
@@ -130,6 +131,14 @@ class SignupFlowService
                 return self::registerUrl($token, self::STEP_EXISTING);
             }
             // never_link — 이 이메일은 쓸 수 없으니 다른 이메일을 받는다(아래 입력 경로).
+        }
+
+        // 여기부터는 새 계정이다. 사이트가 「일반 회원가입 받기」를 끄면(코어 7.2.0) 소셜 신규 가입도 닫는다 — 위의 기존 회원 연결과
+        // 연결된 회원의 로그인(이 흐름 앞)은 그대로 둔다.
+        if (! $this->auth->isSelfRegistrationOpen()) {
+            $this->attempts->record($key, AttemptIntent::Login->value, AttemptOutcome::Denied, null, 'registration_closed');
+
+            return OAuthFlowService::loginErrorUrl('registration_closed', $state->redirect, $key);
         }
 
         $email = $this->decideEmail($key, $profile, $existing !== null);
@@ -278,9 +287,9 @@ class SignupFlowService
      *
      * @param  string  $token  대기 토큰
      * @param  array<string, mixed>  $input  검증된 입력 (name·nickname·email·agree_terms·agree_privacy·verification_token)
-     * @return array{handoff_url?: string, redirect_url?: string} 다음 주소 (같은 출처 상대 경로)
+     * @return array{handoff_url?: string, handoff_cookie?: Cookie, redirect_url?: string} 다음 주소 (같은 출처 상대 경로)와 인계 코드의 묶음 쿠키(컨트롤러가 응답에 싣는다)
      *
-     * @throws SocialFlowException 만료·이메일 미확인·이미 쓰는 이메일·이미 연결됨
+     * @throws SocialFlowException 만료·이메일 미확인·이미 쓰는 이메일·이미 연결됨·가입 닫힘(`registration_closed`, 403)
      */
     public function complete(string $token, array $input): array
     {
@@ -288,6 +297,11 @@ class SignupFlowService
 
         if ($data['step'] === self::STEP_EXISTING && ! ($data['force_new'] ?? false)) {
             throw new SocialFlowException('existing_account_pending', 409);
+        }
+
+        // 대기를 만든 뒤 가입이 닫혔으면 여기서 막는다 — 기존 계정 대신 새 계정을 고른 경우(`force_new`)도 이 길로 온다.
+        if (! $this->auth->isSelfRegistrationOpen()) {
+            throw new SocialFlowException('registration_closed', 403);
         }
 
         $key = (string) $data['provider_key'];
@@ -349,10 +363,14 @@ class SignupFlowService
             return ['redirect_url' => '/login?social_notice=pending_verification'];
         }
 
-        // 가입 직후 로그인은 코어 일반 가입과 같게 2단계 인증 없이 들어간다.
-        $code = $this->login->issueHandoff($user, $key, skipTwoFactor: true);
+        // 가입 직후 로그인은 코어 일반 가입과 같게 2단계 인증 없이 들어간다. API 응답이라 묶음 쿠키를 함께 돌려준다
+        // (컨트롤러가 응답에 싣는다 — 응답 본문에는 나가지 않는다).
+        $ticket = $this->login->issueHandoffTicket($user, $key, skipTwoFactor: true);
 
-        return ['handoff_url' => SocialLoginService::handoffPath($code, (string) ($data['redirect'] ?? '/'))];
+        return [
+            'handoff_url' => SocialLoginService::handoffPath($ticket->code, (string) ($data['redirect'] ?? '/')),
+            'handoff_cookie' => $ticket->cookie,
+        ];
     }
 
     /**

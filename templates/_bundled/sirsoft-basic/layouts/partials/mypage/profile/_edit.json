@@ -750,6 +750,7 @@
                                                     "props": {
                                                         "type": "text",
                                                         "name": "name",
+                                                        "readOnly": "{{(user.data?.locked_fields ?? []).includes('name')}}",
                                                         "aria-label": "$t:mypage.profile.name",
                                                         "value": "{{user.data?.name ?? ''}}",
                                                         "placeholder": "$t:mypage.profile.name_placeholder",
@@ -765,6 +766,15 @@
                                                         "className": "text-sm text-red-600 dark:text-red-400"
                                                     },
                                                     "text": "{{_local.profileErrors?.name?.[0] ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(user.data?.locked_fields ?? []).includes('name')}}",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:mypage.profile.locked_by_company"
                                                 }
                                             ]
                                         },
@@ -790,6 +800,7 @@
                                                     "props": {
                                                         "type": "text",
                                                         "name": "nickname",
+                                                        "readOnly": "{{(user.data?.locked_fields ?? []).includes('nickname')}}",
                                                         "aria-label": "$t:mypage.profile.nickname",
                                                         "value": "{{user.data?.nickname ?? ''}}",
                                                         "placeholder": "$t:mypage.profile.nickname_placeholder",
@@ -804,6 +815,15 @@
                                                         "className": "text-sm text-red-600 dark:text-red-400"
                                                     },
                                                     "text": "{{_local.profileErrors?.nickname?.[0] ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(user.data?.locked_fields ?? []).includes('nickname')}}",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:mypage.profile.locked_by_company"
                                                 }
                                             ]
                                         }
@@ -880,6 +900,7 @@
                                                     "props": {
                                                         "type": "tel",
                                                         "name": "mobile",
+                                                        "readOnly": "{{(user.data?.locked_fields ?? []).includes('mobile')}}",
                                                         "aria-label": "$t:mypage.profile.mobile",
                                                         "value": "{{user.data?.mobile ?? ''}}",
                                                         "placeholder": "$t:mypage.profile.mobile_placeholder",
@@ -894,6 +915,15 @@
                                                         "className": "text-sm text-red-600 dark:text-red-400"
                                                     },
                                                     "text": "{{_local.profileErrors?.mobile?.[0] ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(user.data?.locked_fields ?? []).includes('mobile')}}",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:mypage.profile.locked_by_company"
                                                 }
                                             ]
                                         },
@@ -919,6 +949,7 @@
                                                     "props": {
                                                         "type": "tel",
                                                         "name": "phone",
+                                                        "readOnly": "{{(user.data?.locked_fields ?? []).includes('phone')}}",
                                                         "aria-label": "$t:mypage.profile.phone",
                                                         "value": "{{user.data?.phone ?? ''}}",
                                                         "placeholder": "$t:mypage.profile.phone_placeholder",
@@ -933,6 +964,15 @@
                                                         "className": "text-sm text-red-600 dark:text-red-400"
                                                     },
                                                     "text": "{{_local.profileErrors?.phone?.[0] ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(user.data?.locked_fields ?? []).includes('phone')}}",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:mypage.profile.locked_by_company"
                                                 }
                                             ]
                                         },
@@ -1068,6 +1108,7 @@
                                                     "name": "Select",
                                                     "props": {
                                                         "name": "language",
+                                                        "disabled": "{{(user.data?.locked_fields ?? []).includes('language')}}",
                                                         "aria-label": "$t:mypage.profile.language",
                                                         "value": "{{user.data?.language ?? ''}}",
                                                         "className": "w-full",
@@ -1082,6 +1123,15 @@
                                                         "className": "text-sm text-red-600 dark:text-red-400"
                                                     },
                                                     "text": "{{_local.profileErrors?.language?.[0] ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(user.data?.locked_fields ?? []).includes('language')}}",
+                                                    "props": {
+                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:mypage.profile.locked_by_company"
                                                 }
                                             ]
                                         },

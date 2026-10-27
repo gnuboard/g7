@@ -7,6 +7,7 @@ use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Exceptions\IdentityVerificationRequiredException;
 use App\Models\IdentityPolicy;
 use App\Services\IdentityPolicyService;
+use App\Support\Auth\SystemOperation;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -60,6 +61,13 @@ class EnforceIdentityPolicy
      */
     public function handle(Request $request, Closure $next, ?string $policyKey = null): Response
     {
+        // 행위자 없는 시스템 작업 문맥(하위 요청 등)에서는 사람용 관문을 받지 않는다 — 리스너와 같은 규칙.
+        if (SystemOperation::active()) {
+            SystemOperation::logBypass('route:'.($request->route()?->getName() ?? $request->path()));
+
+            return $next($request);
+        }
+
         $policies = $this->resolvePolicies($request, $policyKey);
 
         foreach ($policies as $policy) {

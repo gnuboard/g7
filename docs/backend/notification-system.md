@@ -320,6 +320,22 @@ return [
 
 복수 수신자 알림에서 `data.name`에 `{recipient_name}`을 설정하면, 발송 시 각 수신자의 이름으로 자동 치환됩니다.
 
+### 언어별 변수 값 (7.2.0)
+
+제목·본문 틀은 수신자 언어로 고르지만, 변수 값이 문자열이면 알림을 일으킨 요청의 언어 그대로 들어갑니다. 연동 이름·상품명처럼 언어마다 다른 값은 `data` 에 `{로케일: 문자열}` 배열로 넣습니다.
+
+```php
+'data' => [
+    'idp_label' => ['ko' => '회사 계정', 'en' => 'Company account'],
+    'count' => 3,
+],
+```
+
+- 값은 수신자 언어 → 사이트 기본 언어 → 영어 → 첫 유효값 순으로 고릅니다(빈 문자열·공백은 없는 값으로 봅니다).
+- 메일·사이트 알림의 제목·본문·`click_url`, 사이트 알림에 저장되는 `data`, 확장 채널 필터(`to_{채널}`)로 넘어가는 `data` 가 모두 같은 값을 씁니다.
+- 키가 로케일 모양(`ko`, `en`, `ja`, `zh-CN` …)이고 값이 문자열·숫자인 배열만 언어별 값으로 봅니다. 그 밖의 배열은 치환하지 않고 `{key}` 를 그대로 둡니다.
+- 문자열·숫자 변수는 종전과 같습니다.
+
 ---
 
 ## 알림 정의 관리
@@ -819,7 +835,7 @@ HookManager::addFilter(
 채널 템플릿 행(알림 설정 화면에 그려지는 채널별 제목·본문·수신자)을 정의에 미리 넣어야 하면 마찬가지로 **코어
 시딩 훅 하나**(`core.notification.filter_seed_definitions`)에 답합니다 — 위 [공통 시딩 훅](#공통-시딩-훅-710) 참조.
 
-GenericNotification의 `__call()`이 `toFcm()` 호출을 `{hookPrefix}.notification.to_fcm` Filter 훅으로 위임합니다.
+GenericNotification의 `__call()`이 `toFcm()` 호출을 `{hookPrefix}.notification.to_fcm` Filter 훅으로 위임합니다. 이 필터가 받는 `data` 는 [언어별 변수 값](#언어별-변수-값-720)을 수신자 언어로 고른 뒤의 값입니다. 채널 드라이버가 자체 템플릿으로 본문을 만들 때도 `getData()` 대신 `$notification->getDataFor($notifiable)` 로 같은 값을 받습니다.
 
 ---
 

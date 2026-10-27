@@ -1084,6 +1084,7 @@ Location: https://example.com/checkout?verification_token=eyJ0eXAiOiJKV1Qi...&ch
 | target.phone | body | string | 아니오 | max 32 | 전화번호 |
 | provider_id | body | string | 아니오 | max 64 | provider 식별자 |
 | policy_key | body | string | 아니오 | max 120 | 428 응답(`verification.policy_key`)이 알려 준 정책 키. 그 정책이 있고 켜져 있으며 `purpose` 와 목적이 같을 때만 출처 정책으로 쓰여 정책별 문구로 발송되고 이력의 `origin_policy_key` 에 남는다. 그 밖의 값은 무시(목적 문구) |
+| return_path | body | string | 아니오 | max 512 | 외부 화면을 거치는 수단(`render_hint=external_redirect` — 회사 계정 다시 로그인 등)이 확인을 마친 뒤 돌려보낼 이 사이트의 경로(7.2.0). 같은 출처 경로만 수단에 넘기고 그 밖은 버린다. 수단은 돌아올 때 `verification_token` 을 쿼리로 붙인다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.identity.request_validation_rules`).
 

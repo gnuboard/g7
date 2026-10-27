@@ -218,6 +218,7 @@ const defaultConfigs: Record<AuthType, AuthConfig> = {
     twoFactorResendEndpoint: '/auth/admin/login/two-factor/resend',
     passwordChangeEndpoint: '/auth/admin/login/password-change',
     passwordChangePostponeEndpoint: '/auth/admin/login/password-change/postpone',
+    handoffEndpoint: '/auth/admin/login/handoff',
     guestOnlyPaths: ['/admin/login', '/admin/forgot-password', '/admin/reset-password'],
   },
   user: {
@@ -900,11 +901,14 @@ export class AuthManager {
   async logout(): Promise<void> {
     const apiClient = getApiClient();
     const config = this.state.type ? this.config.get(this.state.type) : null;
+    // 서버가 정한 로그아웃 뒤 이동 경로(외부 인증의 IdP 로그아웃 등) — 같은 출처 경로만 따른다 (engine-v1.85.0)
+    let serverRedirect: string | null = null;
 
     try {
       // 백엔드 로그아웃 API 호출
       if (config) {
-        await apiClient.post(config.logoutEndpoint);
+        const response: any = await apiClient.post(config.logoutEndpoint);
+        serverRedirect = sanitizeNavPath(response?.data?.redirect_url);
       }
     } catch (error) {
       logger.warn('Logout API call failed:', error);
@@ -924,8 +928,11 @@ export class AuthManager {
         previousType: previousState.type,
       });
 
-      // 로그인 페이지로 리다이렉트 (queryString 포함)
-      if (config && previousState.type) {
+      // 서버가 이동 경로를 주면 그 경로로(같은 출처 경로만 — 외부 IdP 로그아웃은 서버의 같은 출처 라우트가 302 한다),
+      // 아니면 로그인 페이지로 리다이렉트 (queryString 포함)
+      if (serverRedirect) {
+        window.location.href = serverRedirect;
+      } else if (config && previousState.type) {
         const returnUrl = window.location.pathname + window.location.search;
         window.location.href = this.getLoginRedirectUrl(previousState.type, returnUrl);
       }

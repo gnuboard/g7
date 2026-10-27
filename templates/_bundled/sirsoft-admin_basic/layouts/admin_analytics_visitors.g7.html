@@ -164,7 +164,7 @@
                 <!-- 「회원 정보 보기」의 목적지(/admin/users/{uuid})는 core.users.read 를 요구한다.
                   가드 없이 그리면 개인정보 권한만 가진 담당자가 눌러 「권한 없음」 새 창을 받는다 —
                   막다른 안내다(#682 S3 라운드 5). 나머지 안내 버튼 네 자리는 목적지 권한을 먼저 본다.
-                  표 셀은 `_computed` 를 받지 못한다(빈 객체) — 데이터소스 `current_user` 를 직접 읽는다(7.1.0 실측 E-D4). -->
+                  데이터소스 `current_user` 를 직접 읽는다 — 7.1.0 실측(E-D4) 때 표 셀이 `_computed` 를 받지 못해 이렇게 썼다(engine-v1.85.0 에서 셀도 부모 `_computed` 를 받게 고쳐졌고, 이 직접 읽기도 그대로 맞다). -->
                 <action-menu data-type="composite" data-if="{{!!row.user}}" position="right">
                   <prop name="items">
                     <item id="view_member" label="$t:admin.analytics.visitors.action.view_member" iconName="user" href="/admin/users/{{row.user.uuid}}" target="_blank" if="{{(current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}"/>

@@ -81,13 +81,55 @@
                                 "text": "$t:auth.register.title"
                             },
                             {
-                                "comment": "확장 영역 — 소셜 계정으로 가입하기 버튼처럼 다른 가입 수단을 확장이 붙이는 자리(가입 폼 위). 붙인 확장이 없으면 아무것도 그리지 않는다.",
-                                "id": "auth_register_extensions_slot",
-                                "type": "extension_point",
-                                "name": "auth_register_extensions"
+                                "comment": "「일반 회원가입 받지 않음」(7.2.0) — 폼·가입 확장 칸 대신 안내 카드와 로그인 버튼. 회사가 만드는 계정(회사 계정 자동 생성·관리자 추가)은 이 화면을 거치지 않는다.",
+                                "id": "registration_closed_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) === false}}",
+                                "props": {
+                                    "className": "p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 space-y-4"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "text-sm text-gray-700 dark:text-gray-300"
+                                        },
+                                        "text": "$t:auth.register.closed_notice"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "A",
+                                        "actions": [
+                                            {
+                                                "type": "click",
+                                                "handler": "navigate"
+                                            }
+                                        ],
+                                        "props": {
+                                            "href": "/login",
+                                            "className": "inline-flex items-center justify-center w-full py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors cursor-pointer"
+                                        },
+                                        "text": "$t:auth.login"
+                                    }
+                                ]
                             },
                             {
-                                "partial": "partials/auth/_register_form.json"
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{(_global.appConfig?.auth?.registration_open ?? _global.settings?.security?.registration_enabled) !== false}}",
+                                "children": [
+                                    {
+                                        "comment": "확장 영역 — 소셜 계정으로 가입하기 버튼처럼 다른 가입 수단을 확장이 붙이는 자리(가입 폼 위). 붙인 확장이 없으면 아무것도 그리지 않는다.",
+                                        "id": "auth_register_extensions_slot",
+                                        "type": "extension_point",
+                                        "name": "auth_register_extensions"
+                                    },
+                                    {
+                                        "partial": "partials/auth/_register_form.json"
+                                    }
+                                ]
                             },
                             {
                                 "type": "basic",

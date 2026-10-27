@@ -4,6 +4,7 @@ namespace App\Services\Auth;
 
 use App\Contracts\Repositories\UserRepositoryInterface;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\PersonalAccessToken;
 
 /**
@@ -48,7 +49,20 @@ class TokenExpirySlider
 
         // 임계값 미만이고 아직 만료 전이면 갱신
         if ($remainingSeconds > 0 && $remainingSeconds < $thresholdSeconds) {
-            $this->userRepository->updateAccessTokenExpiry($token, now()->addMinutes($lifetime));
+            $newExpiry = now()->addMinutes($lifetime);
+
+            // 외부 인증이 준 세션 수명 상한(절대 만료)은 넘지 않는다 — 이미 상한에 닿았으면 연장할 것이 없다.
+            $absolute = $token->absolute_expires_at ? Carbon::parse($token->absolute_expires_at) : null;
+
+            if ($absolute !== null && $newExpiry->greaterThan($absolute)) {
+                if ($token->expires_at->greaterThanOrEqualTo($absolute)) {
+                    return false;
+                }
+
+                $newExpiry = $absolute;
+            }
+
+            $this->userRepository->updateAccessTokenExpiry($token, $newExpiry);
 
             // 세션 만료 시간도 토큰과 동기화 (웹 세션이 있는 경우)
             if ($request?->hasSession()) {

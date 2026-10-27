@@ -323,7 +323,10 @@
         "ip_address": "IP",
         "country_select": "국가 선택",
         "country_search": "국가 검색...",
-        "lock_status": "계정 잠금 상태"
+        "lock_status": "계정 잠금 상태",
+        "create_without_password": "비밀번호 없이 만들기 (외부 로그인 전용)",
+        "create_without_password_hint": "비밀번호를 정하지 않고 회원을 만듭니다. 이 회원은 외부 인증으로 로그인하고, 필요하면 비밀번호 찾기로 직접 비밀번호를 정할 수 있습니다.",
+        "locked_by_company": "회사 계정에서 관리하는 항목입니다"
       },
       "verification": {
         "method": "본인확인방법",
@@ -384,6 +387,10 @@
         "reauth_confirm": "확인",
         "reauth_verified": "본인 확인이 끝났습니다. 저장하면 비밀번호가 설정됩니다.",
         "reauth_code_sent": "인증번호를 이메일로 보냈습니다.",
+        "reauth_code_sent_generic": "인증번호를 보냈습니다.",
+        "reauth_notice_other": "비밀번호가 없는 계정입니다. 비밀번호를 처음 설정하려면 「본인 확인 시작」을 눌러 이 계정에 쓸 수 있는 방법(회사 계정 다시 로그인 등)으로 본인을 확인하세요.",
+        "reauth_start": "본인 확인 시작",
+        "reauth_external_failed": "본인 확인 화면으로 이동할 수 없습니다. 잠시 뒤 다시 시도해 주세요.",
         "expiry": "비밀번호 만료",
         "expiry_inherit": "역할·사이트 설정 따름",
         "expiry_apply": "적용",
@@ -458,6 +465,13 @@
         "not_set": "미설정",
         "not_set_hint": "외부 인증(소셜 로그인 등)으로만 가입해 비밀번호가 없습니다. 만료 정책 대상이 아닙니다.",
         "policy": "만료 개별 설정"
+      },
+      "revoke_sessions": {
+        "button": "모든 기기에서 로그아웃",
+        "confirm_title": "모든 기기에서 로그아웃",
+        "confirm_message": "이 회원이 로그인한 모든 기기에서 로그아웃시킵니다. 회원은 다시 로그인해야 합니다. 계속할까요?",
+        "confirm": "로그아웃",
+        "success": "모든 기기에서 로그아웃시켰습니다"
       }
     },
     "filter": {
@@ -2162,6 +2176,11 @@
         "days_hint": "{{min}}~{{max}}일. 법정 최소 기간보다 짧게 정할 수 없습니다.",
         "legal_notice": "법정 최소: 접속기록 1년(회원 5만 명 이상이거나 고유식별·민감정보를 처리하면 2년) · 권한·역할 변경 기록은 이 값과 관계없이 최소 3년 보관합니다.",
         "schedule_notice": "기간이 지난 활동 로그는 정리 스케줄이 지웁니다."
+      },
+      "registration": {
+        "title": "회원가입",
+        "enabled": "일반 회원가입 받기",
+        "enabled_desc": "끄면 회원가입 화면, 공개 가입, 소셜 신규 가입이 닫힙니다. 이미 가입한 회원의 로그인과 소셜 연결, 관리자가 추가하거나 외부 인증 확장이 만드는 계정은 그대로입니다."
       }
     },
     "identity": {
@@ -2737,6 +2756,11 @@
       "reauth_request_code": "인증번호 받기",
       "reauth_resend_code": "인증번호 다시 받기",
       "reauth_code_sent": "인증번호를 이메일로 보냈습니다.",
+      "reauth_code_sent_generic": "인증번호를 보냈습니다.",
+      "reauth_notice_other": "비밀번호가 없는 계정입니다. 「본인 확인 시작」을 눌러 이 계정에 쓸 수 있는 방법(회사 계정 다시 로그인 등)으로 본인을 확인한 뒤 재생성할 수 있습니다.",
+      "reauth_start": "본인 확인 시작",
+      "reauth_external_failed": "본인 확인 화면으로 이동할 수 없습니다. 잠시 뒤 다시 시도해 주세요.",
+      "reauth_verified": "본인 확인을 마쳤습니다. [키 재생성] 을 누르면 앱 키를 다시 만듭니다.",
       "reauth_code_placeholder": "6자리 인증번호",
       "cache_delete_title": "캐시 삭제 확인",
       "cache_delete_confirm": "모든 캐시를 삭제하시겠습니까?",

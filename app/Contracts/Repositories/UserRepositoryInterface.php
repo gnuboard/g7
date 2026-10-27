@@ -303,6 +303,28 @@ interface UserRepositoryInterface
     public function updateAccessTokenExpiry(PersonalAccessToken $token, \DateTimeInterface $expiresAt): void;
 
     /**
+     * 인증 토큰에 로그인 수단과 절대 만료를 기록합니다.
+     *
+     * @param  PersonalAccessToken  $token  토큰
+     * @param  string|null  $loginMethod  로그인 수단 이름 (`password`, `social:kakao` 등)
+     * @param  \DateTimeInterface|null  $absoluteExpiresAt  절대 만료 (null 이면 상한 없음)
+     * @return void 반환값 없음
+     *
+     * @since 7.2.0
+     */
+    public function updateAccessTokenSessionMeta(PersonalAccessToken $token, ?string $loginMethod, ?\DateTimeInterface $absoluteExpiresAt): void;
+
+    /**
+     * 회원의 인증 토큰을 전부 지웁니다.
+     *
+     * @param  User  $user  회원
+     * @return int 지운 토큰 수
+     *
+     * @since 7.2.0
+     */
+    public function deleteAllAccessTokens(User $user): int;
+
+    /**
      * 인증 토큰 하나를 삭제합니다.
      *
      * @param  PersonalAccessToken  $token  토큰

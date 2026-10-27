@@ -9,6 +9,7 @@ return [
         'email_not_verified' => '인증번호로 확인한 이메일만 쓸 수 있습니다.',
         'challenge_mismatch' => '인증 요청이 맞지 않습니다. 인증번호를 다시 받아 주세요.',
         'invalid_code' => '인증번호가 맞지 않거나 시간이 지났습니다.',
+        'registration_closed' => '지금은 회원가입을 받지 않습니다. 이미 가입한 계정이 있으면 그 계정으로 로그인해 주세요.',
         'name_required' => '이름을 입력해 주세요.',
         'existing_account_pending' => '같은 이메일의 기존 계정이 있습니다. 기존 계정에 연결하거나 새 계정으로 가입을 골라 주세요.',
         'not_existing_step' => '기존 계정 연결 단계가 아닙니다.',

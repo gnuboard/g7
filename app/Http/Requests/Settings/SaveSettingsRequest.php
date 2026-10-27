@@ -577,6 +577,8 @@ class SaveSettingsRequest extends FormRequest
             // 보안 설정
             'security.force_https' => $this->getTabRules($tab, 'security', 'boolean'),
             'security.login_attempt_enabled' => $this->getTabRules($tab, 'security', 'boolean'),
+            // 「일반 회원가입 받기」(7.2.0) — 탭 필수화를 타지 않는다: 이 키를 싣지 않은 보안 탭 일부 저장이 값을 지우거나 422 가 되지 않게
+            'security.registration_enabled' => ['nullable', 'boolean'],
             'security.auth_token_lifetime' => $this->getSecurityTabAuthTokenRules($tab),
             'security.max_login_attempts' => ['nullable', 'integer', 'min:'.config('core.settings_limits.security_max_login_attempts_min', 0), 'max:'.config('core.settings_limits.security_max_login_attempts_max', 100)],
             'security.login_lockout_time' => ['nullable', 'integer', 'min:'.config('core.settings_limits.security_login_lockout_time_min', 0), 'max:'.config('core.settings_limits.security_login_lockout_time_max', 1440)],
@@ -1773,6 +1775,7 @@ class SaveSettingsRequest extends FormRequest
             // security
             'security.force_https' => __('validation.attributes.force_https'),
             'security.login_attempt_enabled' => __('validation.attributes.login_attempt_enabled'),
+            'security.registration_enabled' => __('validation.attributes.registration_enabled'),
             'security.auth_token_lifetime' => __('validation.attributes.auth_token_lifetime'),
             'security.max_login_attempts' => __('validation.attributes.max_login_attempts'),
             'security.login_lockout_time' => __('validation.attributes.login_lockout_time'),

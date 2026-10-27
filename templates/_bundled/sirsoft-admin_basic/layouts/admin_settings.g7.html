@@ -408,6 +408,16 @@
     <navigate if="{{!!query.tab &amp;&amp; !['general', 'mail', 'upload', 'seo', 'security', 'drivers', 'advanced', 'notification_definitions', 'language_packs', 'identity', 'privacy', 'info'].includes(query.tab)}}" path="/admin/settings" :replace="true">
       <query tab="general"/>
     </navigate>
+    <!-- 앱 키 재생성 창에서 외부 수단(회사 계정 다시 로그인 등)으로 본인 확인을 마치고 돌아왔다(7.2.0) — 받아 온 확인 토큰을 담고,
+         주소에서 토큰을 지운 뒤 창을 다시 연다. 재생성은 관리자가 창의 [재생성] 을 눌러야 나간다(자동 실행 안 함). -->
+    <sequence if="{{!!query.verification_token &amp;&amp; query.reauth === 'app_key'}}">
+      <set-state target="global" appKeyReauthToken="{{query.verification_token}}" activeSettingsTab="security"/>
+      <!-- audit:allow layout-list-context-navigate-merge-query 한 번 쓰는 확인 토큰과 복귀 표지(reauth)를 주소에서 지우는 정리라 지금 쿼리를 물려받지 않는다 — 보안 탭만 남긴다. -->
+      <replace-url path="/admin/settings">
+        <query tab="security"/>
+      </replace-url>
+      <open-modal target="settings_password_confirm_modal"/>
+    </sequence>
   </init>
   <slot name="content">
     <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">

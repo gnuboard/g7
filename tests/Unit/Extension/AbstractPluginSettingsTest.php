@@ -18,26 +18,51 @@ class AbstractPluginSettingsTest extends TestCase
 
     /**
      * 설정 레이아웃 파일이 있으면 true 반환
+     *
+     * @scenario method=hasSettings, layout=present
+     * @effects has_settings_true_when_layout_present
+     *
+     * @return void 반환값 없음
      */
     public function test_hasSettings_returns_true_when_layout_exists(): void
     {
         $plugin = new class extends AbstractPlugin
         {
+            /**
+             * 테스트용 익명 플러그인의 이름을 반환합니다.
+             *
+             * @return string|array 플러그인 이름
+             */
             public function getName(): string|array
             {
                 return 'Test Plugin';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 버전을 반환합니다.
+             *
+             * @return string 플러그인 버전
+             */
             public function getVersion(): string
             {
                 return '1.0.0';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 설명을 반환합니다.
+             *
+             * @return string|array 플러그인 설명
+             */
             public function getDescription(): string|array
             {
                 return 'Test Description';
             }
 
+            /**
+             * 테스트용 설정 레이아웃 경로를 반환합니다.
+             *
+             * @return string|null 설정 레이아웃 경로 (없으면 null)
+             */
             public function getSettingsLayout(): ?string
             {
                 // 실제 존재하는 파일 경로 반환
@@ -56,26 +81,51 @@ class AbstractPluginSettingsTest extends TestCase
 
     /**
      * 설정 레이아웃 파일이 없으면 false 반환
+     *
+     * @scenario method=hasSettings, layout=absent
+     * @effects has_settings_false_when_layout_absent
+     *
+     * @return void 반환값 없음
      */
     public function test_hasSettings_returns_false_when_layout_not_exists(): void
     {
         $plugin = new class extends AbstractPlugin
         {
+            /**
+             * 테스트용 익명 플러그인의 이름을 반환합니다.
+             *
+             * @return string|array 플러그인 이름
+             */
             public function getName(): string|array
             {
                 return 'Test Plugin';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 버전을 반환합니다.
+             *
+             * @return string 플러그인 버전
+             */
             public function getVersion(): string
             {
                 return '1.0.0';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 설명을 반환합니다.
+             *
+             * @return string|array 플러그인 설명
+             */
             public function getDescription(): string|array
             {
                 return 'Test Description';
             }
 
+            /**
+             * 테스트용 설정 레이아웃 경로를 반환합니다.
+             *
+             * @return string|null 설정 레이아웃 경로 (없으면 null)
+             */
             public function getSettingsLayout(): ?string
             {
                 return null;
@@ -91,6 +141,11 @@ class AbstractPluginSettingsTest extends TestCase
 
     /**
      * 기본 설정 레이아웃 경로 반환 테스트 (실제 플러그인)
+     *
+     * @scenario method=getSettingsLayout, layout=default_file
+     * @effects settings_layout_resolves_default_file
+     *
+     * @return void 반환값 없음
      */
     public function test_getSettingsLayout_returns_path_when_file_exists(): void
     {
@@ -111,26 +166,51 @@ class AbstractPluginSettingsTest extends TestCase
         {
             private string $testPluginPath;
 
+            /**
+             * 테스트에 쓸 경로를 주입받습니다.
+             *
+             * @param string $pluginPath 테스트가 가리킬 플러그인 루트 경로
+             */
             public function __construct(string $pluginPath)
             {
                 $this->testPluginPath = $pluginPath;
             }
 
+            /**
+             * 테스트용 익명 플러그인의 이름을 반환합니다.
+             *
+             * @return string|array 플러그인 이름
+             */
             public function getName(): string|array
             {
                 return 'Test Plugin';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 버전을 반환합니다.
+             *
+             * @return string 플러그인 버전
+             */
             public function getVersion(): string
             {
                 return '1.0.0';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 설명을 반환합니다.
+             *
+             * @return string|array 플러그인 설명
+             */
             public function getDescription(): string|array
             {
                 return 'Test Description';
             }
 
+            /**
+             * 테스트용 플러그인 루트 경로를 반환합니다.
+             *
+             * @return string 플러그인 루트 경로
+             */
             protected function getPluginPath(): string
             {
                 return $this->testPluginPath;
@@ -140,32 +220,59 @@ class AbstractPluginSettingsTest extends TestCase
         $result = $plugin->getSettingsLayout();
 
         $this->assertNotNull($result);
-        $this->assertStringEndsWith('settings.json', $result);
+        // 원본 .g7.html 이 있으면 그것을 먼저 돌려준다 — 산출물 .json 은 원본이 없을 때만
+        $source = $pluginPath.'/resources/layouts/admin/plugin_settings.g7.html';
+        $this->assertStringEndsWith(file_exists($source) ? 'plugin_settings.g7.html' : 'plugin_settings.json', $result);
         $this->assertTrue(file_exists($result));
     }
 
     /**
      * 설정 레이아웃 파일이 없으면 null 반환
+     *
+     * @scenario method=getSettingsLayout, layout=absent
+     * @effects settings_layout_null_when_file_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_getSettingsLayout_returns_null_when_file_not_exists(): void
     {
         $plugin = new class extends AbstractPlugin
         {
+            /**
+             * 테스트용 익명 플러그인의 이름을 반환합니다.
+             *
+             * @return string|array 플러그인 이름
+             */
             public function getName(): string|array
             {
                 return 'Test Plugin';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 버전을 반환합니다.
+             *
+             * @return string 플러그인 버전
+             */
             public function getVersion(): string
             {
                 return '1.0.0';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 설명을 반환합니다.
+             *
+             * @return string|array 플러그인 설명
+             */
             public function getDescription(): string|array
             {
                 return 'Test Description';
             }
 
+            /**
+             * 테스트용 플러그인 루트 경로를 반환합니다.
+             *
+             * @return string 플러그인 루트 경로
+             */
             protected function getPluginPath(): string
             {
                 return '/nonexistent/path';
@@ -179,6 +286,11 @@ class AbstractPluginSettingsTest extends TestCase
 
     /**
      * 커스텀 레이아웃 경로 오버라이드 테스트
+     *
+     * @scenario method=getSettingsLayout, layout=override
+     * @effects settings_layout_override_respected
+     *
+     * @return void 반환값 없음
      */
     public function test_getSettingsLayout_can_be_overridden(): void
     {
@@ -188,26 +300,51 @@ class AbstractPluginSettingsTest extends TestCase
         {
             private string $customLayoutPath;
 
+            /**
+             * 테스트에 쓸 경로를 주입받습니다.
+             *
+             * @param string $customLayoutPath 오버라이드할 설정 레이아웃 경로
+             */
             public function __construct(string $customLayoutPath)
             {
                 $this->customLayoutPath = $customLayoutPath;
             }
 
+            /**
+             * 테스트용 익명 플러그인의 이름을 반환합니다.
+             *
+             * @return string|array 플러그인 이름
+             */
             public function getName(): string|array
             {
                 return 'Test Plugin';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 버전을 반환합니다.
+             *
+             * @return string 플러그인 버전
+             */
             public function getVersion(): string
             {
                 return '1.0.0';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 설명을 반환합니다.
+             *
+             * @return string|array 플러그인 설명
+             */
             public function getDescription(): string|array
             {
                 return 'Test Description';
             }
 
+            /**
+             * 테스트용 설정 레이아웃 경로를 반환합니다.
+             *
+             * @return string|null 설정 레이아웃 경로 (없으면 null)
+             */
             public function getSettingsLayout(): ?string
             {
                 return $this->customLayoutPath;
@@ -225,21 +362,41 @@ class AbstractPluginSettingsTest extends TestCase
 
     /**
      * 기본 설정 스키마는 빈 배열 반환
+     *
+     * @scenario method=getSettingsSchema, schema=default
+     * @effects settings_schema_empty_by_default
+     *
+     * @return void 반환값 없음
      */
     public function test_getSettingsSchema_returns_empty_array_by_default(): void
     {
         $plugin = new class extends AbstractPlugin
         {
+            /**
+             * 테스트용 익명 플러그인의 이름을 반환합니다.
+             *
+             * @return string|array 플러그인 이름
+             */
             public function getName(): string|array
             {
                 return 'Test Plugin';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 버전을 반환합니다.
+             *
+             * @return string 플러그인 버전
+             */
             public function getVersion(): string
             {
                 return '1.0.0';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 설명을 반환합니다.
+             *
+             * @return string|array 플러그인 설명
+             */
             public function getDescription(): string|array
             {
                 return 'Test Description';
@@ -254,26 +411,51 @@ class AbstractPluginSettingsTest extends TestCase
 
     /**
      * 커스텀 설정 스키마 오버라이드 테스트
+     *
+     * @scenario method=getSettingsSchema, schema=override
+     * @effects settings_schema_override_respected
+     *
+     * @return void 반환값 없음
      */
     public function test_getSettingsSchema_can_be_overridden(): void
     {
         $plugin = new class extends AbstractPlugin
         {
+            /**
+             * 테스트용 익명 플러그인의 이름을 반환합니다.
+             *
+             * @return string|array 플러그인 이름
+             */
             public function getName(): string|array
             {
                 return 'Test Plugin';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 버전을 반환합니다.
+             *
+             * @return string 플러그인 버전
+             */
             public function getVersion(): string
             {
                 return '1.0.0';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 설명을 반환합니다.
+             *
+             * @return string|array 플러그인 설명
+             */
             public function getDescription(): string|array
             {
                 return 'Test Description';
             }
 
+            /**
+             * 테스트용 설정 스키마를 반환합니다.
+             *
+             * @return array 설정 스키마 정의
+             */
             public function getSettingsSchema(): array
             {
                 return [
@@ -331,6 +513,11 @@ class AbstractPluginSettingsTest extends TestCase
 
     /**
      * Daum 우편번호 플러그인의 실제 설정 스키마 테스트
+     *
+     * @scenario method=getSettingsSchema, schema=bundled_plugin
+     * @effects daum_postcode_schema_fields_declared
+     *
+     * @return void 반환값 없음
      */
     public function test_daum_postcode_plugin_settings_schema(): void
     {
@@ -381,27 +568,52 @@ class AbstractPluginSettingsTest extends TestCase
 
     /**
      * hasSettings()와 getSettingsLayout() 연동 테스트
+     *
+     * @scenario method=hasSettings, layout=override
+     * @effects has_settings_follows_settings_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_hasSettings_uses_getSettingsLayout(): void
     {
         // getSettingsLayout이 값을 반환하면 hasSettings가 true
         $pluginWithLayout = new class extends AbstractPlugin
         {
+            /**
+             * 테스트용 익명 플러그인의 이름을 반환합니다.
+             *
+             * @return string|array 플러그인 이름
+             */
             public function getName(): string|array
             {
                 return 'Plugin With Layout';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 버전을 반환합니다.
+             *
+             * @return string 플러그인 버전
+             */
             public function getVersion(): string
             {
                 return '1.0.0';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 설명을 반환합니다.
+             *
+             * @return string|array 플러그인 설명
+             */
             public function getDescription(): string|array
             {
                 return 'Description';
             }
 
+            /**
+             * 테스트용 설정 레이아웃 경로를 반환합니다.
+             *
+             * @return string|null 설정 레이아웃 경로 (없으면 null)
+             */
             public function getSettingsLayout(): ?string
             {
                 return '/some/path/settings.json';
@@ -413,21 +625,41 @@ class AbstractPluginSettingsTest extends TestCase
         // getSettingsLayout이 null을 반환하면 hasSettings가 false
         $pluginWithoutLayout = new class extends AbstractPlugin
         {
+            /**
+             * 테스트용 익명 플러그인의 이름을 반환합니다.
+             *
+             * @return string|array 플러그인 이름
+             */
             public function getName(): string|array
             {
                 return 'Plugin Without Layout';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 버전을 반환합니다.
+             *
+             * @return string 플러그인 버전
+             */
             public function getVersion(): string
             {
                 return '1.0.0';
             }
 
+            /**
+             * 테스트용 익명 플러그인의 설명을 반환합니다.
+             *
+             * @return string|array 플러그인 설명
+             */
             public function getDescription(): string|array
             {
                 return 'Description';
             }
 
+            /**
+             * 테스트용 설정 레이아웃 경로를 반환합니다.
+             *
+             * @return string|null 설정 레이아웃 경로 (없으면 null)
+             */
             public function getSettingsLayout(): ?string
             {
                 return null;

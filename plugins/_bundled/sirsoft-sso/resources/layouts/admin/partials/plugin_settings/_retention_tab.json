@@ -1,0 +1,400 @@
+{
+    "comment": "보존 탭 — 이력 보존일(로그인 시도, SCIM 수신, 끝난 세션), IdP 연속 실패 알림 기준, 인증서 만료 알림, 로그인 요청과 대기 유효 시간.\n     정책 탭과 같은 편집 칸(_local.policyForm.policy)이고 같은 저장(savePolicy)을 쓴다.",
+    "meta": {
+        "is_partial": true,
+        "description": "보존 탭"
+    },
+    "layout_name": "partials/plugin_settings/_retention_tab",
+    "id": "retention_tab",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{_computed.activeTab === 'retention'}}",
+    "dataKey": "policyForm",
+    "props": {
+        "className": "mt-6 space-y-6"
+    },
+    "children": [
+        {
+            "id": "retention_section",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card space-y-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H2",
+                    "props": {
+                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:sirsoft-sso.admin.settings.retention.title"
+                },
+                {
+                    "id": "retention_field_{{field}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "['attempts_retention_days', 'scim_retention_days', 'session_retention_days']",
+                        "item_var": "field"
+                    },
+                    "dataKey": "{{field}}",
+                    "props": {
+                        "className": "grid-3col-responsive"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "lg:col-span-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "{{$t('sirsoft-sso.admin.settings.retention.fields.' + field)}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "lg:col-span-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "actions": [
+                                        {
+                                            "comment": "보존일 칸 — 입력값을 수로 바꿔 정책 편집값에 담는다(저장은 정책 탭과 같은 저장)",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "policyForm.policy": "{{Object.assign({}, _local.policyForm?.policy ?? {}, Object.fromEntries([[field, Number($event.target.value)]]))}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "number",
+                                        "className": "input",
+                                        "min": 1,
+                                        "max": 3650,
+                                        "value": "{{_local.policyForm?.policy?.[field] ?? ''}}",
+                                        "disabled": "{{!_computed.canUpdate}}",
+                                        "aria-label": "{{$t('sirsoft-sso.admin.settings.retention.fields.' + field)}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "alerts_section",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card space-y-6"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H2",
+                    "props": {
+                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                    },
+                    "text": "$t:sirsoft-sso.admin.settings.retention.alerts"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-3col-responsive"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "lg:col-span-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.retention.fields.failure_alert"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.retention.hints.failure_alert"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "lg:col-span-2 grid grid-cols-2 gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.retention.fields.failure_alert_count"
+                                        },
+                                        {
+                                            "comment": "audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "policy.failure_alert_count",
+                                                "min": 1,
+                                                "max": 1000,
+                                                "className": "input",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.retention.fields.failure_alert_window_minutes"
+                                        },
+                                        {
+                                            "comment": "audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "policy.failure_alert_window_minutes",
+                                                "min": 1,
+                                                "max": 1440,
+                                                "className": "input",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-3col-responsive"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "lg:col-span-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.retention.fields.cert_expiry_notice_days"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.retention.hints.cert_expiry_notice_days"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "lg:col-span-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "composite",
+                                    "name": "TagInput",
+                                    "props": {
+                                        "name": "policy.cert_expiry_notice_days",
+                                        "creatable": true,
+                                        "placeholder": "30",
+                                        "className": "w-full",
+                                        "defaultVariant": "blue",
+                                        "disabled": "{{!_computed.canUpdate}}"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "grid-3col-responsive"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "lg:col-span-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.retention.fields.ttl"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "form-hint"
+                                    },
+                                    "text": "$t:sirsoft-sso.admin.settings.retention.hints.ttl"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "lg:col-span-2 grid grid-cols-2 gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.retention.fields.state_ttl_minutes"
+                                        },
+                                        {
+                                            "comment": "audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "policy.state_ttl_minutes",
+                                                "min": 1,
+                                                "max": 60,
+                                                "className": "input",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:sirsoft-sso.admin.settings.retention.fields.pending_ttl_minutes"
+                                        },
+                                        {
+                                            "comment": "audit:allow layout-input-boundary-hardcoded 한계값은 저장 요청 규칙(PolicyUpdateRequest, IdpUpdateRequest)과 같은 상수다 — 플러그인 API 는 한계값을 따로 내려주지 않는다",
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "number",
+                                                "name": "policy.pending_ttl_minutes",
+                                                "min": 1,
+                                                "max": 60,
+                                                "className": "input",
+                                                "disabled": "{{!_computed.canUpdate}}"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-wrap gap-2"
+            },
+            "children": [
+                {
+                    "id": "retention_save_button",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "actionRef": "savePolicy"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-primary text-sm",
+                        "disabled": "{{!_computed.canUpdate || _local.isSavingPolicy}}"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.save"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

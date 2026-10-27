@@ -6,6 +6,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
 use Plugins\Sirsoft\SocialLogin\Exceptions\SocialFlowException;
+use Plugins\Sirsoft\SocialLogin\Http\Controllers\Concerns\AttachesHandoffCookie;
 use Plugins\Sirsoft\SocialLogin\Http\Controllers\Concerns\RespondsWithFlowErrors;
 use Plugins\Sirsoft\SocialLogin\Http\Requests\CompleteSignupRequest;
 use Plugins\Sirsoft\SocialLogin\Http\Requests\PendingSignupRequest;
@@ -27,6 +28,7 @@ use Plugins\Sirsoft\SocialLogin\Services\SignupFlowService;
  */
 class SignupController extends PublicBaseController
 {
+    use AttachesHandoffCookie;
     use RespondsWithFlowErrors;
 
     /**
@@ -97,7 +99,7 @@ class SignupController extends PublicBaseController
         try {
             $data = $this->signup->complete($request->pendingToken(), $request->validated());
 
-            return ResponseHelper::pluginSuccess('sirsoft-social_login', 'messages.signup.completed', $data);
+            return $this->successWithHandoffCookie('messages.signup.completed', $data);
         } catch (SocialFlowException $e) {
             return $this->flowError($e);
         }

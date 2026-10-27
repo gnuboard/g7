@@ -1,0 +1,109 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 강제 꺼짐 + 비상 계정 2단계 요구)이 대부분이라 명목상이다.
+feature: sso_admin_screens_api
+description: |
+  SSO 관리자 화면 API — IdP 설정(CRUD, 비밀값 가림, 활성화 조건, 연결 테스트, SCIM 토큰), 정책 영향 미리보기와 저장 경로, 회원 연결(단건, 사전 등록, CSV, 해제, 관리자 대상 제한), 이력, 회원 상세·목록 주입, 마이페이지 연결 카드, IdP 연속 실패 알림.
+axes:
+  permission: [accounts_view|none]
+  target: ["admin|super", "existing|new_user"]
+  actor: ["delegate|super", "view|provision|unlink", "member|no_permission|view|update", no_permission, delegate]
+  subject: ["new|taken"]
+  member: [passwordless_single_link]
+  confirm: ["false|true"]
+  mode: ["preview|execute"]
+  rows: ["create|link|exists|conflict|admin|error", "3"]
+  action: ["store|show|update|destroy", scim_token, "test(browser=true)|sp_keys(protocol=oidc)", "create|update"]
+  domain: ["owned_by_other|own|case_variant"]
+  secrets: ["new|masked|null"]
+  enabled: ["true"]
+  config: [invalid]
+  key: ["mock_prefix|duplicate", enforce_site]
+  destroy: [with_accounts]
+  times: ["2"]
+  log: [attempts, scim]
+  filter: ["idp_id|outcome", ext.sirsoft-sso.idp, ext.sirsoft-sso.unlinked]
+  status_class: [error]
+  failures: ["4|5|7"]
+  outcome: ["failed|denied"]
+  viewer: [accounts_view, no_accounts_view]
+  link: ["active+email_differs"]
+  attributes: [department]
+  columns: ["department+title"]
+  linked: [one]
+  linkable: [one]
+  unlink: ["last_method|enforced|other_member|allowed"]
+  path: [core_settings]
+  value: ["unchanged|changed"]
+  change: [enforce_linked]
+  members: ["linked_with_password|linked_passwordless|emergency_linked|unlinked"]
+effects:
+  - only_unlinked_members
+  - unlinked_filter_ignored_without_permission
+  - domain_owned_by_other_idp_rejected
+  - own_domain_resaved
+  - delegate_403
+  - super_201
+  - linked_via_admin
+  - preregistered_passwordless
+  - no_consents
+  - already_linked_409
+  - activity_logs
+  - last_method_409
+  - removed_after_confirm
+  - unlink_hooks
+  - preview_no_change
+  - counts_by_outcome
+  - execute_creates_and_links
+  - csv_imported_log
+  - permission_matrix
+  - secrets_masked
+  - masked_secret_kept
+  - activity_log_idp
+  - config_invalid_422_with_fields
+  - key_reserved_422
+  - key_taken_422
+  - has_accounts_409
+  - token_shown_once
+  - hash_stored
+  - previous_invalidated
+  - start_url_with_ticket
+  - sp_keys_saml_only_422
+  - filtered_rows
+  - newest_first
+  - scim_rows
+  - permission_403
+  - fires_at_threshold
+  - once_per_day
+  - denied_not_counted
+  - sso_key_in_detail
+  - email_differs_flag
+  - attributes_listed
+  - mapped_roles
+  - sso_key_absent
+  - only_linked_members
+  - row_values
+  - single_attribute_query
+  - accounts_listed
+  - linkable_excludes_linked
+  - last_method_422
+  - unlink_enforced_422
+  - not_found_404
+  - removed
+  - schema_empty
+  - policy_unchanged
+  - unchanged_resend_ok
+  - change_403
+  - counts_password_users
+  - counts_sessions
+  - emergency_excluded
+  - nothing_saved
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Admin/AccountsAdminTargetTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Admin/AdminAccountsApiTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Admin/AdminIdpApiTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Admin/AdminLogsApiTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Admin/IdpFailureAlertTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Admin/MemberDetailInjectionTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Admin/MemberListFilterAndColumnsTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Admin/MyAccountsApiTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Admin/PolicyApiSuperOnlyTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Admin/PolicyImpactTest.php

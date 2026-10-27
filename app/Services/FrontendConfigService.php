@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Extension\Auth\CredentialVerifierManager;
 use App\Extension\Consent\ConsentManager;
 use App\Extension\Consent\ConsentSnapshot;
+use App\Services\Auth\LoginEntryService;
 use App\Support\Custom\CustomRoutes;
 
 /**
@@ -87,6 +89,10 @@ class FrontendConfigService
             $appConfig = [];
         }
 
+        // 로그인 화면이 읽는 계산값(7.2.0) — 로그인 칸 형식(사내 아이디를 받는 외부 자격 증명 검증자가 있으면 `email_or_username`)과
+        // 로그인 화면 자동 이동 경로(확장 필터, 같은 출처 경로만). 요청마다 계산한다 — 설정 캐시 무효화가 필요 없다.
+        $appConfig['auth'] = $this->loginEntryConfig();
+
         return [
             'settings' => $settings,
             'plugins' => $plugins,
@@ -94,6 +100,41 @@ class FrontendConfigService
             'appConfig' => $appConfig,
             'consentInitial' => $consentInitial,
         ];
+    }
+
+    /**
+     * 로그인 화면용 계산값을 만듭니다 — 사용자·관리자 경로 각각.
+     *
+     * `registration_open` 은 셀프 가입 실효값이다 — 원 설정값 `security.registration_enabled` 에 확장 필터 `core.auth.self_registration_open`
+     * (예: 사이트 전체 회사 계정 강제)을 거친 값으로, 가입 폼·가입 링크는 이것을 본다. 원 설정값은 관리자 스위치가 저장값을 보이도록 그대로 둔다(W37).
+     *
+     * @return array{login_identifier: array{user: string, admin: string}, auto_redirect: array{user: string|null, admin: string|null}, registration_open: bool} 계산값
+     */
+    private function loginEntryConfig(): array
+    {
+        $identifier = ['user' => 'email', 'admin' => 'email'];
+        $autoRedirect = ['user' => null, 'admin' => null];
+
+        try {
+            $verifiers = app(CredentialVerifierManager::class);
+            $entry = app(LoginEntryService::class);
+
+            foreach (['user', 'admin'] as $guard) {
+                $identifier[$guard] = $verifiers->acceptsUsernames($guard) ? 'email_or_username' : 'email';
+                $autoRedirect[$guard] = $entry->autoRedirect($guard);
+            }
+        } catch (\Throwable $e) {
+            // 확장 오류가 화면 설정 묶음 전체를 깨지 않게 한다 — 이메일 로그인·자동 이동 없음으로 둔다.
+        }
+
+        try {
+            $registrationOpen = app(AuthService::class)->isSelfRegistrationOpen();
+        } catch (Throwable $e) {
+            // 확장 필터 오류는 원 설정값으로 — 서버의 가입 차단 판정도 같은 필터를 거치므로 여기서 묶음 전체를 깨지 않는다
+            $registrationOpen = (bool) g7_core_settings('security.registration_enabled', true);
+        }
+
+        return ['login_identifier' => $identifier, 'auto_redirect' => $autoRedirect, 'registration_open' => $registrationOpen];
     }
 
     /**

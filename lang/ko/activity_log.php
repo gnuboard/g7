@@ -92,6 +92,11 @@ return [
         'dormant_restored' => '휴면 해제',
         'dormant_converted' => '휴면 전환',
         'dormant_withdrawn' => '휴면 계정 탈퇴 처리',
+        // 외부 인증 확장점 (7.2.0)
+        'register_identity_policy_skipped' => '본인인증 정책 생략 가입',
+        'block' => '회원 차단',
+        'unblock' => '회원 차단 해제',
+        'sessions_revoked' => '모든 기기에서 로그아웃',
 
         // 비밀번호 정책 (auth.password_*) — 기존 세그먼트와 겹치지 않는 복합어
         'password_change' => '비밀번호 변경',
@@ -210,6 +215,10 @@ return [
         'user_dormant_restored' => '로그인으로 휴면 해제 (ID: :user_id)',
         'user_dormant_converted' => '장기 미접속으로 휴면 전환 (ID: :user_id)',
         'user_dormant_withdrawn' => '휴면 기간 경과로 탈퇴 처리 (ID: :user_id)',
+        'user_register_identity_policy_skipped' => '본인인증 정책을 생략한 가입 (ID: :user_id, 사유: :reason)',
+        'user_block' => '회원 차단 (ID: :user_id, 사유: :reason)',
+        'user_unblock' => '회원 차단 해제 (ID: :user_id, 사유: :reason)',
+        'user_sessions_revoked' => '회원을 모든 기기에서 로그아웃 (ID: :user_id, 토큰 :count개)',
         'privacy_manual_run_queued' => '개인정보 조치 직권 실행 접수 (:target)',
         'privacy_manual_run_queued_skip_waiting' => '개인정보 조치 직권 실행 접수 — 대기기간 생략 (:target)',
         'privacy_manual_run_completed' => '개인정보 조치 직권 실행 완료 (:target, :count건)',

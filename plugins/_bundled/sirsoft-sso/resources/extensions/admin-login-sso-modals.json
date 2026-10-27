@@ -1,0 +1,887 @@
+{
+    "comment": "e2e:allow Playwright 는 tests/Playwright/specs/sso-enforcement.spec.ts 가 거부 뒤 `/admin/login?sso_error=` 복귀까지만 본다(토스트, 관리자 동의·연결 확인 모달은 단언 없음) — 브라우저 실측은 F1 Chrome MCP 계획서 §10 M1(W40), P1 은 HTTP 왕복 실측과 Vitest 로 덮음\n     관리자 로그인 화면의 SSO 흐름 조각 — 사용자 로그인 화면 조각(auth-login-sso-modals)과 같은 일을 관리자 경로(guard=admin)로 한다.\n     회사 계정 왕복이 관리자 로그인 화면(/admin/login)으로 돌려보낸 쿼리(sso_error, sso_pending, sso_link)를 받아 오류 토스트,\n     처음 로그인 약관 동의, 기존 계정 연결 확인을 처리하고, 받은 인계 코드로 엔진 loginHandoff 액션(관리자 경로)을 실행해 화면의 관리자\n     로그인 응답 분기(applyAdminLoginResult)로 넘긴다. 관리자 계정은 자동 연결·연결 확인 대상이 아니므로 연결 확인은 서버가 거절 문구를 낸다.",
+    "target_layout": "admin_login",
+    "priority": 10,
+    "init_actions": [
+        {
+            "comment": "① 오류 — 문구 키가 없으면(IdP 가 준 낯선 코드) 일반 실패 문구",
+            "handler": "toast",
+            "if": "{{!!query.sso_error}}",
+            "params": {
+                "type": "error",
+                "message": "{{$t('sirsoft-sso.errors.' + query.sso_error) === 'sirsoft-sso.errors.' + query.sso_error ? $t('sirsoft-sso.errors.generic') : $t('sirsoft-sso.errors.' + query.sso_error)}}"
+            }
+        },
+        {
+            "comment": "② 동의 대기 받기",
+            "handler": "setState",
+            "if": "{{!!query.sso_pending}}",
+            "params": {
+                "target": "global",
+                "ssoPending": null,
+                "ssoPendingExpired": false,
+                "ssoBusy": false,
+                "ssoError": null,
+                "ssoForm.agree_terms": false,
+                "ssoForm.agree_privacy": false
+            }
+        },
+        {
+            "handler": "apiCall",
+            "target": "/api/plugins/sirsoft-sso/pending/{{query.sso_pending}}",
+            "if": "{{!!query.sso_pending}}",
+            "auth_mode": "optional",
+            "params": {
+                "method": "GET"
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "ssoPending": "{{response.data}}"
+                    }
+                },
+                {
+                    "handler": "openModal",
+                    "target": "sso_admin_consent"
+                }
+            ],
+            "onError": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "ssoPendingExpired": true
+                    }
+                },
+                {
+                    "handler": "openModal",
+                    "target": "sso_admin_consent"
+                }
+            ]
+        },
+        {
+            "comment": "③ 연결 확인 대기 받기",
+            "handler": "setState",
+            "if": "{{!!query.sso_link}}",
+            "params": {
+                "target": "global",
+                "ssoLink": null,
+                "ssoLinkExpired": false,
+                "ssoBusy": false,
+                "ssoError": null,
+                "ssoLinkMethod": "password",
+                "ssoLinkChallengeId": null,
+                "ssoForm.password": "",
+                "ssoForm.code": ""
+            }
+        },
+        {
+            "handler": "apiCall",
+            "target": "/api/plugins/sirsoft-sso/link/{{query.sso_link}}",
+            "if": "{{!!query.sso_link}}",
+            "auth_mode": "optional",
+            "params": {
+                "method": "GET"
+            },
+            "onSuccess": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "ssoLink": "{{response.data}}",
+                        "ssoLinkMethod": "{{(response.data?.methods ?? []).includes('password') ? 'password' : 'email'}}"
+                    }
+                },
+                {
+                    "handler": "openModal",
+                    "target": "sso_admin_link_verify"
+                }
+            ],
+            "onError": [
+                {
+                    "handler": "setState",
+                    "params": {
+                        "target": "global",
+                        "ssoLinkExpired": true
+                    }
+                },
+                {
+                    "handler": "openModal",
+                    "target": "sso_admin_link_verify"
+                }
+            ]
+        }
+    ],
+    "modals": [
+        {
+            "comment": "② 처음 로그인 약관 동의",
+            "id": "sso_admin_consent",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-sso.consent.title|idp={{_global.ssoPending?.idp?.label ?? $t('sirsoft-sso.common.company_account')}}",
+                "size": "md",
+                "closeOnBackdropClick": false
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-5"
+                    },
+                    "children": [
+                        {
+                            "id": "sso_admin_consent_expired",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.ssoPendingExpired === true}}",
+                            "props": {
+                                "className": "space-y-4 text-center"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-sso.consent.expired"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "만료 안내에서 닫고 로그인 화면 처음으로 — 대기 정보가 사라졌으므로 회사 계정 로그인부터 다시 한다",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "replaceUrl",
+                                                    "params": {
+                                                        "path": "/admin/login"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "w-full px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-sso.common.retry"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "sso_admin_consent_form",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.ssoPendingExpired !== true && !!_global.ssoPending}}",
+                            "props": {
+                                "className": "space-y-5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-sso.consent.intro"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "grid grid-cols-3 gap-x-4 gap-y-1 text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!_global.ssoPending?.name}}",
+                                            "props": {
+                                                "className": "font-medium text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-sso.consent.name"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!_global.ssoPending?.name}}",
+                                            "props": {
+                                                "className": "col-span-2 text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{_global.ssoPending?.name}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!_global.ssoPending?.email}}",
+                                            "props": {
+                                                "className": "font-medium text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-sso.consent.email"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{!!_global.ssoPending?.email}}",
+                                            "props": {
+                                                "className": "col-span-2 text-gray-900 dark:text-white"
+                                            },
+                                            "text": "{{_global.ssoPending?.email}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Checkbox",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "이용약관 동의 값을 전역 폼에 담는다 — 동의 완료 요청 본문이 이 값을 읽는다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ssoForm.agree_terms": "{{$event.target.checked}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "name": "sso_agree_terms",
+                                                        "checked": "{{!!_global.ssoForm?.agree_terms}}",
+                                                        "autoBinding": false,
+                                                        "aria-label": "$t:sirsoft-sso.consent.agree_terms",
+                                                        "disabled": "{{_global.ssoBusy}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.consent.agree_terms"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex items-center gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Checkbox",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "개인정보 처리방침 동의 값을 전역 폼에 담는다",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ssoForm.agree_privacy": "{{$event.target.checked}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "name": "sso_agree_privacy",
+                                                        "checked": "{{!!_global.ssoForm?.agree_privacy}}",
+                                                        "autoBinding": false,
+                                                        "aria-label": "$t:sirsoft-sso.consent.agree_privacy",
+                                                        "disabled": "{{_global.ssoBusy}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                    },
+                                                    "text": "$t:sirsoft-sso.consent.agree_privacy"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "sso_admin_consent_error",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!!_global.ssoError}}",
+                                    "props": {
+                                        "role": "alert",
+                                        "className": "text-sm text-red-600 dark:text-red-400"
+                                    },
+                                    "text": "{{_global.ssoError}}"
+                                },
+                                {
+                                    "id": "sso_admin_consent_submit",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "동의하고 시작 — 회원을 만들고 받은 인계 코드로 로그인을 이어 간다(2단계 인증·비밀번호 변경은 화면의 로그인 응답 분기가 처리)",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ssoBusy": true,
+                                                        "ssoError": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-sso/pending/{{query.sso_pending}}/complete",
+                                                    "auth_mode": "optional",
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "agree_terms": "{{!!_global.ssoForm?.agree_terms}}",
+                                                            "agree_privacy": "{{!!_global.ssoForm?.agree_privacy}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "closeModal"
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "isLoginAction": true
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ssoBusy": false
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "loginHandoff",
+                                                            "target": "admin",
+                                                            "params": {
+                                                                "body": {
+                                                                    "code": "{{response.data?.handoff_code}}"
+                                                                }
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "replaceUrl",
+                                                                    "params": {
+                                                                        "path": "/admin/login",
+                                                                        "query": {
+                                                                            "redirect": "{{query.redirect || undefined}}"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "actionRef": "applyAdminLoginResult"
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "replaceUrl",
+                                                                    "params": {
+                                                                        "path": "/admin/login",
+                                                                        "query": {
+                                                                            "redirect": "{{query.redirect || undefined}}"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "ssoBusy": false,
+                                                            "ssoError": "{{error.message}}"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "w-full px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.ssoBusy || !_global.ssoForm?.agree_terms || !_global.ssoForm?.agree_privacy}}"
+                                    },
+                                    "text": "$t:sirsoft-sso.consent.submit"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "③ 기존 회원 연결 확인",
+            "id": "sso_admin_link_verify",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-sso.link.title",
+                "size": "md",
+                "closeOnBackdropClick": false
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-5"
+                    },
+                    "children": [
+                        {
+                            "id": "sso_admin_link_expired",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.ssoLinkExpired === true}}",
+                            "props": {
+                                "className": "space-y-4 text-center"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:sirsoft-sso.link.expired"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "만료·횟수 초과 안내에서 닫고 로그인 화면 처음으로",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "closeModal"
+                                                },
+                                                {
+                                                    "handler": "replaceUrl",
+                                                    "params": {
+                                                        "path": "/admin/login"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "w-full px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer"
+                                    },
+                                    "text": "$t:sirsoft-sso.common.retry"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "sso_admin_link_form",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.ssoLinkExpired !== true && !!_global.ssoLink}}",
+                            "props": {
+                                "className": "space-y-5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-sm text-gray-600 dark:text-gray-400"
+                                    },
+                                    "text": "$t:sirsoft-sso.link.intro|idp={{_global.ssoLink?.idp?.label ?? ''}}|email={{_global.ssoLink?.email ?? ''}}"
+                                },
+                                {
+                                    "comment": "확인 방법 고르기 — 둘 다 쓸 수 있을 때만",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.ssoLink?.methods ?? []).length > 1}}",
+                                    "props": {
+                                        "role": "tablist",
+                                        "className": "flex gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "sso_admin_link_method_password",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "비밀번호로 확인",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ssoLinkMethod": "password",
+                                                        "ssoError": null
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "role": "tab",
+                                                "aria-selected": "{{_global.ssoLinkMethod === 'password'}}",
+                                                "className": "flex-1 px-3 py-2 rounded-lg border text-sm cursor-pointer {{_global.ssoLinkMethod === 'password' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white font-medium' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}}"
+                                            },
+                                            "text": "$t:sirsoft-sso.link.method_password"
+                                        },
+                                        {
+                                            "id": "sso_admin_link_method_email",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "메일 인증번호로 확인",
+                                                    "type": "click",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ssoLinkMethod": "email",
+                                                        "ssoError": null
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "role": "tab",
+                                                "aria-selected": "{{_global.ssoLinkMethod === 'email'}}",
+                                                "className": "flex-1 px-3 py-2 rounded-lg border text-sm cursor-pointer {{_global.ssoLinkMethod === 'email' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white font-medium' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400'}}"
+                                            },
+                                            "text": "$t:sirsoft-sso.link.method_email"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "비밀번호로 확인",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.ssoLinkMethod === 'password'}}",
+                                    "props": {
+                                        "className": "space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "htmlFor": "sso_link_password",
+                                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                            },
+                                            "text": "$t:sirsoft-sso.link.password"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "actions": [
+                                                {
+                                                    "comment": "입력한 비밀번호를 담는다 — [연결하고 로그인] 이 이 값으로 확인한다",
+                                                    "event": "onChange",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ssoForm.password": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "password",
+                                                "id": "sso_link_password",
+                                                "name": "sso_link_password",
+                                                "value": "{{_global.ssoForm?.password ?? ''}}",
+                                                "autoComplete": "current-password",
+                                                "maxLength": "255",
+                                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                "disabled": "{{_global.ssoBusy}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "메일 인증번호로 확인",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.ssoLinkMethod === 'email'}}",
+                                    "props": {
+                                        "className": "space-y-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "sso_admin_link_request_code",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "인증번호 받기 — 기존 계정 메일로 보낸다",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ssoBusy": true,
+                                                                "ssoError": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "apiCall",
+                                                            "target": "/api/plugins/sirsoft-sso/link/{{query.sso_link}}/email",
+                                                            "auth_mode": "optional",
+                                                            "params": {
+                                                                "method": "POST"
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "ssoBusy": false,
+                                                                        "ssoLinkChallengeId": "{{response.data?.challenge_id}}",
+                                                                        "ssoForm.code": ""
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "info",
+                                                                        "message": "$t:sirsoft-sso.link.code_sent"
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "onError": {
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "global",
+                                                                    "ssoBusy": false,
+                                                                    "ssoError": "{{error.message}}"
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "w-full px-3 py-3 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "disabled": "{{_global.ssoBusy}}"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!_global.ssoLinkChallengeId}}",
+                                                    "text": "$t:sirsoft-sso.link.request_code"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!!_global.ssoLinkChallengeId}}",
+                                                    "text": "$t:sirsoft-sso.link.resend_code"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "if": "{{!!_global.ssoLinkChallengeId}}",
+                                            "actions": [
+                                                {
+                                                    "comment": "입력한 인증번호를 담는다",
+                                                    "event": "onChange",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ssoForm.code": "{{$event.target.value}}"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "text",
+                                                "name": "sso_link_code",
+                                                "value": "{{_global.ssoForm?.code ?? ''}}",
+                                                "inputMode": "numeric",
+                                                "autoComplete": "one-time-code",
+                                                "maxLength": "10",
+                                                "aria-label": "$t:sirsoft-sso.link.code",
+                                                "placeholder": "$t:sirsoft-sso.link.code",
+                                                "className": "w-full px-3 py-2 text-center tracking-widest font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white",
+                                                "disabled": "{{_global.ssoBusy}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "sso_admin_link_error",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!!_global.ssoError}}",
+                                    "props": {
+                                        "role": "alert",
+                                        "className": "text-sm text-red-600 dark:text-red-400"
+                                    },
+                                    "text": "{{_global.ssoError}}"
+                                },
+                                {
+                                    "id": "sso_admin_link_submit",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "연결하고 로그인 — 확인이 맞으면 연결하고 받은 인계 코드로 로그인을 이어 간다. 비밀번호 3번 오류면 처음부터 다시(만료 안내로 바뀐다)",
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "ssoBusy": true,
+                                                        "ssoError": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/plugins/sirsoft-sso/link/{{query.sso_link}}/verify",
+                                                    "auth_mode": "optional",
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": {
+                                                            "method": "{{_global.ssoLinkMethod}}",
+                                                            "password": "{{_global.ssoLinkMethod === 'password' ? _global.ssoForm?.password : undefined}}",
+                                                            "challenge_id": "{{_global.ssoLinkMethod === 'email' ? _global.ssoLinkChallengeId : undefined}}",
+                                                            "code": "{{_global.ssoLinkMethod === 'email' ? _global.ssoForm?.code : undefined}}"
+                                                        }
+                                                    },
+                                                    "onSuccess": [
+                                                        {
+                                                            "handler": "closeModal"
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "isLoginAction": true
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "ssoBusy": false,
+                                                                "ssoForm.password": ""
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "loginHandoff",
+                                                            "target": "admin",
+                                                            "params": {
+                                                                "body": {
+                                                                    "code": "{{response.data?.handoff_code}}"
+                                                                }
+                                                            },
+                                                            "onSuccess": [
+                                                                {
+                                                                    "handler": "replaceUrl",
+                                                                    "params": {
+                                                                        "path": "/admin/login",
+                                                                        "query": {
+                                                                            "redirect": "{{query.redirect || undefined}}"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "actionRef": "applyAdminLoginResult"
+                                                                }
+                                                            ],
+                                                            "onError": [
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{error.message}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "replaceUrl",
+                                                                    "params": {
+                                                                        "path": "/admin/login",
+                                                                        "query": {
+                                                                            "redirect": "{{query.redirect || undefined}}"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "ssoBusy": false,
+                                                            "ssoForm.password": "",
+                                                            "ssoError": "{{error.message}}",
+                                                            "ssoLinkExpired": "{{error.status === 404}}"
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "w-full px-4 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "disabled": "{{_global.ssoBusy || (_global.ssoLinkMethod === 'password' ? !_global.ssoForm?.password : (!_global.ssoLinkChallengeId || !_global.ssoForm?.code))}}"
+                                    },
+                                    "text": "$t:sirsoft-sso.link.submit"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

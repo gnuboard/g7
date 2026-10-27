@@ -70,7 +70,7 @@ class Plugin extends AbstractPlugin
      *
      * 표기 규칙: 끝의 `*` 는 앞부분 매칭, 없으면 정확 일치.
      *
-     * 잠금 항목(`auth_token` / `XSRF-TOKEN` / 세션 쿠키 / `gdpr_session`)은 여기 넣지
+     * 잠금 항목(`auth_token` / `XSRF-TOKEN` / 세션 쿠키 / `gdpr_session` / `g7_login_bind`)은 여기 넣지
      * 않습니다 — 설정에 담기면 API 로 지울 수 있어 잠금이 아니게 됩니다
      * (self::lockedNecessaryStorage()).
      *
@@ -530,6 +530,9 @@ class Plugin extends AbstractPlugin
      * 세션 쿠키 이름은 `session.cookie` 가 정하는 런타임 값이라 상수로 둘 수 없다 —
      * 이름을 하드코딩하면 `SESSION_COOKIE` 를 지정한 사이트에서 그 항목이 죽는다.
      *
+     * `g7_login_bind` 는 코어(7.2.0)가 외부 인증 로그인 인계 코드를 발급 브라우저에 묶는 쿠키다. 지워지면
+     * 쿠키 동의를 하지 않은 방문자는 소셜·회사 계정 로그인이 늘 실패하므로 로그인 토큰·세션과 같은 자리에 둔다.
+     *
      * 이 정의는 `src/` 가 아니라 진입 파일에 둔다. `getConfigValues()` 는 신규 설치 흐름에서
      * 이 플러그인의 PSR-4 오토로드가 등록되기 전에 호출되므로, `src/` 클래스를 부르면
      * "Class not found" 로 설치가 중단된다 (업그레이드 경로는 기설치본 매핑이 있어 재현되지
@@ -542,7 +545,7 @@ class Plugin extends AbstractPlugin
         return [
             'localStorage' => ['auth_token'],
             'sessionStorage' => [],
-            'cookie' => ['XSRF-TOKEN', (string) config('session.cookie', 'laravel_session'), 'gdpr_session'],
+            'cookie' => ['XSRF-TOKEN', (string) config('session.cookie', 'laravel_session'), 'gdpr_session', 'g7_login_bind'],
         ];
     }
 

@@ -98,6 +98,8 @@ effects:
   - middleware_locked_cookies_survive_empty_settings
   - middleware_locked_cookies_cannot_be_removed_via_settings
   - middleware_session_cookie_name_resolved_at_runtime
+  - middleware_core_login_bind_cookie_survives_without_consent
+  - login_handoff_round_trip_without_consent
 
   # 저장 · 검증
   - update_persists_allowlist_per_scope

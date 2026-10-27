@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Services;
 
+use App\Extension\Auth\HandoffTicket;
 use App\Extension\HookManager;
 use App\Models\User;
 use App\Services\Auth\LoginHandoffService;
@@ -71,12 +72,40 @@ class SocialLoginService
      */
     public function issueHandoff(User $user, string $providerKey, bool $skipTwoFactor = false): string
     {
+        return $this->handoff->issue($user, $this->handoffContext($providerKey, $skipTwoFactor));
+    }
+
+    /**
+     * API 응답용 인계 코드와 묶음 쿠키를 발급합니다.
+     *
+     * 코어는 인계 코드를 발급한 브라우저에 묶는다(쿠키). 웹 콜백은 `issueHandoff()` 가 쿠키를 응답 대기열에 넣지만, API 응답
+     * (가입 완료·기존 계정 연결)에는 쿠키 대기열이 붙지 않으므로 호출자가 응답에 `->withCookie($ticket->cookie)` 로 직접 싣는다.
+     *
+     * @param  User  $user  회원
+     * @param  string  $providerKey  제공자 키
+     * @param  bool  $skipTwoFactor  2단계 인증을 건너뛸지 (가입 직후)
+     * @return HandoffTicket 인계 코드와 묶음 쿠키
+     */
+    public function issueHandoffTicket(User $user, string $providerKey, bool $skipTwoFactor = false): HandoffTicket
+    {
+        return $this->handoff->issueTicket($user, $this->handoffContext($providerKey, $skipTwoFactor));
+    }
+
+    /**
+     * 인계 컨텍스트를 만듭니다.
+     *
+     * @param  string  $providerKey  제공자 키
+     * @param  bool  $skipTwoFactor  2단계 인증을 건너뛸지
+     * @return array{login_method: string, skip_two_factor: bool} 컨텍스트
+     */
+    private function handoffContext(string $providerKey, bool $skipTwoFactor): array
+    {
         $twoFactorEnabled = (bool) plugin_setting('sirsoft-social_login', 'two_factor_enabled', true);
 
-        return $this->handoff->issue($user, [
+        return [
             'login_method' => 'social:'.$providerKey,
             'skip_two_factor' => $skipTwoFactor || ! $twoFactorEnabled,
-        ]);
+        ];
     }
 
     /**

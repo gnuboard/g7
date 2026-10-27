@@ -39,7 +39,11 @@ class CreateUserRequest extends FormRequest
             'nickname' => 'nullable|string|max:50',
             'email' => ['required', 'email', Rule::unique(User::class, 'email'), 'max:255'],
             // 관리자가 정해 준 비밀번호는 재사용 검사를 하지 않는다(D11) — 회원이 다음 로그인 때 직접 바꾼다.
-            'password' => ['required', 'confirmed', ...PasswordPolicy::rules($this->identifierEmail())],
+            // 「비밀번호 없이 만들기」(7.2.0) — 외부 인증(회사 계정)으로만 로그인할 회원을 미리 만든다. 켜면 비밀번호를 받지 않는다.
+            'create_without_password' => ['sometimes', 'boolean'],
+            'password' => $this->boolean('create_without_password')
+                ? ['prohibited']
+                : ['required', 'confirmed', ...PasswordPolicy::rules($this->identifierEmail())],
             'password_expiry_policy' => ['nullable', 'string', Rule::in(PasswordExpiryPolicy::values())],
             'language' => 'nullable|string|in:'.$supportedLocales,
             'country' => 'nullable|string|size:2|alpha',
@@ -98,6 +102,7 @@ class CreateUserRequest extends FormRequest
             'email.unique' => __('user.validation.email_unique'),
             'email.max' => __('user.validation.email_max'),
             'password.required' => __('user.validation.password_required'),
+            'password.prohibited' => __('user.validation.password_prohibited_without_password'),
             'password.confirmed' => __('user.validation.password_confirmed'),
             'password.min' => __('user.validation.password_min'),
             'language.in' => __('user.validation.language_invalid'),

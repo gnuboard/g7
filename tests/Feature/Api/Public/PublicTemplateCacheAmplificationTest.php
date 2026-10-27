@@ -42,6 +42,8 @@ class PublicTemplateCacheAmplificationTest extends TestCase
         'api.public.modules.components',
         'api.public.plugins.editor_spec',
         'api.public.plugins.components',
+        // 외부 화면용 공개 설정 — 셸과 같은 값을 매 요청 조립한다
+        'api.public.frontend-config',
     ];
 
     /**

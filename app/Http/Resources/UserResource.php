@@ -9,6 +9,7 @@ use App\Helpers\TimezoneHelper;
 use App\Models\User;
 use App\Services\MemberNotificationService;
 use App\Services\PasswordExpiryService;
+use App\Services\UserLockedFieldsService;
 use App\Support\UndeliverableEmail;
 use App\Support\UserGradeGuard;
 use App\Traits\HasCountryAttributes;
@@ -200,6 +201,7 @@ class UserResource extends BaseApiResource
         // resolve() 로 받는다 — toArray() 를 직접 부르면 when()/whenLoaded() 의 빈 값 객체가 걸러지지 않고
         // JSON 에 `{}` 로 나갔다(modules_count·consents·terms_consent 등 9개, #703).
         $data = $this->resolve($request ?? request());
+        $data['locked_fields'] = app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_PROFILE);
 
         // Filter 훅: 모듈이 자신의 데이터를 응답에 병합 (toProfileArray 와 동일)
         return HookManager::applyFilters('core.user.filter_resource_data', $data, $this->resource);
@@ -220,6 +222,7 @@ class UserResource extends BaseApiResource
         // resolve() 는 when()/whenLoaded() 로 빠진 값을 걸러 준다 — toArray() 를 직접 부르면 빈 값 객체가 남는다.
         return array_merge($this->resolve($request ?? request()), [
             'is_super' => $this->resource->isSuperAdmin(),
+            'locked_fields' => app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_ADMIN),
         ]);
     }
 
@@ -460,6 +463,8 @@ class UserResource extends BaseApiResource
             'is_super' => $this->resource->isSuperAdmin(),
             'is_admin' => $this->resource->isAdmin(),
             'has_password' => $this->resource->hasPassword(),
+            // 외부(회사 계정)가 관리해 화면에서 바꿀 수 없는 칸 — 마이페이지가 읽기 전용으로 그린다(7.2.0)
+            'locked_fields' => app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_PROFILE),
             'email_deliverable' => ! UndeliverableEmail::is($this->resource->email),
             'withdrawn_at' => $this->getValue('withdrawn_at')
                 ? $this->formatDateTimeStringForUser($this->getValue('withdrawn_at'))
@@ -480,6 +485,19 @@ class UserResource extends BaseApiResource
 
         // Filter 훅: 모듈이 자신의 데이터를 프로필 응답에 병합
         return HookManager::applyFilters('core.user.filter_resource_data', $data, $this->resource);
+    }
+
+    /**
+     * 관리자 회원 상세의 잠긴 칸을 반환합니다 (7.2.0 — 상세 응답에만 `locked_fields` 로 싣는다).
+     *
+     * 외부(회사 계정)가 관리해 관리자 화면에서도 바꿀 수 없는 칸이다. 필터 `core.user.locked_fields` 를 회원마다 부르므로
+     * 행마다 `withAdminInfo()` 를 부르는 목록에는 싣지 않는다(목록 행 필터 금지 — 훅 규정).
+     *
+     * @return array<int, string> 잠긴 칸 이름
+     */
+    public function adminLockedFields(): array
+    {
+        return app(UserLockedFieldsService::class)->lockedFor($this->resource, UserLockedFieldsService::SURFACE_ADMIN);
     }
 
     /**

@@ -10,6 +10,7 @@ use App\Enums\ScheduleFrequency;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Models\Schedule;
+use App\Support\LocalizedValue;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Cron\CronExpression;
@@ -183,10 +184,10 @@ class ScheduleLookupService
         }
 
         if (is_array($name)) {
-            foreach ([$locale, (string) config('app.fallback_locale')] as $candidate) {
-                if (is_string($name[$candidate] ?? null) && $name[$candidate] !== '') {
-                    return $name[$candidate];
-                }
+            // 다국어 값 해석은 저장소 단일 기준(LocalizedValue) — 어느 로케일에도 없으면 식별자
+            $picked = LocalizedValue::pick($name, $locale, false);
+            if ($picked !== null && $picked !== '') {
+                return $picked;
             }
         }
 
