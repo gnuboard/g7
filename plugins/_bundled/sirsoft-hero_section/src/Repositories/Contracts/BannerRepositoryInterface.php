@@ -44,6 +44,14 @@ interface BannerRepositoryInterface
     public function findOrFail(int $id): Banner;
 
     /**
+     * 트랜잭션 안에서 배너 부모 행을 잠그고 최신 이미지를 읽습니다.
+     *
+     * @param  int  $id  배너 ID
+     * @return Banner 최신 배너
+     */
+    public function findForUpdate(int $id): Banner;
+
+    /**
      * 여러 id 의 배너를 찾습니다(이미지 포함).
      *
      * @param  array<int, int>  $ids  배너 ID 목록

@@ -1,5 +1,5 @@
 {
-    "comment": "히어로섹션 배너 등록·수정 — 한 레이아웃이 등록(`route.id` 없음)과 수정(`route.id`)을 겸한다. 둘의 차이는 폼을 무엇으로\n  채우느냐뿐이다. 이미지는 둘 다 화면에 들어올 때 만든 임시 키(`_global.tempKey`)로 먼저 올리고 「저장」 때만 배너에 붙는다 — 저장은\n  화면에 남은 이미지 ID(`pc_image_id`·`mobile_image_id`)를 함께 보내고, 저장하지 않고 나가면 사이트 화면은 그대로다(남은 임시\n  이미지는 정리 명령이 지운다). 입력은 전부 `_local.form` 한 그릇에 모이고\n  오른쪽 미리보기는 저장 전 입력값(지금 관리자 화면 언어)을 사용자 슬라이더 그대로 그린다 — PC 이미지가 있어야 그리고, 링크는 관리자\n  화면을 떠나지 않게 미리보기 자리로 바꾼다. 계산값: 권장 크기와 다른 이미지는 막지 않고 안내만 하고(크기를 재지 못한 이미지는 안내하지\n  않는다), 기간 안내(`periodHint`)는 이 기기 시각으로 미리 계산한 것일 뿐 실제 상태는 서버가 사이트 시간대로 정한다.",
+    "comment": "히어로섹션 배너 등록·수정 — 한 레이아웃이 등록(`route.id` 없음)과 수정(`route.id`)을 겸한다. 둘의 차이는 폼을 무엇으로\n  채우느냐뿐이다. 이미지는 둘 다 화면에 들어올 때 만든 임시 키(`_global.tempKey`)로 먼저 올리고 「저장」 때만 배너에 붙는다 — 저장은\n  화면에 남은 이미지 ID(`pc_image_id`·`mobile_image_id`)를 함께 보내고, 저장하지 않고 나가면 사이트 화면은 그대로다(남은 임시\n  이미지는 정리 명령이 지운다). 입력은 전부 `_local.form` 한 그릇에 모이고\n  오른쪽 미리보기는 저장 전 입력값과 별도로 고른 콘텐츠 언어를 사용자 슬라이더로 그린다 — PC 이미지가 있어야 그리고, 링크는 관리자\n  화면을 떠나지 않게 미리보기 자리로 바꾼다. 계산값: 권장 크기와 다른 이미지는 막지 않고 안내만 하고(크기를 재지 못한 이미지는 안내하지\n  않는다), 기간 안내는 서버 기준 시각과 사이트 시간대로 계산하며 실제 노출 상태는 서버가 판정한다.",
     "version": "1.0.0",
     "layout_name": "hero_section_banner_form",
     "extends": "_admin_base",
@@ -97,6 +97,7 @@
             "description_visible": true,
             "description_color": "#E5E7EB",
             "description_align": "left",
+            "presentation": null,
             "link_url": "",
             "link_new_window": false,
             "images": {
@@ -104,6 +105,10 @@
                 "mobile": null
             }
         },
+        "pcUploadBlocked": false,
+        "mobileUploadBlocked": false,
+        "previewLocale": "",
+        "conflict": false,
         "isSaving": false,
         "errors": null,
         "previewDevice": "pc"
@@ -112,9 +117,7 @@
         "uploadMb": "{{position_settings?.data?.upload?.effective_mb ?? 5}}",
         "listPosition": "{{_local.form?.position === 'shop_hero' ? 'shop_hero' : 'home_hero'}}",
         "pcSizeMismatch": "{{!!_local.form?.images?.pc?.width && (_local.form.images.pc.width !== 1920 || _local.form.images.pc.height !== 640)}}",
-        "mobileSizeMismatch": "{{!!_local.form?.images?.mobile?.width && (_local.form.images.mobile.width !== 750 || _local.form.images.mobile.height !== 1000)}}",
-        "periodHint": "{{(() => { const f = _local.form ?? {}; if (f.is_active === false) return 'inactive'; if (f.display_period !== 'range') return 'active'; const now = Date.now(); const s = f.starts_at_local ? new Date(f.starts_at_local).getTime() : NaN; const e = f.ends_at_local ? new Date(f.ends_at_local).getTime() : NaN; if (!isNaN(s) && s > now) return 'scheduled'; if (!isNaN(e) && e < now) return 'ended'; return 'active'; })()}}",
-        "previewBanners": "{{_local.form?.images?.pc ? [{ id: 0, title: $localized(_local.form?.title) ?? '', description: $localized(_local.form?.description) ?? '', button_text: $localized(_local.form?.button_text) ?? '', image_alt: $localized(_local.form?.image_alt) || $localized(_local.form?.title) || '', title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url ? '#hero_form_preview' : null, link_new_window: false, images: { pc: _local.form.images.pc, mobile: _local.form.images.mobile ?? null } }] : []}}"
+        "mobileSizeMismatch": "{{!!_local.form?.images?.mobile?.width && (_local.form.images.mobile.width !== 750 || _local.form.images.mobile.height !== 1000)}}"
     },
     "permissions": [
         "sirsoft-hero_section.banners.update"
@@ -127,7 +130,11 @@
                 "target": "local",
                 "hasChanges": false,
                 "errors": null,
-                "isSaving": false
+                "isSaving": false,
+                "pcUploadBlocked": false,
+                "mobileUploadBlocked": false,
+                "conflict": false,
+                "previewLocale": ""
             }
         },
         {
@@ -160,6 +167,7 @@
                     "description_visible": true,
                     "description_color": "#E5E7EB",
                     "description_align": "left",
+                    "presentation": null,
                     "link_url": "",
                     "link_new_window": false,
                     "images": {
@@ -292,7 +300,7 @@
                                 "name": "Div",
                                 "dataKey": "form",
                                 "trackChanges": true,
-                                "debounce": 300,
+                                "debounce": 0,
                                 "props": {
                                     "className": "lg:col-span-2 flex flex-col gap-6"
                                 },
@@ -824,12 +832,24 @@
                                                                     {
                                                                         "type": "change",
                                                                         "event": "onFilesChange",
-                                                                        "handler": "setState",
-                                                                        "if": "{{!_local.hasChanges}}",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "hasChanges": true
-                                                                        }
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "pcUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "if": "{{!_local.hasChanges}}",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     },
                                                                     {
                                                                         "type": "change",
@@ -862,6 +882,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "maxFiles": 1,
+                                                                    "disabled": "{{_local.isSaving}}",
                                                                     "maxSize": "{{_computed.uploadMb}}",
                                                                     "accept": ".jpg,.jpeg,.png,.webp",
                                                                     "autoUpload": true,
@@ -925,12 +946,24 @@
                                                                     {
                                                                         "type": "change",
                                                                         "event": "onFilesChange",
-                                                                        "handler": "setState",
-                                                                        "if": "{{!_local.hasChanges}}",
-                                                                        "params": {
-                                                                            "target": "local",
-                                                                            "hasChanges": true
-                                                                        }
+                                                                        "handler": "sequence",
+                                                                        "actions": [
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "mobileUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "setState",
+                                                                                "if": "{{!_local.hasChanges}}",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ]
                                                                     },
                                                                     {
                                                                         "type": "change",
@@ -963,6 +996,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "maxFiles": 1,
+                                                                    "disabled": "{{_local.isSaving}}",
                                                                     "maxSize": "{{_computed.uploadMb}}",
                                                                     "accept": ".jpg,.jpeg,.png,.webp",
                                                                     "autoUpload": true,
@@ -997,6 +1031,144 @@
                                                         ]
                                                     }
                                                 ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "이미지 표시 — 기기별 초점과 문구 뒤 배경을 저장 전 미리보기에 함께 반영한다",
+                                        "id": "presentation_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "card-title"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.form.presentation.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "form-hint"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.form.presentation.hint"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "form-label",
+                                                    "htmlFor": "hero_focus_pc_x"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.form.presentation.pc_x"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "range",
+                                                    "id": "hero_focus_pc_x",
+                                                    "name": "presentation.pc_x",
+                                                    "min": "{{position_settings?.data?.editor?.focus_limits?.min ?? 0}}",
+                                                    "max": "{{position_settings?.data?.editor?.focus_limits?.max ?? 100}}",
+                                                    "step": 1,
+                                                    "className": "w-full"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "form-label",
+                                                    "htmlFor": "hero_focus_pc_y"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.form.presentation.pc_y"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "range",
+                                                    "id": "hero_focus_pc_y",
+                                                    "name": "presentation.pc_y",
+                                                    "min": "{{position_settings?.data?.editor?.focus_limits?.min ?? 0}}",
+                                                    "max": "{{position_settings?.data?.editor?.focus_limits?.max ?? 100}}",
+                                                    "step": 1,
+                                                    "className": "w-full"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "form-label",
+                                                    "htmlFor": "hero_focus_mobile_x"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.form.presentation.mobile_x"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "range",
+                                                    "id": "hero_focus_mobile_x",
+                                                    "name": "presentation.mobile_x",
+                                                    "min": "{{position_settings?.data?.editor?.focus_limits?.min ?? 0}}",
+                                                    "max": "{{position_settings?.data?.editor?.focus_limits?.max ?? 100}}",
+                                                    "step": 1,
+                                                    "className": "w-full"
+                                                }
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Label",
+                                                "props": {
+                                                    "className": "form-label",
+                                                    "htmlFor": "hero_focus_mobile_y"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.form.presentation.mobile_y"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Input",
+                                                "props": {
+                                                    "type": "range",
+                                                    "id": "hero_focus_mobile_y",
+                                                    "name": "presentation.mobile_y",
+                                                    "min": "{{position_settings?.data?.editor?.focus_limits?.min ?? 0}}",
+                                                    "max": "{{position_settings?.data?.editor?.focus_limits?.max ?? 100}}",
+                                                    "step": 1,
+                                                    "className": "w-full"
+                                                }
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "RadioGroup",
+                                                "props": {
+                                                    "name": "presentation.overlay",
+                                                    "inline": true,
+                                                    "label": "$t:sirsoft-hero_section.admin.form.presentation.overlay",
+                                                    "options": [
+                                                        {
+                                                            "label": "$t:sirsoft-hero_section.admin.form.presentation.none",
+                                                            "value": "none"
+                                                        },
+                                                        {
+                                                            "label": "$t:sirsoft-hero_section.admin.form.presentation.dark",
+                                                            "value": "dark"
+                                                        },
+                                                        {
+                                                            "label": "$t:sirsoft-hero_section.admin.form.presentation.light",
+                                                            "value": "light"
+                                                        }
+                                                    ]
+                                                }
                                             }
                                         ]
                                     },
@@ -1197,14 +1369,55 @@
                                                     },
                                                     {
                                                         "id": "period_hint",
-                                                        "type": "basic",
-                                                        "name": "P",
+                                                        "type": "composite",
+                                                        "name": "sirsoft-hero_section.HeroPeriodHint",
                                                         "props": {
-                                                            "className": "form-hint"
-                                                        },
-                                                        "text": "{{$t('sirsoft-hero_section.admin.form.period.hint', { status: $t('sirsoft-hero_section.admin.status.' + _computed.periodHint) })}}"
+                                                            "period": "{{_local.form?.display_period}}",
+                                                            "active": "{{_local.form?.is_active !== false}}",
+                                                            "start": "{{_local.form?.starts_at_local}}",
+                                                            "end": "{{_local.form?.ends_at_local}}",
+                                                            "timezone": "{{position_settings?.data?.editor?.timezone}}",
+                                                            "serverNow": "{{position_settings?.data?.editor?.server_now}}"
+                                                        }
                                                     }
                                                 ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "if": "{{_local.pcUploadBlocked || _local.mobileUploadBlocked}}",
+                                        "props": {
+                                            "role": "status",
+                                            "className": "form-hint"
+                                        },
+                                        "text": "$t:sirsoft-hero_section.admin.form.upload_pending"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{_local.conflict}}",
+                                        "props": {
+                                            "role": "alert",
+                                            "className": "alert-danger"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "text": "$t:sirsoft-hero_section.admin.form.conflict"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "A",
+                                                "props": {
+                                                    "href": "/admin/plugins/sirsoft-hero_section/banners/{{route.id}}/edit",
+                                                    "target": "_blank",
+                                                    "rel": "noopener noreferrer",
+                                                    "className": "underline"
+                                                },
+                                                "text": "$t:sirsoft-hero_section.admin.form.conflict_compare"
                                             }
                                         ]
                                     },
@@ -1271,7 +1484,7 @@
                                                                 "auth_required": true,
                                                                 "params": {
                                                                     "method": "{{route.id ? 'PUT' : 'POST'}}",
-                                                                    "body": "{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null })}}"
+                                                                    "body": "{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, revision: route.id ? _local.form?.revision : undefined, presentation: _local.form?.presentation ?? null, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null })}}"
                                                                 },
                                                                 "onSuccess": [
                                                                     {
@@ -1304,12 +1517,13 @@
                                                                 ],
                                                                 "onError": [
                                                                     {
-                                                                        "comment": "422 는 칸마다 사유 + 위쪽 요약으로 옮겨 보인다. 그 밖 실패는 알림만",
+                                                                        "comment": "422 는 칸별 사유와 요약, 409 는 입력을 보존한 충돌 안내를 보인다. 모든 실패는 알림을 띄운다",
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "isSaving": false,
-                                                                            "errors": "{{error.errors ?? null}}"
+                                                                            "errors": "{{error.errors ?? null}}",
+                                                                            "conflict": "{{error.status === 409}}"
                                                                         }
                                                                     },
                                                                     {
@@ -1337,7 +1551,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "disabled": "{{_local.isSaving || !_local.form?.images?.pc}}",
+                                                    "disabled": "{{_local.isSaving || _local.pcUploadBlocked || _local.mobileUploadBlocked || !_local.form?.images?.pc}}",
                                                     "className": "btn btn-primary flex-center gap-1.5"
                                                 },
                                                 "children": [
@@ -1376,7 +1590,7 @@
                                 "props": {
                                     "id": "hero_form_preview",
                                     "aria-labelledby": "hero_form_preview_heading",
-                                    "className": "admin-card self-start"
+                                    "className": "admin-card self-start hs-editor-preview"
                                 },
                                 "children": [
                                     {
@@ -1451,24 +1665,47 @@
                                         ]
                                     },
                                     {
+                                        "type": "composite",
+                                        "name": "sirsoft-hero_section.HeroPreviewLanguage",
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "event": "onLocaleChange",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "previewLocale": "{{$args[0]}}"
+                                                }
+                                            }
+                                        ],
+                                        "props": {
+                                            "locales": "{{position_settings?.data?.editor?.locales ?? []}}",
+                                            "locale": "{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}"
+                                        }
+                                    },
+                                    {
                                         "id": "form_preview",
                                         "type": "composite",
                                         "name": "sirsoft-hero_section.HeroBannerPreview",
+                                        "actions": [
+                                            {
+                                                "type": "change",
+                                                "event": "onContentLocaleChange",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "previewLocale": "{{$args[0]}}"
+                                                }
+                                            }
+                                        ],
                                         "props": {
-                                            "banners": "{{_computed.previewBanners}}",
+                                            "draft": "{{_local.form}}",
+                                            "locale": "{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}",
+                                            "defaultLocale": "{{position_settings?.data?.editor?.default_locale}}",
                                             "settings": "{{({ autoplay: false, interval_seconds: 5, effect: 'none' })}}",
                                             "device": "{{_local.previewDevice}}",
                                             "emptyText": "$t:sirsoft-hero_section.admin.form.preview.empty"
                                         }
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "P",
-                                        "if": "{{_computed.previewBanners.length > 0}}",
-                                        "props": {
-                                            "className": "form-hint mt-2"
-                                        },
-                                        "text": "{{$localized(_local.form?.button_text) ? $t('sirsoft-hero_section.admin.form.preview.has_button') : $t('sirsoft-hero_section.admin.form.preview.whole_link')}}"
                                     }
                                 ]
                             }

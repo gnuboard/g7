@@ -2,6 +2,7 @@
 
 return [
     'banner' => [
+        'conflict' => 'Another administrator saved changes first. Your input is preserved. Open the latest banner in another tab to compare your changes.',
         'fetched' => 'Banners loaded.',
         'created' => 'Banner created.',
         'updated' => 'Banner updated.',

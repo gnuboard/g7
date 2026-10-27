@@ -9,6 +9,8 @@ use Illuminate\Validation\Rule;
 use Plugins\Sirsoft\HeroSection\Enums\DisplayPeriod;
 use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Enums\TextAlign;
+use Plugins\Sirsoft\HeroSection\Enums\TextOverlay;
+use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Rules\SafeLinkUrl;
 
 /**
@@ -50,6 +52,12 @@ trait BannerFieldRules
             'description_align' => ['required', Rule::enum(TextAlign::class)],
             'link_url' => ['nullable', 'string', 'max:2048', new SafeLinkUrl],
             'link_new_window' => ['required', 'boolean'],
+            'presentation' => ['nullable', 'array:pc_x,pc_y,mobile_x,mobile_y,overlay'],
+            'presentation.pc_x' => ['sometimes', 'required', 'integer', 'between:'.Banner::FOCUS_MIN.','.Banner::FOCUS_MAX],
+            'presentation.pc_y' => ['sometimes', 'required', 'integer', 'between:'.Banner::FOCUS_MIN.','.Banner::FOCUS_MAX],
+            'presentation.mobile_x' => ['sometimes', 'required', 'integer', 'between:'.Banner::FOCUS_MIN.','.Banner::FOCUS_MAX],
+            'presentation.mobile_y' => ['sometimes', 'required', 'integer', 'between:'.Banner::FOCUS_MIN.','.Banner::FOCUS_MAX],
+            'presentation.overlay' => ['sometimes', 'required', Rule::enum(TextOverlay::class)],
         ];
     }
 
@@ -94,6 +102,11 @@ trait BannerFieldRules
      */
     protected function convertPeriod(array $data): array
     {
+        foreach (['pc_x', 'pc_y', 'mobile_x', 'mobile_y'] as $coordinate) {
+            if (isset($data['presentation'][$coordinate])) {
+                $data['presentation'][$coordinate] = (int) $data['presentation'][$coordinate];
+            }
+        }
         if (($data['display_period'] ?? null) === DisplayPeriod::Range->value) {
             $data['starts_at'] = TimezoneHelper::fromSiteDateTime($data['starts_at'] ?? null);
             $data['ends_at'] = TimezoneHelper::fromSiteDateTime($data['ends_at'] ?? null);

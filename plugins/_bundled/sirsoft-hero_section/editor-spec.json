@@ -236,7 +236,14 @@
                   "is_image": true
                 }
               },
-              "title_localized": "가을 신상품 기획전"
+              "title_localized": "가을 신상품 기획전",
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
+              }
             }
           ]
         }
@@ -269,6 +276,20 @@
             "max_mb": 5,
             "server_limit_mb": 8,
             "effective_mb": 5
+          },
+          "editor": {
+            "timezone": "Asia/Seoul",
+            "server_now": "2026-10-27T01:00:00+00:00",
+            "default_locale": "ko",
+            "locales": [
+              "ko",
+              "en",
+              "ja"
+            ],
+            "focus_limits": {
+              "min": 0,
+              "max": 100
+            }
           }
         }
       },
@@ -361,7 +382,15 @@
               "is_image": true
             },
             "mobile": null
-          }
+          },
+          "presentation": {
+            "pc_x": 50,
+            "pc_y": 50,
+            "mobile_x": 50,
+            "mobile_y": 50,
+            "overlay": "none"
+          },
+          "revision": 0
         }
       },
       "settings": {
@@ -427,6 +456,13 @@
                   "order": 0,
                   "is_image": true
                 }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
               }
             },
             {
@@ -474,6 +510,13 @@
                   "order": 0,
                   "is_image": true
                 }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
               }
             }
           ]
@@ -533,6 +576,13 @@
                   "order": 0,
                   "is_image": true
                 }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
               }
             },
             {
@@ -580,6 +630,13 @@
                   "order": 0,
                   "is_image": true
                 }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
               }
             }
           ]

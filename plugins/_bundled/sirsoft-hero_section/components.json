@@ -13,27 +13,103 @@
                     "banners": {
                         "type": "array",
                         "required": false,
-                        "description": "미리 볼 배너 (목록 미리보기는 노출 중인 배너들, 폼 미리보기는 저장 전 입력값 1건)"
+                        "description": "목록 미리보기의 공개 모양 배너"
+                    },
+                    "draft": {
+                        "type": "HeroDraft",
+                        "required": false,
+                        "description": "편집 화면의 저장 전 원본 문구·이미지"
+                    },
+                    "locale": {
+                        "type": "string",
+                        "required": false,
+                        "description": "콘텐츠 언어·사이트 기본 언어"
+                    },
+                    "defaultLocale": {
+                        "type": "string",
+                        "required": false
+                    },
+                    "onContentLocaleChange": {
+                        "type": "function",
+                        "required": false,
+                        "description": "실제로 바뀐 문구 언어를 편집 화면에 알립니다."
                     },
                     "settings": {
                         "type": "HeroSliderSettings",
                         "required": false,
-                        "description": "위치 슬라이더 설정"
+                        "description": "위치 설정"
                     },
                     "device": {
                         "type": "'pc' | 'mobile'",
                         "required": false,
-                        "description": "미리 볼 기기"
+                        "description": "실제 미리보기 viewport"
                     },
                     "emptyText": {
                         "type": "string",
                         "required": false,
-                        "description": "배너가 없을 때 보일 문구"
+                        "description": "빈 목록 문구"
                     },
                     "className": {
                         "type": "string",
                         "required": false,
-                        "description": "사용자 정의 클래스"
+                        "description": "사용자 클래스"
+                    }
+                }
+            },
+            {
+                "name": "HeroPeriodHint",
+                "type": "composite",
+                "path": "plugins/_bundled/sirsoft-hero_section/resources/js/components/composite/HeroPeriodHint.tsx",
+                "props": {
+                    "period": {
+                        "type": "string",
+                        "required": false,
+                        "description": "상시/기간 지정"
+                    },
+                    "active": {
+                        "type": "boolean",
+                        "required": false,
+                        "description": "사용 여부"
+                    },
+                    "start": {
+                        "type": "string",
+                        "required": false,
+                        "description": "사이트 시간대로 입력한 시작·종료"
+                    },
+                    "end": {
+                        "type": "string",
+                        "required": false
+                    },
+                    "timezone": {
+                        "type": "string",
+                        "required": false,
+                        "description": "서버가 알려준 사이트 시간대·현재 시각"
+                    },
+                    "serverNow": {
+                        "type": "string",
+                        "required": false
+                    }
+                }
+            },
+            {
+                "name": "HeroPreviewLanguage",
+                "type": "composite",
+                "path": "plugins/_bundled/sirsoft-hero_section/resources/js/components/composite/HeroPreviewLanguage.tsx",
+                "props": {
+                    "locales": {
+                        "type": "array",
+                        "required": false,
+                        "description": "사이트 활성 언어"
+                    },
+                    "locale": {
+                        "type": "string",
+                        "required": false,
+                        "description": "미리 볼 콘텐츠 언어"
+                    },
+                    "onLocaleChange": {
+                        "type": "function",
+                        "required": false,
+                        "description": "언어 선택 콜백"
                     }
                 }
             },

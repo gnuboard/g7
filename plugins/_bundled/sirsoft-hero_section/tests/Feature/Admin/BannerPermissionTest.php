@@ -317,7 +317,7 @@ class BannerPermissionTest extends PluginTestCase
                 },
                 'update' => fn () => ['PUT', $this->api('/admin/banners/'.$banner()->id), $this->bannerPayload()],
                 'image-store' => fn () => ['POSTFILE', $this->api('/admin/banner-images'), ['file' => UploadedFile::fake()->image('a.jpg', 100, 50), 'device' => 'pc', 'temp_key' => (string) Str::uuid()]],
-                'image-destroy' => fn () => ['DELETE', $this->api('/admin/banner-images/'.$banner()->mobileImage()->first()->id), []],
+                'image-destroy' => fn () => ['DELETE', $this->api('/admin/banner-images/'.BannerImage::factory()->mobile()->temp((string) Str::uuid())->create()->id), []],
                 'position-setting' => fn () => ['PUT', $this->api('/admin/position-settings/home_hero'), ['autoplay' => true, 'interval_seconds' => 5, 'effect' => 'fade']],
             ],
             'delete' => [

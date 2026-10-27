@@ -22,6 +22,14 @@ class Banner extends Model
 {
     use HasFactory;
 
+    /** 기기별 중앙 초점·배경 없음이 기존 배너의 기본 표시입니다. */
+    public const DEFAULT_PRESENTATION = ['pc_x' => 50, 'pc_y' => 50, 'mobile_x' => 50, 'mobile_y' => 50, 'overlay' => 'none'];
+
+    /** 이미지 내부 초점의 백분율 범위입니다. */
+    public const FOCUS_MIN = 0;
+
+    public const FOCUS_MAX = 100;
+
     /**
      * 테이블명
      *
@@ -39,7 +47,7 @@ class Banner extends Model
         'title', 'description', 'button_text', 'image_alt',
         'title_visible', 'title_color', 'title_align',
         'description_visible', 'description_color', 'description_align',
-        'link_url', 'link_new_window', 'created_by', 'updated_by',
+        'link_url', 'link_new_window', 'presentation', 'created_by', 'updated_by',
     ];
 
     /**
@@ -76,6 +84,8 @@ class Banner extends Model
             'title_visible' => 'boolean',
             'description_visible' => 'boolean',
             'link_new_window' => 'boolean',
+            'presentation' => 'array',
+            'lock_version' => 'integer',
         ];
     }
 

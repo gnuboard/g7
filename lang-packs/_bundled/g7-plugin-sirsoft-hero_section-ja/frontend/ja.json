@@ -1,202 +1,225 @@
 {
-  "editor": {
-    "data_source": {
-      "settings": "ヒーローセクション設定",
-      "banner": "バナー詳細",
-      "banners": "バナー一覧",
-      "preview": "公開中バナープレビュー",
-      "position_settings": "位置·スライダー設定",
-      "upload_limit": "アップロード限度",
-      "heroSectionHome": "サイトホーム公開バナー",
-      "heroSectionShop": "ショッピングモールメイン公開バナー"
+    "editor": {
+        "data_source": {
+            "settings": "ヒーローセクション設定",
+            "banner": "バナー詳細",
+            "banners": "バナー一覧",
+            "preview": "公開中バナープレビュー",
+            "position_settings": "位置·スライダー設定",
+            "upload_limit": "アップロード限度",
+            "heroSectionHome": "サイトホーム公開バナー",
+            "heroSectionShop": "ショッピングモールメイン公開バナー"
+        },
+        "state": {
+            "with_data": "バナーあり",
+            "empty_data": "バナーなし",
+            "delete_confirm": "削除確認",
+            "bulk_delete_confirm": "一括削除確認",
+            "reorder_open": "順序変更ウィンドウ"
+        },
+        "palette": {
+            "group": "ヒーローセクション",
+            "hero_slider": {
+                "label": "ヒーローバナースライダー"
+            }
+        }
     },
-    "state": {
-      "with_data": "バナーあり",
-      "empty_data": "バナーなし",
-      "delete_confirm": "削除確認",
-      "bulk_delete_confirm": "一括削除確認",
-      "reorder_open": "順序変更ウィンドウ"
+    "settings": {
+        "title": "ヒーローセクション設定",
+        "description": "バナー画像アップロード限度とユーザー画面バナーキャッシュ時間を設定します。",
+        "fields": {
+            "max_upload_mb": {
+                "label": "画像最大容量(MB)",
+                "hint": "バナー画像1枚の最大容量です(1～10)。サーバーPHPのupload_max_filesize·post_max_sizeより大きく設定してもその値を超えるファイルはアップロードされません。",
+                "server_limit": "現在のサーバー限度:{{mb}}MB",
+                "over_server_limit": "設定値がサーバー限度({{mb}}MB)より大きいです。この限度を超えるファイルはアップロードされません。"
+            },
+            "public_cache_minutes": {
+                "label": "ユーザー画面バナーキャッシュ時間(分)",
+                "hint": "0の場合キャッシュを使用しません(0～60)。バナーを保存·削除するか順序を変更するとすぐに反映され、予約開始·終了時刻にもキャッシュが先に失効します。"
+            }
+        }
     },
-    "palette": {
-      "group": "ヒーローセクション",
-      "hero_slider": {
-        "label": "ヒーローバナースライダー"
-      }
-    }
-  },
-  "settings": {
-    "title": "ヒーローセクション設定",
-    "description": "バナー画像アップロード限度とユーザー画面バナーキャッシュ時間を設定します。",
-    "fields": {
-      "max_upload_mb": {
-        "label": "画像最大容量(MB)",
-        "hint": "バナー画像1枚の最大容量です(1～10)。サーバーPHPのupload_max_filesize·post_max_sizeより大きく設定してもその値を超えるファイルはアップロードされません。",
-        "server_limit": "現在のサーバー限度:{{mb}}MB",
-        "over_server_limit": "設定値がサーバー限度({{mb}}MB)より大きいです。この限度を超えるファイルはアップロードされません。"
-      },
-      "public_cache_minutes": {
-        "label": "ユーザー画面バナーキャッシュ時間(分)",
-        "hint": "0の場合キャッシュを使用しません(0～60)。バナーを保存·削除するか順序を変更するとすぐに反映され、予約開始·終了時刻にもキャッシュが先に失効します。"
-      }
-    }
-  },
-  "plugin_read_only": "このプラグイン設定を修正する権限がないため読み取り専用で表示されます。",
-  "slider": {
-    "label": "メインバナー",
-    "previous": "前へ",
-    "next": "次へ",
-    "pause": "自動送出一時停止",
-    "play": "自動送出再開"
-  },
-  "admin": {
-    "title": "ヒーローセクション管理",
-    "description": "サイトホーム·ショッピングモールメイン上部に表示されるバナーを位置別に管理します。",
-    "position": {
-      "tabs_label": "公開位置",
-      "home_hero": "サイトホーム",
-      "shop_hero": "ショッピングモールメイン",
-      "hint": "位置はユーザーテンプレートが開いたヒーローセクション場所(拡張点)です。"
-    },
-    "status": {
-      "all": "すべて",
-      "active": "公開中",
-      "scheduled": "予約",
-      "ended": "終了",
-      "inactive": "無効化"
-    },
-    "preview": {
-      "title": "現在公開中{{count}}個",
-      "device_label": "プレビューデバイス",
-      "pc": "PC",
-      "mobile": "モバイル",
-      "empty": "公開中のバナーがありません。"
-    },
+    "plugin_read_only": "このプラグイン設定を修正する権限がないため読み取り専用で表示されます。",
     "slider": {
-      "title": "スライダー設定",
-      "scope": "{{position}}位置にのみ適用されます。",
-      "autoplay": "自動送出",
-      "interval": "送出間隔",
-      "seconds": "{{n}}秒",
-      "effect": "切り替え効果",
-      "effects": {
-        "slide": "スライド",
-        "fade": "フェード",
-        "none": "なし"
-      },
-      "save": "設定保存"
+        "label": "メインバナー",
+        "previous": "前へ",
+        "next": "次へ",
+        "pause": "自動送出一時停止",
+        "play": "自動送出再開"
     },
-    "list": {
-      "create": "バナー登録",
-      "status_filter": "ステータス",
-      "search": "タイトル検索",
-      "search_placeholder": "バナータイトル",
-      "search_button": "検索",
-      "total": "合計{{count}}件",
-      "selected": "{{count}}個選択されました",
-      "bulk_show": "公開",
-      "bulk_hide": "非公開",
-      "bulk_delete": "削除",
-      "empty": "登録されたバナーがありません。",
-      "always": "常時",
-      "sort": {
-        "sort_order": "公開順序",
-        "status": "ステータス順",
-        "created_desc": "最新登録順",
-        "created_asc": "古い登録順"
-      },
-      "column": {
-        "image": "画像",
-        "title": "タイトル",
-        "period": "公開期間",
-        "status": "ステータス",
-        "order": "順序",
-        "created_at": "登録日"
-      },
-      "action": {
-        "edit": "編集",
-        "delete": "削除"
-      }
-    },
-    "reorder": {
-      "button": "順序変更",
-      "title": "バナー順序変更",
-      "description": "ドラッグして移動するか、↑↓ボタンで順序を変更した後、[保存]をクリックしてください。ユーザー画面とプレビューの順序が一緒に変わります。",
-      "drag_handle": "{{name}} ドラッグして移動",
-      "move_up": "{{name}} 上へ",
-      "move_down": "{{name}} 下へ",
-      "save": "保存"
-    },
-    "delete": {
-      "title": "バナー削除",
-      "message": "「{{title}}」バナーを削除してもよろしいですか?",
-      "bulk_title": "選択したバナーを削除",
-      "bulk_message": "選択したバナー{{count}}個を削除してもよろしいですか?",
-      "warning": "削除するとバナーとPC·モバイル画像がすぐに削除され、復元できません。一時的に非表示にするには非公開を使用してください。"
-    },
-    "form": {
-      "create_title": "バナー登録",
-      "edit_title": "バナー編集",
-      "description": "バナーテキスト·画像·リンク·表示期間を設定します。右側のプレビューは保存前の入力値です。",
-      "validation_error": "入力値を確認してください。",
-      "section": {
-        "basic": "基本情報",
-        "text": "テキスト",
-        "image": "画像",
-        "link": "リンク",
-        "period": "表示期間"
-      },
-      "position": "表示位置",
-      "position_hint": "現在のユーザーテンプレートが提供するヒーローセクション用です。",
-      "is_active": "使用",
-      "is_active_hint": "無効にすると、期間に関係なくユーザー画面に表示されません(無効)。",
-      "locale_hint": "サイトで有効になっている言語ごとに入力できます。空白の言語はサイトの基本言語テキストで表示されます。",
-      "title": "タイトル",
-      "title_placeholder": "バナータイトル",
-      "visible": "表示",
-      "align_label": "配置",
-      "align": {
-        "left": "左",
-        "center": "中央",
-        "right": "右"
-      },
-      "title_color": "タイトルの色",
-      "title_color_code": "タイトル色コード",
-      "description_label": "説明",
-      "description_placeholder": "タイトルの下に表示される説明",
-      "description_color": "説明の色",
-      "description_color_code": "説明色コード",
-      "button_text": "ボタンテキスト",
-      "button_text_placeholder": "例:詳しく見る",
-      "button_text_hint": "入力した場合はボタンのみがリンクになり、空白の場合はバナー全体がリンクになります。",
-      "image_alt": "画像代替テキスト",
-      "image_alt_hint": "画面を見ることができない訪問者に読み上げる説明です。空白の場合はタイトルが読み上げられます。",
-      "image": {
-        "pc": "PC画像",
-        "pc_hint": "推奨1920×640·最大{{mb}}MB·JPG·PNG·WEBP",
-        "mobile": "モバイル画像",
-        "mobile_hint": "選択·推奨750×1000·最大{{mb}}MB·登録しない場合、モバイルでもPC画像を使用します。",
-        "size_mismatch": "アップロードされた画像は{{width}}×{{height}}です。推奨サイズ({{recommended}})と異なるため、画面によっては切れて表示される可能性があります。"
-      },
-      "link_url": "移動先アドレス",
-      "link_url_placeholder": "/shop または https://example.com",
-      "link_url_hint": "サイト内パス(/で始まる)またはhttp(s)アドレスのみを使用できます。",
-      "link_new_window": "新しいウィンドウで開く",
-      "period": {
-        "always": "常時",
-        "range": "期間指定",
-        "starts_at": "表示開始",
-        "ends_at": "表示終了",
-        "hint": "今すぐ保存すると「{{status}}」と表示されます — このデバイスの時刻に基づく情報であり、実際のステータスはサイトのタイムゾーンで決定されます。"
-      },
-      "preview": {
-        "title": "プレビュー",
-        "empty": "PC画像をアップロードするとプレビューが表示されます。",
-        "has_button": "ボタンをクリックするとリンクに移動します。",
-        "whole_link": "ボタンなし — バナー全体がリンクです。"
-      },
-      "cancel": "キャンセル",
-      "save": "保存",
-      "saving": "保存中…"
+    "admin": {
+        "title": "ヒーローセクション管理",
+        "description": "サイトホーム·ショッピングモールメイン上部に表示されるバナーを位置別に管理します。",
+        "position": {
+            "tabs_label": "公開位置",
+            "home_hero": "サイトホーム",
+            "shop_hero": "ショッピングモールメイン",
+            "hint": "位置はユーザーテンプレートが開いたヒーローセクション場所(拡張点)です。"
+        },
+        "status": {
+            "all": "すべて",
+            "active": "公開中",
+            "scheduled": "予約",
+            "ended": "終了",
+            "inactive": "無効化"
+        },
+        "preview": {
+            "title": "現在公開中{{count}}個",
+            "device_label": "プレビューデバイス",
+            "pc": "PC",
+            "mobile": "モバイル",
+            "empty": "公開中のバナーがありません。"
+        },
+        "slider": {
+            "title": "スライダー設定",
+            "scope": "{{position}}位置にのみ適用されます。",
+            "autoplay": "自動送出",
+            "interval": "送出間隔",
+            "seconds": "{{n}}秒",
+            "effect": "切り替え効果",
+            "effects": {
+                "slide": "スライド",
+                "fade": "フェード",
+                "none": "なし"
+            },
+            "save": "設定保存"
+        },
+        "list": {
+            "create": "バナー登録",
+            "status_filter": "ステータス",
+            "search": "タイトル検索",
+            "search_placeholder": "バナータイトル",
+            "search_button": "検索",
+            "total": "合計{{count}}件",
+            "selected": "{{count}}個選択されました",
+            "bulk_show": "公開",
+            "bulk_hide": "非公開",
+            "bulk_delete": "削除",
+            "empty": "登録されたバナーがありません。",
+            "always": "常時",
+            "sort": {
+                "sort_order": "公開順序",
+                "status": "ステータス順",
+                "created_desc": "最新登録順",
+                "created_asc": "古い登録順"
+            },
+            "column": {
+                "image": "画像",
+                "title": "タイトル",
+                "period": "公開期間",
+                "status": "ステータス",
+                "order": "順序",
+                "created_at": "登録日"
+            },
+            "action": {
+                "edit": "編集",
+                "delete": "削除"
+            }
+        },
+        "reorder": {
+            "button": "順序変更",
+            "title": "バナー順序変更",
+            "description": "ドラッグして移動するか、↑↓ボタンで順序を変更した後、[保存]をクリックしてください。ユーザー画面とプレビューの順序が一緒に変わります。",
+            "drag_handle": "{{name}} ドラッグして移動",
+            "move_up": "{{name}} 上へ",
+            "move_down": "{{name}} 下へ",
+            "save": "保存"
+        },
+        "delete": {
+            "title": "バナー削除",
+            "message": "「{{title}}」バナーを削除してもよろしいですか?",
+            "bulk_title": "選択したバナーを削除",
+            "bulk_message": "選択したバナー{{count}}個を削除してもよろしいですか?",
+            "warning": "削除するとバナーとPC·モバイル画像がすぐに削除され、復元できません。一時的に非表示にするには非公開を使用してください。"
+        },
+        "form": {
+            "create_title": "バナー登録",
+            "edit_title": "バナー編集",
+            "description": "バナーテキスト·画像·リンク·表示期間を設定します。右側のプレビューは保存前の入力値です。",
+            "validation_error": "入力値を確認してください。",
+            "section": {
+                "basic": "基本情報",
+                "text": "テキスト",
+                "image": "画像",
+                "link": "リンク",
+                "period": "表示期間"
+            },
+            "position": "表示位置",
+            "position_hint": "現在のユーザーテンプレートが提供するヒーローセクション用です。",
+            "is_active": "使用",
+            "is_active_hint": "無効にすると、期間に関係なくユーザー画面に表示されません(無効)。",
+            "locale_hint": "サイトで有効になっている言語ごとに入力できます。空白の言語はサイトの基本言語テキストで表示されます。",
+            "title": "タイトル",
+            "title_placeholder": "バナータイトル",
+            "visible": "表示",
+            "align_label": "配置",
+            "align": {
+                "left": "左",
+                "center": "中央",
+                "right": "右"
+            },
+            "title_color": "タイトルの色",
+            "title_color_code": "タイトル色コード",
+            "description_label": "説明",
+            "description_placeholder": "タイトルの下に表示される説明",
+            "description_color": "説明の色",
+            "description_color_code": "説明色コード",
+            "button_text": "ボタンテキスト",
+            "button_text_placeholder": "例:詳しく見る",
+            "button_text_hint": "入力した場合はボタンのみがリンクになり、空白の場合はバナー全体がリンクになります。",
+            "image_alt": "画像代替テキスト",
+            "image_alt_hint": "画面を見ることができない訪問者に読み上げる説明です。空白の場合はタイトルが読み上げられます。",
+            "image": {
+                "pc": "PC画像",
+                "pc_hint": "推奨1920×640·最大{{mb}}MB·JPG·PNG·WEBP",
+                "mobile": "モバイル画像",
+                "mobile_hint": "選択·推奨750×1000·最大{{mb}}MB·登録しない場合、モバイルでもPC画像を使用します。",
+                "size_mismatch": "アップロードされた画像は{{width}}×{{height}}です。推奨サイズ({{recommended}})と異なるため、画面によっては切れて表示される可能性があります。"
+            },
+            "link_url": "移動先アドレス",
+            "link_url_placeholder": "/shop または https://example.com",
+            "link_url_hint": "サイト内パス(/で始まる)またはhttp(s)アドレスのみを使用できます。",
+            "link_new_window": "新しいウィンドウで開く",
+            "period": {
+                "always": "常時",
+                "range": "期間指定",
+                "starts_at": "表示開始",
+                "ends_at": "表示終了",
+                "hint": "今すぐ保存すると「{{status}}」の状態になります。",
+                "clock_loading": "サイト時間情報を読み込んでいます。",
+                "timezone": "サイトタイムゾーン: {{timezone}}",
+                "incomplete": "開始日時と終了日時を入力してください。"
+            },
+            "preview": {
+                "title": "プレビュー",
+                "empty": "PC画像をアップロードするとプレビューが表示されます。",
+                "has_button": "ボタンをクリックするとリンクに移動します。",
+                "whole_link": "ボタンなし — バナー全体がリンクです。",
+                "language": "プレビュー言語",
+                "frame": "{{device}}バナープレビュー",
+                "expand": "大きく表示",
+                "close": "閉じる",
+                "fallback": "入力されていないテキストはデフォルト言語({{locale}})などで表示されます。"
+            },
+            "cancel": "キャンセル",
+            "save": "保存",
+            "saving": "保存中…",
+            "upload_pending": "画像をアップロード中です。失敗したファイルは再試行するか削除した後に保存してください。",
+            "conflict": "別の管理者が先に編集しました。入力内容は保持されています。最新バナーを別のタブで確認して変更内容を比較してください。",
+            "conflict_compare": "最新バナーを別のタブで確認",
+            "presentation": {
+                "title": "画像表示とテキスト背景",
+                "hint": "PCは1920×640、モバイルは750×1000の比率で表示されます。モバイル画像がない場合はPC画像を切り取って使用します。左右・上下のフォーカスを移動して重要な部分が表示されるようにしてください。",
+                "pc_x": "PC画像左右フォーカス",
+                "pc_y": "PC画像上下フォーカス",
+                "mobile_x": "モバイル画像左右フォーカス",
+                "mobile_y": "モバイル画像上下フォーカス",
+                "overlay": "テキスト背景",
+                "none": "なし",
+                "dark": "ダーク背景",
+                "light": "ライト背景"
+            }
+        }
     }
-  }
 }

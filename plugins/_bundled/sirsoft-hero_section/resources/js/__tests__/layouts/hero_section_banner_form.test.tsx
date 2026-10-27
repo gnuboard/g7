@@ -42,6 +42,8 @@ describe('배너 등록·수정 화면', () => {
     expect(json(source)).not.toContain('"setState"');
     // 폼 묶음은 변경 추적을 켜고, 이탈 가드는 그 표시를 본다
     const sections = findById(form, 'form_sections')!;
+    // [case:hero-form-nested-debounce] 초점·배경처럼 같은 중첩 객체의 다른 필드를 연속 입력해도 옛 객체로 덮지 않는다.
+    expect(sections.debounce).toBe(0);
     expect(sections.dataKey ?? sections.props?.dataKey ?? sections['data-key']).toBeDefined();
     expect(json(layout.meta)).toContain('_local.hasChanges === true');
     // 들어올 때마다 변경 표시를 끈다
@@ -69,6 +71,26 @@ describe('배너 등록·수정 화면', () => {
     expect(inputs.every((n) => n.props.availableLocales === undefined)).toBe(true);
     expect(inputs.filter((n) => n.props.required === true).map((n) => n.props.name)).toEqual(['title']);
     expect(inputs.map((n) => n.props.maxLength)).toEqual([100, 300, 30, 200]);
+  });
+
+  // @scenario surface=form_images_apply_on_save
+  it('실제 업로드 상태 식이 대기·압축·진행·실패를 막고 완료·제거 뒤 저장을 연다', () => {
+    const disabled = findById(form, 'footer_save_button')!.props.disabled.slice(2, -2);
+    const isDisabled = (state: any) => Function('_local', `return (${disabled})`)(state);
+    for (const device of ['pc', 'mobile']) {
+      const uploader = findById(form, `${device}_image_uploader`)!;
+      expect(uploader.props.disabled).toBe('{{_local.isSaving}}');
+      const action = actionsOf(uploader, 'setState').find((a) => a.params[`${device}UploadBlocked`] !== undefined)!;
+      const expression = action.params[`${device}UploadBlocked`].slice(2, -2);
+      const blocked = (files: any[]) => Function('$args', `return (${expression})`)([files]);
+      for (const status of ['pending', 'compressing', 'uploading', 'error']) {
+        const state = { form: { images: { pc: { id: 1 } } }, [`${device}UploadBlocked`]: blocked([{ status }]) };
+        expect(isDisabled(state), `${device}:${status}`).toBe(true);
+      }
+      expect(blocked([])).toBe(false);
+      expect(blocked([{ status: 'done' }])).toBe(false);
+    }
+    expect(isDisabled({ isSaving: true, form: { images: { pc: { id: 1 } } } })).toBe(true);
   });
 
   // @scenario surface=form_images_apply_on_save

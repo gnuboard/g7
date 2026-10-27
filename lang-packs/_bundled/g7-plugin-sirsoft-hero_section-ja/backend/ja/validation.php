@@ -53,5 +53,7 @@ return [
         'effect' => '切り替え効果',
         'ids' => '選択されたバナー',
         'ids_item' => '選択されたバナー',
+        'revision' => '編集世代',
+        'presentation' => '画像表示設定',
     ],
 ];

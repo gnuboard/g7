@@ -9,6 +9,7 @@ use Plugins\Sirsoft\HeroSection\Enums\BannerDevice;
 use Plugins\Sirsoft\HeroSection\Http\Requests\Concerns\BannerFieldRules;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerImageRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Rules\SelectableBannerImage;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
  * 배너 수정 요청 — 등록과 같은 규칙(대칭)에, 저장 때 바꿀 이미지(`pc_image_id`·`mobile_image_id`)를 받는다.
@@ -38,6 +39,11 @@ class UpdateBannerRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->normalizeTranslations();
+        // 옛 이미지가 삭제됐어도 이미지 422보다 먼저 수정 충돌을 알린다.
+        $revision = filter_var($this->input('revision'), FILTER_VALIDATE_INT);
+        if ($this->has('revision') && $revision !== false && $revision >= 0 && $this->route('banner')?->lock_version !== $revision) {
+            throw new ConflictHttpException(__('sirsoft-hero_section::messages.banner.conflict'));
+        }
     }
 
     /**
@@ -51,6 +57,7 @@ class UpdateBannerRequest extends FormRequest
         $tempKey = is_string($this->input('temp_key')) ? $this->input('temp_key') : null;
 
         $rules = $this->bannerRules() + [
+            'revision' => ['sometimes', 'required', 'integer', 'min:0'],
             'temp_key' => ['nullable', 'string', 'max:64'],
             'pc_image_id' => ['sometimes', 'required', 'integer', new SelectableBannerImage(BannerDevice::Pc, $bannerId, $tempKey)],
             'mobile_image_id' => ['sometimes', 'nullable', 'integer', new SelectableBannerImage(BannerDevice::Mobile, $bannerId, $tempKey)],
@@ -103,6 +110,9 @@ class UpdateBannerRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'revision' => __('sirsoft-hero_section::validation.attributes.revision'),
+            'presentation' => __('sirsoft-hero_section::validation.attributes.presentation'),
+            'presentation.*' => __('sirsoft-hero_section::validation.attributes.presentation'),
             'position' => __('sirsoft-hero_section::validation.attributes.position'),
             'is_active' => __('sirsoft-hero_section::validation.attributes.is_active'),
             'display_period' => __('sirsoft-hero_section::validation.attributes.display_period'),

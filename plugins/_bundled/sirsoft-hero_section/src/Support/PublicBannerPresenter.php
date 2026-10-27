@@ -28,6 +28,7 @@ class PublicBannerPresenter
 
         return [
             'id' => $banner->id,
+            'presentation' => array_replace(Banner::DEFAULT_PRESENTATION, $banner->presentation ?? []),
             'title' => $title,
             'description' => self::pick($banner->description, $locale),
             'button_text' => self::pick($banner->button_text, $locale),

@@ -60,6 +60,8 @@ export interface HeroBanner {
 
   /** PC·모바일 이미지 */
   images?: { pc?: HeroImage | null; mobile?: HeroImage | null };
+  /** 기기별 이미지 초점(%)과 선택적 문구 배경 */
+  presentation?: { pc_x?: number; pc_y?: number; mobile_x?: number; mobile_y?: number; overlay?: 'none' | 'dark' | 'light' } | null;
 }
 
 /** 위치별 슬라이더 설정 */
@@ -100,7 +102,7 @@ export interface HeroSliderProps {
 /** 플러그인 식별자 — 문구 키 앞에 붙는다 */
 const PLUGIN = 'sirsoft-hero_section';
 
-/** 권장 비율 — 이미지 크기 정보가 없을 때 영역 높이를 미리 잡는다 */
+/** 기기별 고정 표시 비율 — 배너가 넘어가도 영역 높이를 유지한다 */
 const FALLBACK_RATIO = { pc: '1920 / 640', mobile: '750 / 1000' };
 
 /**
@@ -120,17 +122,6 @@ function t(key: string, fallback: string, params?: Record<string, string>): stri
   }
 
   return Object.entries(params ?? {}).reduce((text, [name, value]) => text.replace(`{{${name}}}`, value), fallback);
-}
-
-/**
- * 이미지 크기로 aspect-ratio 값을 만듭니다.
- *
- * @param image 이미지
- * @param fallback 크기가 없을 때 쓸 비율
- * @returns CSS aspect-ratio 값
- */
-function ratioOf(image: HeroImage | null | undefined, fallback: string): string {
-  return image?.width && image?.height ? `${image.width} / ${image.height}` : fallback;
 }
 
 /**
@@ -165,7 +156,7 @@ function linkProps(banner: HeroBanner): { href: string; target?: string; rel?: s
  * 넘김(전환 효과·자동 재생·무한 반복·손가락 넘기기)은 Swiper 가 맡고, 화면의 ‹ › 단추·「1 / 3」·일시정지 단추와
  * 캐러셀 접근성 표시는 이 컴포넌트가 그린다(Swiper 기본 화살표·점 표시는 쓰지 않는다). PC 마우스 끌기는 끈다.
  * 배너가 없으면 아무것도 그리지 않는다(구좌 숨김). 1장이면 컨트롤·자동 재생·넘기기가 없다. PC·모바일 이미지는
- * `<picture>` 로 바꾸고, 업로드 때 잰 크기로 영역 비율을 미리 잡아 화면 밀림을 막는다. 첫 장은 즉시, 나머지는 지연
+ * `<picture>` 로 바꾸고, 기기별 고정 표시 비율로 영역 높이를 잡아 화면 밀림을 막는다. 첫 장은 즉시, 나머지는 지연
  * 로딩하되 다음 장은 전환 전에 미리 받는다. 자동 재생은 마우스·포커스·일시정지 단추·움직임 줄이기에서 멈추고,
  * 자동으로 넘어가는 동안에는 장 번호를 화면 읽기 프로그램이 매번 읽지 않게 한다.
  * 템플릿은 자기 오버라이드 폴더(템플릿 루트 기준 src/components/overrides/sirsoft-hero_section/)의 HeroSlider.tsx 로 이 컴포넌트를 대체할 수 있다(같은 props).
@@ -187,7 +178,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
 
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [held, setHeld] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focusWithin, setFocusWithin] = useState(false);
   const [swiper, setSwiper] = useState<SwiperInstance | null>(null);
   const regionRef = useRef<HTMLElement>(null);
 
@@ -198,7 +190,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   }, [key]);
 
   // 자동 재생은 Swiper 가 돌리고, 멈춤 조건(일시정지 단추·마우스·포커스)은 여기서 건다
-  const autoplaying = canAutoplay && !paused && !held;
+  const autoplaying = canAutoplay && !paused && !hovered && !focusWithin;
   useEffect(() => {
     if (!swiper || swiper.destroyed || !swiper.autoplay) {
       return;
@@ -225,9 +217,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
     return null;
   }
 
-  const first = banners[0];
-  const pcRatio = ratioOf(first.images?.pc, FALLBACK_RATIO.pc);
-  const mobileRatio = first.images?.mobile ? ratioOf(first.images.mobile, FALLBACK_RATIO.mobile) : pcRatio;
+  const pcRatio = FALLBACK_RATIO.pc;
+  const mobileRatio = FALLBACK_RATIO.mobile;
   const style = {
     '--hs-ratio-pc': forceDevice === 'mobile' ? mobileRatio : pcRatio,
     '--hs-ratio-mobile': forceDevice === 'pc' ? pcRatio : mobileRatio,
@@ -248,18 +239,18 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       id={id}
       {...editorAttrs}
       ref={regionRef}
-      className={`hs hs--${effect} ${className}`.trim()}
+      className={`hs hs--${effect}${count > 1 ? ' hs--controlled' : ''} ${className}`.trim()}
       style={style}
       role="region"
       aria-roledescription="carousel"
       aria-label={t('sirsoft-hero_section.slider.label', '메인 배너')}
       data-position={position}
-      onMouseEnter={() => setHeld(true)}
-      onMouseLeave={() => setHeld(false)}
-      onFocus={() => setHeld(true)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocusWithin(true)}
       onBlur={(event) => {
         if (!regionRef.current?.contains(event.relatedTarget as Node | null)) {
-          setHeld(false);
+          setFocusWithin(false);
         }
       }}
       onKeyDown={count > 1 ? onKeyDown : undefined}
@@ -339,6 +330,9 @@ const HeroSlide: React.FC<HeroSlideProps> = ({ banner, index, count, active, eag
   const link = linkProps(banner);
   const hasButton = !!banner.button_text && !!link;
   const alt = banner.image_alt ?? banner.title ?? '';
+  const focus = banner.presentation;
+  const point = (device: 'pc' | 'mobile') => `${focus?.[`${device}_x`] ?? 50}% ${focus?.[`${device}_y`] ?? 50}%`;
+  const imageStyle = { '--hs-focus-pc': point(forceDevice ?? 'pc'), '--hs-focus-mobile': point(forceDevice ?? 'mobile') } as React.CSSProperties;
 
   const main = forceDevice === 'mobile' ? (mobile ?? pc) : pc;
   const image = main ? (
@@ -348,6 +342,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({ banner, index, count, active, eag
       )}
       <img
         className="hs__image"
+        style={imageStyle}
         src={main.url}
         alt={alt}
         width={main.width ?? undefined}
@@ -360,7 +355,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({ banner, index, count, active, eag
   ) : null;
 
   const text = (
-    <div className="hs__text">
+    <div className={`hs__text hs__text--${banner.presentation?.overlay ?? 'none'}`}>
       {banner.title_visible !== false && banner.title && (
         <h2 className="hs__title" style={{ color: banner.title_color, textAlign: banner.title_align }}>{banner.title}</h2>
       )}

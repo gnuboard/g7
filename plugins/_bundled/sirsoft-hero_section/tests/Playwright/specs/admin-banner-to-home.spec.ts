@@ -215,7 +215,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       expect(upload.status()).toBe(201);
       const next = (await upload.json()).data.url as string;
       // 저장 전 미리보기는 올린 이미지를 그린다(임시 이미지도 공개 주소로 열린다)
-      await expect(page.locator(`section[aria-labelledby="hero_form_preview_heading"] img.hs__image[src="${next}"]`)).toBeVisible({ timeout: 20_000 });
+      await expect(page.locator('section[aria-labelledby="hero_form_preview_heading"]').frameLocator('iframe').locator(`img.hs__image[src="${next}"]`)).toBeVisible({ timeout: 20_000 });
 
       // 올리기만 해서는 사용자 화면이 바뀌지 않는다
       expect(await publicImage()).toBe(before);

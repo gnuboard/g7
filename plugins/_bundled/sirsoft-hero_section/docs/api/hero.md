@@ -119,3 +119,21 @@ _단건 응답: 위치·설정·노출 배너. 운영 정보(사용 여부·기�
 
 사용자 템플릿 확장점(`home_hero`·`shop_hero`) 조각이 부르는 공개 API. 쿼리 `position`(필수, `home_hero`·`shop_hero`)의 **지금 노출 중인** 배너를 순서대로, 요청 언어(Accept-Language)로 고른 문구와 함께 돌려준다 — 요청 언어 → 사이트 기본 언어 → en 순 대체, alt 가 비면 제목. 응답 `data` = `{position, settings{autoplay, interval_seconds, effect}, banners[{id, title, description, button_text, image_alt, title_visible·color·align, description_visible·color·align, link_url, link_new_window, images{pc{url,width,height}, mobile|null}}]}`. 운영 정보(사용 여부·기간·작성자)는 싣지 않는다. 위치·언어별로 캐시하되 다음 시작·종료 시각을 넘기지 않고, 꺼낼 때 다시 판정한다. 모르는 위치는 422. 분당 120회 제한.
 
+
+## 이미지 표시
+
+`banners[].presentation`에는 기기별 초점 좌표(pc_x, pc_y, mobile_x, mobile_y; 0~100 정수)와 문구 배경(overlay: none/dark/light)이 들어갑니다. 기존 배너는 중앙 초점 50과 배경 없음으로 응답합니다. 사용자 슬라이더와 관리자 미리보기는 이 값을 같은 방식으로 사용합니다.
+
+`GET /api/plugins/sirsoft-hero_section/hero?position=home_hero`에서 확인한 기존 배너의 표시 설정 예시(응답의 해당 부분):
+
+```json
+{
+    "presentation": {
+        "pc_x": 50,
+        "pc_y": 50,
+        "mobile_x": 50,
+        "mobile_y": 50,
+        "overlay": "none"
+    }
+}
+```

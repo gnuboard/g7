@@ -38,6 +38,24 @@ async function settle(page: Page): Promise<void> {
   await expect.poll(() => page.locator('section.hs .hs__track').evaluate((el) => (el as any).swiper?.animating === false)).toBe(true);
 }
 
+// @scenario flow=slider_autoplay_advances, viewport=desktop
+// @effects user_screen_reflects_admin_change, test_data_cleaned_up
+test('키보드 포커스가 남아 있으면 마우스 이탈로 자동 재생하지 않는다', async ({ page, request, managerToken, created }) => {
+  const a = uniqueTitle('포커스A');
+  const b = uniqueTitle('포커스B');
+  created.push(await createBanner(request, managerToken, { title: { ko: a } }));
+  created.push(await createBanner(request, managerToken, { title: { ko: b } }));
+  await page.setViewportSize(VIEWPORTS.desktop);
+  await openHome(page, [a, b]);
+  await page.locator('section.hs .hs__next').focus();
+  await slider(page).hover();
+  await page.mouse.move(0, 0);
+  await expect.poll(() => page.locator('section.hs .hs__track').evaluate((el) => (el as any).swiper.autoplay.running)).toBe(false);
+  const current = await activeTitle(page);
+  await page.waitForTimeout(7_100);
+  expect(await activeTitle(page)).toBe(current);
+});
+
 /**
  * 손가락으로 오른쪽에서 왼쪽으로 쓸어 넘긴다(CDP 터치 — 마우스 끌기는 꺼 두었다).
  *

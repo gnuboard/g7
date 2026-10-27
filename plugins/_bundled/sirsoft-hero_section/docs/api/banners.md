@@ -30,7 +30,7 @@ _요청 파라미터 없음._
 **요청 예시**
 
 ```http
-GET /api/plugins/sirsoft-hero_section/admin/banners HTTP/1.1
+GET /api/plugins/sirsoft-hero_section/admin/banners?position=%EC%98%88%EC%8B%9C%EA%B0%92&status=%EC%98%88%EC%8B%9C%EA%B0%92&search=%EC%98%88%EC%8B%9C%EA%B0%92&sort_by=%EC%98%88%EC%8B%9C%EA%B0%92&sort_order=%EC%98%88%EC%8B%9C%EA%B0%92&page=1&per_page=1 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -68,6 +68,12 @@ _목록 응답: `data` 객체 안에 행 배열(`data`)·`abilities`·`statistic
 
 **응답 예시**
 
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
 ```json
 {
     "success": true,
@@ -75,7 +81,7 @@ _목록 응답: `data` 객체 안에 행 배열(`data`)·`abilities`·`statistic
     "data": {
         "data": [
             {
-                "id": 659,
+                "id": 87,
                 "position": "home_hero",
                 "is_active": true,
                 "status": "active",
@@ -84,25 +90,64 @@ _목록 응답: `data` 객체 안에 행 배열(`data`)·`abilities`·`statistic
                 "starts_at_display": null,
                 "ends_at_display": null,
                 "title": {
-                    "ko": "가을 신상품",
-                    "en": "Autumn arrivals"
+                    "ko": "이미지 저장 반영 확인"
                 },
-                "title_localized": "Autumn arrivals",
+                "title_localized": "이미지 저장 반영 확인",
+                "title_locales": [
+                    "ko"
+                ],
+                "created_at_display": "2026-10-26 16:14:10",
+                "thumbnail": {
+                    "id": 102,
+                    "hash": "VL0wvz5dgQSGOtSArT8MjqCgmpHx74avhuuXZwJM2R4LThwPUzoKCGYnyg6yApRW",
+                    "device": "pc",
+                    "url": "/api/plugins/sirsoft-hero_section/images/VL0wvz5dgQSGOtSArT8MjqCgmpHx74avhuuXZwJM2R4LThwPUzoKCGYnyg6yApRW",
+                    "download_url": "/api/plugins/sirsoft-hero_section/images/VL0wvz5dgQSGOtSArT8MjqCgmpHx74avhuuXZwJM2R4LThwPUzoKCGYnyg6yApRW",
+                    "original_filename": "pc_green.png",
+                    "mime_type": "image/png",
+                    "size": 5206,
+                    "size_formatted": "5.08 KB",
+                    "width": 1920,
+                    "height": 640,
+                    "order": 0,
+                    "is_image": true
+                },
+                "abilities": {
+                    "can_update": true,
+                    "can_delete": true
+                }
+            },
+            {
+                "id": 161,
+                "position": "home_hero",
+                "is_active": false,
+                "status": "inactive",
+                "sort_order": 1,
+                "display_period": "always",
+                "starts_at_display": null,
+                "ends_at_display": null,
+                "title": {
+                    "ko": "배너 편집 미리보기",
+                    "en": "Editor improvement preview",
+                    "ja": "編集改善プレビュー"
+                },
+                "title_localized": "배너 편집 미리보기",
                 "title_locales": [
                     "ko",
-                    "en"
+                    "en",
+                    "ja"
                 ],
-                "created_at_display": "2026-10-26 10:20:17",
+                "created_at_display": "2026-10-27 11:16:40",
                 "thumbnail": {
-                    "id": 717,
-                    "hash": "FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWIojRq0Hbf3t9vVw7Pf9nTlEdxvDs",
+                    "id": 182,
+                    "hash": "K4uE5ZicA9zso2Ea42LrN7fCW744OEd0f8Hep9yoeB2JFwLcVsiFA6FAV2eTdZEG",
                     "device": "pc",
-                    "url": "/api/plugins/sirsoft-hero_section/images/FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWIojRq0Hbf3t9vVw7Pf9nTlEdxvDs",
-                    "download_url": "/api/plugins/sirsoft-hero_section/images/FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWIojRq0Hbf3t9vVw7Pf9nTlEdxvDs",
-                    "original_filename": "pc.jpg",
-                    "mime_type": "image/jpeg",
-                    "size": 19891,
-                    "size_formatted": "19.42 KB",
+                    "url": "/api/plugins/sirsoft-hero_section/images/K4uE5ZicA9zso2Ea42LrN7fCW744OEd0f8Hep9yoeB2JFwLcVsiFA6FAV2eTdZEG",
+                    "download_url": "/api/plugins/sirsoft-hero_section/images/K4uE5ZicA9zso2Ea42LrN7fCW744OEd0f8Hep9yoeB2JFwLcVsiFA6FAV2eTdZEG",
+                    "original_filename": "issue810-focus.png",
+                    "mime_type": "image/png",
+                    "size": 26242,
+                    "size_formatted": "25.63 KB",
                     "width": 1920,
                     "height": 640,
                     "order": 0,
@@ -126,15 +171,15 @@ _목록 응답: `data` 객체 안에 행 배열(`data`)·`abilities`·`statistic
             },
             "statuses": {
                 "active": 1,
-                "scheduled": 1,
+                "scheduled": 0,
                 "ended": 0,
-                "inactive": 0
+                "inactive": 1
             }
         },
         "pagination": {
             "current_page": 1,
             "last_page": 1,
-            "per_page": 20,
+            "per_page": 25,
             "total": 2,
             "from": 1,
             "to": 2,
@@ -826,12 +871,18 @@ _단건 응답: 수정 화면용 상세(다국어 원본·이미지 2종)._
 
 **응답 예시**
 
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
 ```json
 {
     "success": true,
     "message": "배너를 불러왔습니다.",
     "data": {
-        "id": 659,
+        "id": 87,
         "position": "home_hero",
         "is_active": true,
         "status": "active",
@@ -840,65 +891,53 @@ _단건 응답: 수정 화면용 상세(다국어 원본·이미지 2종)._
         "starts_at_display": null,
         "ends_at_display": null,
         "title": {
-            "ko": "가을 신상품",
-            "en": "Autumn arrivals"
+            "ko": "이미지 저장 반영 확인"
         },
-        "title_localized": "Autumn arrivals",
+        "title_localized": "이미지 저장 반영 확인",
         "title_locales": [
-            "ko",
-            "en"
+            "ko"
         ],
-        "created_at_display": "2026-10-26 10:20:17",
+        "created_at_display": "2026-10-26 16:14:10",
         "description": {
-            "ko": "최대 30% 할인"
+            "ko": "수정 화면에서 이미지를 바꾸고 취소·저장을 확인하세요"
         },
-        "button_text": {
-            "ko": "보러 가기"
+        "presentation": {
+            "pc_x": 50,
+            "pc_y": 50,
+            "mobile_x": 50,
+            "mobile_y": 50,
+            "overlay": "none"
         },
-        "image_alt": {
-            "ko": "가을 신상품 배너"
-        },
+        "revision": 0,
+        "button_text": null,
+        "image_alt": null,
         "title_visible": true,
         "title_color": "#FFFFFF",
         "title_align": "left",
         "description_visible": true,
         "description_color": "#E5E7EB",
         "description_align": "left",
-        "link_url": "/shop",
+        "link_url": "/",
         "link_new_window": false,
         "starts_at_local": null,
         "ends_at_local": null,
         "images": {
             "pc": {
-                "id": 717,
-                "hash": "FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWIojRq0Hbf3t9vVw7Pf9nTlEdxvDs",
+                "id": 102,
+                "hash": "VL0wvz5dgQSGOtSArT8MjqCgmpHx74avhuuXZwJM2R4LThwPUzoKCGYnyg6yApRW",
                 "device": "pc",
-                "url": "/api/plugins/sirsoft-hero_section/images/FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWIojRq0Hbf3t9vVw7Pf9nTlEdxvDs",
-                "download_url": "/api/plugins/sirsoft-hero_section/images/FCm6p4tnL4qnOmwOHdqbgaoxqNZQmUaowSsWIojRq0Hbf3t9vVw7Pf9nTlEdxvDs",
-                "original_filename": "pc.jpg",
-                "mime_type": "image/jpeg",
-                "size": 19891,
-                "size_formatted": "19.42 KB",
+                "url": "/api/plugins/sirsoft-hero_section/images/VL0wvz5dgQSGOtSArT8MjqCgmpHx74avhuuXZwJM2R4LThwPUzoKCGYnyg6yApRW",
+                "download_url": "/api/plugins/sirsoft-hero_section/images/VL0wvz5dgQSGOtSArT8MjqCgmpHx74avhuuXZwJM2R4LThwPUzoKCGYnyg6yApRW",
+                "original_filename": "pc_green.png",
+                "mime_type": "image/png",
+                "size": 5206,
+                "size_formatted": "5.08 KB",
                 "width": 1920,
                 "height": 640,
                 "order": 0,
                 "is_image": true
             },
-            "mobile": {
-                "id": 718,
-                "hash": "KrjUXDR79043RZki6CwxzyVVcNhNiK0x0nZwHKc77Yn3otSpwRUUf3zdWm1A3Wkt",
-                "device": "mobile",
-                "url": "/api/plugins/sirsoft-hero_section/images/KrjUXDR79043RZki6CwxzyVVcNhNiK0x0nZwHKc77Yn3otSpwRUUf3zdWm1A3Wkt",
-                "download_url": "/api/plugins/sirsoft-hero_section/images/KrjUXDR79043RZki6CwxzyVVcNhNiK0x0nZwHKc77Yn3otSpwRUUf3zdWm1A3Wkt",
-                "original_filename": "m.jpg",
-                "mime_type": "image/jpeg",
-                "size": 12535,
-                "size_formatted": "12.24 KB",
-                "width": 750,
-                "height": 1000,
-                "order": 0,
-                "is_image": true
-            }
+            "mobile": null
         },
         "abilities": {
             "can_update": true,
@@ -1099,3 +1138,9 @@ _단건 응답: 고친 배너 상세(조회 응답과 같은 모양)._
 
 다른 배너의 이미지, 다른 임시 묶음의 이미지, 기기가 다른 이미지는 422(`pc_image_id`·`mobile_image_id`, 「고른 이미지를 찾을 수 없습니다」). `pc_image_id` 를 보내지 않았는데 배너에 PC 이미지가 없으면 422(`pc_image`). 바뀐 기기마다 옛 이미지는 배너에서 떼어 파일·행을 지우고 `sirsoft-hero_section.banner_image.after_change` 를 발행한다(활동 로그 `hero_banner.image_update`·`hero_banner.image_remove`). 옛 파일 삭제가 실패해도 저장은 성공하고, 떼어 낸 이미지는 임시 이미지로 남아 매일 정리 명령(`prune-temp-images`)이 다시 지운다.
 
+
+## 편집 표시 설정과 수정 충돌
+
+등록·수정 본문에 선택적 `presentation` 객체를 보낼 수 있습니다. `pc_x`, `pc_y`, `mobile_x`, `mobile_y`는 0~100 정수 초점 좌표이며, `overlay`는 `none`, `dark`, `light`입니다. 등록 시 생략하거나 null이면 중앙 초점과 배경 없음을 사용합니다. 수정 시 생략하면 기존 설정을 유지하고 null이면 기본값으로 되돌립니다. 상세 및 공개 hero 응답에 같은 표시 설정을 돌려줍니다.
+
+수정 화면은 상세 응답의 정수 `revision`을 PUT 본문에 그대로 보냅니다. 서버는 트랜잭션 안에서 최신 부모 행을 잠그고 비교해, 다른 수정이나 일괄 상태 변경이 먼저 저장되었으면 409를 반환합니다. 충돌 응답은 기존 배너·이미지를 바꾸지 않습니다. 기존 API 호출의 revision 생략은 호환되지만, 사용자 편집 화면에서는 항상 보내야 합니다. 이미지 검증 전에 확인 가능한 오래된 세대도 먼저 409로 안내합니다.

@@ -186,17 +186,40 @@
                 "range": "Date range",
                 "starts_at": "Display start",
                 "ends_at": "Display end",
-                "hint": "If saved now, it will show as \"{{status}}\" — estimated with this device's clock; the actual status follows the site time zone."
+                "hint": "If saved now, the banner will be {{status}}.",
+                "clock_loading": "Loading the site clock.",
+                "timezone": "Site time zone: {{timezone}}",
+                "incomplete": "Enter both the start and end date and time."
             },
             "preview": {
                 "title": "Preview",
                 "empty": "Upload a PC image to see the preview.",
                 "has_button": "Pressing the button opens the link.",
-                "whole_link": "No button — the whole banner is a link."
+                "whole_link": "No button — the whole banner is a link.",
+                "language": "Preview language",
+                "frame": "{{device}} banner preview",
+                "expand": "Enlarge preview",
+                "close": "Close",
+                "fallback": "Missing text falls back to the site language ({{locale}}) or another available language."
             },
             "cancel": "Cancel",
             "save": "Save",
-            "saving": "Saving…"
+            "saving": "Saving…",
+            "upload_pending": "An image upload is pending. Retry or remove any failed files before saving.",
+            "conflict": "Another administrator saved changes first. Your input is preserved. Open the latest banner in another tab to compare your changes.",
+            "conflict_compare": "Open the latest banner in another tab",
+            "presentation": {
+                "title": "Image framing and text background",
+                "hint": "PC uses 1920×640 and mobile uses 750×1000. If no mobile image is uploaded, the PC image is cropped. Adjust the focal points to keep important content visible.",
+                "pc_x": "PC horizontal focal point",
+                "pc_y": "PC vertical focal point",
+                "mobile_x": "Mobile horizontal focal point",
+                "mobile_y": "Mobile vertical focal point",
+                "overlay": "Text background",
+                "none": "None",
+                "dark": "Dark gradient",
+                "light": "Light gradient"
+            }
         }
     }
 }

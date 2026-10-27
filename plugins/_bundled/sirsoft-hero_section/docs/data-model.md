@@ -7,7 +7,7 @@
 <!-- @generated:models START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 모델 | 테이블 | fillable | 관계 | 특성 |
 |---|---|---|---|---|
-| `Banner` | `hero_section_banners` | 20 | images→BannerImage, pcImage→BannerImage, mobileImage→BannerImage | - |
+| `Banner` | `hero_section_banners` | 21 | images→BannerImage, pcImage→BannerImage, mobileImage→BannerImage | - |
 | `BannerImage` | `hero_section_banner_images` | 12 | banner→Banner | - |
 | `PositionSetting` | `hero_section_position_settings` | 5 | - | - |
 <!-- @generated:models END -->
@@ -33,17 +33,18 @@
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 3개.
+마이그레이션 4개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
 | `2026_10_24_000001_create_hero_section_banners_table.php` | `hero_section_banners` | - | ✅ |
 | `2026_10_24_000002_create_hero_section_banner_images_table.php` | `hero_section_banner_images` | - | ✅ |
 | `2026_10_24_000003_create_hero_section_position_settings_table.php` | `hero_section_position_settings` | - | ✅ |
+| `2026_10_27_000004_add_presentation_and_lock_version_to_hero_section_banners.php` | - | `hero_section_banners` | ✅ |
 <!-- @generated:migrations END -->
 
 <!-- @intent START -->
-신규 설치 마이그레이션 3개. 일시는 UTC 로 저장한다.
+신규 설치는 마이그레이션 4개를 순서대로 적용하고, 기존 설치는 미적용 마이그레이션만 적용한다. 일시는 UTC 로 저장한다.
 <!-- @intent END -->
 
 ## Enum
@@ -57,6 +58,7 @@
 | `HeroPosition` | `string` | 2 | `home_hero`, `shop_hero` |
 | `SlideEffect` | `string` | 3 | `slide`, `fade`, `none` |
 | `TextAlign` | `string` | 3 | `left`, `center`, `right` |
+| `TextOverlay` | `string` | 3 | `none`, `dark`, `light` |
 <!-- @generated:enums END -->
 
 <!-- @intent START -->
@@ -79,3 +81,7 @@
 <!-- @intent START -->
 모든 쿼리는 Repository 안에서 만든다. 상태 필터·정렬·공개 노출은 Repository 의 같은 기간 조건 하나를 쓴다 — PHP 에서 거르면 쪽 수가 어긋난다.
 <!-- @intent END -->
+
+## 편집 표시 설정과 동시 수정
+
+추가 마이그레이션은 `hero_section_banners.presentation`(nullable JSON)과 `lock_version`(unsigned integer, 기본 0)을 더합니다. 기존 배너는 중앙 초점·배경 없음으로 해석합니다. 모델은 presentation을 배열로, 세대를 정수로 캐스팅하며 클라이언트의 lock_version 직접 대입을 허용하지 않습니다. 일반 수정·일괄 사용 여부 변경은 세대를 증가시킵니다. 수정·단건 및 일괄 삭제는 부모 행 잠금 순서를 공유합니다.

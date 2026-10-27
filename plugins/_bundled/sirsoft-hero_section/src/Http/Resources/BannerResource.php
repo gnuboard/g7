@@ -30,6 +30,8 @@ class BannerResource extends BaseApiResource
         return [
             ...$this->baseFields(),
             'description' => $this->description,
+            'presentation' => array_replace(Banner::DEFAULT_PRESENTATION, $this->presentation ?? []),
+            'revision' => (int) $this->lock_version,
             'button_text' => $this->button_text,
             'image_alt' => $this->image_alt,
             'title_visible' => (bool) $this->title_visible,

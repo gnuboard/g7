@@ -77,6 +77,8 @@ class StoreBannerRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'presentation' => __('sirsoft-hero_section::validation.attributes.presentation'),
+            'presentation.*' => __('sirsoft-hero_section::validation.attributes.presentation'),
             'position' => __('sirsoft-hero_section::validation.attributes.position'),
             'is_active' => __('sirsoft-hero_section::validation.attributes.is_active'),
             'display_period' => __('sirsoft-hero_section::validation.attributes.display_period'),

@@ -7,7 +7,7 @@
  */
 import React from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, cleanup } from '@testing-library/react';
+import { render, cleanup, fireEvent } from '@testing-library/react';
 import { HeroBannerPreview } from '../../components/composite/HeroBannerPreview';
 
 vi.mock('swiper/react', () => import('../swiperMock'));
@@ -30,14 +30,21 @@ describe('HeroBannerPreview', () => {
   // @effects responsive_image_switch
   it('기기 틀 안에 슬라이더를 그리고, 모바일 틀은 모바일 이미지를 강제한다', () => {
     const pc = render(<HeroBannerPreview banners={banners} device="pc" />);
-    expect(pc.container.querySelector('.hs-preview--pc .hs')).not.toBeNull();
-    expect(pc.container.querySelector('img')?.getAttribute('src')).toBe('/pc.jpg');
-    expect(pc.container.querySelector('source')).toBeNull();
+    const pcFrame = pc.container.querySelector('iframe')!;
+    fireEvent.load(pcFrame);
+    const pcBody = pcFrame.contentDocument!.body;
+    expect(pcFrame.width).toBe('1366');
+    expect(pcBody.querySelector('.hs')).not.toBeNull();
+    expect(pcBody.querySelector('img')?.getAttribute('src')).toBe('/pc.jpg');
+    expect(pcBody.querySelector('source')).toBeNull();
     pc.unmount();
 
     const mobile = render(<HeroBannerPreview banners={banners} device="mobile" />);
     expect(mobile.container.querySelector('.hs-preview--mobile')).not.toBeNull();
-    expect(mobile.container.querySelector('img')?.getAttribute('src')).toBe('/m.jpg');
+    const mobileFrame = mobile.container.querySelector('iframe')!;
+    fireEvent.load(mobileFrame);
+    expect(mobileFrame.width).toBe('390');
+    expect(mobileFrame.contentDocument!.querySelector('img')?.getAttribute('src')).toBe('/m.jpg');
     mobile.unmount();
 
     const empty = render(<HeroBannerPreview banners={[]} emptyText="노출 중인 배너가 없습니다" />);

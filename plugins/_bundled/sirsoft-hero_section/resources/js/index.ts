@@ -8,9 +8,13 @@
 import '../css/hero.css';
 import { HeroSlider } from './components/composite/HeroSlider';
 import { HeroBannerPreview } from './components/composite/HeroBannerPreview';
+import { HeroPeriodHint } from './components/composite/HeroPeriodHint';
+import { HeroPreviewLanguage } from './components/composite/HeroPreviewLanguage';
 
 export { HeroSlider, type HeroSliderProps, type HeroBanner, type HeroSliderSettings } from './components/composite/HeroSlider';
 export { HeroBannerPreview, type HeroBannerPreviewProps } from './components/composite/HeroBannerPreview';
+export { HeroPeriodHint, type HeroPeriodHintProps } from './components/composite/HeroPeriodHint';
+export { HeroPreviewLanguage, type HeroPreviewLanguageProps } from './components/composite/HeroPreviewLanguage';
 
 /** 플러그인 식별자 — 컴포넌트 이름 앞에 붙는다. */
 const PLUGIN_IDENTIFIER = 'sirsoft-hero_section';
@@ -35,6 +39,8 @@ export function registerComponents(): boolean {
     name: `${PLUGIN_IDENTIFIER}.HeroBannerPreview`,
     type: 'composite',
   });
+  registry.registerExtensionComponent(`${PLUGIN_IDENTIFIER}.HeroPeriodHint`, HeroPeriodHint, { name: `${PLUGIN_IDENTIFIER}.HeroPeriodHint`, type: 'composite' });
+  registry.registerExtensionComponent(`${PLUGIN_IDENTIFIER}.HeroPreviewLanguage`, HeroPreviewLanguage, { name: `${PLUGIN_IDENTIFIER}.HeroPreviewLanguage`, type: 'composite' });
 
   return true;
 }

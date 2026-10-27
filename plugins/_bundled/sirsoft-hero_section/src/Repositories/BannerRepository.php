@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\HeroSection\Enums\BannerStatus;
 use Plugins\Sirsoft\HeroSection\Enums\DisplayPeriod;
 use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
@@ -140,6 +141,17 @@ class BannerRepository implements BannerRepositoryInterface
     }
 
     /**
+     * 편집·이미지 교체를 부모 행 잠금으로 직렬화합니다.
+     *
+     * @param  int  $id  배너 ID
+     * @return Banner 최신 배너
+     */
+    public function findForUpdate(int $id): Banner
+    {
+        return Banner::query()->lockForUpdate()->findOrFail($id)->load(['pcImage', 'mobileImage']);
+    }
+
+    /**
      * {@inheritDoc}
      *
      * @param  Banner  $banner  대상 배너
@@ -148,7 +160,7 @@ class BannerRepository implements BannerRepositoryInterface
      */
     public function update(Banner $banner, array $data): Banner
     {
-        $banner->fill($data)->save();
+        $banner->fill($data)->forceFill(['lock_version' => $banner->lock_version + 1])->save();
 
         return $banner->fresh(['pcImage', 'mobileImage']);
     }
@@ -231,6 +243,7 @@ class BannerRepository implements BannerRepositoryInterface
     public function bulkSetActive(array $ids, bool $isActive, ?int $actorId): int
     {
         return Banner::query()->whereIn('id', $ids)->update([
+            'lock_version' => DB::raw('lock_version + 1'),
             'is_active' => $isActive,
             'updated_by' => $actorId,
             'updated_at' => now(),

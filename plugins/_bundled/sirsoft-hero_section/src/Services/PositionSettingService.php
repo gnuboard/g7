@@ -3,7 +3,9 @@
 namespace Plugins\Sirsoft\HeroSection\Services;
 
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
+use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\PositionSettingRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Support\UploadLimit;
@@ -40,7 +42,17 @@ class PositionSettingService
             'settings' => isset($saved[$position->value]) ? $saved[$position->value]->toSettings() : PositionSetting::DEFAULTS,
         ], HeroPosition::cases());
 
-        return ['positions' => $positions, 'upload' => UploadLimit::describe()];
+        return [
+            'positions' => $positions,
+            'upload' => UploadLimit::describe(),
+            'editor' => [
+                'timezone' => TimezoneHelper::getSiteTimezone(),
+                'server_now' => now()->toIso8601String(),
+                'default_locale' => config('app.site_locale', config('app.locale')),
+                'locales' => array_values(config('app.supported_locales', [])),
+                'focus_limits' => ['min' => Banner::FOCUS_MIN, 'max' => Banner::FOCUS_MAX],
+            ],
+        ];
     }
 
     /**

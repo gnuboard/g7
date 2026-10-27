@@ -53,6 +53,12 @@ _단건 응답: 위치 목록·위치별 슬라이더 설정·업로드 한도._
 
 **응답 예시**
 
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
 ```json
 {
     "success": true,
@@ -84,6 +90,20 @@ _단건 응답: 위치 목록·위치별 슬라이더 설정·업로드 한도._
             "max_mb": 5,
             "server_limit_mb": 2,
             "effective_mb": 2
+        },
+        "editor": {
+            "timezone": "Asia/Seoul",
+            "server_now": "2026-10-27T03:51:29+00:00",
+            "default_locale": "ko",
+            "locales": [
+                "ko",
+                "en",
+                "ja"
+            ],
+            "focus_limits": {
+                "min": 0,
+                "max": 100
+            }
         }
     }
 }
@@ -164,3 +184,7 @@ _단건 응답: 저장한 위치 설정._
 
 위치 슬라이더 설정 저장 — `autoplay`(boolean), `interval_seconds`(3·5·7), `effect`(slide·fade·none). 처음 저장하면 행을 만든다. 모르는 위치는 404. 그 위치 공개 캐시는 즉시 비워진다.
 
+
+## 편집 화면 메타
+
+관리자 위치 설정 GET 응답의 `editor`는 사이트 `timezone`, ISO 8601 `server_now`, `default_locale`, 활성 언어 코드 목록 `locales`를 제공합니다. 등록·수정 화면은 이 값을 미리보기 언어와 기간 상태 안내에 사용합니다. 플러그인 환경설정 관리 권한 없이 배너 조회 권한으로 받을 수 있습니다.

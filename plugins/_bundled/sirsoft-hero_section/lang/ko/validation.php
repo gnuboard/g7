@@ -20,6 +20,8 @@ return [
         'dimensions' => '이미지 가로·세로는 4000픽셀 이하여야 합니다.',
     ],
     'attributes' => [
+        'revision' => '수정 세대',
+        'presentation' => '이미지 표시 설정',
         'pc_image' => 'PC 이미지',
         'mobile_image' => '모바일 이미지',
         'position' => '노출 위치',

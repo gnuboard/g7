@@ -184,6 +184,24 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=pause_button_toggles_autoplay
+  // @scenario surface=autoplay_pauses_on_hover_and_focus
+  it('포커스가 남아 있으면 마우스 이탈로 재생하지 않고, hover가 남으면 blur로 재생하지 않는다', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} />);
+    const region = container.querySelector('section')!;
+    const next = container.querySelector('.hs__next')!;
+    const autoplay = swiperState.instance!.autoplay;
+    fireEvent.focus(next);
+    fireEvent.mouseEnter(region);
+    fireEvent.mouseLeave(region);
+    expect(autoplay.running).toBe(false);
+    fireEvent.mouseEnter(region);
+    fireEvent.blur(next, { relatedTarget: document.body });
+    expect(autoplay.running).toBe(false);
+    fireEvent.mouseLeave(region);
+    expect(autoplay.running).toBe(true);
+  });
+
+  // @scenario surface=pause_button_toggles_autoplay
   it('일시정지 단추가 자동 재생을 멈추고 다시 켠다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
     const toggle = container.querySelector('.hs__toggle') as HTMLButtonElement;
@@ -331,15 +349,15 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=aspect_ratio_falls_back_to_recommended
-  it('크기 정보가 없으면 권장 비율, 모바일 이미지가 없으면 모바일도 PC 비율을 쓴다', () => {
+  it('첫 배너의 이미지 크기·모바일 유무와 무관하게 PC·모바일 표시 비율을 유지한다', () => {
     const { container, rerender } = render(<HeroSlider banners={[banner(1, { images: { pc: { url: '/p.jpg' }, mobile: null } })]} />);
     let style = (container.querySelector('section') as HTMLElement).style;
     expect(style.getPropertyValue('--hs-ratio-pc')).toBe('1920 / 640');
-    expect(style.getPropertyValue('--hs-ratio-mobile')).toBe('1920 / 640');
+    expect(style.getPropertyValue('--hs-ratio-mobile')).toBe('750 / 1000');
 
     rerender(<HeroSlider banners={[banner(1, { images: { pc: { url: '/p.jpg', width: 1600, height: 600 }, mobile: { url: '/m.jpg' } } })]} />);
     style = (container.querySelector('section') as HTMLElement).style;
-    expect(style.getPropertyValue('--hs-ratio-pc')).toBe('1600 / 600');
+    expect(style.getPropertyValue('--hs-ratio-pc')).toBe('1920 / 640');
     expect(style.getPropertyValue('--hs-ratio-mobile')).toBe('750 / 1000');
   });
 });

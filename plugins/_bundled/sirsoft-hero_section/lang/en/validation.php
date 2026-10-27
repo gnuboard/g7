@@ -20,6 +20,8 @@ return [
         'dimensions' => 'Image width and height must be 4000 pixels or less.',
     ],
     'attributes' => [
+        'revision' => 'edit revision',
+        'presentation' => 'image presentation',
         'pc_image' => 'PC image',
         'mobile_image' => 'mobile image',
         'position' => 'position',

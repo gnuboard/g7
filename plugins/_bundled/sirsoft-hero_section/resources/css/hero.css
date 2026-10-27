@@ -1,7 +1,7 @@
 /*
  * 히어로섹션 슬라이더 — 플러그인 소유 스타일(hs- 접두).
  * 템플릿 CSS 에 기대지 않는다: 확장 컴포넌트의 유틸리티 클래스는 템플릿 빌드에 들어 있다는 보장이 없다.
- * 영역 비율(--hs-ratio-pc / --hs-ratio-mobile)은 컴포넌트가 업로드 때 잰 이미지 크기로 넣는다 — 이미지가 오기 전에
+ * 영역 비율(--hs-ratio-pc / --hs-ratio-mobile)은 기기별 고정값(PC 1920×640, 모바일 750×1000)이다 — 이미지가 오기 전에
  * 높이를 잡아 화면 밀림을 막는다. 넘김·전환 효과는 Swiper(swiper/css·effect-fade CSS 를 함께 번들)가 맡고, 여기서는
  * Swiper 영역을 히어로 영역 크기에 맞추고 플러그인 소유 컨트롤을 그 위에 둔다.
  */
@@ -47,6 +47,11 @@
 
 .hs__image {
   object-fit: cover;
+  object-position: var(--hs-focus-pc, 50% 50%);
+}
+
+@media (max-width: 767px) {
+  .hs__image { object-position: var(--hs-focus-mobile, 50% 50%); }
 }
 
 .hs__text {
@@ -72,6 +77,23 @@
   line-height: 1.5;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
+
+.hs__text--dark { background: linear-gradient(transparent, rgba(0, 0, 0, .78)); }
+.hs__text--light { background: linear-gradient(transparent, rgba(255, 255, 255, .9)); }
+.hs--controlled .hs__text { padding-bottom: max(76px, 5vw); }
+
+.hs-editor-preview { position: sticky; top: 84px; }
+.hs-preview__viewport { width: 100%; overflow: hidden; position: relative; }
+.hs-preview__expand { display: block; margin: 8px; border: 1px solid #64748b; border-radius: 6px; padding: 6px 12px; background: #f8fafc; color: #0f172a; cursor: pointer; }
+.dark .hs-preview__expand { background: #1e293b; color: #f8fafc; }
+.hs-preview__dialog { width: min(1400px, 96vw); max-width: 96vw; max-height: 94vh; overflow: auto; padding: 12px; border: 1px solid #64748b; border-radius: 10px; background: #fff; color: #0f172a; }
+.dark .hs-preview__dialog { background: #0f172a; color: #f8fafc; }
+.hs-preview__dialog::backdrop { background: rgba(0, 0, 0, .6); }
+.hs-preview__fallback { padding: 0 8px 8px; }
+.hs-editor-language { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.hs-editor-language select { color: #0f172a; background: #fff; border: 1px solid #64748b; padding: 6px; border-radius: 6px; }
+.dark .hs-editor-language select { background: #1e293b; color: #f8fafc; }
+@media (max-width: 1023px) { .hs-editor-preview { position: static; } }
 
 .hs__button {
   display: inline-block;
