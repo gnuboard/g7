@@ -31,7 +31,7 @@
 | `sirsoft-hero_section.banner_image.after_upload` | action | 배너 이미지 임시 업로드 직후(배너에는 저장 때 붙는다). 인자: (BannerImage $image) | `src/Services/BannerImageService.php:101` |
 | `sirsoft-hero_section.banner_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/BannerImageService.php:67` |
 | `sirsoft-hero_section.hero.filter_public_banners` | filter | 사용자 화면 노출 배너 목록 가공. 인자: (array $banners, string $position, string $locale) | `src/Services/PublicHeroService.php:64` |
-| `sirsoft-hero_section.position_setting.after_update` | action | 위치 슬라이더 설정 저장 직후. 인자: (PositionSetting $setting, array $snapshot) | `src/Services/PositionSettingService.php:84` |
+| `sirsoft-hero_section.position_setting.after_update` | action | 위치 슬라이더 설정 저장 직후. 인자: (PositionSetting $setting, array $snapshot) | `src/Services/PositionSettingService.php:87` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -147,3 +147,17 @@ _등록하는 알림 정의가 없습니다._
 `HeroSlider`의 배너 객체는 선택적 `presentation`을 받습니다. `pc_x`, `pc_y`, `mobile_x`, `mobile_y`는 0~100의 이미지 초점이며 `overlay`는 none/dark/light입니다. PC와 모바일 표시 비율은 각각 1920×640·750×1000으로 고정해 순서 변경이 영역 높이를 바꾸지 않습니다. 템플릿 오버라이드도 이 계약을 반영해야 합니다.
 
 관리자 전용 `HeroBannerPreview`는 기존 banners뿐 아니라 원본 다국어 draft, locale, defaultLocale을 받습니다. `onContentLocaleChange`는 실제로 바뀐 언어 한 개를 알리고, 대상 배너가 바뀌는 초기화는 편집으로 알리지 않습니다. `HeroPeriodHint`·`HeroPreviewLanguage`도 플러그인이 등록하며 사용자 컴포넌트 팔레트에는 노출하지 않습니다.
+
+`HeroBannerPreview`는 선택적 `frame`(위치 설정 응답 `editor.preview_frame`)과 `position`(`home_hero`·`shop_hero`)을 받아 실제 사이트와 같은 구좌 폭에서 그립니다. 주지 않으면 종전처럼 기기 폭 전체를 씁니다.
+
+구좌 폭을 정하는 템플릿 제작자를 위한 제약: 미리보기 틀은 활성 사용자 템플릿에서 확장점(`home_hero`·`shop_hero`)까지 내려가는 **레이아웃 노드의 정적 `className`과 `responsive`의 `className` 덮어쓰기만** 읽어, 같은 템플릿 CSS(`css/components.css`)로 다시 그립니다. 다음은 반영되지 않으므로 미리보기 폭이 실제 사이트와 어긋날 수 있습니다.
+
+- 합성 컴포넌트가 자기 안에서 주는 여백·최대 폭(예: 내부에 `max-w-*`·`px-*`를 가진 컨테이너 컴포넌트) — 미리보기는 컴포넌트를 렌더하지 않고 노드 클래스만 씁니다.
+- 노드의 `style` 속성(인라인 폭·여백)과 `{{…}}` 바인딩이 든 클래스 조각(서버가 상태 값을 모르므로 지웁니다).
+- 템플릿 CSS 밖에서 오는 규칙(레이아웃별 추가 스타일시트 등).
+
+미리보기와 실제 구좌를 맞추려면 확장점을 감싸는 본문 상자의 폭·여백을 레이아웃 노드의 정적 클래스(필요하면 `responsive` 클래스)로 두세요. 확장점을 가진 레이아웃을 읽지 못하면 그 레이아웃은 건너뛰고 오류 로그(`error` 수준 — 템플릿·레이아웃·확장점·오류, 틀 캐시 주기마다 한 번)를 남기며, 쓸 수 있는 레이아웃이 없으면 기기 폭 전체로 그립니다. 관리자 레이아웃 편집기에서 저장하면 확장 캐시 버전이 올라 틀도 바로 다시 읽습니다.
+
+관리자 전용 `HeroConflictResolver`(`base`·`mine`·`latest`·`locales`, `onApply(merged, nextBase)`)는 수정 충돌 뒤 비교·재적용에 쓰며 역시 팔레트에 노출하지 않습니다.
+
+슬라이드 문구 마크업은 `.hs__text > .hs__scroll > (.hs__title, .hs__description, .hs__actions)` 입니다. 버튼 문구가 없어 슬라이드 전체가 링크인 배너는 `.hs__slide > (a.hs__link, .hs__picture, .hs__text)` 처럼 링크를 **비어 있는 형제**(슬라이드를 덮음, `aria-label`=제목)로 두고 문구는 그 위에 둡니다 — 문구를 눌러도 같은 링크로 가고, 링크 안에 다른 포커스 요소가 들어가지 않습니다. 긴 문구는 `.hs__scroll` 안에서만 스크롤하고 `.hs__text` 의 바깥 여백(넘김 단추 자리)으로는 지나가지 않습니다. 문구가 넘칠 때만(ResizeObserver 로 다시 잼) `.hs__scroll` 에 `role="region"`·`aria-label`(배너 제목, 없으면 대체 텍스트)·`tabIndex`(보이는 장 0, 나머지 -1)를 주어 키보드로 들어가 스크롤하게 하고, 넘치지 않으면 이 속성을 두지 않습니다. 휴대폰에서 문구 영역을 세로로 밀면 문구가 스크롤되고 가로로 밀면 장이 넘어갑니다. `HeroSlider` 를 오버라이드하는 템플릿은 문구를 자르지 말고 같은 구조(또는 같은 효과)를 유지해야 합니다.

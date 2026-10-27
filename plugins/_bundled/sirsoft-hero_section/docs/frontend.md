@@ -28,10 +28,13 @@
 
 - 업로더의 pending/compressing/uploading/error 상태를 기기별로 받아 저장을 잠근다. 저장 중에는 업로더도 잠긴다. 폼은 즉시 반영해 초점·배경을 연속으로 바꿀 때 중첩 객체의 앞선 값이 사라지지 않게 한다.
 - `HeroBannerPreview`는 실제 PC 1366px·모바일 390px iframe 문서에 슬라이더를 그리고 전체를 축소한다. 부모의 스타일시트만 복사하며 스크립트는 복사하지 않는다. about:blank 초기 문서는 layout effect에서도 초기화한다. 확대 dialog는 Escape와 닫기 단추를 지원하고 포커스를 돌려준다.
+- 구좌 틀: `frame`(위치 설정 응답 `editor.preview_frame`)·`position` 을 주면 iframe 폭(기기 viewport)은 그대로 두고 그 안에 활성 사용자 템플릿의 본문 상자 사슬(`chain[].className`·`responsive`)을 같은 템플릿 CSS(`stylesheets`)로 그린 뒤 슬라이더를 가장 안쪽 상자에 넣는다. 반응형 키 선택은 코어 `ResponsiveManager` 규칙(사용자 범위 > 프리셋, 좁은 범위 우선)을 따른다. 틀 높이는 슬라이더 높이만큼 잡고 위쪽은 밀어 올려 감춘다. 템플릿 CSS 는 틀이 늦게 와도 그때 실린다. 틀이 없거나 그 위치에 확장점이 없으면 종전처럼 기기 폭 전체에 그린다.
+- 편집(draft) 미리보기는 안내 두 가지를 띄운다 — 지금 기기에서 `.hs__scroll` 에 스크롤이 생기면(배너 1장 그대로, 또는 넘김 단추 자리 `.hs--controlled` 를 잠깐 비워 잰 값) 줄이기 권유, 사진 평균색(16×16 축소)과 문구 배경 절반 세기로 어림한 대비가 제목 3:1·설명 4.5:1 미만이면 추정값과 권장 배경. 둘 다 `role="status"` 안내일 뿐 값을 바꾸거나 저장을 막지 않는다.
 - 콘텐츠 언어는 관리자 UI 언어와 독립적이다. `draft`의 문구 값 변화를 비교해 편집 언어를 알리고, 요청 언어 → 사이트 기본 → en → 첫 유효 문구 순으로 고른다. `HeroPreviewLanguage`는 명시적으로 언어를 선택한다.
 - `HeroPeriodHint`는 위치 설정 응답의 `editor.timezone`·`editor.server_now`를 이용한다. 시간대 없는 입력을 브라우저 현지 시간으로 파싱하지 않고 사이트 벽시계로 비교한다.
 - 사용자 화면은 PC 1920×640·모바일 750×1000 표시 비율을 사용한다. `presentation`의 기기별 초점과 overlay를 미리보기·공개 화면에 같이 반영한다. hover·focusWithin·명시적 pause 중 하나라도 남으면 자동 넘김은 멈춘다.
 - 수정 요청은 상세의 `revision`을 보낸다. HTTP 409이면 이동하지 않고 입력과 임시 이미지를 유지한다. 최신본을 다른 탭에서 열어 비교할 수 있다.
+- 충돌 패널의 「최신본 불러와 비교」는 상세를 다시 받아 `_local.conflictLatest` 에 두고 `HeroConflictResolver`(base=처음 불러온 상세 또는 직전 적용 기준, mine=`_local.form`, latest)로 항목별 3-way 비교를 그린다. 기본 선택은 다른 운영자만 바꾼 항목=최신, 나만 바꾼 항목=내 값, 둘 다=미선택(적용 잠금). 다른 운영자가 바꾼 이미지는 내 값을 고를 수 없다(옛 id 재전송 방지). 적용하면 최신본을 바탕으로 고른 내 값만 얹은 폼(최신 `revision`)과 다음 비교 기준을 돌려준다. 조회 실패는 `conflictLoadError` 로 다시 시도 단추를 보이며 입력은 건드리지 않는다.
 <!-- @intent END -->
 
 ## 액션 핸들러
@@ -53,7 +56,7 @@ _프론트 엔트리포인트가 없습니다._
 <!-- @intent START -->
 프런트 엔트리(`resources/js/index.ts`)가 `HeroSlider`(사용자 확장점 슬라이더)·`HeroBannerPreview`(관리자 미리보기 — 같은 슬라이더를 기기 틀 안에서 그린다)를 코어 레지스트리에 등록한다(`registerExtensionComponent`).
 
-슬라이더의 넘김은 [Swiper](https://swiperjs.com) 14.3.0(`swiper/react`, 모듈 `Autoplay`·`EffectFade`)이 맡는다 — 플러그인 번들에 함께 빌드한다(정확한 버전 고정, React 는 코어 전역을 쓴다). 화면의 ‹ › 단추·「1 / 3」·일시정지 단추와 캐러셀 접근성 표시(region·slide 역할, 비활성 장 `aria-hidden`)는 컴포넌트가 그리고 Swiper 기본 화살표·점 표시는 쓰지 않는다. 2장 이상이면 무한 반복(`loop`)·손가락 넘기기를 켜고 PC 마우스 끌기(`simulateTouch`)는 끈다. 효과는 slide 500ms · fade 교차 600ms · none(=slide 0ms), 움직임 줄이기면 none·자동 재생 끔. 자동 재생은 Swiper autoplay(설정 간격 ms)이고 마우스·포커스·일시정지 단추에서 `autoplay.stop()` 한다 — 자동으로 넘어가는 동안 장 번호는 `aria-live="off"`. 무한 반복은 슬라이드 DOM 순서를 바꾸므로 각 장에 논리 순서 `data-index` 를 둔다. 전환(0.5초) 중 누른 단추는 Swiper 가 무시한다(`loopPreventsSliding` 기본값). 단위 시험은 `resources/js/__tests__/swiperMock.tsx` 대역으로 연결 계약만 보고, 실제 넘김은 E2E `hero-slider-swiper.spec.ts` 가 본다.
+슬라이더의 넘김은 [Swiper](https://swiperjs.com) 14.3.0(`swiper/react`, 모듈 `Autoplay`·`EffectFade`)이 맡는다 — 플러그인 번들에 함께 빌드한다(정확한 버전 고정, React 는 코어 전역을 쓴다). 화면의 ‹ › 단추·「1 / 3」·일시정지 단추와 캐러셀 접근성 표시(region·slide 역할, 비활성 장 `aria-hidden`)는 컴포넌트가 그리고 Swiper 기본 화살표·점 표시는 쓰지 않는다. 2장 이상이면 무한 반복(`loop`)·손가락 넘기기를 켜고 PC 마우스 끌기(`simulateTouch`)는 끈다. 효과는 slide 500ms · fade 교차 600ms · none(=slide 0ms), 움직임 줄이기면 none·자동 재생 끔. 자동 재생은 Swiper autoplay(설정 간격 ms)이고 마우스·포커스·일시정지 단추에서 `autoplay.stop()` 한다 — 자동으로 넘어가는 동안 장 번호는 `aria-live="off"`. 무한 반복은 슬라이드 DOM 순서를 바꾸므로 각 장에 논리 순서 `data-index` 를 둔다. 전환(0.5초) 중 누른 단추는 Swiper 가 무시한다(`loopPreventsSliding` 기본값). 단위 시험은 `resources/js/__tests__/swiperMock.tsx` 대역으로 연결 계약만 보고, 실제 넘김은 E2E `hero-slider-swiper.spec.ts` 가 본다. 긴 문구 영역 `.hs__scroll` 은 넘칠 때만 탭 순서에 들어오는 이름 붙은 영역이 되고(보이는 장 `tabIndex=0`, 나머지 -1), 손가락 세로 쓸기는 문구 스크롤·가로 쓸기는 장 넘김으로 갈린다 — Swiper 가로 넘기기의 `touch-action: pan-y` 그대로 충돌이 없음을 E2E `long-text.spec.ts`(CDP 터치)가 본다. 버튼 문구가 없는 전체 링크 배너는 `a.hs__link` 를 슬라이드를 덮는 빈 형제(z-index 1)로, `.hs__text` 를 그 위(z-index 2)에 두고 문구 클릭을 링크 `click()` 으로 넘긴다 — 링크 안에 문구 영역이 들어가 중첩 상호작용이 되지 않게 한다(편집 미리보기 iframe 은 `a` 클릭을 막으므로 넘긴 클릭도 막힌다).
 <!-- @intent END -->
 
 ## 에셋

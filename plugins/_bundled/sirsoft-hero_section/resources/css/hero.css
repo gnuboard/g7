@@ -30,10 +30,11 @@
   height: 100%;
 }
 
+/* 전체 링크 배너 — 슬라이드를 덮는 빈 링크. 문구(.hs__text)는 그 위에 따로 둔다 */
 .hs__link {
-  display: block;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   color: inherit;
   text-decoration: none;
 }
@@ -60,7 +61,24 @@
   padding: clamp(16px, 5vw, 64px);
   display: flex;
   flex-direction: column;
+  /* 긴 문구는 줄이지 않고 구좌 안(.hs__scroll)에서 스크롤로 모두 읽게 한다(#810 후속) */
+  box-sizing: border-box;
+  max-height: 100%;
+  z-index: 2; /* 전체 링크(.hs__link) 위 — 문구 스크롤·탭 진입이 링크와 섞이지 않게 */
+}
+
+.hs__text--linked { cursor: pointer; }
+
+.hs__scroll {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 버튼 초점 테두리(3px + 2px)가 스크롤 경계에 잘리지 않을 만큼 안쪽 여백을 두고 같은 만큼 되돌린다 */
+  padding: 6px;
+  margin: -6px;
 }
 
 .hs__title {
@@ -69,6 +87,7 @@
   font-weight: 700;
   line-height: 1.2;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  overflow-wrap: anywhere;
 }
 
 .hs__description {
@@ -76,6 +95,7 @@
   font-size: clamp(0.875rem, 1.6vw, 1.25rem);
   line-height: 1.5;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  overflow-wrap: anywhere;
 }
 
 .hs__text--dark { background: linear-gradient(transparent, rgba(0, 0, 0, .78)); }
@@ -89,7 +109,8 @@
 .hs-preview__dialog { width: min(1400px, 96vw); max-width: 96vw; max-height: 94vh; overflow: auto; padding: 12px; border: 1px solid #64748b; border-radius: 10px; background: #fff; color: #0f172a; }
 .dark .hs-preview__dialog { background: #0f172a; color: #f8fafc; }
 .hs-preview__dialog::backdrop { background: rgba(0, 0, 0, .6); }
-.hs-preview__fallback { padding: 0 8px 8px; }
+.hs-preview__fallback,
+.hs-preview__hint { padding: 0 8px 8px; }
 .hs-editor-language { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .hs-editor-language select { color: #0f172a; background: #fff; border: 1px solid #64748b; padding: 6px; border-radius: 6px; }
 .dark .hs-editor-language select { background: #1e293b; color: #f8fafc; }
@@ -103,13 +124,22 @@
   color: #111827;
   font-weight: 600;
   text-decoration: none;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .hs__button:focus-visible,
-.hs__link:focus-visible,
 .hs__control:focus-visible {
   outline: 3px solid #93c5fd;
   outline-offset: 2px;
+}
+
+/* 슬라이드를 덮는 링크·넘칠 때만 탭으로 들어오는 문구 영역 — 테두리를 안쪽에 그려 구좌 경계에 잘리지 않게 한다 */
+.hs__link:focus-visible,
+.hs__scroll:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: -3px;
 }
 
 .hs__controls {
@@ -174,3 +204,15 @@
   text-align: center;
   font-size: 14px;
 }
+
+/* 관리자 편집 화면 — 동시 수정 충돌 뒤 비교·재적용(HeroConflictResolver). 테마와 무관하게 읽히도록 반투명 테두리만 쓴다. */
+.hs-conflict { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.hs-conflict__title { margin: 0; font-weight: 600; }
+.hs-conflict__row { display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border: 1px solid rgba(127, 127, 127, 0.35); border-radius: 8px; }
+.hs-conflict__row--both { border-color: #d97706; }
+.hs-conflict__head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 600; }
+.hs-conflict__badge { font-size: 12px; font-weight: 500; opacity: 0.8; }
+.hs-conflict__option { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; font-size: 14px; overflow-wrap: anywhere; }
+.hs-conflict__side { flex: none; min-width: 4.5em; font-weight: 500; }
+.hs-conflict__value { flex: 1 1 12em; min-width: 0; }
+.hs-conflict__apply { align-self: flex-start; }

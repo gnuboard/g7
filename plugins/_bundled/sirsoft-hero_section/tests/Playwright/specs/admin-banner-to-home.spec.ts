@@ -1,5 +1,5 @@
 /**
- * E2E: 관리자가 배너를 다루면 사이트 홈 상단 슬라이더에 그대로 반영된다 (#810)
+ * E2E: 관리자가 배너를 다루면 사이트 홈(순서 변경은 쇼핑몰 메인) 상단 슬라이더에 그대로 반영된다 (#810)
  *
  * @scenario-manifest tests/scenarios/e2e-flows.yaml
  * @effects user_screen_reflects_admin_change, test_data_cleaned_up
@@ -14,28 +14,37 @@ import {
 } from '../fixtures/hero-auth';
 import type { Page } from '@playwright/test';
 
+// 관리자 조작 → 사용자 화면 확인을 한 시험에서 여러 번 오가므로 기본 30초로는 개발 PC 에서 빠듯하다
+test.setTimeout(90_000);
+
 /**
- * 관리자 목록(사이트 홈 탭)을 열고 표가 붙을 때까지 기다린다.
+ * 관리자 목록(위치 탭)을 열고 표가 붙을 때까지 기다린다.
  *
  * @param page 페이지
+ * @param position 위치 키(기본 사이트 홈)
  */
-async function gotoAdminList(page: Page): Promise<void> {
+async function gotoAdminList(page: Page, position = 'home_hero'): Promise<void> {
   await page.setViewportSize(VIEWPORTS.desktop);
-  await page.goto(`${ADMIN_LIST}?position=home_hero`);
+  await page.goto(`${ADMIN_LIST}?position=${position}`);
   await expect(page.locator('#hero_banner_datagrid')).toBeAttached({ timeout: 30_000 });
 }
 
 /**
- * 사용자 홈을 그 폭으로 열고 슬라이더 제목 목록을 돌려준다.
+ * 사용자 화면(기본 사이트 홈)을 그 폭으로 열고 슬라이더 제목 목록을 돌려준다.
  *
  * @param page 페이지
  * @param viewport 폭
+ * @param position 위치 키
+ * @param path 그 위치가 붙는 사용자 경로
  * @returns 슬라이드 제목(순서대로)
  */
-async function homeTitles(page: Page, viewport: keyof typeof VIEWPORTS): Promise<string[]> {
+async function homeTitles(page: Page, viewport: keyof typeof VIEWPORTS, position = 'home_hero', path = '/'): Promise<string[]> {
   await page.setViewportSize(VIEWPORTS[viewport]);
-  await gotoUser(page, '/');
-  await page.waitForResponse((r) => r.url().includes(`${API}/hero?position=home_hero`), { timeout: 30_000 }).catch(() => undefined);
+  await gotoUser(page, path);
+  // 공개 API 응답을 기다리지 않고 슬라이드가 붙기를 기다린다 — 응답이 엔진 캐시로 채워지면 네트워크 응답이 없어 30초를
+  // 다 쓰고, 응답이 와도 슬라이더 번들·Swiper 가 붙기 전일 수 있다(갱신 직후 첫 방문). 배너가 없는 위치면 그냥 지나간다.
+  await expect.poll(() => page.locator(`section.hs[data-position="${position}"] [data-index]`).count(), { timeout: 15_000 })
+    .toBeGreaterThan(0).catch(() => undefined);
   await page.waitForTimeout(500);
   return slideTitles(page);
 }
@@ -99,21 +108,27 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       expect(titles).not.toContain(later);
     });
 
-    // @scenario flow=reorder_reflected_on_home, viewport=desktop
-    // @scenario flow=reorder_reflected_on_home, viewport=mobile
+    // @scenario flow=reorder_reflected_on_shop_main, viewport=desktop
+    // @scenario flow=reorder_reflected_on_shop_main, viewport=mobile
     // @effects user_screen_reflects_admin_change, test_data_cleaned_up
-    test(`[순서 변경] 창에서 바꾼 순서가 홈 슬라이더 순서가 된다 (${viewport})`, async ({ page, request, managerToken, created }) => {
+    test(`[순서 변경] 창에서 바꾼 순서가 쇼핑몰 메인 슬라이더 순서가 된다 (${viewport})`, async ({ page, request, managerToken, created }) => {
+      // 순서 저장은 위치의 배너 전부를 다시 쓴다(빠진 배너가 있으면 거부) — 운영 배너가 있는 위치에서 돌리면 그 배너의
+      // 수정 시각까지 바뀐다. 그래서 배너가 없는 쇼핑몰 메인 위치에서 이 사양이 만든 배너만으로 순서를 바꾼다.
+      const position = 'shop_hero';
+      const path = '/shop/products';
       const first = uniqueTitle('첫째');
       const second = uniqueTitle('둘째');
-      created.push(await createBanner(request, managerToken, { title: { ko: first } }));
-      const secondId = await createBanner(request, managerToken, { title: { ko: second } });
+      created.push(await createBanner(request, managerToken, { position, title: { ko: first } }));
+      const secondId = await createBanner(request, managerToken, { position, title: { ko: second } });
       created.push(secondId);
+      const order = await request.get(`${API}/admin/banners/order?position=${position}`, { headers: auth(managerToken) });
+      expect((await order.json()).data.data.map((b: { id: number }) => b.id), '쇼핑몰 메인 위치에 사양 밖 배너가 있으면 그 배너까지 다시 저장된다').toEqual(created);
 
-      const before = await homeTitles(page, viewport);
+      const before = await homeTitles(page, viewport, position, path);
       expect(before.indexOf(first)).toBeLessThan(before.indexOf(second));
 
       await authenticatePage(page, managerToken);
-      await gotoAdminList(page);
+      await gotoAdminList(page, position);
       await page.locator('#reorder_button').click();
       const modal = page.getByRole('dialog', { name: '배너 순서 변경' });
       await expect(modal).toBeVisible({ timeout: 20_000 });
@@ -125,7 +140,7 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       expect((await saved).status()).toBe(200);
       await expect(modal).toBeHidden({ timeout: 20_000 });
 
-      const after = await homeTitles(page, viewport);
+      const after = await homeTitles(page, viewport, position, path);
       expect(after.indexOf(second)).toBeLessThan(after.indexOf(first));
     });
 

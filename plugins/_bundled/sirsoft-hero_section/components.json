@@ -53,6 +53,48 @@
                         "type": "string",
                         "required": false,
                         "description": "사용자 클래스"
+                    },
+                    "frame": {
+                        "type": "PreviewFrame | null",
+                        "required": false,
+                        "description": "활성 사용자 템플릿의 구좌 틀(위치 설정 응답 `editor.preview_frame`). 주면 기기 viewport 안에 템플릿 본문 상자를 같은 템플릿 CSS 로 그려 실제 사이트와 같은 구좌 폭에서 미리 본다. 없거나 그 위치에 확장점이 없으면 기기 폭 전체(종전 동작)."
+                    },
+                    "position": {
+                        "type": "string",
+                        "required": false,
+                        "description": "틀에서 고를 위치 키(`home_hero`·`shop_hero`)"
+                    }
+                }
+            },
+            {
+                "name": "HeroConflictResolver",
+                "type": "composite",
+                "path": "plugins/_bundled/sirsoft-hero_section/resources/js/components/composite/HeroConflictResolver.tsx",
+                "props": {
+                    "base": {
+                        "type": "Detail | null",
+                        "required": false,
+                        "description": "편집을 시작한 기준 — 처음 불러온 상세(재적용 뒤에는 그때의 최신본)"
+                    },
+                    "mine": {
+                        "type": "Detail | null",
+                        "required": false,
+                        "description": "지금 폼의 입력값"
+                    },
+                    "latest": {
+                        "type": "Detail | null",
+                        "required": false,
+                        "description": "충돌 뒤 다시 받은 최신 상세(revision 포함)"
+                    },
+                    "locales": {
+                        "type": "array",
+                        "required": false,
+                        "description": "사이트 활성 언어 — 다국어 값 표시 순서"
+                    },
+                    "onApply": {
+                        "type": "function",
+                        "required": false,
+                        "description": "고른 값으로 만든 폼(최신 revision)과, 다음 비교의 기준이 될 최신본을 넘긴다."
                     }
                 }
             },

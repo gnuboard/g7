@@ -131,13 +131,37 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=empty_button_makes_whole_slide_link
-  it('버튼 문구가 없으면 슬라이드 전체가 제목 이름의 링크다', () => {
+  it('버튼 문구가 없으면 슬라이드 전체를 덮는 제목 이름의 링크를 두고, 문구는 링크 밖에 둔다', () => {
     const { container } = render(<HeroSlider banners={[banner(1)]} />);
-    const link = container.querySelector('a.hs__link');
-    expect(link?.getAttribute('href')).toBe('/shop/1');
-    expect(link?.getAttribute('aria-label')).toBe('제목 1');
-    expect(link?.querySelector('img')).not.toBeNull();
+    const link = container.querySelector('a.hs__link') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('/shop/1');
+    expect(link.getAttribute('aria-label')).toBe('제목 1');
     expect(container.querySelector('.hs__button')).toBeNull();
+    // 링크 안에 다른 요소를 넣지 않는다 — 넘칠 때 탭으로 들어오는 문구 영역이 링크 안에 겹치지 않게(중첩 상호작용 금지)
+    expect(link.childElementCount).toBe(0);
+    expect(link.parentElement?.classList.contains('hs__slide')).toBe(true);
+    // 탭 순서: 링크가 문구보다 먼저
+    const text = container.querySelector('.hs__text') as HTMLElement;
+    expect(link.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  // @scenario surface=empty_button_makes_whole_slide_link
+  it('전체 링크 배너는 문구를 눌러도 링크로 이동하고, 버튼 배너의 문구는 누르기만으로 이동하지 않는다', () => {
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    try {
+      const whole = render(<HeroSlider banners={[banner(1)]} />);
+      fireEvent.click(whole.container.querySelector('.hs__title') as HTMLElement);
+      expect(click).toHaveBeenCalledTimes(1);
+      expect(click.mock.contexts[0]).toBe(whole.container.querySelector('a.hs__link'));
+      cleanup();
+
+      click.mockClear();
+      const button = render(<HeroSlider banners={[banner(2, { button_text: '보기' })]} />);
+      fireEvent.click(button.container.querySelector('.hs__title') as HTMLElement);
+      expect(click).not.toHaveBeenCalled();
+    } finally {
+      click.mockRestore();
+    }
   });
 
   // @scenario surface=new_window_sets_rel_noopener_noreferrer
@@ -304,6 +328,46 @@ describe('HeroSlider', () => {
     expect(slides[1].getAttribute('aria-hidden')).toBe('true');
     expect(container.querySelector('.hs__counter')?.textContent).toBe('1 / 2');
     expect(container.querySelector('.hs__prev')?.getAttribute('aria-label')).toBeTruthy();
+  });
+
+  // @scenario surface=long_text_scroll_keyboard_and_touch
+  // @effects long_text_not_lost
+  it('문구가 넘칠 때만 문구 영역을 탭으로 들어가 읽는 이름 붙은 영역으로 만들고, 보이지 않는 장은 탭 순서에서 뺀다', () => {
+    let overflow = true;
+    const observers: Array<() => void> = [];
+    const OriginalObserver = (globalThis as any).ResizeObserver;
+    (globalThis as any).ResizeObserver = class {
+      constructor(callback: () => void) { observers.push(() => callback()); }
+      observe() {}
+      disconnect() {}
+    };
+    // jsdom 은 배치를 하지 않는다 — 문구 영역의 내용 높이만 넘침 여부에 따라 흉내 낸다
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, get() { return this.classList.contains('hs__scroll') && overflow ? 500 : 100; } });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get() { return 100; } });
+
+    try {
+      const { container } = render(<HeroSlider banners={[banner(1), banner(2, { title: '' })]} settings={{ autoplay: false }} />);
+      const scrolls = () => Array.from(container.querySelectorAll<HTMLElement>('.hs__scroll'));
+
+      expect(scrolls().map((el) => [el.getAttribute('tabindex'), el.getAttribute('role'), el.getAttribute('aria-label')])).toEqual([
+        ['0', 'region', '제목 1'],
+        // 제목이 없으면 이미지 대체 텍스트로 이름 짓는다
+        ['-1', 'region', '대체 2'],
+      ]);
+
+      // 화면 폭이 넓어져 더는 넘치지 않으면 속성을 모두 거둔다
+      overflow = false;
+      act(() => observers.forEach((notify) => notify()));
+      for (const el of scrolls()) {
+        expect(el.hasAttribute('tabindex')).toBe(false);
+        expect(el.hasAttribute('role')).toBe(false);
+        expect(el.hasAttribute('aria-label')).toBe(false);
+      }
+    } finally {
+      delete (HTMLElement.prototype as any).scrollHeight;
+      delete (HTMLElement.prototype as any).clientHeight;
+      (globalThis as any).ResizeObserver = OriginalObserver;
+    }
   });
 
   // @scenario surface=index_resets_when_banners_change

@@ -139,7 +139,7 @@
               </button>
             </div>
           </div>
-          <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="hero_preview" banners="{{(preview?.data?.data ?? []).map(b =&gt; ({...b, title: b.title_localized, description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}" settings="{{_computed.currentSettings}}" device="{{_local.previewDevice}}" emptyText="{{preview === undefined ? '' : $t('sirsoft-hero_section.admin.preview.empty')}}"/>
+          <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="hero_preview" banners="{{(preview?.data?.data ?? []).map(b =&gt; ({...b, title: b.title_localized, description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}" settings="{{_computed.currentSettings}}" device="{{_local.previewDevice}}" frame="{{position_settings?.data?.editor?.preview_frame ?? null}}" position="{{_computed.currentPosition}}" emptyText="{{preview === undefined ? '' : $t('sirsoft-hero_section.admin.preview.empty')}}"/>
         </section>
         <!-- 슬라이더 설정 — 이 위치에만 적용 -->
         <section data-ref="slider_card" aria-labelledby="hero_slider_heading" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 flex flex-col gap-4">

@@ -152,6 +152,13 @@ describe('히어로섹션 목록 화면', () => {
     }
   });
 
+  // @scenario surface=preview_frame_slot_inside_device_viewport
+  it('목록 미리보기도 활성 사용자 템플릿 구좌 틀과 보고 있는 위치를 넘긴다', () => {
+    const preview = findById(list, 'hero_preview')!;
+    expect(preview.props.frame).toBe('{{position_settings?.data?.editor?.preview_frame ?? null}}');
+    expect(preview.props.position).toBe('{{_computed.currentPosition}}');
+  });
+
   // @scenario surface=reorder_modal_loads_position_items
   it('[순서 변경]은 그 위치 전체를 받아 작업본·원본으로 담고 창을 연다(받는 중 스피너)', () => {
     const button = findById(list, 'reorder_button')!;

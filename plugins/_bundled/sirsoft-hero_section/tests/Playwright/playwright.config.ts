@@ -95,7 +95,9 @@ export default defineConfig({
     // 그 헤더를 만들므로, 지정하지 않으면 첫 페이지 로드가 en-US 로 나가 화면이 영어로 렌더되고
     // 엔진이 그 값을 localStorage 에 저장해 이후 인증해도 세션 전체가 영어로 고정된다.
     locale: 'ko-KR',
-    trace: 'retain-on-failure',
+    // 기록(trace)은 재시도 때만 남긴다. 늘 켜 두면(retain-on-failure) 관리자 화면 시험 일부가 기록기가 남기는 sandbox
+    // 콘솔 오류로 항상 실패한다(콘솔 오류 0건 단언). CI 는 retries 2 라 실패하면 재시도에서 기록이 남는다.
+    trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     ignoreHTTPSErrors: true,
   },

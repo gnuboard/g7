@@ -183,6 +183,55 @@ describe('배너 등록·수정 화면', () => {
     }
   });
 
+  // @scenario surface=conflict_load_latest_and_retry
+  // @effects my_temp_images_preserved
+  it('충돌 안내의 [최신본 불러와 비교]는 폼을 건드리지 않고 최신본을 따로 받고, 실패하면 다시 시도할 수 있다', () => {
+    const panel = findById(form, 'conflict_panel')!;
+    expect(panel.if).toBe('{{_local.conflict}}');
+    const button = findById(form, 'conflict_load_button')!;
+    const call = actionsOf(button, 'apiCall')[0];
+    expect(call.target ?? call.params?.target).toBe('/api/plugins/sirsoft-hero_section/admin/banners/{{route.id}}');
+    expect((call.params?.method ?? call.method)).toBe('GET');
+    const text = json(call);
+    expect(text).toContain('"conflictLatest":"{{response.data ?? null}}"');
+    expect(text).toContain('"conflictLoadError":true');
+    expect(text).not.toMatch(/"form"\s*:/);
+    expect((text.match(/"conflictLoading":false/g) ?? []).length).toBe(2);
+    expect(button.props.disabled).toBe('{{_local.conflictLoading}}');
+    expect(json(button)).toContain('conflict_merge.retry');
+    expect(findById(form, 'conflict_load_error')!.if).toBe('{{_local.conflictLoadError}}');
+  });
+
+  // @scenario surface=conflict_reapply_and_conflict_again
+  // @effects others_changes_not_overwritten
+  it('비교 컴포넌트는 기준(재적용 뒤에는 그때의 최신본)·내 입력·최신본을 받고, 적용하면 폼·기준을 바꾸고 충돌을 닫는다', () => {
+    const resolver = findById(form, 'conflict_resolver')!;
+    expect(resolver.name).toBe('sirsoft-hero_section.HeroConflictResolver');
+    expect(resolver.props.base).toBe('{{_local.conflictBase ?? banner?.data ?? null}}');
+    expect(resolver.props.mine).toBe('{{_local.form}}');
+    expect(resolver.props.latest).toBe('{{_local.conflictLatest}}');
+    const apply = json(resolver.actions);
+    expect(apply).toContain('"form":"{{$args[0]}}"');
+    // 다음 비교 기준은 방금 적용한 최신본 — 같은 set-state 가 conflictLatest 를 비우기 전 값으로 풀린다
+    // ($args[1] 은 코어 BindingShape 방언 대장에 새 지점을 더하므로 쓰지 않는다)
+    expect(apply).toContain('"conflictBase":"{{_local.conflictLatest}}"');
+    expect(apply).not.toContain('$args[1]');
+    expect(apply).toContain('"conflict":false');
+    expect(apply).toContain('"conflictLatest":null');
+    // 적용한 값은 아직 저장 전이라 이탈 방지(meta 의 _local.hasChanges)가 다시 켜진다
+    expect(apply).toContain('"hasChanges":true');
+    // 저장은 그대로 폼의 revision 을 보낸다 — 적용 뒤에는 최신 revision 이다
+    expect(json(saveCall())).toContain('revision: route.id ? _local.form?.revision : undefined');
+    expect(json(asArray<any>(layout.init_actions)[0])).toContain('"conflictLatest":null');
+  });
+
+  // @scenario surface=preview_frame_slot_inside_device_viewport
+  it('편집 미리보기는 활성 사용자 템플릿 구좌 틀과 폼의 위치를 넘긴다', () => {
+    const preview = findById(form, 'form_preview')!;
+    expect(preview.props.frame).toBe('{{position_settings?.data?.editor?.preview_frame ?? null}}');
+    expect(preview.props.position).toBe("{{_local.form?.position ?? 'home_hero'}}");
+  });
+
   // @scenario surface=form_multilingual_tabs_active_locales
   // @effects accessible_names_present
   it('폼이 쓰는 문구가 한국어·영어 모두 있다', () => {

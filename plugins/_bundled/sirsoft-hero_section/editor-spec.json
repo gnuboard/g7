@@ -289,6 +289,28 @@
             "focus_limits": {
               "min": 0,
               "max": 100
+            },
+            "preview_frame": {
+              "template": "sirsoft-basic",
+              "stylesheets": [],
+              "positions": {
+                "home_hero": {
+                  "layout": "home",
+                  "chain": [
+                    { "className": "min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900", "responsive": {} },
+                    { "className": "flex-1", "responsive": {} },
+                    { "className": "min-h-fit px-4", "responsive": { "desktop": "min-h-fit max-w-7xl mx-auto px-8" } }
+                  ]
+                },
+                "shop_hero": {
+                  "layout": "shop/index",
+                  "chain": [
+                    { "className": "min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900", "responsive": {} },
+                    { "className": "flex-1", "responsive": {} },
+                    { "className": "min-h-fit px-4", "responsive": { "desktop": "min-h-fit max-w-7xl mx-auto px-8" } }
+                  ]
+                }
+              }
             }
           }
         }

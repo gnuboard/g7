@@ -329,8 +329,34 @@ const HeroSlide: React.FC<HeroSlideProps> = ({ banner, index, count, active, eag
   const mobile = banner.images?.mobile ?? null;
   const link = linkProps(banner);
   const hasButton = !!banner.button_text && !!link;
+  // 버튼 문구가 없으면 슬라이드 전체가 링크다 — 링크는 슬라이드를 덮는 빈 형제로 두고 문구는 그 위(링크 밖)에 둔다.
+  // 문구를 링크 안에 넣으면 넘칠 때 탭으로 들어오는 문구 영역이 링크 안에 겹친다(중첩 상호작용)
+  const wholeLink = !!link && !hasButton;
+  const linkRef = useRef<HTMLAnchorElement>(null);
   const alt = banner.image_alt ?? banner.title ?? '';
   const focus = banner.presentation;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [overflowing, setOverflowing] = useState(false);
+
+  // 문구가 영역 높이를 넘을 때만 키보드로 들어가 스크롤해 읽게 한다 — 화면 폭·글꼴·문구가 바뀌면 다시 잰다
+  useEffect(() => {
+    const element = scrollRef.current;
+    if (!element) {
+      return;
+    }
+    const measure = () => setOverflowing(element.scrollHeight > element.clientHeight + 1);
+    measure();
+    if (typeof ResizeObserver === 'undefined') {
+      return;
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    Array.from(element.children).forEach((child) => observer.observe(child));
+    return () => observer.disconnect();
+  }, [banner.title, banner.description, banner.button_text, banner.title_visible, banner.description_visible]);
+  const scrollable = overflowing
+    ? { tabIndex: active ? 0 : -1, role: 'region', 'aria-label': banner.title || alt || t('sirsoft-hero_section.slider.label', '메인 배너') }
+    : {};
   const point = (device: 'pc' | 'mobile') => `${focus?.[`${device}_x`] ?? 50}% ${focus?.[`${device}_y`] ?? 50}%`;
   const imageStyle = { '--hs-focus-pc': point(forceDevice ?? 'pc'), '--hs-focus-mobile': point(forceDevice ?? 'mobile') } as React.CSSProperties;
 
@@ -355,7 +381,13 @@ const HeroSlide: React.FC<HeroSlideProps> = ({ banner, index, count, active, eag
   ) : null;
 
   const text = (
-    <div className={`hs__text hs__text--${banner.presentation?.overlay ?? 'none'}`}>
+    <div
+      className={`hs__text hs__text--${banner.presentation?.overlay ?? 'none'}${wholeLink ? ' hs__text--linked' : ''}`}
+      // 문구를 눌러도 링크로 간다(마우스·손가락). 키보드는 앞의 링크로 간다. 손가락 스크롤·넘기기는 click 을 만들지 않는다
+      onClick={wholeLink ? () => linkRef.current?.click() : undefined}
+    >
+      {/* 긴 문구는 이 안에서만 스크롤한다 — 바깥 여백(넘김 컨트롤 자리)에는 글자가 지나가지 않는다 */}
+      <div className="hs__scroll" ref={scrollRef} {...scrollable}>
       {banner.title_visible !== false && banner.title && (
         <h2 className="hs__title" style={{ color: banner.title_color, textAlign: banner.title_align }}>{banner.title}</h2>
       )}
@@ -367,14 +399,8 @@ const HeroSlide: React.FC<HeroSlideProps> = ({ banner, index, count, active, eag
           <a className="hs__button" {...link!} tabIndex={active ? undefined : -1}>{banner.button_text}</a>
         </div>
       )}
+      </div>
     </div>
-  );
-
-  const body = (
-    <>
-      {image}
-      {text}
-    </>
   );
 
   return (
@@ -387,9 +413,11 @@ const HeroSlide: React.FC<HeroSlideProps> = ({ banner, index, count, active, eag
       data-banner-id={banner.id}
       data-index={index}
     >
-      {link && !hasButton ? (
-        <a className="hs__link" {...link} aria-label={banner.title || alt} tabIndex={active ? undefined : -1}>{body}</a>
-      ) : body}
+      {wholeLink && (
+        <a ref={linkRef} className="hs__link" {...link!} aria-label={banner.title || alt} tabIndex={active ? undefined : -1} />
+      )}
+      {image}
+      {text}
     </div>
   );
 };

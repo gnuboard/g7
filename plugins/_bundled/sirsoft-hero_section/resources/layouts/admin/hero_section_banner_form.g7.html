@@ -66,6 +66,10 @@
     <field name="mobileUploadBlocked" :value="false"/>
     <field name="previewLocale" value=""/>
     <field name="conflict" :value="false"/>
+    <field name="conflictLatest" :value="null"/>
+    <field name="conflictBase" :value="null"/>
+    <field name="conflictLoading" :value="false"/>
+    <field name="conflictLoadError" :value="false"/>
     <field name="isSaving" :value="false"/>
     <field name="errors" :value="null"/>
     <field name="previewDevice" value="pc"/>
@@ -79,7 +83,7 @@
   </permissions>
   <init>
     <!-- 들어올 때마다 「고친 것 있음」 과 직전 오류를 지운다 — 같은 레이아웃의 다른 배너로 넘어와도 앞 화면 표시가 남지 않게 -->
-    <set-state target="local" :hasChanges="false" :errors="null" :isSaving="false" :pcUploadBlocked="false" :mobileUploadBlocked="false" :conflict="false" previewLocale=""/>
+    <set-state target="local" :hasChanges="false" :errors="null" :isSaving="false" :pcUploadBlocked="false" :mobileUploadBlocked="false" :conflict="false" :conflictLatest="null" :conflictBase="null" :conflictLoading="false" :conflictLoadError="false" previewLocale=""/>
     <!-- 등록 진입: 수정 화면에서 SPA 로 넘어오면 `_local` 이 남으므로 폼을 기본값으로 되돌리고, 위치는 목록에서 보던 탭(쿼리 position)으로 시작한다 -->
     <set-state if="{{!route.id}}" target="local" :form="null"/>
     <set-state if="{{!route.id}}" target="local">
@@ -231,7 +235,7 @@
                   </prop>
                   <on type="change" event="onFilesChange">
                     <set-state target="local" pcUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
-                    <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="true"/>
+                    <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
                   </on>
                   <on type="change" event="onUploadComplete">
                     <set-state target="local" form.images.pc="{{$args[0]?.[0] ?? null}}"/>
@@ -258,7 +262,7 @@
                   </prop>
                   <on type="change" event="onFilesChange">
                     <set-state target="local" mobileUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
-                    <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="true"/>
+                    <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
                   </on>
                   <on type="change" event="onUploadComplete">
                     <set-state target="local" form.images.mobile="{{$args[0]?.[0] ?? null}}"/>
@@ -333,9 +337,38 @@
             </div>
           </section>
           <p data-if="{{_local.pcUploadBlocked || _local.mobileUploadBlocked}}" role="status" class="form-hint">$t:sirsoft-hero_section.admin.form.upload_pending</p>
-          <div data-if="{{_local.conflict}}" role="alert" class="alert-danger">
-            <p>$t:sirsoft-hero_section.admin.form.conflict</p>
-            <a href="/admin/plugins/sirsoft-hero_section/banners/{{route.id}}/edit" target="_blank" rel="noopener noreferrer" class="underline">$t:sirsoft-hero_section.admin.form.conflict_compare</a>
+          <!-- 동시 수정 충돌(409) — 입력은 그대로 두고, 같은 창에서 최신본을 따로 받아(폼은 건드리지 않는다) 항목별로 비교한다.
+            적용하면 최신본 위에 고른 내 값만 얹은 폼(최신 revision)으로 바뀌고, 다시 충돌하면 그 최신본을 기준으로 또 비교한다 -->
+          <div data-ref="conflict_panel" data-if="{{_local.conflict}}" role="alert" class="alert-danger">
+            <div class="flex flex-col gap-2 w-full min-w-0">
+              <p>$t:sirsoft-hero_section.admin.form.conflict</p>
+              <div class="flex flex-wrap items-center gap-3">
+                <button type="button" data-ref="conflict_load_button" class="btn btn-secondary flex-center gap-1.5" disabled="{{_local.conflictLoading}}">
+                  <on type="click">
+                    <sequence>
+                      <set-state target="local" :conflictLoading="true" :conflictLoadError="false"/>
+                      <api-call :auth_required="true" target="/api/plugins/sirsoft-hero_section/admin/banners/{{route.id}}" method="GET">
+                        <success>
+                          <set-state target="local" :conflictLoading="false" conflictLatest="{{response.data ?? null}}"/>
+                        </success>
+                        <fail>
+                          <set-state target="local" :conflictLoading="false" :conflictLoadError="true"/>
+                        </fail>
+                      </api-call>
+                    </sequence>
+                  </on>
+                  <icon data-if="{{_local.conflictLoading}}" name="spinner" class="spinner-sm"/>
+                  <span>{{_local.conflictLoadError ? '$t:sirsoft-hero_section.admin.form.conflict_merge.retry' : (_local.conflictLatest ? '$t:sirsoft-hero_section.admin.form.conflict_merge.reload' : '$t:sirsoft-hero_section.admin.form.conflict_merge.load')}}</span>
+                </button>
+                <a href="/admin/plugins/sirsoft-hero_section/banners/{{route.id}}/edit" target="_blank" rel="noopener noreferrer" class="underline">$t:sirsoft-hero_section.admin.form.conflict_compare</a>
+              </div>
+              <p data-ref="conflict_load_error" data-if="{{_local.conflictLoadError}}" role="status" class="form-error">$t:sirsoft-hero_section.admin.form.conflict_merge.load_failed</p>
+              <sirsoft-hero_section.hero-conflict-resolver data-type="composite" data-ref="conflict_resolver" data-if="{{!!_local.conflictLatest}}" base="{{_local.conflictBase ?? banner?.data ?? null}}" mine="{{_local.form}}" latest="{{_local.conflictLatest}}" locales="{{position_settings?.data?.editor?.locales ?? []}}">
+                <on type="change" event="onApply">
+                  <set-state target="local" form="{{$args[0]}}" conflictBase="{{_local.conflictLatest}}" :conflictLatest="null" :conflict="false" :errors="null" :hasChanges="true"/>
+                </on>
+              </sirsoft-hero_section.hero-conflict-resolver>
+            </div>
           </div>
           <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
             <a href="/admin/plugins/sirsoft-hero_section/banners?position={{_computed.listPosition}}" :mergeQuery="true" data-ref="footer_cancel_button" class="button flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
@@ -398,7 +431,7 @@
           <sirsoft-hero_section.hero-preview-language data-type="composite" locales="{{position_settings?.data?.editor?.locales ?? []}}" locale="{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}">
             <on type="change" event="onLocaleChange"><set-state target="local" previewLocale="{{$args[0]}}"/></on>
           </sirsoft-hero_section.hero-preview-language>
-          <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="form_preview" draft="{{_local.form}}" locale="{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}" defaultLocale="{{position_settings?.data?.editor?.default_locale}}" settings="{{({ autoplay: false, interval_seconds: 5, effect: 'none' })}}" device="{{_local.previewDevice}}" emptyText="$t:sirsoft-hero_section.admin.form.preview.empty">
+          <sirsoft-hero_section.hero-banner-preview data-type="composite" data-ref="form_preview" draft="{{_local.form}}" locale="{{_local.previewLocale || position_settings?.data?.editor?.default_locale}}" defaultLocale="{{position_settings?.data?.editor?.default_locale}}" settings="{{({ autoplay: false, interval_seconds: 5, effect: 'none' })}}" device="{{_local.previewDevice}}" frame="{{position_settings?.data?.editor?.preview_frame ?? null}}" position="{{_local.form?.position ?? 'home_hero'}}" emptyText="$t:sirsoft-hero_section.admin.form.preview.empty">
             <on type="change" event="onContentLocaleChange"><set-state target="local" previewLocale="{{$args[0]}}"/></on>
           </sirsoft-hero_section.hero-banner-preview>
         </section>

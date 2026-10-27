@@ -11,6 +11,7 @@ use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\PositionSettingRepositoryInterface;
 use Plugins\Sirsoft\HeroSection\Repositories\PositionSettingRepository;
 use Plugins\Sirsoft\HeroSection\Services\BannerImageService;
+use Plugins\Sirsoft\HeroSection\Services\PreviewFrameResolver;
 use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
 
 /**
@@ -44,6 +45,7 @@ class HeroSectionServiceProvider extends BasePluginServiceProvider
      */
     protected array $cacheServices = [
         PublicHeroService::class,
+        PreviewFrameResolver::class,
     ];
 
     /**

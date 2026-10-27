@@ -446,6 +446,8 @@
                                             "banners": "{{(preview?.data?.data ?? []).map(b => ({...b, title: b.title_localized, description: $localized(b.description) ?? '', button_text: $localized(b.button_text) ?? '', image_alt: $localized(b.image_alt) || b.title_localized}))}}",
                                             "settings": "{{_computed.currentSettings}}",
                                             "device": "{{_local.previewDevice}}",
+                                            "frame": "{{position_settings?.data?.editor?.preview_frame ?? null}}",
+                                            "position": "{{_computed.currentPosition}}",
                                             "emptyText": "{{preview === undefined ? '' : $t('sirsoft-hero_section.admin.preview.empty')}}"
                                         }
                                     }

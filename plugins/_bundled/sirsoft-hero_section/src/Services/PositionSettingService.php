@@ -21,9 +21,11 @@ class PositionSettingService
      * PositionSettingService 생성자
      *
      * @param  PositionSettingRepositoryInterface  $settings  위치 설정 Repository
+     * @param  PreviewFrameResolver  $frames  관리자 미리보기 구좌 틀 해석기
      */
     public function __construct(
         private PositionSettingRepositoryInterface $settings,
+        private PreviewFrameResolver $frames,
     ) {}
 
     /**
@@ -51,6 +53,7 @@ class PositionSettingService
                 'default_locale' => config('app.site_locale', config('app.locale')),
                 'locales' => array_values(config('app.supported_locales', [])),
                 'focus_limits' => ['min' => Banner::FOCUS_MIN, 'max' => Banner::FOCUS_MAX],
+                'preview_frame' => $this->frames->resolve(),
             ],
         ];
     }

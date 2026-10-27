@@ -2,8 +2,12 @@
 
 namespace Plugins\Sirsoft\HeroSection\Tests\Feature\Admin;
 
+use App\Enums\ExtensionStatus;
+use App\Models\Template;
+use App\Models\TemplateLayout;
 use App\Models\User;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
+use Plugins\Sirsoft\HeroSection\Services\PreviewFrameResolver;
 use Plugins\Sirsoft\HeroSection\Support\UploadLimit;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
 
@@ -64,6 +68,64 @@ class PositionSettingControllerTest extends PluginTestCase
         foreach ($positions as $position) {
             $this->assertSame(PositionSetting::DEFAULTS, $position['settings']);
         }
+    }
+
+    /**
+     * 편집 메타에 미리보기 구좌 틀(템플릿·CSS·위치별 사슬)이 실린다 — 배너 조회 권한만으로 받는다.
+     *
+     * @scenario surface=preview_frame_chain_from_active_user_template
+     *
+     * @return void 반환값 없음
+     */
+    public function test_editor_meta_carries_preview_frame(): void
+    {
+        $frame = $this->actingAs($this->adminWith(['sirsoft-hero_section.banners.read']))
+            ->getJson($this->api('/admin/position-settings'))->assertOk()->json('data.editor.preview_frame');
+
+        $this->assertIsArray($frame);
+        $this->assertArrayHasKey('template', $frame);
+        $this->assertIsArray($frame['stylesheets']);
+        $this->assertSame(['home_hero', 'shop_hero'], array_keys($frame['positions']));
+    }
+
+    /**
+     * 관리자 레이아웃 편집기에서 사용자 템플릿 홈 레이아웃을 저장하면 미리보기 구좌 틀이 1시간 캐시를 기다리지 않고 바뀐다.
+     *
+     * 틀 캐시 키에는 확장 캐시 버전이 들어 있다 — 편집기 저장(PUT 레이아웃)이 그 버전을 올리지 않으면 옛 본문 상자 폭이 남는다.
+     *
+     * @scenario surface=preview_frame_refreshes_after_layout_edit
+     *
+     * @return void 반환값 없음
+     */
+    public function test_preview_frame_refreshes_after_layout_editor_save(): void
+    {
+        Template::query()->where('type', 'user')->update(['status' => ExtensionStatus::Inactive->value]);
+        $template = Template::factory()->create(['type' => 'user', 'status' => ExtensionStatus::Active->value]);
+        $content = fn (string $class) => [
+            'version' => '1.0.0',
+            'layout_name' => 'home',
+            'components' => [[
+                'id' => 'main', 'type' => 'basic', 'name' => 'Div', 'props' => ['className' => $class],
+                'children' => [['id' => 'slot', 'type' => 'extension_point', 'name' => 'home_hero']],
+            ]],
+            'data_sources' => [],
+            'metadata' => [],
+        ];
+        TemplateLayout::factory()->create(['template_id' => $template->id, 'name' => 'home', 'content' => $content('max-w-7xl mx-auto px-8')]);
+        $admin = $this->adminWith(['sirsoft-hero_section.banners.read', 'core.templates.layouts.edit']);
+        $chain = fn () => $this->actingAs($admin)->getJson($this->api('/admin/position-settings'))
+            ->assertOk()->json('data.editor.preview_frame.positions.home_hero.chain');
+
+        $this->assertSame([['className' => 'max-w-7xl mx-auto px-8', 'responsive' => []]], $chain());
+        $before = PreviewFrameResolver::getExtensionCacheVersion();
+
+        $this->actingAs($admin)->putJson("/api/admin/templates/{$template->identifier}/layouts/home", [
+            'expected_lock_version' => 0,
+            'content' => $content('max-w-3xl mx-auto px-4'),
+        ])->assertOk();
+
+        $this->assertGreaterThan($before, PreviewFrameResolver::getExtensionCacheVersion());
+        $this->assertSame([['className' => 'max-w-3xl mx-auto px-4', 'responsive' => []]], $chain());
     }
 
     /**

@@ -146,6 +146,7 @@ export async function activeTitle(page: Page): Promise<string> {
 /** 데스크톱·휴대폰 폭 */
 export const VIEWPORTS = {
   desktop: { width: 1366, height: 900 },
+  tablet: { width: 768, height: 1024 },
   mobile: { width: 390, height: 844 },
 } as const;
 

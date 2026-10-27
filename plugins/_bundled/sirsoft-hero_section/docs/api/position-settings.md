@@ -122,6 +122,24 @@ HTTP/1.1 200
 
 위치 목록(`key` = 확장점 이름 `home_hero`·`shop_hero`, `label_key`)과 위치별 슬라이더 설정(저장 행이 없으면 기본값 autoplay=true·5초·slide), 업로드 한도 `upload{max_mb, server_limit_mb, effective_mb}` — 플러그인 설정 API 권한이 없는 배너 담당자도 화면 안내에 쓸 수 있게 여기서 준다.
 
+`editor.preview_frame` 은 편집 미리보기의 구좌 틀이다 — `{template, stylesheets[], positions{home_hero|shop_hero: {layout, chain[{className, responsive{키: className}}]} | null}}`. 활성 사용자 템플릿에서 그 확장점을 가진 레이아웃(상속 병합본)을 찾아 루트부터 확장점까지의 상자 클래스(바인딩 `{{…}}` 토큰은 뺀 정적 클래스)와 반응형 덮어쓰기를 담고(덮어쓰기가 없으면 빈 배열 `[]`), `stylesheets` 는 그 템플릿의 `components.css` 주소(확장 캐시 버전 포함)다. 편집기 견본(`editor-spec.json`)은 버전이 바뀌는 주소 대신 빈 `stylesheets` 를 둔다. 확장점이 없는 위치는 null, 활성 사용자 템플릿이 없으면 `template: null`·`stylesheets: []` 이고 `positions` 의 각 위치가 null 이다. 결과는 템플릿 식별자·확장 캐시 버전별로 1시간 캐시한다.
+
+```json
+"preview_frame": {
+    "template": "sirsoft-basic",
+    "stylesheets": ["/build/ext/{확장 캐시 버전}/templates/sirsoft-basic/assets/css/components.css"],
+    "positions": {
+        "home_hero": {
+            "layout": "home",
+            "chain": [
+                { "className": "min-h-fit px-4", "responsive": { "desktop": "min-h-fit max-w-7xl mx-auto px-8" } }
+            ]
+        },
+        "shop_hero": { "layout": "shop/index", "chain": [ … ] }
+    }
+}
+```
+
 
 ### PUT /api/plugins/sirsoft-hero_section/admin/position-settings/{position}
 <!-- @generated:start:api.plugins.sirsoft-hero_section.admin.position-settings.update -->

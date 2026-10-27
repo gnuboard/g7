@@ -200,7 +200,14 @@
                 "frame": "{{device}} banner preview",
                 "expand": "Enlarge preview",
                 "close": "Close",
-                "fallback": "Missing text falls back to the site language ({{locale}}) or another available language."
+                "fallback": "Missing text falls back to the site language ({{locale}}) or another available language.",
+                "text_overflow": "On {{device}} the text is taller than the banner. Nothing is cut off — visitors can scroll inside the text area to read it all — but shorten the text if you want it visible at once. You can still save.",
+                "text_overflow_controls": "On {{device}} the text becomes taller than the banner when two or more banners share this position and the slide buttons appear. Nothing is cut off — visitors can scroll inside the text area — but shorten the text if you want it visible at once. You can still save.",
+                "contrast_low": "The text may be hard to read against its background — {{parts}}. This is an estimate from the photo's overall average brightness and the text backdrop, so the real contrast behind the text may differ; check the preview. Text colors are never changed automatically.",
+                "contrast_title": "title contrast about {{ratio}}:1 (3:1 or more recommended)",
+                "contrast_description": "description contrast about {{ratio}}:1 (4.5:1 or more recommended)",
+                "contrast_tip_light": "For light text, choose \"{{option}}\" as the text background or place the text over a darker part of the photo.",
+                "contrast_tip_dark": "For dark text, choose \"{{option}}\" as the text background or switch the text color to a white tone."
             },
             "cancel": "Cancel",
             "save": "Save",
@@ -219,6 +226,46 @@
                 "none": "None",
                 "dark": "Dark gradient",
                 "light": "Light gradient"
+            },
+            "conflict_merge": {
+                "title": "Compare the latest version with my changes",
+                "hint": "Fields changed only by another admin use the latest value, and fields changed only by you keep your value. Choose a value for fields both of you changed, apply, then review and save again.",
+                "no_differences": "Your input matches the latest version. Apply to save again on top of the latest version.",
+                "load": "Load latest and compare",
+                "reload": "Reload latest",
+                "retry": "Try again",
+                "load_failed": "Could not load the latest version. Your input is kept. Please try again.",
+                "apply": "Apply selected values",
+                "choose_all": "Choose a value for every field both of you changed to apply.",
+                "mine": "My change",
+                "latest": "Latest",
+                "stale_image": "This image was already replaced or removed by another admin and cannot be reused.",
+                "yes": "Active",
+                "no": "Inactive",
+                "empty": "None",
+                "shown": "Shown",
+                "hidden": "Hidden",
+                "new_window": "New window",
+                "change": {
+                    "theirs": "Changed by another admin",
+                    "mine": "Changed by you",
+                    "both": "Changed by both — choose one"
+                },
+                "fields": {
+                    "position": "Display position",
+                    "is_active": "Active",
+                    "period": "Display period",
+                    "title": "Title",
+                    "description": "Description",
+                    "button_text": "Button text",
+                    "image_alt": "Image alt text",
+                    "title_style": "Title visibility, color, alignment",
+                    "description_style": "Description visibility, color, alignment",
+                    "presentation": "Image focus and text background",
+                    "link": "Link",
+                    "pc_image": "PC image",
+                    "mobile_image": "Mobile image"
+                }
             }
         }
     }
