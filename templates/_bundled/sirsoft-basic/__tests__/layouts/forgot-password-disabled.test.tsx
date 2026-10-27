@@ -219,7 +219,7 @@ describe('sirsoft-basic 비밀번호 찾기·재설정 차단 안내 (7.2.0 B3)'
    * @effects forgot_password_blocked_shows_notice, password_blocked_offers_method_button
    */
   it('비밀번호 찾기가 422 auth.password_auth_disabled 면 토스트 대신 안내와 「{method_label}(으)로 로그인」 버튼을 보인다', async () => {
-    expect(forgotCard, 'forgot_password.json 에 안내 조각 자리가 없다').toBeDefined();
+    expect(forgotCard, 'forgot_password.g7.html 에 안내 조각 자리가 없다').toBeDefined();
     const t = await renderCard(forgotCard, jsonResponse(422, BLOCKED_BODY));
 
     fireEvent.change(document.querySelector('input[name="email"]')!, { target: { value: 'kim@corp.test' } });
@@ -272,7 +272,7 @@ describe('sirsoft-basic 비밀번호 찾기·재설정 차단 안내 (7.2.0 B3)'
    * @effects reset_password_blocked_hides_form, password_blocked_offers_method_button
    */
   it('재설정 제출이 422 auth.password_auth_disabled 면 폼을 숨기고 안내와 수단 버튼을 보인다', async () => {
-    expect(resetCard, 'reset_password.json 에 안내 조각 자리가 없다').toBeDefined();
+    expect(resetCard, 'reset_password.g7.html 에 안내 조각 자리가 없다').toBeDefined();
     const t = await renderCard(resetCard, jsonResponse(422, BLOCKED_BODY));
 
     expect(document.querySelector('form')).not.toBeNull();

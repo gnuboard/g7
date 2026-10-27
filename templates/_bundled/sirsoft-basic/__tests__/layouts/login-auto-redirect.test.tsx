@@ -68,8 +68,17 @@ async function runAutoRedirect(autoPath: string | null, query: Record<string, st
     query,
     route: { path: '/login' },
   };
-  const handler = dispatcher.createHandler({ ...autoRedirect, type: 'click' }, context);
-  await handler(new Event('init'));
+  // 운영에서는 진입 액션 문맥의 `_global` 과 `G7Core.state.get()` 이 같은 전역 상태다. 액션 인자 해석은 `_global` 을
+  // `G7Core.state.get()` 으로 바꿔 읽으므로(stale closure 방지), 그 둘을 맞춘다 — 하네스(layoutTestUtils)를 불러오면
+  // `G7Core.state.get()` 이 빈 전역 상태를 돌려 `url` 이 "undefined" 로 풀렸다
+  const g7State = (window as any).G7Core?.state;
+  const getSpy = typeof g7State?.get === 'function' ? vi.spyOn(g7State, 'get').mockReturnValue(context._global) : null;
+  try {
+    const handler = dispatcher.createHandler({ ...autoRedirect, type: 'click' }, context);
+    await handler(new Event('init'));
+  } finally {
+    getSpy?.mockRestore();
+  }
 }
 
 describe('sirsoft-basic 로그인 화면 자동 이동 (7.2.0 B1)', () => {
@@ -94,7 +103,7 @@ describe('sirsoft-basic 로그인 화면 자동 이동 (7.2.0 B1)', () => {
    * @effects auto_redirect_replaces_to_configured_path
    */
   it('자동 이동 경로가 있고 우회 쿼리가 없으면 진입 시 그 경로로 replace 이동한다', async () => {
-    expect(autoRedirect, 'login.json <init> 에 redirect 액션이 없다').toBeDefined();
+    expect(autoRedirect, 'login.g7.html <init> 에 redirect 액션이 없다').toBeDefined();
     expect(autoRedirect.params?.replace).toBe(true);
 
     await runAutoRedirect(AUTO_PATH, {});
@@ -173,7 +182,7 @@ describe('sirsoft-basic 로그인 화면 자동 이동 (7.2.0 B1)', () => {
     [AUTO_PATH, 1],
     [null, 0],
   ])('자동 이동(%s)이 켜진 사이트에만 하단 「다른 방법으로 로그인」(?local=1) 링크가 있다 (%i개)', async (autoPath, count) => {
-    expect(otherMethodBlock, 'login.json 에 ?local=1 링크 블록이 없다').toBeDefined();
+    expect(otherMethodBlock, 'login.g7.html 에 ?local=1 링크 블록이 없다').toBeDefined();
 
     const registry = ComponentRegistry.getInstance();
     (registry as any).registry = {
@@ -213,7 +222,7 @@ describe('sirsoft-basic 로그인 화면 자동 이동 (7.2.0 B1)', () => {
     [{}, false],
   ])('비상 계정 진입(?local=1)이면 비밀번호 화면임을 알리는 안내가 보인다 (%o → %s, 디자인 ⑤)', async (query, shown) => {
     const notice = flatten(loginPage as any).find((n) => n.id === 'login_local_notice');
-    expect(notice, 'login.json 에 비상 계정 안내가 없다').toBeDefined();
+    expect(notice, 'login.g7.html 에 비상 계정 안내가 없다').toBeDefined();
     expect(String(notice.if)).toContain('query.local');
 
     const registry = ComponentRegistry.getInstance();

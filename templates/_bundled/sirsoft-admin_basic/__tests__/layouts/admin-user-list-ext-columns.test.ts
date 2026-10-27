@@ -8,7 +8,7 @@
  *  - 두 노드가 그 id 로 있다(선택기는 굽힌 조각 `_partial_filter_section` 안, 목록 레이아웃이 그 조각을 include 한다).
  *  - `columns`·`defaultColumns` 가 리터럴 배열이다 — 표현식 문자열이면 서버 병합이 `_append` 를 건너뛴다.
  *  - 열 항목 모양이 `{field, header, …cellChildren}`, 선택기 선택지의 field 집합 == 표 열의 field 집합.
- *  - 선례 오버레이(sirsoft-social_login `admin_user_list_social_column.json`)의 `_append` 를 서버와 같은 규칙(기존 배열 끝에 이어 붙이기)으로
+ *  - 선례 오버레이(sirsoft-social_login `admin_user_list_social_column.g7.html`)의 `_append` 를 서버와 같은 규칙(기존 배열 끝에 이어 붙이기)으로
  *    적용하면 두 곳 모두 열이 1개 늘고, 집합이 여전히 같다.
  *
  * @since 1.2.0

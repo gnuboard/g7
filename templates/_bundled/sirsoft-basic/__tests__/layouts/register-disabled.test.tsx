@@ -151,7 +151,7 @@ describe('sirsoft-basic 일반 회원가입 받지 않음 (7.2.0 B2)', () => {
    * @effects register_closed_shows_notice_card
    */
   it('가입을 받지 않으면 /register 는 폼·확장 칸 대신 안내 카드와 로그인 버튼을 보인다', async () => {
-    expect(registerCard, 'register.json 에 registration_closed_card 를 담은 카드가 없다').toBeDefined();
+    expect(registerCard, 'register.g7.html 에 registration_closed_card 를 담은 카드가 없다').toBeDefined();
     const t = await renderNode(registerCard, false);
 
     const card = document.getElementById('registration_closed_card');

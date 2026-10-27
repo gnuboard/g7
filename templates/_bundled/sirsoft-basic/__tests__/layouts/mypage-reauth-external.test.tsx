@@ -366,7 +366,7 @@ describe('sirsoft-basic 정보 수정 재확인 수단 선택 (7.2.0 B6)', () =>
    * @effects reauth_return_completes_gate
    */
   it('verification_token 을 들고 돌아오면 진입 시 그 토큰으로 재확인을 마치고 주소에서 토큰을 지운다', async () => {
-    expect(returnSequence, 'profile-edit.json <init> 에 verification_token 복귀 시퀀스가 없다').toBeDefined();
+    expect(returnSequence, 'profile-edit.g7.html <init> 에 verification_token 복귀 시퀀스가 없다').toBeDefined();
     routeFetch({ '/api/me/verify-password': () => jsonResponse(200, { success: true, data: { verified: true } }) });
     const replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => undefined);
 

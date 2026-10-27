@@ -155,7 +155,7 @@ SSoT 는 코어 `config/template.php` 의 `required_admin_components` 입니다.
 | PHPUnit | 0개 | — |
 | Vitest | 6개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 2개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 4개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)
