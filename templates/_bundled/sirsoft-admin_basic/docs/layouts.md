@@ -768,6 +768,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │   ├── partials/_modal_changelog.g7.html
 │   ├── partials/_modal_license.g7.html
 │   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달)
+│   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트 부분 실패 경고 결과 창 — 대시보드·모듈·플러그인·언어팩·환경설정 공유)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html
 │
 ├── 에러 페이지
