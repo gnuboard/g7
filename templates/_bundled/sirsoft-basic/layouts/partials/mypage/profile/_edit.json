@@ -1142,7 +1142,7 @@
                                                     "text": "$t:mypage.profile.address"
                                                 },
                                                 {
-                                                    "comment": "우편번호 + 주소 검색 버튼",
+                                                    "comment": "우편번호 + 주소 검색 버튼 — 우편번호 검색 플러그인이 꺼져 있으면 직접 입력한다(readOnly 가 풀린다). 칸은 폼 자동 바인딩(profileEditForm)이라 친 값이 그대로 저장에 실린다.",
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
@@ -1159,7 +1159,7 @@
                                                                 "value": "{{user.data?.zipcode ?? ''}}",
                                                                 "placeholder": "$t:mypage.profile.zipcode_placeholder",
                                                                 "className": "{{_local.profileErrors?.zipcode ? 'w-28 px-4 py-2.5 border border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-28 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}",
-                                                                "readOnly": true
+                                                                "readOnly": "{{_global.activePlugins?.includes('sirsoft-daum_postcode') ?? true}}"
                                                             }
                                                         },
                                                         {
@@ -1192,7 +1192,7 @@
                                                         "value": "{{user.data?.address ?? ''}}",
                                                         "placeholder": "$t:mypage.profile.address_placeholder",
                                                         "className": "{{_local.profileErrors?.address ? 'w-full px-4 py-2.5 border border-red-500 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white' : 'w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'}}",
-                                                        "readOnly": true
+                                                        "readOnly": "{{_global.activePlugins?.includes('sirsoft-daum_postcode') ?? true}}"
                                                     }
                                                 },
                                                 {

@@ -135,9 +135,20 @@
 
 `module.json` 의 `state_contracts` 는 다른 확장이 읽으라고 내놓는 전역 상태(`_global.{이름}`)의 이름·모양·쓰기 허용 주체이고,
 `integrations` 는 「있으면 연동되고 없어도 동작하는」 확장 목록입니다(`dependencies` 와 달리 설치를 막지 않음). 각각
-`getStateContracts()`·`getIntegrations()` 로 자동 파싱됩니다. 형식과 규칙은
+`getStateContracts()`·`getIntegrations()` 로 자동 파싱되고, 연동 대상별 버전 제약은 `getIntegrationConstraints()`
+(`{modules: {식별자: 제약}, plugins: …, templates: …}`, 목록형·설명형은 `'*'`)로 읽습니다(코어 7.1.4+). 형식과 규칙은
 [전역 상태 공개 계약](plugin-development.md#전역-상태-공개-계약-state_contracts)과
-[선택 연동](plugin-development.md#2-의존성-dependency)을 따릅니다.
+[선택 연동](plugin-development.md#선택-연동-integrations)을 따릅니다.
+
+```json
+"integrations": {
+    "modules": { "sirsoft-board": ">=1.2.1" },
+    "plugins": []
+}
+```
+
+연동 대상이 꺼진 사이트에서 이 모듈의 화면·응답이 그 대상으로 가는 링크·데이터를 내지 않게 하는 것은 이 모듈의 몫입니다 —
+서버는 활성 여부를 확인하고, 레이아웃은 `_global.activeModules` 로 가립니다([선택 연동](plugin-development.md#선택-연동-integrations)).
 
 ### 자동 추론 메서드 (final - 오버라이드 불가)
 

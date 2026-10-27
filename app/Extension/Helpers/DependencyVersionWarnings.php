@@ -126,4 +126,30 @@ final class DependencyVersionWarnings
 
         return $warnings;
     }
+
+    /**
+     * 갱신이 끝난 확장의 선택 연동(`integrations`) 안내를 모아 로그에 남기고 돌려줍니다 — 의존 경고의 연동 변형 (7.1.4 D10).
+     *
+     * 의존과 달리 연동은 없어도 동작하므로 경고가 아니라 안내다. 새 판 manifest 의 연동 대상 중 미설치·비활성·버전 미달인 것을
+     * 결과(`integration_notices`)·완료 문구로 알린다.
+     *
+     * @param  string  $type  갱신한 확장 종류 (`module`·`plugin`·`template`)
+     * @param  string  $identifier  갱신한 확장 식별자
+     * @param  string  $manifestPath  갱신된 manifest 파일 경로
+     * @return list<array{type: string, identifier: string, name: string, state: string, required_version: string, installed_version: string|null, message: string}> 연동 안내 목록
+     */
+    public static function integrationsAfterUpdate(string $type, string $identifier, string $manifestPath): array
+    {
+        $notices = IntegrationNotices::forManifestFile($manifestPath);
+
+        if ($notices !== []) {
+            Log::info('확장 업데이트 완료 — 연동 확장 일부가 없거나 꺼져 있거나 버전이 모자랍니다', [
+                'type' => $type,
+                'identifier' => $identifier,
+                'integrations' => array_map(fn (array $n) => $n['identifier'].' '.$n['state'].' '.$n['required_version'].' (installed: '.($n['installed_version'] ?? '-').')', $notices),
+            ]);
+        }
+
+        return $notices;
+    }
 }

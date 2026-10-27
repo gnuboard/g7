@@ -1,11 +1,12 @@
 {
-    "comment": "쇼핑 안내 카드 — 이커머스가 설치돼 있을 때만 뜻이 있어 부르는 쪽이 조건으로 감싼다. 이동 경로 앞머리는 전역 shopBase 를 쓴다.",
+    "comment": "쇼핑 안내 카드 — 쇼핑몰 모듈이 켜져 있을 때만 뜻이 있어 카드 뿌리에 쇼핑몰 가드를 단다. 이동 경로 앞머리는 전역 shopBase 를 쓴다.",
     "meta": {
         "is_partial": true,
         "description": "쇼핑몰 홍보 카드"
     },
     "type": "basic",
     "name": "A",
+    "if": "{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}",
     "actions": [
         {
             "type": "click",

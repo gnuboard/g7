@@ -4,7 +4,7 @@
      못해 값이 `_global` 에 있어야 하고 인라인 폼은 그럴 이유가 없어 `_local` 에 있다 — 두 상태 자리가
      갈리는 이유가 그것이다. -->
 <partial description="상품 상세 Q&amp;A 탭 (테이블 형태)">
-  <div data-if="{{(_local.activeTab ?? 'info') === 'qna' &amp;&amp; !!_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug}}" class="py-6">
+  <div data-if="{{(_local.activeTab ?? 'info') === 'qna' &amp;&amp; !!_global.modules?.['sirsoft-ecommerce']?.inquiry?.board_slug &amp;&amp; (_global.activeModules?.includes('sirsoft-board') ?? true)}}" class="py-6">
     <!-- 헤더 영역: 비밀글 필터 토글 버튼 + 문의 작성 버튼 -->
     <div class="flex items-center justify-between mb-4">
       <!-- 비밀글 필터 pill 버튼 -->

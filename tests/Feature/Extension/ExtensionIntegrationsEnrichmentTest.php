@@ -45,7 +45,8 @@ class ExtensionIntegrationsEnrichmentTest extends TestCase
     }
 
     /**
-     * 대상마다 이름·유형·설치·활성 여부를 싣고, 미설치 대상은 식별자를 이름으로 둔다.
+     * 대상마다 이름·유형·설치·활성 여부를 싣고, 미설치 대상은 식별자를 이름으로 둔다. 목록형 선언은 버전 무관(`*`)이라
+     * 설치만 돼 있으면 충족(`is_met`)이다(7.1.4).
      *
      * @scenario shape=enriched
      *
@@ -58,9 +59,9 @@ class ExtensionIntegrationsEnrichmentTest extends TestCase
         app()->setLocale('ko');
 
         $this->assertSame([
-            ['identifier' => 'sirsoft-board', 'name' => '게시판', 'type' => 'module', 'is_installed' => true, 'is_active' => true],
-            ['identifier' => 'sirsoft-ecommerce', 'name' => 'sirsoft-ecommerce', 'type' => 'module', 'is_installed' => false, 'is_active' => false],
-            ['identifier' => 'sirsoft-marketing', 'name' => '마케팅', 'type' => 'plugin', 'is_installed' => true, 'is_active' => false],
+            ['identifier' => 'sirsoft-board', 'name' => '게시판', 'type' => 'module', 'is_installed' => true, 'is_active' => true, 'required_version' => '*', 'installed_version' => null, 'is_met' => true],
+            ['identifier' => 'sirsoft-ecommerce', 'name' => 'sirsoft-ecommerce', 'type' => 'module', 'is_installed' => false, 'is_active' => false, 'required_version' => '*', 'installed_version' => null, 'is_met' => false],
+            ['identifier' => 'sirsoft-marketing', 'name' => '마케팅', 'type' => 'plugin', 'is_installed' => true, 'is_active' => false, 'required_version' => '*', 'installed_version' => null, 'is_met' => true],
         ], DependencyEnricher::enrichIntegrations([
             'modules' => ['sirsoft-board', 'sirsoft-ecommerce'],
             'plugins' => ['sirsoft-marketing'],

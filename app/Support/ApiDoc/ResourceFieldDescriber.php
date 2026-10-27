@@ -68,6 +68,8 @@ class ResourceFieldDescriber
         'incompatible_required_version' => '요구 코어 버전 미충족 시 필요한 버전 (호환되면 null)',
         'status_variant_label' => '상태 표시용 라벨/변형',
         'dependencies' => '의존하는 확장 맵 (manifest 파생 — {modules, plugins})',
+        'integrations' => '함께 쓰면 연동되는(선택) 확장 목록 (manifest integrations 파생 — 각 원소 identifier/name/type/is_installed/is_active/required_version/installed_version/is_met, 버전 제약이 없으면 required_version 은 *)',
+        'integrated_by' => '이 확장을 선택 연동으로 선언한 활성 확장 목록 (각 원소 type/identifier/name — 비활성화·제거 안내용)',
         'assets' => '프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략)',
 
         // 관계/연관 객체 (여러 Resource 에서 동일 계약)

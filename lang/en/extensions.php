@@ -64,6 +64,41 @@ return [
         'composer_install_failed' => 'Installing Composer dependencies failed — run composer install manually in the extension directory',
     ],
 
+    // Optional integration (integrations) notices — informational only, never blocking (7.1.4)
+    'integrations' => [
+        'notice_not_installed' => ':name not installed',
+        'notice_inactive' => ':name turned off',
+        'notice_version_mismatch' => ':name requires :required (installed :installed)',
+        'notice_summary' => 'Some optional integrations are not working — :list. Install, turn on or update them to enable the integration.',
+        'cascade_failed' => 'Skipped :name because it could not be installed or turned on together: :message',
+        'states' => [
+            'not_installed' => 'Not installed',
+            'inactive' => 'Inactive',
+            'version_mismatch' => 'Version too low',
+        ],
+        'console' => [
+            'notices_title' => 'Optional integrations — this extension works without them; install, turn on or update them to enable the integration',
+            'integrated_by_title' => 'Extensions integrating with this extension — their menus and screens that used this extension will disappear',
+            'column_type' => 'Type',
+            'column_extension' => 'Extension',
+            'column_state' => 'State',
+            'column_required' => 'Required version',
+            'column_installed' => 'Installed version',
+        ],
+    ],
+
+    // Validation field names for items installed together (7.1.4)
+    'install_fields' => [
+        'dependencies' => 'dependencies to install together',
+        'dependency_type' => 'dependency type',
+        'dependency_identifier' => 'dependency identifier',
+        'integrations' => 'integrations to install together',
+        'integration_type' => 'integration type',
+        'integration_identifier' => 'integration identifier',
+        'language_packs' => 'language packs to install together',
+        'language_pack' => 'language pack identifier',
+    ],
+
     'alerts' => [
         'incompatible_deactivated' => ':type ":name" auto-deactivated',
         'incompatible_message' => 'Required: :required, Installed: :installed',

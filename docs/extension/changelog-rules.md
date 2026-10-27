@@ -242,7 +242,7 @@ setState(selectedX) → apiCall(changelog)
 
 ## 8. 코어 버전 제약 정책
 
-확장 manifest(`module.json`, `plugin.json`, `template.json`)의 `g7_version` 과 `dependencies.{modules|plugins}` 버전 제약 작성 규칙.
+확장 manifest(`module.json`, `plugin.json`, `template.json`)의 `g7_version` 과 `dependencies.{modules|plugins}`·`integrations.{modules|plugins|templates}` 버전 제약 작성 규칙.
 
 ### 표기 규칙
 
@@ -262,6 +262,7 @@ setState(selectedX) → apiCall(changelog)
 - A 확장이 B 확장의 공개 Service/Contract/Model/Route/훅을 사용한다면 `dependencies.{type}.B: ">=X.Y.Z"` 기재
 - B 에서 공개 표면이 변경되거나 새 API 가 도입되어 A 가 그것을 소비하게 되면 A 의 최소 버전 제약을 **그 API 최초 도입 버전**으로 상향
 - 실존하지 않는 placeholder 버전(`>=0.1.0` 등)은 금지 — 버전 게이팅 무효화 유발
+- `integrations` 도 같은 규칙(7.1.4+, 미달은 안내만) — [선택 연동](plugin-development.md#선택-연동-integrations)
 
 ### 버전 제약 재검토 트리거
 
@@ -271,12 +272,13 @@ setState(selectedX) → apiCall(changelog)
 |--------|------------|
 | 코어 공개 확장 표면 변경 (AbstractModule/AbstractPlugin/HookManager/Contracts 등) | 모든 번들 확장의 `g7_version` |
 | 코어 minor/major/beta 번호 변경 | 번들 확장 전체 `g7_version` |
-| 번들 모듈/플러그인의 공개 Service/Contract/Model/Route/훅/CHANGELOG 변경 | 해당 확장을 `dependencies` 에 선언한 모든 확장 |
+| 번들 모듈/플러그인의 공개 Service/Contract/Model/Route/훅/CHANGELOG 변경 | 해당 확장을 `dependencies` 또는 `integrations`(버전 제약형)에 선언한 모든 확장 |
 
 ### CHANGELOG 기재
 
 - `g7_version` 상향: `### Changed` 에 `- 코어 최소 요구 버전을 X.Y.Z 로 상향`
 - `dependencies.{id}` 상향: `### Changed` 에 `- {id} 의존성 버전 제약을 실제 릴리스 버전에 맞춰 정비` 또는 `- {id} 최소 버전을 X.Y.Z 로 상향` (변경 이유에 따라)
+- `dependencies` → `integrations` 이동은 `### Changed` 에 적고, 새 코어 기능에 기대면 「코어 X.Y.Z 이상」을 쓴다
 
 ---
 

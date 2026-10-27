@@ -479,6 +479,15 @@
                                             }
                                         },
                                         {
+                                            "comment": "함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 막지 않는 안내라 창을 열지 않는다.",
+                                            "handler": "toast",
+                                            "if": "{{(response?.data?.integration_notices ?? []).length !== 0}}",
+                                            "params": {
+                                                "type": "info",
+                                                "message": "$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + ')').join(', ')}}"
+                                            }
+                                        },
+                                        {
                                             "handler": "refetchDataSource",
                                             "params": {
                                                 "dataSourceId": "plugins"

@@ -5,6 +5,23 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.84.0] - 2026-10-27
+
+### Added
+
+- 전역 상태 `_global.activeModules`·`_global.activePlugins` — 활성 모듈·플러그인 식별자 배열. 서버가 싣던 `G7Config.activeModules`·`activePlugins`(메타 객체 배열)에서 `identifier` 만 뽑는다. `_global.modules` 는 공개 설정이 있는 활성 모듈만 담아 「모듈이 켜져 있나」를 판정할 수 없었다. 레이아웃은 `{{_global.activeModules?.includes('id') ?? true}}` 한 모양으로 가린다 — 키가 없는 옛 서버에서는 `?? true` 로 「켜짐」. 원본 `G7Config` 배열은 그대로 둔다(편집기·핸들러 대기가 읽음). 전역 상태 계약(`G7Core.stateContracts`) 코어 예약 이름에 두 키 추가 (TemplateApp.ts `loadG7Config`·`loadActiveExtensionIdentifiers`)
+- `Route` 타입에 선택 필드 `requires?: {modules?, plugins?}` — 서버가 routes 응답을 만들 때 적힌 확장이 모두 활성인 라우트만 싣는다. 클라이언트는 읽지 않는다(타입 정합) (routing/Router.ts)
+
+### Fixed
+
+- 오류 화면(404·403·500)이 레이아웃 데이터 소스의 `if` 를 평가하지 않고 모두 불러, 꺼진 모듈의 공통 데이터 소스(예: `_user_base` 의 장바구니 수)를 오류 화면에서만 호출하던 문제 — 일반 화면과 같은 `filterByCondition` 으로 거른다 (`ErrorPageHandler.renderError`, 잠금 `__tests__/ErrorPageHandler.test.ts` 「데이터 소스 if 조건」)
+- (검색봇 화면 — 표현식 동형) 봇 화면 평가기가 옵셔널 체이닝 메서드 호출 `list?.includes('x')` 를 풀지 못해 null 이 되고, `?? true` 와 묶이면 목록에 없어도 참이던 문제 (app/Seo/ExpressionEvaluator.php `parseCallExpression`)
+- 봇 화면 props 평가(`evaluateRaw`)에서 `a.includes(x) ?? true` 처럼 메서드 호출 뒤에 연산자가 오면 ` ?? true` 를 프로퍼티 이름으로 읽어 null 이 되던 문제 — 켜진 모듈에서도 거짓이 됐다 (app/Seo/ExpressionEvaluator.php `resolveToValue`)
+- (검색봇 화면 — 표현식 동형) 봇 화면 평가기가 `+` 를 풀지 못해 `'/' + (route_path ?? 'shop')` 같은 경로 조립이 빈 값이 되던 문제 — 상점 경로를 바꾼 사이트의 봇 화면 「쇼핑」 링크가 `/shop/products` 로 남았다. JS `+` 와 같게 한쪽이 문자열이면 잇고 둘 다 수면 더한다. 함께: 값 자리(`evaluateRaw`)의 삼항·`??` 를 메서드 호출 판정보다 먼저 봐서 `c ? '' : '/'.concat(x)` 가 c 참일 때 x 를 돌려주던 문제, `??` 가 빈 문자열을 없는 값으로 보던 문제(루트 배치 `''` 가 `'/shop'` 으로 바뀜), `'/' + 'shop'` 을 리터럴 하나로 읽던 문제, 문자열 경로의 `??` 도 빈 문자열을 값으로 둔다(두 경로 같은 답), 값 자리에서 `||`·`&&`·비교·앞 `!`·경로끼리 산술(`n * m`)을 JS 우선순위로 푼다, `filter(Boolean)`, `Math.min/max` 인자 하나·수 아닌 인자. 평가기가 모르는 문법(즉시 실행 함수 등)이 `+` 피연산자면 잇지 않고 빈 값. 번들 `+` 식 827개 × 문맥 2 를 브라우저 엔진과 대조해 수정 전보다 나빠진 결과 0 (app/Seo/ExpressionEvaluator.php `splitTopLevelPlus`·`addOperands`·`evaluateOperatorsRaw`·`evaluateArithmeticRaw`·`resolveToValue`)
+- seo-config `fields` 모드의 `attrs` 가 `{x}` 하나짜리 패턴만 치환해 `"{shopBase}/products"` 가 중괄호째 href 로 나가던 문제 — `item_attrs` 와 같이 섞인 패턴을 치환한다 (app/Seo/ComponentHtmlMapper.php `renderFieldWithAttrs`)
+
+회귀 잠금: `__tests__/TemplateApp.activeExtensions.test.ts`(7 — 수정 전 4 red, 대조군 3) · `tests/Unit/Seo/SeoGlobalActiveExtensionsTest.php`(가드 식 3종 × 문맥 4종 브라우저 동형·props·fields `if`·데이터소스 `if`·`_global` 주입) · `tests/Feature/Template/RoutesRequiresFilterTest.php`(routes `requires`)
+
 ## [engine-v1.83.0] - 2026-10-23
 
 ### Added

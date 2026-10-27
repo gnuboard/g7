@@ -7,6 +7,7 @@ use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\RebuildsSearchIndex;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Contracts\Repositories\PluginRepositoryInterface;
@@ -22,6 +23,7 @@ class UpdatePluginCommand extends Command
     use HasUnifiedConfirm;
     use RebuildsSearchIndex;
     use RendersLayoutSyncResult;
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
     use ReportsStuckUpdateRecovery;
     use SelectsLayoutInstallSource;
@@ -215,6 +217,7 @@ class UpdatePluginCommand extends Command
                 $this->renderLayoutSyncResult($updateResult['layout_sync'] ?? null);
                 $this->renderLayoutIncludeWarnings($updateResult['layout_warnings'] ?? []);
                 $this->renderDependencyWarnings($updateResult);
+                $this->renderIntegrationNotices($updateResult['integration_notices'] ?? []);
 
                 Log::info('플러그인 업데이트 완료', [
                     'plugin' => $identifier,

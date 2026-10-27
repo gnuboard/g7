@@ -3,6 +3,8 @@
 namespace App\Seo;
 
 use App\Enums\SitemapChangeFreq;
+use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use App\Seo\Contracts\SitemapContributorInterface;
 use App\Services\TemplateService;
@@ -61,7 +63,7 @@ class SitemapGenerator
             $writer->addUrl($entry);
         }
 
-        foreach ($this->contributors as $contributor) {
+        foreach ($this->getActiveContributors() as $contributor) {
             try {
                 foreach ($this->drain($contributor) as $entry) {
                     $writer->addUrl($this->normalizeEntry($entry));
@@ -208,8 +210,8 @@ class SitemapGenerator
         // 1. 정적 라우트 수집 (파라미터 없는 공개 라우트)
         $urls = array_merge($urls, $this->collectStaticRoutes());
 
-        // 2. 기여자들의 동적 URL 수집
-        foreach ($this->contributors as $contributor) {
+        // 2. 기여자들의 동적 URL 수집 (꺼진 확장의 기여자는 제외)
+        foreach ($this->getActiveContributors() as $contributor) {
             try {
                 // 기여자 URL의 'url' 키를 'loc'(절대 URL)으로 변환
                 $contributorUrls = array_map(
@@ -237,6 +239,46 @@ class SitemapGenerator
     public function getContributors(): array
     {
         return $this->contributors;
+    }
+
+    /**
+     * 켜져 있는 확장(또는 확장이 아닌 기여자)의 기여자 목록을 반환합니다.
+     *
+     * 모듈·플러그인의 서비스 프로바이더는 비활성 상태여도 등록되므로, 꺼진 확장의 기여자도 등록돼 있습니다.
+     * 사이트맵에는 켜진 확장의 URL 만 실어야 해 여기서 거릅니다.
+     *
+     * @return SitemapContributorInterface[] 기여자 배열
+     */
+    public function getActiveContributors(): array
+    {
+        $inactive = $this->inactiveExtensionIdentifiers();
+
+        return array_filter(
+            $this->contributors,
+            fn (SitemapContributorInterface $contributor): bool => ! in_array($contributor->getIdentifier(), $inactive, true),
+        );
+    }
+
+    /**
+     * 설치돼 있지만 꺼진 모듈·플러그인 식별자 목록을 반환합니다.
+     *
+     * 사이트맵 저장소에 이미 쌓인 행을 내보낼 때도 이 목록으로 거릅니다. 상태를 읽지 못하면 빈 목록을 돌려
+     * 지금처럼 모두 싣습니다(사이트맵이 통째로 비는 쪽보다 낫다).
+     *
+     * @return array<int, string> 꺼진 확장 식별자 목록
+     */
+    public function inactiveExtensionIdentifiers(): array
+    {
+        try {
+            return array_values(array_merge(
+                array_diff(ModuleManager::getInstalledModuleIdentifiers(), ModuleManager::getActiveModuleIdentifiers()),
+                array_diff(PluginManager::getInstalledPluginIdentifiers(), PluginManager::getActivePluginIdentifiers()),
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('[SEO] Sitemap extension status lookup failed', ['error' => $e->getMessage()]);
+
+            return [];
+        }
     }
 
     /**

@@ -1,6 +1,6 @@
-<!-- 최근 글 카드 — 게시판을 가리지 않고 새로 올라온 순서 다섯 건이다. -->
+<!-- 최근 글 카드 — 게시판을 가리지 않고 새로 올라온 순서 다섯 건이다. 게시판 모듈이 꺼져 있으면 카드째 숨긴다. -->
 <partial description="최근 게시글 카드">
-  <div class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col">
+  <div data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
         <icon name="clock" class="text-xl text-gray-500 dark:text-gray-400"/>

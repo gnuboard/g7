@@ -57,6 +57,41 @@ return [
         'column_message' => '理由',
         'composer_install_failed' => 'Composer 依存関係のインストールに失敗しました — 拡張フォルダで composer install を手動で実行してください',
     ],
+    // 任意連携(integrations)の案内 — ブロックせず知らせるだけ (7.1.4)
+    'integrations' => [
+        'notice_not_installed' => ':name 未インストール',
+        'notice_inactive' => ':name 無効',
+        'notice_version_mismatch' => ':name :required が必要(現在 :installed)',
+        'notice_summary' => '一緒に使うと連携する拡張のうち、連携していないものがあります — :list。インストール・有効化・アップデートすると連携します。',
+        'cascade_failed' => ':name を一緒にインストール・有効化できなかったためスキップしました: :message',
+        'states' => [
+            'not_installed' => '未インストール',
+            'inactive' => '無効',
+            'version_mismatch' => 'バージョン不足',
+        ],
+        'console' => [
+            'notices_title' => '一緒に使うと連携する拡張の案内 — なくてもこの拡張は動作し、インストール・有効化・アップデートすると連携します',
+            'integrated_by_title' => 'この拡張と連携中の拡張 — その拡張でこの拡張を使っていたメニュー・画面が消えます',
+            'column_type' => '種類',
+            'column_extension' => '拡張',
+            'column_state' => '状態',
+            'column_required' => '必要バージョン',
+            'column_installed' => 'インストール済みバージョン',
+        ],
+    ],
+
+    // インストール要求で一緒に処理する項目の検証フィールド名 (7.1.4)
+    'install_fields' => [
+        'dependencies' => '一緒にインストールする依存拡張',
+        'dependency_type' => '依存拡張の種類',
+        'dependency_identifier' => '依存拡張の識別子',
+        'integrations' => '一緒にインストールする連携拡張',
+        'integration_type' => '連携拡張の種類',
+        'integration_identifier' => '連携拡張の識別子',
+        'language_packs' => '一緒にインストールする言語パック',
+        'language_pack' => '言語パックの識別子',
+    ],
+
     'alerts' => [
         'incompatible_deactivated' => ':type ":name"自動無効化',
         'incompatible_message' => '必要バージョン: :required、現在インストール済み: :installed',

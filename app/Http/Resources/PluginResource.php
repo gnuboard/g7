@@ -3,11 +3,13 @@
 namespace App\Http\Resources;
 
 use App\Extension\CoreVersionChecker;
+use App\Http\Resources\Traits\ExposesIntegratedBy;
 use App\Http\Resources\Traits\ExposesUpdateCoreCompatibility;
 use Illuminate\Http\Request;
 
 class PluginResource extends BaseApiResource
 {
+    use ExposesIntegratedBy;
     use ExposesUpdateCoreCompatibility;
 
     /**
@@ -27,6 +29,8 @@ class PluginResource extends BaseApiResource
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
+            // 이 플러그인을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
+            'integrated_by' => $this->integratedBy('plugin'),
             'permissions' => $this->getValue('permissions', []),
             'roles' => $this->getValue('roles', []),
             'config' => $this->getValue('config', []),
@@ -120,6 +124,8 @@ class PluginResource extends BaseApiResource
             'requires_core' => $this->getValue('requires_core'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
+            // 이 플러그인을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
+            'integrated_by' => $this->integratedBy('plugin'),
             'status' => $this->getValue('status', 'uninstalled'),
             'is_installed' => $this->getValue('is_installed', false),
             'has_settings' => $this->getValue('has_settings', false),

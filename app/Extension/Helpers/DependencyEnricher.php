@@ -6,6 +6,7 @@ use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\ExtensionStatus;
+use App\Support\ExtensionDependencies;
 use App\Support\ExtensionIntegrations;
 use App\Support\LocalizedValue;
 use Composer\Semver\Semver;
@@ -42,17 +43,18 @@ class DependencyEnricher
     }
 
     /**
-     * 선택 연동 선언(`integrations`)을 화면 표시용 목록으로 보강합니다 (#639).
+     * 선택 연동 선언(`integrations`)을 화면 표시용 목록으로 보강합니다 (#639, 버전 제약 7.1.4).
      *
-     * `dependencies` 와 달리 버전 제약이 없고 설치를 막지 않으므로, 각 연동 대상의 이름과 설치·활성 여부만 싣습니다
-     * (관리자 확장 상세의 「함께 쓰면 연동되는 확장」 행, 미설치면 「미설치」 배지).
+     * `dependencies` 와 달리 설치를 막지 않으므로, 각 연동 대상의 이름·설치·활성 여부와 요구 버전 충족 여부를 싣습니다
+     * (관리자 확장 상세의 「함께 쓰면 연동되는 확장」 행, 미설치면 「미설치」, 설치됐지만 버전이 모자라면 「버전 미달」 배지).
+     * `is_met` 은 「설치됨 && 버전 제약 충족」이고, 버전 제약이 없으면(`'*'`) 설치만으로 충족입니다.
      *
-     * @param  mixed  $integrations  manifest 의 integrations 값 (정규화 전·후 모두 받음)
-     * @return array<int, array{identifier: string, name: string, type: string, is_installed: bool, is_active: bool}> 보강된 연동 목록
+     * @param  mixed  $integrations  manifest 의 integrations 값 (목록형·버전 제약 객체형·정규화 결과 모두 받음)
+     * @return array<int, array{identifier: string, name: string, type: string, is_installed: bool, is_active: bool, required_version: string, installed_version: string|null, is_met: bool}> 보강된 연동 목록
      */
     public static function enrichIntegrations(mixed $integrations): array
     {
-        $normalized = ExtensionIntegrations::normalize($integrations);
+        $normalized = ExtensionIntegrations::constraints($integrations);
         $repositories = [
             'modules' => [ModuleRepositoryInterface::class, 'module'],
             'plugins' => [PluginRepositoryInterface::class, 'plugin'],
@@ -66,8 +68,12 @@ class DependencyEnricher
             }
 
             $repository = app($contract);
-            foreach ($normalized[$type] as $identifier) {
+            foreach ($normalized[$type] as $identifier => $constraint) {
+                $identifier = (string) $identifier;
                 $record = $repository->findByIdentifier($identifier);
+                $installedVersion = $record !== null && is_string($record->version ?? null) && $record->version !== ''
+                    ? $record->version
+                    : null;
 
                 $result[] = [
                     'identifier' => $identifier,
@@ -75,6 +81,9 @@ class DependencyEnricher
                     'type' => $singular,
                     'is_installed' => $record !== null,
                     'is_active' => $record !== null && ($record->status ?? null) === ExtensionStatus::Active->value,
+                    'required_version' => $constraint,
+                    'installed_version' => $installedVersion,
+                    'is_met' => $record !== null && self::integrationVersionMet($installedVersion, $constraint),
                 ];
             }
         }
@@ -102,7 +111,9 @@ class DependencyEnricher
 
         $result = [];
 
-        foreach ($dependencies[$type] as $identifier => $versionConstraint) {
+        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
+        foreach (ExtensionDependencies::constraintsOf($dependencies[$type]) as $identifier => $versionConstraint) {
+            $identifier = (string) $identifier;
             $record = $repository->findByIdentifier($identifier);
             $activeRecord = $repository->findActiveByIdentifier($identifier);
 
@@ -127,6 +138,22 @@ class DependencyEnricher
     }
 
     /**
+     * 연동 대상의 설치 버전이 요구 버전을 충족하는지 판정합니다. 제약이 없으면(`'*'`) 늘 충족입니다.
+     *
+     * @param  string|null  $installedVersion  설치 버전 (없으면 null)
+     * @param  string  $constraint  요구 버전 제약
+     * @return bool 충족 여부
+     */
+    private static function integrationVersionMet(?string $installedVersion, string $constraint): bool
+    {
+        if ($constraint === ExtensionIntegrations::ANY_VERSION) {
+            return true;
+        }
+
+        return $installedVersion !== null && self::checkVersionConstraint($installedVersion, $constraint);
+    }
+
+    /**
      * Semver 제약 조건을 검증합니다.
      *
      * @param  string  $installedVersion  설치된 버전
@@ -140,6 +167,18 @@ class DependencyEnricher
         } catch (\Exception $e) {
             return false;
         }
+    }
+
+    /**
+     * 확장 모델에서 현재 로케일의 표시 이름을 반환합니다 (연동 안내·역조회 목록용).
+     *
+     * @param  object|null  $record  확장 모델 (Module/Plugin/Template)
+     * @param  string  $fallback  모델이 없거나 이름이 비었을 때 쓸 식별자
+     * @return string 이름
+     */
+    public static function displayName(?object $record, string $fallback): string
+    {
+        return self::resolveName($record, $fallback);
     }
 
     /**

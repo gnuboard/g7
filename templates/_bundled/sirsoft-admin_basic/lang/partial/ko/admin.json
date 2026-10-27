@@ -3,7 +3,20 @@
     "title": "함께 쓰면 연동되는 확장",
     "hint": "아래 확장이 설치돼 있으면 기능이 서로 연결됩니다. 없어도 이 확장은 그대로 동작합니다.",
     "not_installed": "미설치",
-    "inactive": "비활성"
+    "inactive": "비활성",
+    "required_version": "요구 {{version}}",
+    "installed_version": "설치 {{version}}",
+    "version_mismatch": "버전 미달",
+    "active": "사용 중",
+    "install_title": "함께 쓰면 연동되는 확장(선택)",
+    "install_hint": "체크한 확장을 이 확장보다 먼저 설치·활성화합니다. 해제해도 이 확장은 그대로 설치됩니다.",
+    "cannot_select": "여기서 설치할 수 없음",
+    "integrated_by_label": "연동 중인 확장",
+    "deactivate_notice_title": "연동 중인 확장 확인",
+    "deactivate_notice_body": "{{name}}을(를) 끄면 아래 확장에서 이 확장을 쓰던 메뉴·화면이 사라집니다. 아래 확장은 계속 동작합니다.",
+    "deactivate_confirm": "비활성화",
+    "uninstall_notice": "아래 확장이 이 확장과 연동 중입니다 — 삭제하면 이 확장을 쓰던 메뉴·화면이 사라집니다.",
+    "notice_toast": "함께 쓰면 연동되는 확장 안내: {{items}}"
   },
   "sidebar": {
     "no_accessible_menus": "접근 가능한 메뉴가 없습니다",
@@ -4199,6 +4212,7 @@
       "extension_license_modal": "확장 라이선스 전문",
       "module_force_activate_modal": "모듈 강제 활성화",
       "module_force_deactivate_modal": "모듈 강제 비활성화",
+      "module_deactivate_integrations_modal": "모듈 비활성화 연동 안내",
       "module_install_modal": "모듈 설치",
       "module_manual_install_modal": "모듈 수동 설치",
       "module_reactivate_language_packs_modal": "언어팩 일괄 활성화",
@@ -4219,6 +4233,7 @@
       "plugin_extension_license_modal": "플러그인 라이선스 전문",
       "plugin_force_activate_modal": "플러그인 강제 활성화",
       "plugin_force_deactivate_modal": "플러그인 강제 비활성화",
+      "plugin_deactivate_integrations_modal": "플러그인 비활성화 연동 안내",
       "plugin_install_modal": "플러그인 설치 확인",
       "plugin_manifest_preview_drawer": "플러그인 매니페스트 미리보기"
     },

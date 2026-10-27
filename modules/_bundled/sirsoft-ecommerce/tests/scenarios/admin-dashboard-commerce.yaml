@@ -25,6 +25,8 @@ axes:
   module_state: [active, inactive]
   data_state: [has_orders, no_orders, has_reviews, no_reviews, has_inquiries, no_inquiries, has_previous_week, no_previous_week]
   user_role: [admin_with_dashboard_permission, admin_without_dashboard_permission, non_admin, unauthenticated]
+  # 상품 문의는 게시판 모듈(선택 연동)의 글이다 — 게시판이 꺼지거나 없으면 미답변 문의 카드가 사라진다(#822).
+  board_module_state: [active, inactive, not_installed]
 
 exclusions:
   - { module_state: inactive, data_state: has_orders, reason: "모듈 비활성 시 API 미호출 — 데이터 상태 무관" }
@@ -125,6 +127,10 @@ effects:
   - latest_reviews_view_all_links_to_review_admin
   # 미답변 문의 항목·「전체 보기」는 board_slug 기반 게시판 글 경로로 간다(slug 없으면 링크 숨김).
   - pending_inquiries_link_to_board_post_via_board_slug
+  # 게시판 모듈이 꺼지거나 설치되지 않았으면 서버가 미답변 문의 항목·건수·slug 를 비우고 board_active=false 를 낸다(#822).
+  - pending_inquiries_hidden_when_board_module_inactive
+  # 같은 경우 화면은 미답변 문의를 부르지 않고 카드째 숨긴다 — 활성 목록이 없는 옛 코어는 board_active 로 가른다(#822).
+  - pending_inquiries_card_hidden_when_board_module_inactive
   # 판매 차트는 매출액 데이터셋을 보조 Y축(y1)에 그려 수량 막대가 묻히지 않는다.
   - sales_graph_chart_plots_amount_on_secondary_axis
   # 세 카드는 h-full 로 높이를 맞춘다.
@@ -134,6 +140,7 @@ effects:
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/DashboardApiTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/DashboardInquiryBoardInactiveTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Upgrades/RecalculateEcommerceStatsNetSalesTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Admin/PartialCancelNetSalesTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/AggregateEcommerceStatsCommandTest.php

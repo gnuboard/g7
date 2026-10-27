@@ -64,6 +64,41 @@ return [
         'composer_install_failed' => 'Composer 의존성 설치에 실패했습니다 — 확장 폴더에서 composer install 을 수동으로 실행하세요',
     ],
 
+    // 선택 연동(integrations) 안내 — 막지 않고 알리기만 한다 (7.1.4)
+    'integrations' => [
+        'notice_not_installed' => ':name 미설치',
+        'notice_inactive' => ':name 꺼짐',
+        'notice_version_mismatch' => ':name :required 버전 필요(지금 :installed)',
+        'notice_summary' => '함께 쓰면 연동되는 확장 중 연동이 꺼진 것이 있습니다 — :list. 설치·활성화·업데이트하면 연동됩니다.',
+        'cascade_failed' => ':name 을(를) 함께 설치·활성화하지 못해 건너뛰었습니다: :message',
+        'states' => [
+            'not_installed' => '미설치',
+            'inactive' => '비활성',
+            'version_mismatch' => '버전 미달',
+        ],
+        'console' => [
+            'notices_title' => '함께 쓰면 연동되는 확장 안내 — 없어도 이 확장은 동작하고, 설치·활성화·업데이트하면 연동됩니다',
+            'integrated_by_title' => '이 확장과 연동 중인 확장 — 그 확장에서 이 확장을 쓰던 메뉴·화면이 사라집니다',
+            'column_type' => '유형',
+            'column_extension' => '확장',
+            'column_state' => '상태',
+            'column_required' => '요구 버전',
+            'column_installed' => '설치 버전',
+        ],
+    ],
+
+    // 설치 요청 동반 항목의 검증 필드 이름 (7.1.4)
+    'install_fields' => [
+        'dependencies' => '함께 설치할 의존 확장',
+        'dependency_type' => '의존 확장 종류',
+        'dependency_identifier' => '의존 확장 식별자',
+        'integrations' => '함께 설치할 연동 확장',
+        'integration_type' => '연동 확장 종류',
+        'integration_identifier' => '연동 확장 식별자',
+        'language_packs' => '함께 설치할 언어팩',
+        'language_pack' => '언어팩 식별자',
+    ],
+
     'alerts' => [
         'incompatible_deactivated' => ':type ":name" 자동 비활성화됨',
         'incompatible_message' => '필요 버전: :required, 현재 설치됨: :installed',

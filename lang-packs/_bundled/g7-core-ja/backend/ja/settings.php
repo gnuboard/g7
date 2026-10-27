@@ -317,6 +317,7 @@ return [
         'prune_extra_only_kept' => '配布物にないファイルのみ相違、保存: :label (配布物にないファイル :count 件)',
         'prune_extra_only_hint' => '配布物にないファイルのみ異なるフォルダは、以前のバージョンから残ったファイルの可能性があります(通常の更新は新バージョンで削除されたファイルを削除しません)。確認後に削除する場合は --include-modified を併せて指定してください。',
         'prune_protected_dependency' => '依存先のため保持: :label (:required_by)',
+        'prune_protected_integration' => '有効な拡張の連携先のため保持: :label (:integrated_by)',
         'prune_no_release_for_modified' => '配布物がないため変更の有無を確認できません — 変更の有無にかかわらず削除するには --include-modified を指定してください。',
         'prune_summary' => ':count 個を削除しました。',
         'unknown_action' => '不明な操作です: :action (list|place|prune)',

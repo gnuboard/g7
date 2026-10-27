@@ -205,7 +205,7 @@
           <switch on="{{$args[0].status === 'uninstalled' ? 'install' : 'edit'}}">
             <case when="install">
               <sequence>
-                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutSource="auto" :templateLayoutSourceOpen="false"/>
+                <set-state target="global" selectedTemplate="{{$args[0]}}" templateLayoutSource="auto" :templateLayoutSourceOpen="false" :installSelectedDeps="null" :installSelectedLPs="null" :installSelectedIntegrations="null"/>
                 <open-modal target="template_install_modal"/>
               </sequence>
             </case>

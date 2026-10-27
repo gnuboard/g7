@@ -152,6 +152,17 @@ interface PluginRepositoryInterface
     public function findActiveByPluginDependency(string $pluginIdentifier): Collection;
 
     /**
+     * 지정한 확장을 선택 연동(`integrations`)으로 선언한 활성 플러그인을 조회합니다.
+     *
+     * @param  string  $type  연동 대상 유형 (module|plugin|template)
+     * @param  string  $identifier  연동 대상 식별자
+     * @return Collection 그 확장을 연동으로 선언한 활성 플러그인 컬렉션
+     *
+     * @since 7.1.4
+     */
+    public function findActiveByIntegration(string $type, string $identifier): Collection;
+
+    /**
      * 활성화된 플러그인들의 identifier 목록을 반환합니다.
      *
      * @return array 활성화된 플러그인 identifier 배열

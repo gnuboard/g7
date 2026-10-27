@@ -184,6 +184,14 @@ SEO 렌더링 시 `_global` 컨텍스트에 프론트엔드 설정 데이터를 
 | `_global.pluginSettings` | `PluginSettingsService` | 플러그인 설정 데이터 |
 | `_global.site_name` | `general.site_name` | 사이트 이름. `resolveLocalizedValue` 통과 (다국어 array 안전) |
 | `_global.site_url` | `general.site_url` | 사이트 URL |
+| `_global.activeModules` | `ModuleManager::getActiveModules()` | 활성 모듈 식별자 배열 — 사용자 화면의 같은 키와 같은 출처 (코어 7.1.4+). 목록을 못 구하면 키를 싣지 않는다 |
+| `_global.activePlugins` | `PluginManager::getActivePlugins()` | 활성 플러그인 식별자 배열 (코어 7.1.4+) |
+
+레이아웃 가드 `{{_global.activeModules?.includes('id') ?? true}}`(부정 `{{!(… ?? true)}}`)는 봇 화면에서도 브라우저와 같은 값(켜짐 true · 꺼짐 false · 키 없음 true)이 나온다. 이 `_global` 은 데이터소스 `if` 평가에도 쓰여, 꺼진 모듈의 API 는 봇 렌더에서 부르지 않는다. 라우트 자체는 routes.json `requires` 로 거른 결과(공개 routes 응답과 같은 필터)를 쓴다 — [template-routing.md](../extension/template-routing.md#requires--모듈이-꺼지면-라우트-숨기기).
+
+봇 화면 평가기는 `+` 를 JS 와 같게 처리한다 — 한쪽이 문자열이면 잇고 둘 다 수면 더한다(`'/' + (route_path ?? 'shop')` → `/shop`). 값 자리의 `??` 는 null(없는 값)일 때만 오른쪽으로 넘어간다(빈 문자열은 값). 코어 7.1.4+.
+
+seo-config 의 `fields` 모드 항목은 `"if": "{prop}"` 로 props 값이 거짓(`false`·빈 값·`0`)이면 빠지고, `attrs` 는 `"{shopBase}/products"` 처럼 값과 글자를 섞어 쓸 수 있다(코어 7.1.4+).
 
 ### site_name SSoT 체인 (다국어 일관성)
 

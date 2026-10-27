@@ -1359,7 +1359,9 @@ class ComponentHtmlMapper
     {
         $attrStr = '';
         foreach ($field['attrs'] as $attrName => $fieldPattern) {
-            $value = $this->resolveFieldPattern($fieldPattern, $data);
+            // `{shopBase}/products` 처럼 값과 글자가 섞인 패턴도 치환한다(item_attrs 와 같은 규칙).
+            // 종전에는 `{x}` 하나짜리만 치환해 섞인 패턴이 중괄호째 href 로 나갔다(engine-v1.84.0).
+            $value = $this->resolveFieldContent((string) $fieldPattern, $data);
             if ($value !== '') {
                 // src 속성의 상대 경로를 사이트 주소 기준 절대 경로로 변환 (요청 Host 비의존)
                 if ($attrName === 'src' && ! str_starts_with($value, 'http')) {

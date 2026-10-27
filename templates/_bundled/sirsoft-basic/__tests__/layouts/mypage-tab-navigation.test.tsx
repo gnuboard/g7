@@ -33,13 +33,15 @@ describe('마이페이지 탭 — 기능 OFF 탭 숨김 (#524 WP-C3)', () => {
     // @scenario surface=mypage_tabs, mileage=off
     // @effects mypage_tabs_hide_mileage_when_disabled
     it('마일리지가 꺼져 있으면 적립금 탭을 감춘다', () => {
-        expect(hidden).toMatch(/mileage\?\.enabled \? \[\] : \['mileage'\]/);
+        // 1.3.0(#822): 쇼핑몰 모듈 활성도 함께 본다 — 꺼지면 설정과 무관하게 감춘다
+        expect(hidden).toMatch(/mileage\?\.enabled && \(_global\.activeModules\?\.includes\('sirsoft-ecommerce'\) \?\? true\) \? \[\] : \['mileage'\]/);
     });
 
     // @scenario surface=mypage_tabs, inquiry=off
     // @effects mypage_tabs_hide_inquiries_without_board
     it('문의 게시판이 연결되지 않았으면 문의 탭을 감춘다 — 기존 규칙을 유지한다', () => {
-        expect(hidden).toMatch(/inquiry\?\.board_slug \? \[\] : \['inquiries'\]/);
+        // 1.3.0(#822): 문의는 쇼핑몰·게시판 모듈이 모두 켜져 있어야 한다(상품 문의는 게시판 글로 저장)
+        expect(hidden).toMatch(/inquiry\?\.board_slug && \(_global\.activeModules\?\.includes\('sirsoft-ecommerce'\) \?\? true\) && \(_global\.activeModules\?\.includes\('sirsoft-board'\) \?\? true\) \? \[\] : \['inquiries'\]/);
     });
 
     // @scenario surface=mypage_tabs, mileage=on
@@ -51,7 +53,7 @@ describe('마이페이지 탭 — 기능 OFF 탭 숨김 (#524 WP-C3)', () => {
 
     // @scenario surface=mypage_tabs
     // @effects mypage_tabs_hidden_list_covers_only_two_ids
-    it('감추는 대상은 둘뿐이다 — 나머지 탭은 조건 없이 선다', () => {
+    it('기능 설정으로 감추는 대상은 둘뿐이다 — 나머지 탭은 모듈이 꺼졌을 때만 모듈 가드로 감춘다(#822, standalone-module-guards.test.ts)', () => {
         const hiddenIds = Array.from(hidden.matchAll(/\['(\w+)'\]/g)).map((m) => m[1]);
 
         expect(new Set(hiddenIds)).toEqual(new Set(['mileage', 'inquiries']));

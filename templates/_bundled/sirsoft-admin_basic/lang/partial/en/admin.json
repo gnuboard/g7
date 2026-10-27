@@ -3,7 +3,20 @@
     "title": "Works together with",
     "hint": "When these extensions are installed, their features connect with this one. This extension works without them.",
     "not_installed": "Not installed",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "required_version": "Requires {{version}}",
+    "installed_version": "Installed {{version}}",
+    "version_mismatch": "Version too low",
+    "active": "In use",
+    "install_title": "Extensions that work together (optional)",
+    "install_hint": "Checked extensions are installed and activated before this one. This extension is installed even if you uncheck them.",
+    "cannot_select": "Cannot be installed here",
+    "integrated_by_label": "Integrated extensions",
+    "deactivate_notice_title": "Check integrated extensions",
+    "deactivate_notice_body": "If you turn off {{name}}, the menus and screens that the extensions below use from it will disappear. The extensions below keep working.",
+    "deactivate_confirm": "Deactivate",
+    "uninstall_notice": "The extensions below are integrated with this one — deleting it removes the menus and screens they use from it.",
+    "notice_toast": "Extensions that work together: {{items}}"
   },
   "sidebar": {
     "no_accessible_menus": "No accessible menus",
@@ -4254,6 +4267,7 @@
       "extension_license_modal": "Extension License",
       "module_force_activate_modal": "Force Activate Module",
       "module_force_deactivate_modal": "Force Deactivate Module",
+      "module_deactivate_integrations_modal": "Module Deactivation Integration Notice",
       "module_install_modal": "Install Module",
       "module_manual_install_modal": "Manual Module Install",
       "module_reactivate_language_packs_modal": "Bulk Activate Language Packs",
@@ -4274,6 +4288,7 @@
       "plugin_extension_license_modal": "Plugin License",
       "plugin_force_activate_modal": "Force Activate Plugin",
       "plugin_force_deactivate_modal": "Force Deactivate Plugin",
+      "plugin_deactivate_integrations_modal": "Plugin Deactivation Integration Notice",
       "plugin_install_modal": "Install Plugin",
       "plugin_manifest_preview_drawer": "Plugin Manifest Preview"
     },

@@ -32,6 +32,7 @@ require_once dirname(__DIR__).'/includes/config.php';
 require_once dirname(__DIR__).'/includes/installer-state.php';
 require_once dirname(__DIR__).'/includes/functions.php';
 require_once dirname(__DIR__).'/includes/installer-ownership.php';
+require_once dirname(__DIR__).'/includes/install-order.php';
 require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
@@ -132,6 +133,24 @@ foreach ($identifierGroups as $groupKey => $ids) {
         }
     }
 }
+
+// 같은 유형 안 설치 순서 — 의존 대상이 먼저 설치·활성화되도록 dependencies 로 위상 정렬한다.
+// Step 4 의 자동 선택은 의존 대상을 배열 끝에 붙이고, 설치 작업은 배열 순서를 그대로 따른다.
+// 순환이면 원래 순서를 지키고 로그만 남긴다(차단은 dependencyPrecheckSSE 의 몫).
+$sortInstallOrder = static function (array $ids, string $orderType): array {
+    return installerSortSameTypeByDependencies(
+        $ids,
+        installerLoadBundledDependencyMap(BASE_PATH, $orderType),
+        static function (array $cycle) use ($orderType): void {
+            addLog(lang('log_install_order_cycle', [
+                'type' => $orderType,
+                'cycle' => implode(' → ', $cycle),
+            ]));
+        }
+    );
+};
+$modules = $sortInstallOrder($modules, 'modules');
+$plugins = $sortInstallOrder($plugins, 'plugins');
 
 try {
     // selected_extensions 업데이트

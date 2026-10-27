@@ -76,6 +76,7 @@ use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\Storage\CoreStorageDriver;
+use App\Extension\Support\IntegrationReverseIndex;
 use App\Extension\Support\LifecycleWarnings;
 use App\Extension\TemplateManager;
 use App\Listeners\ExtensionCompatibilityAlertListener;
@@ -390,6 +391,9 @@ class CoreServiceProvider extends ServiceProvider
     {
         // 생명주기 부분 실패 경고 수집기 — 요청·명령 단위로 하나 (결과 warnings·CLI 종료코드 1·관리자 결과 창)
         $this->app->scoped(LifecycleWarnings::class);
+
+        // 선택 연동 역맵 — 목록 행마다 「연동 중인 확장」을 실을 때 켜진 확장 조회를 요청·작업당 한 번으로 줄인다(7.1.4)
+        $this->app->scoped(IntegrationReverseIndex::class);
 
         // 확장 매니저 등록 (모듈/플러그인 공통 기능)
         $this->app->singleton(ExtensionManager::class, function ($app) {

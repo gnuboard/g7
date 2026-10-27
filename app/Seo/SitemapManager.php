@@ -30,6 +30,16 @@ class SitemapManager
      */
     private const LEGACY_XML_CACHE_KEY = 'seo.sitemap';
 
+    /**
+     * 사이트맵 생성에 쓰는 생성기·캐시·설정·저장소를 주입받습니다.
+     *
+     * @param  SitemapGenerator  $generator  사이트맵 생성기
+     * @param  CacheInterface  $cache  캐시
+     * @param  ConfigRepositoryInterface  $configRepository  설정 저장소
+     * @param  StorageInterface  $storage  파일 저장소
+     * @param  SitemapUrlRepositoryInterface  $repository  사이트맵 URL 저장소
+     * @param  SitemapProgress  $progress  진행 상태 기록기
+     */
     public function __construct(
         private SitemapGenerator $generator,
         private CacheInterface $cache,
@@ -152,13 +162,16 @@ class SitemapManager
      * 각 기여자를 스트리밍하여 사이트맵 저장소를 전량 대체합니다(전체 재생성).
      *
      * 기여자별로 격리하여, 한 기여자가 실패해도 나머지 기여자의 재적재는 계속됩니다.
+     * 꺼진 모듈·플러그인의 기여자는 재적재하지 않습니다.
+     *
+     * @return void 반환값 없음
      */
     private function rebuildStore(): void
     {
         // 스트림 삽입 건수를 누적해 running 단계의 "누적 URL 수" 를 표기합니다(D4).
         // countVisible() 같은 사전 count 쿼리 없이 삽입 결과만 합산하므로 1.4M 에서도 부담이 없습니다.
         $total = 0;
-        foreach ($this->generator->getContributors() as $contributor) {
+        foreach ($this->generator->getActiveContributors() as $contributor) {
             try {
                 // 현재 기여자 진입 시점의 누적치(직전 기여자들까지)를 표시합니다.
                 $this->progress->phase($contributor->getIdentifier(), $total);
@@ -183,7 +196,14 @@ class SitemapManager
      */
     private function streamStoreEntries(): iterable
     {
+        // 꺼진 모듈·플러그인이 쌓아 둔 행은 내보내지 않는다 — 다시 켜면 행이 그대로 남아 있어 바로 돌아온다
+        $inactive = array_flip($this->generator->inactiveExtensionIdentifiers());
+
         foreach ($this->repository->streamVisible() as $row) {
+            if (isset($inactive[(string) $row->contributor])) {
+                continue;
+            }
+
             yield [
                 'loc' => (string) $row->loc,
                 'lastmod' => $row->lastmod?->toW3cString(),
@@ -212,6 +232,7 @@ class SitemapManager
      * settings 의 seo 카테고리에 sitemap_last_updated_at 을 기록합니다.
      *
      * @param  string  $iso8601  ISO8601 형식 타임스탬프
+     * @return void 반환값 없음
      */
     private function updateLastUpdatedAt(string $iso8601): void
     {

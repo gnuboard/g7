@@ -517,7 +517,10 @@
                                                 "target": "global",
                                                 "selectedTemplate": "{{$args[0]}}",
                                                 "templateLayoutSource": "auto",
-                                                "templateLayoutSourceOpen": false
+                                                "templateLayoutSourceOpen": false,
+                                                "installSelectedDeps": null,
+                                                "installSelectedLPs": null,
+                                                "installSelectedIntegrations": null
                                             }
                                         },
                                         {

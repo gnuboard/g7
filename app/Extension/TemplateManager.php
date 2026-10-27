@@ -26,6 +26,7 @@ use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\ExtensionStatusGuard;
 use App\Extension\Helpers\ExtensionUpdateJournal;
 use App\Extension\Helpers\GithubHelper;
+use App\Extension\Helpers\IntegrationNotices;
 use App\Extension\Helpers\StuckUpdateRecovery;
 use App\Extension\Layout\DTO\LayoutSyncEntry;
 use App\Extension\Layout\LayoutRowSynchronizer;
@@ -36,6 +37,7 @@ use App\Services\LayoutExtensionService;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
 use App\Support\BootDeferredLog;
+use App\Support\ExtensionDependencies;
 use App\Support\ExtensionIntegrations;
 use App\Support\LocalizedValue;
 use App\Support\StateContracts;
@@ -756,7 +758,8 @@ class TemplateManager implements TemplateManagerInterface
 
         // 모듈 의존성 확인
         // dependencies.modules는 연관 배열 형식 {"identifier": ">=version"} 또는 빈 객체 {}
-        $requiredModules = $template['dependencies']['modules'] ?? [];
+        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
+        $requiredModules = ExtensionDependencies::constraints($template['dependencies'] ?? [])['modules'];
         foreach ($requiredModules as $requiredModuleIdentifier => $_versionConstraint) {
             $requiredModule = $this->moduleRepository->findByIdentifier($requiredModuleIdentifier);
             if (! $requiredModule) {
@@ -776,7 +779,7 @@ class TemplateManager implements TemplateManagerInterface
 
         // 플러그인 의존성 확인
         // dependencies.plugins는 연관 배열 형식 {"identifier": ">=version"} 또는 빈 객체 {}
-        $requiredPlugins = $template['dependencies']['plugins'] ?? [];
+        $requiredPlugins = ExtensionDependencies::constraints($template['dependencies'] ?? [])['plugins'];
         foreach ($requiredPlugins as $requiredPluginIdentifier => $_versionConstraint) {
             $requiredPlugin = $this->pluginRepository->findByIdentifier($requiredPluginIdentifier);
             if (! $requiredPlugin) {
@@ -1086,6 +1089,25 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
+     * 템플릿이 선택 연동(`integrations`)으로 선언한 확장을 「식별자 => 버전 제약」 맵으로 반환합니다 (7.1.4).
+     *
+     * 설치된 템플릿을 먼저 보고, 없으면 `_pending`·`_bundled` 의 template.json 을 봅니다(설치 창은 설치 전에 읽는다).
+     * 모듈·플러그인의 `getIntegrationConstraints()` 와 같은 정규화기({@see ExtensionIntegrations::constraints()})를 씁니다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @return array{modules: array<string, string>, plugins: array<string, string>, templates: array<string, string>} 유형별 식별자 => 버전 제약
+     */
+    public function getIntegrationConstraints(string $identifier): array
+    {
+        $template = $this->templates[$identifier]
+            ?? $this->pendingTemplates[$identifier]
+            ?? $this->bundledTemplates[$identifier]
+            ?? null;
+
+        return ExtensionIntegrations::constraints(is_array($template) ? ($template['integrations'] ?? []) : []);
+    }
+
+    /**
      * 로드된 모든 템플릿 인스턴스들을 반환합니다.
      *
      * @return array 모든 템플릿 배열
@@ -1120,6 +1142,8 @@ class TemplateManager implements TemplateManagerInterface
                     'description' => $this->getLocalizedValue($template['description'] ?? '', $locale),
                     'dependencies' => $template['dependencies'] ?? [],
                     'integrations' => ExtensionIntegrations::normalize($template['integrations'] ?? []),
+                    // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
+                    'integration_constraints' => ExtensionIntegrations::constraints($template['integrations'] ?? []),
                     'requires_core' => $template['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'active',
@@ -1143,6 +1167,8 @@ class TemplateManager implements TemplateManagerInterface
                     'description' => $this->getLocalizedValue($description, $locale),
                     'dependencies' => $metadata['dependencies'] ?? [],
                     'integrations' => ExtensionIntegrations::normalize($metadata['integrations'] ?? []),
+                    // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
+                    'integration_constraints' => ExtensionIntegrations::constraints($metadata['integrations'] ?? []),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'pending',
@@ -1166,6 +1192,8 @@ class TemplateManager implements TemplateManagerInterface
                     'description' => $this->getLocalizedValue($description, $locale),
                     'dependencies' => $metadata['dependencies'] ?? [],
                     'integrations' => ExtensionIntegrations::normalize($metadata['integrations'] ?? []),
+                    // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
+                    'integration_constraints' => ExtensionIntegrations::constraints($metadata['integrations'] ?? []),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'source' => 'bundled',
@@ -1227,6 +1255,8 @@ class TemplateManager implements TemplateManagerInterface
                     'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $template['dependencies'] ?? [],
                     'integrations' => ExtensionIntegrations::normalize($template['integrations'] ?? []),
+                    // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
+                    'integration_constraints' => ExtensionIntegrations::constraints($template['integrations'] ?? []),
                     'requires_core' => $template['g7_version'] ?? null,
                     'status' => $record->status,
                     // 멈춘 업데이트(updating 이 10분 넘게 남고 잠금이 빔) — 관리자 카드가 정리·활성화 단추를 보인다
@@ -1307,6 +1337,8 @@ class TemplateManager implements TemplateManagerInterface
             'requires_core' => $template['g7_version'] ?? null,
             'dependencies' => $template['dependencies'] ?? [],
             'integrations' => ExtensionIntegrations::normalize($template['integrations'] ?? []),
+            // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
+            'integration_constraints' => ExtensionIntegrations::constraints($template['integrations'] ?? []),
             'externals' => $template['externals'] ?? [],
             'locales' => $template['locales'] ?? [],
             'layouts_count' => $layoutsCount,
@@ -1357,6 +1389,8 @@ class TemplateManager implements TemplateManagerInterface
             'requires_core' => $metadata['g7_version'] ?? null,
             'dependencies' => $metadata['dependencies'] ?? [],
             'integrations' => ExtensionIntegrations::normalize($metadata['integrations'] ?? []),
+            // 버전 제약 객체형(7.1.4)을 화면 보강·설치 창이 읽는다 — `integrations` 는 식별자 목록 모양 그대로 둔다(하위 호환)
+            'integration_constraints' => ExtensionIntegrations::constraints($metadata['integrations'] ?? []),
             'externals' => $metadata['externals'] ?? [],
             'locales' => $metadata['locales'] ?? [],
             'layouts_count' => 0,
@@ -1583,7 +1617,8 @@ class TemplateManager implements TemplateManagerInterface
             'template'
         );
 
-        $dependencies = $template['dependencies'] ?? [];
+        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
+        $dependencies = ExtensionDependencies::constraints($template['dependencies'] ?? []);
         $unmetDependencies = [];
 
         // 모듈 의존성 확인
@@ -2717,9 +2752,10 @@ class TemplateManager implements TemplateManagerInterface
             ];
         }
 
-        $dependencies = $template['dependencies'] ?? [];
-        $moduleDependencies = $dependencies['modules'] ?? [];
-        $pluginDependencies = $dependencies['plugins'] ?? [];
+        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
+        $dependencies = ExtensionDependencies::constraints($template['dependencies'] ?? []);
+        $moduleDependencies = $dependencies['modules'];
+        $pluginDependencies = $dependencies['plugins'];
 
         $moduleStatuses = [];
         $pluginStatuses = [];
@@ -3627,6 +3663,13 @@ class TemplateManager implements TemplateManagerInterface
                 $this->templatesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'template.json'
             );
 
+            // 선택 연동(integrations) 안내 — 막지 않고 결과·완료 문구로만 알린다 (7.1.4 D10)
+            $integrationNotices = DependencyVersionWarnings::integrationsAfterUpdate(
+                'template',
+                $identifier,
+                $this->templatesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'template.json'
+            );
+
             $result = [
                 'success' => true,
                 'from_version' => $fromVersion,
@@ -3638,10 +3681,11 @@ class TemplateManager implements TemplateManagerInterface
                 'layout_warnings' => $layoutWarnings,
                 'warnings' => LifecycleWarnings::current()->all(),
                 'dependency_warnings' => $dependencyWarnings,
-                'message' => DependencyVersionWarnings::appendToMessage(__('templates.update_success', [
+                'integration_notices' => $integrationNotices,
+                'message' => IntegrationNotices::appendToMessage(DependencyVersionWarnings::appendToMessage(__('templates.update_success', [
                     'template' => $identifier,
                     'version' => $toVersion,
-                ]), $dependencyWarnings),
+                ]), $dependencyWarnings), $integrationNotices),
             ];
 
         } catch (\Throwable $e) {

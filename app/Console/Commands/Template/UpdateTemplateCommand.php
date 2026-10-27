@@ -6,6 +6,7 @@ use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
@@ -19,6 +20,7 @@ class UpdateTemplateCommand extends Command
     use HasProgressBar;
     use HasUnifiedConfirm;
     use RendersLayoutSyncResult;
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
     use ReportsStuckUpdateRecovery;
     use SelectsLayoutInstallSource;
@@ -189,6 +191,7 @@ class UpdateTemplateCommand extends Command
                 $this->renderLayoutSyncResult($updateResult['layout_sync'] ?? null);
                 $this->renderLayoutIncludeWarnings($updateResult['layout_warnings'] ?? []);
                 $this->renderDependencyWarnings($updateResult);
+                $this->renderIntegrationNotices($updateResult['integration_notices'] ?? []);
 
                 Log::info('템플릿 업데이트 완료', [
                     'template' => $identifier,

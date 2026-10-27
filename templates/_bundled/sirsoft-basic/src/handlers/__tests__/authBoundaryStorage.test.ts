@@ -206,4 +206,39 @@ describe('authBoundaryStorage (#639 ⑦)', () => {
         auth.emit({ isAuthenticated: false, user: null });
         expect(localStorage.getItem('g7_cart_key')).toBeNull();
     });
+
+    // @scenario surface=auth_boundary, storage=guest_keys
+    // @effects login_skips_cart_key_when_ecommerce_off
+    it('쇼핑몰 모듈이 꺼진 사이트(활성 목록에 없음)에서는 로그인해도 카트키 발급 API 를 부르지 않는다 (#822)', async () => {
+        auth = createAuthManager({ isAuthenticated: false, user: null });
+        (window as any).G7Core.AuthManager = { getInstance: () => auth };
+        (window as any).G7Core.state.get = () => ({ activeModules: ['sirsoft-board'] });
+        sessionStorage.setItem('g7_guest_order_token', 'tok');
+
+        installAuthBoundaryStorageCleanup();
+        auth.login({ isAuthenticated: true, user: { uuid: 'member-1' } });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(fetch).not.toHaveBeenCalled();
+        // 나머지 경계 정리는 그대로 한다
+        expect(sessionStorage.getItem('g7_guest_order_token')).toBeNull();
+    });
+
+    // @scenario surface=auth_boundary, storage=guest_keys
+    // @effects login_skips_cart_key_when_ecommerce_off
+    it('활성 목록에 쇼핑몰이 있으면 발급하고, 목록이 없는 옛 코어에서도 지금처럼 발급한다', async () => {
+        for (const global of [{ activeModules: ['sirsoft-ecommerce'] }, {}]) {
+            (fetch as any).mockClear();
+            localStorage.removeItem('g7_cart_key');
+            auth = createAuthManager({ isAuthenticated: false, user: null });
+            (window as any).G7Core.AuthManager = { getInstance: () => auth };
+            (window as any).G7Core.state.get = () => global;
+
+            installAuthBoundaryStorageCleanup();
+            auth.login({ isAuthenticated: true, user: { uuid: 'member-1' } });
+
+            await vi.waitFor(() => expect(localStorage.getItem('g7_cart_key')).toBe('ck_new_after_login'));
+            expect(fetch).toHaveBeenCalledTimes(1);
+        }
+    });
 });

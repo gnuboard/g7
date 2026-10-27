@@ -222,6 +222,11 @@ modules/{identifier}/resources/
 3. 플러그인 routes는 **admin 템플릿에만** 포함 (settings 페이지 등 admin 전용)
 4. version은 템플릿의 version 사용
 
+**`requires` 로 걸러내기** (코어 7.1.4+):
+
+- 병합한 뒤, 라우트의 `requires`(`{"modules": [...], "plugins": [...]}`)에 적힌 모듈·플러그인이 **모두** 활성이 아닌 라우트는 응답에서 뺀다. 템플릿 routes 와 모듈 routes 모두 같다.
+- 다른 모듈·플러그인이 있어야 의미가 있는 화면(예: 쇼핑몰의 상품 문의 화면이 게시판 모듈을 쓰는 경우)에 쓴다. 규칙·형식 오류 처리는 [template-routing.md 의 requires 절](template-routing.md#requires--모듈이-꺼지면-라우트-숨기기)
+
 **레이아웃 필드 자동 변환**:
 
 - 모듈 routes의 `layout` 필드에 모듈 식별자 접두사 자동 추가

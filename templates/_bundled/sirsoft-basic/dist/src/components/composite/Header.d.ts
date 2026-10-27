@@ -35,6 +35,21 @@ interface HeaderProps {
     currentLocale?: string;
     /** 쇼핑몰 기본 경로 (예: "/shop", "/") */
     shopBase?: string;
+    /**
+     * 게시판 모듈이 켜져 있는가 — false 면 「인기글」 탭과 게시판 탭·더보기를 그리지 않는다.
+     * 기본값 true: 레이아웃이 `_global.activeModules` 로 판정해 넘긴다. 값이 오지 않는 경우(루트 레이아웃을 keep 으로
+     * 업데이트해 새 바인딩이 없는 사이트)에는 지금처럼 보인다(#822).
+     */
+    boardEnabled?: boolean;
+    /** 쇼핑몰 모듈이 켜져 있는가 — false 면 장바구니 단추·「쇼핑」 탭·회원 메뉴의 주문내역·위시리스트·비회원 「주문조회」를 그리지 않는다. 기본값 true(위와 같은 이유) */
+    shopEnabled?: boolean;
+    /** 검색칸을 그리는가 — 레이아웃은 게시판·쇼핑몰·페이지 중 하나라도 켜져 있으면 true 를 넘긴다(검색 공급자가 없으면 숨김). 기본값 true */
+    searchEnabled?: boolean;
+    /**
+     * 봇 화면(seo-config header_nav)의 「쇼핑」 링크 주소(예: "/shop/products") — 이 컴포넌트는 읽지 않는다(화면은 shopBase 로 만든다).
+     * 옛 코어(7.1.3 이하)의 봇 렌더가 `{shopBase}/products` 같은 섞인 attrs 패턴을 치환하지 못해 레이아웃이 완성된 주소를 넘긴다.
+     */
+    shopProductsHref?: string;
     /** 추가 CSS 클래스 */
     className?: string;
     /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */

@@ -905,7 +905,40 @@ class SeoRenderer implements SeoRendererInterface
             $global['plugins'] = [];
         }
 
+        // activeModules / activePlugins: 활성 확장 식별자 목록 — 사용자 화면의 G7Config.activeModules·activePlugins
+        // 와 같은 출처(ModuleManager::getActiveModules / PluginManager::getActivePlugins)다. 레이아웃 가드
+        // `{{_global.activeModules?.includes('id') ?? true}}` 가 봇 화면에서도 같은 답을 내야 꺼진 모듈의 링크·
+        // 데이터소스 호출이 빠진다. 목록을 못 구하면 키를 싣지 않는다 — 가드는 「켜짐」으로 본다(engine-v1.84.0).
+        foreach ([
+            'activeModules' => fn () => $this->moduleManager->getActiveModules(),
+            'activePlugins' => fn () => $this->pluginManager->getActivePlugins(),
+        ] as $key => $resolver) {
+            try {
+                $global[$key] = $this->extensionIdentifiers($resolver());
+            } catch (\Throwable $e) {
+                Log::warning('[SEO] Failed to load active extension identifiers', ['key' => $key, 'error' => $e->getMessage()]);
+            }
+        }
+
         return $global;
+    }
+
+    /**
+     * 확장 인스턴스 목록에서 식별자만 순서대로 뽑습니다.
+     *
+     * @param  array<mixed>  $extensions  ModuleManager::getActiveModules() / PluginManager::getActivePlugins() 결과
+     * @return array<int, string> 식별자 목록
+     */
+    private function extensionIdentifiers(array $extensions): array
+    {
+        $identifiers = [];
+        foreach ($extensions as $extension) {
+            if (is_object($extension) && method_exists($extension, 'getIdentifier')) {
+                $identifiers[] = (string) $extension->getIdentifier();
+            }
+        }
+
+        return array_values(array_unique($identifiers));
     }
 
     /**

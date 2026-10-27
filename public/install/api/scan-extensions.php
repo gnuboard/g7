@@ -176,6 +176,7 @@ function scanTemplates(): array
         // dependencies 처리: 객체 형태면 모듈/플러그인 키를 배열로 변환
         $dependencies = extractDependenciesFromJson($data);
         $dependenciesDetailed = extractDependenciesDetailedFromJson($data);
+        $integrationsDetailed = extractIntegrationsDetailedFromJson($data);
 
         $templateInfo = [
             'identifier' => $identifier,
@@ -185,6 +186,7 @@ function scanTemplates(): array
             'type' => $type,
             'dependencies' => $dependencies,
             'dependencies_detailed' => $dependenciesDetailed,
+            'integrations_detailed' => $integrationsDetailed,
             'author' => $author,
             'directory' => $dir,
             'icon_data_uri' => extractExtensionIconDataUri($templatesDir.'/'.$dir, $data),
@@ -237,6 +239,8 @@ function scanModules(): array
                 'version' => '1.0.0',
                 'description' => ['ko' => '', 'en' => ''],
                 'dependencies' => [],
+                'dependencies_detailed' => [],
+                'integrations_detailed' => [],
                 'author' => null,
                 'directory' => $dir,
                 // 매니페스트가 없는 역호환 분기 — 아이콘 선언을 읽을 근거가 없다.
@@ -263,6 +267,7 @@ function scanModules(): array
 
         $dependencies = extractDependenciesFromJson($data);
         $dependenciesDetailed = extractDependenciesDetailedFromJson($data);
+        $integrationsDetailed = extractIntegrationsDetailedFromJson($data);
 
         $result[] = [
             'identifier' => $data['identifier'] ?? $dir,
@@ -271,6 +276,7 @@ function scanModules(): array
             'description' => $data['description'] ?? ['ko' => '', 'en' => ''],
             'dependencies' => $dependencies,
             'dependencies_detailed' => $dependenciesDetailed,
+            'integrations_detailed' => $integrationsDetailed,
             'author' => $data['vendor'] ?? null,
             'directory' => $dir,
             'icon_data_uri' => extractExtensionIconDataUri($modulesDir.'/'.$dir, $data),
@@ -317,6 +323,8 @@ function scanPlugins(): array
                 'version' => '1.0.0',
                 'description' => ['ko' => '', 'en' => ''],
                 'dependencies' => [],
+                'dependencies_detailed' => [],
+                'integrations_detailed' => [],
                 'author' => null,
                 'directory' => $dir,
                 // 매니페스트가 없는 역호환 분기 — 아이콘 선언을 읽을 근거가 없다.
@@ -343,6 +351,7 @@ function scanPlugins(): array
 
         $dependencies = extractDependenciesFromJson($data);
         $dependenciesDetailed = extractDependenciesDetailedFromJson($data);
+        $integrationsDetailed = extractIntegrationsDetailedFromJson($data);
 
         $result[] = [
             'identifier' => $data['identifier'] ?? $dir,
@@ -351,6 +360,7 @@ function scanPlugins(): array
             'description' => $data['description'] ?? ['ko' => '', 'en' => ''],
             'dependencies' => $dependencies,
             'dependencies_detailed' => $dependenciesDetailed,
+            'integrations_detailed' => $integrationsDetailed,
             'author' => $data['vendor'] ?? null,
             'directory' => $dir,
             'icon_data_uri' => extractExtensionIconDataUri($pluginsDir.'/'.$dir, $data),
@@ -507,29 +517,108 @@ function scanLanguagePacks(): array
  *
  * dependencies 구조:
  * - 객체 형태: { "modules": {"sirsoft-ecommerce": ">=1.0.0"}, "plugins": {...} }
+ * - 유형별 목록 형태: { "modules": ["sirsoft-ecommerce"] } — 버전 무관. 키(0, 1 …)가 아니라 값이 식별자다.
  * - 배열 형태: ["module1", "module2"]
+ *
+ * 식별자 목록은 {@see extractDependenciesDetailedFromJson()} 과 같은 규칙으로 뽑는다(두 함수가 다른 답을 내면
+ * 카드 표시와 선택 검증이 어긋난다).
  *
  * @param  array  $data  JSON 매니페스트 데이터
  * @return array 의존성 identifier 목록
  */
 function extractDependenciesFromJson(array $data): array
 {
-    $rawDeps = $data['dependencies'] ?? [];
-    $dependencies = [];
+    return array_values(array_map(
+        static fn (array $dep): string => $dep['identifier'],
+        extractDependenciesDetailedFromJson($data)
+    ));
+}
 
-    if (is_array($rawDeps)) {
-        if (isset($rawDeps['modules']) || isset($rawDeps['plugins'])) {
-            foreach (['modules', 'plugins'] as $depType) {
-                if (! empty($rawDeps[$depType]) && is_array($rawDeps[$depType])) {
-                    $dependencies = array_merge($dependencies, array_keys($rawDeps[$depType]));
-                }
+/**
+ * 문자열이 버전 제약식처럼 보이는지 판정합니다.
+ *
+ * 인스톨러는 Laravel·Composer 를 불러오기 전에 돌기 때문에 `Composer\Semver\VersionParser` 를 쓰지 않고,
+ * 코어 `ExtensionIntegrations::isVersionConstraint()` 가 받는 흔한 모양(`>=1.2.1`, `^1.0`, `~1.2.3`,
+ * `1.x`, `*`, `>=1.0 <2.0`, `^1.0 || ^2.0`, `1.0 - 2.0`)을 정규식으로 받는다.
+ *
+ * @param  string  $value  검사할 문자열
+ * @return bool 버전 제약식이면 true
+ */
+function installerLooksLikeVersionConstraint(string $value): bool
+{
+    $value = trim($value);
+    if ($value === '') {
+        return false;
+    }
+
+    $version = 'v?(?:\d+|[xX*])(?:\.(?:\d+|[xX*])){0,3}(?:-[0-9A-Za-z.]+)?(?:@[A-Za-z]+)?';
+    // 원자: 연산자 + 버전 · 하이픈 범위 · 연산자 없는 버전
+    $atom = '(?:'.$version.'\s+-\s+'.$version.'|(?:[<>]=?|==?|!=|\^|~)?\s*'.$version.')';
+    // AND 묶음(쉼표·공백) 을 OR(`|`·`||`) 로 잇는다.
+    $andGroup = $atom.'(?:(?:\s*,\s*|\s+)'.$atom.')*';
+    $pattern = '/^'.$andGroup.'(?:\s*\|\|?\s*'.$andGroup.')*$/';
+
+    return preg_match($pattern, $value) === 1;
+}
+
+/**
+ * JSON 매니페스트의 선택 연동(`integrations`)을 유형·식별자·버전 제약 목록으로 추출합니다.
+ *
+ * `integrations` 는 「있으면 연동되고 없어도 동작한다」는 선언이다. 설치 마법사는 고른 확장의 연동 대상을
+ * 한 번 자동 체크하고(모듈·플러그인만), 번들 버전이 제약에 못 미치면 카드에 「연동 버전 미달」을 보인다.
+ * 선택을 막는 데는 쓰지 않는다.
+ *
+ * 받는 모양 (모듈·플러그인·템플릿 공통):
+ * - 목록형 `{"modules": ["sirsoft-board"]}` → 버전 무관 `'*'`
+ * - 버전 제약 객체형 `{"modules": {"sirsoft-board": ">=1.2.1"}}` → 값 그대로
+ * - 객체형인데 값이 버전식이 아닌 문자열(옛 설명형)·문자열 아님 → `'*'`
+ * 모르는 유형 키와 문자열이 아닌 식별자는 버린다. 같은 유형 안 중복은 처음 것만 남긴다.
+ *
+ * 반환: [['type' => 'modules'|'plugins'|'templates', 'id' => '...', 'version' => '>=1.2.1'|'*'], ...]
+ *
+ * @param  array  $data  JSON 매니페스트 데이터
+ * @return array<int, array{type: string, id: string, version: string}> 연동 상세 목록
+ */
+function extractIntegrationsDetailedFromJson(array $data): array
+{
+    $raw = $data['integrations'] ?? [];
+    $detailed = [];
+
+    if (! is_array($raw)) {
+        return $detailed;
+    }
+
+    foreach (['modules', 'plugins', 'templates'] as $type) {
+        $entries = $raw[$type] ?? [];
+        if (! is_array($entries)) {
+            continue;
+        }
+
+        $seen = [];
+        foreach ($entries as $key => $value) {
+            if (is_int($key)) {
+                // 목록형 원소 — 값이 식별자다.
+                $identifier = is_string($value) ? trim($value) : '';
+                $version = '*';
+            } else {
+                $identifier = trim((string) $key);
+                $version = (is_string($value) && installerLooksLikeVersionConstraint($value)) ? trim($value) : '*';
             }
-        } else {
-            $dependencies = array_values($rawDeps);
+
+            if ($identifier === '' || isset($seen[$identifier])) {
+                continue;
+            }
+            $seen[$identifier] = true;
+
+            $detailed[] = [
+                'type' => $type,
+                'id' => $identifier,
+                'version' => $version,
+            ];
         }
     }
 
-    return $dependencies;
+    return $detailed;
 }
 
 /**

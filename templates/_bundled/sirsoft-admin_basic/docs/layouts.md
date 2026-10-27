@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 186개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 188개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 41개 |
 | `auth` | 1개 |
 | `errors` | 6개 |
-| `partials` | 138개 |
+| `partials` | 140개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -107,6 +107,7 @@
 | `_panel_menu_list` | `partials` | partial | - |
 | `_panel_view` | `partials` | partial | - |
 | `_drawer_manifest_preview` | `partials` | partial | - |
+| `_modal_deactivate_integrations` | `partials` | partial | - |
 | `_modal_deactivate_warning` | `partials` | partial | - |
 | `_modal_detail` | `partials` | partial | - |
 | `_modal_extension_license` | `partials` | partial | - |
@@ -122,6 +123,7 @@
 | `_partial_datagrid` | `partials` | partial | - |
 | `_partial_filter` | `partials` | partial | - |
 | `_drawer_manifest_preview` | `partials` | partial | - |
+| `_modal_deactivate_integrations` | `partials` | partial | - |
 | `_modal_detail` | `partials` | partial | - |
 | `_modal_extension_license` | `partials` | partial | - |
 | `_modal_force_activate` | `partials` | partial | - |
@@ -627,6 +629,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_uninstall.g7.html
 │           ├── _modal_update.g7.html
 │           ├── _modal_deactivate_warning.g7.html
+│           ├── _modal_deactivate_integrations.g7.html (끄려는 모듈을 다른 활성 확장이 연동으로 쓸 때의 안내 창 — 막지 않고 알리고 진행)
 │           ├── _modal_force_activate.g7.html
 │           ├── _modal_force_deactivate.g7.html
 │           ├── _modal_extension_license.g7.html
@@ -635,7 +638,8 @@ _admin_base.g7.html (베이스 레이아웃)
 ├── 플러그인 관리
 │   └── admin_plugin_list.g7.html
 │       └── partials/admin_plugin_list/
-│           ├── (모듈과 동일 구조 — 10개 모달)
+│           ├── (모듈과 동일 구조 — 모달 구성은 모듈 쪽 목록 참고)
+│           ├── _modal_deactivate_integrations.g7.html (플러그인판 연동 안내 창)
 │           └── ...
 │
 ├── 템플릿 관리
@@ -711,6 +715,7 @@ _admin_base.g7.html (베이스 레이아웃)
 ├── 공통 Partial
 │   ├── partials/_modal_changelog.g7.html
 │   ├── partials/_modal_license.g7.html
+│   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트·레이아웃 갱신이 일부 항목 실패·안내를 남긴 결과 창 — 모듈·플러그인·템플릿·언어팩 목록·대시보드·환경설정이 연다)
 │   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html
 │

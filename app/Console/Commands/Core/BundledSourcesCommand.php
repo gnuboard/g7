@@ -358,6 +358,9 @@ class BundledSourcesCommand extends Command
         foreach ($result['protected'] as $key => $requiredBy) {
             $this->line(__('settings.bundled_sources.prune_protected_dependency', ['label' => $key, 'required_by' => implode(', ', $requiredBy)]));
         }
+        foreach ($result['protected_integrations'] ?? [] as $key => $integratedBy) {
+            $this->line(__('settings.bundled_sources.prune_protected_integration', ['label' => $key, 'integrated_by' => implode(', ', $integratedBy)]));
+        }
         // 배포본에 없는 파일만 다른 폴더는 따로 알린다 — 기본 업데이트가 남긴 이전 판 파일일 수 있다(7.1.1 출시 전).
         // 보존 동작은 같다(--include-modified 일 때만 지운다).
         $hasContentChanges = false;

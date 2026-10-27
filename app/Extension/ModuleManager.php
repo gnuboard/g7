@@ -43,6 +43,7 @@ use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\IdentityMessageDeclarationConverter;
 use App\Extension\Helpers\IdentityPolicySyncHelper;
+use App\Extension\Helpers\IntegrationNotices;
 use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\Helpers\StuckUpdateRecovery;
 use App\Extension\Layout\DTO\LayoutSyncEntry;
@@ -58,6 +59,7 @@ use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
 use App\Extension\Vendor\VendorMode;
 use App\Extension\Vendor\VendorResolver;
+use App\Listeners\SeoExtensionCacheListener;
 use App\Models\IdentityPolicy;
 use App\Models\Module;
 use App\Models\Plugin;
@@ -65,6 +67,7 @@ use App\Models\Template;
 use App\Providers\CoreServiceProvider;
 use App\Services\LayoutExtensionService;
 use App\Support\AssetUrl;
+use App\Support\ExtensionDependencies;
 use App\Support\ExtensionStoragePath;
 use App\Support\LocalizedValue;
 use App\Support\RouteCacheHelper;
@@ -1344,7 +1347,7 @@ class ModuleManager implements ModuleManagerInterface
                     'version' => $module->getVersion(),
                     'description' => $this->getLocalizedValue($module->getDescription(), $locale),
                     'dependencies' => $this->enrichDependencies($module->getDependencies()),
-                    'integrations' => $this->enrichIntegrations($module->getIntegrations()),
+                    'integrations' => $this->enrichIntegrations($module->getIntegrationConstraints()),
                     'requires_core' => $module->getRequiredCoreVersion(),
                     'status' => 'uninstalled',
                     'is_pending' => false,
@@ -1461,7 +1464,7 @@ class ModuleManager implements ModuleManagerInterface
                     'version' => $record->version,
                     'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $this->enrichDependencies($module->getDependencies()),
-                    'integrations' => $this->enrichIntegrations($module->getIntegrations()),
+                    'integrations' => $this->enrichIntegrations($module->getIntegrationConstraints()),
                     'requires_core' => $module->getRequiredCoreVersion(),
                     'status' => $record->status,
                     // 멈춘 업데이트(updating 이 10분 넘게 남고 잠금이 빔) — 관리자 카드가 정리·활성화 단추를 보인다
@@ -1616,7 +1619,7 @@ class ModuleManager implements ModuleManagerInterface
             'metadata' => $metadata,
             'requires_core' => $module->getRequiredCoreVersion(),
             'dependencies' => $this->enrichDependencies($module->getDependencies()),
-            'integrations' => $this->enrichIntegrations($module->getIntegrations()),
+            'integrations' => $this->enrichIntegrations($module->getIntegrationConstraints()),
             'permissions' => $module->getPermissions()['categories'] ?? [],
             'roles' => method_exists($module, 'getRoles') ? $module->getRoles() : [],
             'config' => $module->getConfig(),
@@ -1670,7 +1673,7 @@ class ModuleManager implements ModuleManagerInterface
                 'metadata' => $module->getMetadata(),
                 'requires_core' => $module->getRequiredCoreVersion(),
                 'dependencies' => $this->enrichDependencies($module->getDependencies()),
-                'integrations' => $this->enrichIntegrations($module->getIntegrations()),
+                'integrations' => $this->enrichIntegrations($module->getIntegrationConstraints()),
                 'permissions' => $module->getPermissions()['categories'] ?? [],
                 'roles' => method_exists($module, 'getRoles') ? $module->getRoles() : [],
                 'config' => $module->getConfig(),
@@ -1865,15 +1868,14 @@ class ModuleManager implements ModuleManagerInterface
      */
     private function iterateNestedDependencies(array $dependencies): \Generator
     {
-        if (isset($dependencies['modules']) && is_array($dependencies['modules'])) {
-            foreach ($dependencies['modules'] as $identifier => $versionConstraint) {
-                yield $identifier => 'module';
-            }
+        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
+        $constraints = ExtensionDependencies::constraints($dependencies);
+
+        foreach (array_keys($constraints['modules']) as $identifier) {
+            yield (string) $identifier => 'module';
         }
-        if (isset($dependencies['plugins']) && is_array($dependencies['plugins'])) {
-            foreach ($dependencies['plugins'] as $identifier => $versionConstraint) {
-                yield $identifier => 'plugin';
-            }
+        foreach (array_keys($constraints['plugins']) as $identifier) {
+            yield (string) $identifier => 'plugin';
         }
     }
 
@@ -5182,6 +5184,13 @@ class ModuleManager implements ModuleManagerInterface
                 $this->modulesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'module.json'
             );
 
+            // 선택 연동(integrations) 안내 — 막지 않고 결과·완료 문구로만 알린다 (7.1.4 D10)
+            $integrationNotices = DependencyVersionWarnings::integrationsAfterUpdate(
+                'module',
+                $identifier,
+                $this->modulesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'module.json'
+            );
+
             $result = [
                 'success' => true,
                 'from_version' => $fromVersion,
@@ -5193,10 +5202,11 @@ class ModuleManager implements ModuleManagerInterface
                 'layout_warnings' => $layoutWarnings,
                 'warnings' => LifecycleWarnings::current()->all(),
                 'dependency_warnings' => $dependencyWarnings,
-                'message' => DependencyVersionWarnings::appendToMessage(__('modules.update_success', [
+                'integration_notices' => $integrationNotices,
+                'message' => IntegrationNotices::appendToMessage(DependencyVersionWarnings::appendToMessage(__('modules.update_success', [
                     'module' => $identifier,
                     'version' => $toVersion,
-                ]), $dependencyWarnings),
+                ]), $dependencyWarnings), $integrationNotices),
             ];
         } catch (\Throwable $e) {
             // 실패 시: 백업 복원 + 상태 복원
@@ -5242,6 +5252,11 @@ class ModuleManager implements ModuleManagerInterface
             // 그 목록에는 이 모듈이 빠져 있다. 여기서 비우지 않으면 상태를 되돌려 놓고도
             // 캐시 TTL(기본 하루) 동안 이 모듈의 화면이 계속 404 로 남는다.
             self::invalidateModuleStatusCache();
+
+            // 검색봇 화면 캐시(seo.page.*·사이트맵)도 비운다 — 「업데이트 중」 창에 렌더된 봇 화면은 이 모듈이 꺼진 것으로
+            // (`_global.activeModules`·`activePlugins` 에 없음, routes `requires` 미충족) 남는다. 성공 경로는 after_update 훅 구독자가
+            // 비우지만 실패 경로는 그 훅을 발화하지 않는다(#822). 리스너는 예외를 삼키므로 실패 처리를 깨지 않는다.
+            app(SeoExtensionCacheListener::class)->onExtensionChanged($identifier);
 
             // 업데이트 도중 새 판 기준으로 다시 만든 훅 캐시·확장 autoload 를 지금 디스크(되돌린 판) 기준으로 맞춘다 — 남겨 두면 되돌린
             // 판에 없는 리스너를 부팅 때 불러 사이트 전체가 500 이 된다(W3 리허설). 새 프로세스로 굽고, 못 띄우면 훅 캐시를 지운다.

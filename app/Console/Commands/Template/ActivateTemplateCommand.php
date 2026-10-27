@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
 use App\Console\Commands\Traits\RestoresHostLanguagePacks;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 
 class ActivateTemplateCommand extends Command
 {
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
     use ReportsStuckUpdateRecovery;
     use RestoresHostLanguagePacks;
@@ -113,6 +115,7 @@ class ActivateTemplateCommand extends Command
 
                 // 성공 메시지
                 $this->info($this->lifecycleDoneIcon().' '.__('templates.commands.activate.success', ['template' => $identifier]));
+                $this->reportIntegrationNotices('template', $identifier);
 
                 $this->restoreHostLanguagePacks('template', $identifier, 'templates');
                 Log::info(__('templates.commands.activate.success', ['template' => $identifier]));

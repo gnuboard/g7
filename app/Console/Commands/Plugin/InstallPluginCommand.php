@@ -5,6 +5,7 @@ namespace App\Console\Commands\Plugin;
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\RebuildsSearchIndex;
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
@@ -20,6 +21,7 @@ class InstallPluginCommand extends Command
 {
     use HasProgressBar;
     use RebuildsSearchIndex;
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
     use SelectsLayoutInstallSource;
 
@@ -122,6 +124,7 @@ class InstallPluginCommand extends Command
 
                 // 성공 메시지
                 $this->info($this->lifecycleDoneIcon().' '.__('plugins.commands.install.success', ['plugin' => $identifier]));
+                $this->reportIntegrationNotices('plugin', $identifier);
                 $this->info('   - '.__('plugins.commands.install.vendor', ['vendor' => $plugin->vendor]));
                 $this->info('   - '.__('plugins.commands.install.version', ['version' => $plugin->version]));
                 $this->info('   - '.trans_choice('plugins.commands.install.roles_created', $rolesCount));

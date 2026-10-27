@@ -67,6 +67,12 @@ export interface Route {
   auth_required?: boolean;
   auth_type?: AuthType;
   meta?: RouteMeta;
+  /**
+   * 이 라우트에 필요한 활성 모듈·플러그인 식별자. 서버가 routes 응답을 만들 때 모두 활성인 라우트만 싣는다.
+   * 클라이언트는 이 값을 읽지 않는다(타입 정합용).
+   * @since engine-v1.84.0
+   */
+  requires?: { modules?: string[]; plugins?: string[] };
 }
 
 /**

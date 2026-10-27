@@ -7,7 +7,7 @@
 ```text
 1. 유형: 템플릿 (sirsoft-basic, type=user) — 방문자가 보는 사이트 전체 화면 166개. 게시판·이커머스 모듈은 방문자 화면을 갖지 않으므로 상점·게시판 UI 는 여기가 소유한다. 서버 코드 0줄
 2. 확장 방식: 훅 0/0 — 확장점은 화면 구조다. 다른 확장이 `layout_extensions` 로 조각을 끼우고, `extensions/{확장}/` 오버라이드로 원본 조각을 대체한다
-3. 건드리면 안 되는 것: `extends` 없는 독립 레이아웃에서 toast/modal 사용, 상점 경로 하드코딩(표현식 유지), 목록 이동의 `mergeQuery` 누락, 비회원 주문 토큰 진입 정리 제거
+3. 건드리면 안 되는 것: `extends` 없는 독립 레이아웃에서 toast/modal 사용, 상점 경로 하드코딩(표현식 유지), 목록 이동의 `mergeQuery` 누락, 비회원 주문 토큰 진입 정리 제거, 공통 화면의 모듈 API·링크를 가드 없이 두기(게시판·쇼핑몰·페이지·우편번호는 선택 연동)
 4. 작업 위치: `templates/_bundled/sirsoft-basic` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan template:update sirsoft-basic --force`
 ```
@@ -37,8 +37,9 @@ API 까지만 소유하고, 그 API 를 소비해 실제로 그리는 것은 이
 
 **의도적으로 하지 않는 것**: 서버 코드 일체(PHP 0줄 · 모델 0 · 라우트 파일 없음 · 훅 발행 0).
 데이터는 전부 모듈·코어의 공개 API 에서 옵니다. 그래서 이 템플릿을 다른 것으로 바꿔도 데이터는
-그대로이고, 반대로 이 템플릿만으로는 아무 기능도 동작하지 않습니다 — manifest 가 게시판·
-이커머스·페이지 모듈과 주소 검색 플러그인을 의존으로 선언하는 이유입니다.
+그대로입니다. 게시판·이커머스·페이지 모듈과 주소 검색 플러그인은 필수 의존이 아니라 **선택 연동**
+(`template.json` 의 `integrations`)입니다 — 게시판만, 쇼핑몰만, 또는 코어만 켠 사이트에서도 화면이 서고,
+꺼진 모듈의 화면·메뉴·API 호출은 아래 「모듈 결합 가드 규칙」으로 빠집니다(1.3.0, 코어 7.1.4+).
 
 1.1.3 부터 마이페이지에 '취소·반품·교환'(클레임) 화면이 있습니다 — 목록·상세·신청서 작성/수정과,
 비회원 주문 조회의 같은 화면 세트. 회원과 비회원이 **같은 partial** 을 쓰고, 인증 차이는
@@ -112,6 +113,21 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 그립니다(서버도 `claim_image_not_removable` 로 거절).
 <!-- @intent END -->
 
+### 모듈 결합 가드 규칙 (1.3.0)
+
+공통 화면(상속원·홈·검색·인증·마이페이지 탭·회원 프로필)이 선택 연동 모듈을 쓰는 자리는 셋 중 하나로 가린다.
+
+| 자리 | 가드 | 예 |
+|---|---|---|
+| 그 모듈 전용 화면 | `routes.json` 라우트의 `"requires": {"modules": ["<id>"]}` — 모두 활성일 때만 공개 라우트·사이트맵·검색봇·정적 사본에 실린다(코어가 거른다) | 게시판·상점·`/page/:slug`·쇼핑 마이페이지 |
+| 공통 화면의 데이터소스·노드·액션 | `if`/`data-if` 에 **한 모양만**: `{{_global.activeModules?.includes('<id>') ?? true}}`(플러그인은 `activePlugins`), 부정은 `{{!(_global.activeModules?.includes('<id>') ?? true)}}`. 다른 조건과 묶을 때는 이 식을 괄호로 감싸 `&&`·`\|\|` 로 잇는다 | `_user_base` 의 `boards`·`cart`·`initCartKey`, 홈 카드, 검색 탭 |
+| 컴포넌트 안의 링크 | props(`Header` 의 `boardEnabled`·`shopEnabled`·`searchEnabled`, `Footer` 의 `boardEnabled`·`pageEnabled`)를 위 식으로 넘긴다. 기본값은 `true` | 상단 탭·장바구니, 하단 링크 묶음 |
+
+- 공통 화면에서 `/api/modules/<id>/` 를 부르는 데이터소스에는 `if` 가드와 함께 404 삼킴(`<error-handling><on-code code="404"><suppress/></on-code></error-handling>`)을 단다 — 활성 목록이 없는 옛 코어에서는 가드가 늘 참이라 꺼진 모듈로 요청이 나간다.
+- `?? true` 를 빼지 않는다 — 옛 코어(키 없음)에서 모든 메뉴가 사라진다. 컴포넌트 props 기본값도 `true` 로 둔다(레이아웃을 편집기로 고쳐 keep 으로 업데이트한 사이트에는 새 바인딩이 없다).
+- `seo-config.json` 의 `if` 는 늘 값이 있는 prop 을 대체로 붙인다 — 머리글 `{boardEnabled|maxVisibleBoards}`, 꼬리말 `{pageEnabled|copyrightText}`. props 가 `false` 면 빈 값이라 숨고, props 가 아예 없는(keep 된 옛 레이아웃) 경우에는 대체 prop 으로 넘어가 보인다(사이트명은 빈 값일 수 있어 대체로 쓰지 않는다). 상점 링크 `href` 는 섞인 패턴(`{shopBase}/products`) 대신 완성된 주소 prop `{shopProductsHref}` 하나를 쓴다 — 옛 코어(7.1.3 이하)의 봇 렌더는 섞인 attrs 패턴을 치환하지 못해 중괄호째 내보낸다.
+- 회귀 가드: `__tests__/layouts/standalone-module-guards.test.ts`(공통 화면 전수 + 라우트가 보장하지 않는 모듈 API 데이터소스 모집단), `routes-requires.test.ts`, `address-readonly-postcode.test.ts`.
+
 ## 4. 확장점
 
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
@@ -159,7 +175,8 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 - [ ] 상점 관련 경로·링크는 표현식(`route_path` · `no_route`)을 유지 — 문자열로 굳히지 않는다
 - [ ] 목록 클러스터(목록 → 상세 → 형제 상세 → 폼 → 복귀) 이동 전 leg 에 `mergeQuery: true`
 - [ ] 텍스트를 담는 새 컴포넌트 prop 을 도입했다면 `seo-config.json` 의 `text_props` 에 추가 (봇 화면에서만 글자가 사라진다)
-- [ ] 의존 모듈(게시판·이커머스·페이지)의 공개 API 응답 형태가 바뀌면 이 템플릿의 화면이 조용히 빈다 — 그 모듈을 올릴 때 함께 확인
+- [ ] 연동 모듈(게시판·이커머스·페이지)의 공개 API 응답 형태가 바뀌면 이 템플릿의 화면이 조용히 빈다 — 그 모듈을 올릴 때 함께 확인
+- [ ] 모듈 화면을 새로 추가하면 `routes.json` 에 `requires` 를, 공통 화면에 모듈 API·링크를 추가하면 [모듈 결합 가드 규칙](#모듈-결합-가드-규칙-130) 의 `if` 식(+ 404 삼킴)을 단다 — `standalone-module-guards.test.ts` 가 데이터소스 누락을 잡는다
 - [ ] `extensions/sirsoft-daum_postcode/` 오버라이드는 원본이 바뀌어도 따라가지 않는다 — 그 플러그인 업그레이드 후 확인
 - [ ] TSX/TS 를 고쳤다면 `template:build --production` 후 `dist/` 동반 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] 프론트엔드 변경은 Playwright spec 동반 — 단위 테스트만으로는 화면 회귀가 드러나지 않는다
@@ -176,6 +193,7 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | 링크 컴포넌트에 주소 구독 훅·내부 링크 판정·새 창 rel 규칙을 따로 구현 | `G7Core.navigation.useLocationSearch`·`resolveInternalHref`·`mergeRelForTarget` 를 부르고(engine-v1.83.0), 그 API 가 없는 옛 코어에만 짧은 대체를 둔다(내부 링크는 `/` 경로와 경로가 `//` 로 시작하지 않는 같은 출처 `http(s)://` 주소 — 7.1.2 템플릿과 같은 결과라 알림·메뉴의 전체 주소가 새 탭으로 열리지 않는다) | 템플릿마다 사본이 갈라져 엔진 수정을 템플릿마다 옮겨야 했고, 같은 출처 `//다른호스트` 주소를 내부 링크로 본 사본이 생겼다(7.1.3) |
 | 첨부 그림·다운로드 주소를 `isCrossOriginAssetUrl` 로만 판정 | `isDirectAssetUrl`(교차 출처 + `data:`·`blob:`) | `data:`·`blob:` 미리보기 주소를 인증 XHR 로 보내 `/api/data:…` 404 가 난다(7.1.3, sirsoft-admin_basic 판정 이식) |
 | `extends` 없는 독립 레이아웃에서 `toast`·`openModal` 사용 | `_user_base` 를 상속하거나, 독립 레이아웃이라면 `Toast`·모달 호스트 컴포넌트를 직접 마운트 | 호스트가 없으면 핸들러는 성공으로 기록되는데 화면에는 아무것도 나타나지 않는다 |
+| 공통 화면(상속원·홈·검색·인증·마이페이지 탭·회원 프로필)에 모듈 API 데이터소스·모듈 화면 링크를 가드 없이 두기 | `{{_global.activeModules?.includes('<id>') ?? true}}` 한 모양으로 `if` 를 달고, 데이터소스에는 404 삼킴도 단다 | 그 모듈이 꺼진 사이트에서 매 화면 404 요청·토스트와 갈 곳 없는 메뉴가 생긴다(게시판만 켠 사이트의 장바구니 수 요청 등 #822) |
 | 상점 경로를 `/shop/...` 로 하드코딩 | `routes.json` 의 표현식 유지 (`route_path` · `no_route` 반영) | 운영자가 경로를 바꾸거나 루트에 두면 하드코딩한 링크만 조용히 깨진다 |
 | 목록 → 상세 → 목록 이동에서 `mergeQuery` 누락 | 목록 클러스터 내 모든 이동에 `"mergeQuery": true` | 검색어·페이지·필터가 사라져 사용자가 처음부터 다시 찾아야 한다 |
 | 비회원 주문 토큰을 진입 시점에 정리하지 않음 | `clearGuestTokenOnEntry` 유지 | 토큰이 곧 신원이다 — 공용 PC 에서 다음 사용자가 남의 주문을 연다 |
@@ -204,9 +222,9 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 315개 | `vitest.config.ts` |
+| Vitest | 320개 | `vitest.config.ts` |
 | Playwright | 34개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 122개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 123개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

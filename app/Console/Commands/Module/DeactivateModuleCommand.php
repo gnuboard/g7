@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Module;
 
+use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\DeactivationReason;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 
 class DeactivateModuleCommand extends Command
 {
+    use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
 
     /**
@@ -108,6 +110,7 @@ class DeactivateModuleCommand extends Command
 
             if ($result['success']) {
                 $this->info($this->lifecycleDoneIcon().' '.__('modules.commands.deactivate.success', ['module' => $identifier]));
+                $this->reportIntegratedBy('module', $identifier);
                 $this->info('   - '.trans_choice('modules.commands.deactivate.layouts_deleted', (int) ($result['layouts_deleted'] ?? 0)));
                 $this->warn('⚠️  '.__('modules.commands.deactivate.warning'));
                 Log::info(__('modules.commands.deactivate.success', ['module' => $identifier]));

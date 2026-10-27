@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
  * `ZipArchive::extractTo()` 는 항목 이름을 그대로 써서 두 가지 문제가 있다.
  * - Windows PowerShell 5.1 이 만든 zip 의 `dir\file.php` 항목이 리눅스에서는 역슬래시가 든
  *   파일 하나가 된다(폴더가 생기지 않음).
- * - `../../public/x.php` 같은 항목이 압축을 푸는 폴더 밖에 써질 수 있다(Zip Slip).
+ * - "../../public/x.php" 같은 항목이 압축을 푸는 폴더 밖에 써질 수 있다(Zip Slip).
  *
  * 이 도우미는 항목 이름의 `\` 를 `/` 로 바꿔 정규화한 뒤, 압축 밖을 가리키는 항목이
  * 하나라도 있으면 아무것도 풀지 않고 전체를 거부한다. 통과한 항목은 정규화한 경로에

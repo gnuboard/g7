@@ -166,16 +166,21 @@ board 의 라우트가 20개 안팎으로 한 파일에서 관리 가능한 규�
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
-| 확장 | 유형 | 요구 버전 |
-|---|---|---|
-| `sirsoft-basic` | 템플릿 | `>=1.2.1` |
+없음.
+
+**함께 쓰면 연동되는 확장** (manifest `integrations` — 없어도 이 확장은 동작합니다)
+
+| 확장 | 유형 | 버전 제약 | 번들 |
+|---|---|---|---|
+| `sirsoft-ecommerce` | 모듈 | `*` | ✅ |
 
 **이 확장과 연동하는 확장** (이 확장이 있으면 기능을 더합니다 — 이 확장의 화면·훅 이름을 바꿀 때 함께 확인)
 
-| 확장 | 유형 |
-|---|---|
-| `sirsoft-ecommerce` | 모듈 |
-| `sirsoft-message_bizppurio` | 플러그인 |
+| 확장 | 유형 | 요구 버전 |
+|---|---|---|
+| `sirsoft-ecommerce` | 모듈 | `*` |
+| `sirsoft-message_bizppurio` | 플러그인 | `*` |
+| `sirsoft-basic` | 템플릿 | `>=1.2.1` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->
