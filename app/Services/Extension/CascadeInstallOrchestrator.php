@@ -11,6 +11,7 @@ use App\Services\LanguagePackService;
 use App\Services\ModuleService;
 use App\Services\PluginService;
 use App\Services\TemplateService;
+use App\Support\ExtensionDependencies;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
@@ -312,11 +313,11 @@ class CascadeInstallOrchestrator
 
         $out = [];
         if (isset($raw['modules']) || isset($raw['plugins'])) {
+            // 원본형은 코어 정규화기로 읽는다 — 목록형·빈 제약은 '*'
+            $constraints = ExtensionDependencies::constraints($raw);
             foreach (['modules' => 'module', 'plugins' => 'plugin'] as $key => $type) {
-                foreach ((array) ($raw[$key] ?? []) as $id => $constraint) {
-                    $out[] = is_int($id)
-                        ? ['type' => $type, 'identifier' => (string) $constraint, 'constraint' => '*']
-                        : ['type' => $type, 'identifier' => (string) $id, 'constraint' => is_string($constraint) && $constraint !== '' ? $constraint : '*'];
+                foreach ($constraints[$key] as $id => $constraint) {
+                    $out[] = ['type' => $type, 'identifier' => (string) $id, 'constraint' => $constraint];
                 }
             }
 

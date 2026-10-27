@@ -104,7 +104,8 @@
             const deps = (items.get(id) && items.get(id).dependencies_detailed) || [];
             for (const dep of deps) {
                 const depId = String((dep && dep.identifier) || '');
-                if (depId !== '' && set.has(depId) && !visit(depId, path.concat([id]))) return false;
+                // 자기 자신 의존은 순환이 아니라 잘못 적은 선언이다 — 건너뛴다
+                if (depId !== '' && depId !== id && set.has(depId) && !visit(depId, path.concat([id]))) return false;
             }
             state.set(id, 2);
             sorted.push(id);

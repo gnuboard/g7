@@ -1816,8 +1816,7 @@ class PluginManager implements PluginManagerInterface
         $unmetDependencies = $this->unmetDependencyMessages($plugin->getDependencies(), 'plugins');
 
         if (! empty($unmetDependencies)) {
-            throw new \Exception(implode('
-', $unmetDependencies));
+            throw new \Exception(implode("\n", $unmetDependencies));
         }
     }
 

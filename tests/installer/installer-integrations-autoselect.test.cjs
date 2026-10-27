@@ -23,6 +23,9 @@ const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '../..');
 const INSTALLER_JS = path.join(ROOT, 'public/install/assets/js/installer.js');
 const SOURCE = fs.readFileSync(INSTALLER_JS, 'utf8');
+// 설치 화면은 installer.js 앞에 확장 선택 해석기(window.G7ExtensionResolver)를 싣는다 — 의존 자동 선택이 이를 부른다.
+// 루트 package.json 이 ESM 이라 require 로는 내보내기가 비므로, 브라우저처럼 샌드박스 안에서 실행해 window 에 붙인다.
+const RESOLVER_SOURCE = fs.readFileSync(path.join(ROOT, 'public/install/assets/js/installer-extension-resolver.js'), 'utf8');
 
 // ---------------------------------------------------------------------------
 // 소스에서 함수 잘라 내기
@@ -231,6 +234,7 @@ function boot(data = fixture()) {
         __toasts: toasts,
     };
     vm.createContext(context);
+    vm.runInContext(RESOLVER_SOURCE, context, { filename: 'installer-extension-resolver.js' });
 
     const prelude = `
         let extensionsData = __data;
@@ -561,7 +565,7 @@ test('installer.js 가 연동 상태를 선언하고 toggleExtension 선택 분�
  * @effects step4_integration_line_shows_version_mismatch
  */
 test('설치기 언어 파일(ko·en)과 Step 4 라벨에 연동 키가 있다', () => {
-    const keys = ['integrations', 'integration_auto_badge_label', 'integration_version_mismatch', 'integration_template_hint', 'integration_selection_notice', 'log_install_order_cycle'];
+    const keys = ['integrations', 'integration_auto_badge_label', 'integration_version_mismatch', 'integration_template_hint', 'integration_selection_notice'];
     for (const locale of ['ko', 'en']) {
         const src = fs.readFileSync(path.join(ROOT, 'public/install/lang/' + locale + '.php'), 'utf8');
         for (const key of keys) assert.match(src, new RegExp("'" + key + "' => '"), locale + ':' + key);

@@ -856,7 +856,6 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     // save-extensions.php i18n keys
     'log_extensions_selected' => 'Extension selection complete: :admin admin template(s), :user user template(s), :modules module(s), :plugins plugin(s), :language_packs language pack(s)',
     'log_extensions_saved' => 'Extension selection has been saved.',
-    'log_install_order_cycle' => 'Skipped install order sorting (circular :type dependency: :cycle). Installing in the selected order.',
     'error_admin_template_required' => 'Please select at least one admin template.',
     'error_invalid_extension_identifier' => 'Extension identifier ":identifier" is not in an allowed format (group: :group). Only letters, digits, and `._-` are accepted.',
 

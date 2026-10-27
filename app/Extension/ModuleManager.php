@@ -1815,8 +1815,7 @@ class ModuleManager implements ModuleManagerInterface
         $unmetDependencies = $this->unmetDependencyMessages($module->getDependencies(), 'modules');
 
         if (! empty($unmetDependencies)) {
-            throw new \Exception(implode('
-', $unmetDependencies));
+            throw new \Exception(implode("\n", $unmetDependencies));
         }
     }
 

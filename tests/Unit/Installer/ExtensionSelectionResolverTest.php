@@ -123,6 +123,115 @@ class ExtensionSelectionResolverTest extends TestCase
     }
 
     /**
+     * 같은 유형 설치 순서 — 뒤에 고른 의존 대상이 먼저 오고, 연쇄 의존도 풀린다.
+     *
+     * 설치 작업은 배열 순서를 그대로 따르므로 의존 대상이 뒤에 있으면 의존 검사에서 실패한다(#822 D7).
+     *
+     * @scenario surface=save_extensions, owner_type=module
+     *
+     * @effects install_order_dependency_first
+     *
+     * @return void 반환값 없음
+     */
+    public function test_install_order_puts_dependencies_first(): void
+    {
+        $items = self::orderItems(['vendor-shop' => ['vendor-board'], 'vendor-board' => []]);
+        $errors = [];
+        $this->assertSame(['vendor-board', 'vendor-shop'], installer_topological_order('modules', ['vendor-shop', 'vendor-board'], $items, $errors));
+
+        $chain = self::orderItems(['vendor-a' => ['vendor-b'], 'vendor-b' => ['vendor-c'], 'vendor-c' => []]);
+        $this->assertSame(['vendor-c', 'vendor-b', 'vendor-a'], installer_topological_order('modules', ['vendor-a', 'vendor-b', 'vendor-c'], $chain, $errors));
+        $this->assertSame([], $errors);
+    }
+
+    /**
+     * 의존이 없는 항목끼리는 스캔 순서를 지키고, 선택하지 않은 대상·자기 자신 의존은 무시한다.
+     *
+     * @scenario surface=save_extensions, owner_type=plugin
+     *
+     * @effects install_order_stable_for_unrelated
+     *
+     * @return void 반환값 없음
+     */
+    public function test_install_order_is_stable_and_ignores_unselected_targets(): void
+    {
+        $items = self::orderItems([
+            'vendor-c' => [], 'vendor-a' => [], 'vendor-shop' => ['vendor-board'], 'vendor-b' => [], 'vendor-board' => [],
+        ]);
+        $errors = [];
+        $this->assertSame(
+            ['vendor-c', 'vendor-a', 'vendor-board', 'vendor-shop', 'vendor-b'],
+            installer_topological_order('plugins', ['vendor-shop', 'vendor-b', 'vendor-board', 'vendor-c', 'vendor-a'], $items, $errors)
+        );
+
+        $self = self::orderItems(['vendor-a' => ['vendor-missing', 'vendor-a'], 'vendor-b' => []]);
+        $this->assertSame(['vendor-a', 'vendor-b'], installer_topological_order('plugins', ['vendor-a', 'vendor-b'], $self, $errors));
+        $this->assertSame([], installer_topological_order('plugins', [], $self, $errors));
+        $this->assertSame([], $errors);
+    }
+
+    /**
+     * 순환 의존이면 스캔 순서를 그대로 돌려주고 순환 경로를 오류로 남긴다 — 저장 API 는 이 오류로 저장을 막는다.
+     *
+     * @scenario surface=save_extensions, owner_type=module
+     *
+     * @effects install_order_cycle_keeps_scan_order_and_reports
+     *
+     * @return void 반환값 없음
+     */
+    public function test_install_order_cycle_keeps_scan_order_and_reports(): void
+    {
+        $items = self::orderItems(['vendor-x' => [], 'vendor-a' => ['vendor-b'], 'vendor-b' => ['vendor-a']]);
+        $errors = [];
+
+        $this->assertSame(['vendor-x', 'vendor-a', 'vendor-b'], installer_topological_order('modules', ['vendor-b', 'vendor-x', 'vendor-a'], $items, $errors));
+        $this->assertSame([['key' => 'error_extension_dependency_cycle', 'params' => ['group' => 'modules', 'cycle' => 'vendor-a → vendor-b → vendor-a']]], $errors);
+    }
+
+    /**
+     * 저장 API 는 해석기 결과(의존 포함·설치 순서 정렬)를 state 에 저장한다 — 요청 배열을 그대로 저장하지 않는다.
+     *
+     * save-extensions.php 는 세션·소유권 가드를 거치는 실행 스크립트라 소스 배선을 대조한다.
+     *
+     * @scenario surface=save_extensions, owner_type=plugin
+     *
+     * @effects save_extensions_sorts_before_storing
+     *
+     * @return void 반환값 없음
+     */
+    public function test_save_api_stores_resolved_selection(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/api/save-extensions.php');
+
+        $this->assertStringContainsString("require_once dirname(__DIR__).'/includes/extension-selection.php';", $source);
+        $this->assertStringContainsString("\$state['selected_extensions'] = \$resolution['selection'];", $source);
+        $this->assertLessThan(
+            strpos($source, "\$state['selected_extensions'] = \$resolution['selection'];"),
+            strpos($source, '$resolution = installer_resolve_extension_selection('),
+            '해석(정렬)은 state 저장보다 먼저 일어나야 합니다.'
+        );
+    }
+
+    /**
+     * 설치 순서 판정용 스캔 항목 — 식별자 → 같은 유형 의존 식별자 목록을 dependencies_detailed 로 펼친다.
+     *
+     * @param  array<string, array<int, string>>  $map  식별자 → 의존 식별자 (키 순서가 스캔 순서)
+     * @return array<string, array<string, mixed>> 식별자 → 스캔 항목
+     */
+    private static function orderItems(array $map): array
+    {
+        $items = [];
+        foreach ($map as $id => $deps) {
+            $items[$id] = [
+                'identifier' => $id,
+                'dependencies_detailed' => array_map(fn (string $dep): array => ['type' => 'modules', 'identifier' => $dep, 'version' => '*'], $deps),
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
      * 실제 번들 매니페스트에서 결제 플러그인을 고르면 이커머스가 자동 포함되고 먼저 설치된다.
      *
      * @effects resolver_on_bundled_manifests_adds_ecommerce_for_payment_plugin

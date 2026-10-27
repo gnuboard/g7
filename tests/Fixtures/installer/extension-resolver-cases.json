@@ -29,6 +29,9 @@
       ] },
       { "identifier": "cycle-b", "version": "1.0.0", "dependencies_detailed": [
         { "type": "modules", "identifier": "cycle-a", "version": "*" }
+      ] },
+      { "identifier": "self-dep", "version": "1.0.0", "dependencies_detailed": [
+        { "type": "modules", "identifier": "self-dep", "version": "*" }
       ] }
     ],
     "plugins": [
@@ -172,6 +175,17 @@
         "excluded_language_packs": [],
         "error_keys": ["error_extension_dependency_cycle"],
         "install_order": ["admin_templates:sirsoft-admin_basic", "modules:cycle-a", "modules:cycle-b"]
+      }
+    },
+    {
+      "name": "자기 자신 의존 — 순환으로 보지 않고 무시",
+      "requested": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["self-dep", "mod-base"] },
+      "expected": {
+        "selection": { "admin_templates": ["sirsoft-admin_basic"], "modules": ["mod-base", "self-dep"], "plugins": [], "user_templates": [], "language_packs": [] },
+        "auto_added": [],
+        "excluded_language_packs": [],
+        "error_keys": [],
+        "install_order": ["admin_templates:sirsoft-admin_basic", "modules:mod-base", "modules:self-dep"]
       }
     }
   ],

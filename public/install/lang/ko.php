@@ -856,7 +856,6 @@ ini_set(\'zlib.output_compression\', \'off\');
     // save-extensions.php 다국어 키
     'log_extensions_selected' => '확장 기능 선택 완료: 관리자 템플릿 :admin개, 사용자 템플릿 :user개, 모듈 :modules개, 플러그인 :plugins개, 언어팩 :language_packs개',
     'log_extensions_saved' => '확장 기능 선택이 저장되었습니다.',
-    'log_install_order_cycle' => '설치 순서 정렬을 건너뜁니다(:type 순환 의존: :cycle). 선택한 순서대로 설치합니다.',
     'error_admin_template_required' => '관리자 템플릿을 최소 1개 이상 선택해주세요.',
     'error_invalid_extension_identifier' => '확장 식별자 ":identifier" 가 허용된 형식이 아닙니다 (그룹: :group). 영문/숫자/`._-` 만 사용할 수 있습니다.',
 

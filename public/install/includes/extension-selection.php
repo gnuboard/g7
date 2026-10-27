@@ -10,7 +10,6 @@
  *
  * 순수 함수다 — 파일·상태·세션을 읽거나 쓰지 않는다. 입력 스캔 결과는 `scan-extensions.php` 의 data 형식.
  */
-
 if (! defined('INSTALLER_EXTENSION_CATEGORIES')) {
     // 선택 카테고리 — 설치 순서(관리자 템플릿 → 모듈 → 플러그인 → 사용자 템플릿 → 언어팩)이기도 하다.
     define('INSTALLER_EXTENSION_CATEGORIES', ['admin_templates', 'modules', 'plugins', 'user_templates', 'language_packs']);
@@ -288,7 +287,8 @@ if (! function_exists('installer_topological_order')) {
             $state[$id] = 1;
             foreach ($items[$id]['dependencies_detailed'] ?? [] as $dep) {
                 $depId = (string) ($dep['identifier'] ?? '');
-                if ($depId !== '' && isset($set[$depId]) && ! $visit($depId, [...$path, $id])) {
+                // 자기 자신 의존은 순환이 아니라 잘못 적은 선언이다 — 건너뛴다
+                if ($depId !== '' && $depId !== $id && isset($set[$depId]) && ! $visit($depId, [...$path, $id])) {
                     return false;
                 }
             }
