@@ -37,12 +37,23 @@ class BannerImageRepository implements BannerImageRepositoryInterface
     /**
      * {@inheritDoc}
      *
+     * @param  int  $id  이미지 ID
+     * @return BannerImage|null 이미지 (없으면 null)
+     */
+    public function find(int $id): ?BannerImage
+    {
+        return BannerImage::query()->find($id);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
      * @param  string  $hash  공개 해시
      * @return BannerImage|null 이미지
      */
-    public function findPublicByHash(string $hash): ?BannerImage
+    public function findByHash(string $hash): ?BannerImage
     {
-        return BannerImage::query()->where('hash', $hash)->whereNotNull('banner_id')->first();
+        return BannerImage::query()->where('hash', $hash)->first();
     }
 
     /**
@@ -71,16 +82,25 @@ class BannerImageRepository implements BannerImageRepositoryInterface
     /**
      * {@inheritDoc}
      *
-     * @param  string  $tempKey  임시 업로드 묶음 키
+     * @param  BannerImage  $image  붙일 이미지
      * @param  int  $bannerId  배너 ID
-     * @return int 연결한 건수
+     * @return void 반환값 없음
      */
-    public function linkTempImages(string $tempKey, int $bannerId): int
+    public function attach(BannerImage $image, int $bannerId): void
     {
-        return BannerImage::query()
-            ->whereNull('banner_id')
-            ->where('temp_key', $tempKey)
-            ->update(['banner_id' => $bannerId, 'temp_key' => null, 'updated_at' => now()]);
+        $image->forceFill(['banner_id' => $bannerId, 'temp_key' => null])->save();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param  BannerImage  $image  뗄 이미지
+     * @param  string  $tempKey  돌려 둘 임시 묶음 키
+     * @return void 반환값 없음
+     */
+    public function release(BannerImage $image, string $tempKey): void
+    {
+        $image->forceFill(['banner_id' => null, 'temp_key' => $tempKey])->save();
     }
 
     /**

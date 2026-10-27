@@ -1,5 +1,5 @@
 {
-    "comment": "히어로섹션 배너 등록·수정 — 한 레이아웃이 등록(`route.id` 없음)과 수정(`route.id`)을 겸한다. 둘의 차이는 폼을 무엇으로\n  채우느냐와 이미지가 어디에 붙느냐뿐이다: 등록은 화면에 들어올 때 만든 임시 키(`_global.tempKey`)로 이미지를 먼저 올리고 저장 때\n  그 키를 보내 배너에 붙이며, 수정은 이미지를 바로 그 배너(`banner_id`)에 올린다. 입력은 전부 `_local.form` 한 그릇에 모이고\n  오른쪽 미리보기는 저장 전 입력값(지금 관리자 화면 언어)을 사용자 슬라이더 그대로 그린다 — PC 이미지가 있어야 그리고, 링크는 관리자\n  화면을 떠나지 않게 미리보기 자리로 바꾼다. 계산값: 권장 크기와 다른 이미지는 막지 않고 안내만 하고(크기를 재지 못한 이미지는 안내하지\n  않는다), 기간 안내(`periodHint`)는 이 기기 시각으로 미리 계산한 것일 뿐 실제 상태는 서버가 사이트 시간대로 정한다.",
+    "comment": "히어로섹션 배너 등록·수정 — 한 레이아웃이 등록(`route.id` 없음)과 수정(`route.id`)을 겸한다. 둘의 차이는 폼을 무엇으로\n  채우느냐뿐이다. 이미지는 둘 다 화면에 들어올 때 만든 임시 키(`_global.tempKey`)로 먼저 올리고 「저장」 때만 배너에 붙는다 — 저장은\n  화면에 남은 이미지 ID(`pc_image_id`·`mobile_image_id`)를 함께 보내고, 저장하지 않고 나가면 사이트 화면은 그대로다(남은 임시\n  이미지는 정리 명령이 지운다). 입력은 전부 `_local.form` 한 그릇에 모이고\n  오른쪽 미리보기는 저장 전 입력값(지금 관리자 화면 언어)을 사용자 슬라이더 그대로 그린다 — PC 이미지가 있어야 그리고, 링크는 관리자\n  화면을 떠나지 않게 미리보기 자리로 바꾼다. 계산값: 권장 크기와 다른 이미지는 막지 않고 안내만 하고(크기를 재지 못한 이미지는 안내하지\n  않는다), 기간 안내(`periodHint`)는 이 기기 시각으로 미리 계산한 것일 뿐 실제 상태는 서버가 사이트 시간대로 정한다.",
     "version": "1.0.0",
     "layout_name": "hero_section_banner_form",
     "extends": "_admin_base",
@@ -170,20 +170,11 @@
             }
         },
         {
-            "comment": "등록 화면마다 새 임시 키 — 이미지가 이 키로 먼저 올라가고 저장 때 배너에 붙는다. 저장하지 않고 떠난 임시 이미지는 정리 명령이 지운다",
+            "comment": "등록·수정 화면마다 새 임시 키 — 이미지가 이 키로 먼저 올라가고 저장 때 배너에 붙는다. 저장하지 않고 떠난 임시 이미지는 정리 명령이 지운다",
             "handler": "setState",
-            "if": "{{!route.id}}",
             "params": {
                 "target": "global",
                 "tempKey": "{{$uuid()}}"
-            }
-        },
-        {
-            "handler": "setState",
-            "if": "{{!!route.id}}",
-            "params": {
-                "target": "global",
-                "tempKey": null
             }
         }
     ],
@@ -825,7 +816,7 @@
                                                                 "text": "$t:sirsoft-hero_section.admin.form.image.pc_hint|mb={{_computed.uploadMb}}"
                                                             },
                                                             {
-                                                                "comment": "PC 이미지는 서버에서 지울 수 없다(필수 이미지가 빈 배너를 막는다) — 삭제 주소를 비워 화면에서만 빼고, 새로 올리면 서버가 바꾼다",
+                                                                "comment": "업로드는 임시 묶음에만 들어가고, 빼기는 삭제 주소를 비워 화면에서만 뺀다 — 배너 이미지는 「저장」 때 바뀐다. PC 이미지는 필수라 빼면 저장이 잠긴다",
                                                                 "id": "pc_image_uploader",
                                                                 "type": "composite",
                                                                 "name": "FileUploader",
@@ -876,7 +867,7 @@
                                                                     "autoUpload": true,
                                                                     "size": "sm",
                                                                     "initialFiles": "{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}",
-                                                                    "uploadParams": "{{_local.form?.id ? ({ device: 'pc', banner_id: String(_local.form.id) }) : ({ device: 'pc', temp_key: _global.tempKey ?? '' })}}",
+                                                                    "uploadParams": "{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}",
                                                                     "apiEndpoints": {
                                                                         "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
                                                                         "delete": ""
@@ -896,11 +887,11 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "P",
-                                                                "if": "{{_local.errors?.temp_key}}",
+                                                                "if": "{{_local.errors?.temp_key || _local.errors?.pc_image_id || _local.errors?.pc_image}}",
                                                                 "props": {
                                                                     "className": "form-error"
                                                                 },
-                                                                "text": "{{_local.errors?.temp_key?.[0] ?? ''}}"
+                                                                "text": "{{_local.errors?.temp_key?.[0] ?? _local.errors?.pc_image_id?.[0] ?? _local.errors?.pc_image?.[0] ?? ''}}"
                                                             }
                                                         ]
                                                     },
@@ -926,6 +917,7 @@
                                                                 "text": "$t:sirsoft-hero_section.admin.form.image.mobile_hint|mb={{_computed.uploadMb}}"
                                                             },
                                                             {
+                                                                "comment": "PC 와 같이 화면에서만 뺀다 — 빼고 저장하면 그때 모바일 이미지가 빠진다(저장하지 않으면 그대로). 저장은 화면에 남은\n                  이미지 ID 만 붙이므로 뺀 임시 이미지는 붙지 않고 정리 명령이 지운다",
                                                                 "id": "mobile_image_uploader",
                                                                 "type": "composite",
                                                                 "name": "FileUploader",
@@ -961,15 +953,6 @@
                                                                     },
                                                                     {
                                                                         "type": "change",
-                                                                        "event": "onDeleteError",
-                                                                        "handler": "toast",
-                                                                        "params": {
-                                                                            "type": "error",
-                                                                            "message": "$t:sirsoft-hero_section.admin.form.image.delete_failed"
-                                                                        }
-                                                                    },
-                                                                    {
-                                                                        "type": "change",
                                                                         "event": "onRemove",
                                                                         "handler": "setState",
                                                                         "params": {
@@ -984,14 +967,11 @@
                                                                     "accept": ".jpg,.jpeg,.png,.webp",
                                                                     "autoUpload": true,
                                                                     "size": "sm",
-                                                                    "confirmBeforeRemove": true,
-                                                                    "confirmRemoveTitle": "$t:sirsoft-hero_section.admin.form.image.remove_title",
-                                                                    "confirmRemoveMessage": "$t:sirsoft-hero_section.admin.form.image.remove_message",
                                                                     "initialFiles": "{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}",
-                                                                    "uploadParams": "{{_local.form?.id ? ({ device: 'mobile', banner_id: String(_local.form.id) }) : ({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}",
+                                                                    "uploadParams": "{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}",
                                                                     "apiEndpoints": {
                                                                         "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
-                                                                        "delete": "/api/plugins/sirsoft-hero_section/admin/banner-images/:id"
+                                                                        "delete": ""
                                                                     }
                                                                 }
                                                             },
@@ -1004,6 +984,15 @@
                                                                     "className": "mt-2 text-sm text-amber-700 dark:text-amber-300"
                                                                 },
                                                                 "text": "$t:sirsoft-hero_section.admin.form.image.size_mismatch|width={{_local.form?.images?.mobile?.width}}|height={{_local.form?.images?.mobile?.height}}|recommended=750×1000"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.mobile_image_id}}",
+                                                                "props": {
+                                                                    "className": "form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.mobile_image_id?.[0] ?? ''}}"
                                                             }
                                                         ]
                                                     }
@@ -1282,7 +1271,7 @@
                                                                 "auth_required": true,
                                                                 "params": {
                                                                     "method": "{{route.id ? 'PUT' : 'POST'}}",
-                                                                    "body": "{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, ...(route.id ? {} : { temp_key: _global.tempKey }) })}}"
+                                                                    "body": "{{({ position: _local.form?.position, is_active: _local.form?.is_active !== false, display_period: _local.form?.display_period ?? 'always', starts_at: _local.form?.starts_at_local || null, ends_at: _local.form?.ends_at_local || null, title: _local.form?.title ?? [], description: _local.form?.description ?? [], button_text: _local.form?.button_text ?? [], image_alt: _local.form?.image_alt ?? [], title_visible: _local.form?.title_visible !== false, title_color: _local.form?.title_color, title_align: _local.form?.title_align, description_visible: _local.form?.description_visible !== false, description_color: _local.form?.description_color, description_align: _local.form?.description_align, link_url: _local.form?.link_url || null, link_new_window: _local.form?.link_new_window === true, temp_key: _global.tempKey, pc_image_id: _local.form?.images?.pc?.id, mobile_image_id: _local.form?.images?.mobile?.id ?? null })}}"
                                                                 },
                                                                 "onSuccess": [
                                                                     {
@@ -1380,10 +1369,10 @@
                                 ]
                             },
                             {
-                                "comment": "미리보기 — 저장 전 입력값을 사용자 슬라이더 그대로 그린다. 좁은 화면에서는 입력 아래로 내려간다",
+                                "comment": "미리보기 — 저장 전 입력값을 사용자 슬라이더 그대로 그린다. 좁은 화면에서는 입력 아래로 내려간다.\n          관리자 템플릿에는 Aside 기본 컴포넌트가 없어(있으면 화면에서 조용히 빠진다) Section 으로 둔다",
                                 "id": "preview_card",
                                 "type": "basic",
-                                "name": "Aside",
+                                "name": "Section",
                                 "props": {
                                     "id": "hero_form_preview",
                                     "aria-labelledby": "hero_form_preview_heading",

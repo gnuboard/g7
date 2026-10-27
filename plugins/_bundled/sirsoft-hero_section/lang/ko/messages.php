@@ -14,7 +14,7 @@ return [
         'uploaded' => '이미지를 올렸습니다.',
         'deleted' => '이미지를 삭제했습니다.',
         'delete_failed' => '이미지 파일을 지우지 못했습니다. 잠시 뒤 다시 시도하세요.',
-        'pc_not_deletable' => 'PC 이미지는 필수라 삭제할 수 없습니다. 새 이미지를 올려 교체하세요.',
+        'attached_not_deletable' => '배너에 붙은 이미지는 여기서 지울 수 없습니다. 배너 수정 화면에서 바꾸고 저장하세요.',
         'not_found' => '이미지를 찾을 수 없습니다.',
     ],
     'position' => [

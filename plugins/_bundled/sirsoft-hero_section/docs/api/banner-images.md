@@ -91,7 +91,7 @@ _단건 응답: 올린 이미지(관리자 업로더 첨부 모양 + `url`·`dev
 
 **설명**
 
-이미지 업로드(multipart). 필드 `file`(JPG·PNG·WEBP, 가로·세로 4000px 이하), `device`(pc·mobile), `temp_key`(등록 화면) 또는 `banner_id`(수정 화면) 중 하나. 최대 용량 = min(플러그인 설정 `max_upload_mb`, PHP `upload_max_filesize`, `post_max_size`) — PHP 한도를 넘어 파일이 비어 들어오면 「서버 업로드 한도」 안내로 422. 같은 소유자의 같은 기기 이미지는 교체된다(이전 파일 삭제). 권장 크기(PC 1920×640, 모바일 750×1000)는 강제하지 않고 응답 width·height 로 화면이 안내한다. 응답 이미지는 관리자 업로더(`file-uploader`)의 첨부 모양(`id`·`hash`·`original_filename`·`mime_type`·`size`·`size_formatted`·`download_url`·`order`·`is_image`)에 `url`·`device`·`width`·`height` 를 더한 것이고, 배너 상세의 `images.pc`·`images.mobile`·목록의 `thumbnail` 도 같은 모양이다.
+이미지 업로드(multipart). 필드 `file`(JPG·PNG·WEBP, 가로·세로 4000px 이하), `device`(pc·mobile), `temp_key`(필수 — 등록·수정 화면이 들어올 때 만든 임시 묶음 키). 업로드는 언제나 임시 묶음에 들어가고 배너에는 등록(`POST /admin/banners`)·수정(`PUT /admin/banners/{banner}`)을 저장할 때만 붙는다 — 올리기만 해서는 사이트 화면이 바뀌지 않는다. 최대 용량 = min(플러그인 설정 `max_upload_mb`, PHP `upload_max_filesize`, `post_max_size`) — PHP 한도를 넘어 파일이 비어 들어오면 「서버 업로드 한도」 안내로 422. 같은 임시 묶음의 같은 기기 이미지는 교체된다(이전 파일 삭제). 권장 크기(PC 1920×640, 모바일 750×1000)는 강제하지 않고 응답 width·height 로 화면이 안내한다. 응답 이미지는 관리자 업로더(`file-uploader`)의 첨부 모양(`id`·`hash`·`original_filename`·`mime_type`·`size`·`size_formatted`·`download_url`·`order`·`is_image`)에 `url`·`device`·`width`·`height` 를 더한 것이고, 배너 상세의 `images.pc`·`images.mobile`·목록의 `thumbnail` 도 같은 모양이다.
 
 
 ### DELETE /api/plugins/sirsoft-hero_section/admin/banner-images/{image}
@@ -117,7 +117,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-_본문 없음: `data` 는 `null` 이다. 모바일 이미지만 지울 수 있다(PC 는 교체만 — 422)._
+_본문 없음: `data` 는 `null` 이다. 아직 배너에 붙지 않은 임시 이미지만 지울 수 있다(배너에 붙은 이미지는 422)._
 
 **응답 예시**
 
@@ -141,5 +141,5 @@ _본문 없음: `data` 는 `null` 이다. 모바일 이미지만 지울 수 있�
 
 **설명**
 
-모바일 이미지를 지운다(파일 포함 — 모바일이 없으면 화면은 PC 이미지를 쓴다). PC 이미지는 필수라 422 — 새 이미지를 올려 교체한다.
+아직 배너에 붙지 않은 임시 이미지를 지운다(파일 포함). 배너에 붙은 이미지(PC·모바일)는 422 — 배너 수정 저장의 `pc_image_id`·`mobile_image_id` 로만 바꾸거나 뺀다. 관리자 화면은 이 주소를 부르지 않는다 — 등록·수정 모두 화면에서만 빼고, 저장이 남은 이미지 ID 만 붙인다(붙지 않은 임시 이미지는 매일 정리 명령이 지운다).
 

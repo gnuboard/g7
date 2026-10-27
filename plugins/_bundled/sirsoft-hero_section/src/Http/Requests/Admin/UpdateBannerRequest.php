@@ -8,9 +8,13 @@ use Illuminate\Validation\Validator;
 use Plugins\Sirsoft\HeroSection\Enums\BannerDevice;
 use Plugins\Sirsoft\HeroSection\Http\Requests\Concerns\BannerFieldRules;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerImageRepositoryInterface;
+use Plugins\Sirsoft\HeroSection\Rules\SelectableBannerImage;
 
 /**
- * 배너 수정 요청 — 등록과 같은 규칙(대칭)에, 배너에 PC 이미지가 남아 있어야 한다.
+ * 배너 수정 요청 — 등록과 같은 규칙(대칭)에, 저장 때 바꿀 이미지(`pc_image_id`·`mobile_image_id`)를 받는다.
+ *
+ * 수정 화면은 이미지를 임시 묶음(`temp_key`)에 올려 두고 저장 때 화면에 남은 이미지 ID 를 보낸다. 키를 보내지 않은
+ * 기기는 그대로 두고, `mobile_image_id: null` 은 모바일 이미지를 뺀다. PC 이미지는 필수라 null 을 받지 않는다.
  */
 class UpdateBannerRequest extends FormRequest
 {
@@ -43,11 +47,20 @@ class UpdateBannerRequest extends FormRequest
      */
     public function rules(): array
     {
-        return HookManager::applyFilters('sirsoft-hero_section.banner.update_validation_rules', $this->bannerRules(), $this);
+        $bannerId = (int) $this->route('banner')?->id;
+        $tempKey = is_string($this->input('temp_key')) ? $this->input('temp_key') : null;
+
+        $rules = $this->bannerRules() + [
+            'temp_key' => ['nullable', 'string', 'max:64'],
+            'pc_image_id' => ['sometimes', 'required', 'integer', new SelectableBannerImage(BannerDevice::Pc, $bannerId, $tempKey)],
+            'mobile_image_id' => ['sometimes', 'nullable', 'integer', new SelectableBannerImage(BannerDevice::Mobile, $bannerId, $tempKey)],
+        ];
+
+        return HookManager::applyFilters('sirsoft-hero_section.banner.update_validation_rules', $rules, $this);
     }
 
     /**
-     * 규칙 뒤 검사 — 배너에 PC 이미지가 있어야 합니다.
+     * 규칙 뒤 검사 — PC 이미지를 바꾸지 않으면 배너에 PC 이미지가 있어야 합니다.
      *
      * @return array<int, callable> 뒤 검사 목록
      */
@@ -55,6 +68,10 @@ class UpdateBannerRequest extends FormRequest
     {
         return [
             function (Validator $validator) {
+                if ($this->has('pc_image_id')) {
+                    return;
+                }
+
                 $bannerId = (int) $this->route('banner')?->id;
                 $pc = app(BannerImageRepositoryInterface::class)->findByOwnerAndDevice($bannerId, null, BannerDevice::Pc->value);
                 if ($pc === null) {
@@ -104,6 +121,9 @@ class UpdateBannerRequest extends FormRequest
             'link_url' => __('sirsoft-hero_section::validation.attributes.link_url'),
             'link_new_window' => __('sirsoft-hero_section::validation.attributes.link_new_window'),
             'pc_image' => __('sirsoft-hero_section::validation.attributes.pc_image'),
+            'temp_key' => __('sirsoft-hero_section::validation.attributes.temp_key'),
+            'pc_image_id' => __('sirsoft-hero_section::validation.attributes.pc_image'),
+            'mobile_image_id' => __('sirsoft-hero_section::validation.attributes.mobile_image'),
         ];
     }
 }

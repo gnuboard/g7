@@ -319,7 +319,7 @@ _단건 응답: 만든 배너 상세(조회 응답과 같은 모양)._
 
 **설명**
 
-배너 등록. 먼저 `POST /admin/banner-images` 로 같은 `temp_key` 에 PC 이미지(필수)·모바일 이미지(선택)를 올린 뒤 부른다. 본문: position, is_active, display_period(always·range), starts_at·ends_at(range 일 때 필수, 사이트 시간대 `Y-m-d\TH:i`, 종료 > 시작), title(사이트 기본 언어 필수)·description·button_text·image_alt(다국어 객체), title/description_visible·color(#RRGGBB)·align(left·center·right), link_url(`/…` 또는 http(s), `//`·`/\` 시작과 다른 스킴 거부), link_new_window, temp_key. 위치 맨 뒤 순서로 저장되고 임시 이미지가 연결된다. 훅 before/after_create 발행.
+배너 등록. 먼저 `POST /admin/banner-images` 로 같은 `temp_key` 에 PC 이미지(필수)·모바일 이미지(선택)를 올린 뒤 부른다. 본문: position, is_active, display_period(always·range), starts_at·ends_at(range 일 때 필수, 사이트 시간대 `Y-m-d\TH:i`, 종료 > 시작), title(사이트 기본 언어 필수)·description·button_text·image_alt(다국어 객체), title/description_visible·color(#RRGGBB)·align(left·center·right), link_url(`/…` 또는 http(s), `//`·`/\` 시작과 다른 스킴 거부), link_new_window, temp_key, (선택) pc_image_id·mobile_image_id — 같은 `temp_key` 묶음의 이미지 ID. 보낸 기기는 그 이미지만 붙고(`mobile_image_id: null` 이면 모바일 없음), 보내지 않은 기기는 묶음의 가장 최근 이미지가 붙는다 — 기기마다 한 장. 다른 묶음·다른 기기 이미지는 422(「고른 이미지를 찾을 수 없습니다」). 붙지 않은 임시 이미지는 매일 정리 명령이 지운다. 위치 맨 뒤 순서로 저장된다. 훅 before/after_create 발행.
 
 
 ### DELETE /api/plugins/sirsoft-hero_section/admin/banners/bulk
@@ -372,7 +372,7 @@ _단건 응답: 처리 건수._
 
 **설명**
 
-고른 배너(`ids` 1~100개)를 **영구 삭제**한다 — 배너마다 PC·모바일 이미지 파일을 먼저 지운 뒤 행을 지운다. 활동 로그는 배너마다 한 줄. 되돌릴 수 없으므로 잠시 내리려면 일괄 비노출을 쓴다.
+고른 배너(`ids` 1~100개)를 **영구 삭제**한다 — 배너마다 PC·모바일 이미지를 떼어 낸 뒤 배너를 지우고, 이어서 이미지 파일·행을 지운다(파일 삭제가 실패한 이미지는 임시 이미지로 남아 매일 정리 명령이 다시 지운다). 활동 로그는 배너마다 한 줄. 되돌릴 수 없으므로 잠시 내리려면 일괄 비노출을 쓴다.
 
 
 ### PATCH /api/plugins/sirsoft-hero_section/admin/banners/bulk-status
@@ -753,7 +753,7 @@ _본문 없음: `data` 는 `null` 이다. 배너와 PC·모바일 이미지 파�
 
 **설명**
 
-배너를 **영구 삭제**한다 — PC·모바일 이미지 파일을 먼저 지우고 행을 지운다. 활동 로그는 남는다. 훅 before/after_delete 발행.
+배너를 **영구 삭제**한다 — PC·모바일 이미지를 떼어 낸 뒤 배너를 지우고, 이어서 이미지 파일·행을 지운다(파일 삭제가 실패한 이미지는 임시 이미지로 남아 매일 정리 명령이 다시 지운다). 활동 로그는 남는다. 훅 before/after_delete 발행.
 
 
 ### GET /api/plugins/sirsoft-hero_section/admin/banners/{banner}
@@ -1087,5 +1087,15 @@ _단건 응답: 고친 배너 상세(조회 응답과 같은 모양)._
 
 **설명**
 
-배너 수정 — 등록과 같은 규칙(temp_key 제외). 배너에 PC 이미지가 남아 있어야 한다(`pc_image` 오류). 위치를 바꾸면 새 위치 맨 뒤로 가고 옛·새 위치 공개 캐시가 모두 비워진다. 이미지는 `POST /admin/banner-images`(banner_id)로 따로 교체한다.
+배너 수정 — 등록과 같은 규칙에 이미지 선택을 더한다. 위치를 바꾸면 새 위치 맨 뒤로 가고 옛·새 위치 공개 캐시가 모두 비워진다.
+
+이미지는 이 저장 때만 바뀐다. 수정 화면은 `POST /admin/banner-images` 로 임시 묶음(`temp_key`)에 올려 두고, 저장 때 화면에 남은 이미지 ID 를 보낸다.
+
+| 필드 | 필수 | 설명 |
+| --- | --- | --- |
+| temp_key | 아니오 | 이 화면의 임시 묶음 키(최대 64자). 새로 올린 이미지를 고를 때 필요 |
+| pc_image_id | 아니오 | 남길 PC 이미지 ID — 지금 배너의 PC 이미지 또는 `temp_key` 묶음에 올린 PC 이미지. 보내면 null 불가(PC 필수). 보내지 않으면 그대로 |
+| mobile_image_id | 아니오 | 남길 모바일 이미지 ID — 지금 배너의 모바일 이미지 또는 `temp_key` 묶음의 모바일 이미지. `null` 이면 모바일 이미지를 뺀다. 보내지 않으면 그대로 |
+
+다른 배너의 이미지, 다른 임시 묶음의 이미지, 기기가 다른 이미지는 422(`pc_image_id`·`mobile_image_id`, 「고른 이미지를 찾을 수 없습니다」). `pc_image_id` 를 보내지 않았는데 배너에 PC 이미지가 없으면 422(`pc_image`). 바뀐 기기마다 옛 이미지는 배너에서 떼어 파일·행을 지우고 `sirsoft-hero_section.banner_image.after_change` 를 발행한다(활동 로그 `hero_banner.image_update`·`hero_banner.image_remove`). 옛 파일 삭제가 실패해도 저장은 성공하고, 떼어 낸 이미지는 임시 이미지로 남아 매일 정리 명령(`prune-temp-images`)이 다시 지운다.
 

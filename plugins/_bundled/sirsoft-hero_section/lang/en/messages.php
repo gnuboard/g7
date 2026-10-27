@@ -14,7 +14,7 @@ return [
         'uploaded' => 'Image uploaded.',
         'deleted' => 'Image deleted.',
         'delete_failed' => 'Could not delete the image file. Please try again later.',
-        'pc_not_deletable' => 'The PC image is required and cannot be deleted. Upload a new image to replace it.',
+        'attached_not_deletable' => 'An image attached to a banner cannot be deleted here. Change it on the banner edit screen and save.',
         'not_found' => 'Image not found.',
     ],
     'position' => [

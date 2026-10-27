@@ -13,6 +13,7 @@ axes:
     - reorder_reflected_on_home
     - bulk_hide_removes_from_home
     - delete_removes_from_home
+    - edit_image_applies_on_save
     - locale_switch_changes_text
     - plugin_deactivate_hides_section
     - read_only_admin_sees_no_edit_buttons

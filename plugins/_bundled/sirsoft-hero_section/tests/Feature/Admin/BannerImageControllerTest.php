@@ -5,7 +5,6 @@ namespace Plugins\Sirsoft\HeroSection\Tests\Feature\Admin;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
-use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Support\UploadLimit;
 use Plugins\Sirsoft\HeroSection\Tests\PluginTestCase;
@@ -34,7 +33,7 @@ class BannerImageControllerTest extends PluginTestCase
     }
 
     /**
-     * 등록 화면 임시 묶음으로 올리면 배너 없이 temp_key 로 저장되고 크기를 재서 돌려준다.
+     * 등록·수정 화면 임시 묶음으로 올리면 배너 없이 temp_key 로 저장되고 크기를 재서 돌려준다.
      *
      * @scenario surface=image_upload_with_temp_key
      *
@@ -65,7 +64,7 @@ class BannerImageControllerTest extends PluginTestCase
     }
 
     /**
-     * 같은 배너의 같은 기기 이미지를 다시 올리면 앞 이미지(행·파일)를 교체한다.
+     * 같은 임시 묶음의 같은 기기 이미지를 다시 올리면 앞 이미지(행·파일)를 교체한다.
      *
      * @scenario surface=image_upload_replaces_same_device
      *
@@ -75,14 +74,33 @@ class BannerImageControllerTest extends PluginTestCase
      */
     public function test_upload_replaces_same_device(): void
     {
-        $id = $this->createBannerViaApi($this->admin)->assertCreated()->json('data.id');
-        $old = BannerImage::query()->where('banner_id', $id)->where('device', 'pc')->first();
+        $tempKey = (string) Str::uuid();
+        $oldId = $this->uploadImage($this->admin, 'pc', ['temp_key' => $tempKey])->assertCreated()->json('data.id');
+        $old = BannerImage::query()->find($oldId);
 
-        $newId = $this->uploadImage($this->admin, 'pc', ['banner_id' => $id])->assertCreated()->json('data.id');
+        $newId = $this->uploadImage($this->admin, 'pc', ['temp_key' => $tempKey])->assertCreated()->json('data.id');
 
-        $this->assertSame([$newId], BannerImage::query()->where('banner_id', $id)->where('device', 'pc')->pluck('id')->all());
-        $this->assertNull(BannerImage::query()->find($old->id));
+        $this->assertSame([$newId], BannerImage::query()->where('temp_key', $tempKey)->where('device', 'pc')->pluck('id')->all());
+        $this->assertNull(BannerImage::query()->find($oldId));
         $this->imageStorage()->assertMissing('sirsoft-hero_section/images/'.$old->path);
+    }
+
+    /**
+     * 업로드는 임시 묶음 키가 있어야 한다 — 배너에 바로 올리는 길은 없다(배너 이미지는 저장 때만 바뀐다).
+     *
+     * @scenario surface=image_upload_requires_temp_key
+     *
+     * @return void 반환값 없음
+     */
+    public function test_upload_requires_temp_key(): void
+    {
+        $id = $this->createBannerViaApi($this->admin)->assertCreated()->json('data.id');
+        $before = BannerImage::query()->where('banner_id', $id)->pluck('id')->all();
+
+        $this->uploadImage($this->admin, 'pc', ['banner_id' => $id])
+            ->assertStatus(422)->assertJsonValidationErrors(['temp_key']);
+
+        $this->assertSame($before, BannerImage::query()->where('banner_id', $id)->pluck('id')->all());
     }
 
     /**
@@ -129,40 +147,42 @@ class BannerImageControllerTest extends PluginTestCase
     }
 
     /**
-     * PC 이미지는 삭제할 수 없다(교체만).
+     * 배너에 붙은 이미지(PC·모바일)는 이미지 API 로 지울 수 없다 — 배너 수정 저장으로만 바뀐다.
      *
-     * @scenario surface=image_pc_cannot_be_deleted
+     * @scenario surface=image_attached_cannot_be_deleted
      *
      * @return void 반환값 없음
      */
-    public function test_pc_image_cannot_be_deleted(): void
+    public function test_attached_image_cannot_be_deleted(): void
     {
-        $banner = Banner::factory()->withImages()->create();
-        $pc = $banner->pcImage()->first();
+        $id = $this->createBannerViaApi($this->admin, [], mobile: true)->assertCreated()->json('data.id');
 
-        $this->actingAs($this->admin)->deleteJson($this->api('/admin/banner-images/'.$pc->id))->assertStatus(422);
+        $images = BannerImage::query()->where('banner_id', $id)->get();
+        $this->assertCount(2, $images);
 
-        $this->assertNotNull(BannerImage::query()->find($pc->id));
+        foreach ($images as $image) {
+            $this->actingAs($this->admin)->deleteJson($this->api('/admin/banner-images/'.$image->id))->assertStatus(422);
+            $this->assertNotNull(BannerImage::query()->find($image->id));
+        }
     }
 
     /**
-     * 모바일 이미지는 삭제할 수 있고 파일도 지워진다.
+     * 아직 배너에 붙지 않은 임시 이미지는 지울 수 있고 파일도 지워진다.
      *
-     * @scenario surface=image_mobile_can_be_deleted
+     * @scenario surface=image_temp_can_be_deleted
      *
      * @effects image_files_deleted
      *
      * @return void 반환값 없음
      */
-    public function test_mobile_image_can_be_deleted(): void
+    public function test_temp_image_can_be_deleted(): void
     {
-        $id = $this->createBannerViaApi($this->admin, [], mobile: true)->assertCreated()->json('data.id');
-        $mobile = BannerImage::query()->where('banner_id', $id)->where('device', 'mobile')->first();
+        $id = $this->uploadImage($this->admin, 'mobile', ['temp_key' => (string) Str::uuid()])->assertCreated()->json('data.id');
+        $image = BannerImage::query()->find($id);
 
-        $this->actingAs($this->admin)->deleteJson($this->api('/admin/banner-images/'.$mobile->id))->assertOk();
+        $this->actingAs($this->admin)->deleteJson($this->api('/admin/banner-images/'.$id))->assertOk();
 
-        $this->assertNull(BannerImage::query()->find($mobile->id));
-        $this->imageStorage()->assertMissing('sirsoft-hero_section/images/'.$mobile->path);
-        $this->assertNull($this->actingAs($this->admin)->getJson($this->api('/admin/banners/'.$id))->json('data.images.mobile'));
+        $this->assertNull(BannerImage::query()->find($id));
+        $this->imageStorage()->assertMissing('sirsoft-hero_section/images/'.$image->path);
     }
 }

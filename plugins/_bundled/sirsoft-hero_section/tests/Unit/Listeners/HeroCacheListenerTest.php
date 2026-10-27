@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\HeroSection\Tests\Unit\Listeners;
 use App\Extension\HookManager;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Plugins\Sirsoft\HeroSection\Enums\HeroPosition;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Plugin;
@@ -115,7 +116,7 @@ class HeroCacheListenerTest extends PluginTestCase
     }
 
     /**
-     * 저장된 배너의 이미지를 교체하면 캐시가 비워진다(새 이미지 주소가 나온다).
+     * 수정 화면에서 이미지를 바꿔 저장하면 캐시가 비워진다(새 이미지 주소가 나온다). 올리기만 해서는 비우지 않는다.
      *
      * @scenario surface=cache_cleared_on_image_change
      *
@@ -127,8 +128,12 @@ class HeroCacheListenerTest extends PluginTestCase
     {
         $banner = Banner::factory()->withImages()->create();
         $before = $this->payload()['banners'][0]['images']['pc']['url'];
+        $tempKey = (string) Str::uuid();
 
-        $this->uploadImage($this->admin, 'pc', ['banner_id' => $banner->id])->assertCreated();
+        $newId = $this->uploadImage($this->admin, 'pc', ['temp_key' => $tempKey])->assertCreated()->json('data.id');
+        $this->assertSame($before, $this->payload()['banners'][0]['images']['pc']['url']);
+
+        $this->actingAs($this->admin)->putJson($this->api('/admin/banners/'.$banner->id), $this->bannerPayload(['temp_key' => $tempKey, 'pc_image_id' => $newId]))->assertOk();
 
         $this->assertNotSame($before, $this->payload()['banners'][0]['images']['pc']['url']);
     }

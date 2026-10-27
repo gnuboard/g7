@@ -10,6 +10,7 @@ return [
             'bulk_delete' => '히어로섹션 배너 일괄 삭제',
             'reorder' => '히어로섹션 배너 순서 변경',
             'image_update' => '히어로섹션 배너 이미지 교체',
+            'image_remove' => '히어로섹션 배너 이미지 삭제',
         ],
         'hero_position' => [
             'update' => '히어로섹션 슬라이더 설정 변경',
@@ -23,6 +24,7 @@ return [
         'hero_banner_bulk_hide' => '히어로섹션 배너 「:banner_title」을(를) 비노출로 바꿨습니다.',
         'hero_banner_reorder' => '히어로섹션 :position 위치의 배너 :count개 순서를 바꿨습니다.',
         'hero_banner_image_update' => '히어로섹션 배너 「:banner_title」의 :device 이미지를 교체했습니다.',
+        'hero_banner_image_remove' => '히어로섹션 배너 「:banner_title」의 :device 이미지를 뺐습니다.',
         'hero_position_update' => '히어로섹션 :position 위치의 슬라이더 설정을 바꿨습니다.',
     ],
     'fields' => [

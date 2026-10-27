@@ -7,7 +7,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
-use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerImageRepositoryInterface;
+use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
 
 /**
@@ -15,6 +15,7 @@ use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface
  *
  * 발행 훅(접두 `sirsoft-hero_section.banner.`): before/after_create · update · delete · bulk_status ·
  * bulk_delete · reorder, filter_create_data · filter_update_data · filter_list_params.
+ * 수정 저장으로 기기별 이미지가 바뀌면 `sirsoft-hero_section.banner_image.after_change` 도 발행한다.
  * 활동 로그·공개 캐시 비우기는 after 훅을 구독하는 리스너가 한다.
  */
 class BannerService
@@ -23,12 +24,10 @@ class BannerService
      * BannerService 생성자
      *
      * @param  BannerRepositoryInterface  $banners  배너 Repository
-     * @param  BannerImageRepositoryInterface  $images  이미지 Repository
-     * @param  BannerImageService  $imageService  이미지 서비스(파일 삭제)
+     * @param  BannerImageService  $imageService  이미지 서비스(선택 적용·떼어 내기·파일 삭제)
      */
     public function __construct(
         private BannerRepositoryInterface $banners,
-        private BannerImageRepositoryInterface $images,
         private BannerImageService $imageService,
     ) {}
 
@@ -90,7 +89,10 @@ class BannerService
     }
 
     /**
-     * 배너를 만듭니다 — 위치 맨 뒤에 놓고 임시 업로드 이미지를 연결합니다.
+     * 배너를 만듭니다 — 위치 맨 뒤에 놓고 임시 묶음에서 기기마다 한 장씩 붙입니다.
+     *
+     * 이미지 ID(pc_image_id·mobile_image_id)를 보냈으면 그것을, 보내지 않은 기기는 묶음의 가장 최근 이미지를 붙인다.
+     * 붙지 않은 임시 이미지는 그대로 두고 고아 임시 이미지 정리가 지운다.
      *
      * @param  array<string, mixed>  $data  검증된 값 (temp_key 포함)
      * @param  int|null  $actorId  등록한 회원 ID
@@ -102,9 +104,9 @@ class BannerService
         $data = HookManager::applyFilters('sirsoft-hero_section.banner.filter_create_data', $data);
 
         $tempKey = (string) ($data['temp_key'] ?? '');
-        unset($data['temp_key']);
+        $selected = $this->takeImageSelection($data);
 
-        $banner = DB::transaction(function () use ($data, $tempKey, $actorId) {
+        $banner = DB::transaction(function () use ($data, $tempKey, $selected, $actorId) {
             $banner = $this->banners->create($data + [
                 'sort_order' => $this->banners->nextSortOrder($data['position']),
                 'created_by' => $actorId,
@@ -112,7 +114,7 @@ class BannerService
             ]);
 
             if ($tempKey !== '') {
-                $this->images->linkTempImages($tempKey, $banner->id);
+                $this->imageService->applySelection($banner, $this->imageService->resolveTempSelection($tempKey, $selected));
             }
 
             return $this->banners->findOrFail($banner->id);
@@ -124,10 +126,12 @@ class BannerService
     }
 
     /**
-     * 배너를 고칩니다 — 위치가 바뀌면 새 위치 맨 뒤로 옮깁니다.
+     * 배너를 고칩니다 — 위치가 바뀌면 새 위치 맨 뒤로 옮기고, 수정 화면이 고른 이미지로 바꿉니다.
+     *
+     * 이미지는 저장할 때만 바뀐다(수정 화면의 업로드는 임시 묶음에 머문다). 떼어 낸 옛 이미지 파일은 커밋 뒤에 지운다.
      *
      * @param  Banner  $banner  대상 배너
-     * @param  array<string, mixed>  $data  검증된 값
+     * @param  array<string, mixed>  $data  검증된 값 (pc_image_id·mobile_image_id 는 보낸 것만 반영)
      * @param  int|null  $actorId  수정한 회원 ID
      * @return Banner 고친 배너
      */
@@ -135,18 +139,26 @@ class BannerService
     {
         HookManager::doAction('sirsoft-hero_section.banner.before_update', $banner, $data);
         $data = HookManager::applyFilters('sirsoft-hero_section.banner.filter_update_data', $data, $banner);
-        unset($data['temp_key']);
+
+        $selection = $this->takeImageSelection($data);
 
         $snapshot = $banner->toArray();
         $previousPosition = $banner->position;
 
-        $updated = DB::transaction(function () use ($banner, $data, $actorId, $previousPosition) {
+        [$updated, $images] = DB::transaction(function () use ($banner, $data, $actorId, $previousPosition, $selection) {
             if (isset($data['position']) && $data['position'] !== $previousPosition) {
                 $data['sort_order'] = $this->banners->nextSortOrder($data['position']);
             }
 
-            return $this->banners->update($banner, $data + ['updated_by' => $actorId]);
+            $images = $this->imageService->applySelection($banner, $selection);
+
+            return [$this->banners->update($banner, $data + ['updated_by' => $actorId]), $images];
         });
+
+        $this->deleteReleasedImages($images['released']);
+        foreach ($images['changes'] as $device => $change) {
+            HookManager::doAction('sirsoft-hero_section.banner_image.after_change', $updated, $device, $change);
+        }
 
         HookManager::doAction('sirsoft-hero_section.banner.after_update', $updated, $snapshot, $previousPosition);
 
@@ -154,7 +166,9 @@ class BannerService
     }
 
     /**
-     * 배너를 영구 삭제합니다 — PC·모바일 이미지 파일을 먼저 지운 뒤 행을 지웁니다.
+     * 배너를 영구 삭제합니다 — PC·모바일 이미지를 떼어 낸 뒤 배너를 지우고, 커밋 뒤 이미지 파일·행을 지웁니다.
+     *
+     * 파일 삭제가 실패한 이미지는 임시 이미지로 남아 고아 임시 이미지 정리가 다시 지운다(아무도 찾지 못하는 파일이 남지 않는다).
      *
      * @param  Banner  $banner  대상 배너
      * @return void 반환값 없음
@@ -166,8 +180,13 @@ class BannerService
         $snapshot = $banner->toArray();
         $id = $banner->id;
 
-        $this->imageService->deleteFilesForBanners([$id]);
-        DB::transaction(fn () => $this->banners->delete($banner));
+        $released = DB::transaction(function () use ($banner, $id) {
+            $released = $this->imageService->releaseForBanners([$id]);
+            $this->banners->delete($banner);
+
+            return $released;
+        });
+        $this->deleteReleasedImages($released);
 
         HookManager::doAction('sirsoft-hero_section.banner.after_delete', $id, $snapshot);
     }
@@ -193,7 +212,7 @@ class BannerService
     }
 
     /**
-     * 여러 배너를 영구 삭제합니다 — 각 배너의 이미지 파일을 먼저 지웁니다.
+     * 여러 배너를 영구 삭제합니다 — 단건 삭제와 같이 이미지를 떼어 낸 뒤 배너를 지우고, 커밋 뒤 이미지를 지웁니다.
      *
      * @param  array<int, int>  $ids  배너 ID 목록
      * @return int 지운 건수
@@ -205,15 +224,16 @@ class BannerService
         $banners = $this->banners->findMany($ids);
         $snapshots = $banners->map(fn (Banner $b) => $b->toArray())->keyBy('id')->all();
 
-        $this->imageService->deleteFilesForBanners($banners->pluck('id')->all());
-        $count = DB::transaction(function () use ($banners) {
+        [$count, $released] = DB::transaction(function () use ($banners) {
+            $released = $this->imageService->releaseForBanners($banners->pluck('id')->all());
             $deleted = 0;
             foreach ($banners as $banner) {
                 $deleted += $this->banners->delete($banner) ? 1 : 0;
             }
 
-            return $deleted;
+            return [$deleted, $released];
         });
+        $this->deleteReleasedImages($released);
 
         HookManager::doAction('sirsoft-hero_section.banner.after_bulk_delete', $ids, $snapshots);
 
@@ -234,5 +254,37 @@ class BannerService
         DB::transaction(fn () => $this->banners->reorder($ids));
 
         HookManager::doAction('sirsoft-hero_section.banner.after_reorder', $position, $ids);
+    }
+
+    /**
+     * 검증된 값에서 이미지 선택(pc_image_id·mobile_image_id)과 temp_key 를 빼냅니다 — 배너 행에 저장할 값이 아니다.
+     *
+     * @param  array<string, mixed>  $data  검증된 값 (참조로 받아 세 키를 지운다)
+     * @return array<string, int|null> 보낸 기기 => 이미지 ID (보내지 않은 기기는 키가 없다)
+     */
+    private function takeImageSelection(array &$data): array
+    {
+        $selection = [];
+        foreach (['pc' => 'pc_image_id', 'mobile' => 'mobile_image_id'] as $device => $field) {
+            if (array_key_exists($field, $data)) {
+                $selection[$device] = $data[$field] !== null ? (int) $data[$field] : null;
+            }
+        }
+        unset($data['temp_key'], $data['pc_image_id'], $data['mobile_image_id']);
+
+        return $selection;
+    }
+
+    /**
+     * 배너에서 떼어 낸 이미지의 파일·행을 지웁니다 — 실패분은 임시 이미지로 남아 정리 명령이 다시 지운다.
+     *
+     * @param  array<int, BannerImage>  $released  떼어 낸 이미지
+     * @return void 반환값 없음
+     */
+    private function deleteReleasedImages(array $released): void
+    {
+        foreach ($released as $image) {
+            $this->imageService->deleteImage($image);
+        }
     }
 }

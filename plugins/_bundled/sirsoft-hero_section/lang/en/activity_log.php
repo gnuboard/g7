@@ -10,6 +10,7 @@ return [
             'bulk_delete' => 'Hero banners deleted in bulk',
             'reorder' => 'Hero banners reordered',
             'image_update' => 'Hero banner image replaced',
+            'image_remove' => 'Hero banner image removed',
         ],
         'hero_position' => [
             'update' => 'Hero slider settings changed',
@@ -23,6 +24,7 @@ return [
         'hero_banner_bulk_hide' => 'Set hero banner ":banner_title" to hidden.',
         'hero_banner_reorder' => 'Reordered :count hero banner(s) in position :position.',
         'hero_banner_image_update' => 'Replaced the :device image of hero banner ":banner_title".',
+        'hero_banner_image_remove' => 'Removed the :device image of hero banner ":banner_title".',
         'hero_position_update' => 'Changed slider settings for hero position :position.',
     ],
     'fields' => [

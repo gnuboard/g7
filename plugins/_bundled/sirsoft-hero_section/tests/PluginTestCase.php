@@ -311,7 +311,7 @@ abstract class PluginTestCase extends TestCase
      *
      * @param  User  $admin  관리자
      * @param  string  $device  기기 (pc, mobile)
-     * @param  array<string, mixed>  $owner  ['temp_key' => …] 또는 ['banner_id' => …]
+     * @param  array<string, mixed>  $owner  ['temp_key' => …] (업로드는 임시 묶음에만 들어간다)
      * @param  UploadedFile|null  $file  올릴 파일 (null 이면 권장 크기 가짜 이미지)
      * @return TestResponse 응답
      */

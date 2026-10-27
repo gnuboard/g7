@@ -10,6 +10,9 @@ return [
     'pc_image' => [
         'required' => 'PC 이미지를 올려 주세요.',
     ],
+    'image_selection' => [
+        'invalid' => '고른 이미지를 찾을 수 없습니다. 이미지를 다시 올린 뒤 저장하세요.',
+    ],
     'file' => [
         'server_limit' => '서버 업로드 한도(:mbMB)를 넘었습니다. 더 작은 파일을 올리거나 서버 관리자에게 PHP 업로드 한도를 올려 달라고 하세요.',
         'max' => '이미지는 :mbMB 이하여야 합니다.',
@@ -18,6 +21,7 @@ return [
     ],
     'attributes' => [
         'pc_image' => 'PC 이미지',
+        'mobile_image' => '모바일 이미지',
         'position' => '노출 위치',
         'status' => '상태',
         'search' => '검색어',
@@ -42,7 +46,6 @@ return [
         'link_url' => '이동할 URL',
         'link_new_window' => '새 창에서 열기',
         'temp_key' => '임시 업로드 키',
-        'banner_id' => '배너',
         'file' => '이미지 파일',
         'device' => '기기',
         'autoplay' => '자동 재생',

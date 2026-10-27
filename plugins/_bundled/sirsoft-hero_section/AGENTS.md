@@ -71,8 +71,8 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 22개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 21개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 발행 훅 | 23개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 구독 훅 | 19개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 4개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
@@ -113,7 +113,7 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 13개 | `plugins/_bundled/sirsoft-hero_section/tests` |
+| PHPUnit | 14개 | `plugins/_bundled/sirsoft-hero_section/tests` |
 | Vitest | 6개 | `vitest.config.ts` |
 | Playwright | 2개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 10개 | `tests/scenarios` |

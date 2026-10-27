@@ -10,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Plugins\Sirsoft\HeroSection\Enums\BannerDevice;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerImageRepositoryInterface;
@@ -18,8 +19,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * 배너 이미지 서비스 — 업로드·교체·파일 삭제·공개 서빙·고아 임시 이미지 정리.
  *
- * 파일은 플러그인 스토리지(카테고리 `images`)에 두고, 행보다 파일을 먼저 지운다 — 행만 지우고 파일 삭제가
- * 실패하면 아무도 찾지 못하는 고아 파일이 남기 때문이다.
+ * 업로드는 언제나 임시 묶음(temp_key)에 들어가고, 배너에는 등록·수정을 저장할 때만 붙는다 — 저장하지 않고
+ * 나가면 사이트 화면은 그대로다. 파일은 플러그인 스토리지(카테고리 `images`)에 두고, 행보다 파일을 먼저 지운다 —
+ * 행만 지우고 파일 삭제가 실패하면 아무도 찾지 못하는 고아 파일이 남기 때문이다.
  */
 class BannerImageService
 {
@@ -36,6 +38,11 @@ class BannerImageService
     private const EXTENSIONS = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
 
     /**
+     * 배너에서 떼어 낸 이미지를 돌려 두는 임시 묶음 키 접두 (+ 배너 ID)
+     */
+    private const RELEASED_KEY_PREFIX = 'released:';
+
+    /**
      * BannerImageService 생성자
      *
      * @param  BannerImageRepositoryInterface  $images  이미지 Repository
@@ -47,16 +54,15 @@ class BannerImageService
     ) {}
 
     /**
-     * 이미지를 올립니다 — 같은 배너(또는 임시 묶음)의 같은 기기 이미지가 있으면 교체합니다.
+     * 이미지를 임시 묶음에 올립니다 — 같은 묶음의 같은 기기 이미지가 있으면 교체합니다.
      *
      * @param  UploadedFile  $file  올린 파일 (FormRequest 가 형식·용량 검증)
      * @param  string  $device  기기 (pc, mobile)
-     * @param  string|null  $tempKey  등록 화면 임시 묶음 키
-     * @param  Banner|null  $banner  수정 화면의 대상 배너
+     * @param  string  $tempKey  등록·수정 화면 임시 묶음 키
      * @param  int|null  $actorId  올린 회원 ID
      * @return BannerImage 올린 이미지
      */
-    public function upload(UploadedFile $file, string $device, ?string $tempKey, ?Banner $banner, ?int $actorId): BannerImage
+    public function upload(UploadedFile $file, string $device, string $tempKey, ?int $actorId): BannerImage
     {
         $file = HookManager::applyFilters('sirsoft-hero_section.banner_image.filter_upload_file', $file);
 
@@ -69,12 +75,12 @@ class BannerImageService
 
         $this->storage->put(self::CATEGORY, $path, file_get_contents($file->getRealPath()));
 
-        $previous = $this->images->findByOwnerAndDevice($banner?->id, $banner ? null : $tempKey, $device);
+        $previous = $this->images->findByOwnerAndDevice(null, $tempKey, $device);
 
-        $image = DB::transaction(function () use ($banner, $tempKey, $device, $hash, $path, $file, $mime, $width, $height, $actorId) {
+        $image = DB::transaction(function () use ($tempKey, $device, $hash, $path, $file, $mime, $width, $height, $actorId) {
             return $this->images->create([
-                'banner_id' => $banner?->id,
-                'temp_key' => $banner ? null : $tempKey,
+                'banner_id' => null,
+                'temp_key' => $tempKey,
                 'device' => $device,
                 'hash' => $hash,
                 'disk' => $this->storage->getDisk(),
@@ -92,7 +98,7 @@ class BannerImageService
             $this->deleteImage($previous);
         }
 
-        HookManager::doAction('sirsoft-hero_section.banner_image.after_upload', $image, $banner);
+        HookManager::doAction('sirsoft-hero_section.banner_image.after_upload', $image);
 
         return $image;
     }
@@ -119,32 +125,92 @@ class BannerImageService
     }
 
     /**
-     * 배너들의 이미지 파일을 모두 지웁니다(행은 배너 삭제 때 함께 지워진다).
+     * 등록 화면 임시 묶음에서 기기별로 붙일 이미지를 고릅니다 — 보낸 ID 가 있으면 그것(null 이면 없음), 없으면 묶음의 가장 최근 이미지.
      *
-     * @param  array<int, int>  $bannerIds  배너 ID 목록
-     * @return int 지운 파일 수
+     * 기기마다 한 장만 고르므로, 교체 업로드 때 앞 이미지 삭제가 실패해 묶음에 같은 기기 이미지가 둘 남아도 하나만 붙는다.
+     *
+     * @param  string  $tempKey  임시 묶음 키
+     * @param  array<string, int|null>  $selected  기기 => 보낸 이미지 ID (키가 없으면 묶음에서 고른다)
+     * @return array<string, int|null> 기기 => 붙일 이미지 ID
      */
-    public function deleteFilesForBanners(array $bannerIds): int
+    public function resolveTempSelection(string $tempKey, array $selected): array
     {
-        $deleted = 0;
-        foreach ($this->images->forBanners($bannerIds) as $image) {
-            if ($this->deleteFile($image)) {
-                $deleted++;
-            }
+        $selection = [];
+        foreach (BannerDevice::cases() as $device) {
+            $selection[$device->value] = array_key_exists($device->value, $selected)
+                ? $selected[$device->value]
+                : $this->images->findByOwnerAndDevice(null, $tempKey, $device->value)?->id;
         }
 
-        return $deleted;
+        return $selection;
     }
 
     /**
-     * 배너에 연결된 이미지를 공개 응답으로 내보냅니다.
+     * 등록·수정 화면이 고른 이미지로 배너의 기기별 이미지를 맞춥니다 — 호출한 쪽 트랜잭션 안에서 부른다.
+     *
+     * 새 이미지는 배너에 붙이고, 지금 붙어 있던 이미지는 떼어 임시 이미지로 돌려 둔다. 떼어 낸 이미지의 파일은
+     * 트랜잭션이 끝난 뒤 `deleteImage()` 로 지우며, 그때 실패해도 임시 이미지로 남아 고아 임시 이미지 정리가 다시 지운다.
+     *
+     * @param  Banner  $banner  대상 배너
+     * @param  array<string, int|null>  $selection  기기 => 남길 이미지 ID (null 이면 그 기기 이미지 없음, 키가 없으면 그대로)
+     * @return array{changes: array<string, string>, released: array<int, BannerImage>} 바뀐 기기(replaced·removed)와 떼어 낸 이미지
+     */
+    public function applySelection(Banner $banner, array $selection): array
+    {
+        $changes = [];
+        $released = [];
+
+        foreach ($selection as $device => $imageId) {
+            $current = $this->images->findByOwnerAndDevice($banner->id, null, $device);
+            if ($current?->id === $imageId) {
+                continue;
+            }
+
+            if ($current !== null) {
+                $this->images->release($current, self::RELEASED_KEY_PREFIX.$banner->id);
+                $released[] = $current;
+            }
+
+            $next = $imageId !== null ? $this->images->find($imageId) : null;
+            if ($next !== null) {
+                $this->images->attach($next, $banner->id);
+            }
+
+            $changes[$device] = $next !== null ? 'replaced' : 'removed';
+        }
+
+        return ['changes' => $changes, 'released' => $released];
+    }
+
+    /**
+     * 지울 배너들의 이미지를 떼어 임시 이미지로 돌립니다 — 호출한 쪽 트랜잭션 안에서, 배너 행을 지우기 전에 부른다.
+     *
+     * 배너 행이 지워지면 이미지 행도 외래 키로 함께 지워지므로, 떼지 않으면 파일 삭제가 실패했을 때 아무도 찾지 못하는 파일이 남는다.
+     * 돌려준 이미지는 트랜잭션이 끝난 뒤 `deleteImage()` 로 지우고, 실패분은 고아 임시 이미지 정리가 다시 지운다.
+     *
+     * @param  array<int, int>  $bannerIds  배너 ID 목록
+     * @return array<int, BannerImage> 떼어 낸 이미지
+     */
+    public function releaseForBanners(array $bannerIds): array
+    {
+        $released = [];
+        foreach ($this->images->forBanners($bannerIds) as $image) {
+            $this->images->release($image, self::RELEASED_KEY_PREFIX.$image->banner_id);
+            $released[] = $image;
+        }
+
+        return $released;
+    }
+
+    /**
+     * 이미지를 공개 응답으로 내보냅니다 — 저장 전 미리보기를 위해 임시 업로드도 해시로 내보낸다(해시 64자는 추측할 수 없다).
      *
      * @param  string  $hash  공개 해시
      * @return StreamedResponse|null 이미지 응답 (없으면 null)
      */
     public function publicResponse(string $hash): ?StreamedResponse
     {
-        $image = $this->images->findPublicByHash($hash);
+        $image = $this->images->findByHash($hash);
         if ($image === null) {
             return null;
         }

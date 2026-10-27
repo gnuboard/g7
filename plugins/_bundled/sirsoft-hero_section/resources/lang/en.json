@@ -175,10 +175,7 @@
                 "pc_hint": "Recommended 1920×640 · up to {{mb}}MB · JPG, PNG, WEBP",
                 "mobile": "Mobile image",
                 "mobile_hint": "Optional · recommended 750×1000 · up to {{mb}}MB · Without it, mobile shows the PC image.",
-                "size_mismatch": "The uploaded image is {{width}}×{{height}}. It differs from the recommended size ({{recommended}}) and may be cropped on some screens.",
-                "remove_title": "Delete mobile image",
-                "remove_message": "Delete the mobile image? Mobile will then show the PC image.",
-                "delete_failed": "Could not delete the image. Please try again shortly."
+                "size_mismatch": "The uploaded image is {{width}}×{{height}}. It differs from the recommended size ({{recommended}}) and may be cropped on some screens."
             },
             "link_url": "Link URL",
             "link_url_placeholder": "/shop or https://example.com",

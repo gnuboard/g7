@@ -47,18 +47,28 @@ class PublicBannerImageTest extends PluginTestCase
     }
 
     /**
-     * 모르는 해시와 아직 배너에 연결되지 않은 임시 이미지는 404 다.
+     * 모르는 해시는 404 다.
      *
      * @scenario surface=image_unknown_hash_returns_404
      *
      * @return void 반환값 없음
      */
-    public function test_unknown_or_temp_hash_returns_404(): void
+    public function test_unknown_hash_returns_404(): void
     {
         $this->get($this->api('/images/'.Str::random(64)))->assertNotFound();
+    }
 
-        $temp = $this->uploadImage($this->fullAdmin(), 'pc', ['temp_key' => (string) Str::uuid()])->assertCreated()->json('data.id');
-        $hash = BannerImage::query()->whereKey($temp)->value('hash');
-        $this->get($this->api('/images/'.$hash))->assertNotFound();
+    /**
+     * 아직 배너에 붙지 않은 임시 이미지도 해시로 내보낸다 — 등록·수정 화면 업로더 썸네일과 미리보기가 저장 전에 그린다.
+     *
+     * @scenario surface=image_temp_hash_streams_for_preview
+     *
+     * @return void 반환값 없음
+     */
+    public function test_temp_hash_streams_for_preview(): void
+    {
+        $temp = $this->uploadImage($this->fullAdmin(), 'pc', ['temp_key' => (string) Str::uuid()])->assertCreated()->json('data');
+
+        $this->get($temp['url'])->assertOk();
     }
 }

@@ -1,8 +1,9 @@
 /**
  * @file hero_section_banner_form.test.tsx
  * @description 배너 등록·수정 화면의 계약 — 등록은 쿼리 위치와 새 임시 키로 시작, 수정은 원본을 한 번만 심는다, 기간 입력은
- * 「기간 지정」일 때만, 문구는 사이트 언어 탭, 업로드는 임시 키/배너 id 로 갈라 보낸다, 업로드 한도는 실제 한도(effective_mb),
- * 권장 크기와 다르면 안내만, 422 는 칸마다·위쪽 요약. (매니페스트 admin-screens.yaml)
+ * 「기간 지정」일 때만, 문구는 사이트 언어 탭, 업로드는 등록·수정 모두 임시 키로 보내고 이미지는 저장 때 바뀐다, 업로드 한도는
+ * 실제 한도(effective_mb), 권장 크기와 다르면 안내만, 422 는 칸마다·위쪽 요약, 미리보기는 관리자 템플릿에 있는 기본 컴포넌트로 그린다.
+ * (매니페스트 admin-screens.yaml)
  *
  * @vitest-environment node
  */
@@ -26,10 +27,10 @@ describe('배너 등록·수정 화면', () => {
     const reset = init.find((a) => a.if === '{{!route.id}}' && a.params?.form && typeof a.params.form === 'object');
     expect(reset.params.form.position).toBe("{{query.position === 'shop_hero' ? 'shop_hero' : 'home_hero'}}");
     expect(reset.params.form.images).toEqual({ pc: null, mobile: null });
+    // 임시 키는 등록·수정 모두 들어올 때마다 새로 만든다
     const temp = init.find((a) => a.params?.target === 'global' && a.params?.tempKey === '{{$uuid()}}');
-    expect(temp.if).toBe('{{!route.id}}');
-    // 저장 요청은 등록일 때만 temp_key 를 싣는다
-    expect(json(saveCall())).toContain('...(route.id ? {} : { temp_key: _global.tempKey })');
+    expect(temp.if).toBeUndefined();
+    expect(json(saveCall())).toContain('temp_key: _global.tempKey');
   });
 
   // @scenario surface=form_edit_initializes_once
@@ -70,22 +71,37 @@ describe('배너 등록·수정 화면', () => {
     expect(inputs.map((n) => n.props.maxLength)).toEqual([100, 300, 30, 200]);
   });
 
-  // @scenario surface=form_upload_endpoint_temp_or_banner
-  it('업로드는 플러그인 이미지 주소로, 등록은 temp_key·수정은 banner_id 를 기기와 함께 보낸다', () => {
+  // @scenario surface=form_images_apply_on_save
+  it('업로드는 등록·수정 모두 임시 키로만 보내고, 빼기는 화면에서만 — 이미지는 저장 요청의 이미지 ID 로 바뀐다', () => {
     for (const [id, device] of [['pc_image_uploader', 'pc'], ['mobile_image_uploader', 'mobile']]) {
       const uploader = findById(form, id)!;
       expect(uploader.name).toBe('FileUploader');
       expect(uploader.props.apiEndpoints.upload).toBe('/api/plugins/sirsoft-hero_section/admin/banner-images');
-      expect(uploader.props.uploadParams).toContain(`device: '${device}', banner_id: String(_local.form.id)`);
       expect(uploader.props.uploadParams).toContain(`device: '${device}', temp_key: _global.tempKey`);
+      expect(uploader.props.uploadParams).not.toContain('banner_id');
       expect(uploader.props.maxFiles).toBe(1);
       expect(json(uploader.actions)).toContain(`form.images.${device}`);
     }
-    // PC 는 서버에서 지우지 않는다(교체만), 모바일은 삭제 주소가 있다
+    // 빼기는 등록·수정 모두 화면에서만 — 서버 삭제 주소가 없다(저장이 남은 이미지 ID 만 붙인다)
     expect(findById(form, 'pc_image_uploader')!.props.apiEndpoints.delete).toBe('');
-    expect(findById(form, 'mobile_image_uploader')!.props.apiEndpoints.delete).toBe('/api/plugins/sirsoft-hero_section/admin/banner-images/:id');
+    expect(findById(form, 'mobile_image_uploader')!.props.apiEndpoints.delete).toBe('');
+    // 저장은 등록·수정 모두 화면에 남은 이미지 ID 를 보낸다(모바일을 뺐으면 null)
+    const body = json(saveCall());
+    expect(body).toContain('pc_image_id: _local.form?.images?.pc?.id');
+    expect(body).toContain('mobile_image_id: _local.form?.images?.mobile?.id ?? null');
     // PC 이미지가 없으면 저장 단추가 잠긴다
     expect(findById(form, 'footer_save_button')!.props.disabled).toContain('!_local.form?.images?.pc');
+  });
+
+  describe('[case:components-misc-basic-component-missing-in-template] 템플릿에 없는 기본 컴포넌트', () => {
+    // @scenario surface=form_preview_renders_admin_component
+    it('미리보기 칸은 관리자 템플릿에 있는 기본 컴포넌트(Section)로 그린다 — 없는 이름(Aside)은 화면에서 조용히 빠진다', () => {
+      const card = findById(form, 'preview_card')!;
+      expect(card.name).toBe('Section');
+      expect(collect(form, (n) => n.name === 'Aside')).toHaveLength(0);
+      // 미리보기 슬라이더는 그 칸 안에 있다
+      expect(collect(card, (n) => n.id === 'form_preview')).toHaveLength(1);
+    });
   });
 
   // @scenario surface=form_upload_limit_uses_effective_mb
@@ -138,8 +154,8 @@ describe('배너 등록·수정 화면', () => {
     expect(actionsOf(cancel, 'navigate')[0].params.mergeQuery).toBe(true);
   });
 
-  // @scenario surface=form_upload_endpoint_temp_or_banner
-  it('화면 갈래(등록/수정)는 렌더 값에서 route.id 대신 폼에 심긴 배너 id 로 판정한다', () => {
+  // @scenario surface=form_images_apply_on_save
+  it('업로드 값은 화면 갈래(등록/수정)를 가리지 않는다', () => {
     for (const id of ['pc_image_uploader', 'mobile_image_uploader']) {
       expect(findById(form, id)!.props.uploadParams).not.toContain('route.id');
     }

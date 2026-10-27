@@ -10,6 +10,9 @@ return [
     'pc_image' => [
         'required' => 'Please upload a PC image.',
     ],
+    'image_selection' => [
+        'invalid' => 'The selected image could not be found. Upload the image again and save.',
+    ],
     'file' => [
         'server_limit' => 'The file exceeds the server upload limit (:mbMB). Upload a smaller file or ask your server administrator to raise the PHP upload limit.',
         'max' => 'The image must be :mbMB or smaller.',
@@ -18,6 +21,7 @@ return [
     ],
     'attributes' => [
         'pc_image' => 'PC image',
+        'mobile_image' => 'mobile image',
         'position' => 'position',
         'status' => 'status',
         'search' => 'search',
@@ -42,7 +46,6 @@ return [
         'link_url' => 'link URL',
         'link_new_window' => 'open in new window',
         'temp_key' => 'temporary upload key',
-        'banner_id' => 'banner',
         'file' => 'image file',
         'device' => 'device',
         'autoplay' => 'autoplay',

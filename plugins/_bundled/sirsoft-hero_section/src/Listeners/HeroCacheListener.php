@@ -4,7 +4,6 @@ namespace Plugins\Sirsoft\HeroSection\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
-use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
 
@@ -32,8 +31,6 @@ class HeroCacheListener implements HookListenerInterface
             'sirsoft-hero_section.banner.after_bulk_status' => ['method' => 'onBulkStatus'] + $sync,
             'sirsoft-hero_section.banner.after_bulk_delete' => ['method' => 'onBulkDelete'] + $sync,
             'sirsoft-hero_section.banner.after_reorder' => ['method' => 'onReorder'] + $sync,
-            'sirsoft-hero_section.banner_image.after_upload' => ['method' => 'onImageUploaded'] + $sync,
-            'sirsoft-hero_section.banner_image.after_delete' => ['method' => 'onImageDeleted'] + $sync,
             'sirsoft-hero_section.position_setting.after_update' => ['method' => 'onPositionSetting'] + $sync,
             'core.plugin_settings.after_save' => ['method' => 'onPluginSettingsSaved'] + $sync,
             'core.plugin_settings.after_reset' => ['method' => 'onPluginSettingsSaved'] + $sync,
@@ -129,34 +126,6 @@ class HeroCacheListener implements HookListenerInterface
     public function onReorder(string $position, array $ids = []): void
     {
         $this->hero->invalidate($position);
-    }
-
-    /**
-     * 배너 이미지 교체 뒤 그 배너 위치 캐시를 비웁니다(임시 업로드는 무시).
-     *
-     * @param  BannerImage  $image  올린 이미지
-     * @param  Banner|null  $banner  대상 배너
-     * @return void 반환값 없음
-     */
-    public function onImageUploaded(BannerImage $image, ?Banner $banner = null): void
-    {
-        if ($banner !== null) {
-            $this->hero->invalidate($banner->position);
-        }
-    }
-
-    /**
-     * 배너 이미지 삭제 뒤 그 배너 위치 캐시를 비웁니다(임시 업로드 정리는 모든 위치에 무관).
-     *
-     * @param  array<string, mixed>  $snapshot  삭제 전 이미지 값
-     * @return void 반환값 없음
-     */
-    public function onImageDeleted(array $snapshot): void
-    {
-        if (! empty($snapshot['banner_id'])) {
-            // 이미지 행만으로는 위치를 모르므로 모든 위치를 비운다(이미지 삭제는 드물다)
-            $this->hero->invalidate();
-        }
     }
 
     /**

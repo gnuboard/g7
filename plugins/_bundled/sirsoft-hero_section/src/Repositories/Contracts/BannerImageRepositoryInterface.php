@@ -31,12 +31,20 @@ interface BannerImageRepositoryInterface
     public function findOrFail(int $id): BannerImage;
 
     /**
-     * 공개 해시로 배너에 연결된 이미지를 찾습니다(임시 업로드는 공개하지 않는다).
+     * id 로 이미지를 찾습니다.
+     *
+     * @param  int  $id  이미지 ID
+     * @return BannerImage|null 이미지 (없으면 null)
+     */
+    public function find(int $id): ?BannerImage;
+
+    /**
+     * 공개 해시로 이미지를 찾습니다 — 저장 전 미리보기가 임시 업로드도 그려야 해서 연결 여부를 가리지 않는다.
      *
      * @param  string  $hash  공개 해시
      * @return BannerImage|null 이미지
      */
-    public function findPublicByHash(string $hash): ?BannerImage;
+    public function findByHash(string $hash): ?BannerImage;
 
     /**
      * 배너 또는 임시 묶음의 기기별 이미지를 찾습니다.
@@ -49,13 +57,22 @@ interface BannerImageRepositoryInterface
     public function findByOwnerAndDevice(?int $bannerId, ?string $tempKey, string $device): ?BannerImage;
 
     /**
-     * 임시 업로드를 배너에 연결합니다.
+     * 이미지 한 장을 배너에 붙입니다(임시 묶음에서 뺀다).
      *
-     * @param  string  $tempKey  임시 업로드 묶음 키
+     * @param  BannerImage  $image  붙일 이미지
      * @param  int  $bannerId  배너 ID
-     * @return int 연결한 건수
+     * @return void 반환값 없음
      */
-    public function linkTempImages(string $tempKey, int $bannerId): int;
+    public function attach(BannerImage $image, int $bannerId): void;
+
+    /**
+     * 이미지를 배너에서 떼어 임시 이미지로 돌립니다 — 파일 삭제가 실패해도 고아 임시 이미지 정리가 다시 지운다.
+     *
+     * @param  BannerImage  $image  뗄 이미지
+     * @param  string  $tempKey  돌려 둘 임시 묶음 키
+     * @return void 반환값 없음
+     */
+    public function release(BannerImage $image, string $tempKey): void;
 
     /**
      * 배너들의 이미지를 모두 반환합니다.

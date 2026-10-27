@@ -3,7 +3,7 @@ feature: 히어로섹션 공개 API (위치별 노출 배너·이미지·캐시)
 description: |
   사용자 화면 확장점이 부르는 공개 API. 노출중 배너만 순서대로, 요청 언어 → 사이트 기본 언어 → en 순으로 문구를 고르고,
   alt 는 alt → 제목 순으로 대체한다(D9). 운영 정보(사용 여부·기간·작성자)는 싣지 않는다.
-  이미지는 해시 주소로 래스터만 인라인 응답한다.
+  이미지는 해시 주소로 래스터만 인라인 응답한다(저장 전 미리보기를 위해 임시 업로드도 포함).
   캐시는 위치·언어별이며 노출 기간 경계와 충돌하지 않게 두 겹으로 막는다 — 만료 = min(설정 시간, 다음 시작·종료 시각),
   꺼낼 때 now 로 기간을 다시 거름. 관리자 저장·삭제·일괄·순서·이미지·슬라이더 설정·플러그인 설정 변경과
   플러그인 비활성화 때 비운다. 판정·캐시 경계·관리자 표시는 모두 UTC 기준이고 사이트 시간대는 입력·표시에서만 변환한다.
@@ -32,6 +32,7 @@ axes:
     - omits_internal_fields
     - image_streams_inline_raster
     - image_unknown_hash_returns_404
+    - image_temp_hash_streams_for_preview
     - cache_reused_within_ttl
     - cache_ttl_capped_at_next_start
     - cache_ttl_capped_at_next_end

@@ -9,11 +9,11 @@
   },
   "sirsoft-hero_section.banners.read": {
     "name": "バナー閲覧",
-    "description": "バナーの一覧·詳細·プレビューを表示します。"
+    "description": "バナー一覧·詳細·プレビューを表示します。"
   },
   "sirsoft-hero_section.banners.update": {
     "name": "バナー登録·編集",
-    "description": "バナーの登録·編集·順序変更·表示切り替え·画像アップロードとスライダー設定を行います。"
+    "description": "バナー登録·編集·順序変更·表示切り替え·画像アップロードとスライダー設定を行います。"
   },
   "sirsoft-hero_section.banners.delete": {
     "name": "バナー削除",

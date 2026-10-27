@@ -8,7 +8,6 @@ use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
-use Plugins\Sirsoft\HeroSection\Models\BannerImage;
 use Plugins\Sirsoft\HeroSection\Models\PositionSetting;
 use Plugins\Sirsoft\HeroSection\Repositories\Contracts\BannerRepositoryInterface;
 
@@ -41,7 +40,7 @@ class BannerActivityLogListener implements HookListenerInterface
             'sirsoft-hero_section.banner.after_bulk_status' => ['method' => 'handleBulkStatus', 'priority' => 20],
             'sirsoft-hero_section.banner.after_bulk_delete' => ['method' => 'handleBulkDelete', 'priority' => 20],
             'sirsoft-hero_section.banner.after_reorder' => ['method' => 'handleReordered', 'priority' => 20],
-            'sirsoft-hero_section.banner_image.after_upload' => ['method' => 'handleImageUploaded', 'priority' => 20],
+            'sirsoft-hero_section.banner_image.after_change' => ['method' => 'handleImageChanged', 'priority' => 20],
             'sirsoft-hero_section.position_setting.after_update' => ['method' => 'handlePositionSetting', 'priority' => 20],
         ];
     }
@@ -167,23 +166,22 @@ class BannerActivityLogListener implements HookListenerInterface
     }
 
     /**
-     * 저장된 배너의 이미지 교체를 기록합니다(등록 화면 임시 업로드는 기록하지 않는다).
+     * 배너 수정 저장으로 바뀐 기기별 이미지를 기록합니다(업로드만 하고 저장하지 않은 이미지는 기록하지 않는다).
      *
-     * @param  BannerImage  $image  올린 이미지
-     * @param  Banner|null  $banner  대상 배너
+     * @param  Banner  $banner  수정한 배너
+     * @param  string  $device  기기 (pc, mobile)
+     * @param  string  $change  replaced(교체) 또는 removed(뺌)
      * @return void 반환값 없음
      */
-    public function handleImageUploaded(BannerImage $image, ?Banner $banner = null): void
+    public function handleImageChanged(Banner $banner, string $device, string $change = 'replaced'): void
     {
-        if ($banner === null) {
-            return;
-        }
+        $action = $change === 'removed' ? 'image_remove' : 'image_update';
 
-        $this->logActivity('hero_banner.image_update', [
+        $this->logActivity('hero_banner.'.$action, [
             'loggable' => $banner,
-            'description_key' => self::KEY.'hero_banner_image_update',
-            'description_params' => ['banner_id' => $banner->id, 'device' => $image->device],
-            'properties' => ['name' => $banner->title, 'device' => $image->device],
+            'description_key' => self::KEY.'hero_banner_'.$action,
+            'description_params' => ['banner_id' => $banner->id, 'device' => $device],
+            'properties' => ['name' => $banner->title, 'device' => $device],
         ]);
     }
 

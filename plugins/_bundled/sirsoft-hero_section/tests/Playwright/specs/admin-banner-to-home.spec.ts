@@ -183,5 +183,54 @@ for (const viewport of ['desktop', 'mobile'] as const) {
       // 영구 삭제 — 공개 이미지 주소도 더는 열리지 않는다
       expect((await request.get(imageUrl)).status()).toBe(404);
     });
+
+    // @scenario flow=edit_image_applies_on_save, viewport=desktop
+    // @scenario flow=edit_image_applies_on_save, viewport=mobile
+    // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+    test(`수정 화면에서 바꾼 이미지는 [저장] 전에는 홈에 반영되지 않고, 저장하면 바뀐다 (${viewport})`, async ({ page, request, managerToken, created }) => {
+      const errors: string[] = [];
+      page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+      const title = uniqueTitle('이미지');
+      const id = await createBanner(request, managerToken, { title: { ko: title } });
+      created.push(id);
+      const publicImage = async (): Promise<string | undefined> => {
+        const res = await request.get(`${API}/hero?position=home_hero`, { headers: { Accept: 'application/json' } });
+        const banners = (await res.json()).data.banners as Array<{ title: string; images: { pc: { url: string } } }>;
+        return banners.find((b) => b.title === title)?.images.pc.url;
+      };
+      const before = await publicImage();
+      expect(before).toBeTruthy();
+
+      await authenticatePage(page, managerToken);
+      await page.setViewportSize(VIEWPORTS.desktop);
+      await page.goto(`${ADMIN_LIST}/${id}/edit`);
+      await expect(page.locator('#footer_save_button')).toBeEnabled({ timeout: 30_000 });
+      // PC 업로더는 1장이 차 있으면 올리기 칸이 없다 — 운영자처럼 [삭제]로 화면에서 뺀 뒤 새로 올린다(서버는 아직 그대로)
+      await page.locator('#pc_image_uploader').getByRole('button', { name: '삭제' }).click();
+      await expect(page.locator('#footer_save_button')).toBeDisabled();
+      expect(await publicImage()).toBe(before);
+      const uploaded = page.waitForResponse((r) => r.url().includes(`${API}/admin/banner-images`) && r.request().method() === 'POST');
+      await page.locator('#pc_image_uploader input[type="file"]').setInputFiles({ name: 'e2e-pc-new.png', mimeType: 'image/png', buffer: PNG_1X1 });
+      const upload = await uploaded;
+      expect(upload.status()).toBe(201);
+      const next = (await upload.json()).data.url as string;
+      // 저장 전 미리보기는 올린 이미지를 그린다(임시 이미지도 공개 주소로 열린다)
+      await expect(page.locator(`section[aria-labelledby="hero_form_preview_heading"] img.hs__image[src="${next}"]`)).toBeVisible({ timeout: 20_000 });
+
+      // 올리기만 해서는 사용자 화면이 바뀌지 않는다
+      expect(await publicImage()).toBe(before);
+
+      const saved = page.waitForResponse((r) => r.url().endsWith(`${API}/admin/banners/${id}`) && r.request().method() === 'PUT');
+      await page.locator('#footer_save_button').click();
+      expect((await saved).status()).toBe(200);
+      await expect(page).toHaveURL(/\/admin\/plugins\/sirsoft-hero_section\/banners\?/, { timeout: 30_000 });
+
+      expect(await publicImage()).toBe(next);
+      // 옛 이미지는 지워졌다
+      expect((await request.get(before!)).status()).toBe(404);
+      expect(await homeTitles(page, viewport)).toContain(title);
+      await expect(page.locator(`section.hs img.hs__image[src="${next}"]`)).toHaveCount(1);
+      expect(errors.filter((e) => !/favicon/i.test(e))).toEqual([]);
+    });
   });
 }

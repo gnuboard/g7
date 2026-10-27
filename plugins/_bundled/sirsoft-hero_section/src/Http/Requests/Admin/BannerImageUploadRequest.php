@@ -6,12 +6,12 @@ use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Plugins\Sirsoft\HeroSection\Enums\BannerDevice;
-use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Support\UploadLimit;
 
 /**
  * 배너 이미지 업로드 요청 — 형식 JPG·PNG·WEBP, 최대 용량은 설정과 서버 PHP 한도 중 작은 값.
  *
+ * 업로드는 언제나 임시 묶음(temp_key)에 들어가고 배너에는 등록·수정 저장 때 붙는다 — 저장 전에는 사이트 화면이 바뀌지 않는다.
  * 권장 크기(PC 1920×640, 모바일 750×1000)는 강제하지 않는다 — 화면이 응답 크기로 안내만 한다.
  * PHP 한도를 넘으면 파일이 라라벨에 닿기 전에 잘리므로 그 경우를 가려 전용 안내로 답한다.
  */
@@ -47,8 +47,7 @@ class BannerImageUploadRequest extends FormRequest
         return [
             'file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp', 'max:'.$maxKb, 'dimensions:max_width=4000,max_height=4000'],
             'device' => ['required', Rule::enum(BannerDevice::class)],
-            'temp_key' => ['required_without:banner_id', 'prohibits:banner_id', 'nullable', 'string', 'max:64'],
-            'banner_id' => ['required_without:temp_key', 'nullable', 'integer', Rule::exists(Banner::class, 'id')],
+            'temp_key' => ['required', 'string', 'max:64'],
         ];
     }
 
@@ -97,7 +96,6 @@ class BannerImageUploadRequest extends FormRequest
             'file' => __('sirsoft-hero_section::validation.attributes.file'),
             'device' => __('sirsoft-hero_section::validation.attributes.device'),
             'temp_key' => __('sirsoft-hero_section::validation.attributes.temp_key'),
-            'banner_id' => __('sirsoft-hero_section::validation.attributes.banner_id'),
         ];
     }
 }

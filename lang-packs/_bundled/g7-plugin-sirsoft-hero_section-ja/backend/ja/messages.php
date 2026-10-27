@@ -7,14 +7,14 @@ return [
         'updated' => 'バナーを編集しました。',
         'deleted' => 'バナーを削除しました。',
         'reordered' => 'バナーの順序を変更しました。',
-        'bulk_status' => 'バナー:count個の表示有無を変更しました。',
-        'bulk_deleted' => 'バナー:count個を削除しました。',
+        'bulk_status' => 'バナー :count個の表示非表示を変更しました。',
+        'bulk_deleted' => 'バナー :count個を削除しました。',
     ],
     'image' => [
         'uploaded' => '画像をアップロードしました。',
         'deleted' => '画像を削除しました。',
         'delete_failed' => '画像ファイルを削除できませんでした。しばらく経ってからもう一度お試しください。',
-        'pc_not_deletable' => 'PC画像は必須のため削除できません。新しい画像をアップロードして置き換えてください。',
+        'attached_not_deletable' => 'バナーに付属した画像はここで削除できません。バナー編集画面で変更して保存してください。',
         'not_found' => '画像が見つかりません。',
     ],
     'position' => [
@@ -25,8 +25,8 @@ return [
     'console' => [
         'prune_temp_images' => [
             'retention_disabled' => '保持期間が1日より短いため、一時画像をクリーンアップしません。',
-            'dry_run' => ':days日より前の一時画像:count個がクリーンアップ対象です。',
-            'done' => ':days日より前の一時画像:scanned個中:deleted個を削除しました(失敗:failed個)。',
+            'dry_run' => ':days日より古い一時画像 :count個がクリーンアップの対象です。',
+            'done' => ':days日より古い一時画像 :scanned個中 :deleted個を削除しました(失敗 :failed個)。',
         ],
     ],
 ];

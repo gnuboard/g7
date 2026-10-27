@@ -25,7 +25,8 @@ axes:
     - form_edit_initializes_once
     - form_period_inputs_toggle
     - form_multilingual_tabs_active_locales
-    - form_upload_endpoint_temp_or_banner
+    - form_images_apply_on_save
+    - form_preview_renders_admin_component
     - form_upload_limit_uses_effective_mb
     - form_recommended_size_warning
     - form_validation_errors_render

@@ -9,7 +9,9 @@ description: |
   - 링크는 `//`·`/\` 로 시작하는 외부 유출 주소를 거부한다.
   - 업로드 한도는 min(설정, PHP upload_max_filesize, post_max_size) 이며 PHP 한도 초과는 전용 안내로 응답한다.
   - 순서 변경(D12)은 그 위치 전체 id 집합만 받는다.
-  - 이미지: 임시 키 업로드·같은 기기 교체·형식/용량, PC 는 삭제 불가·모바일은 삭제 가능.
+  - 이미지: 업로드는 언제나 임시 키 묶음(같은 기기 교체·형식/용량), 이미지 API 는 임시 이미지만 지운다.
+  - 등록·수정 화면 이미지는 「저장」 때만 반영 — 고른 이미지 ID 로 붙이고 옛 이미지는 떼어 지운다.
+    옛 파일 삭제가 실패하면 임시 이미지로 남아 정리 명령이 다시 지운다. 다른 배너·다른 화면의 이미지는 고를 수 없다.
   - 위치 설정: 행이 없으면 기본값, 저장 때 upsert, 간격은 3·5·7초.
   - 기간 입력은 사이트 시간대로 받아 UTC 로 저장한다(쿠폰 발급 기간 규약).
   모든 쓰기는 before/after 훅을 발행하고 공개 캐시(해당 위치)를 지운다.
@@ -52,10 +54,20 @@ axes:
     - reorder_rejects_other_position_id
     - image_upload_with_temp_key
     - image_upload_replaces_same_device
+    - image_upload_requires_temp_key
     - image_upload_rejects_type_and_size
     - image_upload_over_server_limit_message
-    - image_pc_cannot_be_deleted
-    - image_mobile_can_be_deleted
+    - image_attached_cannot_be_deleted
+    - image_temp_can_be_deleted
+    - update_image_upload_not_applied_until_save
+    - update_image_replaced_on_save
+    - update_image_mobile_removed_on_save
+    - update_image_kept_when_ids_omitted
+    - update_image_rejects_foreign_image
+    - update_image_release_failure_left_for_prune
+    - destroy_file_failure_left_for_prune
+    - store_links_one_image_per_device
+    - store_respects_selected_images
     - position_settings_reports_upload_limits
     - position_settings_default_when_missing
     - position_settings_upsert
@@ -71,6 +83,7 @@ effects:
 test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerControllerTest.php
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerImageControllerTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerImageSaveTest.php
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/PositionSettingControllerTest.php
   - plugins/_bundled/sirsoft-hero_section/tests/Unit/Requests/BannerRequestTest.php
   - plugins/_bundled/sirsoft-hero_section/tests/Unit/Listeners/BannerActivityLogListenerTest.php

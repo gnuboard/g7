@@ -175,10 +175,7 @@
                 "pc_hint": "권장 1920×640 · 최대 {{mb}}MB · JPG·PNG·WEBP",
                 "mobile": "모바일 이미지",
                 "mobile_hint": "선택 · 권장 750×1000 · 최대 {{mb}}MB · 등록하지 않으면 모바일에서도 PC 이미지를 사용합니다.",
-                "size_mismatch": "올린 이미지는 {{width}}×{{height}} 입니다. 권장 크기({{recommended}})와 달라 화면에 따라 잘려 보일 수 있습니다.",
-                "remove_title": "모바일 이미지 삭제",
-                "remove_message": "모바일 이미지를 삭제할까요? 삭제하면 모바일에서도 PC 이미지가 보입니다.",
-                "delete_failed": "이미지를 삭제하지 못했습니다. 잠시 뒤 다시 시도해 주세요."
+                "size_mismatch": "올린 이미지는 {{width}}×{{height}} 입니다. 권장 크기({{recommended}})와 달라 화면에 따라 잘려 보일 수 있습니다."
             },
             "link_url": "이동할 주소",
             "link_url_placeholder": "/shop 또는 https://example.com",

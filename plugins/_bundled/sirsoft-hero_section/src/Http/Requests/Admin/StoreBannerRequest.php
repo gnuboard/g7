@@ -4,11 +4,14 @@ namespace Plugins\Sirsoft\HeroSection\Http\Requests\Admin;
 
 use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
+use Plugins\Sirsoft\HeroSection\Enums\BannerDevice;
 use Plugins\Sirsoft\HeroSection\Http\Requests\Concerns\BannerFieldRules;
 use Plugins\Sirsoft\HeroSection\Rules\PcImagePresent;
+use Plugins\Sirsoft\HeroSection\Rules\SelectableBannerImage;
 
 /**
- * 배너 등록 요청 — 등록 화면이 만든 임시 묶음(temp_key)에 PC 이미지가 올라와 있어야 한다.
+ * 배너 등록 요청 — 등록 화면이 만든 임시 묶음(temp_key)에 PC 이미지가 올라와 있어야 한다. 화면에 남은 이미지 ID(pc_image_id·
+ * mobile_image_id)를 보내면 그것만 붙고(모바일 null 은 붙이지 않음), 보내지 않은 기기는 묶음의 가장 최근 이미지가 붙는다.
  */
 class StoreBannerRequest extends FormRequest
 {
@@ -41,8 +44,12 @@ class StoreBannerRequest extends FormRequest
      */
     public function rules(): array
     {
+        $tempKey = is_string($this->input('temp_key')) ? $this->input('temp_key') : null;
+
         $rules = $this->bannerRules() + [
             'temp_key' => ['required', 'string', 'max:64', new PcImagePresent],
+            'pc_image_id' => ['sometimes', 'required', 'integer', new SelectableBannerImage(BannerDevice::Pc, null, $tempKey)],
+            'mobile_image_id' => ['sometimes', 'nullable', 'integer', new SelectableBannerImage(BannerDevice::Mobile, null, $tempKey)],
         ];
 
         return HookManager::applyFilters('sirsoft-hero_section.banner.store_validation_rules', $rules, $this);
@@ -88,6 +95,8 @@ class StoreBannerRequest extends FormRequest
             'link_url' => __('sirsoft-hero_section::validation.attributes.link_url'),
             'link_new_window' => __('sirsoft-hero_section::validation.attributes.link_new_window'),
             'temp_key' => __('sirsoft-hero_section::validation.attributes.temp_key'),
+            'pc_image_id' => __('sirsoft-hero_section::validation.attributes.pc_image'),
+            'mobile_image_id' => __('sirsoft-hero_section::validation.attributes.mobile_image'),
         ];
     }
 }
