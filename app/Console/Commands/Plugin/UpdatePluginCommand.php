@@ -5,6 +5,7 @@ namespace App\Console\Commands\Plugin;
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RebuildsSearchIndex;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Console\Commands\Traits\ReportsIntegrationNotices;
@@ -21,6 +22,7 @@ class UpdatePluginCommand extends Command
 {
     use HasProgressBar;
     use HasUnifiedConfirm;
+    use LocalizesDescription;
     use RebuildsSearchIndex;
     use RendersLayoutSyncResult;
     use ReportsIntegrationNotices;
@@ -40,11 +42,6 @@ class UpdatePluginCommand extends Command
         {--zip= : 외부 ZIP 파일 경로 (지정 시 GitHub/번들 우회 + 버전은 plugin.json 기준)}
         {--layout-source= : 레이아웃 설치 소스 (auto|json) — 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따름. json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}
         {--rebuild-search-index : 완료 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
-
-    /**
-     * 커맨드 설명
-     */
-    protected $description = '플러그인을 최신 버전으로 업데이트합니다';
 
     /**
      * 플러그인 관리자 및 리포지토리

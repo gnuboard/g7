@@ -32,6 +32,13 @@ return [
         'zip_missing_version' => 'Manifest :file inside ZIP has no version field.',
         'not_found' => 'Extension (:identifier) not found.',
         'cascade_dependency_failed' => 'Failed to install cascade dependency :type (:identifier): :message',
+        'unknown_error' => 'An unknown error occurred.',
+        'cascade_dependency_activation_failed' => 'Failed to activate dependency :identifier: :reason',
+        'cascade_dependencies_kept' => 'Dependencies installed or activated along the way were kept, not rolled back: :list',
+        'cascade_dependency_unmet_list' => 'Required dependencies are not met — :list',
+        'cascade_dependency_cycle' => 'Dependencies form a cycle: :cycle',
+        'cascade_dependency_not_found' => 'Dependency :identifier required by :required_by was not found.',
+        'cascade_dependency_version' => ':identifier :version does not satisfy the version (:required) required by :required_by.',
         'cascade_permission_denied' => 'You do not have permission to install or activate the :type (:identifier) selected for installation together.',
         'invalid_type' => 'Invalid extension type.',
         'not_auto_deactivated' => 'This extension was not automatically deactivated due to core version incompatibility.',
@@ -140,6 +147,19 @@ return [
     ],
 
     'commands' => [
+        // Cascade options of the install commands (--with-dependencies · --with-language-packs)
+        'cascade' => [
+            'dependency_unmet' => 'Dependency not met: :identifier (requires :required, currently :state)',
+            'use_with_dependencies' => 'Use --with-dependencies to install and activate it together.',
+            'state_install_activate' => 'not installed',
+            'state_activate' => 'inactive',
+            'dependency_step' => 'Dependency :identifier is :action — handling it together (required by :required_by)',
+            'dependencies_done' => 'Dependencies done — :installed installed, :activated activated',
+            'language_pack_failed' => 'Language pack :identifier failed to install: :reason',
+            'language_pack_awaiting' => 'Language pack :identifier will turn on when its target extension is activated.',
+            'language_packs_done' => ':count language packs installed',
+            'language_pack_not_candidate' => 'Not a language pack that can be installed with it: :list',
+        ],
         'clear_cache_success' => 'Extension version check cache has been cleared.',
 
         // Shared option validation and ZIP notices for module:update / plugin:update / template:update

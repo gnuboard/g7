@@ -35,6 +35,7 @@ return [
         'install' => 'インストール',
         'register' => '会員登録',
         'admin_create' => '管理者による登録',
+        'console' => 'サーバーターミナルでの再設定',
     ],
     'password_expiry_target' => [
         'admin' => '管理者',
@@ -207,4 +208,21 @@ return [
     'bulk_roles_updated_with_unchanged' => ':count名のロールを変更しました。(除外 :skipped名、反映済みのため変更なし :unchanged名)',
     'bulk_roles_failed' => '会員のロール一括変更に失敗しました。',
     'bulk_roles_ceiling' => '自分が付与できない権限を含むロールが含まれているため、処理しませんでした。',
+    'commands' => [
+        'reset_password' => [
+            'not_found' => '会員が見つかりません: :email',
+            'no_source' => '新しいパスワードがありません。環境変数 G7_RESET_PASSWORD、--password-file、--generate のいずれかを使うか、ターミナルで実行してください。',
+            'file_unreadable' => 'パスワードファイルを読み込めません: :path',
+            'ask' => '新しいパスワード',
+            'ask_confirm' => '新しいパスワード(確認)',
+            'mismatch' => '2つのパスワードが一致しません。',
+            'done' => ':email のパスワードを再設定しました。',
+            'unlocked' => 'ログイン失敗回数・ロックを解除しました。',
+            'sessions_revoked' => 'すべての端末からログアウトしました。',
+            'notified' => 'パスワード変更の通知を送信しました(通知設定に従います)。',
+            'change_required' => '次回ログイン時にパスワードを変更するようにしました。',
+            'generated_once' => '以下のパスワードは二度と表示できません — 今すぐ安全な場所に控えてください。',
+            'failed' => 'パスワードを再設定できませんでした(何も変更されていません): :reason',
+        ],
+    ],
 ];

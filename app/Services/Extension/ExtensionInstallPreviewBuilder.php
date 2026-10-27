@@ -64,7 +64,11 @@ class ExtensionInstallPreviewBuilder
             && (isset($rawDependencies['modules']) || isset($rawDependencies['plugins']))) {
             $rawDependencies = DependencyEnricher::enrich($rawDependencies);
         }
-        $dependencies = $this->buildDependencies($rawDependencies);
+        $dependencies = $this->appendTransitiveDependencies(
+            $scope,
+            $identifier,
+            $this->buildDependencies($rawDependencies)
+        );
         $languagePacks = $this->buildLanguagePacks($scope, $identifier, $dependencies);
         $integrations = $this->buildIntegrations($info);
 
@@ -183,6 +187,71 @@ class ExtensionInstallPreviewBuilder
         }
 
         return $result;
+    }
+
+    /**
+     * 의존의 의존(2단계 이상)을 직접 의존 뒤에 덧붙입니다 — 설치할 때 함께 설치·활성화해야 하는 확장.
+     *
+     * 해석은 설치가 실제로 쓰는 연쇄 설치 서비스와 같다(CascadeInstallOrchestrator::resolveDependencyPlan) —
+     * 미리보기와 설치가 서로 다른 목록을 보지 않게. 직접 의존 행은 그대로 두고, 없던 행만 같은 모양으로 더한다.
+     *
+     * @param  LanguagePackScope  $scope  본 확장 스코프
+     * @param  string  $identifier  본 확장 식별자
+     * @param  array<int, array<string, mixed>>  $direct  직접 의존 행
+     * @return array<int, array<string, mixed>> 직접 + 추이 의존 행
+     */
+    private function appendTransitiveDependencies(LanguagePackScope $scope, string $identifier, array $direct): array
+    {
+        $known = [];
+        foreach ($direct as $dep) {
+            $known[($dep['type'] ?? '').':'.($dep['identifier'] ?? '')] = true;
+        }
+
+        $plan = app(CascadeInstallOrchestrator::class)->resolveDependencyPlan($scope->value, $identifier);
+        foreach ($plan['steps'] as $step) {
+            if (isset($known[$step['type'].':'.$step['identifier']])) {
+                continue;
+            }
+
+            $isInstalled = $step['action'] === 'activate';
+            $canSelect = $this->authorizer->canSelectDependency($step['type'], $isInstalled);
+            $direct[] = [
+                'type' => $step['type'],
+                'identifier' => $step['identifier'],
+                'name' => $this->dependencyName($step['type'], $step['identifier']),
+                'required_version' => $step['required_version'],
+                'installed_version' => $step['installed_version'],
+                'is_installed' => $isInstalled,
+                'is_active' => false,
+                'is_met' => false,
+                'available' => true,
+                'default_selected' => ! $isInstalled && $canSelect,
+                'can_select' => $canSelect,
+                // 어느 의존 확장 때문에 필요한지 — 2단계 의존 행 구분용
+                'required_by' => $step['required_by'],
+            ];
+        }
+
+        return $direct;
+    }
+
+    /**
+     * 의존 확장 표시 이름 (현재 로케일, 없으면 식별자).
+     *
+     * @param  string  $type  module|plugin
+     * @param  string  $identifier  식별자
+     * @return string 이름
+     */
+    private function dependencyName(string $type, string $identifier): string
+    {
+        $info = $type === 'module' ? $this->moduleService->getModuleInfo($identifier) : $this->pluginService->getPluginInfo($identifier);
+        $name = $info['name'] ?? null;
+
+        if (is_array($name)) {
+            return (string) ($name[app()->getLocale()] ?? $name['ko'] ?? $name['en'] ?? $identifier);
+        }
+
+        return is_string($name) && $name !== '' ? $name : $identifier;
     }
 
     /**

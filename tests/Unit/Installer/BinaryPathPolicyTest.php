@@ -20,6 +20,11 @@ use PHPUnit\Framework\TestCase;
  */
 class BinaryPathPolicyTest extends TestCase
 {
+    /**
+     * 클래스 공통 준비 — 검사 대상 파일을 한 번 로드한다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         require_once dirname(__DIR__, 3).'/public/install/includes/binary-path-policy.php';
@@ -34,6 +39,8 @@ class BinaryPathPolicyTest extends TestCase
      * @scenario vector=validatePhpPath, payload_class=normal, expected_outcome=accept_normal
      *
      * @effects legitimate_paths_still_reach_exec
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('shapeAllowedProvider')]
@@ -56,6 +63,8 @@ class BinaryPathPolicyTest extends TestCase
      * @effects leading_hyphen_token_is_rejected
      * @effects php_slot_rejects_leading_hyphen
      * @effects relative_and_traversal_paths_are_rejected
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('shapeRejectedProvider')]
@@ -77,6 +86,8 @@ class BinaryPathPolicyTest extends TestCase
      * @scenario vector=validateComposerPath, payload_class=interpreter_plus_script, expected_outcome=return_invalid_message
      *
      * @effects getComposerCommand_rejects_interpreter_plus_arbitrary_script
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('composerSlotProvider')]
@@ -101,6 +112,8 @@ class BinaryPathPolicyTest extends TestCase
      * @scenario vector=validatePhpPath, payload_class=wrapper_script_name, expected_outcome=accept_normal
      *
      * @effects legitimate_paths_still_reach_exec
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('phpSlotNameProvider')]
@@ -123,6 +136,8 @@ class BinaryPathPolicyTest extends TestCase
      *
      * @effects argument_injection_never_reaches_exec
      * @effects getComposerCommand_keeps_multi_php_pair_support
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('pairProvider')]
@@ -145,6 +160,8 @@ class BinaryPathPolicyTest extends TestCase
      * @scenario vector=getPhpBinary, payload_class=normal, expected_outcome=accept_normal
      *
      * @effects getPhpBinary_passes_through_legitimate_paths
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function it_does_not_depend_on_filesystem_stat(): void
@@ -162,6 +179,10 @@ class BinaryPathPolicyTest extends TestCase
      * 정책이 한 파일에 있어도 어느 한 진입점이 그 파일을 require 하지 않으면
      * "저장은 막히는데 실행은 통과" 같은 어긋난 상태가 남고, 그 어긋남은 오류를
      * 남기지 않는다. 그래서 파일 참조 자체를 계약으로 고정한다 (KVE-2026-2043).
+     *
+     * @effects binary_path_policy_file_is_shared_by_all_entrypoints
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function validation_and_execution_entrypoints_share_the_same_policy_file(): void
@@ -171,7 +192,9 @@ class BinaryPathPolicyTest extends TestCase
         $entrypoints = [
             'api/check-configuration.php' => $projectRoot.'/public/install/api/check-configuration.php',
             'includes/task-runner.php' => $projectRoot.'/public/install/includes/task-runner.php',
-            'includes/request-handler.php' => $projectRoot.'/public/install/includes/request-handler.php',
+            // Step 3 저장·터미널 설치 공유 검증 / 요구사항·바이너리 검사 공유 함수
+            'includes/config-validation.php' => $projectRoot.'/public/install/includes/config-validation.php',
+            'includes/requirements.php' => $projectRoot.'/public/install/includes/requirements.php',
         ];
 
         foreach ($entrypoints as $label => $path) {
@@ -189,6 +212,10 @@ class BinaryPathPolicyTest extends TestCase
      *
      * 쌍 해석은 자리별 규칙을 재사용하므로 여기서도 같은 결론이 나와야 한다 —
      * 한쪽만 막히면 그 경로가 우회로가 된다.
+     *
+     * @effects pair_resolver_rejects_unc_and_arbitrary_phar
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_pair_resolver_rejects_unc_and_arbitrary_phar(): void
@@ -216,7 +243,7 @@ class BinaryPathPolicyTest extends TestCase
     /**
      * 통과해야 하는 토큰 목록.
      *
-     * @return array<string, array{string, string}>
+     * @return array<string, array{string, string}> 테스트 데이터 세트
      */
     public static function shapeAllowedProvider(): array
     {
@@ -235,7 +262,7 @@ class BinaryPathPolicyTest extends TestCase
     /**
      * 거부해야 하는 토큰 목록.
      *
-     * @return array<string, array{string, string}>
+     * @return array<string, array{string, string}> 테스트 데이터 세트
      */
     public static function shapeRejectedProvider(): array
     {
@@ -268,7 +295,7 @@ class BinaryPathPolicyTest extends TestCase
     /**
      * Composer 자리 판정 목록.
      *
-     * @return array<string, array{string, bool, string}>
+     * @return array<string, array{string, bool, string}> 테스트 데이터 세트
      */
     public static function composerSlotProvider(): array
     {
@@ -293,7 +320,7 @@ class BinaryPathPolicyTest extends TestCase
     /**
      * PHP 자리에 허용되어야 하는 이름 목록.
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 테스트 데이터 세트
      */
     public static function phpSlotNameProvider(): array
     {
@@ -309,7 +336,7 @@ class BinaryPathPolicyTest extends TestCase
     /**
      * 2토큰 해석 목록.
      *
-     * @return array<string, array{string, array{php: string, composer: string}|null, string}>
+     * @return array<string, array{string, array{php: string, composer: string}|null, string}> 테스트 데이터 세트
      */
     public static function pairProvider(): array
     {

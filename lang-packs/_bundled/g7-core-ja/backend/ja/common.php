@@ -46,11 +46,9 @@ return [
             'identity_logs' => '本人認証履歴 :count 件を破棄しました。(保管 :days 日)',
             'activity_logs' => 'アクティビティログ :count 件を削除しました。(保管 :days 日)',
         ],
-        // コンソール yes/no 確認プロンプト(HasUnifiedConfirm・ConsoleConfirm)の出力
         'console_confirm' => [
             'invalid_answer' => 'yes, y, no, n のいずれかで入力してください。',
         ],
-        // `geoip:update` コマンド出力
         'geoip_update' => [
             'license_missing' => 'MaxMind ライセンスキーが設定されていません。',
             'license_hint' => '管理者 > 環境設定 > 詳細 タブでライセンスキーを入力してください。',
@@ -61,7 +59,6 @@ return [
             'elapsed' => '所要時間: :seconds 秒',
             'failed' => 'GeoIP DB の更新に失敗しました。',
         ],
-        // コンソールコマンド出力 (trusted-proxy:status・security:ip-restriction・security:audit-dependencies・storage:prune-leftovers・g7:bench・json:convert-unicode)
         'trusted_proxy_status' => [
             'title' => 'リバースプロキシ信頼設定の状態',
             'config_file' => '設定ファイル     : :path',
@@ -183,7 +180,6 @@ return [
             'converted_count' => ':count 件',
             'column_result' => ':converted (スキップ: :skipped 件)',
         ],
-        // `api:docgen` コマンド出力
         'api_docgen' => [
             'no_routes' => '範囲 \':scope\' に該当する API ルートがありません。',
             'routes_collected' => 'ルート :count 個を収集しました (scope=:scope)',
@@ -211,15 +207,12 @@ return [
             ],
             'marker_count' => ':label :count 件',
         ],
-        // `api:docgen-backfill-fields` コマンド出力
         'api_docgen_backfill_fields' => [
             'summary' => 'レスポンスフィールドの説明を記入: :filled 件、TODO 維持(ドメイン固有): :skipped 件、変更ファイル: :files 個',
         ],
-        // `api:docgen-backfill-params` コマンド出力
         'api_docgen_backfill_params' => [
             'summary' => 'パラメータの用途を記入: :filled 件、TODO 維持(ドメイン固有): :skipped 件、変更ファイル: :files 個',
         ],
-        // `phpunit:convert-annotations` コマンド出力
         'phpunit_convert_annotations' => [
             'script_not_found' => 'スクリプトファイルが見つかりません: :path',
             'stats_checking' => 'PHPUnit アノテーションの統計を確認しています...',
@@ -242,14 +235,12 @@ return [
             'rollback_unsupported' => 'バックアップの復元機能は現在実装されていません。',
             'rollback_manual_hint' => '.bak ファイルを手動で復元してください:',
         ],
-        // `playwright:*` コマンド共通の実行ガード(CLI 限定・G7_PLAYWRIGHT_BYPASS オプトイン)
         'playwright_guard' => [
             'cli_only' => 'CLI 専用のコマンドです。(現在の SAPI: :sapi)',
             'bypass_required' => '環境変数 G7_PLAYWRIGHT_BYPASS=1 が必要です。(例: PowerShell — $env:G7_PLAYWRIGHT_BYPASS=\'1\')',
             'cli_only_plain' => 'CLI 専用のコマンドです。',
             'bypass_required_plain' => '環境変数 G7_PLAYWRIGHT_BYPASS=1 が必要です。',
         ],
-        // `playwright:seed-layout` コマンド出力
         'playwright_seed_layout' => [
             'no_targets' => '対象のテンプレートがありません。',
             'not_active_skipped' => '有効なテンプレートではないためスキップします: :identifier',
@@ -262,7 +253,6 @@ return [
             'routes_missing_skipped' => 'routes.json がないためルート処理をスキップします: :identifier',
             'routes_parse_failed_skipped' => 'routes.json を解析できないためルート処理をスキップします: :identifier',
         ],
-        // `playwright:seed-password-expiry` コマンド出力
         'playwright_seed_password_expiry' => [
             'unknown_stage' => '不明な状態です: :stage (:stages)',
             'snapshot_exists' => 'セキュリティ設定のスナップショットが既にあるため上書きしませんでした: :path',
@@ -273,7 +263,6 @@ return [
             'policy_enabled' => 'パスワードの有効期限を有効にしました (範囲は全体・変更しないとログイン不可・開始日は :days 日前)。',
             'users_purged' => 'パスワード有効期限の実測用テストアカウント :count 件を削除しました。',
         ],
-        // `playwright:seed-two-factor` コマンド出力
         'playwright_seed_two_factor' => [
             'option_required' => '--ensure-user・--plant・--purge-users のいずれかを指定してください。',
             'role_not_found_skipped' => 'ロール \':identifier\' が見つからないためスキップします。',
@@ -281,30 +270,25 @@ return [
             'users_purged' => 'playwright 2FA テストアカウントを削除: :count 件 (prefix=:prefix)',
             'stale_users_pruned' => 'playwright 2FA テストアカウントを整理: :count 件',
         ],
-        // `playwright:cleanup` コマンド出力
         'playwright_cleanup' => [
             'nothing_to_reclaim' => '回収する Playwright の残留物はありません。',
             'targets' => 'ロール :roles 個 / アカウント :users 個 / 権限 :permissions 個が回収対象です。',
             'dry_run_skipped' => '--dry-run のため削除しませんでした。',
             'done' => '回収完了 — ロール :roles 個、アカウント :users 個、権限 :permissions 個。',
         ],
-        // `playwright:issue-token` コマンド出力 (トークン行自体は翻訳しない)
         'playwright_issue_token' => [
             'unknown_permissions' => 'DB に存在しない権限識別子のため、トークンを発行しません: :permissions',
             'unknown_permissions_hint' => 'その権限を定義する拡張がインストールされているか、掲示板別の権限であれば先に掲示板を作成したか、識別子の綴りが正しいかを確認してください。',
             'stale_artifacts_pruned' => 'playwright テストの残留物を整理: ロール :roles 件、ユーザー :users 件',
             'invalid_scope' => '不明な権限範囲 \':scope\' — self または role のみ使用できます: :spec',
         ],
-        // `playwright:seed-dormant` コマンド出力
         'playwright_seed_dormant' => [
             'unknown_stage' => '不明な段階です: :stage (:stages)',
             'users_purged' => '休眠実測用テストアカウント :count 件を削除しました。',
         ],
-        // `playwright:seed-member-notification` コマンド出力
         'playwright_seed_member_notification' => [
             'user_not_found' => '--user に該当する会員がいません: :user',
         ],
-        // `core:check-updates` コマンド出力
         'core_check_updates' => [
             'checking' => 'コアのアップデートを確認中...',
             'current_version' => '現在のバージョン: :version',
@@ -315,7 +299,6 @@ return [
             'update_hint' => 'アップデートするには: php artisan core:update',
             'up_to_date' => '現在、最新バージョンです。',
         ],
-        // `core:build` コマンド出力
         'core_build' => [
             'package_json_missing' => 'package.json ファイルがありません。',
             'installing_dependencies' => '依存関係をインストール中...',
@@ -340,7 +323,6 @@ return [
             'sourcemap_removed' => '残存ソースマップを削除: :files',
             'build_results' => 'ビルド結果:',
         ],
-        // `core:execute-upgrade-steps` コマンド出力
         'core_execute_upgrade_steps' => [
             'from_to_required' => '--from と --to は必須オプションです。',
             'migrations' => 'マイグレーションを実行',
@@ -366,7 +348,6 @@ return [
             ],
             'staging_swept' => '空の隔離ディレクトリを清掃: :count 個',
         ],
-        // `hotfix:rollback-stale-files` コマンド出力
         'hotfix_rollback_stale_files' => [
             'no_backup' => '利用可能なバックアップがありません (`storage/app/core_backups/` が空です)。',
             'backup_dir' => 'バックアップディレクトリ: :path',
@@ -387,7 +368,6 @@ return [
             'done' => 'クリーンアップ完了: ファイル :files 個、ディレクトリ :dirs 個を削除。保護 :protected 件、symlink スキップ :symlinks 件、失敗 :failed 件。',
             'log_path' => 'ログ: :path',
         ],
-        // コアシーダーのコンソール出力(db:seed・core:update などでシーダーが出力する文言)
         'seeders' => [
             'admin_user' => [
                 'skip_super_exists' => '最高管理者アカウントが既に存在するため、管理者アカウントの作成をスキップします(既存の会員はそのまま残します)。',
@@ -505,6 +485,10 @@ return [
                 'start' => ':label 通知送信履歴のシーディングを開始...(:count 件)',
                 'done' => ':label 通知送信履歴のシーディング完了(:count 件)',
             ],
+        ],
+        'core_install' => [
+            'script_missing' => 'ターミナルインストールスクリプトが見つかりません: :path',
+            'process_failed' => 'ターミナルインストールスクリプトを実行できませんでした。',
         ],
     ],
 ];

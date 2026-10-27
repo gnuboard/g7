@@ -43,5 +43,6 @@ return [
             'done' => '인증 앱 등록을 해제했습니다: :email',
             'next_login_notice' => '다음 로그인부터 이 회원은 인증 앱 코드를 요구받지 않습니다 (메일 폴백이 켜져 있으면 이메일로 받습니다).',
         ],
+        'password_reset_notice' => '이 회원은 인증 앱을 등록했습니다 — 인증 앱을 잃었다면 초기화하세요: php artisan totp:reset :email',
     ],
 ];

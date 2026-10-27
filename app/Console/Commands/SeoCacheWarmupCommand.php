@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use Illuminate\Console\Command;
 
 /**
@@ -12,15 +13,12 @@ use Illuminate\Console\Command;
  */
 class SeoCacheWarmupCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * @var string 커맨드 시그니처
      */
     protected $signature = 'seo:warmup {--layout= : 특정 레이아웃만 워밍업}';
-
-    /**
-     * @var string 커맨드 설명
-     */
-    protected $description = 'SEO 캐시 워밍업 - 모든 SEO 레이아웃을 사전 렌더링합니다';
 
     /**
      * 커맨드를 실행합니다.

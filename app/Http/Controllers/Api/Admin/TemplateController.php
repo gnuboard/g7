@@ -8,6 +8,7 @@ use App\Exceptions\TemplateOperationException;
 use App\Extension\Helpers\IntegrationNotices;
 use App\Extension\Layout\LayoutInstallSourceScope;
 use App\Extension\Layout\LayoutSyncSummary;
+use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
@@ -186,7 +187,7 @@ class TemplateController extends AdminBaseController
             // cascade 1단계: 사용자가 선택한 의존 확장 사전 설치 (실패 시 abort)
             // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
             $template = LayoutInstallSourceScope::run($request->validated('layout_source'), function () use ($validated, $templateName, &$integrationFailures) {
-                $this->installSelectedDependencies($validated['dependencies'] ?? []);
+                $this->installSelectedDependencies($validated['dependencies'] ?? [], VendorMode::Auto, 'template', $templateName);
 
                 // cascade 1.5단계: 고른 선택 연동 확장을 의존 다음·본체 이전에 설치·활성화 (실패해도 본체는 계속, 7.1.4 D9)
                 $integrationFailures = $this->installSelectedIntegrations($validated['integrations'] ?? []);
@@ -209,7 +210,7 @@ class TemplateController extends AdminBaseController
                 );
             } else {
                 return $this->error('templates.install_failed', 400, null, [
-                    'error' => __('templates.errors.unknown_error'),
+                    'error' => $this->withKeptDependencies(__('templates.errors.unknown_error')),
                 ]);
             }
         } catch (ValidationException $e) {
@@ -218,10 +219,11 @@ class TemplateController extends AdminBaseController
             $firstError = collect($e->errors())->flatten()->first()
                 ?? __('templates.install_failed', ['error' => SafeExceptionMessage::for($e)]);
 
-            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $firstError]);
+            // 의존 버전 미달처럼 검증 예외로 끝나도 앞서 설치·활성화해 남긴 의존 확장을 함께 알린다 (D14)
+            return $this->validationError($e->errors(), 'common.failure_reason', ['reason' => $this->withKeptDependencies($firstError)]);
         } catch (\Exception $e) {
             return $this->error('templates.errors.installation_failed', 500, $e->getMessage(), [
-                'error' => SafeExceptionMessage::for($e),
+                'error' => $this->withKeptDependencies(SafeExceptionMessage::for($e)),
             ]);
         }
     }

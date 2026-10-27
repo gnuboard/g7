@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Module;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 
 class ActivateModuleCommand extends Command
 {
+    use LocalizesDescription;
     use RendersLayoutSyncResult;
     use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
@@ -25,11 +27,6 @@ class ActivateModuleCommand extends Command
      * The name and signature of the console command.
      */
     protected $signature = 'module:activate {identifier : 활성화할 모듈 식별자} {--force : 의존성 미충족 시 강제 활성화}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '모듈을 활성화합니다';
 
     /**
      * 모듈 관리자 및 리포지토리

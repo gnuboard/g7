@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\TemplateManager;
 use Illuminate\Console\Command;
@@ -9,18 +10,18 @@ use Illuminate\Support\Facades\Log;
 
 class CheckTemplateUpdatesCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'template:check-updates {identifier? : 특정 템플릿만 확인 (선택)}';
 
     /**
-     * The console command description.
-     */
-    protected $description = '템플릿 업데이트를 확인합니다';
-
-    /**
-     * 템플릿 관리자 및 리포지토리
+     * 템플릿 관리자 및 리포지토리를 주입받는다.
+     *
+     * @param  TemplateManager  $templateManager  템플릿 관리자
+     * @param  TemplateRepositoryInterface  $templateRepository  템플릿 리포지토리
      */
     public function __construct(
         private TemplateManager $templateManager,
@@ -30,7 +31,9 @@ class CheckTemplateUpdatesCommand extends Command
     }
 
     /**
-     * Execute the console command.
+     * 템플릿 업데이트를 확인한다 — 식별자를 주면 그 템플릿만, 없으면 설치된 전부.
+     *
+     * @return int 종료 코드
      */
     public function handle(): int
     {
@@ -59,6 +62,7 @@ class CheckTemplateUpdatesCommand extends Command
      * 단일 템플릿 업데이트를 확인합니다.
      *
      * @param  string  $identifier  템플릿 식별자
+     * @return int 종료 코드
      */
     private function checkSingle(string $identifier): int
     {
@@ -98,6 +102,8 @@ class CheckTemplateUpdatesCommand extends Command
 
     /**
      * 모든 설치된 템플릿의 업데이트를 확인합니다.
+     *
+     * @return int 종료 코드
      */
     private function checkAll(): int
     {

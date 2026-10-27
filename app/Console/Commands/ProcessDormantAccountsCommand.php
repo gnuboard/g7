@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Privacy\DormantAccountService;
 use App\Privacy\ManualRun\DormantStageRunner;
 use Illuminate\Console\Command;
@@ -40,6 +41,8 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcessDormantAccountsCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 커맨드 이름 및 시그니처
      *
@@ -48,13 +51,6 @@ class ProcessDormantAccountsCommand extends Command
     protected $signature = 'privacy:process-dormant
                             {--dry-run : 실제 처리 없이 단계별 대상 건수만 확인}
                             {--scheduled : 스케줄러 호출 표시 (기록용) — 꺼짐 판정은 이 플래그와 무관하게 항상 선행한다}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '장기 미접속 회원에게 사전 안내를 보내고 휴면으로 전환하며, 설정에 따라 탈퇴까지 처리합니다.';
 
     /**
      * @param  DormantAccountService  $service  휴면 생명주기 서비스

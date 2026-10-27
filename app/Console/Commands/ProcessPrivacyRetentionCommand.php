@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Privacy\PrivacyRetentionManager;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -35,6 +36,8 @@ use Illuminate\Support\Facades\Log;
  */
 class ProcessPrivacyRetentionCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 커맨드 이름 및 시그니처
      *
@@ -44,13 +47,6 @@ class ProcessPrivacyRetentionCommand extends Command
                             {--dry-run : 실제 처리 없이 대상 건수만 확인}
                             {--handler= : 특정 핸들러 하나만 실행 (식별자)}
                             {--scheduled : 스케줄러 호출 표시 (기록용) — 토글 재확인은 이 플래그와 무관하게 항상 수행한다}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '보유기간이 지난 개인정보를 각 도메인 핸들러에 위임해 파기·익명화합니다.';
 
     /**
      * @param  PrivacyRetentionManager  $manager  보유기간 처리 진입점

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use Illuminate\Console\Command;
 
 /**
@@ -11,6 +12,8 @@ use Illuminate\Console\Command;
  */
 class ConvertPHPUnitAnnotations extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 커맨드 시그니처
      *
@@ -22,13 +25,6 @@ class ConvertPHPUnitAnnotations extends Command
                             {--path= : 특정 경로만 변환}
                             {--stats-only : 통계만 출력}
                             {--rollback : 백업에서 복원}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = 'PHPUnit doc-comment annotations를 PHP 8 attributes로 변환합니다';
 
     /**
      * 변환기 인스턴스

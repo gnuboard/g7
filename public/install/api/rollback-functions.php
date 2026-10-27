@@ -70,6 +70,21 @@ function rollbackTask(string $taskId, array $state): array
 }
 
 /**
+ * 마이그레이션 롤백 명령 문자열을 만듭니다.
+ *
+ * 작업 디렉터리는 호출자가 chdir(BASE_PATH) 로 맞춘다 — 다른 artisan 실행 경로와 같은 방식.
+ * 종전의 `cd /d` 접두는 Windows cmd 전용이라 리눅스·맥 셸에서는 명령 전체가 실패해
+ * db_migrate·db_seed 실패 뒤 자동 롤백이 한 번도 실행되지 않았다.
+ *
+ * @param  string  $phpBinary  PHP 실행 경로 (escape 전)
+ * @return string 셸에 넘길 명령
+ */
+function buildMigrateRollbackCommand(string $phpBinary): string
+{
+    return escapeshellarg($phpBinary).' artisan migrate:rollback --force 2>&1';
+}
+
+/**
  * 마이그레이션 롤백을 실행합니다 (migrate:rollback --force)
  *
  * @param  string|null  $logPrefix  로그 접두사 (null이면 lang('log_prefix_rollback') 사용)
@@ -83,13 +98,9 @@ function executeMigrateRollback(?string $logPrefix = null): array
 
         $output = [];
         $returnCode = 0;
-        $phpBin = escapeshellarg(function_exists('getPhpBinary') ? getPhpBinary() : 'php');
-        $command = sprintf(
-            'cd /d %s && %s artisan migrate:rollback --force 2>&1',
-            escapeshellarg(BASE_PATH),
-            $phpBin
-        );
+        $command = buildMigrateRollbackCommand(function_exists('getPhpBinary') ? getPhpBinary() : 'php');
 
+        chdir(BASE_PATH);
         exec($command, $output, $returnCode);
 
         addLog("{$logPrefix} ".lang('rollback_migrate_result', ['result' => implode("\n", $output)]));

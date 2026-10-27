@@ -33,6 +33,8 @@ $dbReadHash = getDatabaseFieldHash($formData, 'db_read');
 
     <form method="POST" id="config-form" class="installer-form">
         <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(installer_csrf_token()) ?>">
+        <!-- 사이트 기본 언어 — 설치 화면 언어로 고정(.env APP_LOCALE·설정 general.language 공통). 터미널 설치는 --site-language -->
+        <input type="hidden" name="site_language" value="<?= htmlspecialchars(getCurrentLanguage()) ?>">
         <!-- 데이터베이스 설정 (Write DB) -->
         <div class="requirement-card">
             <div class="requirement-card-header">

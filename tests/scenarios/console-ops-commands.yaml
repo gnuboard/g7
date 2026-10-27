@@ -1,0 +1,127 @@
+# audit:allow test-scenario-coverage[cross_product] reason: 명령(설치 3종·비밀번호·설정) × 입력 채널 × 대상 확장 상태의 곱은 명령마다 축이 달라 한 곱으로 전개하면 의미 없는 조합이 대부분이다. 명령별 대표 조합은 test_files 의 effects 로, 실제 서버 조합은 manual_verification(R1~R5 실측)으로 덮는다.
+feature: 웹 전용이던 운영 절차의 터미널 명령 — 확장 연쇄 설치·관리자 비밀번호 재설정·설정 값 지정
+
+description: |
+  설치 직후 자동 구성을 막던 웹 전용 운영 절차를 터미널에서도 같은 규칙으로 할 수 있게 한다.
+
+  5.1 확장 연쇄 설치 — module:install·plugin:install·template:install 의 --with-dependencies·--with-language-packs.
+      관리자 설치 창과 같은 서비스(CascadeInstallOrchestrator)를 쓰고, 함께 고친 결함:
+        (a) 의존 확장 활성화 결과를 버려 엉뚱한 오류로 실패 (b) 의존의 의존 미해석 (c) 의존 확장 vendor 방식 auto 고정
+      모듈·플러그인 의존성 검사가 템플릿처럼 버전 제약까지 본다(--force 로만 우회).
+  5.2 user:reset-password — 메일 없는 서버에서도 관리자 비밀번호를 정책 그대로 재설정, 활동 로그 행위자 「시스템(CLI)」.
+  5.3 settings:get·settings:set — 코어·플러그인·모듈 설정을 관리자 화면 저장과 같은 FormRequest 로 검증해 저장.
+
+axes:
+  command: [module_install, plugin_install, template_install, reset_password, settings_set, settings_get]
+  dependency_state: [none, not_installed, inactive, active_version_unmet, transitive]
+  cascade_option: [none, with_dependencies, with_language_packs]
+
+effects:
+  # 5.1 연쇄 설치 서비스
+  - cascade_resolves_transitive_dependencies_in_install_order
+  - cascade_reports_active_dependency_version_unmet
+  - cascade_detects_dependency_cycle
+  - cascade_surfaces_dependency_activation_failure
+  - cascade_passes_vendor_mode_to_dependencies
+  - cascade_orders_selected_dependencies
+  - cascade_activates_inactive_dependency_without_reinstall
+  - cascade_installs_then_activates_missing_dependency
+  - cascade_skips_active_dependency
+  - install_preview_includes_transitive_dependencies
+  # 5.1 설치 명령 옵션
+  - install_command_without_option_explains_unmet_dependency
+  - install_command_with_dependencies_runs_plan_and_surfaces_failure
+  - cascade_failure_lists_kept_dependencies
+  - cascade_web_failure_reason_lists_kept_dependencies
+  - cascade_kept_dependencies_listed_on_validation_failure
+  - install_command_failure_lists_kept_dependencies
+  - core_command_descriptions_follow_locale
+  - install_command_rejects_non_candidate_language_pack
+  - install_command_language_pack_option_values
+  # 5.1 버전 검사 (D18)
+  - module_install_rejects_dependency_version_below_constraint
+  - plugin_install_rejects_dependency_version_below_constraint
+  - activation_reports_version_mismatch_as_unmet
+  - activation_force_bypasses_dependency_version_mismatch
+  - activation_modal_shows_version_mismatch_badge
+  - activation_modal_version_mismatch_label_translated
+  # 5.2 비밀번호 재설정
+  - reset_password_unlocks_revokes_sessions_and_notifies
+  - reset_password_logs_system_actor_without_user
+  - reset_password_rejects_policy_violation
+  - reset_password_rejects_reused_password
+  - reset_password_generate_prints_once_and_requires_change
+  - reset_password_require_change_flag
+  - reset_password_unknown_email_fails
+  - reset_password_has_no_password_argument
+  - reset_password_console_skips_web_reset_guard_hook
+  - reset_password_prints_extension_notices_from_filter
+  - reset_password_reports_failure_without_change
+  - reset_service_rolls_back_with_inside_transaction_failure
+  - reset_service_fires_before_hook_only_for_mail_reset
+  - reset_service_require_change_only_when_requested
+  # 5.3 설정 값 지정·조회
+  - settings_set_tab_path_rejects_out_of_range_value
+  - settings_set_tab_path_runs_cross_validation
+  - settings_set_saves_rebuilds_cache_and_logs_without_actor
+  - settings_set_single_path_for_category_without_tab
+  - settings_set_rejects_env_locked_key
+  - settings_set_rejects_sensitive_positional_value
+  - settings_set_json_array_value_replaces_whole
+  - settings_set_rejects_computed_key
+  - settings_cli_tab_map_matches_save_request
+  - settings_get_masks_sensitive_values
+  - settings_get_show_secrets_prints_raw_with_warning
+  - settings_get_marks_computed_values
+  - settings_get_json_output
+  - settings_get_unknown_key_fails
+  - plugin_settings_cli_encrypts_sensitive_value
+  - plugin_settings_cli_rejects_sensitive_positional
+  - plugin_settings_cli_validates_schema
+  - plugin_settings_cli_saves_only_changed_key
+  - plugin_settings_cli_rejects_unknown_key
+  - module_settings_cli_board_saves_through_form_request
+  - module_settings_cli_board_validation_rejects
+  - module_settings_cli_ecommerce_validation_rejects
+  - module_settings_cli_rejects_admin_screen_only_key
+  - module_settings_cli_ecommerce_saves_through_form_request
+  - module_settings_cli_rejects_unsupported_module
+  - form_request_runner_skips_authorize
+  - form_request_runner_applies_prepare_for_validation
+  - form_request_runner_applies_with_validator_and_route_parameters
+  # 같은 결함군 (F32·F33)
+  - update_setting_rejects_env_locked_key
+  - update_setting_allows_unlocked_key
+  - settings_install_invalidates_settings_cache
+
+test_files:
+  - tests/Unit/Console/CommandDescriptionLocalizationTest.php
+  - tests/Unit/Services/Extension/CascadeInstallOrchestratorTest.php
+  - tests/Unit/Http/Controllers/Concerns/OrchestratesCascadeInstallTest.php
+  - tests/Feature/Api/Admin/CascadeInstallKeptDependenciesTest.php
+  - tests/Unit/Services/Extension/ExtensionInstallPreviewTransitiveTest.php
+  - tests/Feature/Console/Cascade/InstallModuleCommandCascadeTest.php
+  - tests/Feature/Console/Cascade/InstallPluginCommandCascadeTest.php
+  - tests/Feature/Console/Cascade/InstallTemplateCommandCascadeTest.php
+  - tests/Feature/Console/Cascade/InstallCommandCascadeTestCase.php
+  - tests/Unit/Extension/ExtensionDependencyVersionCheckTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-activation-version-mismatch.test.ts
+  - tests/Feature/Console/ResetPasswordCommandTest.php
+  - tests/Feature/Services/PasswordResetServiceTest.php
+  - tests/Feature/Console/Settings/SettingsSetCommandTest.php
+  - tests/Feature/Console/Settings/SettingsGetCommandTest.php
+  - tests/Feature/Console/Settings/PluginSettingsCliTest.php
+  - tests/Feature/Console/Settings/ModuleSettingsCliTest.php
+  - tests/Unit/Support/FormRequestRunnerTest.php
+  - tests/Feature/Settings/UpdateSettingRequestEnvLockTest.php
+  - tests/Feature/Console/InstallSettingsCommandCacheTest.php
+
+manual_verification:
+  - description: "R1 — 이커머스 비활성 상태에서 plugin:install sirsoft-tosspayments --with-dependencies --with-language-packs=all / 옵션 없이"
+    steps:
+      - "옵션 없이: 종료 1, 「의존 확장 미충족 … --with-dependencies」 안내"
+      - "옵션: 종료 0, 이커머스 활성, 언어팩 설치 (module:list·language-pack:list)"
+  - description: "관리자 확장 설치 창 — 2단계 의존 행, 활성화 실패 주입 시 실제 사유 토스트 (Chrome MCP T1·T4)"
+    steps:
+      - "미리보기 창의 의존 목록 행 수·이름"
+      - "의존 모듈 매니페스트 버전을 제약 미달로 임시 변경 → 설치 → 「X 활성화 실패: (사유)」 또는 버전 미달 문구"

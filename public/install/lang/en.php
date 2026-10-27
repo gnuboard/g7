@@ -649,8 +649,8 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'db_force_proceed_confirmed' => 'Force install mode (existing tables will be dropped)',
     'log_db_cleanup_skipped' => 'Skipping existing table cleanup (no action)',
     'log_db_cleanup_empty' => 'No existing tables. Skipping cleanup.',
-    'log_db_cleanup_dropping' => 'Dropping {count} existing tables...',
-    'log_db_cleanup_done' => 'Dropped {count} existing tables.',
+    'log_db_cleanup_dropping' => 'Dropping :count existing tables...',
+    'log_db_cleanup_done' => 'Dropped :count existing tables.',
     'error_db_cleanup_failed' => 'Failed to clean up existing database tables',
 
     // Dark Mode
@@ -992,4 +992,140 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'log_ownership_claimed' => '[Ownership] The installation owner session has been set.',
     'log_ownership_reclaimed' => '[Ownership] Installation ownership was reclaimed with the recovery token.',
     'log_ownership_reclaim_failed' => '[Ownership] Reclaim rejected: recovery token mismatch.',
+
+    // Server-side validation (shared by web and terminal)
+    'error_vendor_mode_unavailable' => 'The selected vendor installation method (:mode) is not available on this server. Choose another method.',
+    'error_vendor_mode_invalid' => 'Unknown vendor installation method (:value). Choose one of auto, composer, or bundled.',
+    'error_extension_not_found' => 'Extension :identifier was not found. (:group)',
+    'error_extension_dependency_unavailable' => 'Extension :dependency required by :owner is not in the installable list.',
+    'error_extension_dependency_version' => ':dependency does not satisfy the version (:required) required by :owner. (available: :available)',
+    'error_extension_dependency_cycle' => 'Extension dependencies form a cycle: :cycle',
+    'error_admin_template_single' => 'Only one admin template can be selected.',
+    'error_user_template_single' => 'Only one user template can be selected.',
+
+    // Terminal (CLI) installer — php g7-install
+    'cli_help' => 'Gnuboard7 terminal installer — installs with the same rules as the web installer (/install).
+
+Usage:  php g7-install [options]        (with vendor present, php artisan core:install [options] is the same)
+
+Run in a terminal (TTY) and it asks in the web installer\'s order. With --no-interaction (-n) or a non-terminal
+input it uses options, environment variables and the config file only.
+Precedence: options > environment G7_INSTALL_* > --config=<json> > defaults.
+
+Required (non-interactive): --accept-license --db-database --db-username --app-url --admin-email
+               + admin password (G7_INSTALL_ADMIN_PASSWORD or --admin-password-file)
+
+Database:      --db-host(localhost) --db-port(3306) --db-database --db-username --db-prefix(g7_)
+               password: G7_INSTALL_DB_PASSWORD or --db-password-file
+               --use-read-db --db-read-host --db-read-port --db-read-database --db-read-username
+               (read DB password: G7_INSTALL_DB_READ_PASSWORD or --db-read-password-file)
+               --drop-existing-tables   drop existing tables starting with the prefix, then install
+Site / admin:  --app-name --app-url --admin-name --admin-email --admin-language(ko|en) --site-language(ko|en)
+Core update:   --core-pending-path --github-url (token: G7_INSTALL_GITHUB_TOKEN or --github-token-file)
+Runtime:       --php-binary --composer-binary --vendor-mode=auto|composer|bundled --asset-url-mode=extension|extensionless
+Extensions:    --admin-template=<id> --user-template=<id|none> --modules=a,b --plugins=a,b --language-packs=a,b
+               --all-extensions   (same as the web "select all" — dependencies are added automatically)
+Control:       --resume  --reset-state  --takeover  --skip-if-installed  --output=text|json  --locale=ko|en
+Running as root: --web-user=<web server user> [--web-group=<group>]  (refused without it)
+Reinstall:     --reinstall --drop-existing-tables [--delete-vendor] [--delete-extensions] [--delete-settings] [--delete-uploads]
+
+Secrets are never accepted as command-line arguments (--admin-password=… is refused). From a file, one trailing newline is removed.
+
+Exit codes: 0 done (with warnings the last line is [g7-install-warnings]) · 1 install failed · 2 input/validation error
+            3 already installed · 4 requirements not met · 5 conflict (web install in progress, another terminal install)
+            6 aborted (Ctrl+C) · 7 root refused',
+    'cli_error_unknown_argument' => 'Unknown argument: :argument',
+    'cli_error_unknown_option' => 'Unknown option: :option (php g7-install --help)',
+    'cli_error_flag_value' => ':option takes no value or only 1/0 · true/false.',
+    'cli_error_option_needs_value' => ':option needs a value.',
+    'cli_error_option_value' => 'Invalid value for :option: :value',
+    'cli_error_secret_on_command_line' => 'Secrets are not accepted as command-line arguments (:option). Use the :env environment variable or the :file option.',
+    'cli_error_secret_file' => 'Cannot read the :option file: :path',
+    'cli_error_config_file' => 'The config file cannot be read or is not JSON: :path',
+    'cli_error_config_secret_key' => 'The config file cannot contain secrets (:key). Use environment variables or *-file options.',
+    'cli_error_config_unknown_key' => 'Unknown key in the config file: :key',
+    'cli_error_root_refused' => 'To install as root, pass --web-user=<web server user> or run sudo -u <web server user> php g7-install …. (path: :base)',
+    'cli_error_web_user_not_found' => 'The --web-user account was not found: :user',
+    'cli_error_web_user_requires_root' => '--web-user is only used when running as root.',
+    'cli_web_user_ignored_windows' => '--web-user is ignored on Windows.',
+    'cli_error_already_installed' => 'This site is already installed. Use --reinstall to install again or --skip-if-installed to skip.',
+    'cli_already_installed_skip' => 'This site is already installed — skipping.',
+    'cli_error_another_cli_running' => 'Another terminal installation is running.',
+    'cli_error_web_owned' => 'The web installer is running this installation. Continue in that browser, or use --takeover to hand it over to the terminal.',
+    'cli_error_web_worker_active' => 'A web installation task is running right now (active within 15 seconds). Wait until it ends — it cannot be taken over while running.',
+    'cli_error_cli_interrupted' => 'A previous terminal installation was left unfinished. Use --resume to continue or --reset-state to start over.',
+    'cli_error_nothing_to_resume' => 'There is no terminal installation to resume.',
+    'cli_error_resume_incomplete_state' => 'This installation stopped before the installation step (5). Start over with --reset-state.',
+    'cli_error_worker_active' => 'An installation task is running right now (active within 15 seconds).',
+    'cli_error_license_not_accepted' => 'A non-interactive installation must accept the license with --accept-license.',
+    'cli_error_hidden_input_unavailable' => 'This terminal cannot read a hidden password. Use the :env environment variable or :file.',
+    'cli_error_finalize_failed' => 'Finalizing .env failed. Check storage/logs/installation.log.',
+    'cli_error_reinstall_not_installed' => 'This site is not installed — install without --reinstall.',
+    'cli_error_reinstall_requires_drop' => 'Reinstalling drops the existing tables, so --drop-existing-tables is required.',
+    'cli_error_reinstall_failed' => 'Some items could not be removed during the reinstall reset. Check the permissions of the paths above and run again.',
+    'cli_reinstall_title' => 'Reinstall reset',
+    'cli_reinstall_group_installed_flag' => 'Installed marker',
+    'cli_reinstall_group_installer_state' => 'Installer state and runtime',
+    'cli_reinstall_group_bootstrap_cache' => 'Bootstrap caches',
+    'cli_reinstall_group_static_publish' => 'Static publish files',
+    'cli_reinstall_group_app_cache' => 'Application file cache',
+    'cli_reinstall_group_vendor' => 'vendor',
+    'cli_reinstall_group_extensions' => 'Active extensions (modules, plugins, templates, language packs)',
+    'cli_reinstall_group_settings' => 'Settings files',
+    'cli_reinstall_group_uploads' => 'Uploaded files',
+    'cli_reinstall_group_env_completed_flag' => '.env installed line',
+    'cli_reinstall_removed' => ':count removed',
+    'cli_reinstall_warn_keep_extensions' => 'Active extensions are kept — the reinstall uses the installed copies as they are (not the newer bundled versions). Use --delete-extensions to reinstall the bundled versions.',
+    'cli_reinstall_warn_keep_uploads' => 'Uploaded files are kept — the database is emptied, so the remaining files are no longer referenced anywhere.',
+    'cli_reinstall_keep_app_key' => 'Settings are kept, so the existing APP_KEY is reused (encrypted values in the kept settings stay readable).',
+    'cli_reinstall_new_app_key' => 'Settings are deleted, so a new APP_KEY is generated.',
+    'cli_reinstall_confirm_url' => 'To continue, type the current site URL exactly (:url)',
+    'cli_reinstall_cancelled' => 'Reinstall cancelled.',
+    'cli_state_reset' => 'The leftover installation state was removed; starting over (the database is untouched).',
+    'cli_state_owner' => 'Owner',
+    'cli_state_status' => 'Status',
+    'cli_state_step' => 'Step',
+    'cli_state_current_task' => 'Current task',
+    'cli_state_last_heartbeat' => 'Last activity',
+    'cli_state_updated' => 'Updated',
+    'cli_license_accepted' => 'License accepted.',
+    'cli_page_more' => 'Enter: next page, q: skip to the end',
+    'cli_env_copied' => '.env was missing, so .env.example was copied.',
+    'cli_php_auto_selected' => 'The default php command is unavailable — using the detected PHP: :path (PHP :version)',
+    'cli_composer_auto_selected' => 'Using the detected Composer: :path (Composer :version)',
+    'cli_web_only_item' => ':item — web-only item, not checked in the terminal.',
+    'cli_requirements_cli_php_note' => 'These checks use the terminal PHP settings. The web server PHP (FPM etc.) may have different extensions and disable_functions.',
+    'cli_requirements_chown_planned' => 'After installing, writable directories will be owned by :user::group.',
+    'cli_ask_use_read_db' => 'Use a separate read-only database?',
+    'cli_site_language' => 'Site default language',
+    'cli_ask_core_pending_path' => 'Core update staging path (empty = storage/app/core_pending)',
+    'cli_ask_github_url' => 'Core update GitHub repository URL',
+    'cli_ask_php_binary' => 'PHP CLI path',
+    'cli_ask_composer_binary' => 'Composer path (empty = system PATH)',
+    'cli_hint_drop_existing_tables' => 'For a non-interactive installation, give consent with --drop-existing-tables.',
+    'cli_existing_tables_other_prefix' => 'The database has tables with other prefixes — they are kept, not dropped.',
+    'cli_asset_url_mode_default' => 'Undetermined — using the default',
+    'cli_toggle_hint' => 'Toggle by number (comma or space separated), empty line to continue',
+    'cli_ext_admin_templates' => 'Admin template (exactly one)',
+    'cli_ext_user_templates' => 'User template (one or none)',
+    'cli_ext_modules' => 'Modules',
+    'cli_ext_plugins' => 'Plugins',
+    'cli_ext_language_packs' => 'Language packs',
+    'cli_ext_auto_added' => 'Added as a dependency: :identifier (required by :required_by)',
+    'cli_ext_language_pack_excluded' => 'Language pack excluded because its target extension is not selected: :identifier',
+    'cli_ext_install_order' => 'Install order',
+    'cli_abort_hint' => 'Ctrl+C rolls back the current task and stops (child commands in the same process group stop too). Continue later with php g7-install --resume',
+    'cli_aborted' => 'Installation aborted. Continue with php g7-install --resume',
+    'cli_failed_resume_hint' => 'After fixing the cause, continue with php g7-install --resume (completed tasks are skipped).',
+    'cli_finalize_failed_warning' => 'Finalizing .env failed and the installer runtime file remains — finalize again with php g7-install --resume.',
+    'cli_resuming' => 'resuming',
+    'cli_chown_done' => ':count ownership changes → :user::group',
+    'cli_chown_failed' => ':count ownership changes failed — change them with the command below.',
+    'cli_worker_lock_lost' => 'Another installation task took over the lock; stopping this installation.',
+    'cli_owned_notice_title' => 'Installation running in a terminal',
+    'cli_owned_notice_running' => 'This installation is running in the server terminal (php g7-install). You cannot change it from this screen.',
+    'cli_owned_notice_stopped' => 'This installation was started in the server terminal and stopped. Continue on the server with php g7-install --resume.',
+    'error_recovery_cli_owned' => 'A terminal installation cannot be taken over from the browser. Use php g7-install --resume on the server.',
+    'log_cli_takeover' => '[Ownership] The terminal took over the web installation.',
+    'log_ownership_claimed_cli' => '[Ownership] The terminal installation was set as the owner.',
 ];

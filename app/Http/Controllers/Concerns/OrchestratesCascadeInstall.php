@@ -3,12 +3,10 @@
 namespace App\Http\Controllers\Concerns;
 
 use App\Enums\ExtensionStatus;
-use App\Enums\LanguagePackDeactivationReason;
-use App\Enums\LanguagePackStatus;
 use App\Extension\Helpers\IntegrationNotices;
 use App\Extension\Vendor\VendorMode;
 use App\Services\Extension\CascadeInstallAuthorizer;
-use App\Services\LanguagePackService;
+use App\Services\Extension\CascadeInstallOrchestrator;
 use App\Services\ModuleService;
 use App\Services\PluginService;
 use Illuminate\Support\Facades\Log;
@@ -30,6 +28,13 @@ use RuntimeException;
  */
 trait OrchestratesCascadeInstall
 {
+    /**
+     * 이번 요청에서 설치·활성화한 의존 확장 — 본 확장이 실패하면 실패 사유에 덧붙인다.
+     *
+     * @var array{installed: array<int, string>, activated: array<int, string>, skipped: array<int, string>}
+     */
+    private array $cascadeDependencyResult = ['installed' => [], 'activated' => [], 'skipped' => []];
+
     /**
      * 함께 고른 의존 확장·언어팩 가운데 현재 사용자가 처리할 권한이 없는 첫 항목을 찾습니다.
      *
@@ -78,73 +83,47 @@ trait OrchestratesCascadeInstall
     /**
      * 사용자가 선택한 의존 확장을 사전 설치하고 활성화합니다.
      *
-     * cascade 흐름은 일반 설치(웹/CLI 단독 설치)와 달리, 본 확장 install 직후
-     * `checkDependencies` 가 의존 확장의 active 상태를 요구하므로 활성화까지 자동 수행합니다.
-     * 일반 설치 프로세스(ModuleController/PluginController::install)는 활성화하지 않는
-     * 정책을 그대로 유지하며, 본 helper 만 cascade 한정으로 install + activate 를 묶습니다.
+     * 본문은 관리자 화면·artisan 공통 서비스(CascadeInstallOrchestrator)가 소유한다 — 의존 확장이 먼저 오도록
+     * 정렬하고(대상을 주면), 본 확장과 같은 vendor 설치 방식을 쓰며, 활성화 결과를 확인해 실패하면 그 확장 이름과
+     * 실제 사유로 멈춘다.
      *
-     * 상태별 처리:
-     * - 미설치 → install + activate
-     * - 설치됨 + 비활성 → activate (재설치 회피)
-     * - 설치됨 + 활성 → skip (already met)
+     * 상태별 처리: 미설치 → install + activate · 설치됨 + 비활성 → activate · 설치됨 + 활성 → skip.
      *
      * @param  array<int, array{type: string, identifier: string}>  $dependencies  사용자가 고른 의존 확장 목록 (종류·식별자)
-     * @return void 반환값 없음
+     * @param  VendorMode  $vendorMode  본 확장과 같은 vendor 설치 방식
+     * @param  string|null  $targetType  본 확장 종류 (module|plugin|template) — 주면 의존 순서로 정렬
+     * @param  string|null  $targetIdentifier  본 확장 식별자
+     * @return array{installed: array<int, string>, activated: array<int, string>, skipped: array<int, string>} 처리 결과
      *
      * @throws RuntimeException 의존 확장 설치 또는 활성화 실패 시
      */
-    protected function installSelectedDependencies(array $dependencies): void
+    protected function installSelectedDependencies(array $dependencies, VendorMode $vendorMode = VendorMode::Auto, ?string $targetType = null, ?string $targetIdentifier = null): array
     {
+        $this->cascadeDependencyResult = ['installed' => [], 'activated' => [], 'skipped' => []];
+
         if (empty($dependencies)) {
-            return;
+            return $this->cascadeDependencyResult;
         }
 
-        /** @var ModuleService $moduleService */
-        $moduleService = app(ModuleService::class);
-        /** @var PluginService $pluginService */
-        $pluginService = app(PluginService::class);
+        /** @var CascadeInstallOrchestrator $orchestrator */
+        $orchestrator = app(CascadeInstallOrchestrator::class);
 
-        foreach ($dependencies as $dep) {
-            $type = $dep['type'] ?? '';
-            $identifier = $dep['identifier'] ?? '';
-            if ($identifier === '') {
-                continue;
-            }
-
-            try {
-                if ($type === 'module') {
-                    $info = $moduleService->getModuleInfo($identifier);
-                    $isInstalled = (bool) ($info['is_installed'] ?? false);
-                    $isActive = ($info['status'] ?? null) === ExtensionStatus::Active->value;
-
-                    if ($isActive) {
-                        continue;
-                    }
-                    if (! $isInstalled) {
-                        $moduleService->installModule($identifier, VendorMode::Auto);
-                    }
-                    $moduleService->activateModule($identifier);
-                } elseif ($type === 'plugin') {
-                    $info = $pluginService->getPluginInfo($identifier);
-                    $isInstalled = (bool) ($info['is_installed'] ?? false);
-                    $isActive = ($info['status'] ?? null) === ExtensionStatus::Active->value;
-
-                    if ($isActive) {
-                        continue;
-                    }
-                    if (! $isInstalled) {
-                        $pluginService->installPlugin($identifier, VendorMode::Auto);
-                    }
-                    $pluginService->activatePlugin($identifier);
-                }
-            } catch (\Throwable $e) {
-                throw new RuntimeException(__('extensions.errors.cascade_dependency_failed', [
-                    'type' => $type,
-                    'identifier' => $identifier,
-                    'message' => $e->getMessage(),
-                ]));
-            }
+        if ($targetType !== null && $targetIdentifier !== null) {
+            $dependencies = $orchestrator->orderSelectedDependencies($targetType, $targetIdentifier, $dependencies);
         }
+
+        return $this->cascadeDependencyResult = $orchestrator->installDependencies($dependencies, $vendorMode);
+    }
+
+    /**
+     * 본 확장 설치 실패 사유 뒤에 이미 설치·활성화해 남겨 둔 의존 확장 안내를 붙인다(되돌리지 않는 현행 — D14).
+     *
+     * @param  string  $reason  실패 사유
+     * @return string 안내를 붙인 사유 (남긴 의존 확장이 없으면 그대로)
+     */
+    protected function withKeptDependencies(string $reason): string
+    {
+        return CascadeInstallOrchestrator::appendKeptNotice($reason, $this->cascadeDependencyResult);
     }
 
     /**
@@ -261,40 +240,6 @@ trait OrchestratesCascadeInstall
      */
     protected function installSelectedLanguagePacks(array $bundledIdentifiers, ?array &$awaitingHost = null): array
     {
-        $awaitingHost = [];
-
-        if (empty($bundledIdentifiers)) {
-            return [];
-        }
-
-        /** @var LanguagePackService $service */
-        $service = app(LanguagePackService::class);
-        $failures = [];
-
-        foreach ($bundledIdentifiers as $identifier) {
-            try {
-                $pack = $service->installFromBundled(
-                    $identifier,
-                    autoActivate: true,
-                    installedBy: auth()->id(),
-                );
-
-                if ($pack->status === LanguagePackStatus::Installed->value
-                    && $pack->deactivated_reason === LanguagePackDeactivationReason::AwaitingHost->value) {
-                    $awaitingHost[] = $identifier;
-                }
-            } catch (\Throwable $e) {
-                Log::warning('cascade language pack install failed', [
-                    'identifier' => $identifier,
-                    'error' => $e->getMessage(),
-                ]);
-                $failures[] = [
-                    'identifier' => $identifier,
-                    'reason' => $e->getMessage(),
-                ];
-            }
-        }
-
-        return $failures;
+        return app(CascadeInstallOrchestrator::class)->installLanguagePacks($bundledIdentifiers, auth()->id(), $awaitingHost);
     }
 }

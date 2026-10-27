@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Analytics\AnalyticsClock;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\Analytics\ArchiveRunStatus;
 use App\Enums\Analytics\ArchiveRunType;
 use App\Models\Analytics\AnalyticsArchiveRun;
@@ -31,6 +32,8 @@ use Illuminate\Support\Carbon;
  */
 class ArchiveCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 커맨드 이름 및 시그니처
      *
@@ -43,13 +46,6 @@ class ArchiveCommand extends Command
                             {--force : 이미 확정된 날도 다시 집계}
                             {--dry-run : 집계 표를 바꾸지 않고 대상만 확인}
                             {--scheduled : 스케줄러 등록 실행으로 기록 (없으면 수동 실행으로 기록)}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '방문자 통계 원장을 시간·일·차원 집계 표로 만듭니다.';
 
     /**
      * 커맨드 실행

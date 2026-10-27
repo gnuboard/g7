@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use Illuminate\Console\Command;
 
@@ -12,15 +13,12 @@ use Illuminate\Console\Command;
  */
 class SeoCacheClearCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * @var string 커맨드 시그니처
      */
     protected $signature = 'seo:clear {--layout= : 특정 레이아웃의 캐시만 삭제}';
-
-    /**
-     * @var string 커맨드 설명
-     */
-    protected $description = 'SEO 캐시 삭제';
 
     /**
      * 커맨드를 실행합니다.

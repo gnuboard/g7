@@ -649,8 +649,8 @@ ini_set(\'zlib.output_compression\', \'off\');
     'db_force_proceed_confirmed' => '강제 진행 모드 (설치 시 기존 테이블 삭제)',
     'log_db_cleanup_skipped' => '기존 테이블 정리 건너뛰기 (액션 없음)',
     'log_db_cleanup_empty' => '기존 테이블이 없습니다. 정리 건너뛰기',
-    'log_db_cleanup_dropping' => '기존 테이블 {count}개 삭제 시작...',
-    'log_db_cleanup_done' => '기존 테이블 {count}개 삭제 완료',
+    'log_db_cleanup_dropping' => '기존 테이블 :count개 삭제 시작...',
+    'log_db_cleanup_done' => '기존 테이블 :count개 삭제 완료',
     'error_db_cleanup_failed' => '기존 DB 테이블 정리 실패',
 
     // 다크모드
@@ -992,4 +992,138 @@ ini_set(\'zlib.output_compression\', \'off\');
     'log_ownership_claimed' => '[소유권] 설치 소유 세션이 지정되었습니다.',
     'log_ownership_reclaimed' => '[소유권] 복구 토큰으로 설치 소유권을 되찾았습니다.',
     'log_ownership_reclaim_failed' => '[소유권] 복구 토큰 불일치로 소유권 되찾기를 거부했습니다.',
+
+    // 서버 검증 (웹·터미널 공유)
+    'error_vendor_mode_unavailable' => '선택한 Vendor 설치 방식(:mode)은 이 서버에서 사용할 수 없습니다. 다른 방식을 선택해주세요.',
+    'error_vendor_mode_invalid' => '알 수 없는 Vendor 설치 방식입니다(:value). auto, composer, bundled 중 하나를 고르세요.',
+    'error_extension_not_found' => '확장 :identifier 을(를) 찾을 수 없습니다. (:group)',
+    'error_extension_dependency_unavailable' => ':owner 에 필요한 확장 :dependency 이(가) 설치 가능한 목록에 없습니다.',
+    'error_extension_dependency_version' => ':owner 에 필요한 :dependency 버전(:required)을 충족하지 않습니다. (사용 가능: :available)',
+    'error_extension_dependency_cycle' => '확장 의존 관계가 순환합니다: :cycle',
+    'error_admin_template_single' => '관리자 템플릿은 하나만 선택할 수 있습니다.',
+    'error_user_template_single' => '사용자 템플릿은 하나만 선택할 수 있습니다.',
+
+    // 터미널(CLI) 설치 — php g7-install
+    'cli_help' => '그누보드7 터미널 설치 — 웹 설치 마법사(/install)와 같은 규칙으로 설치합니다.
+
+사용법:  php g7-install [옵션]        (vendor 가 있으면 php artisan core:install [옵션] 도 같습니다)
+
+터미널(TTY)에서 실행하면 웹 마법사 순서대로 묻고, --no-interaction(-n) 이거나 입력이 터미널이 아니면
+옵션·환경변수·설정 파일만 사용합니다. 우선순위: 옵션 > 환경변수 G7_INSTALL_* > --config=<json> > 기본값.
+
+필수(비대화형): --accept-license --db-database --db-username --app-url --admin-email
+               + 관리자 비밀번호 (환경변수 G7_INSTALL_ADMIN_PASSWORD 또는 --admin-password-file)
+
+데이터베이스:  --db-host(localhost) --db-port(3306) --db-database --db-username --db-prefix(g7_)
+               비밀번호: G7_INSTALL_DB_PASSWORD 또는 --db-password-file
+               --use-read-db --db-read-host --db-read-port --db-read-database --db-read-username
+               (읽기 DB 비밀번호: G7_INSTALL_DB_READ_PASSWORD 또는 --db-read-password-file)
+               --drop-existing-tables   입력한 접두사로 시작하는 기존 테이블을 지우고 설치
+사이트·관리자: --app-name --app-url --admin-name --admin-email --admin-language(ko|en) --site-language(ko|en)
+코어 업데이트: --core-pending-path --github-url (토큰: G7_INSTALL_GITHUB_TOKEN 또는 --github-token-file)
+실행 환경:     --php-binary --composer-binary --vendor-mode=auto|composer|bundled --asset-url-mode=extension|extensionless
+확장:          --admin-template=<id> --user-template=<id|none> --modules=a,b --plugins=a,b --language-packs=a,b
+               --all-extensions   (웹 「전체 선택」과 같음 — 의존 확장은 자동 포함)
+진행 제어:     --resume  --reset-state  --takeover  --skip-if-installed  --output=text|json  --locale=ko|en
+root 실행:     --web-user=<웹서버 계정> [--web-group=<그룹>]  (없으면 root 실행을 거부)
+재설치:        --reinstall --drop-existing-tables [--delete-vendor] [--delete-extensions] [--delete-settings] [--delete-uploads]
+
+비밀값은 명령줄 인자로 받지 않습니다(--admin-password=… 는 거부). 파일로 줄 때는 끝 개행 하나만 제거합니다.
+
+종료 코드: 0 완료(경고 시 마지막 줄 [g7-install-warnings]) · 1 설치 실패 · 2 입력·검증 오류 · 3 이미 설치됨
+           4 요구사항 미충족 · 5 충돌(웹 설치 중·다른 터미널 설치 실행 중) · 6 중단(Ctrl+C) · 7 root 실행 거부',
+    'cli_error_unknown_argument' => '알 수 없는 인자입니다: :argument',
+    'cli_error_unknown_option' => '알 수 없는 옵션입니다: :option (php g7-install --help)',
+    'cli_error_flag_value' => ':option 은 값 없이 쓰거나 1/0·true/false 만 줄 수 있습니다.',
+    'cli_error_option_needs_value' => ':option 에 값이 필요합니다.',
+    'cli_error_option_value' => ':option 의 값이 올바르지 않습니다: :value',
+    'cli_error_secret_on_command_line' => '비밀값은 명령줄 인자로 받지 않습니다(:option). 환경변수 :env 또는 :file 옵션을 사용하세요.',
+    'cli_error_secret_file' => ':option 파일을 읽을 수 없습니다: :path',
+    'cli_error_config_file' => '설정 파일을 읽을 수 없거나 JSON 이 아닙니다: :path',
+    'cli_error_config_secret_key' => '설정 파일에는 비밀값(:key)을 넣을 수 없습니다. 환경변수나 *-file 옵션을 사용하세요.',
+    'cli_error_config_unknown_key' => '설정 파일에 알 수 없는 키가 있습니다: :key',
+    'cli_error_root_refused' => 'root 로 설치하려면 --web-user=<웹서버 계정> 을 주거나, sudo -u <웹서버 계정> php g7-install … 로 실행하세요. (설치 경로: :base)',
+    'cli_error_web_user_not_found' => '--web-user 계정을 찾을 수 없습니다: :user',
+    'cli_error_web_user_requires_root' => '--web-user 는 root 로 실행할 때만 씁니다.',
+    'cli_web_user_ignored_windows' => 'Windows 에서는 --web-user 를 무시합니다.',
+    'cli_error_already_installed' => '이미 설치된 사이트입니다. 다시 설치하려면 --reinstall, 건너뛰려면 --skip-if-installed 를 사용하세요.',
+    'cli_already_installed_skip' => '이미 설치된 사이트입니다 — 설치를 건너뜁니다.',
+    'cli_error_another_cli_running' => '다른 터미널 설치가 실행 중입니다.',
+    'cli_error_web_owned' => '웹 설치 마법사가 이 설치를 진행 중입니다. 그 브라우저에서 이어서 진행하거나, 터미널로 넘겨받으려면 --takeover 를 사용하세요.',
+    'cli_error_web_worker_active' => '웹 설치 작업이 지금 실행 중입니다(15초 안에 활동). 끝날 때까지 기다리세요 — 실행 중에는 넘겨받을 수 없습니다.',
+    'cli_error_cli_interrupted' => '이전 터미널 설치가 끝나지 않은 채 남아 있습니다. 이어서 하려면 --resume, 처음부터 하려면 --reset-state 를 사용하세요.',
+    'cli_error_nothing_to_resume' => '이어서 할 터미널 설치가 없습니다.',
+    'cli_error_resume_incomplete_state' => '설치 단계(5)에 들어가기 전에 멈춘 설치입니다. --reset-state 로 처음부터 다시 진행하세요.',
+    'cli_error_worker_active' => '설치 작업이 지금 실행 중입니다(15초 안에 활동).',
+    'cli_error_license_not_accepted' => '비대화형 설치는 --accept-license 로 라이선스 동의를 명시해야 합니다.',
+    'cli_error_hidden_input_unavailable' => '이 터미널에서는 비밀번호를 숨겨 입력할 수 없습니다. 환경변수 :env 또는 :file 을 사용하세요.',
+    'cli_error_finalize_failed' => '.env 확정에 실패했습니다. storage/logs/installation.log 를 확인하세요.',
+    'cli_error_reinstall_not_installed' => '설치되지 않은 사이트입니다 — --reinstall 없이 설치하세요.',
+    'cli_error_reinstall_requires_drop' => '재설치는 기존 테이블을 지워야 하므로 --drop-existing-tables 가 필요합니다.',
+    'cli_error_reinstall_failed' => '재설치 초기화 중 일부를 지우지 못했습니다. 위 경로의 권한을 확인한 뒤 다시 실행하세요.',
+    'cli_reinstall_title' => '재설치 초기화',
+    'cli_reinstall_group_installed_flag' => '설치 완료 표식',
+    'cli_reinstall_group_installer_state' => '인스톨러 상태·런타임',
+    'cli_reinstall_group_bootstrap_cache' => '부트스트랩 캐시',
+    'cli_reinstall_group_static_publish' => '정적 게시 파일',
+    'cli_reinstall_group_app_cache' => '애플리케이션 파일 캐시',
+    'cli_reinstall_group_vendor' => 'vendor',
+    'cli_reinstall_group_extensions' => '활성 확장(모듈·플러그인·템플릿·언어팩)',
+    'cli_reinstall_group_settings' => '설정 파일',
+    'cli_reinstall_group_uploads' => '업로드 파일',
+    'cli_reinstall_group_env_completed_flag' => '.env 설치 완료 줄',
+    'cli_reinstall_removed' => ':count개 삭제',
+    'cli_reinstall_warn_keep_extensions' => '활성 확장을 남깁니다 — 재설치는 남아 있는 설치본 버전을 그대로 씁니다(번들 새 버전이 아님). 번들 버전으로 다시 설치하려면 --delete-extensions.',
+    'cli_reinstall_warn_keep_uploads' => '업로드 파일을 남깁니다 — 데이터베이스가 비워지므로 남은 파일은 어디에서도 참조되지 않습니다.',
+    'cli_reinstall_keep_app_key' => '설정을 남기므로 기존 APP_KEY 를 이어 씁니다(남은 설정의 암호화 값을 계속 읽을 수 있습니다).',
+    'cli_reinstall_new_app_key' => '설정을 지우므로 새 APP_KEY 를 만듭니다.',
+    'cli_reinstall_confirm_url' => '진행하려면 현재 사이트 주소를 그대로 입력하세요 (:url)',
+    'cli_reinstall_cancelled' => '재설치를 취소했습니다.',
+    'cli_state_reset' => '남아 있던 설치 상태를 지우고 처음부터 진행합니다(데이터베이스는 그대로입니다).',
+    'cli_state_owner' => '소유',
+    'cli_state_status' => '상태',
+    'cli_state_step' => '단계',
+    'cli_state_current_task' => '현재 작업',
+    'cli_state_last_heartbeat' => '마지막 활동',
+    'cli_state_updated' => '갱신',
+    'cli_license_accepted' => '라이선스에 동의했습니다.',
+    'cli_page_more' => '엔터: 다음, q: 끝까지 건너뛰기',
+    'cli_env_copied' => '.env 파일이 없어 .env.example 을 복사했습니다.',
+    'cli_php_auto_selected' => '기본 php 명령을 쓸 수 없어 찾은 PHP 를 사용합니다: :path (PHP :version)',
+    'cli_composer_auto_selected' => '찾은 Composer 를 사용합니다: :path (Composer :version)',
+    'cli_web_only_item' => ':item — 웹 전용 항목이라 터미널에서는 판정하지 않습니다.',
+    'cli_requirements_cli_php_note' => '이 검사는 터미널 PHP 설정 기준입니다. 웹서버 PHP(FPM 등)의 확장·disable_functions 는 다를 수 있습니다.',
+    'cli_requirements_chown_planned' => '설치 뒤 쓰기 디렉터리의 소유자를 :user::group 로 바꿉니다.',
+    'cli_ask_use_read_db' => '읽기 전용 DB 를 따로 쓰시겠습니까?',
+    'cli_site_language' => '사이트 기본 언어',
+    'cli_ask_core_pending_path' => '코어 업데이트 임시 경로 (빈 값 = storage/app/core_pending)',
+    'cli_ask_github_url' => '코어 업데이트 GitHub 저장소 URL',
+    'cli_ask_php_binary' => 'PHP CLI 경로',
+    'cli_ask_composer_binary' => 'Composer 경로 (빈 값 = 시스템 PATH)',
+    'cli_hint_drop_existing_tables' => '비대화형 설치는 --drop-existing-tables 로 동의를 명시하세요.',
+    'cli_existing_tables_other_prefix' => '데이터베이스에 다른 접두사의 테이블이 있습니다 — 삭제하지 않고 보존합니다.',
+    'cli_asset_url_mode_default' => '판정 불가 — 기본값 사용',
+    'cli_toggle_hint' => '번호(쉼표·공백 구분)로 선택/해제, 빈 줄로 다음',
+    'cli_ext_admin_templates' => '관리자 템플릿 (하나 필수)',
+    'cli_ext_user_templates' => '사용자 템플릿 (하나 또는 없음)',
+    'cli_ext_modules' => '모듈',
+    'cli_ext_plugins' => '플러그인',
+    'cli_ext_language_packs' => '언어팩',
+    'cli_ext_auto_added' => '의존성으로 추가: :identifier (필요: :required_by)',
+    'cli_ext_language_pack_excluded' => '대상 확장을 선택하지 않아 제외한 언어팩: :identifier',
+    'cli_ext_install_order' => '설치 순서',
+    'cli_abort_hint' => 'Ctrl+C 로 중단하면 현재 작업을 되돌린 뒤 멈춥니다(같은 프로세스 그룹의 하위 명령도 함께 중단됩니다). 이어서 하려면 php g7-install --resume',
+    'cli_aborted' => '설치를 중단했습니다. 이어서 하려면 php g7-install --resume',
+    'cli_failed_resume_hint' => '원인을 고친 뒤 php g7-install --resume 으로 이어서 설치할 수 있습니다(완료된 작업은 건너뜁니다).',
+    'cli_finalize_failed_warning' => '.env 확정에 실패해 설치 런타임 파일이 남았습니다 — php g7-install --resume 으로 다시 확정하세요.',
+    'cli_resuming' => '이어서 설치',
+    'cli_chown_done' => '소유자 변경 :count건 → :user::group',
+    'cli_chown_failed' => '소유자 변경 실패 :count건 — 아래 명령으로 직접 바꾸세요.',
+    'cli_worker_lock_lost' => '다른 설치 작업이 잠금을 넘겨받아 이 설치를 멈춥니다.',
+    'cli_owned_notice_title' => '터미널에서 진행 중인 설치',
+    'cli_owned_notice_running' => '이 설치는 서버 터미널(php g7-install)에서 진행 중입니다. 이 화면에서는 설치 상태를 바꿀 수 없습니다.',
+    'cli_owned_notice_stopped' => '이 설치는 서버 터미널에서 시작했다가 멈췄습니다. 서버에서 php g7-install --resume 으로 이어서 진행하세요.',
+    'error_recovery_cli_owned' => '터미널에서 진행하는 설치는 브라우저에서 넘겨받을 수 없습니다. 서버에서 php g7-install --resume 을 사용하세요.',
+    'log_cli_takeover' => '[소유권] 터미널이 웹 설치를 넘겨받았습니다.',
+    'log_ownership_claimed_cli' => '[소유권] 터미널 설치가 소유자로 지정되었습니다.',
 ];

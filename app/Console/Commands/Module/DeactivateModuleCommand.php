@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Module;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 
 class DeactivateModuleCommand extends Command
 {
+    use LocalizesDescription;
     use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
 
@@ -20,11 +22,6 @@ class DeactivateModuleCommand extends Command
      * The name and signature of the console command.
      */
     protected $signature = 'module:deactivate {identifier : 비활성화할 모듈 식별자} {--force : 의존 템플릿이 있어도 강제 비활성화}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '모듈을 비활성화합니다';
 
     /**
      * 모듈 관리자 및 리포지토리

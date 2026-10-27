@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.2] - 2026-10-26
+
+### Added
+
+- 서버 터미널에서 회원 비밀번호를 재설정하면(`php artisan user:reset-password`), 그 회원이 인증 앱을 등록해 둔 경우 인증 앱 초기화 명령(`php artisan totp:reset`) 안내를 결과에 한 줄 덧붙입니다. 비밀번호를 되찾아도 인증 앱을 잃었으면 여전히 로그인할 수 없기 때문입니다. 그누보드7 코어 7.1.4 이상에서 나타납니다.
+
 ## [1.0.1] - 2026-10-21
 
 ### Fixed

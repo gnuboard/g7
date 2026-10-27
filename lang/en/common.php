@@ -61,6 +61,11 @@ return [
             'identity_logs' => 'Identity verification logs purged: :count (retention in days: :days)',
             'activity_logs' => 'Activity logs deleted: :count (retention in days: :days)',
         ],
+        // `core:install` (terminal installer alias) output
+        'core_install' => [
+            'script_missing' => 'The terminal installer script was not found: :path',
+            'process_failed' => 'Could not run the terminal installer script.',
+        ],
         // Console yes/no confirmation prompt (HasUnifiedConfirm, ConsoleConfirm) output
         'console_confirm' => [
             'invalid_answer' => 'Please answer yes, y, no, or n.',

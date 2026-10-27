@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Layout;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\LayoutMarkupService;
 use App\Support\LayoutMarkup\CompileContext;
 use App\Support\LayoutMarkup\CompileError;
@@ -30,6 +31,8 @@ use Illuminate\Support\Facades\File;
  */
 class LayoutCompileCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * @var string
      */
@@ -39,11 +42,6 @@ class LayoutCompileCommand extends Command
                             {--roundtrip : 산출을 쓰지 않고 decompile(compile) 왕복만 검증}
                             {--out= : 산출 .g7.html 출력 경로 (단일 파일)}
                             {--limit=15 : 왕복 실패 상세 출력 개수}';
-
-    /**
-     * @var string
-     */
-    protected $description = 'JSON 레이아웃을 .g7.html 소스로 컴파일하고 왕복 동등성을 검증합니다';
 
     /**
      * 경로 → 레지스트리 해석기 (`layout:decompile` 과 공유).

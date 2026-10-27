@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\LanguagePack;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Extension\Support\LifecycleWarnings;
 use App\Models\LanguagePack;
@@ -27,6 +28,7 @@ use Throwable;
  */
 class ProvisionLanguagePackCommand extends Command
 {
+    use LocalizesDescription;
     use ReportsLifecycleWarnings;
 
     /**
@@ -36,11 +38,6 @@ class ProvisionLanguagePackCommand extends Command
         {--locale=* : 대상 로케일(미지정 시 supported_locales 에서 base locale 제외)}
         {--scope=* : core/module/plugin/template 로 대상 스코프 한정}
         {--no-activate : 설치 후 자동 활성화하지 않음}';
-
-    /**
-     * @var string
-     */
-    protected $description = '정책(supported_locales) 기준 미설치 번들 언어팩을 멱등 설치합니다.';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service

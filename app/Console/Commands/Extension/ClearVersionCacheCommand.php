@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Extension;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\CoreVersionChecker;
 use Illuminate\Console\Command;
 
@@ -13,19 +14,14 @@ use Illuminate\Console\Command;
  */
 class ClearVersionCacheCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 커맨드 시그니처
      *
      * @var string
      */
     protected $signature = 'extension:clear-version-cache';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '확장 버전 검증 캐시를 삭제합니다';
 
     /**
      * 커맨드 실행

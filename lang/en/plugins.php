@@ -60,6 +60,7 @@ return [
 
     // Dependency messages
     'dependency_not_active' => 'Dependency ":dependency" is not installed or inactive.',
+    'dependency_version_unmet' => 'The installed version (:installed) of dependency ":dependency" does not satisfy the required version (:required). Update the dependency or bypass with --force.',
 
     // Plugin service error messages
     'installation_failed' => 'Plugin installation failed: :error',

@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Search;
 
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\SearchIndexStatus;
 use App\Search\DTO\SearchIndexHealth;
 use App\Search\SearchIndexMaintenanceManager;
@@ -28,13 +29,12 @@ use Illuminate\Console\Command;
 class SearchIndexCommand extends Command
 {
     use HasUnifiedConfirm;
+    use LocalizesDescription;
 
     protected $signature = 'search:index
         {--repair : 색인이 누락된 인덱스를 재생성 (미지정 시 점검만)}
         {--filter=* : 엔진별 필터 (key=value 형태, 다중 지정 가능. FULLTEXT: table, index, samples)}
         {--json : 기계 판독용 JSON 출력}';
-
-    protected $description = '활성 검색 엔진의 인덱스가 실제로 내용을 색인하고 있는지 점검하고, 누락 시 재생성합니다';
 
     /**
      * 커맨드를 실행합니다.

@@ -61,6 +61,11 @@ return [
             'identity_logs' => '본인인증 이력 :count건을 파기했습니다. (보관 :days일)',
             'activity_logs' => '활동 로그 :count건을 삭제했습니다. (보관 :days일)',
         ],
+        // `core:install` (터미널 설치 별칭) 출력
+        'core_install' => [
+            'script_missing' => '터미널 설치 스크립트를 찾을 수 없습니다: :path',
+            'process_failed' => '터미널 설치 스크립트를 실행하지 못했습니다.',
+        ],
         // 콘솔 yes/no 확인 프롬프트(HasUnifiedConfirm·ConsoleConfirm) 공통 출력
         'console_confirm' => [
             'invalid_answer' => 'yes, y, no, n 중 하나로 입력해 주세요.',

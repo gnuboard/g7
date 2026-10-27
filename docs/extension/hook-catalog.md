@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (612)
+- [코어](#코어) (613)
 - [기본 제공 확장](#기본-제공-확장) (15)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -106,6 +106,7 @@
 | `core.auth.before_logout` | action | 1 |  |
 | `core.auth.before_register` | action | 2 |  |
 | `core.auth.before_reset_password` | action | 1 |  |
+| `core.auth.console_password_reset_notices` | filter | 2 |  |
 | `core.auth.forgot_password_validation_rules` | filter | 2 |  |
 | `core.auth.lockout_minutes` | filter | 2 |  |
 | `core.auth.login_failed` | action | 2 |  |

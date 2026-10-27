@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Module;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Extension\ExtensionManager;
 use App\Extension\ModuleManager;
@@ -10,6 +11,8 @@ use Illuminate\Support\Facades\Log;
 
 class ComposerInstallModuleCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
@@ -17,11 +20,6 @@ class ComposerInstallModuleCommand extends Command
                             {identifier? : Composer 의존성을 설치할 모듈 식별자 (생략 시 --all 필요)}
                             {--all : 모든 모듈의 Composer 의존성 설치}
                             {--no-dev : dev 의존성 제외}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '모듈의 Composer 의존성을 설치합니다';
 
     /**
      * 모듈 관리자 및 리포지토리

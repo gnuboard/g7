@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Module;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Enums\LayoutSourceType;
 use App\Extension\ExtensionMiddlewareRegistry;
@@ -17,17 +18,13 @@ class ClearModuleCacheCommand extends Command
 {
     use ClearsTemplateCaches;
     use InvalidatesLayoutCache;
+    use LocalizesDescription;
 
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'module:cache-clear
         {identifier? : 특정 모듈의 캐시만 삭제 (생략 시 모든 모듈)}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '모듈 캐시를 삭제합니다';
 
     /**
      * 모듈 관리자 및 리포지토리

@@ -19,6 +19,7 @@
  *   headers     (endpoint) $_SERVER 에 넣을 HTTP_* 키
  *   session_id  세션 ID (같은 ID 로 부르면 이전 호출의 세션이 이어진다)
  *   session     주면 세션을 이 값으로 덮어쓴다
+ *   json_body   (endpoint) 요청 본문 — php://input 으로 읽힌다 (배열이면 JSON 인코딩)
  *   script      (script) 인스톨러 include 를 로드한 뒤 실행할 PHP 코드
  *
  * 출력 끝에 `__HARNESS_STATUS__=<http status>` 와 `__HARNESS_SESSION__=<json>` 을 붙인다.
@@ -59,6 +60,103 @@ foreach (($spec['headers'] ?? []) as $key => $value) {
 }
 $_GET = $spec['get'] ?? [];
 $_POST = $spec['post'] ?? [];
+
+// 요청 본문(JSON) — CLI SAPI 에는 php://input 이 비어 있으므로 그 경로만 가로채 spec 값을 돌려준다.
+if (array_key_exists('json_body', $spec)) {
+    $GLOBALS['__harness_input'] = is_string($spec['json_body']) ? $spec['json_body'] : (string) json_encode($spec['json_body']); // json-encode:allow — 테스트 하네스 입력
+
+    final class HarnessPhpInputStream
+    {
+        /** @var resource|null 스트림 컨텍스트 (PHP 가 채운다) */
+        public $context;
+
+        /** @var resource 실제 핸들 */
+        private $handle;
+
+        /**
+         * php://input 이면 spec 본문을 담은 메모리 스트림, 그 밖의 php:// 경로는 원래 래퍼로 연다.
+         *
+         * @param  string  $path  열 경로
+         * @param  string  $mode  열기 모드
+         * @param  int  $options  스트림 옵션 (미사용)
+         * @param  string|null  $opened  실제로 연 경로 (미사용)
+         * @return bool 열기 성공 여부
+         */
+        public function stream_open(string $path, string $mode, int $options, ?string &$opened): bool
+        {
+            stream_wrapper_restore('php');
+            try {
+                if (strtolower($path) === 'php://input') {
+                    $this->handle = fopen('php://memory', 'w+b');
+                    fwrite($this->handle, $GLOBALS['__harness_input']);
+                    rewind($this->handle);
+                } else {
+                    $this->handle = fopen($path, $mode);
+                }
+            } finally {
+                stream_wrapper_unregister('php');
+                stream_wrapper_register('php', self::class);
+            }
+
+            return is_resource($this->handle);
+        }
+
+        /**
+         * 읽기.
+         *
+         * @param  int  $count  읽을 바이트 수
+         * @return string|false 읽은 내용
+         */
+        public function stream_read(int $count): string|false
+        {
+            return fread($this->handle, $count);
+        }
+
+        /**
+         * 쓰기.
+         *
+         * @param  string  $data  쓸 내용
+         * @return int|false 쓴 바이트 수
+         */
+        public function stream_write(string $data): int|false
+        {
+            return fwrite($this->handle, $data);
+        }
+
+        /**
+         * 끝 도달 여부.
+         *
+         * @return bool 끝이면 true
+         */
+        public function stream_eof(): bool
+        {
+            return feof($this->handle);
+        }
+
+        /**
+         * 스트림 정보.
+         *
+         * @return array<int|string, int>|false fstat 결과
+         */
+        public function stream_stat(): array|false
+        {
+            return fstat($this->handle);
+        }
+
+        /**
+         * 닫기.
+         *
+         * @return void 반환값 없음
+         */
+        public function stream_close(): void
+        {
+            fclose($this->handle);
+        }
+    }
+
+    stream_wrapper_unregister('php');
+    stream_wrapper_register('php', HarnessPhpInputStream::class);
+}
 
 ini_set('session.save_path', BASE_PATH.'/sessions');
 ini_set('session.use_cookies', '0');

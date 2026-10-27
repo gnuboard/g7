@@ -4,6 +4,7 @@ namespace App\Http\Requests\Settings;
 
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Extension\HookManager;
+use App\Support\EnvPriority;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
@@ -135,6 +136,18 @@ class UpdateSettingRequest extends FormRequest
         if (in_array($this->route('key'), self::SERVER_ONLY_KEYS, true)) {
             $rules['value'] = ['present', function (string $attribute, mixed $value, callable $fail): void {
                 $fail(__('validation.setting.value.server_only'));
+            }];
+        }
+
+        // `.env` 가 값을 정하는 키는 이 경로로 쓰지 못한다 — 탭 저장은 그 키를 버리는데(`EnvPriority::rejectLockedForSave`)
+        // 단건 저장만 그대로 써서, 저장은 성공으로 보이고 실제 동작은 `.env` 값을 따르는 어긋남이 생겼다(7.1.4 F33).
+        // 단건은 운영자가 그 키 하나를 지목한 요청이므로 조용히 버리지 않고 거부한다.
+        $key = $this->route('key');
+        if (is_string($key) && EnvPriority::isLocked($key)) {
+            $rules['value'] = ['present', function (string $attribute, mixed $value, callable $fail) use ($key): void {
+                $fail(__('validation.setting.value.env_locked', [
+                    'env' => implode(', ', EnvPriority::MAP[$key]['env'] ?? []),
+                ]));
             }];
         }
 

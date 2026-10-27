@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Vendor;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Vendor\Concerns\RunsVendorBundleAction;
 use App\Extension\Vendor\VendorBundler;
 use Illuminate\Console\Command;
@@ -18,14 +19,19 @@ use Illuminate\Console\Command;
  */
 class BuildVendorBundleCommand extends Command
 {
+    use LocalizesDescription;
     use RunsVendorBundleAction;
 
     protected $signature = 'vendor-bundle:build-all
                             {--force : 해시 체크 무시, 강제 재빌드}
                             {--check : 실제 빌드 없이 stale 여부만 확인}';
 
-    protected $description = '코어 + 모든 _bundled 모듈/플러그인의 vendor 번들을 일괄 빌드합니다';
-
+    /**
+     * 코어와 모든 번들 모듈·플러그인의 vendor 번들을 빌드한다(--check 면 stale 여부만).
+     *
+     * @param  VendorBundler  $bundler  vendor 번들 빌더
+     * @return int 종료 코드
+     */
     public function handle(VendorBundler $bundler): int
     {
         $targets = [['type' => 'core', 'identifier' => null]];

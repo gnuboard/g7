@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Services\NotificationLogService;
 use Illuminate\Console\Command;
@@ -11,17 +12,13 @@ use Illuminate\Console\Command;
  */
 class PruneNotificationLogsCommand extends Command
 {
+    use LocalizesDescription;
     use ParsesDaysOption;
 
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'notification-log:prune {--days=90 : 보관 기간(일)}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '보관 기간이 지난 알림 발송 이력을 삭제합니다';
 
     /**
      * Execute the console command.

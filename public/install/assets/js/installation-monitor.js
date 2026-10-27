@@ -323,6 +323,21 @@
                 }
             }
 
+            // 4-2. 완료 표식(complete_flag) 뒤 마무리 작업(설정·라우트 캐시 굽기·정적 게시)이 남아 있으면 기다린다.
+            //      먼저 완료 처리하면 finalize-env 가 상태 파일을 지워 워커가 lock lost 로 끝나고,
+            //      설정 캐시에 확정 전 값(installer_completed=false)이 남는다. 상태 갱신이 임계 시간 넘게 멈추면
+            //      설치 자체는 끝났으므로 완료 처리한다. tasks_finished 가 없는 응답은 종전처럼 바로 완료.
+            if (state.status === 'completed' && state.tasks_finished === false) {
+                if (state.last_updated !== this.lastUpdatedSeen) {
+                    this.lastUpdatedSeen = state.last_updated;
+                    this.lastUpdatedClientMs = Date.now();
+                    return;
+                }
+                if (Date.now() - this.lastUpdatedClientMs < this.stuckThresholdMs) {
+                    return;
+                }
+            }
+
             // 5. status 전환 감지
             const status = state.status;
             if (status && status !== this.lastStatus) {

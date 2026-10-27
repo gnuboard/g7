@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Analytics;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\Analytics\CloudIpRangeService;
 use Illuminate\Console\Command;
 
@@ -18,19 +19,14 @@ use Illuminate\Console\Command;
  */
 class UpdateCloudRangesCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * 커맨드 이름 및 시그니처
      *
      * @var string
      */
     protected $signature = 'analytics:update-cloud-ranges';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '클라우드 사업자의 IP 대역 목록을 내려받아 갱신합니다.';
 
     /**
      * 커맨드 실행

@@ -51,6 +51,7 @@
 | [identity-messages.md](identity-messages.md) | 본인인증 알림 (Identity Notifications) | 본인인증 메일 문구 = 알림 정의(notification_definitions) 중 ... |
 | [identity-policies.md](identity-policies.md) | 본인인증 정책 시스템 (Identity Policies) | - |
 | [identity-providers.md](identity-providers.md) | IDV Provider 작성 가이드 (Identity Verification Providers) | VerificationProviderInterface 구현 + IdentityProv... |
+| [installer-cli.md](installer-cli.md) | 터미널 설치·운영 명령 (installer CLI) | php g7-install(루트 스크립트) = php artisan core:inst... |
 | [language-pack-service.md](language-pack-service.md) | LanguagePackService (백엔드 Service 레이어) | LanguagePackService 가 install/activate/deactiva... |
 | [middleware.md](middleware.md) | 미들웨어 등록 규칙 | 인증 필요 미들웨어 → 전역 등록 금지! |
 | [notification-system.md](notification-system.md) | 알림 시스템 (Notification System) | GenericNotification 범용 클래스 1개로 모든 알림 처리 (개별 클래스... |

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\TemplateManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\Template;
@@ -12,17 +13,13 @@ use Illuminate\Support\Facades\Log;
 class ClearTemplateCacheCommand extends Command
 {
     use ClearsTemplateCaches;
+    use LocalizesDescription;
 
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'template:cache-clear
         {identifier? : 특정 템플릿의 캐시만 삭제 (생략 시 모든 템플릿)}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '템플릿 관련 캐시를 삭제합니다';
 
     /**
      * 템플릿 관리자

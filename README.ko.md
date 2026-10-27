@@ -430,6 +430,13 @@ cp .env.example .env
 
 > Composer 의존성은 설치 마법사가 운영용 구성(`--no-dev`)으로 자동 설치합니다. 직접 설치하려면 `composer install --no-dev --optimize-autoloader` 를 사용하세요.
 
+브라우저 없이 서버 터미널에서도 같은 설치를 진행할 수 있습니다(대화형, 또는 옵션·환경변수만으로 끝나는 비대화형).
+
+```bash
+php g7-install                       # 대화형
+php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
+```
+
 > 상세 설치 가이드는 [INSTALL.md](INSTALL.md)를 참조하세요.
 
 ---

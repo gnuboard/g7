@@ -5,6 +5,7 @@ namespace App\Console\Commands\Core;
 use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
 use App\Console\Commands\Core\Concerns\BundledSourcePlacementPrompt;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Exceptions\UpgradeHandoffException;
 use App\Extension\CoreVersionChecker;
@@ -33,6 +34,7 @@ class CoreUpdateCommand extends Command
     use BundledSourcePlacementPrompt;
     use ClearsTemplateCaches;
     use HasUnifiedConfirm;
+    use LocalizesDescription;
     use ReportsLifecycleWarnings;
 
     protected $signature = 'core:update
@@ -46,8 +48,6 @@ class CoreUpdateCommand extends Command
         {--vendor-mode=auto : vendor 설치 모드 (auto|composer|bundled)}
         {--bundled-sources= : 설치되지 않았고 이 프로젝트에도 없는 공식 번들 소스 처리 (none|all|식별자 목록, 쉼표 구분, type:id 허용). 미지정 시 대화형은 묻고 비대화형은 none}
         {--rebuild-search-index : 번들 확장 일괄 업데이트 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
-
-    protected $description = '그누보드7 코어를 최신 버전으로 업데이트합니다';
 
     private const TOTAL_STEPS = 11;
 

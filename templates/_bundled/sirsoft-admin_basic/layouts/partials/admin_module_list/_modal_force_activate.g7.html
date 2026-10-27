@@ -19,6 +19,7 @@
             <span class="text-body">{{module.name || module.identifier}}</span>
             <span data-if="{{module.status === 'inactive'}}" class="text-body text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.modules.status.inactive</span>
             <span data-if="{{module.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded">$t:admin.modules.status.not_installed</span>
+            <span data-if="{{module.status === 'version_mismatch'}}" class="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded">$t:admin.modules.status.version_mismatch ({{module.installed_version}} → {{module.required_version}})</span>
           </div>
         </div>
       </div>
@@ -30,6 +31,7 @@
             <span class="text-body">{{plugin.name || plugin.identifier}}</span>
             <span data-if="{{plugin.status === 'inactive'}}" class="text-body text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.plugins.status.inactive</span>
             <span data-if="{{plugin.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 rounded">$t:admin.plugins.status.not_installed</span>
+            <span data-if="{{plugin.status === 'version_mismatch'}}" class="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded">$t:admin.plugins.status.version_mismatch ({{plugin.installed_version}} → {{plugin.required_version}})</span>
           </div>
         </div>
       </div>

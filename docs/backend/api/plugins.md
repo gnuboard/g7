@@ -326,7 +326,7 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
-**설명** 설치된 플러그인을 활성화합니다. `core.plugins.activate` 권한이 필요합니다. `force` 없이 호출했을 때 필요한 의존 확장이 충족되지 않으면 409 응답으로 `missing_modules`·`missing_plugins` 목록과 함께 경고를 반환하므로, 사용자 확인 후 `force: true` 로 재요청해야 합니다. 재활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록이 `pending_language_packs` 로 응답에 포함됩니다. 레이아웃 파일 검사(데이터 소스 id 중복·`layouts/` 밖 조각 참조·`.g7.html` 컴파일 오류 등)에 실패하면 상태·레이아웃을 바꾸지 않고 오류를 반환한다. 7.0 JSON 레이아웃의 깨진 조각 참조(파일 부재·조각 JSON 오류·순환)는 실패로 보지 않고 빈 자리로 등록한 뒤 `layout_warnings` 로 알린다.
+**설명** 설치된 플러그인을 활성화합니다. `core.plugins.activate` 권한이 필요합니다. `force` 없이 호출했을 때 필요한 의존 확장이 충족되지 않으면 409 응답으로 `missing_modules`·`missing_plugins` 목록과 함께 경고를 반환하므로, 사용자 확인 후 `force: true` 로 재요청해야 합니다. 재활성화 시 cascade 로 함께 비활성화됐던 번들 언어팩 목록이 `pending_language_packs` 로 응답에 포함됩니다. 레이아웃 파일 검사(데이터 소스 id 중복·`layouts/` 밖 조각 참조·`.g7.html` 컴파일 오류 등)에 실패하면 상태·레이아웃을 바꾸지 않고 오류를 반환한다. 7.0 JSON 레이아웃의 깨진 조각 참조(파일 부재·조각 JSON 오류·순환)는 실패로 보지 않고 빈 자리로 등록한 뒤 `layout_warnings` 로 알린다. 미충족 항목의 `status` 는 `not_installed`·`inactive`·`version_mismatch`(활성이지만 설치 버전이 요구 버전 제약 미달, 7.1.4) 이며, 각 항목에 `required_version`·`installed_version` 이 함께 온다.
 
 
 ### POST /api/admin/plugins/check-updates
@@ -630,7 +630,7 @@ _단건 응답: `data` 객체의 필드 — 설치된 플러그인 리소스(Plu
 
 <!-- @generated:end -->
 
-**설명** `_pending`·`_bundled` 대기소에 있는 플러그인을 활성 디렉토리로 설치합니다. `core.plugins.install` 권한이 필요합니다. `vendor_mode` 로 Composer 의존성 설치 방식을(auto/composer/bundled) 지정하며, 요청 본문의 `dependencies` 로 선택한 의존 확장을 먼저 설치(cascade 1단계, 실패 시 전체 중단)한 뒤 `language_packs` 로 지정한 번들 언어팩을 best-effort 로 함께 설치합니다(cascade 2단계). 언어팩 설치 실패는 응답의 `language_pack_failures` 에 담겨 반환됩니다. 설치 직후 플러그인은 비활성이라 그 플러그인 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 에 담기고, 플러그인을 켤 때 함께 켜집니다.
+**설명** `_pending`·`_bundled` 대기소에 있는 플러그인을 활성 디렉토리로 설치합니다. `core.plugins.install` 권한이 필요합니다. `vendor_mode` 로 Composer 의존성 설치 방식을(auto/composer/bundled) 지정하며, 요청 본문의 `dependencies` 로 선택한 의존 확장을 먼저 설치(cascade 1단계, 실패 시 전체 중단)한 뒤 `language_packs` 로 지정한 번들 언어팩을 best-effort 로 함께 설치합니다(cascade 2단계). 언어팩 설치 실패는 응답의 `language_pack_failures` 에 담겨 반환됩니다. 설치 직후 플러그인은 비활성이라 그 플러그인 자신의 언어팩은 꺼진 채 설치되어 `language_packs_awaiting_host` 에 담기고, 플러그인을 켤 때 함께 켜집니다. 의존 확장은 의존 관계 순서(의존의 의존 먼저)로 설치하고 본 확장과 같은 `vendor_mode` 를 쓴다(7.1.4). 의존 확장 활성화가 실패하면 그 확장 이름과 실제 사유(`extensions.errors.cascade_dependency_activation_failed`)로 중단한다 — 앞서 설치한 의존 확장은 되돌리지 않는다 — 이때와 본 확장 설치가 실패했을 때, 실패 사유 끝에(400·500 응답은 `error`, 의존 버전 미달 같은 검증 실패 422 응답은 `message`) 남겨 둔 의존 확장 목록(`extensions.errors.cascade_dependencies_kept`, 예: 「함께 설치·활성화한 의존 확장은 되돌리지 않고 남겨 두었습니다: sirsoft-ecommerce」)을 붙인다(7.1.4).
 
 **동반 설치 권한(7.1.0)** 함께 고른 의존 모듈·플러그인(`dependencies[]`)은 설치·활성화까지, 번들 언어팩(`language_packs[]`)은 설치·자동 활성화까지 수행되므로 항목마다 그 종류의 권한을 먼저 확인한다 — 미설치 의존 확장 = `core.{type}s.install` + `core.{type}s.activate`, 설치됐지만 꺼진 의존 확장 = `core.{type}s.activate`, 언어팩 = `core.language_packs.install` + `core.language_packs.manage`. 하나라도 없으면 아무것도 설치하지 않고 403(`extensions.errors.cascade_permission_denied`, 항목 종류·식별자 포함)을 낸다. 설치 창은 `install-preview` 응답의 항목별 `can_select` 로 같은 판정을 미리 보여 체크박스를 잠근다.
 
@@ -2011,6 +2011,7 @@ _단건 응답: `data` 객체의 필드._
 | dependencies[].is_met | boolean | `false` | 의존 조건 충족 여부 |
 | dependencies[].available | boolean | `true` | cascade 선택 후보 여부 (미충족 항목만 true) |
 | dependencies[].default_selected | boolean | `true` | 체크리스트 기본 선택 여부 (미충족 + 미설치) |
+| dependencies[].required_by | string | `sirsoft-ecommerce` | 2단계 이상 의존 행만 — 이 확장을 필요로 하는 의존 확장 식별자 (7.1.4, 직접 의존 행에는 없음) |
 | integrations | array | `[{"type":"module", ...}]` | 함께 쓰면 연동되는 확장(선택) 체크목록 (7.1.4, 아래 하위 필드). 고른 항목은 install API 의 `integrations[]` 로 보낸다 |
 | integrations[].type | string | `module` | 연동 대상 유형 (`module` \| `plugin` \| `template`) |
 | integrations[].identifier | string | `sirsoft-board` | 연동 대상 식별자 |
