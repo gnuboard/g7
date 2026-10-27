@@ -45,6 +45,8 @@ _프론트 엔트리포인트가 없습니다._
 
 <!-- @intent START -->
 프런트 엔트리(`resources/js/index.ts`)가 `HeroSlider`(사용자 확장점 슬라이더)·`HeroBannerPreview`(관리자 미리보기 — 같은 슬라이더를 기기 틀 안에서 그린다)를 코어 레지스트리에 등록한다(`registerExtensionComponent`).
+
+슬라이더의 넘김은 [Swiper](https://swiperjs.com) 14.3.0(`swiper/react`, 모듈 `Autoplay`·`EffectFade`)이 맡는다 — 플러그인 번들에 함께 빌드한다(정확한 버전 고정, React 는 코어 전역을 쓴다). 화면의 ‹ › 단추·「1 / 3」·일시정지 단추와 캐러셀 접근성 표시(region·slide 역할, 비활성 장 `aria-hidden`)는 컴포넌트가 그리고 Swiper 기본 화살표·점 표시는 쓰지 않는다. 2장 이상이면 무한 반복(`loop`)·손가락 넘기기를 켜고 PC 마우스 끌기(`simulateTouch`)는 끈다. 효과는 slide 500ms · fade 교차 600ms · none(=slide 0ms), 움직임 줄이기면 none·자동 재생 끔. 자동 재생은 Swiper autoplay(설정 간격 ms)이고 마우스·포커스·일시정지 단추에서 `autoplay.stop()` 한다 — 자동으로 넘어가는 동안 장 번호는 `aria-live="off"`. 무한 반복은 슬라이드 DOM 순서를 바꾸므로 각 장에 논리 순서 `data-index` 를 둔다. 전환(0.5초) 중 누른 단추는 Swiper 가 무시한다(`loopPreventsSliding` 기본값). 단위 시험은 `resources/js/__tests__/swiperMock.tsx` 대역으로 연결 계약만 보고, 실제 넘김은 E2E `hero-slider-swiper.spec.ts` 가 본다.
 <!-- @intent END -->
 
 ## 에셋

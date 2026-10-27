@@ -1,4 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Autoplay, EffectFade } from 'swiper/modules';
+import type { Swiper as SwiperInstance } from 'swiper';
+import 'swiper/css';
+import 'swiper/css/effect-fade';
 
 /** 공개 API(`GET /api/plugins/sirsoft-hero_section/hero`)의 이미지 한 장 */
 export interface HeroImage {
@@ -157,9 +162,12 @@ function linkProps(banner: HeroBanner): { href: string; target?: string; rel?: s
 /**
  * 히어로섹션 슬라이더 — 사용자 템플릿 확장점(`home_hero`·`shop_hero`)에 끼워지는 플러그인 소유 컴포넌트.
  *
- * 배너가 없으면 아무것도 그리지 않는다(구좌 숨김). 1장이면 컨트롤·자동 재생이 없다. PC·모바일 이미지는
+ * 넘김(전환 효과·자동 재생·무한 반복·손가락 넘기기)은 Swiper 가 맡고, 화면의 ‹ › 단추·「1 / 3」·일시정지 단추와
+ * 캐러셀 접근성 표시는 이 컴포넌트가 그린다(Swiper 기본 화살표·점 표시는 쓰지 않는다). PC 마우스 끌기는 끈다.
+ * 배너가 없으면 아무것도 그리지 않는다(구좌 숨김). 1장이면 컨트롤·자동 재생·넘기기가 없다. PC·모바일 이미지는
  * `<picture>` 로 바꾸고, 업로드 때 잰 크기로 영역 비율을 미리 잡아 화면 밀림을 막는다. 첫 장은 즉시, 나머지는 지연
- * 로딩하되 다음 장은 전환 전에 미리 받는다. 자동 재생은 마우스·포커스·일시정지 단추·움직임 줄이기에서 멈춘다.
+ * 로딩하되 다음 장은 전환 전에 미리 받는다. 자동 재생은 마우스·포커스·일시정지 단추·움직임 줄이기에서 멈추고,
+ * 자동으로 넘어가는 동안에는 장 번호를 화면 읽기 프로그램이 매번 읽지 않게 한다.
  * 템플릿은 자기 오버라이드 폴더(템플릿 루트 기준 src/components/overrides/sirsoft-hero_section/)의 HeroSlider.tsx 로 이 컴포넌트를 대체할 수 있다(같은 props).
  */
 export const HeroSlider: React.FC<HeroSliderProps> = ({
@@ -180,26 +188,38 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [held, setHeld] = useState(false);
+  const [swiper, setSwiper] = useState<SwiperInstance | null>(null);
   const regionRef = useRef<HTMLElement>(null);
 
-  // 배너 목록이 바뀌면(언어 전환·재조회) 첫 장으로
+  // 배너 목록이 바뀌면(언어 전환·재조회) Swiper 를 새로 만들어 첫 장으로
   const key = banners.map((b) => b.id).join(',');
   useEffect(() => {
     setIndex(0);
   }, [key]);
 
-  const go = useCallback((next: number) => {
-    setIndex(((next % count) + count) % count);
-  }, [count]);
-
+  // 자동 재생은 Swiper 가 돌리고, 멈춤 조건(일시정지 단추·마우스·포커스)은 여기서 건다
+  const autoplaying = canAutoplay && !paused && !held;
   useEffect(() => {
-    if (!canAutoplay || paused || held) {
-      return undefined;
+    if (!swiper || swiper.destroyed || !swiper.autoplay) {
+      return;
     }
-    const timer = window.setInterval(() => setIndex((i) => (i + 1) % count), interval);
+    if (autoplaying) {
+      swiper.autoplay.start();
+    } else {
+      swiper.autoplay.stop();
+    }
+  }, [swiper, autoplaying]);
 
-    return () => window.clearInterval(timer);
-  }, [canAutoplay, paused, held, interval, count]);
+  const go = useCallback((direction: -1 | 1) => {
+    if (!swiper || swiper.destroyed) {
+      return;
+    }
+    if (direction < 0) {
+      swiper.slidePrev();
+    } else {
+      swiper.slideNext();
+    }
+  }, [swiper]);
 
   if (count === 0) {
     return null;
@@ -216,10 +236,10 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
   const onKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'ArrowLeft') {
       event.preventDefault();
-      go(index - 1);
+      go(-1);
     } else if (event.key === 'ArrowRight') {
       event.preventDefault();
-      go(index + 1);
+      go(1);
     }
   };
 
@@ -244,27 +264,41 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({
       }}
       onKeyDown={count > 1 ? onKeyDown : undefined}
     >
-      <div className="hs__track" style={effect === 'slide' ? { transform: `translateX(-${index * 100}%)` } : undefined}>
+      <Swiper
+        key={key}
+        className="hs__track"
+        modules={[Autoplay, EffectFade]}
+        loop={count > 1}
+        effect={effect === 'fade' ? 'fade' : 'slide'}
+        fadeEffect={{ crossFade: true }}
+        speed={effect === 'none' ? 0 : effect === 'fade' ? 600 : 500}
+        allowTouchMove={count > 1}
+        simulateTouch={false}
+        autoplay={canAutoplay ? { delay: interval, disableOnInteraction: false } : false}
+        onSwiper={setSwiper}
+        onRealIndexChange={(instance: SwiperInstance) => setIndex(instance.realIndex)}
+      >
         {banners.map((banner, i) => (
-          <HeroSlide
-            key={banner.id}
-            banner={banner}
-            index={i}
-            count={count}
-            active={i === index}
-            eager={i === 0 || i === (index + 1) % count}
-            forceDevice={forceDevice}
-          />
+          <SwiperSlide key={banner.id}>
+            <HeroSlide
+              banner={banner}
+              index={i}
+              count={count}
+              active={i === index}
+              eager={i === 0 || i === (index + 1) % count}
+              forceDevice={forceDevice}
+            />
+          </SwiperSlide>
         ))}
-      </div>
+      </Swiper>
 
       {count > 1 && (
         <div className="hs__controls">
-          <button type="button" className="hs__control hs__prev" aria-label={t('sirsoft-hero_section.slider.previous', '이전 배너')} onClick={() => go(index - 1)}>
+          <button type="button" className="hs__control hs__prev" aria-label={t('sirsoft-hero_section.slider.previous', '이전 배너')} onClick={() => go(-1)}>
             <span aria-hidden="true">‹</span>
           </button>
-          <span className="hs__counter" aria-live="polite">{`${index + 1} / ${count}`}</span>
-          <button type="button" className="hs__control hs__next" aria-label={t('sirsoft-hero_section.slider.next', '다음 배너')} onClick={() => go(index + 1)}>
+          <span className="hs__counter" aria-live={autoplaying ? 'off' : 'polite'}>{`${index + 1} / ${count}`}</span>
+          <button type="button" className="hs__control hs__next" aria-label={t('sirsoft-hero_section.slider.next', '다음 배너')} onClick={() => go(1)}>
             <span aria-hidden="true">›</span>
           </button>
           {canAutoplay && (
@@ -356,6 +390,7 @@ const HeroSlide: React.FC<HeroSlideProps> = ({ banner, index, count, active, eag
       aria-label={`${index + 1} / ${count}`}
       aria-hidden={active ? undefined : true}
       data-banner-id={banner.id}
+      data-index={index}
     >
       {link && !hasButton ? (
         <a className="hs__link" {...link} aria-label={banner.title || alt} tabIndex={active ? undefined : -1}>{body}</a>

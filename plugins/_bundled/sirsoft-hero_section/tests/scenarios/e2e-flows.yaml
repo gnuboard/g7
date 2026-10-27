@@ -14,6 +14,9 @@ axes:
     - bulk_hide_removes_from_home
     - delete_removes_from_home
     - edit_image_applies_on_save
+    - slider_buttons_loop_both_ways
+    - slider_autoplay_advances
+    - slider_touch_swipe
     - locale_switch_changes_text
     - plugin_deactivate_hides_section
     - read_only_admin_sees_no_edit_buttons
@@ -22,6 +25,8 @@ axes:
 exclusions:
   - { flow: plugin_deactivate_hides_section, viewport: mobile, reason: "비활성화 반영은 폭과 무관" }
   - { flow: read_only_admin_sees_no_edit_buttons, viewport: mobile, reason: "권한 판정은 폭과 무관(카드 보기 단추는 레이아웃 테스트가 본다)" }
+  - { flow: slider_autoplay_advances, viewport: mobile, reason: "자동 재생 시각은 폭과 무관(Swiper 같은 설정)" }
+  - { flow: slider_touch_swipe, viewport: desktop, reason: "손가락 넘기기는 터치 기기 동작 — 데스크톱 마우스 끌기는 꺼 두었다" }
 
 effects:
   - user_screen_reflects_admin_change
@@ -30,3 +35,4 @@ effects:
 test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/admin-banner-to-home.spec.ts
   - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/hero-locale-and-lifecycle.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/hero-slider-swiper.spec.ts

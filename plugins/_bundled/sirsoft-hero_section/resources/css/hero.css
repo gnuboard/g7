@@ -2,7 +2,8 @@
  * 히어로섹션 슬라이더 — 플러그인 소유 스타일(hs- 접두).
  * 템플릿 CSS 에 기대지 않는다: 확장 컴포넌트의 유틸리티 클래스는 템플릿 빌드에 들어 있다는 보장이 없다.
  * 영역 비율(--hs-ratio-pc / --hs-ratio-mobile)은 컴포넌트가 업로드 때 잰 이미지 크기로 넣는다 — 이미지가 오기 전에
- * 높이를 잡아 화면 밀림을 막는다.
+ * 높이를 잡아 화면 밀림을 막는다. 넘김·전환 효과는 Swiper(swiper/css·effect-fade CSS 를 함께 번들)가 맡고, 여기서는
+ * Swiper 영역을 히어로 영역 크기에 맞추고 플러그인 소유 컨트롤을 그 위에 둔다.
  */
 .hs {
   position: relative;
@@ -19,39 +20,14 @@
 }
 
 .hs__track {
-  position: relative;
-  display: flex;
   width: 100%;
   height: 100%;
-}
-
-.hs--slide .hs__track {
-  transition: transform 0.5s ease;
 }
 
 .hs__slide {
   position: relative;
-  flex: 0 0 100%;
   width: 100%;
   height: 100%;
-}
-
-.hs--fade .hs__slide,
-.hs--none .hs__slide {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.hs--fade .hs__slide {
-  transition: opacity 0.6s ease;
-}
-
-.hs--fade .hs__slide--active,
-.hs--none .hs__slide--active {
-  opacity: 1;
-  pointer-events: auto;
 }
 
 .hs__link {
@@ -116,6 +92,7 @@
 
 .hs__controls {
   position: absolute;
+  z-index: 2; /* Swiper 영역(z-index 1) 위 */
   right: 16px;
   bottom: 16px;
   display: flex;
@@ -145,13 +122,6 @@
   color: #ffffff;
   font-size: 13px;
   text-align: center;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hs--slide .hs__track,
-  .hs--fade .hs__slide {
-    transition: none;
-  }
 }
 
 /* 관리자 미리보기 — 기기 폭 틀 */

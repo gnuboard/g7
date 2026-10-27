@@ -30,6 +30,8 @@ export default defineConfig({
                     'react-dom': 'ReactDOM',
                     'react/jsx-runtime': 'ReactJSXRuntime',
                 },
+                // 번들에 함께 담는 Swiper 의 MIT 저작권 고지 — 원본 머리 주석은 `/**` 라 압축 때 지워지므로 `/*!` 로 남긴다
+                banner: '/*! Swiper 14.3.0 | https://swiperjs.com | Copyright 2014-2026 Vladimir Kharlampidi | Released under the MIT License */',
                 entryFileNames: 'js/plugin.iife.js',
                 assetFileNames: (info) => {
                     if (info.name && info.name.endsWith('.css')) return 'css/plugin.css';

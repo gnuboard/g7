@@ -6,9 +6,14 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup } from '@testing-library/react';
 import { HeroBannerPreview } from '../../components/composite/HeroBannerPreview';
+
+vi.mock('swiper/react', () => import('../swiperMock'));
+vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' } }));
+vi.mock('swiper/css', () => ({}));
+vi.mock('swiper/css/effect-fade', () => ({}));
 
 const banners = [{
   id: 1,

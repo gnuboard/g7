@@ -118,9 +118,29 @@ export async function gotoUser(page: Page, path = '/'): Promise<void> {
 /** 사용자 화면 슬라이더 영역 */
 export const slider = (page: Page) => page.locator('section.hs[aria-roledescription="carousel"]');
 
-/** 슬라이더 안 슬라이드 제목들(순서대로) */
+/**
+ * 슬라이더 안 슬라이드 제목들(배너 순서대로) — Swiper 무한 반복은 슬라이드 DOM 순서를 바꾸므로 논리 순서(`data-index`)로 정렬한다.
+ *
+ * @param page 페이지
+ * @returns 슬라이드 제목(제목을 숨긴 슬라이드는 빠진다)
+ */
 export async function slideTitles(page: Page): Promise<string[]> {
-  return page.locator('section.hs .hs__title').allTextContents();
+  const rows = await page.locator('section.hs [data-index]').evaluateAll((els) => els.map((el) => [
+    Number(el.getAttribute('data-index')),
+    el.querySelector('.hs__title')?.textContent ?? null,
+  ] as [number, string | null]));
+
+  return rows.sort((a, b) => a[0] - b[0]).map(([, title]) => title).filter((title): title is string => title !== null);
+}
+
+/**
+ * 지금 보이는 슬라이드의 제목을 돌려준다.
+ *
+ * @param page 페이지
+ * @returns 활성 슬라이드 제목
+ */
+export async function activeTitle(page: Page): Promise<string> {
+  return (await page.locator('section.hs .hs__slide--active .hs__title').first().textContent()) ?? '';
 }
 
 /** 데스크톱·휴대폰 폭 */

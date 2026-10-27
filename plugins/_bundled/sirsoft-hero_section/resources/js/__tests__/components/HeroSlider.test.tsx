@@ -10,6 +10,13 @@ import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, cleanup, fireEvent, act } from '@testing-library/react';
 import { HeroSlider, type HeroBanner } from '../../components/composite/HeroSlider';
+import { swiperState } from '../swiperMock';
+
+// 넘김은 Swiper 가 맡는다 — jsdom 에서는 대역으로 연결 계약(옵션·호출·장 번호 동기)만 보고, 실제 넘김은 E2E 가 본다
+vi.mock('swiper/react', () => import('../swiperMock'));
+vi.mock('swiper/modules', () => ({ Autoplay: { name: 'autoplay' }, EffectFade: { name: 'effect-fade' } }));
+vi.mock('swiper/css', () => ({}));
+vi.mock('swiper/css/effect-fade', () => ({}));
 
 /** 배너 하나를 만든다. */
 const banner = (id: number, extra: Partial<HeroBanner> = {}): HeroBanner => ({
@@ -63,11 +70,22 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=single_banner_hides_controls
-  it('배너 1장이면 컨트롤과 자동 재생이 없다', () => {
+  it('배너 1장이면 컨트롤·자동 재생·넘기기·무한 반복이 없다', () => {
     const { container } = render(<HeroSlider banners={[banner(1)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
     expect(container.querySelector('.hs__controls')).toBeNull();
-    act(() => { vi.advanceTimersByTime(10000); });
+    expect(swiperState.props?.autoplay).toBe(false);
+    expect(swiperState.props?.allowTouchMove).toBe(false);
+    expect(swiperState.props?.loop).toBe(false);
     expect(activeId(container)).toBe('1');
+  });
+
+  // @scenario surface=loop_and_touch_swipe_enabled
+  it('2장 이상이면 Swiper 무한 반복과 손가락 넘기기를 켜고, PC 마우스 끌기는 끈다', () => {
+    render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false }} />);
+    expect(swiperState.props?.loop).toBe(true);
+    expect(swiperState.props?.allowTouchMove).toBe(true);
+    expect(swiperState.props?.simulateTouch).toBe(false);
+    expect(swiperState.props?.className).toBe('hs__track');
   });
 
   // @scenario surface=picture_has_mobile_source
@@ -134,32 +152,35 @@ describe('HeroSlider', () => {
   });
 
   // @scenario surface=autoplay_advances_by_interval
-  it('자동 재생은 설정 간격마다 다음 장으로 간다', () => {
-    const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
-    expect(activeId(container)).toBe('1');
-    act(() => { vi.advanceTimersByTime(2999); });
-    expect(activeId(container)).toBe('1');
-    act(() => { vi.advanceTimersByTime(1); });
+  it('자동 재생은 설정 간격(초)을 Swiper autoplay 지연(ms)으로 넘기고, Swiper 가 넘긴 장을 따라간다', () => {
+    const { container, unmount } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
+    expect(swiperState.props?.autoplay).toEqual({ delay: 3000, disableOnInteraction: false });
+    expect(swiperState.instance?.autoplay.start).toHaveBeenCalled();
+    // Swiper 가 다음 장으로 넘기면(자동 재생·손가락) 번호와 활성 장이 따라온다
+    act(() => { swiperState.instance?.slideNext(); });
     expect(activeId(container)).toBe('2');
-    act(() => { vi.advanceTimersByTime(6000); });
-    expect(activeId(container)).toBe('1');
+    expect(container.querySelector('.hs__counter')?.textContent).toBe('2 / 3');
+    unmount();
+
+    render(<HeroSlider banners={[banner(1), banner(2)]} />);
+    expect(swiperState.props?.autoplay).toEqual({ delay: 5000, disableOnInteraction: false });
   });
 
   // @scenario surface=autoplay_pauses_on_hover_and_focus
-  it('마우스를 올리거나 포커스가 들어가면 자동 재생이 멈춘다', () => {
+  it('마우스를 올리거나 포커스가 들어가면 Swiper 자동 재생을 멈추고, 나가면 다시 켠다', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
     const region = container.querySelector('section') as HTMLElement;
+    const autoplay = swiperState.instance!.autoplay;
 
     fireEvent.mouseEnter(region);
-    act(() => { vi.advanceTimersByTime(9000); });
-    expect(activeId(container)).toBe('1');
+    expect(autoplay.running).toBe(false);
     fireEvent.mouseLeave(region);
-    act(() => { vi.advanceTimersByTime(3000); });
-    expect(activeId(container)).toBe('2');
+    expect(autoplay.running).toBe(true);
 
     fireEvent.focus(container.querySelector('.hs__next') as HTMLElement);
-    act(() => { vi.advanceTimersByTime(9000); });
-    expect(activeId(container)).toBe('2');
+    expect(autoplay.running).toBe(false);
+    fireEvent.blur(container.querySelector('.hs__next') as HTMLElement, { relatedTarget: document.body });
+    expect(autoplay.running).toBe(true);
   });
 
   // @scenario surface=pause_button_toggles_autoplay
@@ -168,48 +189,53 @@ describe('HeroSlider', () => {
     const toggle = container.querySelector('.hs__toggle') as HTMLButtonElement;
     expect(toggle.getAttribute('aria-pressed')).toBe('false');
 
+    const autoplay = swiperState.instance!.autoplay;
+
     fireEvent.click(toggle);
     expect(toggle.getAttribute('aria-pressed')).toBe('true');
     // 단추를 누르며 포커스가 들어갔다면 그 멈춤과 별개로 일시정지가 유지되는지 보려고 포커스를 뺀다
     fireEvent.blur(toggle, { relatedTarget: document.body });
-    act(() => { vi.advanceTimersByTime(9000); });
-    expect(activeId(container)).toBe('1');
+    expect(autoplay.running).toBe(false);
 
     fireEvent.click(toggle);
     fireEvent.blur(toggle, { relatedTarget: document.body });
-    act(() => { vi.advanceTimersByTime(3000); });
-    expect(activeId(container)).toBe('2');
+    expect(autoplay.running).toBe(true);
   });
 
   // @scenario surface=reduced_motion_disables_autoplay
   it('움직임 줄이기를 켠 사용자는 자동 재생·효과가 꺼진다', () => {
     mockReducedMotion(true);
     const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: true, interval_seconds: 3, effect: 'slide' }} />);
-    act(() => { vi.advanceTimersByTime(9000); });
-    expect(activeId(container)).toBe('1');
+    expect(swiperState.props?.autoplay).toBe(false);
+    expect(swiperState.props?.speed).toBe(0);
     expect(container.querySelector('section')?.className).toContain('hs--none');
     expect(container.querySelector('.hs__toggle')).toBeNull();
   });
 
   // @scenario surface=effect_fade_and_none
-  it('효과 fade·none 은 이동 대신 보이는 장만 바꾼다', () => {
-    for (const effect of ['fade', 'none'] as const) {
-      const { container, unmount } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false, effect }} />);
-      expect(container.querySelector('section')?.className).toContain(`hs--${effect}`);
-      expect((container.querySelector('.hs__track') as HTMLElement).style.transform).toBe('');
+  it('효과는 Swiper effect·speed 로 옮긴다 — 슬라이드 500ms, 페이드(교차) 600ms, 없음은 slide 를 0ms 로', () => {
+    const cases = [
+      ['slide', 'slide', 500],
+      ['fade', 'fade', 600],
+      ['none', 'slide', 0],
+    ] as const;
+    for (const [setting, effect, speed] of cases) {
+      const { container, unmount } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false, effect: setting }} />);
+      expect(container.querySelector('section')?.className).toContain(`hs--${setting}`);
+      expect(swiperState.props?.effect).toBe(effect);
+      expect(swiperState.props?.speed).toBe(speed);
+      expect(swiperState.props?.fadeEffect).toEqual({ crossFade: true });
       fireEvent.click(container.querySelector('.hs__next') as HTMLElement);
       expect(activeId(container)).toBe('2');
       unmount();
     }
-    const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false, effect: 'slide' }} />);
-    fireEvent.click(container.querySelector('.hs__next') as HTMLElement);
-    expect((container.querySelector('.hs__track') as HTMLElement).style.transform).toBe('translateX(-100%)');
   });
 
   // @scenario surface=prev_next_buttons_and_keyboard
-  it('이전·다음 단추와 좌우 화살표 키로 넘긴다(끝에서 처음으로 돈다)', () => {
+  it('이전·다음 단추와 좌우 화살표 키가 Swiper 를 넘긴다(무한 반복이라 끝에서 처음으로 돈다)', () => {
     const { container } = render(<HeroSlider banners={[banner(1), banner(2), banner(3)]} settings={{ autoplay: false }} />);
     const region = container.querySelector('section') as HTMLElement;
+    const instance = swiperState.instance!;
 
     fireEvent.click(container.querySelector('.hs__prev') as HTMLElement);
     expect(activeId(container)).toBe('3');
@@ -220,6 +246,27 @@ describe('HeroSlider', () => {
     expect(activeId(container)).toBe('1');
     fireEvent.click(container.querySelector('.hs__next') as HTMLElement);
     expect(activeId(container)).toBe('2');
+    expect(instance.slidePrev).toHaveBeenCalledTimes(2);
+    expect(instance.slideNext).toHaveBeenCalledTimes(3);
+  });
+
+  // @scenario surface=counter_not_announced_while_autoplaying
+  // @effects accessible_carousel_semantics
+  it('자동으로 넘어가는 동안은 장 번호를 읽지 않고(aria-live off), 멈추면 읽는다(polite)', () => {
+    const { container } = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: true, interval_seconds: 3 }} />);
+    const counter = container.querySelector('.hs__counter') as HTMLElement;
+    expect(counter.getAttribute('aria-live')).toBe('off');
+
+    fireEvent.mouseEnter(container.querySelector('section') as HTMLElement);
+    expect(counter.getAttribute('aria-live')).toBe('polite');
+    fireEvent.mouseLeave(container.querySelector('section') as HTMLElement);
+    fireEvent.click(container.querySelector('.hs__toggle') as HTMLElement);
+    fireEvent.blur(container.querySelector('.hs__toggle') as HTMLElement, { relatedTarget: document.body });
+    expect(counter.getAttribute('aria-live')).toBe('polite');
+
+    cleanup();
+    const manual = render(<HeroSlider banners={[banner(1), banner(2)]} settings={{ autoplay: false }} />);
+    expect(manual.container.querySelector('.hs__counter')?.getAttribute('aria-live')).toBe('polite');
   });
 
   // @scenario surface=carousel_aria_roles_and_counter
@@ -234,6 +281,8 @@ describe('HeroSlider', () => {
     const slides = container.querySelectorAll('[aria-roledescription="slide"]');
     expect(slides).toHaveLength(2);
     expect(slides[0].getAttribute('aria-label')).toBe('1 / 2');
+    // 무한 반복은 슬라이드 DOM 순서를 바꾸므로 논리 순서를 data-index 로 남긴다
+    expect(Array.from(slides).map((el) => el.getAttribute('data-index'))).toEqual(['0', '1']);
     expect(slides[1].getAttribute('aria-hidden')).toBe('true');
     expect(container.querySelector('.hs__counter')?.textContent).toBe('1 / 2');
     expect(container.querySelector('.hs__prev')?.getAttribute('aria-label')).toBeTruthy();

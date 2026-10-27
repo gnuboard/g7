@@ -6,11 +6,14 @@ description: |
   버튼 문구가 있으면 버튼만, 없으면 슬라이드 전체가 링크다(새 창이면 rel="noopener noreferrer").
   첫 슬라이드 이미지는 즉시, 나머지는 지연 로딩하고, width·height·aspect-ratio 로 화면 밀림을 막는다. 자동 재생은 마우스·포커스·일시정지 단추·
   reduced-motion 에서 멈춘다. 관리자 미리보기(HeroBannerPreview)는 같은 렌더 함수를 쓴다.
+  넘김은 Swiper(무한 반복·손가락 넘기기, PC 마우스 끌기 끔)가 맡는다 — 단위 시험은 Swiper 대역으로 옵션·호출·장 번호 동기만 보고,
+  실제 넘김·자동 재생·쓸기는 e2e-flows.yaml 의 slider_* 흐름이 실브라우저에서 본다. 자동으로 넘어가는 동안 장 번호는 읽지 않는다.
 
 axes:
   surface:
     - renders_nothing_when_empty
     - single_banner_hides_controls
+    - loop_and_touch_swipe_enabled
     - picture_has_mobile_source
     - picture_omits_mobile_source_when_missing
     - text_visibility_color_align
@@ -24,6 +27,7 @@ axes:
     - effect_fade_and_none
     - prev_next_buttons_and_keyboard
     - carousel_aria_roles_and_counter
+    - counter_not_announced_while_autoplaying
     - index_resets_when_banners_change
     - first_image_eager_rest_lazy
     - next_slide_preloaded_before_transition
