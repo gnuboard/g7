@@ -23,7 +23,7 @@ test('desktop and mobile rate inputs stay locked and badges remain on one line',
     for(const rate of await rates.all())await expect(rate).toBeVisible();
     for(const rate of (await rates.all()).slice(0,4))await expect(rate).toBeDisabled();
     await expect(rates.last()).toBeEnabled();
-    const badges=page.locator('span.whitespace-nowrap').filter({hasText:'자동 관리'});
+    const badges=page.locator('span.ecommerce\\:whitespace-nowrap').filter({hasText:'자동 관리'});
     await expect(badges).toHaveCount(4);
     expect(await badges.evaluateAll(elements=>elements.every(e=>getComputedStyle(e).whiteSpace==='nowrap'&&e.getBoundingClientRect().height<=24))).toBe(true);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);

@@ -153,7 +153,7 @@ test('이번 주기 대상 회원 수가 보이고 「대상 보기」 창이 �
     await page.goto('/admin/plugins/sirsoft-gdpr/settings');
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-    const badge = page.locator('#annual_notice_targets .badge');
+    const badge = page.locator('#annual_notice_targets .gdpr-badge');
     await expect(badge).toBeVisible({ timeout: 20_000 });
     await expect(badge).not.toContainText(/대상 0명|: 0$/);
 

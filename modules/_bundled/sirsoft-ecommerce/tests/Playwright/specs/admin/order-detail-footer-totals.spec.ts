@@ -11,8 +11,11 @@
  *  - 값 하드코딩 금지 — 주문 데이터는 변동한다. 형태(정규식)로 단언한다.
  *  - 헤더/라벨의 한글 문자열 단언 금지 — E2E 세션 로케일이 en 이면 `$t:` 라벨이 영문으로
  *    렌더된다(order-detail-numeric-alignment.spec.ts 실측 선례). 셀 식별은 레이아웃
- *    JSON 이 부여한 className 훅으로 한다: 수량=`text-center`(비 blue), 적립=`text-center`+
- *    `text-blue-600`, 배송비=`text-label`. `개`/`P` 접미사는 레이아웃에 리터럴로 박힌
+ *    JSON 이 부여한 className 훅으로 한다: 수량=`ecommerce:text-center`(비 `font-medium`),
+ *    적립=`ecommerce:text-center`+`ecommerce:font-medium`, 배송비=`ecommerce:whitespace-nowrap`
+ *    (비 `text-center`). 색 클래스는 훅으로 쓰지 않는다 — DataGrid 가 합계행 칸에 직접 넣는
+ *    `text-gray-900` 이 같은 칸의 색을 이겨(종전 `text-blue-600`·`text-label` 도 화면에 나타난 적이
+ *    없다) #816 에서 레이아웃 색 클래스를 걷었다. `개`/`P` 접미사는 레이아웃에 리터럴로 박힌
  *    로케일 무관 문자라 단언에 써도 된다.
  *  - tfoot 의 선행 빈 셀(expandable/selectable) 유무에 좌우되지 않도록 인덱스 단언 금지.
  */
@@ -23,14 +26,14 @@ import type { Page } from '@playwright/test';
  * 첫 주문의 상세로 진입한다 (주문번호 하드코딩 회피).
  *
  * 목록 화면은 좁은 뷰포트에서 카드로 렌더되므로 진입은 항상 데스크톱 폭에서 한다.
- * 상세 진입은 주문번호 `<span>` 클릭(DataGrid onRowClick 계열).
+ * 상세 진입은 주문번호 링크(`<a href="/admin/ecommerce/orders/…">`) 클릭.
  */
 async function gotoFirstOrderDetail(page: Page): Promise<void> {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto('/admin/ecommerce/orders');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
-  const orderNumber = page.locator('table tbody tr span.cursor-pointer').first();
+  const orderNumber = page.locator('table tbody tr a[href^="/admin/ecommerce/orders/"]').first();
   await orderNumber.waitFor({ state: 'visible', timeout: 30_000 });
   await orderNumber.click();
 
@@ -60,19 +63,19 @@ test.describe('@sirsoft-ecommerce 주문 상세 합계행 텍스트 바인딩', 
       })
       .toBe(false);
 
-    // ② 수량 셀 — 레이아웃 className 훅: text-center 이면서 blue(적립) 가 아닌 셀.
+    // ② 수량 셀 — 레이아웃 className 훅: text-center 이면서 font-medium(적립) 이 아닌 셀.
     //    `개` 는 레이아웃 리터럴(로케일 무관). 회귀 시 `{{...}}개` 라 정규식이 깨진다.
-    const quantityCell = tfoot.locator('td.text-center:not(.text-blue-600)').first();
+    const quantityCell = tfoot.locator('td.ecommerce\\:text-center:not(.ecommerce\\:font-medium)').first();
     await expect(quantityCell).toHaveText(/^[\d,]+개$/);
 
-    // ③ 적립예정 셀 — text-center + text-blue-600. `| number` 파이프 해석 결과라
+    // ③ 적립예정 셀 — text-center + font-medium. `| number` 파이프 해석 결과라
     //    숫자(천단위 콤마 허용) + `P` 리터럴 형태여야 한다.
-    const pointsCell = tfoot.locator('td.text-center.text-blue-600').first();
+    const pointsCell = tfoot.locator('td.ecommerce\\:text-center.ecommerce\\:font-medium').first();
     await expect(pointsCell).toHaveText(/^[\d,]+P$/);
 
-    // ④ 배송비 셀 — text-label. 라벨은 `$t:` 로 로케일 의존이므로 라벨 문자열 대신
-    //    "라벨: 값" 구분자 존재 + 표현식 원문 부재를 단언한다.
-    const deliveryCell = tfoot.locator('td.text-label').first();
+    // ④ 배송비 셀 — whitespace-nowrap 이면서 text-center 가 아닌 셀. 라벨은 `$t:` 로 로케일
+    //    의존이므로 라벨 문자열 대신 "라벨: 값" 구분자 존재 + 표현식 원문 부재를 단언한다.
+    const deliveryCell = tfoot.locator('td.ecommerce\\:whitespace-nowrap:not(.ecommerce\\:text-center)').first();
     const deliveryText = (await deliveryCell.innerText()).trim();
     expect(deliveryText).not.toContain('{{');
     expect(deliveryText).toMatch(/:/);
