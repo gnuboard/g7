@@ -36,6 +36,69 @@ const FLICK_MIN_RATIO = 0.04;
 /** 점 단추를 그리는 최대 장 수 — 넘으면 점(각 44px)이 여러 줄로 늘어 띠가 길어지므로 「지금 / 전체」 숫자만 둔다 */
 export const MAX_DOTS = 8;
 
+/** 옮긴 창이 화면 가장자리와 남기는 여백(px) */
+const MOVE_EDGE_PX = 8;
+
+/** 창 옮기기 손잡이에서 화살표 키 한 번에 옮기는 거리(px) */
+const MOVE_KEY_PX = 16;
+
+/** 레이어 층(z-index) — `popup.css` 의 `.g7pp-root` 와 같은 값. 이 층 이상인 화면 위 고정 요소(헤더 등)는 창을 덮는다 */
+const LAYER_Z = 40;
+
+/** 위아래 고정 요소 사이가 좁을 때 줄이는 본문 높이의 하한(px) */
+const FIT_MIN_PX = 120;
+
+/** 하단 시트를 놓았을 때 닫는 내림 거리 — 시트 높이 대비 비율 */
+const SHEET_CLOSE_RATIO = 0.3;
+
+/** 하단 시트를 빠르게 휙 내렸을 때 닫는 최소 거리(px) — 속도는 장 넘김과 같은 FLICK_SPEED */
+const SHEET_FLICK_MIN_PX = 24;
+
+/** 창을 옮긴 거리(px) — 기존 배치(가운데·좌표·시트) 위에 더해진다 */
+interface MoveShift {
+  x: number;
+  y: number;
+}
+
+/** 옮기지 않은 자리 */
+const NO_SHIFT: MoveShift = { x: 0, y: 0 };
+
+/** 창을 덮는 화면 위·아래 고정 요소의 두께(px) — 위는 헤더 등, 아래는 GDPR 배너 */
+interface Covers {
+  top: number;
+  bottom: number;
+}
+
+/** 옮기기 전 창의 표시 자리 */
+interface MoveBase {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/** 진행 중인 창 옮기기 */
+interface MoveState {
+  /** 포인터 id */
+  id: number;
+
+  /** 누른 위치 (화면 px) */
+  x: number;
+  y: number;
+
+  /** 누른 시각 (ms) */
+  at: number;
+
+  /** 누를 때 이미 옮겨져 있던 거리 */
+  start: MoveShift;
+
+  /** 옮기기 전 창의 표시 자리 */
+  base: MoveBase;
+
+  /** 누를 때 잰 화면 위·아래 고정 요소 */
+  covers: Covers;
+}
+
 /**
  * 장 위치 상태 — 현재 장과 함께 보이는 옆 장 하나만 ±100% 에 두고 옮긴다(전체 트랙 없음).
  * 끝 → 처음 넘김도 옆 장 하나만 들어오므로 한 칸 넘김으로 보인다.
@@ -86,6 +149,59 @@ interface DragState {
  */
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+/**
+ * 화면 맨 위에 붙어 레이어를 덮는 고정 요소(템플릿 헤더 등)의 아래 끝을 잽니다 — 없으면 0.
+ *
+ * 화면 맨 윗줄 세 점에 겹친 요소 중 레이어 밖의 `fixed`·`sticky` 요소이고 층이 레이어(40) 이상인 것만 센다.
+ * 화면 절반을 넘게 덮는 요소(전체 화면 배경 등)는 헤더가 아니므로 뺀다.
+ *
+ * @param root 레이어 루트 (그 안의 요소는 세지 않는다)
+ * @returns 덮는 요소의 아래 끝(px)
+ */
+function measureTopCover(root: Element | null): number {
+  if (typeof document.elementsFromPoint !== 'function') {
+    return 0;
+  }
+  let cover = 0;
+  for (const x of [1, window.innerWidth / 2, window.innerWidth - 1]) {
+    for (const el of document.elementsFromPoint(x, 1)) {
+      if (root?.contains(el)) {
+        continue;
+      }
+      const style = window.getComputedStyle(el);
+      if (style.position !== 'fixed' && style.position !== 'sticky') {
+        continue;
+      }
+      const rect = el.getBoundingClientRect();
+      if ((Number.parseInt(style.zIndex, 10) || 0) >= LAYER_Z && rect.top <= 1 && rect.bottom < window.innerHeight / 2) {
+        cover = Math.max(cover, rect.bottom);
+      }
+    }
+  }
+
+  return Math.round(cover);
+}
+
+/**
+ * 옮긴 거리를 화면 안으로 자릅니다 — 창이 들어가면 가장자리 8px 안쪽, 창이 화면보다 크면 맨 위(손잡이)가 보이는 데까지.
+ * 화면 위 고정 요소가 있으면 위쪽 끝은 그 아래, 바닥 배너가 있으면 아래쪽 끝은 그 위다(둘 다 안 되면 위가 먼저).
+ *
+ * @param base 옮기기 전 창의 표시 자리
+ * @param x 옮길 가로 거리(px)
+ * @param y 옮길 세로 거리(px)
+ * @param covers 화면 위·아래 고정 요소 (없으면 0)
+ * @returns 자른 거리
+ */
+function clampShift(base: MoveBase, x: number, y: number, covers: Covers = { top: 0, bottom: 0 }): MoveShift {
+  const right = window.innerWidth - base.width - MOVE_EDGE_PX;
+  const bottom = window.innerHeight - covers.bottom - base.height - MOVE_EDGE_PX;
+  const minTop = covers.top + MOVE_EDGE_PX;
+  const left = clamp(base.left + x, Math.min(MOVE_EDGE_PX, right), Math.max(MOVE_EDGE_PX, right));
+  const top = Math.max(covers.top, clamp(base.top + y, Math.min(minTop, bottom), Math.max(minTop, bottom)));
+
+  return { x: Math.round(left - base.left), y: Math.round(top - base.top) };
 }
 
 /** 사용자 레이어 props */
@@ -271,6 +387,17 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
   const dragRef = useRef<DragState | null>(null);
   // 끈 뒤 따라오는 click 은 링크 이동이 아니다 — 다음 click 하나를 막는다
   const draggedRef = useRef(false);
+  // 창 옮기기 — 옮긴 자리는 기억하지 않는다(새로 열리거나 경로가 바뀌면 원래 자리)
+  const [shift, setShift] = useState<MoveShift>(NO_SHIFT);
+  const [holding, setHolding] = useState(false);
+  const shiftRef = useRef<MoveShift>(NO_SHIFT);
+  const moveRef = useRef<MoveState | null>(null);
+  shiftRef.current = shift;
+  // 위아래 고정 요소 사이에 들어가도록 줄인 본문 높이 상한(px) — 바뀌면 다시 그린 뒤 자리를 잡는다
+  const [fit, setFit] = useState<number | null>(null);
+  const fitRef = useRef<number | null>(null);
+  const pendingRef = useRef<MoveShift | null>(null);
+  const gdprRef = useRef(0);
 
   const visible = useMemo(() => {
     if (preview) {
@@ -292,7 +419,8 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
   const count = visible.length;
   const open = count > 0;
   const isSheet = isMobile && config.mobile_style === 'sheet';
-  const gdprHeight = useGdprBannerHeight(open && isSheet && !preview);
+  // 시트는 배너 위로 올리고, 가운데·좌표 창은 배너 위에 들어가게 놓는다
+  const gdprHeight = useGdprBannerHeight(open && !preview);
 
   const current = count > 0 ? Math.min(index, count - 1) : 0;
   indexRef.current = current;
@@ -302,6 +430,99 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     setIndex(0);
     setMotion(REST);
   }, [visibleKey]);
+
+  /**
+   * 옮기기 전 창의 표시 자리를 잰다 — 지금 자리에서 옮긴 거리를 뺀다.
+   *
+   * @returns 옮기기 전 자리 (창이 없으면 null)
+   */
+  const measureBase = useCallback((): MoveBase | null => {
+    const rect = dialogRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return null;
+    }
+    const now = shiftRef.current;
+
+    return { left: rect.left - now.x, top: rect.top - now.y, width: rect.width, height: rect.height };
+  }, []);
+
+  /**
+   * 창을 덮는 화면 위·아래 고정 요소를 잰다 — 위는 헤더 등(층 40 이상), 아래는 GDPR 배너.
+   *
+   * @returns 위·아래 두께(px)
+   */
+  const measureCovers = useCallback((): Covers => ({
+    top: measureTopCover(dialogRef.current?.parentElement ?? null),
+    bottom: gdprRef.current,
+  }), []);
+
+  /**
+   * 창을 원래 자리에서 (x, y) 만큼 옮겨 둔다 — 화면 안, 위아래 고정 요소 사이로 자른다.
+   * 그 사이가 창보다 좁으면 본문 높이 상한을 먼저 줄이고, 다시 그린 뒤 자리를 잡는다.
+   *
+   * @param x 옮길 가로 거리(px)
+   * @param y 옮길 세로 거리(px)
+   */
+  const settle = useCallback((x: number, y: number) => {
+    const base = measureBase();
+    const bodyHeight = bodyRef.current?.getBoundingClientRect().height ?? 0;
+    if (!base) {
+      return;
+    }
+    const covers = measureCovers();
+    // 손잡이·위치 표시·닫기 띠는 그대로 두고 본문만 줄인다
+    const nextFit = Math.max(FIT_MIN_PX, Math.floor(window.innerHeight - covers.top - covers.bottom - MOVE_EDGE_PX * 2 - (base.height - bodyHeight)));
+    if (nextFit !== fitRef.current) {
+      fitRef.current = nextFit;
+      pendingRef.current = { x, y };
+      setFit(nextFit);
+
+      return;
+    }
+    const next = clampShift(base, x, y, covers);
+    const now = shiftRef.current;
+    if (next.x !== now.x || next.y !== now.y) {
+      shiftRef.current = next;
+      setShift(next);
+    }
+  }, [measureBase, measureCovers]);
+
+  // 본문 상한을 바꿔 다시 그렸으면 그 크기로 자리를 잡는다
+  useLayoutEffect(() => {
+    const pending = pendingRef.current;
+    if (pending) {
+      pendingRef.current = null;
+      settle(pending.x, pending.y);
+    }
+  }, [fit, settle]);
+
+  // 열리거나 경로·목록·배치가 바뀌면 원래 자리로 — 헤더·GDPR 배너가 덮으면 그 사이로 비켜 둔다
+  useLayoutEffect(() => {
+    moveRef.current = null;
+    setHolding(false);
+    if (!open || isSheet || preview) {
+      shiftRef.current = NO_SHIFT;
+      fitRef.current = null;
+      setShift(NO_SHIFT);
+      setFit(null);
+
+      return;
+    }
+    settle(0, 0);
+  }, [open, visibleKey, path, isMobile, isSheet, preview, settle]);
+
+  // 브라우저 창 크기가 바뀌거나 GDPR 배너가 붙고 빠지면 옮긴 자리를 지키며 다시 맞춘다
+  gdprRef.current = gdprHeight;
+  useEffect(() => {
+    if (!open || isSheet || preview) {
+      return undefined;
+    }
+    const onResize = () => settle(shiftRef.current.x, shiftRef.current.y);
+    onResize();
+    window.addEventListener('resize', onResize);
+
+    return () => window.removeEventListener('resize', onResize);
+  }, [open, isSheet, preview, gdprHeight, settle]);
 
   // 들어올 장을 시작 자리에 그린 직후(그리기 전) 목표 자리로 옮긴다 — 시작 자리를 먼저 확정해야 transition 이 일어난다
   useLayoutEffect(() => {
@@ -416,6 +637,28 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
 
       return;
     }
+    // 창 옮기기 손잡이 — 화살표는 창을 옮기고(장을 넘기지 않는다) Home 은 원래 자리로
+    if ((event.target as HTMLElement).closest?.('.g7pp-grip')) {
+      const step: Record<string, [number, number]> = {
+        ArrowLeft: [-MOVE_KEY_PX, 0],
+        ArrowRight: [MOVE_KEY_PX, 0],
+        ArrowUp: [0, -MOVE_KEY_PX],
+        ArrowDown: [0, MOVE_KEY_PX],
+      };
+      if (event.key === 'Home') {
+        event.preventDefault();
+        settle(0, 0);
+
+        return;
+      }
+      if (step[event.key]) {
+        event.preventDefault();
+        const [dx, dy] = step[event.key];
+        settle(shiftRef.current.x + dx, shiftRef.current.y + dy);
+
+        return;
+      }
+    }
     if (count > 1 && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
       const target = event.target as HTMLElement;
       // 본문 스크롤 영역 안에서는 가로 스크롤을 빼앗지 않는다
@@ -446,7 +689,7 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
         first.focus();
       }
     }
-  }, [close, count, go, preview]);
+  }, [close, count, go, preview, settle]);
 
   /**
    * 끌기를 끝낸다 — 일정 거리(폭의 20%) 또는 빠른 휙 넘김이면 옆 장으로, 아니면 제자리로.
@@ -541,6 +784,95 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     setMotion({ peer: (indexRef.current + dir + count) % count, side: dir, offset: ratio * 100, moving: false });
   };
 
+  /**
+   * 창 옮기기를 시작한다 — 가운데·좌표 창은 손잡이 띠, 하단 시트는 손잡이 막대를 누른다.
+   *
+   * @param event 누름 포인터 이벤트
+   */
+  const onMoveDown = (event: React.PointerEvent<HTMLElement>) => {
+    if (moveRef.current || (event.pointerType === 'mouse' && event.button !== 0)) {
+      return;
+    }
+    const base = measureBase();
+    if (!base) {
+      return;
+    }
+    moveRef.current = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      at: Date.now(),
+      start: shiftRef.current,
+      base,
+      covers: isSheet ? { top: 0, bottom: 0 } : measureCovers(),
+    };
+    setHolding(true);
+    setPressing(true);
+    try {
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    } catch {
+      // 합성 이벤트 등 잡을 수 없는 포인터
+    }
+  };
+
+  const onMoveMove = (event: React.PointerEvent<HTMLElement>) => {
+    const move = moveRef.current;
+    if (!move || move.id !== event.pointerId) {
+      return;
+    }
+    window.getSelection?.()?.removeAllRanges();
+    const dx = event.clientX - move.x;
+    const dy = event.clientY - move.y;
+    // 시트는 아래로만 따라 내려간다
+    setShift(isSheet
+      ? { x: 0, y: Math.max(0, dy) }
+      : clampShift(move.base, move.start.x + dx, move.start.y + dy, move.covers));
+  };
+
+  /**
+   * 창 옮기기를 끝낸다 — 시트는 높이의 30% 이상 또는 빠르게 휙 내렸으면 닫고, 아니면 제자리로 돌아온다.
+   *
+   * @param event 놓음·취소 포인터 이벤트
+   * @param cancelled 브라우저가 포인터를 가져갔으면 true — 시트를 닫지 않는다
+   */
+  const onMoveEnd = (event: React.PointerEvent<HTMLElement>, cancelled: boolean) => {
+    const move = moveRef.current;
+    if (!move || move.id !== event.pointerId) {
+      return;
+    }
+    moveRef.current = null;
+    setHolding(false);
+    setPressing(false);
+    try {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    } catch {
+      // 이미 풀린 포인터
+    }
+    if (!isSheet) {
+      return;
+    }
+    const dy = Math.max(0, event.clientY - move.y);
+    const speed = dy / Math.max(1, Date.now() - move.at);
+    if (!cancelled && (dy >= move.base.height * SHEET_CLOSE_RATIO || (dy >= SHEET_FLICK_MIN_PX && speed >= FLICK_SPEED))) {
+      close();
+    }
+    setShift(NO_SHIFT);
+  };
+
+  /** 창 옮기기 포인터 핸들러 — 미리보기에서는 붙이지 않는다 */
+  const moveHandlers = preview ? {} : {
+    onPointerDown: onMoveDown,
+    onPointerMove: onMoveMove,
+    onPointerUp: (event: React.PointerEvent<HTMLElement>) => onMoveEnd(event, false),
+    onPointerCancel: (event: React.PointerEvent<HTMLElement>) => onMoveEnd(event, true),
+    onLostPointerCapture: (event: React.PointerEvent<HTMLElement>) => {
+      // 터치는 누른 자식이 잡았던 포인터를 넘겨줄 때 자식의 lostpointercapture 가 올라온다 — 손잡이 자신이 잃었을 때만 끝낸다
+      if (event.target === event.currentTarget) {
+        onMoveEnd(event, true);
+      }
+    },
+  };
+
   const onClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
     if (draggedRef.current) {
       // 끌다 놓은 자리의 링크(덮는 링크·본문 링크)로 이동하지 않는다
@@ -568,8 +900,15 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
       variant = 'pc-coords';
       // 창이 좁으면 화면 안으로 끌어들인다(오른쪽·아래 16px 여백)
       dialogStyle.left = `min(${config.pc_left}px, max(16px, calc(100vw - ${config.pc_width}px - 16px)))`;
-      dialogStyle.top = `min(${config.pc_top}px, max(16px, calc(100vh - ${config.pc_height}px - 120px)))`;
+      dialogStyle.top = `min(${config.pc_top}px, max(16px, calc(100vh - ${config.pc_height}px - 148px)))`;
     }
+  }
+  if (fit !== null) {
+    dialogStyle['--g7pp-fit-h' as string] = `${fit}px`;
+  }
+  if (shift.x !== 0 || shift.y !== 0) {
+    dialogStyle['--g7pp-move-x' as string] = `${shift.x}px`;
+    dialogStyle['--g7pp-move-y' as string] = `${shift.y}px`;
   }
 
   const dismissLabel = config.dismiss_mode === 'days'
@@ -632,7 +971,7 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
         aria-modal={preview ? undefined : 'true'}
         aria-label={preview ? t('sirsoft-popup.admin.preview.region') : t('sirsoft-popup.layer.region')}
         tabIndex={preview ? undefined : -1}
-        className={`g7pp-dialog g7pp-dialog--${variant}`}
+        className={`g7pp-dialog g7pp-dialog--${variant}${holding ? ' g7pp-dialog--held' : ''}`}
         style={dialogStyle}
         onKeyDown={onKeyDown}
         onMouseEnter={() => setHovering(true)}
@@ -649,7 +988,16 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
           }
         }}
       >
-        {isSheet && <div className="g7pp-handle" aria-hidden="true" />}
+        {!isSheet && (preview ? (
+          <div className="g7pp-grip" aria-hidden="true"><span className="g7pp-grip__dots" /></div>
+        ) : (
+          // 누르기만 해서는 하는 일이 없다 — 끌거나 화살표 키로 창을 옮긴다
+          <button type="button" className="g7pp-grip" aria-label={t('sirsoft-popup.layer.move')} {...moveHandlers}>
+            <span className="g7pp-grip__dots" aria-hidden="true" />
+          </button>
+        ))}
+        {/* 시트 손잡이를 아래로 끌어 내리면 닫힌다 — 키보드는 「닫기」·ESC 가 같은 일을 한다 */}
+        {isSheet && <div className="g7pp-handle" aria-hidden="true" {...moveHandlers} />}
         <div
           ref={bodyRef}
           className={`g7pp-body${dragging ? ' g7pp-body--dragging' : ''}`}

@@ -31,7 +31,8 @@
     "dismiss_today": "今日は表示しない",
     "dismiss_days": "{{days}}日間表示しない",
     "close": "閉じる",
-    "scroll_region": "ポップアップ本文"
+    "scroll_region": "ポップアップ本文",
+    "move": "ポップアップ ウィンドウを移動 — 矢印キーで移動し、Home キーで元の位置に戻す"
   },
   "admin": {
     "title": "ポップアップ管理",

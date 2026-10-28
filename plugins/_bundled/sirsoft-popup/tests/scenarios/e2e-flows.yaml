@@ -6,6 +6,8 @@ description: |
   ko-KR 로케일·실제 UA 고정, trace on-first-retry. 봇 UA 는 서버 렌더 화면에 레이어가 없음을, GDPR 동시 흐름은 배너가 가려지지 않음을,
   비활성화 흐름은 플러그인을 끄면 레이어가 즉시 사라짐을 본다. 다크 모드는 데스크톱·모바일 각 1회 대비를 본다.
   끌어서 넘기기는 데스크톱 마우스(끌다 놓은 새 창 링크가 열리지 않고 글자가 선택되지 않음)·모바일 실제 터치 입력으로 본다.
+  창 옮기기는 데스크톱 손잡이 띠를 마우스로 끌어(헤더에 덮이지 않음·장 그대로·다른 페이지에서 원래 자리), 모바일 하단 시트는 손잡이 막대를
+  실제 터치로 끌어 내려 닫는다(쿠키 없음, 새로고침하면 다시 뜸).
 
 axes:
   flow:
@@ -25,6 +27,7 @@ axes:
     - read_only_admin_cannot_edit
     - admin_preview_shows_content
     - drag_to_next_slide
+    - move_window
   viewport: [desktop, mobile]
 
 exclusions:

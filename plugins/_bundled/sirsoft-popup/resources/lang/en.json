@@ -31,7 +31,8 @@
         "dismiss_today": "Don't show today",
         "dismiss_days": "Don't show for {{days}} days",
         "close": "Close",
-        "scroll_region": "Popup content"
+        "scroll_region": "Popup content",
+        "move": "Move popup window — arrow keys to move, Home to reset"
     },
     "admin": {
         "title": "Popups",

@@ -905,12 +905,15 @@ describe('PopupLayer', () => {
       expect(leaving.hasAttribute('hidden')).toBe(false);
       expect((container.querySelector('.g7pp-slide[data-popup-id="3"]') as HTMLElement).hasAttribute('hidden')).toBe(true);
 
-      // Tab 순환의 첫 요소는 지금 장의 링크 — 옆 장 링크로 가지 않는다
+      // Tab 순환은 창 옮기기 손잡이 → 지금 장의 링크 → … — 옆 장 링크로 가지 않는다
       const buttons = [...dialog.querySelectorAll<HTMLElement>('button')];
       const last = buttons[buttons.length - 1];
       act(() => { last.focus(); });
       act(() => { fireEvent.keyDown(last, { key: 'Tab' }); });
-      expect(document.activeElement).toBe(links[1]);
+      expect(document.activeElement).toBe(dialog.querySelector('.g7pp-grip'));
+      const cycle = [...dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')].filter((el) => !el.closest('[hidden], [inert], [aria-hidden="true"]'));
+      expect(cycle[1]).toBe(links[1]);
+      expect(cycle).not.toContain(links[0]);
 
       act(() => { vi.advanceTimersByTime(SLIDE_MS + 80); });
       expect(leaving.hasAttribute('hidden')).toBe(true);
@@ -935,6 +938,332 @@ describe('PopupLayer', () => {
       const { container: full } = render(<PopupLayer popups={[htmlPopup(1), htmlPopup(2)]} settings={{ autoplay: false }} preview="pc" />);
       dragOn(full.querySelector('.g7pp-body') as HTMLElement, -30, { wait: 600 });
       expect(currentId(full)).toBe(1);
+    });
+  });
+
+  describe('창 옮기기', () => {
+    /** 옮기기 전 창 자리 — PC 중앙 480×560 이 1280×768 화면 가운데 */
+    const BASE = { left: 400, top: 104, width: 480, height: 560 };
+    let rectSpy: { mockRestore: () => void };
+
+    /**
+     * 창·슬라이드 영역의 표시 위치를 흉내 낸다 — 창은 옮긴 거리(인라인 `--g7pp-move-*`)만큼 비켜 선다.
+     *
+     * @param base 옮기기 전 창 자리
+     */
+    const mockDialogRect = (base: typeof BASE) => vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('g7pp-dialog')) {
+        const left = base.left + (parseFloat(this.style.getPropertyValue('--g7pp-move-x')) || 0);
+        const top = base.top + (parseFloat(this.style.getPropertyValue('--g7pp-move-y')) || 0);
+
+        return { width: base.width, height: base.height, left, top, right: left + base.width, bottom: top + base.height, x: left, y: top, toJSON: () => ({}) } as DOMRect;
+      }
+      // 본문 영역 — 창 높이에서 손잡이·띠(160px)를 뺀 높이
+      const isBody = this.classList.contains('g7pp-body');
+      const w = isBody ? 400 : 0;
+      const h = isBody ? base.height - 160 : 0;
+
+      return { width: w, height: h, top: 0, left: 0, right: w, bottom: h, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+
+    /** 창의 옮긴 거리 (없으면 '') */
+    const moved = (container: HTMLElement) => {
+      const dialog = container.querySelector('.g7pp-dialog') as HTMLElement;
+
+      return [dialog.style.getPropertyValue('--g7pp-move-x'), dialog.style.getPropertyValue('--g7pp-move-y')];
+    };
+
+    /**
+     * 요소를 눌러 끌고 놓는다.
+     *
+     * @param target 누르는 요소
+     * @param dx 가로 이동(px)
+     * @param dy 세로 이동(px)
+     * @param options type 포인터 종류, release 놓기까지, wait 놓기 전 기다림(ms, 가짜 시계)
+     */
+    const holdAndMove = (target: Element, dx: number, dy: number, options: { type?: 'mouse' | 'touch'; release?: boolean; wait?: number } = {}) => {
+      const { type = 'mouse', release = true, wait = 0 } = options;
+      const base = { pointerId: 9, pointerType: type, button: 0, bubbles: true };
+      fireEvent.pointerDown(target, { ...base, clientX: 300, clientY: 200 });
+      if (wait > 0) {
+        act(() => { vi.advanceTimersByTime(wait); });
+      }
+      fireEvent.pointerMove(target, { ...base, clientX: 300 + dx / 2, clientY: 200 + dy / 2 });
+      fireEvent.pointerMove(target, { ...base, clientX: 300 + dx, clientY: 200 + dy });
+      if (release) {
+        fireEvent.pointerUp(target, { ...base, clientX: 300 + dx, clientY: 200 + dy });
+      }
+    };
+
+    beforeEach(() => {
+      (window as any).PointerEvent = TestPointerEvent;
+      Object.defineProperty(window, 'innerHeight', { value: 768, configurable: true, writable: true });
+      rectSpy = mockDialogRect(BASE);
+    });
+
+    afterEach(() => {
+      rectSpy.mockRestore();
+      delete (window as any).PointerEvent;
+    });
+
+    // @scenario surface=window_move_grip_drags_dialog
+    // @effects accessible_modal_carousel
+    it('위쪽 손잡이 띠를 잡고 끌면 창이 손을 따라 옮겨지고, 장은 넘어가지 않으며 누르는 동안 자동 넘김이 멈춘다', async () => {
+      vi.useFakeTimers();
+      const { container } = show([htmlPopup(1), htmlPopup(2), htmlPopup(3)], { autoplay: true, autoplay_interval: 1 });
+      const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
+      const grip = container.querySelector('.g7pp-grip') as HTMLElement;
+
+      expect(grip.tagName).toBe('BUTTON');
+      expect(grip.getAttribute('aria-label')).toBe('팝업 창 옮기기 — 화살표 키로 옮기고 Home 키로 제자리');
+      // 손잡이는 창 맨 위, 슬라이드 영역 밖이다
+      expect(dialog.firstElementChild).toBe(grip);
+
+      holdAndMove(grip, -50, 60, { release: false });
+      expect(moved(container)).toEqual(['-50px', '60px']);
+      expect(dialog.className).toContain('g7pp-dialog--held');
+      act(() => { vi.advanceTimersByTime(3000); });
+      expect(currentId(container)).toBe(1);
+      expect(slideX(container, 1)).toBe('');
+
+      fireEvent.pointerUp(grip, { pointerId: 9, pointerType: 'mouse', clientX: 250, clientY: 260 });
+      expect(dialog.className).not.toContain('g7pp-dialog--held');
+      expect(moved(container)).toEqual(['-50px', '60px']);
+
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+      // 옮긴 거리는 기존 배치(transform)와 따로 더해지는 translate 로 준다 — 중앙 정렬 transform 을 덮지 않는다
+      expect(css.match(/\.g7pp-dialog\s*\{[^}]*\}/)?.[0] ?? '').toMatch(/translate:\s*var\(--g7pp-move-x, 0px\) var\(--g7pp-move-y, 0px\)/);
+      // 손가락으로 잡아도 화면이 스크롤·새로고침되지 않게
+      expect(css.match(/\.g7pp-grip\s*\{[^}]*\}/)?.[0] ?? '').toMatch(/touch-action:\s*none/);
+      expect(css.match(/\.g7pp-handle\s*\{[^}]*\}/)?.[0] ?? '').toMatch(/touch-action:\s*none/);
+    });
+
+    // @scenario surface=window_move_clamped_to_viewport
+    it('창은 화면 밖으로 빠지지 않는다 — 가장자리 8px 안쪽에서 멈춘다', () => {
+      const { container } = show([htmlPopup(1)]);
+      const grip = container.querySelector('.g7pp-grip') as HTMLElement;
+
+      holdAndMove(grip, -2000, 2000);
+      // 왼쪽 끝 8px(400 → 8), 아래 끝 768 - 560 - 8 = 200(104 → 200)
+      expect(moved(container)).toEqual(['-392px', '96px']);
+
+      holdAndMove(grip, 5000, -5000);
+      // 오른쪽 끝 1280 - 480 - 8 = 792, 위 끝 8
+      expect(moved(container)).toEqual(['392px', '-96px']);
+    });
+
+    // @scenario surface=window_clears_top_fixed_header
+    it('화면 위에 고정된 헤더(팝업 층 이상)가 손잡이를 덮으면 그 아래로 비켜 뜨고, 옮겨도 그 위로는 올라가지 않는다 — 팝업 층 아래 고정 요소는 무시', () => {
+      const header = document.createElement('header');
+      header.style.position = 'sticky';
+      header.style.zIndex = '50';
+      document.body.appendChild(header);
+      const headerRect = vi.spyOn(header, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: 114, left: 0, right: 1280, width: 1280, height: 114, x: 0, y: 0, toJSON: () => ({}) } as DOMRect);
+      (document as any).elementsFromPoint = vi.fn(() => [header, document.body, document.documentElement]);
+
+      try {
+        const { container, unmount } = show([htmlPopup(1)]);
+        const grip = container.querySelector('.g7pp-grip') as HTMLElement;
+        // 104 → 헤더 아래 114 + 8 = 122
+        expect(moved(container)).toEqual(['0px', '18px']);
+
+        holdAndMove(grip, 0, -5000);
+        expect(moved(container)).toEqual(['0px', '18px']);
+        holdAndMove(grip, 0, 40);
+        expect(moved(container)).toEqual(['0px', '58px']);
+        act(() => { grip.focus(); });
+        fireEvent.keyDown(grip, { key: 'Home' });
+        expect(moved(container)).toEqual(['0px', '18px']);
+        unmount();
+
+        // 팝업 층(40)보다 아래인 고정 요소는 팝업을 덮지 않는다
+        header.style.zIndex = '10';
+        const low = show([htmlPopup(1)]);
+        expect(moved(low.container)).toEqual(['', '']);
+      } finally {
+        headerRect.mockRestore();
+        delete (document as any).elementsFromPoint;
+        header.remove();
+      }
+    });
+
+    // @scenario surface=window_fits_above_gdpr_banner
+    // @effects gdpr_banner_not_covered
+    it('GDPR 배너가 바닥에 보이면 PC 창도 그 위로 올려 띠(닫기)가 덮이지 않게 하고, 자리가 모자라면 본문 높이를 줄인다', async () => {
+      const banner = document.createElement('div');
+      banner.id = GDPR_BANNER_ID;
+      banner.getBoundingClientRect = () => ({ top: 620, bottom: 752, height: 132, left: 16, right: 1264, width: 1248, x: 16, y: 620, toJSON: () => ({}) });
+      document.body.appendChild(banner);
+
+      try {
+        const { container } = show([htmlPopup(1)]);
+        await act(async () => {});
+        const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
+        // 배너 윗변 620 - 8 = 612 까지 — 560 높이 창의 위 끝은 52(104 → 52)
+        expect(moved(container)).toEqual(['0px', '-52px']);
+        // 본문은 768 - 148(배너) - 16(위아래 여백) - 160(손잡이·띠) = 444 까지
+        expect(dialog.style.getPropertyValue('--g7pp-fit-h')).toBe('444px');
+        // 아래로 끌어도 배너 밑으로 들어가지 않는다
+        holdAndMove(container.querySelector('.g7pp-grip') as HTMLElement, 0, 3000);
+        expect(moved(container)).toEqual(['0px', '-52px']);
+
+        // 동의로 배너가 빠지면 본문 상한이 풀린다(옮긴 자리는 그대로)
+        await act(async () => { banner.remove(); });
+        expect(dialog.style.getPropertyValue('--g7pp-fit-h')).toBe('592px');
+        expect(moved(container)).toEqual(['0px', '-52px']);
+
+        const fs = await import('node:fs');
+        const path = await import('node:path');
+        const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+        expect(css.match(/\.g7pp-body\s*\{[^}]*\}/)?.[0] ?? '').toMatch(/var\(--g7pp-fit-h, 100vh\)/);
+      } finally {
+        banner.remove();
+      }
+    });
+
+    // @scenario surface=window_move_keyboard_arrows
+    it('손잡이에 포커스를 두고 화살표 키로 16px 씩 옮기고 Home 으로 제자리 — 이때 ←→ 는 장을 넘기지 않는다', () => {
+      const { container } = show([htmlPopup(1), htmlPopup(2)]);
+      const grip = container.querySelector('.g7pp-grip') as HTMLElement;
+
+      act(() => { grip.focus(); });
+      fireEvent.keyDown(grip, { key: 'ArrowRight' });
+      fireEvent.keyDown(grip, { key: 'ArrowDown' });
+      fireEvent.keyDown(grip, { key: 'ArrowDown' });
+      expect(moved(container)).toEqual(['16px', '32px']);
+      expect(currentId(container)).toBe(1);
+
+      fireEvent.keyDown(grip, { key: 'ArrowLeft' });
+      fireEvent.keyDown(grip, { key: 'ArrowUp' });
+      expect(moved(container)).toEqual(['0px', '16px']);
+
+      fireEvent.keyDown(grip, { key: 'Home' });
+      expect(moved(container)).toEqual(['', '']);
+      expect(currentId(container)).toBe(1);
+
+      // 손잡이 밖에서는 ←→ 가 그대로 장을 넘긴다
+      fireEvent.keyDown(container.querySelector('[role="dialog"]') as HTMLElement, { key: 'ArrowRight' });
+      expect(currentId(container)).toBe(2);
+    });
+
+    // @scenario surface=window_move_resets_on_path_change
+    it('옮긴 자리는 기억하지 않는다 — 다른 페이지로 가면 원래 자리, 새로 열려도 원래 자리', () => {
+      const popups = [htmlPopup(1)];
+      const { container, rerender, unmount } = show(popups);
+
+      holdAndMove(container.querySelector('.g7pp-grip') as HTMLElement, 40, 40);
+      expect(moved(container)).toEqual(['40px', '40px']);
+      rerender(<PopupLayer popups={popups} settings={{ autoplay: false }} path="/board" />);
+      expect(moved(container)).toEqual(['', '']);
+
+      holdAndMove(container.querySelector('.g7pp-grip') as HTMLElement, 40, 40);
+      unmount();
+      const again = show(popups, {}, '/board');
+      expect(moved(again.container)).toEqual(['', '']);
+      expect(document.cookie).not.toContain('move');
+      expect(window.sessionStorage.length).toBe(0);
+      expect(window.localStorage.length).toBe(0);
+    });
+
+    // @scenario surface=window_move_reclamped_on_resize
+    it('브라우저 창이 좁아지면 옮긴 창을 다시 화면 안으로 들인다', () => {
+      const { container } = show([htmlPopup(1)]);
+
+      holdAndMove(container.querySelector('.g7pp-grip') as HTMLElement, 5000, 0);
+      expect(moved(container)).toEqual(['392px', '0px']);
+
+      act(() => {
+        Object.defineProperty(window, 'innerWidth', { value: 1000, configurable: true, writable: true });
+        window.dispatchEvent(new Event('resize'));
+      });
+      // 1000 - 480 - 8 = 512 → 400 에서 112
+      expect(moved(container)).toEqual(['112px', '0px']);
+    });
+
+    // @scenario surface=window_move_mobile_center_by_touch
+    it('휴대폰 가운데 창도 손잡이를 손가락으로 끌어 옮긴다', () => {
+      media.mobile = true;
+      rectSpy.mockRestore();
+      // 375px 화면의 좌우 24px 여백 창
+      rectSpy = mockDialogRect({ left: 24, top: 184, width: 327, height: 400 });
+      const { container } = show([htmlPopup(1), htmlPopup(2)], { mobile_style: 'center' });
+      const grip = container.querySelector('.g7pp-grip') as HTMLElement;
+
+      expect(grip).not.toBeNull();
+      expect(container.querySelector('.g7pp-handle')).toBeNull();
+      holdAndMove(grip, 0, -80, { type: 'touch' });
+
+      expect(moved(container)).toEqual(['0px', '-80px']);
+      expect(currentId(container)).toBe(1);
+    });
+
+    // @scenario surface=sheet_drag_down_closes
+    it('휴대폰 하단 시트는 손잡이 막대를 아래로 끌어 내리면 닫힌다(「닫기」와 같음) — 끄는 동안 손을 따라 내려간다', () => {
+      media.mobile = true;
+      rectSpy.mockRestore();
+      rectSpy = mockDialogRect({ left: 0, top: 368, width: 375, height: 400 });
+      const { container, unmount } = show([htmlPopup(1), htmlPopup(2)], { mobile_style: 'sheet' });
+      const handle = container.querySelector('.g7pp-handle') as HTMLElement;
+
+      // 시트는 창 옮기기 손잡이 띠가 없다
+      expect(container.querySelector('.g7pp-grip')).toBeNull();
+      holdAndMove(handle, 30, 150, { type: 'touch', release: false });
+      // 아래로만 따라간다(가로는 무시)
+      expect(moved(container)).toEqual(['0px', '150px']);
+      fireEvent.pointerUp(handle, { pointerId: 9, pointerType: 'touch', clientX: 330, clientY: 350 });
+
+      expect(container.querySelector('[role="dialog"]')).toBeNull();
+      // 「닫기」처럼 이 페이지 사용 중에는 다시 뜨지 않는다
+      unmount();
+      expect(show([htmlPopup(1), htmlPopup(2)], { mobile_style: 'sheet' }).container.querySelector('[role="dialog"]')).toBeNull();
+      expect(document.cookie).not.toContain(DISMISS_COOKIE);
+    });
+
+    // @scenario surface=sheet_drag_short_springs_back
+    it('시트를 조금만 천천히 내리거나 위로 끌면 제자리로 돌아온다 — 놓은 뒤 미끄러져 돌아오는 전환은 움직임 줄이기가 아닐 때만', async () => {
+      vi.useFakeTimers();
+      media.mobile = true;
+      rectSpy.mockRestore();
+      rectSpy = mockDialogRect({ left: 0, top: 368, width: 375, height: 400 });
+      const { container } = show([htmlPopup(1)], { mobile_style: 'sheet' });
+      const handle = container.querySelector('.g7pp-handle') as HTMLElement;
+      const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
+
+      holdAndMove(handle, 0, 60, { type: 'touch', wait: 600 });
+      expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+      expect(moved(container)).toEqual(['', '']);
+      expect(dialog.className).not.toContain('g7pp-dialog--held');
+
+      // 위로는 올라가지 않는다
+      holdAndMove(handle, 0, -200, { type: 'touch', release: false });
+      expect(moved(container)).toEqual(['', '']);
+      fireEvent.pointerUp(handle, { pointerId: 9, pointerType: 'touch', clientX: 300, clientY: 0 });
+      expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+      const motionBlock = css.match(/@media \(prefers-reduced-motion: no-preference\)\s*\{[\s\S]*?\n\}/g)?.join('\n') ?? '';
+      expect(motionBlock).toMatch(/\.g7pp-dialog--m-sheet:not\(\.g7pp-dialog--held\)\s*\{\s*transition:\s*translate/);
+    });
+
+    // @scenario surface=preview_window_move_disabled
+    it('관리자 미리보기에서는 손잡이를 같은 모양으로 그리되 옮기거나 닫지 않는다', () => {
+      const { container } = render(<PopupLayer popups={[htmlPopup(1)]} settings={{ autoplay: false }} preview="pc" />);
+      const grip = container.querySelector('.g7pp-grip') as HTMLElement;
+
+      expect(grip.tagName).not.toBe('BUTTON');
+      expect(grip.getAttribute('aria-hidden')).toBe('true');
+      holdAndMove(grip, 50, 50);
+      expect(moved(container)).toEqual(['', '']);
+      cleanup();
+
+      const sheet = render(<PopupLayer popups={[htmlPopup(1)]} settings={{ autoplay: false, mobile_style: 'sheet' }} preview="mobile" />);
+      holdAndMove(sheet.container.querySelector('.g7pp-handle') as HTMLElement, 0, 300, { type: 'touch' });
+      expect(sheet.container.querySelector('[data-popup-layer="mobile"] .g7pp-dialog')).not.toBeNull();
+      expect(moved(sheet.container)).toEqual(['', '']);
     });
   });
 });

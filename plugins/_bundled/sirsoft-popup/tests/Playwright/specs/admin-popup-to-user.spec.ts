@@ -1,7 +1,8 @@
 /**
  * @file admin-popup-to-user.spec.ts
  * @description 관리자가 등록·수정·순서를 바꾼 팝업이 사용자 화면에 조건대로 뜨는지 — 이미지형·직접 작성형, 노출 페이지 경계,
- * 회원만, 모바일만, 순서 변경, 오늘 하루 보지 않기 뒤 새 팝업, 닫기 뒤 SPA 이동, 끌어서 넘기기(마우스·터치), 조회 전용 관리자. (매니페스트 e2e-flows.yaml)
+ * 회원만, 모바일만, 순서 변경, 오늘 하루 보지 않기 뒤 새 팝업, 닫기 뒤 SPA 이동, 끌어서 넘기기(마우스·터치), 창 옮기기·시트 끌어 닫기, 조회 전용 관리자.
+ * (매니페스트 e2e-flows.yaml)
  */
 import { test, expect, auth, authenticatePage, createHtmlPopup, createImagePopup, gotoUser, layer, layerIds, navigateSpa, uniqueTitle, ADMIN_LIST, API, VIEWPORTS } from '../fixtures/popup-auth';
 
@@ -202,6 +203,83 @@ async function flow_drag_to_next_slide({ page, request, managerToken, created }:
   }
 }
 
+/**
+ * 창을 옮긴다 — 데스크톱은 위쪽 손잡이 띠를 마우스로 끌어 옮기고(장은 그대로, 헤더 아래), 다른 페이지로 가면 원래 자리.
+ * 모바일 하단 시트는 손잡이 막대를 손가락(실제 터치 입력)으로 끌어 내려 닫는다 — 쿠키는 남지 않아 새로고침하면 다시 뜬다.
+ * 모바일 표시 방식이 가운데 창이면 손잡이 띠를 손가락으로 끌어 옮긴다.
+ */
+async function flow_move_window({ page, request, managerToken, created }: Ctx, viewport: Viewport): Promise<void> {
+  const id = await createHtmlPopup(request, managerToken, { body_html: { ko: '<p>창을 옮겨 보는 팝업 본문입니다.</p>' } });
+  created.push(id);
+
+  await gotoUser(page, '/');
+  await expect(page.locator(`.g7pp-slide[data-popup-id="${id}"]`)).toHaveCount(1);
+  const dialog = page.locator('[data-popup-layer=""] .g7pp-dialog');
+  const sheet = (await page.locator('[data-popup-layer=""] .g7pp-handle').count()) > 0;
+  const grabber = page.locator(`[data-popup-layer=""] ${sheet ? '.g7pp-handle' : '.g7pp-grip'}`);
+  // 잡는 곳이 헤더 등 다른 요소에 덮이지 않았다
+  expect(await grabber.evaluate((el) => {
+    const rect = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+
+    return el === hit || el.contains(hit);
+  })).toBe(true);
+  const start = (await dialog.boundingBox())!;
+  const grab = (await grabber.boundingBox())!;
+  const x = grab.x + grab.width / 2;
+  const y = grab.y + grab.height / 2;
+  const before = await currentSlideId(page);
+
+  if (viewport === 'desktop') {
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x - 200, y, { steps: 10 });
+    await page.mouse.up();
+    const moved = (await dialog.boundingBox())!;
+    expect(Math.round(moved.x - start.x)).toBe(-200);
+    // 위아래 끝까지 끌어도 헤더 밑·GDPR 배너 밑으로 들어가지 않는다(배너가 있으면 그 사이에 맞게 본문이 줄어 있다)
+    const headerBottom = await page.evaluate(() => document.querySelector('header')?.getBoundingClientRect().bottom ?? 0);
+    const bannerTop = await page.evaluate(() => document.getElementById('gdpr_cookie_banner')?.getBoundingClientRect().top ?? window.innerHeight);
+    for (const toY of [0, 800]) {
+      const grab2 = (await grabber.boundingBox())!;
+      await page.mouse.move(grab2.x + grab2.width / 2, grab2.y + grab2.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(grab2.x + grab2.width / 2, toY, { steps: 10 });
+      await page.mouse.up();
+      const box = (await dialog.boundingBox())!;
+      expect(box.y).toBeGreaterThanOrEqual(headerBottom);
+      expect(box.y + box.height).toBeLessThanOrEqual(bannerTop);
+    }
+    await expect(layer(page).getByRole('button', { name: '닫기' })).toBeVisible();
+    expect(await currentSlideId(page)).toBe(before);
+    expect(await page.evaluate(() => window.getSelection()?.toString() ?? '')).toBe('');
+
+    // 다른 페이지로 가면 원래 자리
+    await navigateSpa(page, '/page/about');
+    await expect.poll(async () => Math.round((await dialog.boundingBox())!.x)).toBe(Math.round(start.x));
+
+    return;
+  }
+
+  const cdp = await page.context().newCDPSession(page);
+  const distance = sheet ? start.height * 0.6 : -80;
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+  for (let i = 1; i <= 10; i++) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: y + (distance * i) / 10 }] });
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+
+  if (!sheet) {
+    await expect.poll(async () => Math.round((await dialog.boundingBox())!.y - start.y)).toBe(-80);
+
+    return;
+  }
+  await expect(layer(page)).toHaveCount(0);
+  expect(await page.evaluate(() => document.cookie)).not.toContain('g7_popup_dismissed');
+  await gotoUser(page, '/');
+  await expect(page.locator(`.g7pp-slide[data-popup-id="${id}"]`)).toHaveCount(1);
+}
+
 test.describe('팝업 → 사용자 화면', () => {
   // @scenario flow=admin_creates_image_popup_shows_on_home, viewport=desktop
   // @effects user_screen_reflects_admin_change, test_data_cleaned_up
@@ -307,6 +385,14 @@ test.describe('팝업 → 사용자 화면', () => {
     await page.setViewportSize(VIEWPORTS.desktop);
     await flow_drag_to_next_slide({ page, request, managerToken, created } as Ctx, 'desktop');
   });
+
+  // @scenario flow=move_window, viewport=desktop
+  // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+  test('위쪽 손잡이 띠를 마우스로 끌어 창을 옮기고, 다른 페이지로 가면 원래 자리 (desktop)', async ({ page, request, managerToken, created }) => {
+    // 높이 800 노트북 화면 — 가운데 정렬한 창의 위쪽이 사이트 헤더 자리에 걸리는 크기(헤더 아래로 비켜 떠야 잡힌다)
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await flow_move_window({ page, request, managerToken, created } as Ctx, 'desktop');
+  });
 });
 
 test.describe('팝업 → 사용자 화면 (터치)', () => {
@@ -317,6 +403,12 @@ test.describe('팝업 → 사용자 화면 (터치)', () => {
   // @effects user_screen_reflects_admin_change, test_data_cleaned_up
   test('손가락으로 끌어 다음 장으로 넘긴다 (mobile)', async ({ page, request, managerToken, created }) => {
     await flow_drag_to_next_slide({ page, request, managerToken, created } as Ctx, 'mobile');
+  });
+
+  // @scenario flow=move_window, viewport=mobile
+  // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+  test('하단 시트 손잡이를 손가락으로 끌어 내려 닫는다(가운데 창이면 옮긴다) (mobile)', async ({ page, request, managerToken, created }) => {
+    await flow_move_window({ page, request, managerToken, created } as Ctx, 'mobile');
   });
 });
 

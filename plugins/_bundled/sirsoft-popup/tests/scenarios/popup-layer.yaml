@@ -9,6 +9,11 @@ description: |
   밀리고, 폭의 20% 이상 또는 빠른 휙 넘김이면 넘기고 아니면 제자리. 세로 의도는 무시, 끈 뒤의 click 은 링크로 가지 않는다.
   끄는 동안 보이는 옆 장은 aria-hidden + inert, 화면 밖 장은 hidden. 끈 거리는 실제 표시 폭 대비 비율(축소 미리보기 틀 포함).
   본문 HTML 은 DOMPurify 로 한 번 더 거르고, 덮는 링크 안에 포커스 요소가 없다.
+  창 옮기기(2026-10-28 결정): 가운데·좌표 창은 맨 위 손잡이 띠를 끌거나(마우스·터치) 화살표 키로 옮기고 Home 으로 제자리.
+  화면 가장자리 8px 안쪽, 화면 위 고정 요소(층 40 이상, 헤더 등) 아래·바닥의 GDPR 배너 위로만 놓이며 열릴 때 덮여 있으면 비켜 뜬다.
+  그 사이가 창보다 좁으면 본문 높이를 줄여 창 전체(손잡이·닫기 띠)가 보이게 한다.
+  옮긴 자리는 기억하지 않는다(경로·목록·배치가 바뀌면 원래 자리). 모바일 하단 시트는 손잡이 막대를 끌어 내리면 닫힌다(「닫기」와 같음).
+  관리자 미리보기는 손잡이를 같은 모양으로 그리되 옮기지 않는다.
 
 axes:
   surface:
@@ -75,6 +80,17 @@ axes:
     - autoplay_paused_while_pressing
     - offscreen_slides_not_focusable
     - preview_drag_uses_rendered_width
+    - window_move_grip_drags_dialog
+    - window_move_clamped_to_viewport
+    - window_clears_top_fixed_header
+    - window_fits_above_gdpr_banner
+    - window_move_keyboard_arrows
+    - window_move_resets_on_path_change
+    - window_move_reclamped_on_resize
+    - window_move_mobile_center_by_touch
+    - sheet_drag_down_closes
+    - sheet_drag_short_springs_back
+    - preview_window_move_disabled
 
 effects:
   - accessible_modal_carousel
