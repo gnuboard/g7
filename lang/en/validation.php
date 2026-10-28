@@ -1082,6 +1082,7 @@ return [
         'sitemap_urls_per_file_min' => 'URLs per sitemap file must be at least 1000.',
         'sitemap_urls_per_file_max' => 'URLs per sitemap file may not be greater than 50000.',
         'sitemap_gzip_boolean' => 'Sitemap compression setting must be true or false.',
+        'sitemap_gzip_requires_zlib' => 'Sitemap compression (gzip) requires the PHP zlib extension on the server. Install it or turn compression off.',
         'sitemap_serve_stale_on_miss_boolean' => 'Serving the previous sitemap setting must be true or false.',
         'sitemap_max_urls_per_contributor_integer' => 'Maximum URLs per contributor must be an integer.',
         'sitemap_max_urls_per_contributor_min' => 'Maximum URLs per contributor must be at least 0.',

@@ -482,6 +482,14 @@ class PluginManager implements PluginManagerInterface
                 'plugin'
             );
 
+            // 확장이 composer.json require.ext-* 로 선언한 PHP 확장 검증 — 없으면 설치를 막는다(#151)
+            $this->extensionManager->assertPhpExtensionRequirements(
+                'plugin',
+                $plugin->getIdentifier(),
+                $this->pluginsPath.DIRECTORY_SEPARATOR.$plugin->getIdentifier(),
+                fn () => $plugin->getName(),
+            );
+
             // 의존성 확인 (트랜잭션 외부에서 먼저 검증)
             $this->checkDependencies($plugin);
 
@@ -700,6 +708,15 @@ class PluginManager implements PluginManagerInterface
                 $plugin->getIdentifier(),
                 'plugin'
             );
+        }
+
+        // 필수 PHP 확장(composer.json require.ext-*) 검증 — 코어 버전 검사와 같은 조건으로 막고,
+        // 강제 활성화·코어 업데이트 중에는 경고만 남긴다(#151)
+        $phpExtensionPath = $this->pluginsPath.DIRECTORY_SEPARATOR.$plugin->getIdentifier();
+        if (! $force && ! CoreServiceProvider::isCoreUpdateInProgress()) {
+            $this->extensionManager->assertPhpExtensionRequirements('plugin', $plugin->getIdentifier(), $phpExtensionPath, fn () => $plugin->getName());
+        } else {
+            $this->extensionManager->warnPhpExtensionRequirements('plugin', $plugin->getIdentifier(), $phpExtensionPath);
         }
 
         // 전역 상태 공개 계약 이름 충돌 검증 — 꺼져 있던 사이 다른 확장이 같은 이름을 가졌을 수 있다 (#639)
@@ -4847,6 +4864,12 @@ class PluginManager implements PluginManagerInterface
                         $identifier,
                         'plugin'
                     );
+                }
+
+                // 3.4.1. 새 버전 composer.json 의 필수 PHP 확장 — 업데이트는 막지 않고 경고만 남긴다(#151 D3).
+                // 번들 일괄 업데이트(force)·코어 업데이트 중에도 같은 경고를 남긴다. 기준은 스테이징 composer.json 이다.
+                if ($stagingPath) {
+                    $this->extensionManager->warnPhpExtensionRequirements('plugin', $identifier, $stagingPath);
                 }
 
                 // 3.5. Vendor 설치 (의존성 있는 경우만, 변경 시에만)

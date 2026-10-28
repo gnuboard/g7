@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Contracts\Extension\ConsentProviderInterface;
+use App\Exceptions\PhpExtensionUnavailableException;
 use App\Extension\Consent\ConsentManager;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Settings\PasswordExpiryPreviewRequest;
@@ -461,6 +462,9 @@ class SettingsController extends AdminBaseController
             return $this->success('settings.backup_success', [
                 'backup_path' => $backupPath,
             ]);
+        } catch (PhpExtensionUnavailableException $e) {
+            // 선택 확장(zip) 부재는 서버 장애가 아니라 환경 조건이다 — 원인을 알리는 422 (#151)
+            return $this->error($e->messageKey, 422, null, ['extension' => $e->extension]);
         } catch (\Exception $e) {
             return $this->error('settings.backup_failed', 500, $e->getMessage());
         }
@@ -484,6 +488,8 @@ class SettingsController extends AdminBaseController
             }
 
             return $this->error('settings.restore_failed');
+        } catch (PhpExtensionUnavailableException $e) {
+            return $this->error($e->messageKey, 422, null, ['extension' => $e->extension]);
         } catch (\Exception $e) {
             return $this->error('settings.restore_error', 500, $e->getMessage());
         }

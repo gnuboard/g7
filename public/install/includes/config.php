@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\PhpExtensionRequirements;
+
 /**
  * 그누보드7 웹 인스톨러 설정 파일
  *
@@ -39,36 +41,22 @@ if (! defined('MIN_PHP_VERSION')) {
     define('MIN_PHP_VERSION', '8.2.0');
 }
 
-// 필수 PHP 모듈
+// 필수·선택 PHP 모듈 — 코어 SSoT(app/Support/Requirements/php-extensions.json)에서 만든다.
+// 관리자 환경설정 > 정보, 코어 업데이트 사전점검, 문서(docs/requirements.md §1.4)가 같은 목록을 쓴다.
+// 테스트가 상수를 먼저 정의해 주입할 수 있도록 defined 가드는 유지한다.
+if (! class_exists('App\\Support\\PhpExtensionRequirements')) {
+    require_once BASE_PATH.'/app/Support/PhpExtensionRequirements.php';
+}
+$installerPhpExtensionRequirements = PhpExtensionRequirements::load();
 if (! defined('REQUIRED_EXTENSIONS')) {
-    define('REQUIRED_EXTENSIONS', [
-        'pdo',
-        'mbstring',
-        'openssl',
-        'tokenizer',
-        'xml',
-        'ctype',
-        'json',
-        'fileinfo',
-        'curl',
-        'dom',
-        'filter',
-        'hash',
-        'pcre',
-        'session',
-    ]);
+    define('REQUIRED_EXTENSIONS', $installerPhpExtensionRequirements['required']);
 }
 
-// 선택적 PHP 모듈 (설치를 권장하지만 필수는 아님)
+// 선택적 PHP 모듈 (설치를 권장하지만 필수는 아님 — 설치는 막지 않는다)
 if (! defined('OPTIONAL_EXTENSIONS')) {
-    define('OPTIONAL_EXTENSIONS', [
-        'zlib',     // gzip 압축 지원 (응답 압축에 사용)
-        'gd',       // 이미지 처리
-        'imagick',  // 고급 이미지 처리
-        'redis',    // Redis 캐시 지원
-        'intl',     // 국제화 지원
-    ]);
+    define('OPTIONAL_EXTENSIONS', $installerPhpExtensionRequirements['optional']);
 }
+unset($installerPhpExtensionRequirements);
 
 // 최소 디스크 공간 (MB)
 if (! defined('MIN_DISK_SPACE_MB')) {

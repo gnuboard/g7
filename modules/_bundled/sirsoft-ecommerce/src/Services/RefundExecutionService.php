@@ -21,6 +21,7 @@ use Modules\Sirsoft\Ecommerce\Models\OrderRefund;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\MileageTransactionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
+use Modules\Sirsoft\Ecommerce\Support\DecimalComparator;
 
 /**
  * 환불 실행 서비스
@@ -392,7 +393,7 @@ class RefundExecutionService
      * 결제행 수납액도 함께 본다 — 수동 결제완료로 헤더가 0 인 채 결제된 주문을 0원으로 오판하지 않게 한다.
      * 단 결제가 실제로 끝난 결제행(`paid`·`partial_cancelled`)만 본다(00 ⑭): 결제행은 생성 때부터
      * `paid_amount_base` 에 결제예정금액이 들어 있어, 상태를 보지 않으면 결제금액 기록을 끈 수동 결제완료
-     * 주문을 「현금 있음」으로 읽는다. 비교는 decimal 문자열 `bccomp`(소수 4자리) — 0.1 + 0.2 같은 부동소수
+     * 주문을 「현금 있음」으로 읽는다. 비교는 `DecimalComparator`(소수 4자리) — 0.1 + 0.2 같은 부동소수
      * 오차가 「돌려줄 돈 있음」이 되지 않게 한다(`CancelOrderRequest::hasMoneyToReturn` 과 같은 이유).
      *
      * 결제 전 주문은 받은 돈이 없다 — 단 입금이 결제행에 기록된 주문은 예외다(`hasRecordedDepositBeforePayment`, S3-D7).
@@ -407,7 +408,7 @@ class RefundExecutionService
             return false;
         }
 
-        if (bccomp($this->decimal($order->total_paid_amount), $this->decimal($order->total_refunded_amount), 4) > 0) {
+        if (DecimalComparator::compare($order->total_paid_amount, $order->total_refunded_amount) > 0) {
             return true;
         }
 
@@ -419,7 +420,7 @@ class RefundExecutionService
             return false;
         }
 
-        return bccomp($this->decimal($payment->paid_amount_base), $this->decimal($payment->cancelled_amount), 4) > 0;
+        return DecimalComparator::compare($payment->paid_amount_base, $payment->cancelled_amount) > 0;
     }
 
     /**
@@ -462,18 +463,7 @@ class RefundExecutionService
     {
         return $order->user_id !== null
             && ! $this->hasCashToReturn($order)
-            && bccomp($this->decimal($order->total_points_used_amount), $this->decimal($order->total_refunded_points_amount), 4) > 0;
-    }
-
-    /**
-     * 금액을 bccomp 용 decimal 문자열로 바꿉니다. (null 은 0)
-     *
-     * @param  mixed  $value  금액
-     * @return string 소수 4자리 문자열
-     */
-    private function decimal(mixed $value): string
-    {
-        return number_format((float) ($value ?? 0), 4, '.', '');
+            && DecimalComparator::compare($order->total_points_used_amount, $order->total_refunded_points_amount) > 0;
     }
 
     /**

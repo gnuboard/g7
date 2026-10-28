@@ -348,6 +348,7 @@ class InstallerIncludeOrderTest extends TestCase
                     'public/install/includes/functions.php',
                     'public/install/includes/installer-ownership.php',
                     'public/install/includes/extension-selection.php',
+                    'public/install/includes/php-extension-requirements.php',
                 ],
                 [
                     'getInstallationState',
@@ -358,6 +359,7 @@ class InstallerIncludeOrderTest extends TestCase
                     'installer_resolve_extension_selection',
                     'installer_scan_extensions',
                     'installer_extension_error_messages',
+                    'installer_exclude_selection_missing_php',
                     'addLog',
                 ],
             ],
@@ -427,6 +429,7 @@ class InstallerIncludeOrderTest extends TestCase
                     'installer_collect_requirements',
                     'installer_test_database',
                     'installer_resolve_extension_selection',
+                    'installer_exclude_selection_missing_php',
                     'installer_begin_installation',
                     'installer_finalize_env',
                     'runInstallationTasks',

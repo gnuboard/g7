@@ -33,6 +33,7 @@ require_once dirname(__DIR__).'/includes/installer-state.php';
 require_once dirname(__DIR__).'/includes/functions.php';
 require_once dirname(__DIR__).'/includes/installer-ownership.php';
 require_once dirname(__DIR__).'/includes/extension-selection.php';
+require_once dirname(__DIR__).'/includes/php-extension-requirements.php';
 require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
@@ -150,6 +151,17 @@ try {
             'errors' => $messages,
         ], JSON_UNESCAPED_UNICODE);
         exit;
+    }
+
+    // 필수 PHP 확장(composer.json require.ext-*)이 서버에 없는 확장은 설치 대상에서 뺀다 — 선택 화면이 체크를 끄지만
+    // 요청을 직접 만들면 우회되므로 서버에서 다시 거른다. 설치 단계의 코어 게이트에 걸려 설치 전체가 멈추지 않게 한다(#151).
+    $phpExclusion = installer_exclude_selection_missing_php($resolution, BASE_PATH);
+    $resolution = $phpExclusion['resolution'];
+    foreach ($phpExclusion['skipped'] as $skippedIdentifier => $missingPhpExtensions) {
+        addLog(lang('log_extension_skipped_php_extension_missing', [
+            'identifier' => $skippedIdentifier,
+            'extensions' => implode(', ', $missingPhpExtensions),
+        ]));
     }
 
     // selected_extensions 업데이트 — 해석 결과(의존 확장 포함·설치 순서 정렬)를 저장한다.

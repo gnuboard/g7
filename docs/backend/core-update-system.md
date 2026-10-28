@@ -153,6 +153,23 @@
 
 > **효력 시점**: Step 7 은 업데이트를 실행하는 쪽(이전 버전)의 코드로 돈다. 그래서 이 판정은 **7.1.1 로 올린 뒤의 업데이트부터** 적용되고, 7.1.0 → 7.1.1 업데이트는 7.1.0 코드가 돌려 지금까지처럼 모두 배치한다. 이미 깔린 쓰지 않는 번들은 `php artisan core:bundled-sources prune` 으로 정리한다(아래 「사후 관리 명령」).
 
+### PHP 확장 사전점검 (7.1.4+)
+
+새 배포본의 코어 요구 목록(`app/Support/Requirements/php-extensions.json` — 필수·선택 확장의 SSoT)을 읽어, 새 코어의 **필수**
+확장이 이 서버에 없으면 업데이트를 시작하지 않는다(공개 #151). 파일을 적용한 뒤에야 부팅이 깨지는 것보다 시작 전에 멈추는 편이 사이트가 온전하다.
+
+| 소스 | 판정 시점 | 미충족 시 |
+|------|----------|----------|
+| `--source` | 공식 번들 배치 판정 직후, 유지보수 모드 전 | 오류 출력 + FAILURE. 사이트·파일 변화 없음 |
+| `--zip` | 같은 시점 — zip 을 풀지 않고 목록 파일만 읽는다(읽지 못하면 추출 직후로 미룬다) | 같음 |
+| GitHub 다운로드 | Step 4 다운로드 직후(유지보수 중), 백업 전 | 받은 `_pending` 삭제 → 유지보수 해제 → 업데이트 로그 저장 → FAILURE (공식 번들 선택 오류와 같은 모양) |
+| `--local` | 판정하지 않음 (현재 코드 그대로) | — |
+
+- 새 배포본에 목록 파일이 없으면(이 체계 도입 전 판) 코어 판정은 건너뛰고 로그만 남긴다.
+- 같은 시점에 「이번에 함께 갱신될 설치된 번들 확장」의 새 `composer.json` `require.ext-*` 도 계산해 **경고만** 출력한다 — 확장 업데이트는 막지 않는다(번들 일괄 업데이트 단계도 `php_extension_missing` 생명주기 경고만 남긴다).
+- 판정은 JSON 만 읽는다. 새 배포본의 PHP 클래스를 `require` 하면 이미 로드된 같은 이름 클래스와 충돌하기 때문이다.
+- 서비스: `App\Services\Core\PhpRequirementPreflight`(`inspectDirectory`·`inspectZip`). 회귀: `tests/Feature/Console/CoreUpdatePhpRequirementPreflightTest.php`.
+
 ### 사후 관리 명령: core:bundled-sources (7.1.1+)
 
 ```bash

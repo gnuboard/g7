@@ -19,6 +19,7 @@ use App\Support\AllowedExtensions;
 use App\Support\AssetUrl;
 use App\Support\EnvPriority;
 use App\Support\IpAccessMatcher;
+use App\Support\PhpExtensionProbe;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -555,7 +556,8 @@ class SaveSettingsRequest extends FormRequest
             'seo.sitemap_cache_ttl' => ['nullable', 'integer', 'min:'.config('core.settings_limits.seo_sitemap_cache_ttl_min', 3600), 'max:'.config('core.settings_limits.seo_sitemap_cache_ttl_max', 604800)],
             // 분할 기준. 상한 50000 은 sitemaps.org 프로토콜 제한이며 SitemapWriter 가 동일 값으로 클램프합니다.
             'seo.sitemap_urls_per_file' => ['nullable', 'integer', 'min:'.config('core.settings_limits.seo_sitemap_urls_per_file_min', 1000), 'max:'.config('core.settings_limits.seo_sitemap_urls_per_file_max', 50000)],
-            'seo.sitemap_gzip' => ['nullable', 'boolean'],
+            // zlib(gzencode) 없이 gzip 을 켜면 사이트맵 생성이 매번 실패한다 — 저장 시점에 막는다(#151)
+            'seo.sitemap_gzip' => ['nullable', 'boolean', $this->sitemapGzipRequiresZlibRule()],
             'seo.sitemap_serve_stale_on_miss' => ['nullable', 'boolean'],
             'seo.sitemap_max_urls_per_contributor' => ['nullable', 'integer', 'min:0'],
             'seo.sitemap_hreflang_enabled' => ['nullable', 'boolean'],
@@ -938,6 +940,23 @@ class SaveSettingsRequest extends FormRequest
                     'driver' => $value,
                     'reason' => $registry->usabilityFailureReason($category, $value),
                 ]));
+            }
+        };
+    }
+
+    /**
+     * 사이트맵 gzip 을 켤 때 서버에 zlib(gzencode)이 있는지 검사하는 규칙을 반환합니다.
+     *
+     * zlib 은 코어 기준 「선택」 확장이다. 확장이 로드돼 있어도 `disable_functions` 로 함수만 막힌 서버가 있어
+     * 실제로 부를 함수(`gzencode`)로 판정한다.
+     *
+     * @return \Closure 검증 클로저
+     */
+    private function sitemapGzipRequiresZlibRule(): \Closure
+    {
+        return function ($attribute, $value, $fail) {
+            if (filter_var($value, FILTER_VALIDATE_BOOLEAN) && ! app(PhpExtensionProbe::class)->functionAvailable('gzencode')) {
+                $fail(__('validation.settings.sitemap_gzip_requires_zlib'));
             }
         };
     }

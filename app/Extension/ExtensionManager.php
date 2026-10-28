@@ -4,12 +4,15 @@ namespace App\Extension;
 
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Exceptions\PhpExtensionRequirementException;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\SafeArchiveExtractor;
 use App\Extension\Support\ExtensionFingerprint;
 use App\Extension\Support\LifecycleWarnings;
 use App\Rules\ValidExtensionIdentifier;
 use App\Support\ConfigCacheHelper;
+use App\Support\PhpExtensionProbe;
+use Closure;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -1163,6 +1166,130 @@ PHP;
         return array_filter($require, function (string $package) {
             return $package !== 'php' && ! str_starts_with($package, 'ext-');
         }, ARRAY_FILTER_USE_KEY);
+    }
+
+    /**
+     * 확장이 composer.json 에 선언한 PHP 확장 요구를 반환합니다.
+     *
+     * @param  string  $type  확장 타입 ('modules' 또는 'plugins')
+     * @param  string  $dirName  확장 디렉토리명 (예: 'sirsoft-pay_nhnkcp')
+     * @return array{required: list<string>, suggested: array<string, string>} 필수 확장 이름 / 권장 확장 이름 => 사유
+     */
+    public function getPhpExtensionRequirements(string $type, string $dirName): array
+    {
+        return $this->getPhpExtensionRequirementsAt(base_path("{$type}/{$dirName}"));
+    }
+
+    /**
+     * 지정 경로의 composer.json 에 선언된 PHP 확장 요구를 반환합니다.
+     *
+     * `require.ext-*` 는 필수(설치·활성화 차단), `suggest.ext-*` 는 권장(경고만)이다. 이름은 `ext-` 를 떼고
+     * 소문자로 정규화한다. `getComposerDependencies[At]()` 가 `ext-*` 를 버리는 것과는 목적이 다르다 — 그쪽은
+     * 「composer install 을 돌릴지」만 정한다.
+     *
+     * @param  string  $path  composer.json이 있는 디렉토리 경로 (활성·스테이징·_bundled 어느 것이든)
+     * @return array{required: list<string>, suggested: array<string, string>} 필수 확장 이름 / 권장 확장 이름 => 사유
+     */
+    public function getPhpExtensionRequirementsAt(string $path): array
+    {
+        $result = ['required' => [], 'suggested' => []];
+        $composerFile = $path.DIRECTORY_SEPARATOR.'composer.json';
+
+        if (! is_file($composerFile)) {
+            return $result;
+        }
+
+        $composerJson = json_decode((string) file_get_contents($composerFile), true);
+        if (! is_array($composerJson)) {
+            return $result;
+        }
+
+        foreach (array_keys(is_array($composerJson['require'] ?? null) ? $composerJson['require'] : []) as $package) {
+            if (str_starts_with((string) $package, 'ext-')) {
+                $result['required'][] = strtolower(substr((string) $package, 4));
+            }
+        }
+
+        foreach (is_array($composerJson['suggest'] ?? null) ? $composerJson['suggest'] : [] as $package => $reason) {
+            if (str_starts_with((string) $package, 'ext-')) {
+                $result['suggested'][strtolower(substr((string) $package, 4))] = is_string($reason) ? $reason : '';
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * 지정 경로 확장의 PHP 확장 요구와 미충족 목록을 함께 반환합니다.
+     *
+     * 로드 여부는 컨테이너의 {@see PhpExtensionProbe} 로 판정한다(테스트가 부재를 주입).
+     *
+     * @param  string  $path  composer.json이 있는 디렉토리 경로
+     * @return array{required: list<string>, suggested: array<string, string>, missing_required: list<string>, missing_suggested: list<string>} 선언과 미충족 목록
+     */
+    public function checkPhpExtensionRequirementsAt(string $path): array
+    {
+        $declared = $this->getPhpExtensionRequirementsAt($path);
+        $probe = app(PhpExtensionProbe::class);
+
+        return $declared + [
+            'missing_required' => $probe->missing($declared['required']),
+            'missing_suggested' => $probe->missing(array_keys($declared['suggested'])),
+        ];
+    }
+
+    /**
+     * 확장이 필수로 선언한 PHP 확장이 서버에 없으면 막습니다. (설치·활성화 게이트)
+     *
+     * @param  string  $extensionType  확장 타입 (module|plugin)
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $path  composer.json 이 있는 확장 디렉토리
+     * @param  string|array<string, string>|Closure(): (string|array<string, string>)  $name  사람이 읽는 확장 이름 (매니페스트 name — 다국어 배열이면 현재 로케일, 비우면 식별자). 클로저면 미충족일 때만 호출한다
+     * @return void 반환값 없음
+     *
+     * @throws PhpExtensionRequirementException 필수 PHP 확장이 없을 때
+     */
+    public function assertPhpExtensionRequirements(string $extensionType, string $identifier, string $path, string|array|Closure $name = ''): void
+    {
+        $missing = $this->checkPhpExtensionRequirementsAt($path)['missing_required'];
+
+        if ($missing !== []) {
+            $name = $name instanceof Closure ? $name() : $name;
+            $label = is_array($name) ? (string) ($name[app()->getLocale()] ?? reset($name) ?: '') : $name;
+
+            throw new PhpExtensionRequirementException($extensionType, $identifier, $missing, $label);
+        }
+    }
+
+    /**
+     * 확장이 필수로 선언한 PHP 확장이 서버에 없으면 경고만 남깁니다. (업데이트·강제 활성화·코어 업데이트 중 활성화)
+     *
+     * 생명주기 경고(`php_extension_missing`)와 로그에 남기고 작업은 계속한다 — 업데이트를 막으면 보안 수정까지
+     * 못 받게 되므로 차단하지 않는다(#151 D3). 권장(suggest) 미충족은 관리자 배지로만 알린다.
+     *
+     * @param  string  $extensionType  확장 타입 (module|plugin)
+     * @param  string  $identifier  확장 식별자
+     * @param  string  $path  composer.json 이 있는 확장 디렉토리 (업데이트는 스테이징 경로)
+     * @return list<string> 서버에 없는 필수 PHP 확장 이름
+     */
+    public function warnPhpExtensionRequirements(string $extensionType, string $identifier, string $path): array
+    {
+        $missing = $this->checkPhpExtensionRequirementsAt($path)['missing_required'];
+
+        if ($missing !== []) {
+            Log::warning('확장이 요구하는 PHP 확장이 서버에 없습니다', [
+                'type' => $extensionType,
+                'identifier' => $identifier,
+                'missing' => $missing,
+            ]);
+            LifecycleWarnings::current()->add(
+                'php_extension_missing',
+                $identifier,
+                __('extensions.warnings.php_extension_missing', ['extensions' => implode(', ', $missing)]),
+            );
+        }
+
+        return $missing;
     }
 
     /**

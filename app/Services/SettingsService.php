@@ -5,6 +5,9 @@ namespace App\Services;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\Resources\AttachmentResource;
@@ -14,6 +17,8 @@ use App\Support\ConfigCacheHelper;
 use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\OpcacheStatus;
+use App\Support\PhpExtensionProbe;
+use App\Support\PhpExtensionRequirements;
 use App\Support\ProcessOutputEncoding;
 use App\Support\SettingsVersion;
 use Illuminate\Support\Facades\Artisan;
@@ -1381,7 +1386,7 @@ class SettingsService
             'config_path' => storage_path('app/settings'),
             'log_path' => storage_path('logs'),
             'upload_path' => storage_path('app/public'),
-            'php_extensions' => $this->safeSystemProbe('php_extensions', fn () => $this->getPhpExtensions(), ['required' => [], 'optional' => []]),
+            'php_extensions' => $this->safeSystemProbe('php_extensions', fn () => $this->getPhpExtensions(), ['required' => [], 'optional' => [], 'requested' => [], 'requested_by' => []]),
             'database_config' => $this->safeSystemProbe('database_config', fn () => $this->getDatabaseConfig(), ['has_read_write_split' => false, 'write' => [], 'read' => []]),
             'timezone' => config('app.timezone'),
         ];
@@ -1870,26 +1875,73 @@ class SettingsService
     /**
      * PHP 확장 모듈 상태를 조회합니다.
      *
-     * @return array PHP 확장 모듈 상태 배열
+     * 필수·선택 목록은 코어 SSoT(`App\Support\PhpExtensionRequirements`)에서 읽는다 — 인스톨러·코어 업데이트
+     * 사전점검·문서와 같은 목록이다. 설치된 모듈·플러그인이 composer.json 으로 요구한 확장은 `requested_by`
+     * (확장 → 요구한 확장 목록)로, 코어 목록 밖의 요구 확장(soap 등)의 로드 상태는 `requested` 로 싣는다.
+     *
+     * @return array{required: array<string, bool>, optional: array<string, bool>, requested: array<string, bool>, requested_by: array<string, list<array{type: string, identifier: string, name: string, level: string}>>} PHP 확장 모듈 상태
      */
     public function getPhpExtensions(): array
     {
-        $required = ['openssl', 'pdo', 'mbstring', 'tokenizer', 'xml', 'curl', 'json', 'zip', 'fileinfo', 'bcmath'];
-        $optional = ['gd', 'imagick', 'redis', 'memcached', 'sodium', 'exif', 'intl', 'ldap', 'zlib'];
+        $requirements = PhpExtensionRequirements::load();
+        $probe = app(PhpExtensionProbe::class);
 
         $extensions = [
             'required' => [],
             'optional' => [],
+            'requested' => [],
+            'requested_by' => $this->collectExtensionPhpRequirements(),
         ];
 
-        foreach ($required as $ext) {
-            $extensions['required'][$ext] = extension_loaded($ext);
+        foreach ($requirements['required'] as $ext) {
+            $extensions['required'][$ext] = $probe->loaded($ext);
         }
 
-        foreach ($optional as $ext) {
-            $extensions['optional'][$ext] = extension_loaded($ext);
+        foreach ($requirements['optional'] as $ext) {
+            $extensions['optional'][$ext] = $probe->loaded($ext);
+        }
+
+        foreach (array_keys($extensions['requested_by']) as $ext) {
+            if (! isset($extensions['required'][$ext]) && ! isset($extensions['optional'][$ext])) {
+                $extensions['requested'][$ext] = $probe->loaded($ext);
+            }
         }
 
         return $extensions;
+    }
+
+    /**
+     * 설치된 모듈·플러그인이 composer.json 으로 요구한 PHP 확장을 모읍니다.
+     *
+     * @return array<string, list<array{type: string, identifier: string, name: string, level: string}>> PHP 확장 이름 => 요구한 확장 목록 (level: require|suggest)
+     */
+    protected function collectExtensionPhpRequirements(): array
+    {
+        $extensionManager = app(ExtensionManager::class);
+        $requestedBy = [];
+
+        $sources = [
+            ['module', 'modules', app(ModuleRepositoryInterface::class)->getAll()],
+            ['plugin', 'plugins', app(PluginRepositoryInterface::class)->getAll()],
+        ];
+
+        foreach ($sources as [$type, $directory, $records]) {
+            foreach ($records as $record) {
+                $declared = $extensionManager->getPhpExtensionRequirements($directory, $record->identifier);
+                $requester = ['type' => $type, 'identifier' => $record->identifier, 'name' => $record->getLocalizedName()];
+
+                foreach ($declared['required'] as $ext) {
+                    $requestedBy[$ext][] = $requester + ['level' => 'require'];
+                }
+
+                foreach (array_keys($declared['suggested']) as $ext) {
+                    $requestedBy[$ext][] = $requester + ['level' => 'suggest'];
+                }
+            }
+        }
+
+        ksort($requestedBy);
+
+        return $requestedBy;
     }
 }

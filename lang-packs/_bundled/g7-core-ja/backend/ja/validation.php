@@ -895,6 +895,7 @@ return [
         'sitemap_urls_per_file_min' => 'Sitemap ファイルあたりURL数は最小1000件以上である必要があります。',
         'sitemap_urls_per_file_max' => 'Sitemap ファイルあたりURL数は最大50000件を超えることはできません。',
         'sitemap_gzip_boolean' => 'Sitemap 圧縮設定はtrue又はfalse値である必要があります。',
+        'sitemap_gzip_requires_zlib' => 'サイトマップ圧縮(gzip)を有効にするには、サーバーに PHP zlib 拡張が必要です。拡張をインストールするか、圧縮をオフにしてください。',
         'sitemap_serve_stale_on_miss_boolean' => '前Sitemap 提供設定はtrue又はfalse値である必要があります。',
         'sitemap_max_urls_per_contributor_integer' => 'クローラーあたり最大URL数は整数である必要があります。',
         'sitemap_max_urls_per_contributor_min' => 'クローラーあたり最大URL数は0以上である必要があります。',

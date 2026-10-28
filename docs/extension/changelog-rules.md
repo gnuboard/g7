@@ -100,6 +100,10 @@ composer test-smoke-ci
 | `Fixed` | 버그 수정 | 기존 버그, 오류 수정 |
 | `Security` | 보안 취약점 수정 | 보안 관련 수정 |
 
+composer.json 에 PHP 확장 요구(`require.ext-*`·`suggest.ext-*`)를 새로 선언하거나 바꾸면 운영자가 서버 준비물을 알 수 있도록
+CHANGELOG 에 적는다 — 새 선언은 `Added`(예: 「모바일 결제에 필요한 PHP soap 확장을 권장 확장으로 선언했습니다」), 필수 요구 추가는
+설치·활성화를 막을 수 있으므로 `Changed` 에 「필요한 PHP 확장」을 명시한다.
+
 ---
 
 ## 3. 파일 위치

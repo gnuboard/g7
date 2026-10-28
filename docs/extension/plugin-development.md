@@ -309,6 +309,24 @@ class Plugin implements PluginInterface
 - `"src/"`: src 디렉토리 내 클래스 로딩
 - `"./"`: 루트의 plugin.php 로딩
 
+### PHP 확장 요구 선언
+
+코어 기준 「선택」 PHP 확장(`bcmath`·`gd`·`zlib` 등)이나 코어 목록 밖 확장(`soap` 등)을 쓰면 composer.json 에 선언한다.
+`composer install` 판단에서는 `ext-*` 를 무시하지만, 코어가 설치·활성화·업데이트 때 이 선언을 검사하고 관리자 화면·README 에 표시한다.
+
+```json
+{
+    "require": { "php": "^8.2", "ext-openssl": "*" },
+    "suggest": { "ext-soap": "모바일 결제(SmartPhone Pay) 승인키 발급에 필요" }
+}
+```
+
+- `require.ext-*`: 필수 — 서버에 없으면 설치·활성화를 막는다(업데이트는 경고만).
+- `suggest.ext-*`: 권장 — 일부 기능에만 필요할 때. 막지 않고 「권장 PHP 확장: 이름(미설치)」 배지만 표시한다. 값은 사유 문장이다.
+- `suggest` 로 선언한 확장을 쓰는 코드는 `class_exists`·`function_exists` 로 가드하고, 없을 때 고객에게는 일반 문구를, 로그에는 원인을 남긴다.
+
+상세: [requirements.md §1.8](../requirements.md#18-확장모듈플러그인이-요구하는-php-확장)
+
 ---
 
 ## 화면 컴포넌트 제공

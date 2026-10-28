@@ -1288,6 +1288,68 @@
                                     ]
                                 }
                             ]
+                        },
+                        {
+                            "id": "requested_php_extensions",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{Object.keys(systemInfo?.data?.php_extensions?.requested_by ?? {}).length > 0}}",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-body font-medium mb-3"
+                                    },
+                                    "text": "$t:admin.settings.info.requested_modules"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex flex-col gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "Object.entries(systemInfo?.data?.php_extensions?.requested_by ?? {})",
+                                                "item_var": "req"
+                                            },
+                                            "props": {
+                                                "className": "flex-center gap-1.5 flex-wrap"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "{{(systemInfo?.data?.php_extensions?.required?.[req[0]] ?? systemInfo?.data?.php_extensions?.optional?.[req[0]] ?? systemInfo?.data?.php_extensions?.requested?.[req[0]]) ? 'check' : 'x'}}",
+                                                        "className": "{{(systemInfo?.data?.php_extensions?.required?.[req[0]] ?? systemInfo?.data?.php_extensions?.optional?.[req[0]] ?? systemInfo?.data?.php_extensions?.requested?.[req[0]]) ? 'text-base text-green-600 flex-shrink-0' : 'text-base text-red-500 flex-shrink-0'}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-body"
+                                                    },
+                                                    "text": "{{req[0]}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.info.requested_by_line|names={{(req[1] ?? []).map(function(r) { return r.name + ' (' + (r.level === 'suggest' ? $t('admin.settings.info.level_suggest') : $t('admin.settings.info.level_require')) + ')'; }).join(', ')}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     ]
                 }

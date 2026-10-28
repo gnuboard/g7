@@ -482,8 +482,14 @@ if (! function_exists('g7_cli_select_extensions')) {
         if ($resolution['errors'] !== []) {
             return g7_cli_fail($out, $resolution['errors'], G7_CLI_EXIT_INVALID);
         }
+        // 필수 PHP 확장이 서버에 없는 확장은 웹 확장 저장과 같은 함수로 미리 뺀다 — 설치 단계의 코어 게이트에서 멈추지 않게 한다(#151).
+        $phpExclusion = installer_exclude_selection_missing_php($resolution, BASE_PATH);
+        $resolution = $phpExclusion['resolution'];
+        foreach ($phpExclusion['skipped'] as $skippedIdentifier => $missingPhpExtensions) {
+            $out->info(lang('log_extension_skipped_php_extension_missing', ['identifier' => $skippedIdentifier, 'extensions' => implode(', ', $missingPhpExtensions)]));
+        }
         $out->info(lang('cli_ext_install_order').': '.implode(', ', $resolution['install_order']));
-        $out->raw('extensions', ['install_order' => $resolution['install_order'], 'auto_added' => $resolution['auto_added']]);
+        $out->raw('extensions', ['install_order' => $resolution['install_order'], 'auto_added' => $resolution['auto_added'], 'php_extension_skipped' => $phpExclusion['skipped']]);
 
         return ['selection' => $resolution['selection'], 'names' => $names];
     }

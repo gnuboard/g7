@@ -44,9 +44,11 @@ $projectRoot = dirname(__DIR__, 4);
 // 경고는 stderr 로 — CLI 에서는 표준출력이 먼저 나가면 http_response_code() 가 기록되지 않는다.
 ini_set('display_errors', 'stderr');
 
-// config.php 는 BASE_PATH/app/Support 의 두 클래스를 require 한다 — 임시 루트에는 없으므로 실 소스를 미리 로드.
+// config.php 는 BASE_PATH/app/Support 의 세 클래스를 require 한다 — 임시 루트에는 없으므로 실 소스를 미리 로드.
+// (PhpExtensionRequirements 는 자기 옆의 Requirements/php-extensions.json 을 읽으므로 실 소스 경로에서 로드해야 한다)
 require_once $projectRoot.'/app/Support/PrivilegedDatabaseAccounts.php';
 require_once $projectRoot.'/app/Support/OpcacheStatus.php';
+require_once $projectRoot.'/app/Support/PhpExtensionRequirements.php';
 
 $mode = $spec['mode'] ?? 'endpoint';
 $endpoint = (string) ($spec['endpoint'] ?? '');

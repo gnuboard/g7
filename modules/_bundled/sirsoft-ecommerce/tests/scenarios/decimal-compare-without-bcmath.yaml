@@ -1,0 +1,33 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   bcmath=absent × comparison=random 은 별도 PHP 프로세스를 2만 번 띄워야 해 재지 않는다. 비교식이
+#   bcmath 를 쓰지 않음은 absent × table(서브프로세스)과 NoBcmathUsageTest(정적)가 함께 잠근다.
+#   경계 모양(null·"0.00"·부동소수 오차·반올림 경계·대금액·음수)은 데이터 공급자 행으로 나눠 잰다.
+feature: bcmath 확장 없이 환불·취소 금액 판정 (#151)
+
+description: |
+  bcmath 가 없는 PHP 서버에서 결제완료·취소 주문 상세(회원·관리자·비회원)와 클레임 가능 옵션 API 가
+  `bccomp()` 미정의로 500 이 됐다. 금액 비교를 `Support\DecimalComparator`(소수 4자리 round 비교)로
+  바꿔 bcmath 의존을 없앤다.
+
+    - 비교 결과는 종전 `bccomp(number_format(v,4,'.',''), …, 4)` 와 같다(경계 표 + 무작위 대조).
+    - bcmath 함수를 막은 PHP 에서도 동작한다.
+    - 모듈 src 에 bc* 호출이 다시 들어오지 않는다.
+    - 사용처(`hasCashToReturn`·`refundsOnlyMileage`·`paymentCashFullyCancelled`)의 기존 판정은 그대로다.
+
+axes:
+  bcmath: [present, absent]
+  comparison: [table, random]
+
+effects:
+  - decimal_compare_matches_four_digit_rounding
+  - decimal_compare_equals_legacy_bccomp
+  - decimal_compare_works_without_bcmath
+  - module_source_has_no_bcmath_call
+  - has_cash_to_return_reads_header_and_payment_ledgers
+  - refund_method_for_claim_is_points_only_when_no_cash_remains
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/DecimalComparatorTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Architecture/NoBcmathUsageTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderRefundRequestServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/RefundExecutionServiceTest.php

@@ -22,6 +22,7 @@ return [
     'errors' => [
         'state_contract_conflict' => "The ':name' state contract is owned by :owner. :extension cannot declare the same name.",
         'core_version_mismatch' => ':extension (:type) requires Gnuboard7 core version :required or higher. (Current: :installed)',
+        'php_extension_missing' => 'The :name extension requires the PHP extension(s) :extensions on the server. Install them and try again.',
         'version_check_failed' => 'Version check failed.',
         'operation_in_progress' => 'Cannot process the request because ":name" has an operation in progress (:status).',
         'operation_stuck' => '":name" has been stuck in "updating" for more than :minutes minutes. If the update ended midway, update again with --force to clean it up and finish the update, or activate it to only clean it up and turn it on (you will be told to run an unfinished update again).',
@@ -69,6 +70,7 @@ return [
         'column_target' => 'Target',
         'column_message' => 'Reason',
         'composer_install_failed' => 'Installing Composer dependencies failed — run composer install manually in the extension directory',
+        'php_extension_missing' => 'The server is missing the PHP extension(s) :extensions required by this extension — related features may not work until they are installed',
     ],
 
     // Optional integration (integrations) notices — informational only, never blocking (7.1.4)

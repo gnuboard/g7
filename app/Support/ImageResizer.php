@@ -130,6 +130,7 @@ class ImageResizer
      */
     private function write(string $path, string $format, int $targetWidth, int $targetHeight): bool
     {
+        // php-ext-guard: resizeInPlace() 가 extension_loaded('gd') 로 먼저 거른다
         $source = match ($format) {
             'jpeg' => @imagecreatefromjpeg($path),
             'png' => @imagecreatefrompng($path),

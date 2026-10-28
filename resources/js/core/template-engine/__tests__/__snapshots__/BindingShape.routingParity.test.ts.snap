@@ -150,14 +150,14 @@ exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: greedy
 ]
 `;
 
-exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `875`;
+exports[`BindingShape 라우팅 diff 하네스 > 단일 바인딩 판정: 구 정규식과 신 정본이 갈리는 총량 1`] = `878`;
 
 exports[`BindingShape 라우팅 diff 하네스 > 판정이 갈리는 식의 분류별 건수 요약 1`] = `
 {
-  "numericIndex": 44,
+  "numericIndex": 47,
   "other": 3,
   "quotedBracket": 31,
-  "total": 78,
+  "total": 81,
 }
 `;
 
@@ -1259,6 +1259,19 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
   },
   {
     "canonical": true,
+    "expr": "req[0]",
+    "files": [
+      "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_tab_info.json",
+    ],
+    "old": {
+      "DataBindingEngine.isBaseExpression": false,
+      "DataBindingEngine.resolveBindings": false,
+      "DynamicRenderer/ConditionEvaluator": false,
+      "RenderHelpers": true,
+    },
+  },
+  {
+    "canonical": true,
     "expr": "review.images[0].download_url",
     "files": [
       "templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_reviews.json",
@@ -1353,6 +1366,34 @@ exports[`BindingShape 라우팅 diff 하네스 > 표현식/경로 판정: 구 �
     "expr": "rowImages[3].download_url",
     "files": [
       "modules/_bundled/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_product_review_index.json",
+    ],
+    "old": {
+      "DataBindingEngine.isBaseExpression": false,
+      "DataBindingEngine.resolveBindings": false,
+      "DynamicRenderer/ConditionEvaluator": false,
+      "RenderHelpers": true,
+    },
+  },
+  {
+    "canonical": true,
+    "expr": "sug[0]",
+    "files": [
+      "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_detail.json",
+      "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_detail.json",
+    ],
+    "old": {
+      "DataBindingEngine.isBaseExpression": false,
+      "DataBindingEngine.resolveBindings": false,
+      "DynamicRenderer/ConditionEvaluator": false,
+      "RenderHelpers": true,
+    },
+  },
+  {
+    "canonical": true,
+    "expr": "sug[1]",
+    "files": [
+      "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_module_list/_modal_detail.json",
+      "templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_plugin_list/_modal_detail.json",
     ],
     "old": {
       "DataBindingEngine.isBaseExpression": false,

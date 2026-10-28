@@ -32,6 +32,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRefundRepositoryInterf
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\AppliesRefundBankAccount;
+use Modules\Sirsoft\Ecommerce\Support\DecimalComparator;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
 /**
@@ -1448,7 +1449,7 @@ class OrderCancellationService
         $cancelled = (float) ($cancelledUpdates['cancelled_amount'] ?? $payment->cancelled_amount);
 
         return $paid > 0
-            && bccomp(number_format($cancelled, 4, '.', ''), number_format($paid, 4, '.', ''), 4) >= 0;
+            && DecimalComparator::compare($cancelled, $paid) >= 0;
     }
 
     /**

@@ -1,0 +1,28 @@
+feature: PHP soap 확장 없는 서버의 모바일 결제 승인키 발급 (#151)
+
+description: |
+  모바일 결제(SmartPhone Pay)는 서버가 SOAP 으로 승인키를 받아야 결제창을 연다. soap 확장이 없으면
+  `new SoapClient` 가 치명 오류가 되어 POST /mobile/approval-key 가 500 이고 결제창이 뜨지 않았다.
+
+    - `KcpSoapService::soapAvailable()` 가 false 면 원인을 오류 로그에 남기고 일반 문구 예외를 던진다.
+    - 컨트롤러의 기존 NhnKcpApiException 분기가 422 {success:false, error:<일반 문구>} 로 응답한다.
+    - 고객 문구에는 서버 구성 정보(soap)를 노출하지 않는다. ko·en 번역이 있다.
+    - soap 이 있으면 기존 흐름 그대로다.
+    - composer.json `suggest.ext-soap` 로 권장 확장을 선언한다(설치를 막지 않음 — PC 결제만 쓰는 서버).
+
+# 컨트롤러 축(422 응답·기존 흐름)은 mobile-approval-key.yaml 의 request 축 마커를 그대로 쓰고,
+# 이 매니페스트는 effects 로만 묶는다(한 docblock 은 @scenario 하나만 가진다).
+axes:
+  soap: [present, absent]
+
+effects:
+  - missing_soap_throws_generic_customer_message
+  - missing_soap_cause_is_logged
+  - missing_soap_returns_422_with_generic_message
+  - soap_present_keeps_existing_flow
+  - soap_client_is_created_only_behind_guard
+  - approval_key_returns_pay_url_and_fields
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Services/KcpSoapServiceTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/MobileApprovalControllerTest.php

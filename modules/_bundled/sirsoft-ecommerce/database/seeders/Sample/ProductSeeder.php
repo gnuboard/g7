@@ -72,6 +72,11 @@ class ProductSeeder extends Seeder
     private array $usedHashes = [];
 
     /**
+     * gd 부재 경고를 이미 냈는지 여부 (상품마다 반복하지 않는다)
+     */
+    private bool $gdWarningShown = false;
+
+    /**
      * 상품 템플릿 데이터 정의 (이 데이터를 기반으로 100개 생성)
      *
      * 가격 분포: 50000원 이하 80%, 최대 200000원, 1000원 단위
@@ -1401,6 +1406,16 @@ class ProductSeeder extends Seeder
     }
 
     /**
+     * PHP gd 확장(이미지 함수)을 쓸 수 있는지 반환합니다. (테스트가 부재를 흉내 내도록 protected)
+     *
+     * @return bool imagecreatefromstring 이 있으면 true
+     */
+    protected function gdAvailable(): bool
+    {
+        return function_exists('imagecreatefromstring');
+    }
+
+    /**
      * GD 색상 필터를 적용하여 이미지를 변형합니다.
      *
      * 5가지 필터 중 랜덤 적용: 색상 시프트, 따뜻한 톤, 차가운 톤, 밝기/대비, 세피아
@@ -1410,6 +1425,16 @@ class ProductSeeder extends Seeder
      */
     public function applyColorFilter(string $imageContent): string
     {
+        // gd 는 코어 기준 「선택」 확장이다 — 없으면 필터 없이 원본을 쓴다(#151). 경고는 한 번만 낸다.
+        if (! $this->gdAvailable()) {
+            if (! $this->gdWarningShown) {
+                $this->gdWarningShown = true;
+                $this->command?->warn('  - '.__('sirsoft-ecommerce::messages.seeders.product.color_filter_skipped_no_gd'));
+            }
+
+            return $imageContent;
+        }
+
         $image = @imagecreatefromstring($imageContent);
         if ($image === false) {
             return $imageContent;

@@ -996,6 +996,7 @@ return [
         'sitemap_urls_per_file_min' => 'Sitemap 파일당 URL 수는 최소 1000개 이상이어야 합니다.',
         'sitemap_urls_per_file_max' => 'Sitemap 파일당 URL 수는 최대 50000개를 초과할 수 없습니다.',
         'sitemap_gzip_boolean' => 'Sitemap 압축 설정은 true 또는 false 값이어야 합니다.',
+        'sitemap_gzip_requires_zlib' => '사이트맵 압축(gzip)을 켜려면 서버에 PHP zlib 확장이 필요합니다. 확장을 설치하거나 압축을 끄세요.',
         'sitemap_serve_stale_on_miss_boolean' => '이전 Sitemap 제공 설정은 true 또는 false 값이어야 합니다.',
         'sitemap_max_urls_per_contributor_integer' => '수집기당 최대 URL 수는 정수여야 합니다.',
         'sitemap_max_urls_per_contributor_min' => '수집기당 최대 URL 수는 0 이상이어야 합니다.',

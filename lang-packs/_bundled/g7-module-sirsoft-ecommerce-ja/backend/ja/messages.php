@@ -1673,6 +1673,7 @@ return [
             'purged_inquiries' => '既存の商品お問い合わせ :count 件と、その掲示板のお問い合わせ投稿・回答を削除しました。',
             'purged' => '既存の商品関連データ :count 件を削除しました。',
             'images_dir_deleted' => 'ストレージから商品画像フォルダを削除しました。',
+            'color_filter_skipped_no_gd' => 'PHP gd 拡張がないため、商品画像の色の変形を行わず元の画像を使用します。',
             'no_categories' => 'カテゴリーがありません。先に CategorySeeder を実行してください。',
             'no_brands' => 'ブランドがありません。先に BrandSeeder を実行することをお勧めします。',
             'no_shipping_policies' => '配送ポリシーがありません。先に ShippingPolicySeeder を実行することをお勧めします。',

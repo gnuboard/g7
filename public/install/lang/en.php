@@ -854,6 +854,9 @@ Firewalls or proxies may be blocking long-lived HTTP connections.',
     'dir_templates_pending' => 'Templates pending directory',
 
     // save-extensions.php i18n keys
+    'log_extension_skipped_php_extension_missing' => 'Skipped :identifier because the server is missing the PHP extension(s) :extensions',
+    'extension_php_missing_required' => 'Cannot be installed: the server is missing the PHP extension(s) :extensions',
+    'extension_php_missing_suggested' => 'Recommended PHP extension(s) :extensions missing — some features (:reason) may not work',
     'log_extensions_selected' => 'Extension selection complete: :admin admin template(s), :user user template(s), :modules module(s), :plugins plugin(s), :language_packs language pack(s)',
     'log_extensions_saved' => 'Extension selection has been saved.',
     'error_admin_template_required' => 'Please select at least one admin template.',

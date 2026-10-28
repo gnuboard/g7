@@ -4,12 +4,14 @@ namespace App\Http\Resources;
 
 use App\Extension\CoreVersionChecker;
 use App\Http\Resources\Traits\ExposesIntegratedBy;
+use App\Http\Resources\Traits\ExposesPhpExtensionRequirements;
 use App\Http\Resources\Traits\ExposesUpdateCoreCompatibility;
 use Illuminate\Http\Request;
 
 class PluginResource extends BaseApiResource
 {
     use ExposesIntegratedBy;
+    use ExposesPhpExtensionRequirements;
     use ExposesUpdateCoreCompatibility;
 
     /**
@@ -66,6 +68,8 @@ class PluginResource extends BaseApiResource
             ),
             // 업데이트 대상 버전의 코어 호환(업데이트가 있을 때만) — 업데이트 창의 경고·강제 업데이트 체크가 읽는다.
             ...$this->updateCoreCompatibilityFields(),
+            // composer.json require/suggest ext-* 와 서버 로드 상태 — 목록 카드의 PHP 확장 배지(#151)
+            ...$this->phpExtensionRequirementFields('plugin'),
 
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),
@@ -154,6 +158,8 @@ class PluginResource extends BaseApiResource
             'deactivated_reason' => $this->getDeactivatedReasonValue(),
             'deactivated_at' => $this->getValue('deactivated_at'),
             'incompatible_required_version' => $this->getValue('incompatible_required_version'),
+            // composer.json require/suggest ext-* 와 서버 로드 상태 — 상세 창의 PHP 확장 배지(#151)
+            ...$this->phpExtensionRequirementFields('plugin'),
             // 타임스탬프
             'created_at' => $this->getValue('created_at'),
             'updated_at' => $this->getValue('updated_at'),

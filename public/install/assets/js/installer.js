@@ -2351,6 +2351,14 @@
             ? '<div class="extension-card-footer">' + depsBlock + integrationsBlock + '</div>'
             : '';
 
+        // 서버에 없는 PHP 확장(composer.json require/suggest ext-*) — 필수가 없으면 고를 수 없게 끈다(#151)
+        const phpBlock = buildPhpExtensionNoticeHtml(item);
+        const blockedByPhp = hasMissingRequiredPhpExtensions(item);
+        if (blockedByPhp) {
+            card.classList.add('disabled');
+            card.dataset.phpBlocked = '1';
+        }
+
         // 선택 표시 아이콘 (단일 선택은 라디오, 다중 선택은 체크박스)
         const selectIcon = isSingleSelect
             ? (isSelected ? '<i class="fas fa-check-circle"></i>' : '<i class="far fa-circle"></i>')
@@ -2366,9 +2374,10 @@
                 '<div class="extension-card-select">' + selectIcon + '</div>' +
             '</div>' +
             (description ? '<p class="extension-card-description">' + escapeHtml(description) + '</p>' : '') +
-            depsHtml;
+            depsHtml + phpBlock;
 
         card.addEventListener('click', function() {
+            if (blockedByPhp) return;
             toggleExtension(type, item.identifier, isSingleSelect);
         });
 
@@ -2392,6 +2401,45 @@
             if (found) return found;
         }
         return null;
+    }
+
+    /**
+     * 확장이 필수로 요구한 PHP 확장 중 서버에 없는 것이 있는지 판정합니다.
+     *
+     * @param {object} item - 확장 항목 (scan-extensions 의 missing_php_extensions 포함)
+     * @returns {boolean} 필수 PHP 확장이 하나라도 없으면 true
+     */
+    function hasMissingRequiredPhpExtensions(item) {
+        return !!(item && Array.isArray(item.missing_php_extensions) && item.missing_php_extensions.length > 0);
+    }
+
+    /**
+     * 카드의 PHP 확장 안내 HTML 을 만듭니다. (필수 없음 → 설치 불가, 권장 없음 → 경고만)
+     *
+     * @param {object} item - 확장 항목 (missing_php_extensions · suggested_missing 포함)
+     * @returns {string} HTML, 안내할 것이 없으면 빈 문자열
+     */
+    function buildPhpExtensionNoticeHtml(item) {
+        let html = '';
+
+        if (hasMissingRequiredPhpExtensions(item)) {
+            html += '<div class="extension-card-php-notice extension-card-php-blocked"><i class="fas fa-ban"></i> ' +
+                escapeHtml(lang('extension_php_missing_required').replace(':extensions', item.missing_php_extensions.join(', '))) +
+                '</div>';
+        }
+
+        const suggested = (item && item.suggested_missing && typeof item.suggested_missing === 'object') ? item.suggested_missing : {};
+        const suggestedNames = Object.keys(suggested);
+        if (suggestedNames.length > 0) {
+            const reasons = suggestedNames.map(function(n) { return suggested[n]; }).filter(Boolean).join(', ');
+            html += '<div class="extension-card-php-notice"><i class="fas fa-exclamation-triangle"></i> ' +
+                escapeHtml(lang('extension_php_missing_suggested')
+                    .replace(':extensions', suggestedNames.join(', '))
+                    .replace(':reason', reasons || suggestedNames.join(', '))) +
+                '</div>';
+        }
+
+        return html;
     }
 
     /**
@@ -2643,6 +2691,8 @@
                 );
                 if (card && card.classList.contains('disabled')) return;
             }
+            // 필수 PHP 확장이 없는 모듈·플러그인은 일괄 선택에서도 뺀다(#151)
+            if (hasMissingRequiredPhpExtensions(item)) return;
             ids.push(item.identifier);
         });
         return ids;
@@ -2761,6 +2811,8 @@
     window.toggleExtension = function(type, identifier, isSingleSelect, _isAutoSelect) {
         const card = document.querySelector('.extension-card[data-type="' + type + '"][data-identifier="' + identifier + '"]');
         if (!card) return;
+        // 필수 PHP 확장이 없는 확장은 직접 클릭·의존 자동 선택 어느 쪽으로도 고르지 않는다(#151)
+        if (card.dataset.phpBlocked === '1' && selectedExtensions[type].indexOf(identifier) === -1) return;
 
         const isCurrentlySelected = selectedExtensions[type].indexOf(identifier) !== -1;
         const isRequired = (type === 'admin_templates'); // 관리자 템플릿만 필수
