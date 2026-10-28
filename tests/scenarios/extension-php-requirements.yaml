@@ -1,0 +1,63 @@
+# audit:allow test-scenario-coverage[cross_product] reason: |
+#   표면마다 입력 축이 다르다(코어 업데이트: 소스 종류×코어 확장 상태, 게이트: 선언 등급×경로, 대체 동작: 표면×확장 상태).
+#   한 매니페스트의 축 곱으로 묶으면 실재하지 않는 조합(GitHub × 목록 없음의 설치기 화면 등)이 생긴다.
+#   축은 각 테스트의 @scenario 로 표면별로 표시하고, 이 매니페스트는 effects 로 전수 검증한다.
+feature: 확장(모듈·플러그인)이 요구하는 PHP 확장의 선언·검사·표시와 선택 확장 부재 대체 동작 (#151)
+
+description: |
+  번들 이커머스가 bcmath 를 가드 없이 써서 bcmath 없는 서버의 주문 상세가 500 이 됐다(#151). 같은 결함군을 막는 체계 —
+
+    - 코어 필수/선택 확장 목록을 SSoT(app/Support/Requirements/php-extensions.json) 하나로 묶는다 — 인스톨러·관리자 정보 탭·
+      코어 업데이트 사전점검·audit 룰이 같은 목록을 읽고, 문서 §1.4 와 대조해 잠근다(필수 16 — zip·pdo_mysql 포함, bcmath 선택).
+    - 확장은 composer.json require.ext-*(필수: 설치·활성화 422 차단)·suggest.ext-*(권장: 경고 배지만)로 선언한다.
+      업데이트(번들 일괄 포함)·강제 활성화·코어 업데이트 중 활성화는 막지 않고 생명주기 경고만 남긴다.
+    - core:update 는 새 코어 필수 확장 미충족이면 --source·--zip 은 유지보수 전, GitHub 는 다운로드 직후 멈춘다.
+    - 관리자 모듈·플러그인 목록·상세·정보 탭·README 가 요구 확장과 설치 여부를 보여 준다.
+    - 선택 확장이 없을 때 500 대신 안내·대체 동작: 설정 백업·복원(zip) 422, SEO 미리보기(iconv) 정화 폴백, 사이트맵 gzip(zlib)
+      저장 차단·평문 폴백, GeoIP tar.gz(zlib·phar) 원인 메시지.
+    - 정적 잠금: audit 룰 optional-php-extension-unguarded + PHPUnit OptionalPhpExtensionUsageTest.
+
+axes:
+  surface: [ssot, installer, extension_gate, core_update, admin_display, fallback, static_lock]
+
+effects:
+  - ssot_lists_sixteen_required_with_zip_and_pdo_mysql
+  - ssot_matches_requirements_doc_table
+  - missing_uses_injected_probe
+  - load_reads_given_path_and_rejects_invalid
+  - installer_constants_follow_ssot
+  - installer_marks_require_missing_and_suggest_missing
+  - installer_server_skips_require_missing
+  - installer_scan_and_card_disable_wiring
+  - composer_ext_declarations_are_read
+  - missing_lists_follow_probe
+  - composer_dependency_judgement_unchanged
+  - require_missing_blocks_install_and_activate
+  - require_missing_responds_422
+  - update_only_warns
+  - suggest_never_blocks_or_warns
+  - managers_wire_install_activate_update_gates
+  - source_preflight_blocks_before_maintenance
+  - zip_preflight_blocks_before_maintenance
+  - github_preflight_cleans_pending_and_releases_maintenance
+  - old_release_without_list_skips_core_check
+  - bundled_extension_requirement_only_warns
+  - system_info_lists_follow_ssot_with_requested_by
+  - extension_resource_exposes_php_extensions
+  - readme_lists_declared_php_extensions
+  - backup_restore_without_zip_returns_422
+  - utf8_scrub_works_without_iconv
+  - sitemap_gzip_save_requires_zlib
+  - sitemap_writer_falls_back_to_plain_xml
+  - tar_extract_names_missing_extensions
+  - core_optional_extension_usage_is_guarded
+
+test_files:
+  - tests/Unit/Support/PhpExtensionRequirementsTest.php
+  - tests/Unit/Installer/RequirementsExtensionListSsotTest.php
+  - tests/Unit/Extension/ExtensionPhpRequirementsTest.php
+  - tests/Feature/Extension/ExtensionPhpRequirementGateTest.php
+  - tests/Feature/Console/CoreUpdatePhpRequirementPreflightTest.php
+  - tests/Feature/Api/Admin/OptionalPhpExtensionFallbackTest.php
+  - tests/Feature/Documentation/ExtensionDocPhpRequirementsRowTest.php
+  - tests/Unit/Architecture/OptionalPhpExtensionUsageTest.php

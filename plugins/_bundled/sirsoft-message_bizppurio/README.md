@@ -100,6 +100,7 @@ flowchart LR
 |---|---|
 | 그누보드7 코어 | `>=7.1.1` |
 | PHP | `^8.2` |
+| PHP 확장(필수) | `json` |
 <!-- @generated:requirements END -->
 
 ## 설치

@@ -27,6 +27,7 @@ return [
         'wsdl_missing' => 'KCP WSDL file not found: :file',
         'approval_key_error' => 'KCP approval key error [:code]: :message',
         'soap_error' => 'KCP SOAP integration error: :message',
+        'mobile_payment_unavailable' => 'Mobile payment is currently unavailable. Please choose another payment method or contact the store.',
         'cli_binary_missing' => 'KCP CLI binary missing: :path',
         'cli_binary_not_executable' => 'KCP CLI binary is not executable. Operator action required (sudo chmod 755 :path)',
     ],

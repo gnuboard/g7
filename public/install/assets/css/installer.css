@@ -4275,6 +4275,25 @@ body {
   border-color: rgba(248, 113, 113, 0.6);
 }
 
+.extension-card-php-notice {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: #b45309;
+}
+
+.extension-card-php-notice.extension-card-php-blocked {
+  color: var(--color-danger, #dc2626);
+  font-weight: 600;
+}
+
+[data-theme="dark"] .extension-card-php-notice {
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .extension-card-php-notice.extension-card-php-blocked {
+  color: #f87171;
+}
+
 [data-theme="dark"] .integration-version-warning {
   color: #f87171;
 }

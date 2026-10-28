@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\Admin\SeoBotPreviewRequest;
 use App\Seo\Editor\SeoBotPreviewService;
+use App\Support\Utf8;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -16,6 +17,11 @@ use Illuminate\Http\JsonResponse;
  */
 class SeoBotPreviewController extends AdminBaseController
 {
+    /**
+     * SEO 봇 미리보기 서비스를 주입받습니다.
+     *
+     * @param  SeoBotPreviewService  $previewService  미리보기 렌더 서비스
+     */
     public function __construct(
         private readonly SeoBotPreviewService $previewService,
     ) {
@@ -48,8 +54,7 @@ class SeoBotPreviewController extends AdminBaseController
         // "Malformed UTF-8" 로 500 을 던진다(샘플 데이터/표현식 평가 잔여로 잘린 멀티바이트 가능).
         // 응답 직전 한 번 정화해 직렬화를 보장한다(산출물 내용 불변 — 깨진 바이트만 제거).
         if (is_string($html)) {
-            $clean = @iconv('UTF-8', 'UTF-8//IGNORE', $html);
-            $html = $clean === false ? mb_convert_encoding($html, 'UTF-8', 'UTF-8') : $clean;
+            $html = Utf8::scrub($html);
         }
 
         return $this->success('common.success', [

@@ -854,6 +854,9 @@ ini_set(\'zlib.output_compression\', \'off\');
     'dir_templates_pending' => '템플릿 대기 디렉토리',
 
     // save-extensions.php 다국어 키
+    'log_extension_skipped_php_extension_missing' => '서버에 PHP 확장 :extensions 이(가) 없어 :identifier 확장을 설치 대상에서 뺐습니다',
+    'extension_php_missing_required' => '서버에 PHP 확장 :extensions 이(가) 없어 설치할 수 없습니다',
+    'extension_php_missing_suggested' => '권장 PHP 확장 :extensions 이(가) 없습니다 — 일부 기능(:reason)이 동작하지 않을 수 있습니다',
     'log_extensions_selected' => '확장 기능 선택 완료: 관리자 템플릿 :admin개, 사용자 템플릿 :user개, 모듈 :modules개, 플러그인 :plugins개, 언어팩 :language_packs개',
     'log_extensions_saved' => '확장 기능 선택이 저장되었습니다.',
     'error_admin_template_required' => '관리자 템플릿을 최소 1개 이상 선택해주세요.',

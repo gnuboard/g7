@@ -33,6 +33,7 @@ require_once dirname(__DIR__).'/includes/installer-state.php';
 require_once dirname(__DIR__).'/includes/functions.php';
 require_once dirname(__DIR__).'/includes/installer-ownership.php';
 require_once dirname(__DIR__).'/includes/extension-selection.php';
+require_once dirname(__DIR__).'/includes/php-extension-requirements.php';
 require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
@@ -134,6 +135,20 @@ foreach ($identifierGroups as $groupKey => $ids) {
     }
 }
 
+// 필수 PHP 확장(composer.json require.ext-*)이 서버에 없는 확장은 설치 대상에서 뺀다 — 선택 화면이 체크를 끄지만
+// 요청을 직접 만들면 우회되므로 서버에서 다시 거른다. 설치 단계의 코어 게이트에 걸려 설치 전체가 멈추지 않게 한다(#151).
+$skipMissingPhpExtensions = static function (array $ids, string $type): array {
+    $filtered = installer_filter_extensions_missing_php($ids, BASE_PATH.'/'.$type.'/_bundled');
+    foreach ($filtered['skipped'] as $skippedIdentifier => $missingPhpExtensions) {
+        addLog(lang('log_extension_skipped_php_extension_missing', [
+            'identifier' => $skippedIdentifier,
+            'extensions' => implode(', ', $missingPhpExtensions),
+        ]));
+    }
+
+    return $filtered['kept'];
+};
+
 try {
     // 서버 검증 — 화면(JS)과 같은 규칙의 공유 해석기로 존재·의존 자동 포함·버전·단일 선택·언어팩 대상을 확인한다.
     // 종전에는 형식만 보고 저장해, 없는 확장·의존 누락이 설치 단계에서 늦게 실패했다(터미널 설치와 같은 함수).
@@ -152,13 +167,28 @@ try {
         exit;
     }
 
-    // selected_extensions 업데이트 — 해석 결과(의존 확장 포함·설치 순서 정렬)를 저장한다.
-    $state['selected_extensions'] = $resolution['selection'];
     $adminTemplates = $resolution['selection']['admin_templates'];
     $userTemplates = $resolution['selection']['user_templates'];
     $modules = $resolution['selection']['modules'];
     $plugins = $resolution['selection']['plugins'];
     $languagePacks = $resolution['selection']['language_packs'];
+
+    // 필수 PHP 확장 재검증은 의존 자동 포함까지 끝난 해석 결과에 건다 — 요청 단계에서 빼면 해석기가 의존 확장으로 다시 넣는다.
+    $modules = $skipMissingPhpExtensions($modules, 'modules');
+    $plugins = $skipMissingPhpExtensions($plugins, 'plugins');
+    $resolution['selection']['modules'] = $modules;
+    $resolution['selection']['plugins'] = $plugins;
+    $resolution['install_order'] = array_values(array_filter(
+        $resolution['install_order'],
+        static function (string $entry) use ($resolution): bool {
+            [$category, $identifier] = explode(':', $entry, 2);
+
+            return in_array($identifier, $resolution['selection'][$category] ?? [], true);
+        }
+    ));
+
+    // selected_extensions 업데이트 — 해석 결과(의존 확장 포함·설치 순서 정렬)를 저장한다.
+    $state['selected_extensions'] = $resolution['selection'];
 
     // 확장 이름 매핑 저장 (설치 시 표시용)
     $state['extension_names'] = $extensionNames;

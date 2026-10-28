@@ -24,6 +24,7 @@ return [
         'github_download_failed' => 'GitHubからのダウンロードに失敗しました。',
         'github_archive_download_failed' => 'アーカイブのダウンロードに失敗しました。(:url)',
         'zip_file_not_found' => 'ZIPファイルが見つかりません。',
+        'archive_php_extension_missing' => 'アーカイブを展開するには、サーバーに PHP 拡張 :extensions が必要です。サーバー管理者にインストールを依頼してください。',
         'zip_open_failed' => 'ZIPファイルを開くことができません。',
     ],
     'validation_error' => '入力値のバリデーションエラー',

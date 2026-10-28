@@ -45,6 +45,16 @@ PC 가상계좌 발급도 같다 — 발급 응답의 `amount` 가 청구액과 
 
 정당한 결제창 닫힘은 주문 소유자(회원 본인 로그인 / 비회원 조회 토큰)가 보낸 close-report 요청으로만 기록된다. 주문자 이메일·전화번호는 제3자도 알 수 있어 소유 증명이 아니다 (KVE-2026-2434).
 
+### 모바일 승인키 발급은 PHP soap 확장이 필요하다 (1.1.2+)
+
+모바일 결제창은 서버가 SOAP 으로 받은 승인키(`POST /api/plugins/sirsoft-pay_nhnkcp/mobile/approval-key`)로 연다. 이 플러그인은 `composer.json`
+`suggest.ext-soap` 로 soap 을 **권장** 확장으로 선언한다(PC 결제만 쓰는 서버의 설치를 막지 않는다). soap 이 없는 서버에서 승인키를
+요청하면 500 대신 다음으로 응답한다.
+
+| 상태 | 본문 | 비고 |
+| --- | --- | --- |
+| 422 | `{"success": false, "error": "현재 모바일 결제를 이용할 수 없습니다. 다른 결제수단을 선택하거나 쇼핑몰에 문의해 주세요."}` | 고객에게는 서버 구성 정보를 보이지 않는다. 원인(soap 미설치)은 서버 오류 로그에 남는다 |
+
 > 형제 플러그인도 같은 규약이다 — `sirsoft-pay_kginicis` · `sirsoft-tosspayments` 의 `docs/api/payment.md` 를 참조.
 
 ---

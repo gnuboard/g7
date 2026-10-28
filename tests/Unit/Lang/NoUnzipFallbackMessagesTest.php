@@ -96,6 +96,43 @@ class NoUnzipFallbackMessagesTest extends TestCase
     }
 
     /**
+     * 어떤 화면 문구도 zip 확장이 없는 서버에 폴더 지정(--source) 수동 업데이트를 대안으로 안내하지 않는다 (7.1.4, #151).
+     *
+     * 7.1.4 의 코어 업데이트 사전점검은 새 코어의 필수 PHP 확장(zip 포함)이 없으면 `--source` 경로도 시작하지 않는다.
+     * 「zip 이 없으면 --source 로 수동 업데이트」·「수동 업데이트 (ZIP 확장 미설치 환경)」 같은 문구가 남으면
+     * 운영자가 안내대로 해도 업데이트는 막힌다.
+     *
+     * @scenario case=no_message_offers_source_update_without_zip
+     *
+     * @effects missing_zip_extension_message_requires_zip_extension_only
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function no_message_offers_manual_source_update_without_zip(): void
+    {
+        $zipExtension = '/zip\s*(확장|extension|拡張)|ZipArchive/iu';
+        $absent = '/미설치|없는|not available|no zip|without|未インストール|がない/iu';
+        $manual = '/수동|직접 다운로드|manual|download|手動|ダウンロード/iu';
+
+        $offending = [];
+        foreach ($this->messageFiles() as $file) {
+            foreach ($this->flatten($file) as $key => $message) {
+                if (! preg_match($zipExtension, $message)) {
+                    continue;
+                }
+                $offersSource = str_contains($message, '--source');
+                $manualForZipless = preg_match($absent, $message) && preg_match($manual, $message);
+                if ($offersSource || $manualForZipless) {
+                    $offending[] = str_replace(base_path().'/', '', $file).' '.$key;
+                }
+            }
+        }
+
+        $this->assertSame([], $offending, '7.1.4 부터 zip 확장이 없으면 --source 수동 업데이트도 사전점검에서 멈춥니다 — zip 확장 설치를 안내하세요.');
+    }
+
+    /**
      * 모집단이 비지 않았고 압축 해제 안내 문구를 실제로 담고 있다(모집단 0 방지).
      *
      * @scenario case=population_not_empty

@@ -19,6 +19,7 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorMode;
 use App\Services\Core\BundledSourcePlanner;
+use App\Services\Core\PhpRequirementPreflight;
 use App\Services\CoreUpdateService;
 use App\Support\ComposerInstallInfo;
 use App\Support\ConfigCacheHelper;
@@ -90,6 +91,9 @@ class CoreUpdateCommand extends Command
         $bundledRecordWritten = false;
         $planner = app(BundledSourcePlanner::class);
         $bundledOption = is_string($this->option('bundled-sources')) ? $this->option('bundled-sources') : null;
+        // PHP 확장 사전점검(#151 D9) — --source/--zip 은 유지보수 전, 그 밖에는 Step 4 다운로드 직후
+        $phpPreflight = app(PhpRequirementPreflight::class);
+        $phpPreflightDone = false;
 
         $log = function (string $message) use (&$logEntries) {
             $logEntries[] = '['.date('H:i:s').'] '.$message;
@@ -253,6 +257,17 @@ class CoreUpdateCommand extends Command
                 }
             }
 
+            // ── PHP 확장 사전점검 (#151 D9) — 새 코어 필수 확장이 없으면 유지보수 모드 전에 멈춘다 ──
+            $earlyPhpResult = $sourceDir ? $phpPreflight->inspectDirectory($sourceDir) : ($zipPath ? $phpPreflight->inspectZip($zipPath) : null);
+            if ($earlyPhpResult !== null) {
+                $phpPreflightDone = true;
+                if ($this->reportPhpRequirementPreflight($earlyPhpResult, $log)) {
+                    $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
+
+                    return Command::FAILURE;
+                }
+            }
+
             // Step 2~10 프로그레스바 (9단계)
             $remainingSteps = self::TOTAL_STEPS - 1;
             $bar = $this->output->createProgressBar($remainingSteps);
@@ -371,6 +386,24 @@ class CoreUpdateCommand extends Command
                 $bar->display();
             }
             $bundledSkipPaths = $bundledPlan->skipPaths();
+
+            // GitHub 다운로드(또는 zip 목록을 못 읽은) 경로: 받은 배포본으로 지금 PHP 확장을 판정한다(유지보수 중).
+            // 아직 백업·파일 적용 전이라 공식 번들 선택 오류와 같은 모양으로 깨끗이 끝낸다(#151 D9).
+            if (! $phpPreflightDone && ! $this->option('local')) {
+                $phpPreflightDone = true;
+                $bar->clear();
+                if ($this->reportPhpRequirementPreflight($phpPreflight->inspectDirectory($pendingPath), $log)) {
+                    $service->cleanupPending($pendingPath);
+                    if ($maintenanceEnabled) {
+                        $service->disableMaintenanceMode();
+                        $maintenanceEnabled = false;
+                    }
+                    $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, false);
+
+                    return Command::FAILURE;
+                }
+                $bar->display();
+            }
 
             // ── Step 5: 백업 ──
             $bar->setMessage(__('settings.core_update.step_backup'));
@@ -1133,6 +1166,44 @@ class CoreUpdateCommand extends Command
             $toVersion,
             $log,
         );
+    }
+
+    /**
+     * PHP 확장 사전점검 결과를 출력하고 차단 여부를 반환합니다. (#151 D9)
+     *
+     * 새 코어 필수 확장 미충족은 오류(차단), 함께 갱신될 번들 확장의 필수 확장 미충족은 경고만 낸다.
+     *
+     * @param  array{core_checked: bool, core_missing: list<string>, extension_missing: array<string, list<string>>}  $result  {@see PhpRequirementPreflight} 판정 결과
+     * @param  \Closure  $log  업데이트 로그 기록 콜백
+     * @return bool 업데이트를 멈춰야 하면 true
+     */
+    private function reportPhpRequirementPreflight(array $result, \Closure $log): bool
+    {
+        foreach ($result['extension_missing'] as $extension => $missing) {
+            $this->warn(__('settings.core_update.console.php_extension_extension_warning', [
+                'extension' => $extension,
+                'extensions' => implode(', ', $missing),
+            ]));
+            $log('PHP 확장 사전점검 경고: '.$extension.' → '.implode(', ', $missing));
+        }
+
+        if (! $result['core_checked']) {
+            $log('PHP 확장 사전점검: 새 배포본에 요구 목록이 없어 코어 판정 건너뜀');
+
+            return false;
+        }
+
+        if ($result['core_missing'] === []) {
+            return false;
+        }
+
+        $this->newLine();
+        $this->error(__('settings.core_update.console.php_extension_core_missing', [
+            'extensions' => implode(', ', $result['core_missing']),
+        ]));
+        $log('PHP 확장 사전점검 실패로 중단: '.implode(', ', $result['core_missing']));
+
+        return true;
     }
 
     /**

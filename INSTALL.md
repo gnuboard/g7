@@ -376,7 +376,7 @@ http://도메인/install
 설치 중 문제가 발생하면 아래 항목을 확인합니다.
 
 - [ ] `php -v` 출력이 8.2 이상인가? (Cafe24 관리자에서 PHP 버전 변경 가능)
-- [ ] `php -m` 출력에 `pdo_mysql`, `mbstring`, `openssl`, `zip`이 포함되어 있는가?
+- [ ] `php -m` 출력에 필수 확장 16개([docs/requirements.md §1.4](docs/requirements.md#14-php-확장-모듈) — `pdo_mysql`, `mbstring`, `openssl`, `zip` 등)가 포함되어 있는가?
 - [ ] `~/www`가 `g7/public/`를 올바르게 가리키는가? (`ls -la ~/www` 확인)
 - [ ] `vendor-bundle.zip`이 `~/g7/` 디렉토리에 존재하는가?
 - [ ] 웹 인스톨러 Step 3에서 "Vendor 설치 방식"을 **번들 Vendor 사용** 또는 **자동**으로 선택했는가?
@@ -801,9 +801,11 @@ sudo php artisan core:update
 
 > 자신의 환경이 어느 쪽인지 확인하려면 `ls -l .env` 의 소유자(세 번째 컬럼) 가 명령줄 로그인 사용자와 일치하는지 보세요. 일치하면 `sudo` 없이 실행 가능합니다.
 
-### 방법 3: 수동 ZIP 업그레이드 (PHP zip 확장 미설치 환경)
+### 방법 3: 수동 ZIP 업그레이드 (GitHub 에서 받기 어려운 환경)
 
-PHP `zip` 확장이 없는 서버에서는 GitHub Release ZIP 을 직접 다운로드한 뒤 압축 해제 경로를 지정해 업그레이드합니다. 7.1.3 부터 코어·확장 업데이트는 시스템 `unzip` 명령으로 대신 풀지 않으므로, `unzip` 명령만 있는 서버도 이 방법을 씁니다.
+서버가 GitHub 에 연결할 수 없거나 특정 버전으로 올릴 때는 GitHub Release ZIP 을 직접 다운로드한 뒤 압축 해제 경로를 지정해 업그레이드합니다.
+
+> **이 방법도 PHP `zip` 확장이 필요합니다.** `zip` 은 필수 확장입니다([docs/requirements.md §1.4](docs/requirements.md#14-php-확장-모듈)). 7.1.3 부터 코어·확장 업데이트는 시스템 `unzip` 명령으로 대신 풀지 않고, 7.1.4 부터 코어 업데이트는 새 코어의 필수 PHP 확장이 서버에 없으면 `--source` 로 지정해도 시작하지 않습니다. `php -m` 에 `zip` 이 없으면 먼저 설치한 뒤 업데이트하세요.
 
 ```bash
 # 1. GitHub 릴리스 페이지에서 ZIP 다운로드 후 서버에 압축 해제

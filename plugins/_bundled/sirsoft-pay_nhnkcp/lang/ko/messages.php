@@ -27,6 +27,7 @@ return [
         'wsdl_missing' => 'KCP WSDL 파일이 없습니다: :file',
         'approval_key_error' => 'KCP 승인키 오류 [:code]: :message',
         'soap_error' => 'KCP SOAP 연동 오류: :message',
+        'mobile_payment_unavailable' => '현재 모바일 결제를 이용할 수 없습니다. 다른 결제수단을 선택하거나 쇼핑몰에 문의해 주세요.',
         'cli_binary_missing' => 'KCP CLI 바이너리 누락: :path',
         'cli_binary_not_executable' => 'KCP CLI 바이너리 실행 권한 부족 — 운영자 조치 필요 (sudo chmod 755 :path)',
     ],

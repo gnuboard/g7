@@ -547,7 +547,8 @@ modules/{identifier}/vendor/ 디렉토리에 독립 설치
 수동 설치: php artisan module:composer-install [identifier]
 ```
 
-- `php`와 `ext-*` 패키지는 외부 의존성으로 간주되지 않음 (composer install 트리거 안 함)
+- `php`와 `ext-*` 패키지는 composer install 판단에서는 외부 의존성으로 간주되지 않음 (composer install 트리거 안 함)
+- 단 `ext-*` 는 **PHP 확장 요구로 검사**된다 — `require.ext-*` 는 필수(서버에 없으면 설치·활성화 차단, 업데이트는 경고만), `suggest.ext-*` 는 권장(값은 사유, 관리자 배지로만 알림). 코어 「선택」 확장(`bcmath`·`gd`·`zlib` 등)이나 목록 밖 확장(`soap` 등)을 쓰면 선언하거나 `function_exists`·`class_exists` 로 가드한다. 상세: [requirements.md §1.8](../requirements.md#18-확장모듈플러그인이-요구하는-php-확장)
 - 설치된 패키지는 `vendor_autoloads`를 통해 런타임에 자동 로드됨
 - 상세: [extension-manager.md](extension-manager.md) "Composer 의존성 관리" 참조
 

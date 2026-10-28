@@ -14,6 +14,7 @@ use App\Services\SettingsService;
 use App\Services\TemplateService;
 use App\Support\AssetUrl;
 use App\Support\LayoutEmptyObjects;
+use App\Support\Utf8;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -572,12 +573,7 @@ class SeoRenderer implements SeoRendererInterface
     private function tidyPreviewHtml(string $html): string
     {
         // 유효 UTF-8 보장 — 깨진 바이트 제거(JSON 직렬화 안전). 산출물 내용은 그대로 둔다.
-        $clean = @iconv('UTF-8', 'UTF-8//IGNORE', $html);
-        if ($clean === false || ! is_string($clean)) {
-            $clean = mb_convert_encoding($html, 'UTF-8', 'UTF-8');
-        }
-
-        return $clean;
+        return Utf8::scrub($html);
     }
 
     /**

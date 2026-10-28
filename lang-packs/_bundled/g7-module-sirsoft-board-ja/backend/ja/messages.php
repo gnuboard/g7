@@ -531,6 +531,7 @@ return [
             'counts_syncing' => '非正規化カウント列を同期中...',
             'counts_synced' => '投稿・コメント・掲示板のカウント列の更新完了',
             'images_creating' => 'サンプル画像ファイルを作成中...',
+            'images_skipped_no_gd' => 'PHP gd 拡張がないため、サンプル画像・添付ファイルなしで続行します。',
             'image_created' => 'サンプル画像 #:index: :path',
             'posts_exist_skip' => ':slug 掲示板には既に投稿が :count 件あります。スキップします。',
             'board_summary' => ':slug: 投稿 :posts 件、返信投稿 :replies 件、コメント :comments 件を作成',

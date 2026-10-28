@@ -897,6 +897,7 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
+| 422 | Unprocessable Entity | 서버에 PHP `zip` 확장이 없어 백업을 만들 수 없는 경우 (`settings.errors.zip_extension_required`, 7.1.4) |
 | 500 | Internal Server Error | 백업 파일 생성에 실패한 경우 (`settings.backup_failed`) |
 
 <!-- @generated:end -->
@@ -1233,6 +1234,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 서버에 PHP `zip` 확장이 없어 백업을 풀 수 없는 경우 (`settings.errors.zip_extension_required`, 7.1.4) |
 | 500 | Internal Server Error | 백업 파일을 읽을 수 없는 등 복원 중 예외 발생 (`settings.restore_error`) |
 
 <!-- @generated:end -->
@@ -1286,7 +1288,7 @@ _단건 응답: `data` 객체의 필드._
 | config_path | string | `/var/www/g7/storage/…` | 설정 파일 저장 경로 (`storage/app/settings`) |
 | log_path | string | `/var/www/g7/storage/…` | 로그 파일 저장 경로 (`storage/logs`) |
 | upload_path | string | `/var/www/g7/storage/…` | 공개 업로드 파일 저장 경로 (`storage/app/public`) |
-| php_extensions | object | `{"required":{"openssl":true,"pdo":true,"mbstring":true,"t…` | PHP 확장 로드 상태. required(필수)·optional(선택) 두 그룹으로 나뉘며 각 확장명→로드 여부(bool) 매핑 |
+| php_extensions | object | `{"required":{"ctype":true,"curl":true,…},"optional":{"bcmath":true,…},"requested":{"soap":true},"requested_by":{"soap":[{"type":"plugin",…}]}}` | PHP 확장 로드 상태. `required`(필수 16)·`optional`(선택)은 코어 SSoT(`app/Support/Requirements/php-extensions.json`)의 목록이며 각 확장명→로드 여부(bool). `requested_by` 는 설치된 모듈·플러그인이 composer.json 으로 요구한 확장 → 요구한 확장 목록(`type`·`identifier`·`name`·`level`: require\|suggest), `requested` 는 그중 코어 목록 밖 확장(soap 등)의 로드 여부 (7.1.4) |
 | database_config | object | `{"has_read_write_split":false,"write":{"host":"localhost"…` | DB 연결 구성 요약. has_read_write_split(읽기/쓰기 분리 여부)·write(쓰기 연결 정보)·read(읽기 replica 목록, write 와 동일하면 제외) |
 | timezone | string | `UTC` | 애플리케이션 기본 타임존 (`config('app.timezone')`) |
 | server_time | string | `2026-08-04 12:53:55` | 서버 현재 시각 (Y-m-d H:i:s) |

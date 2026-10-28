@@ -22,6 +22,7 @@ return [
     'errors' => [
         'state_contract_conflict' => "':name' 상태 계약은 이미 :owner 확장이 소유하고 있어 :extension 확장에서 같은 이름을 선언할 수 없습니다.",
         'core_version_mismatch' => ':extension (:type)에는 그누보드7 코어 버전 :required 이상이 필요합니다. (현재: :installed)',
+        'php_extension_missing' => ':name 확장을 쓰려면 서버에 PHP 확장 :extensions 이(가) 필요합니다. 설치 후 다시 시도하세요.',
         'version_check_failed' => '버전 검증에 실패했습니다.',
         'operation_in_progress' => '":name"에 대해 진행 중인 작업(:status)이 있어 요청을 처리할 수 없습니다.',
         'operation_stuck' => '":name" 이(가) :minutes분 넘게 「업데이트 중」에 멈춰 있습니다. 업데이트가 도중에 끝난 경우라면 --force 로 다시 업데이트하면 정리한 뒤 업데이트를 마저 끝내고, 활성화하면 정리만 하고 켭니다(끝나지 않은 업데이트는 다시 실행하라고 안내합니다).',
@@ -69,6 +70,7 @@ return [
         'column_target' => '대상',
         'column_message' => '사유',
         'composer_install_failed' => 'Composer 의존성 설치에 실패했습니다 — 확장 폴더에서 composer install 을 수동으로 실행하세요',
+        'php_extension_missing' => '서버에 이 확장이 필요로 하는 PHP 확장 :extensions 이(가) 없습니다 — 해당 기능이 동작하지 않을 수 있으니 설치하세요',
     ],
 
     // 선택 연동(integrations) 안내 — 막지 않고 알리기만 한다 (7.1.4)

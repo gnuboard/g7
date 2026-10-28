@@ -1809,6 +1809,7 @@ return [
             'purged_inquiries' => 'Deleted :count existing product inquiries and their board inquiry posts and replies.',
             'purged' => 'Deleted :count existing product-related records.',
             'images_dir_deleted' => 'Deleted the product image folder from storage.',
+            'color_filter_skipped_no_gd' => 'The PHP gd extension is not available — using original product images without color variations.',
             'no_categories' => 'No categories found. Run CategorySeeder first.',
             'no_brands' => 'No brands found. Running BrandSeeder first is recommended.',
             'no_shipping_policies' => 'No shipping policies found. Running ShippingPolicySeeder first is recommended.',

@@ -596,7 +596,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_drivers.g7.html (드라이버)
 │           ├── _tab_seo.g7.html (SEO)
 │           ├── _tab_advanced.g7.html (고급)
-│           ├── _tab_info.g7.html (시스템 정보)
+│           ├── _tab_info.g7.html (시스템 정보 — PHP 확장 카드: 필수·선택(코어 SSoT)과 「확장이 요구하는 모듈」(`php_extensions.requested_by`))
 │           ├── _modal_ip_restriction_rule_form.g7.html (IP 접근 제한 규칙 추가·수정)
 │           ├── _modal_cache_delete.g7.html
 │           ├── _modal_core_changelog.g7.html
@@ -955,6 +955,11 @@ modals:
   다시 받는다. 템플릿은 확인 창을 여는 시점에 올려, 창이 답을 받을 때까지 스위치를 서버 값에 둔다.
 - 버튼 잠금은 서버가 422 로 거절하는 상태와 맞춘다: 코어 요구 버전 미충족(`core_compatible === false`)이면 설치와
   켜기를, `installing`·`uninstalling`·`updating` 진행 중이면 스위치·삭제·업데이트를 잠근다.
+- PHP 확장 배지(코어 7.1.4+): 행의 `php_extensions.missing_required` 가 있으면 「PHP 확장 필요: 이름(미설치)」(danger),
+  `missing_suggested` 가 있으면 「권장 PHP 확장: 이름(미설치)」(warning, title 에 composer.json 의 사유)를 단다. 상세 창은
+  `php_extensions_section` 에 선언된 확장마다 필수/권장과 설치 여부를 보인다(선언이 없으면 절을 그리지 않는다). 필수 미충족이면
+  서버가 설치·활성화를 422 `php_extension_missing` 으로 거절한다 — 배지는 그 이유를 미리 보이는 표시다. 옛 코어는 필드를 싣지
+  않으므로 `?.`·`?? []` 로 읽어 아무것도 그리지 않는다.
 - 모듈·플러그인·템플릿을 다시 켜면 서버가 함께 꺼졌던 언어팩(`pending_language_packs`)을 한 번만 실어 주므로, 활성
   성공 갈래(모듈·플러그인은 스위치 요청, 템플릿은 `_modal_activate`·`_modal_force_activate`)가 `_global.reactivateLanguagePacksData` 에 담고 언어팩 관리 권한(`core.language_packs.manage`)이 있을
   때만 `_modal_reactivate_language_packs` 를 연다. 각 목록 레이아웃이 이 창을 `<modal>` 로 선언해 둔다.

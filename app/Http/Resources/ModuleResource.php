@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Extension\CoreVersionChecker;
 use App\Helpers\TimezoneHelper;
 use App\Http\Resources\Traits\ExposesIntegratedBy;
+use App\Http\Resources\Traits\ExposesPhpExtensionRequirements;
 use App\Http\Resources\Traits\ExposesUpdateCoreCompatibility;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 class ModuleResource extends BaseApiResource
 {
     use ExposesIntegratedBy;
+    use ExposesPhpExtensionRequirements;
     use ExposesUpdateCoreCompatibility;
 
     /**
@@ -60,6 +62,8 @@ class ModuleResource extends BaseApiResource
             ),
             // 업데이트 대상 버전의 코어 호환(업데이트가 있을 때만) — 업데이트 창의 경고·강제 업데이트 체크가 읽는다.
             ...$this->updateCoreCompatibilityFields(),
+            // composer.json require/suggest ext-* 와 서버 로드 상태 — 목록 카드의 PHP 확장 배지(#151)
+            ...$this->phpExtensionRequirementFields('module'),
             // 레이아웃 갱신 응답에만 — 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
             ...(is_array($this->getValue('layout_warnings')) ? ['layout_warnings' => $this->getValue('layout_warnings')] : []),
             ...$this->resourceMeta($request),
@@ -140,6 +144,8 @@ class ModuleResource extends BaseApiResource
             'deactivated_reason' => $this->getDeactivatedReasonValue(),
             'deactivated_at' => $this->getValue('deactivated_at'),
             'incompatible_required_version' => $this->getValue('incompatible_required_version'),
+            // composer.json require/suggest ext-* 와 서버 로드 상태 — 상세 창의 PHP 확장 배지(#151)
+            ...$this->phpExtensionRequirementFields('module'),
             // 타임스탬프
             'created_at' => $this->getValue('created_at')
                 ? TimezoneHelper::toUserDateTimeString(Carbon::parse($this->getValue('created_at')))

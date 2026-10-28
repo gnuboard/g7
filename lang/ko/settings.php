@@ -25,6 +25,9 @@ return [
     'backup_path_required' => '백업 경로를 입력해주세요.',
     'restore_success' => '설정이 성공적으로 복원되었습니다.',
     'restore_failed' => '설정 복원에 실패했습니다.',
+    'errors' => [
+        'zip_extension_required' => '설정 백업·복원에는 서버의 PHP :extension 확장이 필요합니다. 서버 관리자에게 설치를 요청하세요.',
+    ],
     'restore_error' => '설정 복원 중 오류가 발생했습니다.',
     'save_individual_failed' => '설정 저장에 실패했습니다: :error',
     'static_cache_status_loaded' => '초기 화면 정적 파일 상태를 불러왔습니다.',
@@ -196,7 +199,7 @@ return [
 
         // 시스템 요구사항
         'system_requirements_failed' => '시스템 요구사항이 충족되지 않습니다:',
-        'no_extract_method_available' => '압축을 풀 수 없습니다. PHP zip 확장(ZipArchive)이 필요합니다. 또는 --source 옵션으로 수동 업데이트할 수 있습니다.',
+        'no_extract_method_available' => '압축을 풀 수 없습니다. PHP zip 확장(ZipArchive)이 필요합니다. 서버에 zip 확장을 설치한 뒤 다시 시도하세요.',
         'manual_update_guide' => '수동 업데이트: GitHub에서 릴리스 ZIP을 다운로드하여 압축 해제 후, php artisan core:update --source=/압축해제/경로 명령어를 실행하세요.',
 
         // 추출 폴백 체인
@@ -222,6 +225,8 @@ return [
             'target_version_pending' => '업데이트 버전: (ZIP 추출 후 판별)',
             'target_version' => '업데이트 버전: :version',
             'confirm_update' => '코어를 업데이트하시겠습니까?',
+            'php_extension_core_missing' => '새 코어에 필요한 PHP 확장 :extensions 이(가) 서버에 없어 업데이트를 중단했습니다. 확장을 설치한 뒤 다시 실행하세요. (사이트는 바뀌지 않았습니다)',
+            'php_extension_extension_warning' => '함께 갱신될 확장 :extension 이(가) 요구하는 PHP 확장 :extensions 이(가) 서버에 없습니다 — 업데이트는 진행하지만 해당 기능이 동작하지 않을 수 있습니다',
             'pending_invalid' => '_pending 디렉토리 문제:',
             'pending_path' => '경로: :path',
             'pending_owner' => '소유자: :owner, 그룹: :group, 퍼미션: :permissions',

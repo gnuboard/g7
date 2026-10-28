@@ -17,6 +17,7 @@ return [
     'errors' => [
         'state_contract_conflict' => '\':name\' 状態契約は :owner が所有しています。:extension は同じ名前を宣言できません。',
         'core_version_mismatch' => ':extension (:type)はグヌボード7コアバージョン :required 以上が必要です。(現在: :installed)',
+        'php_extension_missing' => ':name 拡張を使用するには、サーバーに PHP 拡張 :extensions が必要です。インストール後にもう一度お試しください。',
         'version_check_failed' => 'バージョン検証に失敗しました。',
         'operation_in_progress' => '":name"に対して進行中の処理(:status)があるため、リクエストを処理できません。',
         'operation_stuck' => '":name" は :minutes 分以上「更新中」のまま止まっています。更新が途中で終了した場合は、--force で再更新すると整理してから更新を最後まで完了し、有効化すると整理だけして有効にします(終わっていない更新はもう一度実行するよう案内します)。',
@@ -63,6 +64,7 @@ return [
         'column_target' => '対象',
         'column_message' => '理由',
         'composer_install_failed' => 'Composer 依存関係のインストールに失敗しました — 拡張フォルダで composer install を手動で実行してください',
+        'php_extension_missing' => 'この拡張に必要な PHP 拡張 :extensions がサーバーにありません — 関連機能が動作しない可能性があるため、インストールしてください',
     ],
     // 任意連携(integrations)の案内 — ブロックせず知らせるだけ (7.1.4)
     'integrations' => [

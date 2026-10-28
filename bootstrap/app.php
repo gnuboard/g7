@@ -5,6 +5,7 @@ use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\CoreVersionMismatchException;
 use App\Exceptions\IdentityVerificationRequiredException;
 use App\Exceptions\PermissionEscalationException;
+use App\Exceptions\PhpExtensionRequirementException;
 use App\Helpers\ResponseHelper;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\Analytics\EnsureArchiveFresh;
@@ -253,6 +254,19 @@ $app = Application::configure(basePath: dirname(__DIR__))
                     'success' => false,
                     'message' => $e->getMessage(),
                     'error_code' => 'core_version_mismatch',
+                    'data' => $e->getPayload(),
+                ], 422);
+            }
+        });
+
+        // 확장이 요구하는 PHP 확장(composer.json require.ext-*) 미충족 → HTTP 422 + error_code: 'php_extension_missing'
+        // (확장 install/activate 진입 지점에서 throw — update 는 경고만)
+        $exceptions->render(function (PhpExtensionRequirementException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                    'error_code' => 'php_extension_missing',
                     'data' => $e->getPayload(),
                 ], 422);
             }

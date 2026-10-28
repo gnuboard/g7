@@ -39,6 +39,10 @@ if (! $scanExtensionsLibraryMode) {
     installer_guard_or_410();
 }
 
+// PHP 확장 요구 판정 — scanModules()/scanPlugins() 가 쓴다. 공유 해석기(installer_scan_extensions)가
+// 라이브러리 모드로 이 파일을 읽는 설치 진행·터미널 설치에서도 있어야 하므로 모드와 무관하게 적재한다(#151).
+require_once dirname(__DIR__).'/includes/php-extension-requirements.php';
+
 // 확장 아이콘 검증기 적재 — Laravel autoload 없이 프로젝트 안 고정 경로에서 require 한다.
 // 검증기는 의존성 0 의 순수 PHP 라 여기서 바로 쓸 수 있다. 부재해도 죽지 않고
 // 아이콘만 빠진다(카드는 종전대로 유형 글리프).
@@ -280,6 +284,8 @@ function scanModules(): array
             'author' => $data['vendor'] ?? null,
             'directory' => $dir,
             'icon_data_uri' => extractExtensionIconDataUri($modulesDir.'/'.$dir, $data),
+            // composer.json require/suggest ext-* 중 서버에 없는 PHP 확장 — 필수가 없으면 선택 화면이 체크를 끈다(#151)
+            ...installer_extension_php_requirements($modulesDir.'/'.$dir),
         ];
     }
 
@@ -364,6 +370,8 @@ function scanPlugins(): array
             'author' => $data['vendor'] ?? null,
             'directory' => $dir,
             'icon_data_uri' => extractExtensionIconDataUri($pluginsDir.'/'.$dir, $data),
+            // composer.json require/suggest ext-* 중 서버에 없는 PHP 확장 — 필수가 없으면 선택 화면이 체크를 끈다(#151)
+            ...installer_extension_php_requirements($pluginsDir.'/'.$dir),
         ];
     }
 

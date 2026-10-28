@@ -321,7 +321,9 @@
             ...(p.status === 'updating' &amp;&amp; p.stuck_update !== true ? [{ label: '$t:admin.plugins.status.updating', tone: 'accent' }] : []),
             ...(p.stuck_update === true ? [{ label: '$t:admin.plugins.status.stuck_update', tone: 'warning', icon: 'exclamation-triangle', title: '$t:admin.plugins.stuck_update_hint' }] : []),
             ...(p.update_available &amp;&amp; p.status !== 'updating' &amp;&amp; p.status !== 'uninstalled' ? [{ label: '$t:admin.plugins.update_available', tone: 'danger' }] : []),
-            ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : [])
+            ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : []),
+            ...((p.php_extensions?.missing_required ?? []).length > 0 ? [{ label: $t('extensions.php_extensions.badge_required_missing', {extensions: p.php_extensions.missing_required.join(', ')}), tone: 'danger', icon: 'exclamation-triangle' }] : []),
+            ...((p.php_extensions?.missing_suggested ?? []).length > 0 ? [{ label: $t('extensions.php_extensions.badge_suggested_missing', {extensions: p.php_extensions.missing_suggested.join(', ')}), tone: 'warning', title: p.php_extensions.missing_suggested.map(n => p.php_extensions.suggested?.[n] ?? '').filter(Boolean).join(', ') }] : [])
           ],
           toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.abilities?.can_activate !== true || (['installing', 'uninstalling', 'updating'].includes(p.status) &amp;&amp; p.stuck_update !== true) || (p.status !== 'active' &amp;&amp; p.core_compatible === false), label: p.name ?? p.identifier } : null,
           primaryAction: p.status === 'uninstalled'

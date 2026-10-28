@@ -35,6 +35,7 @@ return [
         'github_download_failed' => 'GitHub에서 다운로드에 실패했습니다.',
         'github_archive_download_failed' => '아카이브 다운로드에 실패했습니다. (:url)',
         'zip_file_not_found' => 'ZIP 파일을 찾을 수 없습니다.',
+        'archive_php_extension_missing' => '압축을 풀려면 서버에 PHP 확장 :extensions 이(가) 필요합니다. 서버 관리자에게 설치를 요청하세요.',
         'zip_open_failed' => 'ZIP 파일을 열 수 없습니다.',
     ],
 

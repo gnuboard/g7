@@ -156,10 +156,16 @@ class SafeArchiveExtractor
      * @return array<int, string> 풀어 쓴 파일의 정규화된 상대 경로 목록
      *
      * @throws UnsafeArchiveException 허용되지 않는 항목이 하나라도 있을 때 (아무것도 풀지 않음)
-     * @throws \RuntimeException 아카이브를 열 수 없거나 항목을 쓰지 못했을 때
+     * @throws \RuntimeException 아카이브를 열 수 없거나 항목을 쓰지 못했을 때, 필요한 PHP 확장(zlib·phar)이 없을 때
      */
     public static function extractTarGz(string $path, string $destination): array
     {
+        // zlib(gzopen)·phar(PharData)는 코어 기준 「선택」 확장이다 — 없으면 「Call to undefined function…」이
+        // 원인 모를 실패 메시지로 화면에 나갔다(#151). 무엇이 없는지 알리는 메시지로 먼저 멈춘다.
+        if (! function_exists('gzopen') || ! class_exists(\PharData::class)) {
+            throw new \RuntimeException(__('common.errors.archive_php_extension_missing', ['extensions' => 'zlib, phar']));
+        }
+
         if (! is_file($path)) {
             throw new \RuntimeException(__('common.errors.zip_file_not_found'));
         }
@@ -270,6 +276,7 @@ class SafeArchiveExtractor
      */
     private static function findTarLinkEntry(string $path): ?string
     {
+        // php-ext-guard: extractTarGz() 진입이 gzopen·PharData 를 먼저 확인한다
         $fp = @gzopen($path, 'rb');
         if ($fp === false) {
             throw new \RuntimeException(__('common.errors.zip_open_failed'));

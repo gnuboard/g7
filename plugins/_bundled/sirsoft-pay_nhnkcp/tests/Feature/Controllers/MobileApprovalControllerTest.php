@@ -294,6 +294,35 @@ class MobileApprovalControllerTest extends PluginTestCase
     }
 
     /**
+     * 서버에 PHP soap 확장이 없으면 500 이 아니라 422 와 고객용 일반 문구로 실패를 알린다 (#151).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario request=soap_failure
+     *
+     * @effects soap_failure_returns_422, missing_soap_returns_422_with_generic_message
+     */
+    public function test_get_approval_key_returns_422_with_generic_message_when_soap_extension_missing(): void
+    {
+        $order = $this->createOrder(10000);
+        $this->mockPluginSettings();
+
+        $service = $this->getMockBuilder(KcpSoapService::class)
+            ->setConstructorArgs([$this->app->make(PluginSettingsService::class)])
+            ->onlyMethods(['soapAvailable'])
+            ->getMock();
+        $service->method('soapAvailable')->willReturn(false);
+        $this->app->instance(KcpSoapService::class, $service);
+
+        $response = $this->actingAs($order->user)
+            ->postJson(self::APPROVAL_KEY_ENDPOINT, $this->approvalKeyPayload($order));
+
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error', __('sirsoft-pay_nhnkcp::messages.errors.mobile_payment_unavailable'));
+    }
+
+    /**
      * 로그인하지 않은 요청은 401 이다.
      *
      * @return void 반환값 없음
