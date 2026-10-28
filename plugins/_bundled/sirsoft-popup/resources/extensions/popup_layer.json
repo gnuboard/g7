@@ -1,5 +1,5 @@
 {
-    "comment": "모든 사용자 화면 위에 팝업 레이어를 얹는 조각 — 사용자 템플릿을 고치지 않고 공통 확장점 `user_global_overlay` 에 붙는다(GDPR 쿠키 배너와 같은 방식).\n  공개 API 는 지금 노출 중이고 노출 대상(손님/회원)이 맞는 팝업과 표시 방식을 준다 — 노출 페이지·기기·「보지 않기」는 레이어가 현재 경로(`route.path`)로 거른다.\n  그래서 요청 매개변수에 경로를 넣지 않는다(경로 이동마다 응답 키가 바뀌지 않게, 서버는 대상·언어 단위로 캐시한다). 0건이거나 받기에 실패하면 아무것도 그리지 않는다.\n  플러그인을 끄면 이 조각과 공개 API 가 함께 빠져 레이어도 사라진다. 검색엔진 봇에게는 공개 API 가 빈 목록을 준다.",
+    "comment": "모든 사용자 화면 위에 팝업 레이어를 얹는 조각 — 사용자 템플릿을 고치지 않고 공통 확장점 `user_global_overlay` 에 붙는다(GDPR 쿠키 배너와 같은 방식).\n  공개 API 는 지금 노출 중이고 노출 대상(손님/회원)이 맞는 팝업과 표시 방식을 준다 — 노출 페이지·기기·「보지 않기」는 레이어가 현재 경로(`route.path`)로 거른다.\n  그래서 요청 매개변수에 경로를 넣지 않는다(경로 이동마다 응답 키가 바뀌지 않게, 서버는 대상·언어 단위로 캐시한다). 0건이거나 받기에 실패하면 레이어는 숨기고 예약 경계·탭 복귀 구독은 유지한다.\n  플러그인을 끄면 이 조각과 공개 API 가 함께 빠져 레이어도 사라진다. 검색엔진 봇에게는 공개 API 가 빈 목록을 준다.",
     "extension_point": "user_global_overlay",
     "mode": "append",
     "priority": 60,
@@ -24,11 +24,12 @@
             "id": "sirsoftPopup_layer",
             "type": "composite",
             "name": "sirsoft-popup.PopupLayer",
-            "if": "{{(sirsoftPopup_public?.data?.popups ?? []).length > 0}}",
             "props": {
                 "popups": "{{sirsoftPopup_public?.data?.popups ?? []}}",
                 "settings": "{{sirsoftPopup_public?.data?.settings ?? null}}",
-                "path": "{{route.path}}"
+                "path": "{{route.path}}",
+                "refreshAt": "{{sirsoftPopup_public?.data?.refresh_at ?? null}}",
+                "serverTime": "{{sirsoftPopup_public?.data?.server_time ?? null}}"
             }
         }
     ]

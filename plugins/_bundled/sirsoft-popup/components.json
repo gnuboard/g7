@@ -52,6 +52,16 @@
                         "required": false,
                         "description": "표시 방식"
                     },
+                    "refreshAt": {
+                        "type": "string | null",
+                        "required": false,
+                        "description": "다음 서버 기간 전환 시각(ISO 8601). 0건이어도 갱신 타이머를 유지한다."
+                    },
+                    "serverTime": {
+                        "type": "string | null",
+                        "required": false,
+                        "description": "응답을 만든 서버 시각(ISO 8601). 방문자 시계 차이 보정용."
+                    },
                     "path": {
                         "type": "string",
                         "required": false,

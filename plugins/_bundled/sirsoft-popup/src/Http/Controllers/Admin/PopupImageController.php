@@ -40,7 +40,7 @@ class PopupImageController extends AdminBaseController
         try {
             $image = $this->images->upload($request->file('file'), $data['device'], $data['temp_key'], $request->user()?->id);
         } catch (PopupImageUploadException $e) {
-            // 저장소·DB 장애라 입력 오류(4xx)가 아니다 — 남은 파일·행은 서비스가 정리했다
+            // 저장소·DB 장애라 입력 오류(4xx)가 아니다 — 서비스가 파일 정리를 시도하고 실패분은 대장에 남긴다
             return $this->error($e->getMessageKey(), 500);
         }
 

@@ -11,7 +11,7 @@ return [
         'incomplete' => '순서를 바꿀 때는 팝업을 모두 보내야 합니다. 목록을 다시 불러온 뒤 시도하세요.',
     ],
     'body_html' => [
-        'emptied_by_sanitize' => ':locale 본문에 허용하지 않는 내용(iframe·script·form 등)만 있어 저장하면 비게 됩니다. 문단·이미지·표 같은 내용을 넣어 주세요.',
+        'emptied_by_sanitize' => ':locale 본문에 표시할 내용이 없습니다. 글자나 이미지를 넣어 주세요. 빈 문단·공백과 허용하지 않는 요소만 있는 내용은 저장할 수 없습니다.',
     ],
     'pc_image' => [
         'required' => '이미지형 팝업에는 PC 이미지가 필요합니다.',

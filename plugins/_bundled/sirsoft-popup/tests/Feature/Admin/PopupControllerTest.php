@@ -18,6 +18,7 @@ use Plugins\Sirsoft\Popup\Tests\PluginTestCase;
  *
  * 검증 규칙 자체는 `PopupRequestTest`, 이미지 업로드는 `PopupImageControllerTest` 가 본다.
  */
+/** [case:backend-popup-visually-empty] 표시 내용 없는 본문 등록·수정 회귀. */
 class PopupControllerTest extends PluginTestCase
 {
     /**
@@ -936,5 +937,48 @@ class PopupControllerTest extends PluginTestCase
 
         $this->assertSame(['before', 'filter', 'after'], $fired);
         $this->assertSame('가을 감사 이벤트 (필터)', Popup::query()->find($id)->title);
+    }
+
+    /**
+     * 화면상 빈 본문을 등록·수정에서 대칭으로 막습니다.
+     *
+     * @scenario surface=body_visually_empty
+     *
+     * @effects files_created_or_removed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_visually_empty_bodies_are_rejected_on_store_and_update(): void
+    {
+        $popup = Popup::factory()->html()->create();
+        foreach (['', '   ', '<p><br></p>', '<p>&nbsp;</p>', '<p> </p><p><br></p>', '<p>&#160; &#x200B;</p>', '<script>alert(1)</script>', '<iframe src="/blank"></iframe>'] as $html) {
+            $payload = $this->htmlPopupPayload(['body_html' => ['ko' => $html]]);
+            $this->actingAs($this->admin)->postJson($this->api('/admin/popups'), $payload)
+                ->assertStatus(422)->assertJsonValidationErrors('body_html');
+            $this->actingAs($this->admin)->putJson($this->api('/admin/popups/'.$popup->id), $payload + ['revision' => 0])
+                ->assertStatus(422)->assertJsonValidationErrors('body_html');
+        }
+        $this->assertSame(['ko' => '<p>공지</p>'], $popup->fresh()->body_html);
+    }
+
+    /**
+     * 텍스트·이미지와 비워 둔 선택 언어는 허용합니다.
+     *
+     * @scenario surface=body_visible_with_optional_locale
+     *
+     * @effects files_created_or_removed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_visible_text_and_images_with_empty_optional_locale_are_accepted(): void
+    {
+        foreach (['<p>공지</p>', '<p><img src="/notice.png" alt="안내"></p>'] as $html) {
+            $payload = $this->htmlPopupPayload(['body_html' => ['ko' => $html, 'en' => '']]);
+            $id = $this->actingAs($this->admin)->postJson($this->api('/admin/popups'), $payload)->assertCreated()->json('data.id');
+            $this->actingAs($this->admin)->putJson($this->api('/admin/popups/'.$id), $payload + ['revision' => 0])->assertOk();
+        }
+        $this->actingAs($this->admin)->postJson($this->api('/admin/popups'), $this->htmlPopupPayload([
+            'body_html' => ['ko' => '<p>기본</p>', 'en' => '<p>&nbsp;</p>'],
+        ]))->assertStatus(422)->assertJsonValidationErrors('body_html');
     }
 }

@@ -338,6 +338,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | `sirsoft-pay_kginicis` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-pay_kginicis/docs/api/README.md) | 6 / 37 |
 | `sirsoft-pay_nhnkcp` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-pay_nhnkcp/docs/api/README.md) | 0 / 0 |
 | `sirsoft-pay_nicepayments` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-pay_nicepayments/docs/api/README.md) | 0 / 0 |
+| `sirsoft-popup` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-popup/docs/api/README.md) | 4 / 16 |
 | `sirsoft-social_login` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-social_login/docs/api/README.md) | 1 / 14 |
 | `sirsoft-sso` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-sso/docs/api/README.md) | 14 / 66 |
 | `sirsoft-tosspayments` | 플러그인 | [docs/api/](../plugins/_bundled/sirsoft-tosspayments/docs/api/README.md) | 2 / 4 |

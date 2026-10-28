@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
+import { usePopupRefresh } from '../../lib/usePopupRefresh';
 import { DEFAULT_SETTINGS, type PopupDisplaySettings, type PublicPopup } from '../../lib/types';
 import { MOBILE_MAX_WIDTH, rememberClosed, visiblePopups } from '../../lib/popupVisibility';
 import { readDismissed, rememberDismissed } from '../../lib/dismissCookie';
@@ -212,6 +213,12 @@ export interface PopupLayerProps {
   /** 표시 방식 */
   settings?: Partial<PopupDisplaySettings> | null;
 
+  /** 다음 서버 기간 전환 시각(ISO 8601). 0건이어도 갱신 타이머를 유지한다. */
+  refreshAt?: string | null;
+
+  /** 응답을 만든 서버 시각(ISO 8601). 방문자 시계 차이 보정용. */
+  serverTime?: string | null;
+
   /** 현재 경로 (`route.path`) — 바뀔 때마다 다시 판정한다 */
   path?: string;
 
@@ -362,7 +369,8 @@ function useGdprBannerHeight(active: boolean): number {
  * @param props 레이어 props
  * @returns 팝업 레이어 (보일 팝업이 없으면 null)
  */
-export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path = '/', className = '', preview }) => {
+export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path = '/', className = '', preview, refreshAt, serverTime }) => {
+  usePopupRefresh(refreshAt, serverTime, !preview);
   const config: PopupDisplaySettings = { ...DEFAULT_SETTINGS, ...(settings ?? {}) };
   const viewportMobile = useIsMobile();
   const isMobile = preview ? preview === 'mobile' : viewportMobile;

@@ -54,3 +54,6 @@ effects:
 test_files:
   - plugins/_bundled/sirsoft-popup/tests/Playwright/specs/admin-popup-to-user.spec.ts
   - plugins/_bundled/sirsoft-popup/tests/Playwright/specs/popup-conditions-and-lifecycle.spec.ts
+  - plugins/_bundled/sirsoft-popup/tests/Playwright/specs/popup-refresh.spec.ts
+
+# 예약 갱신은 별도 spec에서 desktop/mobile 2개 변종을 검증한다.

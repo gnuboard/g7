@@ -86,6 +86,24 @@ class PopupHtmlSanitizer
     }
 
     /**
+     * 정화한 HTML 에 표시할 텍스트 또는 이미지가 있는지 판정합니다.
+     *
+     * @param  string  $html  정화된 HTML
+     * @return bool 표시할 내용이 있으면 true
+     */
+    public function hasVisibleContent(string $html): bool
+    {
+        // 태그를 먼저 없애야 &lt; 같은 실제 텍스트를 태그로 오인하지 않는다.
+        $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if (preg_replace('/[\\s\\p{Z}\\p{Cf}]+/u', '', $text) !== '') {
+            return true;
+        }
+
+        // 이미지 단독 본문은 유효하다. 정화기가 남긴 src 가 있는 이미지만 센다.
+        return preg_match('/<img\\b[^>]*\\bsrc=["\'][^"\']+["\']/i', $html) === 1;
+    }
+
+    /**
      * 정화 설정을 만듭니다.
      *
      * 허용: 문단·제목(h2~h4)·목록·강조·링크(http·https·mailto·사이트 내부, 새 창은 rel 강제)·이미지·표·인용·구분선,

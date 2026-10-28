@@ -490,4 +490,21 @@ class PopupControllerTest extends PluginTestCase
     {
         return Popup::factory()->html()->period(Carbon::parse(self::START, 'UTC'), Carbon::parse(self::END, 'UTC'))->create();
     }
+
+    /** 0건에도 다음 예약 시각을 제공해 열린 화면이 갱신할 수 있다.
+     * @return void 반환값 없음
+     *
+     * @scenario surface=public_refresh_timing
+     *
+     * @effects files_created_or_removed
+     */
+    public function test_public_payload_includes_next_transition_and_server_time_when_empty(): void
+    {
+        Carbon::setTestNow(Carbon::parse(self::START)->subSeconds(10));
+        $this->rangePopup();
+        $response = $this->popups()->assertOk();
+        $this->assertSame([], $response->json('data.popups'));
+        $this->assertSame(now()->toISOString(), $response->json('data.server_time'));
+        $this->assertSame(Carbon::parse(self::START)->toISOString(), $response->json('data.refresh_at'));
+    }
 }

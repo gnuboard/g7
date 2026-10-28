@@ -29,7 +29,9 @@ describe('사용자 화면 주입 조각', () => {
   it('받은 팝업이 0건이거나 받기에 실패하면 레이어를 그리지 않는다', () => {
     const layer = doc.components[0];
     expect(layer.name).toBe('sirsoft-popup.PopupLayer');
-    expect(layer.if).toContain('(sirsoftPopup_public?.data?.popups ?? []).length > 0');
+    expect(layer.if).toBeUndefined(); // 0건에도 예약·탭 복귀 구독 유지
+    expect(layer.props.refreshAt).toBe('{{sirsoftPopup_public?.data?.refresh_at ?? null}}');
+    expect(layer.props.serverTime).toBe('{{sirsoftPopup_public?.data?.server_time ?? null}}');
     expect(doc.data_sources[0].fallback).toEqual({ data: null });
   });
 

@@ -45,3 +45,9 @@ Controller(`Admin\PopupController`·`PopupImageController`·`DisplaySettingsCont
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
+
+## 파일 정리 대장과 예약 갱신
+
+`PendingImageFiles`는 이미지 쓰기 전 로컬 `cleanup/pending-images`에 고유 해시·상대경로·디스크·시각을 기록합니다. 로컬 대장 기록 실패면 쓰기를 시작하지 않습니다. 성공 행 또는 파일 삭제를 확인하면 지우며, 보존기간이 지난 항목은 기존 정리 명령이 이미지 행을 재확인한 뒤 기록된 디스크에서 삭제합니다. 손상 항목은 로그로 알리고 자동 삭제하지 않습니다. 대장 로컬 볼륨을 보존해야 하며, 여러 웹 노드를 운영하면 각 노드의 대장을 정리 명령이 읽을 수 있어야 합니다. DB 스키마 변경은 없습니다.
+
+`usePopupRefresh`는 공개 응답의 다음 기간 경계·서버 시각으로 타이머 하나를 유지합니다. 0건이어도 구독하고, 탭 복귀에서 공개 데이터 소스만 재조회합니다. 코어·템플릿 변경 없이 기존 닫음·보지 않기 판정을 계속 사용합니다.

@@ -11,7 +11,7 @@ return [
         'incomplete' => 'Send every popup when reordering. Reload the list and try again.',
     ],
     'body_html' => [
-        'emptied_by_sanitize' => 'The :locale content only has elements that are not allowed (iframe, script, form, etc.) and would be empty when saved. Add paragraphs, images, tables or other content.',
+        'emptied_by_sanitize' => 'The :locale content has nothing to display. Add text or an image. Empty paragraphs, whitespace and content containing only disallowed elements cannot be saved.',
     ],
     'pc_image' => [
         'required' => 'Image popups need a PC image.',

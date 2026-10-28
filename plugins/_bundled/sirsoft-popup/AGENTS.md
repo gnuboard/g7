@@ -63,8 +63,8 @@
 - **등록**: `PopupController::store` → `StorePopupRequest`(유형별 필수·경로 정규화·기간 UTC 변환) → `PopupService::create`(before → filter → 트랜잭션: 맨 뒤 순서·본문 정화·임시 묶음 이미지 연결 → after) → `PopupRepository::create` → `Popup`. after 훅을 `PopupActivityLogListener`(활동 로그)·`PopupCacheListener`(공개 캐시 비우기)가 받는다.
 - **사용자 화면**: 주입 조각 `resources/extensions/popup_layer` 의 data-source → `Public\PopupController::index`(봇이면 빈 목록) → `PublicPopupService::forRequest`(대상·언어 캐시, 꺼낼 때 기간 재판정) → `PopupRepository::exposureCandidates` → 브라우저 `PopupLayer` 가 `route.path`·폭·쿠키로 거른 뒤 캐러셀로 그린다.
 - **복사**: `PopupController::bulkCopy` → `PopupIdsRequest` → `PopupService::bulkCopy`(건마다 트랜잭션: 비활성·맨 뒤·제목 접미 + `PopupImageService::duplicate` 로 파일 복제, 실패한 건만 되돌림) → after_bulk_copy.
-- **이미지 업로드**: `PopupImageController::store` → `PopupImageUploadRequest` → `PopupImageService::upload`(파일 쓰기 → 임시 묶음 행). 파일 쓰기가 실패하거나 행 저장이 실패하면 쓴 파일을 지우고 `PopupImageUploadException` → 500 `messages.image.upload_failed`. 복제(`duplicate`)도 행 저장이 실패하면 그 파일을 지운다.
-- **수정의 다국어 값**: `UpdatePopupRequest` 는 언어팩을 꺼서 지원 목록에서 빠진 언어의 **저장된** 번역을 검증에서 빼 두었다가 저장된 값으로 되돌려 넣는다(보내도 막지 않고 빼도 지우지 않음). 등록과 새 지원 밖 언어는 `strictLocales` 로 422. 본문은 `SanitizedBodyNotEmpty` 가 저장 때와 같은 정화기로 미리 걸러, 정화 뒤 비는 언어가 있으면 422.
+- **이미지 업로드**: `PopupImageController::store` → `PopupImageUploadRequest` → `PopupImageService::upload`(파일 쓰기 → 임시 묶음 행). 저장소 false·예외 또는 저장 후 조회·행 생성이 실패하면 새 파일 정리를 시도하고 실패분은 `PendingImageFiles` 로컬 대장에 남겨 기존 정리 명령으로 재시도한다. 실패는 `PopupImageUploadException` → 500 `messages.image.upload_failed`. 복제(`duplicate`)도 저장·행 생성 실패를 같은 대장으로 추적하며, 호출자 트랜잭션이 되돌려진 파일도 다시 정리한다.
+- **수정의 다국어 값**: `UpdatePopupRequest` 는 언어팩을 꺼서 지원 목록에서 빠진 언어의 **저장된** 번역을 검증에서 빼 두었다가 저장된 값으로 되돌려 넣는다(보내도 막지 않고 빼도 지우지 않음). 등록과 새 지원 밖 언어는 `strictLocales` 로 422. 본문은 `SanitizedBodyNotEmpty` 가 저장 때와 같은 정화기로 미리 걸러, 정화 뒤 표시할 텍스트·이미지가 없는 언어가 있으면(빈 문단·NBSP 포함) 422.
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -113,7 +113,7 @@
 | 링크 팝업에서 `<a>` 안에 단추·스크롤 영역을 넣음 | 이미지 위를 덮는 빈 `<a>` + 그 바깥 형제로 넘김 단추·띠 |
 | 직접 작성형 본문을 정화 없이 저장·출력 | 저장 때 `PopupHtmlSanitizer`, 출력 때 DOMPurify |
 | GDPR 플러그인 코드를 참조해 쿠키를 등록 | 계약 훅 `sirsoft-gdpr.necessary_storage.filter_provided_keys` 에 이름만 더한다 |
-| 스토리지에 파일을 쓴 뒤 행 저장 실패를 그대로 던짐 | 실패하면 쓴 파일을 지우고 던진다(`PopupImageService::upload`·`duplicate`) — 행이 없는 파일은 임시 이미지 정리 명령이 찾지 못한다 |
+| 스토리지에 파일을 쓴 뒤 행 저장 실패를 그대로 던짐 | 실패하면 새 파일만 정리를 시도하고, 실패분은 `PendingImageFiles` 대장을 기존 정리 명령이 다시 확인한다(`PopupImageService::upload`·`duplicate`) |
 | 수정 요청에 지원 밖 언어 키가 있다고 422 | 저장된 번역이면 보존(`UpdatePopupRequest`) — 언어팩을 끄는 순간 그 언어로 쓴 팝업을 고칠 수 없게 된다 |
 
 | 금지 | 올바른 사용 | 이유 |
@@ -131,10 +131,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 16개 | `plugins/_bundled/sirsoft-popup/tests` |
-| Vitest | 10개 | `vitest.config.ts` |
-| Playwright | 2개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 11개 | `tests/scenarios` |
+| PHPUnit | 17개 | `plugins/_bundled/sirsoft-popup/tests` |
+| Vitest | 11개 | `vitest.config.ts` |
+| Playwright | 3개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 12개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

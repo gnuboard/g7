@@ -58,7 +58,7 @@ class PublicPopupService
      * @param  User|null  $user  요청한 회원 (손님은 null)
      * @param  string  $locale  요청 언어
      * @param  bool  $isBot  검색엔진 봇 요청인지
-     * @return array{settings: array<string, mixed>, popups: array<int, array<string, mixed>>} 공개 응답 본문
+     * @return array{settings: array<string, mixed>, popups: array<int, array<string, mixed>>, server_time?: string, refresh_at?: string|null} 공개 응답 본문
      */
     public function forRequest(?User $user, string $locale, bool $isBot = false): array
     {
@@ -87,6 +87,8 @@ class PublicPopupService
         return [
             'settings' => $candidates['settings'],
             'popups' => $popups,
+            'server_time' => $now->toISOString(),
+            'refresh_at' => $this->popups->nextTransitionAt($now)?->toISOString(),
         ];
     }
 

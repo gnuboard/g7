@@ -5,7 +5,10 @@ namespace Plugins\Sirsoft\Popup\Tests\Feature\Admin;
 use App\Contracts\Extension\StorageInterface;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Plugins\Sirsoft\Popup\Models\Popup;
 use Plugins\Sirsoft\Popup\Models\PopupImage;
 use Plugins\Sirsoft\Popup\Repositories\Contracts\PopupImageRepositoryInterface;
 use Plugins\Sirsoft\Popup\Services\PopupImageService;
@@ -168,5 +171,103 @@ class PopupImageControllerTest extends PluginTestCase
             ->assertStatus(500)
             ->assertJsonPath('message', __('sirsoft-popup::messages.image.upload_failed'));
         $this->assertSame($before, $this->imageFiles());
+    }
+
+    /**
+     * 파일 저장 후 첫 조회 실패도 새 파일만 거둡니다.
+     *
+     * @scenario surface=image_upload_lookup_failure
+     *
+     * @effects files_created_or_removed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_upload_lookup_failure_removes_only_new_file(): void
+    {
+        $popup = Popup::factory()->withImages()->create();
+        $old = $popup->images()->first();
+        $this->imageStorage()->put('sirsoft-popup/images/'.$old->path, 'existing');
+        $before = $this->imageFiles();
+        $rows = PopupImage::query()->count();
+        $repository = \Mockery::mock(app(PopupImageRepositoryInterface::class));
+        $repository->shouldReceive('findByOwnerAndDevice')->andThrow(new \RuntimeException('조회 실패'));
+        $this->app->instance(PopupImageService::class, new PopupImageService($repository, $this->imageStorageDriver()));
+        $this->uploadImage($this->admin, 'pc', (string) Str::uuid())->assertStatus(500)
+            ->assertJsonPath('message', __('sirsoft-popup::messages.image.upload_failed'));
+        $this->assertSame($before, $this->imageFiles());
+        $this->assertSame($rows, PopupImage::query()->count());
+    }
+
+    /**
+     * 저장소 예외와 부분 쓰기 false 모두 새 파일을 정리합니다.
+     *
+     * @scenario surface=image_upload_storage_failure
+     *
+     * @effects files_created_or_removed
+     *
+     * @param  bool  $throws  저장소 예외 여부
+     * @return void 반환값 없음
+     */
+    #[DataProvider('storageFailures')]
+    public function test_upload_storage_exception_and_partial_false_remove_file(bool $throws): void
+    {
+        $driver = $this->imageStorageDriver();
+        $storage = \Mockery::mock($driver);
+        $storage->shouldReceive('put')->andReturnUsing(function ($category, $path, $content) use ($driver, $throws) {
+            $driver->put($category, $path, $content);
+            if ($throws) {
+                throw new \RuntimeException('저장소 오류');
+            }
+
+            return false;
+        });
+        $before = $this->imageFiles();
+        $this->app->instance(PopupImageService::class, new PopupImageService(app(PopupImageRepositoryInterface::class), $storage));
+        $this->uploadImage($this->admin, 'pc', (string) Str::uuid())->assertStatus(500)
+            ->assertJsonPath('message', __('sirsoft-popup::messages.image.upload_failed'));
+        $this->assertSame($before, $this->imageFiles());
+        $this->assertSame(0, PopupImage::query()->count());
+    }
+
+    /** 저장소 실패 분기를 제공합니다.
+     * @return array<string, array{bool}> 예외 여부
+     */
+    public static function storageFailures(): array
+    {
+        return ['false' => [false], 'exception' => [true]];
+    }
+
+    /**
+     * 보상 삭제 실패는 대장을 남기고 다음 정리에서 재시도합니다.
+     *
+     * @scenario surface=image_cleanup_retry
+     *
+     * @effects files_created_or_removed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_upload_cleanup_failure_is_retried_without_deleting_other_files(): void
+    {
+        $popup = Popup::factory()->withImages()->create();
+        $old = $popup->images()->first();
+        $this->imageStorage()->put('sirsoft-popup/images/'.$old->path, 'existing');
+        $before = $this->imageFiles();
+        $driver = $this->imageStorageDriver();
+        $repository = \Mockery::mock(app(PopupImageRepositoryInterface::class));
+        $repository->shouldReceive('create')->andThrow(new \RuntimeException('행 생성 실패'));
+        $storage = \Mockery::mock($driver);
+        $storage->shouldReceive('delete')->andReturn(false);
+        $this->app->instance(PopupImageService::class, new PopupImageService($repository, $storage));
+        Log::spy();
+        $this->uploadImage($this->admin, 'pc', (string) Str::uuid())->assertStatus(500);
+        Log::shouldHaveReceived('error')->withArgs(fn ($message, $context) => $message === '팝업 이미지 업로드 실패' && $context['cleanup'] === 'pending_retry')->once();
+        $this->assertCount(count($before) + 1, $this->imageFiles());
+        $service = new PopupImageService(app(PopupImageRepositoryInterface::class), $driver);
+        $this->travel(3)->days();
+        $this->assertSame(['scanned' => 1, 'deleted' => 0, 'failed' => 0], $service->pruneTempUploads(2, 500, true));
+        $this->assertCount(count($before) + 1, $this->imageFiles());
+        $this->assertSame(['scanned' => 1, 'deleted' => 1, 'failed' => 0], $service->pruneTempUploads(2, 500, false));
+        $this->assertSame($before, $this->imageFiles());
+        $this->travelBack();
     }
 }

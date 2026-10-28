@@ -67,6 +67,8 @@ abstract class PluginTestCase extends TestCase
         parent::setUp();
 
         $this->registerPluginAutoload();
+        // 로컬 정리 대장도 가짜 이미지 디스크와 같은 테스트별 루트에 둔다.
+        config(['filesystems.disks.plugins.root' => storage_path('framework/testing/disks/plugins')]);
         $this->app->register(PopupServiceProvider::class);
         // 설치본이 없어 코어 TranslationServiceProvider 가 plugins/<id>/lang 을 싣지 않으므로 _bundled 의 lang 을 직접 싣는다
         app('translator')->addNamespace('sirsoft-popup', $this->getPluginBasePath().'/lang');

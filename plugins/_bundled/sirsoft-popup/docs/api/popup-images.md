@@ -124,7 +124,7 @@ HTTP/1.1 201
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 관리자가 아니거나(`admin`) 요구 권한(`sirsoft-popup.popups.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지). 형식·용량·크기(4000px) 초과, 서버 PHP 업로드 한도 초과(파일이 서버에 닿기 전에 잘려 전용 안내 메시지로 응답) 포함 |
-| 500 | Internal Server Error | 스토리지에 파일을 쓰지 못했거나, 쓴 뒤 이미지 행 저장이 실패한 경우(`sirsoft-popup::messages.image.upload_failed`). 행은 만들지 않고 쓴 파일은 지웁니다 |
+| 500 | Internal Server Error | 저장소 false·예외, 저장 후 선행 조회·이미지 행 저장이 실패한 경우(`sirsoft-popup::messages.image.upload_failed`). 새 파일 정리를 시도하며, 삭제 실패분은 로컬 대장에 남겨 재정리합니다 |
 
 <!-- @generated:end -->
 
@@ -134,7 +134,7 @@ HTTP/1.1 201
 
 - 업로드한 이미지는 **임시 묶음**(`temp_key`)에만 들어가고 팝업에는 아직 붙지 않습니다. 등록·수정 「저장」 요청이 `temp_key`·`pc_image_id`·`mobile_image_id` 로 붙일 이미지를 정할 때 비로소 팝업에 연결되므로, 저장하지 않고 화면을 떠나면 사용자 화면은 바뀌지 않습니다.
 - 같은 묶음·같은 기기로 다시 올리면 새 이미지로 교체되고 앞 이미지(파일·행)는 지워집니다. 기기마다 한 장만 유지됩니다.
-- 저장에 실패하면(500) 파일도 행도 남기지 않습니다 — 행이 없는 파일은 임시 이미지 정리 명령이 찾지 못하므로 그 자리에서 지웁니다.
+- 저장에 실패하면(500) 이번 요청이 만든 파일만 정리합니다. 삭제가 실패하면 성공으로 기록하지 않고 디스크·고유 경로를 로컬 대장에 남깁니다. `sirsoft-popup:prune-temp-images --dry-run`으로 대상을 확인하고 같은 명령에서 보존기간(기본 2일) 뒤 다시 정리합니다. 기존 연결 이미지와 다른 요청의 파일은 보상 삭제 대상이 아닙니다. 로컬 대장을 쓰지 못하면 파일 저장을 시작하지 않습니다.
 - 끝내 팝업에 붙지 않은 임시 이미지는 매일 도는 정리 스케줄(`sirsoft-popup:prune-temp-images`, 기본 보존 2일)이 회수합니다.
 - 권장 크기(표시 방식의 PC 너비×높이)는 강제하지 않습니다. 화면이 응답의 `width`·`height` 로 안내만 합니다. GIF 는 움직임을 지키려고 크기를 줄이지 않고, 그 밖의 형식은 서버가 크기를 줄여 저장할 수 있습니다.
 - 성공은 `201` 입니다. 업로드 파일은 `sirsoft-popup.popup_image.filter_upload_file` 필터 훅을 거치고, 저장 뒤 `sirsoft-popup.popup_image.after_upload` 액션 훅이 발행됩니다.

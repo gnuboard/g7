@@ -65,7 +65,7 @@ class PopupImageService
      * @param  int|null  $actorId  올린 회원 ID
      * @return PopupImage 올린 이미지
      *
-     * @throws PopupImageUploadException 파일을 쓰지 못했거나 행 저장이 실패했을 때(쓴 파일은 지운다)
+     * @throws PopupImageUploadException 파일·조회·행 저장 실패 시(정리 실패분은 대장에 남겨 재시도)
      */
     public function upload(UploadedFile $file, string $device, string $tempKey, ?int $actorId): PopupImage
     {
@@ -81,13 +81,17 @@ class PopupImageService
         }
         [$width, $height] = $this->dimensions($file->getRealPath());
 
-        if (! $this->storage->put(self::CATEGORY, $path, file_get_contents($file->getRealPath()))) {
-            throw new PopupImageUploadException;
-        }
-
-        $previous = $this->images->findByOwnerAndDevice(null, $tempKey, $device);
-
+        $pending = app(PendingImageFiles::class);
+        $tracked = false;
+        $disk = null;
         try {
+            $disk = $this->storage->getDisk();
+            $pending->remember($hash, $path, $disk);
+            $tracked = true;
+            if (! $this->storage->put(self::CATEGORY, $path, file_get_contents($file->getRealPath()))) {
+                throw new PopupImageUploadException;
+            }
+            $previous = $this->images->findByOwnerAndDevice(null, $tempKey, $device);
             $image = DB::transaction(fn () => $this->images->create([
                 'popup_id' => null,
                 'temp_key' => $tempKey,
@@ -103,12 +107,19 @@ class PopupImageService
                 'created_by' => $actorId,
             ]));
         } catch (\Throwable $e) {
-            // 행이 없는 파일은 임시 이미지 정리도 찾지 못한다 — 여기서 지운다
-            $this->deletePath($path, ['temp_key' => $tempKey]);
-            Log::error('팝업 이미지 행 저장 실패 — 쓴 파일을 지웠습니다', ['temp_key' => $tempKey, 'error' => $e->getMessage()]);
+            $cleaned = $tracked && $this->deletePath($path, ['hash' => $hash]);
+            if ($cleaned) {
+                $pending->forget($hash);
+            }
+            Log::error('팝업 이미지 업로드 실패', [
+                'hash' => $hash, 'path' => $path, 'disk' => $disk,
+                'cleanup' => $cleaned ? 'removed_or_absent' : ($tracked ? 'pending_retry' : 'write_not_started'),
+                'exception' => $e::class,
+            ]);
 
             throw new PopupImageUploadException($e);
         }
+        $pending->forget($hash);
 
         if ($previous !== null) {
             $this->deleteImage($previous);
@@ -257,12 +268,17 @@ class PopupImageService
 
         $hash = Str::random(64);
         $path = date('Y/m').'/'.$hash.'.'.(self::EXTENSIONS[$source->mime] ?? 'jpg');
-        if (! $this->storage->put(self::CATEGORY, $path, $contents)) {
-            throw PopupImageCopyException::writeFailed($source->id);
-        }
-
+        $pending = app(PendingImageFiles::class);
+        $tracked = false;
+        $disk = null;
         try {
-            return $this->images->create([
+            $disk = $this->storage->getDisk();
+            $pending->remember($hash, $path, $disk);
+            $tracked = true;
+            if (! $this->storage->put(self::CATEGORY, $path, $contents)) {
+                throw PopupImageCopyException::writeFailed($source->id);
+            }
+            $image = $this->images->create([
                 'popup_id' => $popupId,
                 'temp_key' => null,
                 'device' => $source->device,
@@ -277,11 +293,17 @@ class PopupImageService
                 'created_by' => $actorId,
             ]);
         } catch (\Throwable $e) {
-            // 행이 되돌려지면 호출자는 이 파일을 모른다 — 여기서 지운다
-            $this->deletePath($path, ['source_image_id' => $source->id]);
+            if ($tracked && $this->deletePath($path, ['source_image_id' => $source->id])) {
+                $pending->forget($hash);
+            }
 
             throw $e;
         }
+        // 호출자 트랜잭션이 되돌려지면 대장을 남긴다 — 이후 정리에서 행 부재를 다시 확인한다.
+        DB::afterCommit(fn () => $pending->forget($hash));
+
+        return $image;
+
     }
 
     /**
@@ -292,7 +314,12 @@ class PopupImageService
      */
     public function discardFile(PopupImage $image): bool
     {
-        return $this->deleteFile($image);
+        if (! $this->deleteFile($image)) {
+            return false;
+        }
+        app(PendingImageFiles::class)->forget($image->hash);
+
+        return true;
     }
 
     /**
@@ -338,9 +365,33 @@ class PopupImageService
     {
         $targets = $this->images->staleTempImages(now()->subDays($days), $limit);
         $result = ['scanned' => $targets->count(), 'deleted' => 0, 'failed' => 0];
+        $pending = app(PendingImageFiles::class);
+        $orphans = $limit > $targets->count() ? $pending->stale(now()->subDays($days)->getTimestamp(), $limit - $targets->count()) : [];
+        $result['scanned'] += count($orphans);
 
         if ($dryRun) {
             return $result;
+        }
+
+        foreach ($orphans as $row) {
+            try {
+                // 대장이 남았어도 행이 있으면 절대 지우지 않는다(다른 요청·연결된 파일 보호).
+                if ($this->images->findByHash($row['hash']) !== null) {
+                    $pending->forget($row['hash']);
+
+                    continue;
+                }
+                $disk = $this->storage->withDisk($row['disk']);
+                if (! $disk->exists(self::CATEGORY, $row['path']) || $disk->delete(self::CATEGORY, $row['path'])) {
+                    $pending->forget($row['hash']);
+                    $result['deleted']++;
+                } else {
+                    $result['failed']++;
+                }
+            } catch (\Throwable $e) {
+                $result['failed']++;
+                Log::error('팝업 미완료 이미지 재정리 실패 — 대장을 유지합니다', ['hash' => $row['hash'], 'disk' => $row['disk'], 'exception' => $e::class]);
+            }
         }
 
         foreach ($targets as $image) {
@@ -397,7 +448,7 @@ class PopupImageService
 
             return $this->storage->delete(self::CATEGORY, $path);
         } catch (\Throwable $e) {
-            Log::warning('팝업 이미지 파일 삭제 실패(정리 명령이 다시 시도)', $context + ['error' => $e->getMessage()]);
+            Log::error('팝업 이미지 파일 삭제 실패 — 행 또는 정리 대장을 유지합니다', $context + ['exception' => $e::class]);
 
             return false;
         }

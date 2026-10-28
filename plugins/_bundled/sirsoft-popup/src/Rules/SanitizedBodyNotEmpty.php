@@ -30,7 +30,7 @@ class SanitizedBodyNotEmpty implements ValidationRule
 
         $sanitizer = app(PopupHtmlSanitizer::class);
         foreach ($value as $locale => $html) {
-            if (is_string($html) && trim($html) !== '' && $sanitizer->sanitize($html) === '') {
+            if (is_string($html) && trim($html) !== '' && ! $sanitizer->hasVisibleContent($sanitizer->sanitize($html))) {
                 $fail(__('sirsoft-popup::validation.body_html.emptied_by_sanitize', ['locale' => $locale]));
 
                 return;
