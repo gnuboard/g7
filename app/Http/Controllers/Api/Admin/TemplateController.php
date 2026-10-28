@@ -245,12 +245,15 @@ class TemplateController extends AdminBaseController
 
             $result = $this->templateService->activateTemplate($templateName, $force);
 
-            // 경고 응답인 경우 (필요 의존성 미충족) - 활성화 실패로 처리
+            // 경고 응답인 경우 (필요 의존성 미충족 — 미설치·꺼짐·버전 미달) - 활성화 실패로 처리
+            // template_type·current_active_identifier 는 강제 활성화 창이 타입별 503 경고(관리자면 복구 명령)를 그리는 데 쓴다(#152)
             if (isset($result['warning']) && $result['warning'] === true) {
                 return $this->error('templates.activate_warning', 409, [
                     'warning' => true,
                     'missing_modules' => $result['missing_modules'] ?? [],
                     'missing_plugins' => $result['missing_plugins'] ?? [],
+                    'template_type' => $result['template_type'] ?? null,
+                    'current_active_identifier' => $result['current_active_identifier'] ?? null,
                     'message' => $result['message'],
                 ]);
             }

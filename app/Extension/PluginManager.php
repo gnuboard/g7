@@ -654,6 +654,12 @@ class PluginManager implements PluginManagerInterface
         // 돈다(#138). 설치 롤백 try 밖에서 발화해, 리스너 예외가 방금 끝난 설치를 되돌리지 않게 한다.
         HookManager::doAction('core.plugins.after_install', $pluginName, $this->getPluginInfo($pluginName) ?? []);
 
+        // 기존 레코드 위 재설치(--force) — 판·상태가 manifest 값으로 바뀌어 이 확장을 요구하던 활성 의존자가 깨질 수 있다.
+        // 막지 않고 깨지는 의존자를 안내로 남긴다(#152 D6)
+        if ($existingRecord !== null) {
+            DependencyVersionWarnings::noticeDependents('plugin', $pluginName);
+        }
+
         return true;
 
     }
@@ -1003,6 +1009,11 @@ class PluginManager implements PluginManagerInterface
 
             // 요구사항 #6: 비활성화 후 훅 발행 — 언어팩 cascade 등 후속 처리
             HookManager::doAction('core.plugins.after_deactivate', $plugin->getIdentifier());
+
+            // 강제 비활성화 — 의존자 경고(409)를 건너뛰고 끈 경우, 깨지는 의존자를 안내로 남긴다(#152 D6). 종료 코드는 그대로
+            if ($hasDependents) {
+                DependencyVersionWarnings::noticeDependents('plugin', $plugin->getIdentifier());
+            }
         }
 
         $response = ['success' => $result, 'layouts_deleted' => $layoutsDeleted];
@@ -5077,6 +5088,9 @@ class PluginManager implements PluginManagerInterface
                 $identifier,
                 $this->pluginsPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'plugin.json'
             );
+
+            // 역방향 — 이 확장을 요구하던 활성 의존자가 새 판(강제 업데이트는 더 낮은 판일 수 있다)으로 깨지면 함께 알린다(#152)
+            $dependencyWarnings = [...$dependencyWarnings, ...DependencyVersionWarnings::forDependents('plugin', $identifier)];
 
             // 선택 연동(integrations) 안내 — 막지 않고 결과·완료 문구로만 알린다 (7.1.4 D10)
             $integrationNotices = DependencyVersionWarnings::integrationsAfterUpdate(

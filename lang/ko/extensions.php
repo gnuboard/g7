@@ -43,6 +43,8 @@ return [
         'cascade_permission_denied' => '함께 설치할 :type (:identifier) 을(를) 설치하거나 활성화할 권한이 없습니다.',
         'invalid_type' => '유효하지 않은 확장 타입입니다.',
         'not_auto_deactivated' => '이 확장은 코어 버전 호환성 문제로 자동 비활성화된 상태가 아닙니다.',
+        'recover_dependencies_unmet' => '복구하지 못했습니다 — 필요한 확장이 조건에 맞지 않습니다: :list',
+        'recover_failed' => '복구하지 못했습니다 — :reason',
         'hidden_extension' => '내부용(hidden) 확장은 사용자 노출 대상이 아닙니다.',
         'internal_error' => '서버 내부 오류가 발생했습니다. 자세한 내용은 서버 로그를 확인하세요.',
         'seeder_failed' => '기본 데이터 생성(:seeder)에 실패해 설치를 취소했습니다: :message',
@@ -61,6 +63,8 @@ return [
         'dependency_not_installed' => ':identifier :required 버전이 필요한데 설치되어 있지 않습니다',
         'dependency_inactive' => ':identifier 확장이 꺼져 있습니다(필요 버전 :required)',
         'dependency_summary' => '단, 의존 확장이 요구 조건에 못 미칩니다 — :list. 해당 확장도 업데이트하거나 켜세요.',
+        'dependent_unmet' => ':dependent_type ":dependent" 이(가) 요구하는 ":identifier" :required 를 이제 충족하지 못합니다(현재 :state).',
+        'dependent_template_503' => '이 템플릿을 쓰는 화면이 503 안내로 바뀝니다.',
         'archive_backslash_normalized' => '역슬래시(\\) 경로 :count개를 / 로 정규화해 풀었습니다',
         'seeder_class_name_mismatch' => '시더 파일 :file 은 있지만 추론한 클래스 :class 를 찾을 수 없어 건너뛰었습니다',
         'storage_cleanup_incomplete' => '확장 저장 폴더를 모두 지우지 못했습니다 — 서버 파일 권한을 확인한 뒤 남은 파일을 직접 지우세요',
@@ -71,6 +75,14 @@ return [
         'column_message' => '사유',
         'composer_install_failed' => 'Composer 의존성 설치에 실패했습니다 — 확장 폴더에서 composer install 을 수동으로 실행하세요',
         'php_extension_missing' => '서버에 이 확장이 필요로 하는 PHP 확장 :extensions 이(가) 없습니다 — 해당 기능이 동작하지 않을 수 있으니 설치하세요',
+    ],
+
+    // 필수 의존(dependencies) 미충족 사유 — 복구 실패·연쇄 설치 실패·CLI 가 같은 문장을 쓴다 (7.1.4)
+    'dependency_status' => [
+        'label' => ':name(:identifier)',
+        'not_installed' => '미설치',
+        'inactive' => '꺼짐',
+        'version_mismatch' => '버전 미달 :installed → :required',
     ],
 
     // 선택 연동(integrations) 안내 — 막지 않고 알리기만 한다 (7.1.4)

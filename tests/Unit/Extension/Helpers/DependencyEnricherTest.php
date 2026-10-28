@@ -89,7 +89,8 @@ class DependencyEnricherTest extends TestCase
     #[Test]
     public function enrich_설치_활성_모듈은_is_met_true를_반환합니다(): void
     {
-        $module = new Module(['name' => ['ko' => '상점', 'en' => 'Shop'], 'version' => '1.2.0']);
+        // 활성 여부는 레코드 status 로 본다 — 판정식이 한 번 조회로 상태·판을 함께 판정한다(#152)
+        $module = new Module(['name' => ['ko' => '상점', 'en' => 'Shop'], 'version' => '1.2.0', 'status' => 'active']);
 
         $moduleRepo = $this->createMock(ModuleRepositoryInterface::class);
         $moduleRepo->method('findByIdentifier')->willReturn($module);
@@ -152,7 +153,7 @@ class DependencyEnricherTest extends TestCase
     #[Test]
     public function enrich_버전_미충족_모듈은_is_met_false를_반환합니다(): void
     {
-        $module = new Module(['name' => ['ko' => '상점'], 'version' => '0.9.0']);
+        $module = new Module(['name' => ['ko' => '상점'], 'version' => '0.9.0', 'status' => 'active']);
 
         $moduleRepo = $this->createMock(ModuleRepositoryInterface::class);
         $moduleRepo->method('findByIdentifier')->willReturn($module);

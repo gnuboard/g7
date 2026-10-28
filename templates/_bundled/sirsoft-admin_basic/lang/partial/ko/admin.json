@@ -950,6 +950,11 @@
     "dependencies": "의존성: {{deps}}",
     "dependencies_label": "의존성:",
     "no_dependencies": "의존성: 없음",
+    "dependency_unmet": {
+      "not_installed": "미설치",
+      "inactive": "꺼짐",
+      "version_mismatch": "버전 미달 {{installed}} → {{required}}"
+    },
     "no_plugins": "설치된 플러그인이 없습니다.",
     "pagination_info": "총 {{total}}개 중 {{from}}-{{to}}개 표시",
     "update_available": "업데이트 필요",
@@ -2606,6 +2611,10 @@
     "dependencies": "의존성: {{deps}}",
     "dependencies_label": "의존성:",
     "no_dependencies": "의존성: 없음",
+    "force_activate": {
+      "warning_user_503": "강제로 켜면 조건을 맞출 때까지 사용자 화면이 「서비스 일시 중단(503)」 안내로 바뀝니다.",
+      "warning_admin_503": "강제로 켜면 관리자 화면이 503 안내로 바뀌어 이 화면으로 되돌릴 수 없습니다. 복구: php artisan template:activate {{identifier}}"
+    },
     "available": "사용 가능",
     "no_templates": "설치된 템플릿이 없습니다.",
     "pagination_info": "총 {{total}}개 중 {{from}}-{{to}}개 표시",

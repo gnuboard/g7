@@ -10,6 +10,7 @@ use App\Services\ModuleService;
 use App\Services\PluginService;
 use App\Services\TemplateService;
 use Mockery;
+use Mockery\MockInterface;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -27,10 +28,10 @@ class CascadeInstallOrchestratorTest extends TestCase
     /** @var array<string, array<string, mixed>> 식별자 → 플러그인 정보 */
     private array $plugins = [];
 
-    /** @var \Mockery\MockInterface&ModuleService 모듈 서비스 대역 */
+    /** @var MockInterface&ModuleService 모듈 서비스 대역 */
     private $moduleService;
 
-    /** @var \Mockery\MockInterface&PluginService 플러그인 서비스 대역 */
+    /** @var MockInterface&PluginService 플러그인 서비스 대역 */
     private $pluginService;
 
     /**
@@ -164,7 +165,9 @@ class CascadeInstallOrchestratorTest extends TestCase
             $this->fail('활성화 실패가 통과했다');
         } catch (RuntimeException $e) {
             $this->assertStringContainsString('shop', $e->getMessage());
-            $this->assertStringContainsString('base (not_installed)', $e->getMessage());
+            // 사유는 사람이 읽는 문장이다 — 원문(not_installed)을 내보내지 않는다(#152 D5)
+            $this->assertStringContainsString('base '.__('extensions.dependency_status.not_installed'), $e->getMessage());
+            $this->assertStringNotContainsString('(not_installed)', $e->getMessage());
         }
     }
 

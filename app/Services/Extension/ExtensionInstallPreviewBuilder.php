@@ -167,6 +167,10 @@ class ExtensionInstallPreviewBuilder
             $isInstalled = ! empty($dep['installed_version']);
             $isMet = (bool) ($dep['is_met'] ?? false);
             $canSelect = $this->authorizer->canSelectDependency((string) ($dep['type'] ?? 'module'), $isInstalled);
+            // 설치됐지만 판이 요구에 못 미치면 함께 설치·활성화로 풀 수 없다 — 선택하게 두면 건너뛴 뒤 본 설치가 실패한다(#152).
+            // 의존 확장을 먼저 업데이트해야 하므로 고를 수 없게 막고 이유를 싣는다(설치 창이 「버전 불일치」 배지로 보인다)
+            $versionBlocked = ! $isMet && $isInstalled
+                && ! DependencyEnricher::checkVersionConstraint((string) $dep['installed_version'], $dep['required_version'] ?? null);
 
             $result[] = [
                 'type' => $dep['type'] ?? 'module',
@@ -177,10 +181,12 @@ class ExtensionInstallPreviewBuilder
                 'is_installed' => $isInstalled,
                 'is_active' => (bool) ($dep['is_active'] ?? false),
                 'is_met' => $isMet,
-                // 미충족 의존성만 cascade 후보 — 충족 의존성은 추가 설치 불필요
-                'available' => ! $isMet,
+                'status' => $dep['status'] ?? null,
+                // 미충족 의존성만 cascade 후보 — 충족 의존성은 추가 설치 불필요, 버전 미달은 함께 처리로 풀 수 없음
+                'available' => ! $isMet && ! $versionBlocked,
+                'blocked_reason' => $versionBlocked ? DependencyEnricher::STATUS_VERSION_MISMATCH : null,
                 // 미충족 + 미설치 항목은 기본 선택 (체크리스트 prefill)
-                'default_selected' => ! $isMet && ! $isInstalled && $canSelect,
+                'default_selected' => ! $isMet && ! $isInstalled && ! $versionBlocked && $canSelect,
                 // 이 항목을 함께 설치·활성화할 권한 (미설치=install+activate, 설치됨=activate)
                 'can_select' => $canSelect,
             ];
@@ -224,7 +230,10 @@ class ExtensionInstallPreviewBuilder
                 'is_installed' => $isInstalled,
                 'is_active' => false,
                 'is_met' => false,
+                'status' => $isInstalled ? DependencyEnricher::STATUS_INACTIVE : DependencyEnricher::STATUS_NOT_INSTALLED,
+                // 버전 미달 의존은 계획 해석(resolveDependencyPlan)이 단계에서 빼고 오류로 보내므로 여기 오지 않는다
                 'available' => true,
+                'blocked_reason' => null,
                 'default_selected' => ! $isInstalled && $canSelect,
                 'can_select' => $canSelect,
                 // 어느 의존 확장 때문에 필요한지 — 2단계 의존 행 구분용

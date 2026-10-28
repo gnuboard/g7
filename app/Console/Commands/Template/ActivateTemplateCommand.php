@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Console\Commands\Traits\LabelsMissingDependencies;
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 
 class ActivateTemplateCommand extends Command
 {
+    use LabelsMissingDependencies;
     use LocalizesDescription;
     use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
@@ -78,9 +80,7 @@ class ActivateTemplateCommand extends Command
                 if (! empty($result['missing_modules'])) {
                     $this->info(__('templates.commands.activate.required_modules'));
                     foreach ($result['missing_modules'] as $module) {
-                        $statusLabel = $module['status'] === 'not_installed'
-                            ? __('templates.commands.activate.missing_status.not_installed')
-                            : __('templates.commands.activate.missing_status.inactive');
+                        $statusLabel = $this->missingDependencyStatusLabel('templates', $module);
                         $this->line("   - {$module['identifier']} ({$module['name']}) [{$statusLabel}]");
                     }
                 }
@@ -88,15 +88,17 @@ class ActivateTemplateCommand extends Command
                 if (! empty($result['missing_plugins'])) {
                     $this->info(__('templates.commands.activate.required_plugins'));
                     foreach ($result['missing_plugins'] as $plugin) {
-                        $statusLabel = $plugin['status'] === 'not_installed'
-                            ? __('templates.commands.activate.missing_status.not_installed')
-                            : __('templates.commands.activate.missing_status.inactive');
+                        $statusLabel = $this->missingDependencyStatusLabel('templates', $plugin);
                         $this->line("   - {$plugin['identifier']} ({$plugin['name']}) [{$statusLabel}]");
                     }
                 }
 
                 $this->line('');
                 $this->info(__('templates.commands.activate.force_hint'));
+                // 강제로 켜면 조건을 맞출 때까지 그 템플릿의 화면이 503 이 된다 — 관리자 템플릿이면 이 명령으로만 되돌릴 수 있다(#152)
+                $this->warn(($result['template_type'] ?? $template->type) === 'admin'
+                    ? __('templates.commands.activate.force_503_hint_admin', ['identifier' => $result['current_active_identifier'] ?? $previousActive?->identifier ?? '<identifier>'])
+                    : __('templates.commands.activate.force_503_hint_user'));
 
                 return Command::FAILURE;
             }

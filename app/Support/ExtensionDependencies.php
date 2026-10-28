@@ -71,12 +71,21 @@ class ExtensionDependencies
                 continue;
             }
 
-            $result[$identifier] = is_string($constraint) && trim($constraint) !== ''
-                ? trim($constraint)
-                : self::ANY_VERSION;
+            $result[$identifier] = self::normalizeConstraint($constraint);
         }
 
         return $result;
+    }
+
+    /**
+     * 버전 제약 값 하나를 정규화합니다 — `null`·빈 문자열·공백·문자열이 아닌 값은 `'*'`(버전 무관), 나머지는 앞뒤 공백 제거.
+     *
+     * @param  mixed  $constraint  manifest 의 버전 제약 값
+     * @return string 정규화한 제약
+     */
+    public static function normalizeConstraint(mixed $constraint): string
+    {
+        return is_string($constraint) && trim($constraint) !== '' ? trim($constraint) : self::ANY_VERSION;
     }
 
     /**

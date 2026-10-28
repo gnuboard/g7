@@ -950,6 +950,11 @@
     "dependencies": "依存関係: {{deps}}",
     "dependencies_label": "依存関係:",
     "no_dependencies": "依存関係: なし",
+    "dependency_unmet": {
+      "not_installed": "未インストール",
+      "inactive": "無効",
+      "version_mismatch": "バージョン不足 {{installed}} → {{required}}"
+    },
     "no_plugins": "インストール済みプラグインがありません。",
     "pagination_info": "全 {{total}} 件中 {{from}}-{{to}} 件表示",
     "update_available": "アップデート必要",
@@ -2606,6 +2611,10 @@
     "dependencies": "依存関係: {{deps}}",
     "dependencies_label": "依存関係:",
     "no_dependencies": "依存関係: なし",
+    "force_activate": {
+      "warning_user_503": "強制的に有効にすると、条件を満たすまでユーザー画面が「サービス一時停止(503)」の案内に切り替わります。",
+      "warning_admin_503": "強制的に有効にすると管理画面が503の案内に切り替わり、この画面から元に戻せません。復旧: php artisan template:activate {{identifier}}"
+    },
     "available": "利用可能",
     "no_templates": "インストールされたテンプレートはありません。",
     "pagination_info": "合計 {{total}}個中 {{from}}-{{to}}個を表示",

@@ -270,8 +270,11 @@ return [
             'missing_status' => [
                 'not_installed' => '미설치',
                 'inactive' => '비활성',
+                'version_mismatch' => '버전 미달 :installed → :required',
             ],
             'force_hint' => '강제로 활성화하려면 --force 옵션을 사용하세요.',
+            'force_503_hint_user' => '강제로 켜면 조건을 맞출 때까지 사용자 화면이 「서비스 일시 중단(503)」 안내로 바뀝니다.',
+            'force_503_hint_admin' => '강제로 켜면 관리자 화면이 503 안내로 바뀌어 관리자 화면에서 되돌릴 수 없습니다. 복구: php artisan template:activate :identifier',
         ],
         'deactivate' => [
             'success' => '템플릿 ":template" 비활성화 완료',

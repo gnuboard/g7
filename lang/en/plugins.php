@@ -60,7 +60,7 @@ return [
 
     // Dependency messages
     'dependency_not_active' => 'Dependency ":dependency" is not installed or inactive.',
-    'dependency_version_unmet' => 'The installed version (:installed) of dependency ":dependency" does not satisfy the required version (:required). Update the dependency or bypass with --force.',
+    'dependency_version_unmet' => 'The installed version (:installed) of dependency ":dependency" does not satisfy the required version (:required). Update the dependency first.',
 
     // Plugin service error messages
     'installation_failed' => 'Plugin installation failed: :error',
@@ -186,6 +186,7 @@ return [
             'missing_status' => [
                 'not_installed' => 'not installed',
                 'inactive' => 'inactive',
+                'version_mismatch' => 'version too low :installed → :required',
             ],
             'force_hint' => 'Use the --force option to activate anyway.',
         ],

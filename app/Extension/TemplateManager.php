@@ -16,8 +16,10 @@ use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\ExtensionUpdateFailedException;
 use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Concerns\ChecksDependencyVersions;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
+use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\DependencyVersionWarnings;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionInstallRollbackHelper;
@@ -37,11 +39,9 @@ use App\Services\LayoutExtensionService;
 use App\Services\LayoutService;
 use App\Services\TemplateService;
 use App\Support\BootDeferredLog;
-use App\Support\ExtensionDependencies;
 use App\Support\ExtensionIntegrations;
 use App\Support\LocalizedValue;
 use App\Support\StateContracts;
-use Composer\Semver\Semver;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +55,7 @@ use Illuminate\Support\Facades\Log;
  */
 class TemplateManager implements TemplateManagerInterface
 {
+    use ChecksDependencyVersions;
     use ResolvesExtensionIcons;
     use ResolvesUpdateCoreCompatibility;
     use Traits\CachesTemplateStatus;
@@ -697,7 +698,7 @@ class TemplateManager implements TemplateManagerInterface
      *
      * @param  string  $templateName  활성화할 템플릿명 (identifier)
      * @param  bool  $force  필요 의존성이 충족되지 않아도 강제 활성화 여부
-     * @return array{success: bool, warning?: bool, missing_modules?: array, missing_plugins?: array, message?: string} 활성화 결과
+     * @return array{success: bool, warning?: bool, missing_modules?: array, missing_plugins?: array, template_type?: string, current_active_identifier?: string|null, message?: string} 활성화 결과
      *
      * @throws \Exception 활성화 실패 시
      */
@@ -752,60 +753,25 @@ class TemplateManager implements TemplateManagerInterface
             is_array($replaced) && isset($replaced['identifier']) ? ['template:'.$replaced['identifier']] : [],
         );
 
-        // 의존성 검증: 필요한 모듈/플러그인이 활성화되어 있는지 확인
-        $missingModules = [];
-        $missingPlugins = [];
-
-        // 모듈 의존성 확인
-        // dependencies.modules는 연관 배열 형식 {"identifier": ">=version"} 또는 빈 객체 {}
-        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
-        $requiredModules = ExtensionDependencies::constraints($template['dependencies'] ?? [])['modules'];
-        foreach ($requiredModules as $requiredModuleIdentifier => $_versionConstraint) {
-            $requiredModule = $this->moduleRepository->findByIdentifier($requiredModuleIdentifier);
-            if (! $requiredModule) {
-                $missingModules[] = [
-                    'identifier' => $requiredModuleIdentifier,
-                    'name' => $requiredModuleIdentifier,
-                    'status' => 'not_installed',
-                ];
-            } elseif ($requiredModule->status !== ExtensionStatus::Active->value) {
-                $missingModules[] = [
-                    'identifier' => $requiredModule->identifier,
-                    'name' => $requiredModule->getLocalizedName(),
-                    'status' => 'inactive',
-                ];
-            }
-        }
-
-        // 플러그인 의존성 확인
-        // dependencies.plugins는 연관 배열 형식 {"identifier": ">=version"} 또는 빈 객체 {}
-        $requiredPlugins = ExtensionDependencies::constraints($template['dependencies'] ?? [])['plugins'];
-        foreach ($requiredPlugins as $requiredPluginIdentifier => $_versionConstraint) {
-            $requiredPlugin = $this->pluginRepository->findByIdentifier($requiredPluginIdentifier);
-            if (! $requiredPlugin) {
-                $missingPlugins[] = [
-                    'identifier' => $requiredPluginIdentifier,
-                    'name' => $requiredPluginIdentifier,
-                    'status' => 'not_installed',
-                ];
-            } elseif ($requiredPlugin->status !== ExtensionStatus::Active->value) {
-                $missingPlugins[] = [
-                    'identifier' => $requiredPlugin->identifier,
-                    'name' => $requiredPlugin->getLocalizedName(),
-                    'status' => 'inactive',
-                ];
-            }
-        }
+        // 의존성 검증: 필요한 모듈/플러그인이 설치·활성이고 요구 버전을 충족하는지 확인한다. 종전 사본은 버전 제약을 버려
+        // 버전 미달 의존 위에서도 활성화가 통과하고, 직후 런타임 미들웨어가 같은 미달로 화면 전체를 503 으로 내렸다(#152).
+        // 판정은 설치·런타임과 같은 원천(DependencyEnricher)을 쓴다 — 사유: not_installed·inactive·version_mismatch
+        $unmet = $this->collectUnmetDependencies($template['dependencies'] ?? []);
+        $missingModules = $unmet['modules'];
+        $missingPlugins = $unmet['plugins'];
 
         $hasMissingDependencies = ! empty($missingModules) || ! empty($missingPlugins);
 
         if ($hasMissingDependencies && ! $force) {
             // 필요한 의존성이 충족되지 않고 강제 활성화가 아닌 경우 경고 반환
+            // template_type·current_active_identifier — 강제 활성화 창이 타입별 503 경고(관리자면 복구 명령)를 고른다
             return [
                 'success' => false,
                 'warning' => true,
                 'missing_modules' => $missingModules,
                 'missing_plugins' => $missingPlugins,
+                'template_type' => (string) ($template['type'] ?? ''),
+                'current_active_identifier' => is_array($replaced) ? ($replaced['identifier'] ?? null) : null,
                 'message' => __('templates.warnings.missing_dependencies'),
             ];
         }
@@ -1617,58 +1583,21 @@ class TemplateManager implements TemplateManagerInterface
             'template'
         );
 
-        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
-        $dependencies = ExtensionDependencies::constraints($template['dependencies'] ?? []);
+        // 활성화·런타임과 같은 판정식(DependencyEnricher) — 목록형·빈 제약은 '*', 꺼진 확장은 미충족(#152)
+        $unmet = $this->collectUnmetDependencies($template['dependencies'] ?? []);
         $unmetDependencies = [];
 
-        // 모듈 의존성 확인
-        if (isset($dependencies['modules']) && ! empty($dependencies['modules'])) {
-            foreach ($dependencies['modules'] as $moduleName => $versionConstraint) {
-                // identifier 컬럼으로 활성화된 모듈 조회
-                $module = $this->moduleRepository->findActiveByIdentifier($moduleName);
-                if (! $module) {
-                    $unmetDependencies[] = __('templates.errors.dependency_not_met', [
-                        'dependency' => $moduleName,
-                        'type' => 'module',
-                    ]);
-
-                    continue;
-                }
-
-                // 버전 체크
-                if (! $this->checkVersionConstraint($module->version, $versionConstraint)) {
-                    $unmetDependencies[] = __('templates.errors.version_mismatch', [
-                        'dependency' => $moduleName,
-                        'required' => $versionConstraint,
-                        'installed' => $module->version,
-                    ]);
-                }
-            }
-        }
-
-        // 플러그인 의존성 확인
-        if (isset($dependencies['plugins']) && ! empty($dependencies['plugins'])) {
-            foreach ($dependencies['plugins'] as $pluginName => $versionConstraint) {
-                // identifier 컬럼으로 활성화된 플러그인 조회
-                $plugin = $this->pluginRepository->findActiveByIdentifier($pluginName);
-                if (! $plugin) {
-                    $unmetDependencies[] = __('templates.errors.dependency_not_met', [
-                        'dependency' => $pluginName,
-                        'type' => 'plugin',
-                    ]);
-
-                    continue;
-                }
-
-                // 버전 체크
-                if (! $this->checkVersionConstraint($plugin->version, $versionConstraint)) {
-                    $unmetDependencies[] = __('templates.errors.version_mismatch', [
-                        'dependency' => $pluginName,
-                        'required' => $versionConstraint,
-                        'installed' => $plugin->version,
-                    ]);
-                }
-            }
+        foreach ([...$unmet['modules'], ...$unmet['plugins']] as $item) {
+            $unmetDependencies[] = $item['status'] === DependencyEnricher::STATUS_VERSION_MISMATCH
+                ? __('templates.errors.version_mismatch', [
+                    'dependency' => $item['identifier'],
+                    'required' => $item['required_version'],
+                    'installed' => $item['installed_version'],
+                ])
+                : __('templates.errors.dependency_not_met', [
+                    'dependency' => $item['identifier'],
+                    'type' => $item['type'],
+                ]);
         }
 
         if (! empty($unmetDependencies)) {
@@ -1677,25 +1606,15 @@ class TemplateManager implements TemplateManagerInterface
     }
 
     /**
-     * 버전 제약조건을 검증합니다.
+     * 버전 제약조건을 검증합니다 — 판정식 원천(DependencyEnricher)에 위임합니다(빈 제약·null = 제약 없음, 예외 없음).
      *
-     * @param  string  $installedVersion  설치된 버전
-     * @param  string  $versionConstraint  요구 버전 제약조건 (예: '>=1.0.0', '^2.0', '~1.2.3')
+     * @param  string|null  $installedVersion  설치된 버전
+     * @param  mixed  $versionConstraint  요구 버전 제약조건 (예: '>=1.0.0', '^2.0', '~1.2.3')
      * @return bool 제약조건 충족 여부
      */
-    protected function checkVersionConstraint(string $installedVersion, string $versionConstraint): bool
+    protected function checkVersionConstraint(?string $installedVersion, mixed $versionConstraint): bool
     {
-        try {
-            return Semver::satisfies($installedVersion, $versionConstraint);
-        } catch (\Exception $e) {
-            Log::warning('Version constraint check failed', [
-                'installed_version' => $installedVersion,
-                'constraint' => $versionConstraint,
-                'error' => $e->getMessage(),
-            ]);
-
-            return false;
-        }
+        return DependencyEnricher::checkVersionConstraint($installedVersion, $versionConstraint);
     }
 
     /**
@@ -2752,69 +2671,35 @@ class TemplateManager implements TemplateManagerInterface
             ];
         }
 
-        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
-        $dependencies = ExtensionDependencies::constraints($template['dependencies'] ?? []);
-        $moduleDependencies = $dependencies['modules'];
-        $pluginDependencies = $dependencies['plugins'];
-
+        // 설치·활성화와 같은 판정식(DependencyEnricher). 런타임만 업데이트 중(updating)인 확장을 활성으로 본다 —
+        // 의존 모듈을 업데이트하는 잠깐 동안 사이트 전체가 503 이 되지 않게 한다(#152 D2).
         $moduleStatuses = [];
         $pluginStatuses = [];
         $allMet = true;
 
-        // 모듈 의존성 확인
-        foreach ($moduleDependencies as $moduleName => $versionConstraint) {
-            // 먼저 설치된 모듈 조회 (활성화 여부와 무관)
-            $module = $this->moduleRepository->findByIdentifier($moduleName);
-            $activeModule = $module && $module->status === ExtensionStatus::Active->value;
-
+        foreach (DependencyEnricher::enrich($template['dependencies'] ?? [], true) as $item) {
             $status = [
-                'identifier' => $moduleName,
-                'name' => $module ? $module->getLocalizedName() : $moduleName,
-                'required_version' => $versionConstraint,
-                'installed_version' => $module?->version,
-                'is_active' => $activeModule,
-                'version_met' => false,
-                'met' => false,
+                'identifier' => $item['identifier'],
+                'name' => $item['name'],
+                'type' => $item['type'],
+                'status' => $item['status'],
+                'required_version' => $item['required_version'],
+                'installed_version' => $item['installed_version'],
+                'is_active' => $item['is_active'],
+                // 하위 호환 — 꺼졌거나 미설치면 버전 비교 자체를 하지 않았으므로 false
+                'version_met' => $item['is_active'] && $item['status'] !== DependencyEnricher::STATUS_VERSION_MISMATCH,
+                'met' => $item['is_met'],
             ];
-
-            if ($activeModule) {
-                $status['version_met'] = $this->checkVersionConstraint($module->version, $versionConstraint);
-                $status['met'] = $status['version_met'];
-            }
 
             if (! $status['met']) {
                 $allMet = false;
             }
 
-            $moduleStatuses[] = $status;
-        }
-
-        // 플러그인 의존성 확인
-        foreach ($pluginDependencies as $pluginName => $versionConstraint) {
-            // 먼저 설치된 플러그인 조회 (활성화 여부와 무관)
-            $plugin = $this->pluginRepository->findByIdentifier($pluginName);
-            $activePlugin = $plugin && $plugin->status === ExtensionStatus::Active->value;
-
-            $status = [
-                'identifier' => $pluginName,
-                'name' => $plugin ? $plugin->getLocalizedName() : $pluginName,
-                'required_version' => $versionConstraint,
-                'installed_version' => $plugin?->version,
-                'is_active' => $activePlugin,
-                'version_met' => false,
-                'met' => false,
-            ];
-
-            if ($activePlugin) {
-                $status['version_met'] = $this->checkVersionConstraint($plugin->version, $versionConstraint);
-                $status['met'] = $status['version_met'];
+            if ($item['type'] === 'module') {
+                $moduleStatuses[] = $status;
+            } else {
+                $pluginStatuses[] = $status;
             }
-
-            if (! $status['met']) {
-                $allMet = false;
-            }
-
-            $pluginStatuses[] = $status;
         }
 
         return [

@@ -185,6 +185,7 @@ return [
             'missing_status' => [
                 'not_installed' => '未インストール',
                 'inactive' => '無効',
+                'version_mismatch' => 'バージョン不足 :installed → :required',
             ],
             'force_hint' => '強制的に有効化するには --force オプションを使用してください。',
         ],
@@ -327,5 +328,5 @@ return [
         'update_failed' => 'プラグイン設定のアップデートに失敗しました: :error',
         'updated' => 'プラグイン設定が正常にアップデートされました。',
     ],
-    'dependency_version_unmet' => '依存する「:dependency」のインストール済みバージョン(:installed)が要求バージョン(:required)を満たしていません。依存する拡張を更新するか、--force で回避してください。',
+    'dependency_version_unmet' => '依存する「:dependency」のインストール済みバージョン(:installed)が要求バージョン(:required)を満たしていません。先に依存する拡張を更新してください。',
 ];

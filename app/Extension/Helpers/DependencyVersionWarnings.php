@@ -2,6 +2,13 @@
 
 namespace App\Extension\Helpers;
 
+use App\Contracts\Extension\ModuleManagerInterface;
+use App\Contracts\Extension\PluginManagerInterface;
+use App\Contracts\Extension\TemplateManagerInterface;
+use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Extension\Support\LifecycleWarnings;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
@@ -13,6 +20,10 @@ use Illuminate\Support\Facades\Log;
  * manifest 의 `dependencies` 를 지금 설치 상태와 대조해, 없거나 꺼져 있거나 버전이 모자란 의존을 결과
  * (`dependency_warnings`)·완료 문구·로그로 알린다. 갱신을 거부하지 않는 이유: 코어 업데이트 뒤 번들 일괄 업데이트처럼
  * 의존 확장이 같은 흐름에서 곧 따라 올라오는 경우가 정상 경로이고, 거부하면 그 흐름 전체가 멈춘다.
+ *
+ * 역방향({@see forDependents()}): 의존 **대상**의 판이 내려가거나 꺼지는 경로(강제 업데이트·`install --force`·멈춘
+ * 업데이트 정리·강제 비활성화)는 그 확장을 요구하던 활성 템플릿·모듈·플러그인을 다시 보지 않아, 의존자가 조용히 깨졌다
+ * (템플릿이면 화면 전체 503). 작업은 막지 않고 깨지는 의존자를 안내(notice)로 알린다(#152).
  */
 final class DependencyVersionWarnings
 {
@@ -66,9 +77,9 @@ final class DependencyVersionWarnings
                 'installed' => (string) ($item['installed_version'] ?? ''),
             ];
 
-            $message = match (true) {
-                $item['installed_version'] === null => __('extensions.warnings.dependency_not_installed', $params),
-                ! $item['is_active'] => __('extensions.warnings.dependency_inactive', $params),
+            $message = match ($item['status']) {
+                DependencyEnricher::STATUS_NOT_INSTALLED => __('extensions.warnings.dependency_not_installed', $params),
+                DependencyEnricher::STATUS_INACTIVE => __('extensions.warnings.dependency_inactive', $params),
                 default => __('extensions.warnings.dependency_version_unmet', $params),
             };
 
@@ -87,21 +98,140 @@ final class DependencyVersionWarnings
     }
 
     /**
+     * 이 확장을 의존으로 선언한 활성 템플릿·모듈·플러그인 중, 지금 상태로는 그 의존을 충족하지 못하는 것을 찾습니다.
+     *
+     * 의존 대상의 판이 내려가거나 꺼진 뒤 부른다. 판정은 활성화와 같은 원천(DependencyEnricher)이다. 수집 중 예외는 삼키고
+     * 로그만 남긴다 — 안내 수집이 본 작업(업데이트·설치·정리·비활성화)을 깨지 않게 한다.
+     *
+     * @param  string  $type  상태가 바뀐 확장 종류 (`module`·`plugin`)
+     * @param  string  $identifier  상태가 바뀐 확장 식별자
+     * @param  bool  $versionOnly  판만 본다(꺼짐은 따지지 않음) — 곧 다시 켜지는 흐름(멈춘 업데이트 정리)에서 일시적인 「꺼짐」을 알리지 않는다
+     * @return list<array{direction: string, dependent_type: string, dependent_identifier: string, dependent_name: string, identifier: string, type: string, required_version: string, installed_version: string|null, status: string, message: string}> 깨지는 의존자 목록
+     */
+    public static function forDependents(string $type, string $identifier, bool $versionOnly = false): array
+    {
+        if (! in_array($type, ['module', 'plugin'], true)) {
+            return [];
+        }
+
+        try {
+            $finder = $type === 'module' ? 'findActiveByModuleDependency' : 'findActiveByPluginDependency';
+            $targetRecord = app($type === 'module' ? ModuleRepositoryInterface::class : PluginRepositoryInterface::class)
+                ->findByIdentifier($identifier);
+
+            // 의존자 종류별 (저장소, manifest 의존 선언 읽기)
+            $sources = [
+                'template' => [TemplateRepositoryInterface::class, fn (object $record) => app(TemplateManagerInterface::class)->getTemplate($record->identifier)['dependencies'] ?? []],
+                'module' => [ModuleRepositoryInterface::class, fn (object $record) => app(ModuleManagerInterface::class)->getModule($record->identifier)?->getDependencies() ?? []],
+                'plugin' => [PluginRepositoryInterface::class, fn (object $record) => app(PluginManagerInterface::class)->getPlugin($record->identifier)?->getDependencies() ?? []],
+            ];
+
+            $result = [];
+            foreach ($sources as $dependentType => [$repository, $readDependencies]) {
+                foreach (app($repository)->{$finder}($identifier) as $dependent) {
+                    $dependencies = $readDependencies($dependent);
+
+                    foreach (DependencyEnricher::iterate(is_array($dependencies) ? $dependencies : []) as $dependency) {
+                        if ($dependency['type'] !== $type || $dependency['identifier'] !== $identifier) {
+                            continue;
+                        }
+
+                        $status = $versionOnly && $targetRecord !== null
+                            ? (DependencyEnricher::checkVersionConstraint($targetRecord->version, $dependency['constraint']) ? DependencyEnricher::STATUS_MET : DependencyEnricher::STATUS_VERSION_MISMATCH)
+                            : DependencyEnricher::statusOf($targetRecord, $dependency['constraint']);
+                        if ($status === DependencyEnricher::STATUS_MET) {
+                            continue;
+                        }
+
+                        $item = [
+                            'direction' => 'dependent',
+                            'dependent_type' => $dependentType,
+                            'dependent_identifier' => (string) $dependent->identifier,
+                            'dependent_name' => DependencyEnricher::displayName($dependent, (string) $dependent->identifier),
+                            'identifier' => $identifier,
+                            'type' => $type,
+                            'required_version' => $dependency['constraint'],
+                            'installed_version' => $targetRecord?->version,
+                            'status' => $status,
+                        ];
+
+                        $message = __('extensions.warnings.dependent_unmet', [
+                            'dependent_type' => __('extensions.types.'.$dependentType),
+                            'dependent' => $item['dependent_name'],
+                            'identifier' => $identifier,
+                            'required' => $dependency['constraint'],
+                            'state' => DependencyEnricher::describeReason($item),
+                        ]);
+                        if ($dependentType === 'template') {
+                            $message .= ' '.__('extensions.warnings.dependent_template_503');
+                        }
+
+                        $result[] = [...$item, 'message' => $message];
+                    }
+                }
+            }
+
+            return $result;
+        } catch (\Throwable $e) {
+            Log::warning('의존자 검사 실패 — 안내 없이 진행합니다', ['type' => $type, 'identifier' => $identifier, 'error' => $e->getMessage()]);
+
+            return [];
+        }
+    }
+
+    /**
+     * 깨지는 의존자를 생명주기 안내(notice)로 남깁니다 — 관리자 결과 창과 CLI 가 보여 주고 종료 코드는 바꾸지 않습니다.
+     *
+     * `install --force`·멈춘 업데이트 정리·강제 비활성화 뒤에 부른다.
+     *
+     * @param  string  $type  상태가 바뀐 확장 종류 (`module`·`plugin`)
+     * @param  string  $identifier  상태가 바뀐 확장 식별자
+     * @param  bool  $versionOnly  판만 본다 ({@see forDependents()})
+     * @return list<array<string, mixed>> 남긴 의존자 목록 ({@see forDependents()})
+     */
+    public static function noticeDependents(string $type, string $identifier, bool $versionOnly = false): array
+    {
+        $dependents = self::forDependents($type, $identifier, $versionOnly);
+
+        foreach ($dependents as $dependent) {
+            LifecycleWarnings::current()->notice('dependents', $dependent['dependent_identifier'], $dependent['message']);
+        }
+
+        if ($dependents !== []) {
+            Log::warning('의존 대상 상태 변경 — 의존하는 확장이 요구 조건을 더는 충족하지 못합니다', [
+                'type' => $type,
+                'identifier' => $identifier,
+                'dependents' => array_column($dependents, 'dependent_identifier'),
+            ]);
+        }
+
+        return $dependents;
+    }
+
+    /**
      * 갱신 완료 문구 뒤에 의존 경고를 이어 붙입니다 — 관리자 업데이트 창은 서버가 보낸 완료 문구를 그대로 보여 준다.
      *
      * @param  string  $message  완료 문구
-     * @param  array<int, array{message: string}>  $warnings  {@see forDependencies()} 결과
+     * @param  array<int, array{message: string, direction?: string}>  $warnings  {@see forDependencies()}·{@see forDependents()} 결과
      * @return string 경고를 덧붙인 문구 (경고가 없으면 그대로)
      */
     public static function appendToMessage(string $message, array $warnings): string
     {
-        if ($warnings === []) {
-            return $message;
+        // 자기 의존(이 확장이 요구하는 것)과 역방향(이 확장을 요구하는 의존자, direction=dependent)은 문장이 다르다
+        $own = array_values(array_filter($warnings, fn (array $w) => ($w['direction'] ?? null) !== 'dependent'));
+        $dependents = array_values(array_filter($warnings, fn (array $w) => ($w['direction'] ?? null) === 'dependent'));
+
+        if ($own !== []) {
+            $message .= ' '.__('extensions.warnings.dependency_summary', [
+                'list' => implode(' / ', array_column($own, 'message')),
+            ]);
         }
 
-        return $message.' '.__('extensions.warnings.dependency_summary', [
-            'list' => implode(' / ', array_column($warnings, 'message')),
-        ]);
+        if ($dependents !== []) {
+            $message .= ' '.implode(' ', array_column($dependents, 'message'));
+        }
+
+        return $message;
     }
 
     /**

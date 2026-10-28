@@ -1,5 +1,6 @@
-<!-- **이 템플릿이 요구하는 확장이 없는데도** 활성하겠다는 확인 창. 활성 창이 409 를 받았을 때 열린다.
-  무엇이 없는지는 전역 `activateWarningData` 에 담긴 서버 오류를 읽는다.
+<!-- **이 템플릿이 요구하는 확장이 없거나 꺼져 있거나 버전이 모자란데도** 활성하겠다는 확인 창. 활성 창이 409 를 받았을 때 열린다.
+  무엇이 모자란지는 전역 `activateWarningData` 에 담긴 서버 오류(항목별 status·installed_version·required_version, template_type)를 읽는다.
+  강제로 켜면 조건을 맞출 때까지 그 템플릿의 화면이 503 안내가 되므로 타입별 경고를 늘 보인다 — 관리자 템플릿이면 이 화면으로 되돌릴 수 없어 복구 명령을 함께 적는다.
   템플릿에는 강제 **비활성** 창이 없다 — 템플릿에 의존하는 확장이라는 방향이 없기 때문이다. -->
 <partial description="템플릿 강제 활성화 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_force_activate_modal">
   <modal data-type="composite" data-ref="template_force_activate_modal" title="$t:admin.templates.modals.activate_warning_title" size="sm">
@@ -18,6 +19,7 @@
             <span class="text-body">{{module.name || module.identifier}}</span>
             <span data-if="{{module.status === 'inactive'}}" class="text-body text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.modules.status.inactive</span>
             <span data-if="{{module.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded">$t:admin.modules.status.not_installed</span>
+            <span data-if="{{module.status === 'version_mismatch'}}" class="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded">$t:admin.modules.status.version_mismatch ({{module.installed_version}} → {{module.required_version}})</span>
           </div>
         </div>
       </div>
@@ -29,10 +31,18 @@
             <span class="text-body">{{plugin.name || plugin.identifier}}</span>
             <span data-if="{{plugin.status === 'inactive'}}" class="text-body text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 rounded">$t:admin.plugins.status.inactive</span>
             <span data-if="{{plugin.status === 'not_installed'}}" class="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 rounded">$t:admin.plugins.status.not_installed</span>
+            <span data-if="{{plugin.status === 'version_mismatch'}}" class="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded">$t:admin.plugins.status.version_mismatch ({{plugin.installed_version}} → {{plugin.required_version}})</span>
           </div>
         </div>
       </div>
       <p class="mt-4 text-label">$t:admin.templates.modals.force_activate_description</p>
+      <div data-ref="force_activate_503_warning" class="alert-warning mt-3">
+        <icon name="warning" class="text-xl text-yellow-700 dark:text-yellow-500 flex-shrink-0 mt-0.5"/>
+        <div>
+          <p data-if="{{(_global.activateWarningData?.template_type ?? _global.selectedTemplate?.type) !== 'admin'}}" class="text-warning-soft">$t:admin.templates.force_activate.warning_user_503</p>
+          <p data-if="{{(_global.activateWarningData?.template_type ?? _global.selectedTemplate?.type) === 'admin'}}" class="text-warning-soft">$t:admin.templates.force_activate.warning_admin_503|identifier={{_global.activateWarningData?.current_active_identifier ?? 'sirsoft-admin_basic'}}</p>
+        </div>
+      </div>
     </div>
     <div class="modal-footer-buttons">
       <button type="button" class="btn btn-secondary" disabled="{{_global.isForceActivating}}">
