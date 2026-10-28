@@ -4,7 +4,7 @@ return [
     // 기존 메시지
     'not_found' => '":module" 모듈을 찾을 수 없습니다.',
     'dependency_not_active' => '의존하는 ":dependency" 모듈이 설치되지 않았거나 비활성 상태입니다.',
-    'dependency_version_unmet' => '의존하는 ":dependency" 의 설치 버전(:installed)이 요구 버전(:required)을 충족하지 않습니다. 의존 확장을 업데이트하거나 --force 로 우회하세요.',
+    'dependency_version_unmet' => '의존하는 ":dependency" 의 설치 버전(:installed)이 요구 버전(:required)을 충족하지 않습니다. 의존 확장을 먼저 업데이트하세요.',
 
     'status' => [
         'active' => '활성',
@@ -67,6 +67,7 @@ return [
             'missing_status' => [
                 'not_installed' => '미설치',
                 'inactive' => '비활성',
+                'version_mismatch' => '버전 미달 :installed → :required',
             ],
             'force_hint' => '강제로 활성화하려면 --force 옵션을 사용하세요.',
         ],

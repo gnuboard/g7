@@ -43,6 +43,8 @@ return [
         'cascade_permission_denied' => 'You do not have permission to install or activate the :type (:identifier) selected for installation together.',
         'invalid_type' => 'Invalid extension type.',
         'not_auto_deactivated' => 'This extension was not automatically deactivated due to core version incompatibility.',
+        'recover_dependencies_unmet' => 'Could not recover — required extensions do not meet the requirements: :list',
+        'recover_failed' => 'Could not recover — :reason',
         'hidden_extension' => 'Hidden (internal-only) extensions are not exposed to user actions.',
         'internal_error' => 'An internal server error occurred. Check the server log for details.',
         'seeder_failed' => 'Installation was cancelled because seeding default data (:seeder) failed: :message',
@@ -61,6 +63,8 @@ return [
         'dependency_not_installed' => ':identifier :required is required, but it is not installed',
         'dependency_inactive' => 'Extension :identifier is turned off (requires :required)',
         'dependency_summary' => 'However, some dependencies do not meet the requirements — :list. Update or turn on those extensions as well.',
+        'dependent_unmet' => ':dependent_type ":dependent" requires ":identifier" :required, which is no longer met (now :state).',
+        'dependent_template_503' => 'Screens using this template will show the 503 notice.',
         'archive_backslash_normalized' => 'Extracted after normalizing :count backslash (\\) paths to /',
         'seeder_class_name_mismatch' => 'Skipped seeder file :file because the inferred class :class was not found',
         'storage_cleanup_incomplete' => 'Could not delete the whole extension storage folder — check the server file permissions and delete the remaining files manually',
@@ -71,6 +75,14 @@ return [
         'column_message' => 'Reason',
         'composer_install_failed' => 'Installing Composer dependencies failed — run composer install manually in the extension directory',
         'php_extension_missing' => 'The server is missing the PHP extension(s) :extensions required by this extension — related features may not work until they are installed',
+    ],
+
+    // Unmet required dependency (dependencies) reasons — shared by recovery failure, cascade install failure and CLI (7.1.4)
+    'dependency_status' => [
+        'label' => ':name (:identifier)',
+        'not_installed' => 'not installed',
+        'inactive' => 'disabled',
+        'version_mismatch' => 'version too low :installed → :required',
     ],
 
     // Optional integration (integrations) notices — informational only, never blocking (7.1.4)

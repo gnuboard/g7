@@ -107,7 +107,7 @@ php artisan module:activate [identifier]
 - 이 모듈을 끌 때 함께 꺼진 언어팩을 함께 켜고 개수와 언어를 출력 (`--without-language-packs` 를 붙이면 켜지 않고 목록만 출력 — 관리자 화면 「언어팩 다시 켜기」 창에서 나중에 켤 수 있음)
 
 **옵션**:
-- `--force`: 필요한 의존 확장이 없어도 강제로 활성화
+- `--force`: 필요한 의존 확장이 없거나 꺼져 있거나 버전이 모자라도 강제로 활성화
 - `--without-language-packs`: 함께 꺼진 언어팩을 다시 켜지 않음
 
 #### 모듈 비활성화

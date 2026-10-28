@@ -42,7 +42,14 @@
         },
         "503": {
             "title": "잠시 이용이 어려워요",
-            "description": "서비스를 점검 중입니다. 잠시 후 다시 시도해 주세요."
+            "description": "서비스를 점검 중입니다. 잠시 후 다시 시도해 주세요.",
+            "unmet_dependencies": "필요한 확장 기능의 조건이 맞지 않습니다.",
+            "required_modules": "필요한 모듈",
+            "required_plugins": "필요한 플러그인",
+            "contact_admin": "관리자에게 문의하여 필요한 확장 기능을 설치·활성화하거나 업데이트해 주세요.",
+            "reason_not_installed": "미설치",
+            "reason_inactive": "꺼짐",
+            "reason_version_mismatch": "버전 미달 {{installed}} → {{required}}"
         },
         "maintenance": {
             "title": "점검 중입니다",

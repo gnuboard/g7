@@ -31,6 +31,8 @@ return [
         'cascade_permission_denied' => '同梱インストール対象の :type (:identifier)をインストールまたは有効化する権限がありません。',
         'invalid_type' => '無効な拡張タイプです。',
         'not_auto_deactivated' => 'この拡張はコアバージョン互換性の問題により自動無効化された状態ではありません。',
+        'recover_dependencies_unmet' => '復旧できませんでした — 必要な拡張が条件を満たしていません: :list',
+        'recover_failed' => '復旧できませんでした — :reason',
         'hidden_extension' => '内部用(非表示)拡張はユーザーに非公開です。',
         'internal_error' => 'サーバー内部エラーが発生しました。詳細はサーバーログを確認してください。',
         'seeder_failed' => '初期データの作成(:seeder)に失敗したため、インストールを取り消しました: :message',
@@ -55,6 +57,8 @@ return [
         'dependency_not_installed' => ':identifier :required が必要ですが、インストールされていません',
         'dependency_inactive' => '拡張 :identifier が無効になっています(必要バージョン :required)',
         'dependency_summary' => 'ただし、依存する拡張が要件を満たしていません — :list。その拡張も更新するか有効にしてください。',
+        'dependent_unmet' => ':dependent_type「:dependent」が要求する「:identifier」:required を満たさなくなりました(現在 :state)。',
+        'dependent_template_503' => 'このテンプレートを使う画面が503の案内に切り替わります。',
         'archive_backslash_normalized' => 'バックスラッシュ(\\)のパス :count 件を / に正規化して展開しました',
         'seeder_class_name_mismatch' => 'シーダーファイル :file はありますが、推定したクラス :class が見つからないためスキップしました',
         'storage_cleanup_incomplete' => '拡張機能の保存フォルダーをすべて削除できませんでした — サーバーのファイル権限を確認し、残ったファイルを手動で削除してください',
@@ -66,6 +70,14 @@ return [
         'composer_install_failed' => 'Composer 依存関係のインストールに失敗しました — 拡張フォルダで composer install を手動で実行してください',
         'php_extension_missing' => 'この拡張に必要な PHP 拡張 :extensions がサーバーにありません — 関連機能が動作しない可能性があるため、インストールしてください',
     ],
+    // 必須依存(dependencies)未充足の理由 — 復旧失敗・連鎖インストール失敗・CLI が同じ文を使う (7.1.4)
+    'dependency_status' => [
+        'label' => ':name(:identifier)',
+        'not_installed' => '未インストール',
+        'inactive' => '無効',
+        'version_mismatch' => 'バージョン不足 :installed → :required',
+    ],
+
     // 任意連携(integrations)の案内 — ブロックせず知らせるだけ (7.1.4)
     'integrations' => [
         'notice_not_installed' => ':name 未インストール',

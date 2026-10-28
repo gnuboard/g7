@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Traits\LabelsMissingDependencies;
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Console\Commands\Traits\ReportsIntegrationNotices;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 
 class ActivatePluginCommand extends Command
 {
+    use LabelsMissingDependencies;
     use LocalizesDescription;
     use RendersLayoutSyncResult;
     use ReportsIntegrationNotices;
@@ -84,9 +86,7 @@ class ActivatePluginCommand extends Command
                 if (! empty($result['missing_modules'])) {
                     $this->info(__('plugins.commands.activate.required_modules'));
                     foreach ($result['missing_modules'] as $module) {
-                        $statusLabel = $module['status'] === 'not_installed'
-                            ? __('plugins.commands.activate.missing_status.not_installed')
-                            : __('plugins.commands.activate.missing_status.inactive');
+                        $statusLabel = $this->missingDependencyStatusLabel('plugins', $module);
                         $this->line("   - {$module['identifier']} ({$module['name']}) [{$statusLabel}]");
                     }
                 }
@@ -94,9 +94,7 @@ class ActivatePluginCommand extends Command
                 if (! empty($result['missing_plugins'])) {
                     $this->info(__('plugins.commands.activate.required_plugins'));
                     foreach ($result['missing_plugins'] as $plugin) {
-                        $statusLabel = $plugin['status'] === 'not_installed'
-                            ? __('plugins.commands.activate.missing_status.not_installed')
-                            : __('plugins.commands.activate.missing_status.inactive');
+                        $statusLabel = $this->missingDependencyStatusLabel('plugins', $plugin);
                         $this->line("   - {$plugin['identifier']} ({$plugin['name']}) [{$statusLabel}]");
                     }
                 }

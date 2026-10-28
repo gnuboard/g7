@@ -965,6 +965,11 @@
     "dependencies": "Dependencies: {{deps}}",
     "dependencies_label": "Dependencies:",
     "no_dependencies": "Dependencies: None",
+    "dependency_unmet": {
+      "not_installed": "not installed",
+      "inactive": "disabled",
+      "version_mismatch": "version too low {{installed}} → {{required}}"
+    },
     "no_plugins": "No plugins installed.",
     "pagination_info": "Showing {{from}}-{{to}} of {{total}}",
     "update_available": "Update Available",
@@ -2639,6 +2644,10 @@
     "dependencies": "Dependencies: {{deps}}",
     "dependencies_label": "Dependencies:",
     "no_dependencies": "Dependencies: None",
+    "force_activate": {
+      "warning_user_503": "If you force it, the user site shows the \"Service temporarily unavailable (503)\" notice until the requirements are met.",
+      "warning_admin_503": "If you force it, the admin screens show the 503 notice and you cannot undo it from here. To recover: php artisan template:activate {{identifier}}"
+    },
     "available": "available",
     "no_templates": "No templates installed.",
     "pagination_info": "Showing {{from}}-{{to}} of {{total}}",

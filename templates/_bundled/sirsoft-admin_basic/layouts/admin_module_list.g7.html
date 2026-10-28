@@ -312,7 +312,7 @@
           vendor: p.vendor,
           iconUrl: p.icon_url,
           fallbackIcon: 'cube',
-          dependencies: (p.dependencies ?? []).map(d => ({ type: d.type, name: d.name || d.identifier })),
+          dependencies: (p.dependencies ?? []).map(d => ({ type: d.type, name: d.name || d.identifier, unmet: d?.is_met === false, reason: d?.is_met === false ? (d.status === 'version_mismatch' ? $t('admin.plugins.dependency_unmet.version_mismatch', {installed: d.installed_version, required: d.required_version}) : (d.status === 'inactive' ? $t('admin.plugins.dependency_unmet.inactive') : $t('admin.plugins.dependency_unmet.not_installed'))) : undefined })),
           badges: [
             ...(p.status === 'active' ? [{ label: '$t:admin.modules.status.active', tone: 'success' }] : []),
             ...(p.status === 'inactive' ? [{ label: '$t:admin.modules.status.inactive', tone: 'neutral' }] : []),

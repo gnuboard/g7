@@ -347,8 +347,9 @@ class CascadeInstallOrchestrator
     {
         $missing = array_merge($activation['missing_modules'] ?? [], $activation['missing_plugins'] ?? []);
         if ($missing !== []) {
+            // 사유 원문(version_mismatch 등)을 내보내지 않고 사람이 읽는 문장으로 — 복구 실패·CLI 와 같은 포맷터(#152 D5)
             return __('extensions.errors.cascade_dependency_unmet_list', [
-                'list' => implode(', ', array_map(static fn (array $m): string => ($m['identifier'] ?? '').' ('.($m['status'] ?? '').')', $missing)),
+                'list' => DependencyEnricher::describeUnmet($missing),
             ]);
         }
 

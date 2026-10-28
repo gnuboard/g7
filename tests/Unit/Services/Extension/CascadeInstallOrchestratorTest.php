@@ -164,7 +164,9 @@ class CascadeInstallOrchestratorTest extends TestCase
             $this->fail('활성화 실패가 통과했다');
         } catch (RuntimeException $e) {
             $this->assertStringContainsString('shop', $e->getMessage());
-            $this->assertStringContainsString('base (not_installed)', $e->getMessage());
+            // 사유는 사람이 읽는 문장이다 — 원문(not_installed)을 내보내지 않는다(#152 D5)
+            $this->assertStringContainsString('base '.__('extensions.dependency_status.not_installed'), $e->getMessage());
+            $this->assertStringNotContainsString('(not_installed)', $e->getMessage());
         }
     }
 

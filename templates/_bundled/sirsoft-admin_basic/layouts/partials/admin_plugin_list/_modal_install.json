@@ -293,6 +293,15 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "if": "{{dep.is_installed && !dep.is_met && (dep.is_active || dep.blocked_reason === 'version_mismatch')}}",
+                            "props": {
+                                "className": "text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded"
+                            },
+                            "text": "$t:admin.plugins.modals.dependency_unmet_version ({{dep.installed_version}} → {{dep.required_version}})"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
                             "if": "{{dep.available && dep.can_select !== true}}",
                             "props": {
                                 "className": "text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded"

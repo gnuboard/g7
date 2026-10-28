@@ -59,10 +59,10 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | type | string | `admin` | 템플릿 타입 (admin: 관리자용, user: 사용자용) |
 | status | string | `active` | 상태 (active: 활성화, inactive: 비활성화, installing: 설치 중, uninstalling: 제거 중, updating: 업데이트 중) |
 | description | string | `그누보드7 기본 관리자 템플릿` | 템플릿 설명 (다국어 JSON) |
-| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}). 각 항목은 `{identifier, name, type}` 이고 `name` 은 항상 문자열이다 — 미설치이거나 이름이 비어 있으면 식별자 |
+| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}). 각 항목은 `{identifier, name, type, is_met, status, required_version, installed_version}` 이고 `name` 은 항상 문자열이다 — 미설치이거나 이름이 비어 있으면 식별자. `status` 는 `met`·`not_installed`·`inactive`·`version_mismatch` 중 하나(7.1.4), `required_version` 은 제약이 없으면(빈 값·목록형) `*`, `installed_version` 은 미설치면 null. 목록 카드가 미충족 의존을 사유와 함께 표시할 때 쓴다 |
 | integrations | array | `[]` | 함께 쓰면 연동되는(선택) 확장 목록 (manifest `integrations` 파생, 7.1.4) — 각 원소 `identifier`·`name`(현재 로케일)·`type`(module\|plugin\|template)·`is_installed`·`is_active`·`required_version`(버전 제약, 목록형·제약 없음은 `*`)·`installed_version`(미설치 null)·`is_met`(설치됨 && 제약 충족). 「버전 미달」 = `is_installed && !is_met`. 없어도 동작하므로 설치·활성화를 막지 않는다 |
 | integrated_by | array | `[]` | 이 확장을 선택 연동으로 선언한 **켜진** 확장 목록 (7.1.4) — 각 원소 `type`(module\|plugin\|template)·`identifier`·`name`(현재 로케일 문자열). 비활성화·제거 확인 창이 「연동 중인 확장」으로 보인다. 설치되지 않은 행은 빈 배열 |
-| dependencies_met | boolean | `true` | 의존하는 모듈/플러그인이 모두 설치·활성 상태로 충족되었는지 여부 (activate 선행 검사 파생) |
+| dependencies_met | boolean | `true` | 의존하는 모듈/플러그인이 모두 설치·활성이고 버전 제약까지 충족하는지 여부 — 활성화(activate)가 막는 조건, 사이트가 503 이 되는 조건과 같은 판정 |
 | icon_url | string\|null | `/api/extensions/template/sirsoft-admin_basic/icon?v=1.1.0` | 확장 아이콘을 내려받는 공개 주소 (없으면 null — 화면은 유형 글리프로 대체). `?v=` 는 캐시 무효화용 버전 |
 | icon_source | string | `convention` | 아이콘을 어디서 얻었는지 (`manifest` 선언 · `convention` 관례 파일 · `none` 없음) |
 | update_available | boolean | `false` | 최신 버전 대비 업데이트 가능 여부 |
@@ -311,13 +311,13 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.activate`)이 없는 경우 |
-| 409 | Conflict | 필요한 의존 모듈/플러그인이 충족되지 않은 경우 (`errors` 에 `warning`, `missing_modules`, `missing_plugins`, `message`) — `force=true` 로 우회 가능 |
+| 409 | Conflict | 필요한 의존 모듈/플러그인이 충족되지 않은 경우 (`errors` 에 `warning`, `missing_modules`, `missing_plugins`, `template_type`, `current_active_identifier`, `message`) — 각 항목은 `{identifier, name, type, status, required_version, installed_version}` 이고 `status` 는 `not_installed`·`inactive`·`version_mismatch`(7.1.4 부터) 중 하나다. `template_type` 은 켜려던 템플릿의 타입(user\|admin), `current_active_identifier` 는 지금 켜져 있는 같은 타입 템플릿(없으면 null). `force=true` 로 우회 가능 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 500 | Server Error | 활성화 처리 실패 (이미 활성 상태·미설치·코어 버전 비호환 등) |
 
 <!-- @generated:end -->
 
-**설명** 설치된 템플릿을 활성화합니다. 필요한 의존 모듈/플러그인이 충족되지 않으면 409(warning)로 누락 목록을 반환하며, `force=true`로 강제 활성화할 수 있습니다. 활성화 성공 시 재활성화로 되살아나는 번들 언어팩 목록(`pending_language_packs`)을 함께 반환합니다. `core.templates.activate` 권한이 필요합니다.
+**설명** 설치된 템플릿을 활성화합니다. 필요한 의존 모듈/플러그인이 없거나 꺼져 있거나 요구 버전에 못 미치면 409(warning)로 누락 목록을 반환하며, `force=true`로 강제 활성화할 수 있습니다. 강제로 켠 템플릿은 조건을 맞출 때까지 그 템플릿의 화면(사용자 템플릿이면 사용자 화면, 관리자 템플릿이면 관리자 화면)이 503 안내가 됩니다 — 관리자 템플릿은 `php artisan template:activate <이전 관리자 템플릿>` 으로 되돌립니다. 활성화 성공 시 재활성화로 되살아나는 번들 언어팩 목록(`pending_language_packs`)을 함께 반환합니다. `core.templates.activate` 권한이 필요합니다.
 
 
 ### POST /api/admin/templates/check-updates
@@ -97780,7 +97780,7 @@ _단건 응답: `data` 객체의 필드._
 | author | object | `{"name":"sirsoft","email":"contact@sirsoft.com","url":"ht…` | 작성자 사용자 객체 (uuid/name — author 관계 파생) |
 | release_date | string | `2026-10-10` | 배포일 |
 | g7_version | string | `>=7.0.0` | 요구하는 코어 최소 버전 (manifest requires.g7_version) |
-| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}). 각 항목은 `{identifier, name, type}` 이고 `name` 은 항상 문자열이다 — 미설치이거나 이름이 비어 있으면 식별자 |
+| dependencies | object | `{"modules":[],"plugins":[]}` | 의존하는 확장 맵 (manifest 파생 — {modules, plugins}). 각 항목은 `{identifier, name, type, is_met, status, required_version, installed_version}` 이고 `name` 은 항상 문자열이다 — 미설치이거나 이름이 비어 있으면 식별자. `status` 는 `met`·`not_installed`·`inactive`·`version_mismatch` 중 하나(7.1.4), `required_version` 은 제약이 없으면(빈 값·목록형) `*`, `installed_version` 은 미설치면 null. 목록 카드가 미충족 의존을 사유와 함께 표시할 때 쓴다 |
 | assets | object | `{"css":["assets\/css\/main.css","assets\/css\/ui-system.c…` | 프론트엔드 에셋 매니페스트 (manifest 파생 — js/css 진입점·로딩 전략) |
 | components | object | `{"basic":["a","button","checkbox","div","form","h1","h2",…` | 컴포넌트 트리 (레이아웃이 렌더할 컴포넌트 정의) |
 | preview | object | `{"thumbnail":"preview\/thumbnail.png","screenshots":["pre…` | 미리보기 정보 객체 |

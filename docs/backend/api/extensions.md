@@ -327,11 +327,12 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 그 확장 종류의 활성화 권한(`core.plugins.activate`·`core.modules.activate`·`core.templates.activate`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 (`extensions.errors.not_found`) |
+| 409 | Conflict | 확장이 요구하는 의존 모듈·플러그인이 없거나 꺼져 있거나 요구 버전에 못 미쳐 켜지 못한 경우(7.1.4) — `message` 에 사람이 읽는 사유 목록(`extensions.errors.recover_dependencies_unmet`), `errors.missing_modules`·`errors.missing_plugins` 에 항목별 `{identifier, name, type, status, required_version, installed_version}`. 의존과 무관한 이유(확장이 스스로 활성화를 거부·파일 없음)로 켜지 못하면 `message` 에 그 사유(`extensions.errors.recover_failed`)만 싣는다 |
 | 422 | Unprocessable Entity | 재검증 결과 여전히 코어 버전이 요구 버전에 미달하는 경우 — 글로벌 핸들러가 `core_version_mismatch` 로 변환 |
 
 <!-- @generated:end -->
 
-**설명** 코어와 재호환된 확장을 원클릭으로 복구(재활성화)합니다. 경로의 `{type}`/`{identifier}`로 대상을 지정하며, 대상이 `IncompatibleCore` 사유로 자동 비활성화된 상태인지 검증한 뒤 코어 버전 재검증을 거쳐 활성화합니다. 잘못된 타입은 422, 미존재 확장은 404, hidden 확장이나 자동 비활성화가 아닌 경우는 error_code와 함께 422를 반환하고, 재검증 실패 시 글로벌 핸들러가 core_version_mismatch로 변환합니다. `core.plugins.activate` 권한이 필요합니다. 재활성화 중 레이아웃 등록 같은 일부 항목이 실패하면(작업은 성공) 응답 `data.warnings` 에 경고 목록이 붙습니다(7.1.3+, 형식은 [공통 응답 — 부분 실패 경고](README.md#부분-실패-경고-datawarnings-713)).
+**설명** 코어와 재호환된 확장을 원클릭으로 복구(재활성화)합니다. 경로의 `{type}`/`{identifier}`로 대상을 지정하며, 대상이 `IncompatibleCore` 사유로 자동 비활성화된 상태인지 검증한 뒤 코어 버전 재검증을 거쳐 활성화합니다. 잘못된 타입은 422, 미존재 확장은 404, hidden 확장이나 자동 비활성화가 아닌 경우는 error_code와 함께 422를 반환하고, 재검증 실패 시 글로벌 핸들러가 core_version_mismatch로 변환합니다. 코어는 맞지만 의존 확장이 조건에 맞지 않거나 확장이 스스로 활성화를 거부해 켜지 못하면 409 와 사유를 돌려줍니다(7.1.4 — 종전에는 켜지지 않았는데도 성공으로 응답했습니다). `core.plugins.activate` 권한이 필요합니다. 재활성화 중 레이아웃 등록 같은 일부 항목이 실패하면(작업은 성공) 응답 `data.warnings` 에 경고 목록이 붙습니다(7.1.3+, 형식은 [공통 응답 — 부분 실패 경고](README.md#부분-실패-경고-datawarnings-713)).
 
 ### GET /api/admin/extensions/{type}/{identifier}/custom-assets
 <!-- @generated:start:api.admin.extensions.custom-assets.index -->

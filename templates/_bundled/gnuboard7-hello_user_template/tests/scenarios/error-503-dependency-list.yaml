@@ -1,0 +1,14 @@
+feature: Hello 사용자 템플릿 — 503 화면의 미충족 의존 목록
+
+description: |
+  활성 템플릿이 요구하는 모듈·플러그인이 조건에 맞지 않으면 코어가 errorData.modules/plugins 로 미충족 목록을 넘기는데
+  이 템플릿의 503 화면은 그 목록을 그리지 않았다(코어 7.1.4). sirsoft-basic 과 같은 목록·사유 블록(미설치·꺼짐·버전 미달)을 둔다.
+
+axes:
+  surface: [list, lang_keys]
+
+effects:
+  - error_503_lists_unmet_dependencies
+
+test_files:
+  - templates/_bundled/gnuboard7-hello_user_template/__tests__/layouts/error503DependencyList.test.ts
