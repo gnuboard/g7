@@ -16,7 +16,7 @@
             "type": "basic",
             "name": "P",
             "props": {
-                "className": "text-body"
+                "className": "ecommerce-text-body"
             },
             "text": "$t:sirsoft-ecommerce.admin.claim.modal.preset_delete.confirm|name={{_global.deletingPresetName}}"
         },
@@ -24,7 +24,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "ecommerce-modal-footer-buttons"
             },
             "children": [
                 {
@@ -38,7 +38,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{_global.isDeleting}}"
                     },
                     "children": [
@@ -119,7 +119,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 text-sm bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{_global.isDeleting}}"
                     },
                     "children": [
@@ -129,7 +129,7 @@
                             "if": "{{_global.isDeleting}}",
                             "props": {
                                 "name": "spinner",
-                                "className": "spinner-sm"
+                                "className": "ecommerce-spinner-sm"
                             }
                         },
                         {

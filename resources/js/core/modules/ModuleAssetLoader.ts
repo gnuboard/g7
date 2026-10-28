@@ -287,6 +287,51 @@ export class ModuleAssetLoader {
     }
 
     /**
+     * 템플릿이 선언한 확장 CSS 덮기 파일을 로드합니다.
+     *
+     * 목록은 서버가 `window.G7Config.extensionCssOverrides` 로 내려준다 — 템플릿
+     * `template.json` 의 `extension_css_overrides` 중 대상 확장이 활성이고 `targetVersion`
+     * 이 맞는 항목만 남긴 결과다(판정은 서버 몫, 버전이 어긋나면 빠져 확장 원본으로 폴백).
+     *
+     * 확장 번들 CSS 뒤, 운영자 추가 자산 앞에 붙여야 한다. 덮기 파일은 확장 CSS 와 같은
+     * 특이도로 쓰이므로 나중에 붙는 것이 이긴다.
+     *
+     * 실패해도 throw 하지 않는다 — 덮기 파일이 없으면 확장 원본 모양이 그대로 남을 뿐이다.
+     *
+     * @return Promise<void>
+     * @since engine-v1.86.0
+     */
+    async loadExtensionCssOverrides(): Promise<void> {
+        const overrides = parseExtensionCssOverridesFromConfig();
+
+        for (const override of overrides) {
+            const elementId = `g7-ext-css-override-${cssEscapeId(override.target)}`;
+
+            if (document.getElementById(elementId)) {
+                continue;
+            }
+
+            try {
+                await loadStylesheetWithRetry(
+                    convertToCurrentMode(override.url),
+                    { id: elementId },
+                    { label: `extension CSS override: ${override.target}` }
+                );
+                logger.log(`Extension CSS override loaded: ${override.target}`);
+            } catch (error) {
+                // 항목명은 사용자 어휘로 — 확장 식별자 원문을 배너에 내지 않는다(AssetFailureNotice 계약). 재시도는 같은 id 로 붙인다.
+                this.surfaceCssFailure(
+                    `override-${override.target}`,
+                    assetText('core.assets.extension_style_overrides', '템플릿 확장 스타일 조정'),
+                    override.url,
+                    error,
+                    elementId
+                );
+            }
+        }
+    }
+
+    /**
      * 병합 CSS 번들을 단일 `<link>` 로 로드합니다(중복 가드).
      *
      * @param key 번들 구분 키
@@ -473,9 +518,10 @@ export class ModuleAssetLoader {
      * @param label 사용자에게 보일 항목명
      * @param url 실패한 URL
      * @param error 마지막 시도의 에러
+     * @param elementId 재시도 때 지우고 같은 id 로 다시 붙일 `<link>` id(없으면 id 없이 붙인다)
      * @since engine-v1.62.0
      */
-    private surfaceCssFailure(assetKey: string, label: string, url: string, error: unknown): void {
+    private surfaceCssFailure(assetKey: string, label: string, url: string, error: unknown, elementId?: string): void {
         logger.warn(`Failed to load CSS after retries: ${assetKey} (${url})`, error);
         this.failedCssAssets.add(assetKey);
 
@@ -485,7 +531,10 @@ export class ModuleAssetLoader {
             retry: async () => {
                 document.getElementById(`module-css-${assetKey}`)?.remove();
                 document.getElementById(`ext-bundle-css-${assetKey.replace(/^bundle-/, '')}`)?.remove();
-                await loadStylesheetWithRetry(url, {}, { label: `CSS retry: ${assetKey}` });
+                if (elementId) {
+                    document.getElementById(elementId)?.remove();
+                }
+                await loadStylesheetWithRetry(url, elementId ? { id: elementId } : {}, { label: `CSS retry: ${assetKey}` });
                 this.failedCssAssets.delete(assetKey);
             },
         });
@@ -654,6 +703,39 @@ export function parseCustomAssetsFromConfig(): CustomAsset[] {
             && typeof item.id === 'string'
             && typeof item.url === 'string'
             && (item.type === 'style' || item.type === 'script')
+    );
+}
+
+/**
+ * 템플릿 확장 CSS 덮기 파일 서술자
+ *
+ * 서버(`App\Support\Template\ExtensionCssOverrideResolver`)가 호환 판정을 끝낸 항목이다.
+ *
+ * @since engine-v1.86.0
+ */
+export interface ExtensionCssOverride {
+    /** 덮는 대상 확장 식별자 */
+    target: string;
+    /** 덮기 CSS URL */
+    url: string;
+}
+
+/**
+ * `window.G7Config.extensionCssOverrides` 를 파싱합니다.
+ *
+ * @return ExtensionCssOverride[] 서술자 목록 (없으면 빈 배열)
+ * @since engine-v1.86.0
+ */
+export function parseExtensionCssOverridesFromConfig(): ExtensionCssOverride[] {
+    const raw = (window as any)?.G7Config?.extensionCssOverrides;
+
+    if (!Array.isArray(raw)) {
+        return [];
+    }
+
+    return raw.filter(
+        (item: any): item is ExtensionCssOverride =>
+            item && typeof item.target === 'string' && typeof item.url === 'string'
     );
 }
 

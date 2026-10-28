@@ -35,26 +35,26 @@
     <wait-for>reporters_list</wait-for>
   </transition-overlay>
   <slot name="content">
-    <div data-ref="report_detail_wrapper" class="admin-page-content-fluid">
-      <responsive on="portable" class="admin-page-content-fluid-compact"/>
+    <div data-ref="report_detail_wrapper" class="board-admin-page-content-fluid">
+      <responsive on="portable" class="board-admin-page-content-fluid-compact"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.reports.detail.page_title" description="$t:sirsoft-board.admin.reports.detail.page_description">
-        <button type="button" aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="refresh_button" class="btn-icon">
+        <button type="button" aria-label="$t:common.refresh" title="$t:common.refresh" data-ref="refresh_button" class="board-btn-icon">
           <on type="click">
             <!-- 같은 신고로 다시 들어가 본문·신고자 목록을 새로 읽는다 — 신고자 페이지도 함께 1 로 돌아간다 -->
             <navigate path="/admin/boards/reports/{{route.id}}" :mergeQuery="true">
               <query/>
             </navigate>
           </on>
-          <icon name="arrows-rotate" class="text-xl"/>
+          <icon name="arrows-rotate" class="board:text-xl"/>
         </button>
-        <a href="/admin/boards/reports" :mergeQuery="true" data-ref="back_button" class="button flex-center gap-2 btn btn-secondary">
+        <a href="/admin/boards/reports" :mergeQuery="true" data-ref="back_button" class="board-button board-flex-center board:gap-2 board-btn board-btn-secondary">
           <on type="click">
             <!-- 신고 목록으로. 보던 목록 상태를 이고 간다 -->
             <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
-          <icon name="arrow-left" class="text-base"/>
+          <icon name="arrow-left" class="board:text-base"/>
           <span>$t:common.back</span>
         </a>
       </page-header>
@@ -67,22 +67,22 @@
     <!-- 상태 전환 확인 — 다섯 갈래를 겸한다. 「기각」이면서 대상이 이미 가려져 있으면 그 글이 다시 공개된다는 것을 별도 문구로 먼저 알린다(기각은 되돌리는 동작이라 눈에 안 띄게 노출이 일어날 수 있다) -->
     <modal data-type="composite" data-ref="status_action_modal" title="{{_global.actionType === 'pending' ? '$t:sirsoft-board.admin.reports.modals.status_change_pending_title' : _global.actionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_title' : _global.actionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_title' : _global.actionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_title' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_title'}}" size="medium">
       <meta editor_label="$t:sirsoft-board.admin.reports.modals.status_action_editor_label"/>
-      <div class="py-2">
-        <p class="text-gray-700 dark:text-gray-300 mb-4">{{_global.actionType === 'pending' ? '$t:sirsoft-board.admin.reports.modals.status_change_pending_confirm_single' : _global.actionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_confirm_single' : _global.actionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_confirm_single' : _global.actionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_confirm_single' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_confirm_single'}}</p>
-        <div data-if="{{_global.actionType === 'rejected' &amp;&amp; report_detail.data?.target_status === 'blinded'}}" class="mb-4 flex-center gap-2 p-2.5 bg-orange-50 dark:bg-orange-900/20 rounded-md">
-          <icon name="eye" class="text-base text-orange-600 dark:text-orange-400 flex-shrink-0"/>
-          <span class="text-xs text-orange-700 dark:text-orange-300">$t:sirsoft-board.admin.reports.modals.blinded_will_be_public|count=1</span>
+      <div class="board:py-2">
+        <p class="board:text-gray-700 board:dark:text-gray-300 board:mb-4">{{_global.actionType === 'pending' ? '$t:sirsoft-board.admin.reports.modals.status_change_pending_confirm_single' : _global.actionType === 'review' ? '$t:sirsoft-board.admin.reports.modals.status_change_review_confirm_single' : _global.actionType === 'rejected' ? '$t:sirsoft-board.admin.reports.modals.status_change_rejected_confirm_single' : _global.actionType === 'deleted' ? '$t:sirsoft-board.admin.reports.modals.status_change_deleted_confirm_single' : '$t:sirsoft-board.admin.reports.modals.status_change_suspended_confirm_single'}}</p>
+        <div data-if="{{_global.actionType === 'rejected' &amp;&amp; report_detail.data?.target_status === 'blinded'}}" class="board:mb-4 board-flex-center board:gap-2 board:p-2.5 board:bg-orange-50 board:dark:bg-orange-900/20 board:rounded-md">
+          <icon name="eye" class="board:text-base board:text-orange-600 board:dark:text-orange-400 board:flex-shrink-0"/>
+          <span class="board:text-xs board:text-orange-700 board:dark:text-orange-300">$t:sirsoft-board.admin.reports.modals.blinded_will_be_public|count=1</span>
         </div>
-        <label class="form-label">$t:sirsoft-board.admin.reports.modals.reason_label</label>
-        <textarea class="text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800" :rows="4" placeholder="$t:sirsoft-board.admin.reports.modals.reason_placeholder" value="{{_global.actionReason || ''}}">
+        <label class="board-form-label">$t:sirsoft-board.admin.reports.modals.reason_label</label>
+        <textarea class="board:w-full board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800" :rows="4" placeholder="$t:sirsoft-board.admin.reports.modals.reason_placeholder" value="{{_global.actionReason || ''}}">
           <on type="change">
             <!-- 처리 사유를 전역에 담는다 — 아래 확인 버튼이 이 값을 `process_note` 로 보내고, 처리 이력 카드에 그대로 남는다 -->
             <set-state target="global" actionReason="{{$event.target.value}}"/>
           </on>
         </textarea>
       </div>
-      <div class="modal-footer-buttons">
-        <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSaving}}">
+      <div class="board-modal-footer-buttons">
+        <button type="button" class="board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed" disabled="{{_global.isSaving}}">
           <on type="click">
             <close-modal/>
           </on>
@@ -92,7 +92,7 @@
           </on>
           <span>$t:common.cancel</span>
         </button>
-        <button type="button" class="px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed {{_global.actionType === 'pending' ? 'bg-yellow-700 hover:bg-yellow-800' : _global.actionType === 'review' ? 'bg-blue-600 hover:bg-blue-700' : _global.actionType === 'rejected' ? 'bg-purple-600 hover:bg-purple-700' : _global.actionType === 'suspended' ? 'bg-red-600 hover:bg-red-700' : _global.actionType === 'deleted' ? 'bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600' : 'bg-blue-600 hover:bg-blue-700'}}" disabled="{{_global.isSaving}}">
+        <button type="button" class="board:px-4 board:py-2 board:text-white board:rounded-lg board:disabled:opacity-50 board:disabled:cursor-not-allowed {{_global.actionType === 'pending' ? 'board:bg-yellow-700 board:hover:bg-yellow-800' : _global.actionType === 'review' ? 'board:bg-blue-600 board:hover:bg-blue-700' : _global.actionType === 'rejected' ? 'board:bg-purple-600 board:hover:bg-purple-700' : _global.actionType === 'suspended' ? 'board:bg-red-600 board:hover:bg-red-700' : _global.actionType === 'deleted' ? 'board:bg-gray-600 board:hover:bg-gray-700 board:dark:bg-gray-700 board:dark:hover:bg-gray-600' : 'board:bg-blue-600 board:hover:bg-blue-700'}}" disabled="{{_global.isSaving}}">
           <on type="click">
             <!-- 확인 ①  저장 중 표시를 켜 두 번 눌리는 것을 막는다(취소 버튼도 같은 값으로 함께 잠긴다) -->
             <set-state target="global" :isSaving="true"/>

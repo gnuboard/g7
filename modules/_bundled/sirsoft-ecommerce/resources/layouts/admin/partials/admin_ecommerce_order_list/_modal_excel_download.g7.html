@@ -12,43 +12,43 @@
   <modal data-type="composite" data-ref="modal_excel_download" size="sm" title="$t:sirsoft-ecommerce.admin.order.excel.title">
     <div>
       <div>
-        <p class="text-label">$t:sirsoft-ecommerce.admin.order.excel.description</p>
+        <p class="ecommerce-text-label">$t:sirsoft-ecommerce.admin.order.excel.description</p>
         <div>
-          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_global.excelDownloadContext?.type === 'search' ? 'bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500' : ''}}">
-            <input type="radio" name="excelDownloadType" value="search" checked="{{_global.excelDownloadContext?.type === 'search'}}" class="radio mt-1">
+          <label class="ecommerce:flex ecommerce:items-start ecommerce:gap-3 ecommerce:p-3 ecommerce:rounded-lg ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-800 ecommerce:transition-colors {{_global.excelDownloadContext?.type === 'search' ? 'ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:ring-2 ecommerce:ring-blue-500' : ''}}">
+            <input type="radio" name="excelDownloadType" value="search" checked="{{_global.excelDownloadContext?.type === 'search'}}" class="ecommerce-radio ecommerce:mt-1">
               <on type="change">
                 <!-- 라디오 두 개가 같은 name 을 쓰지만 무엇이 선택됐는지는 브라우저가 아니라 이 키가 정한다 — 아래 요청 본문이 이 값으로 보낼 것을 가른다. -->
                 <set-state target="global" excelDownloadContext.type="search"/>
               </on>
             </input>
-            <div class="flex-1">
-              <span class="block text-heading">$t:sirsoft-ecommerce.admin.order.excel.option_search</span>
-              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_search_desc|count={{_global.excelDownloadContext?.total ?? 0}}</span>
+            <div class="ecommerce:flex-1">
+              <span class="ecommerce:block ecommerce-text-heading">$t:sirsoft-ecommerce.admin.order.excel.option_search</span>
+              <span class="ecommerce:block ecommerce-text-tertiary ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_search_desc|count={{_global.excelDownloadContext?.total ?? 0}}</span>
             </div>
           </label>
-          <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {{_global.excelDownloadContext?.type === 'selected' ? 'bg-blue-50 dark:bg-blue-900/20 ring-2 ring-blue-500' : ''}} {{(_global.excelDownloadContext?.selectedItems ?? []).length === 0 ? 'opacity-50 cursor-not-allowed' : ''}}">
-            <input type="radio" name="excelDownloadType" value="selected" checked="{{_global.excelDownloadContext?.type === 'selected'}}" disabled="{{(_global.excelDownloadContext?.selectedItems ?? []).length === 0}}" class="radio mt-1">
+          <label class="ecommerce:flex ecommerce:items-start ecommerce:gap-3 ecommerce:p-3 ecommerce:rounded-lg ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-800 ecommerce:transition-colors {{_global.excelDownloadContext?.type === 'selected' ? 'ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:ring-2 ecommerce:ring-blue-500' : ''}} {{(_global.excelDownloadContext?.selectedItems ?? []).length === 0 ? 'ecommerce:opacity-50 ecommerce:cursor-not-allowed' : ''}}">
+            <input type="radio" name="excelDownloadType" value="selected" checked="{{_global.excelDownloadContext?.type === 'selected'}}" disabled="{{(_global.excelDownloadContext?.selectedItems ?? []).length === 0}}" class="ecommerce-radio ecommerce:mt-1">
               <on type="change">
                 <!-- 체크한 주문이 없으면 이 갈래는 잠긴다(라디오 자체가 disabled). 다만 아래 내려받기가 부르는 `admin/orders/export-excel` 은 모듈 라우트에 없어, 지금은 어느 갈래를 골라도 파일이 나오지 않는다 — 파일 머리 참조. -->
                 <set-state target="global" excelDownloadContext.type="selected"/>
               </on>
             </input>
-            <div class="flex-1">
-              <span class="block text-heading">$t:sirsoft-ecommerce.admin.order.excel.option_selected</span>
-              <span class="block text-tertiary mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_selected_desc|count={{(_global.excelDownloadContext?.selectedItems ?? []).length}}</span>
+            <div class="ecommerce:flex-1">
+              <span class="ecommerce:block ecommerce-text-heading">$t:sirsoft-ecommerce.admin.order.excel.option_selected</span>
+              <span class="ecommerce:block ecommerce-text-tertiary ecommerce:mt-0.5">$t:sirsoft-ecommerce.admin.order.excel.option_selected_desc|count={{(_global.excelDownloadContext?.selectedItems ?? []).length}}</span>
             </div>
           </label>
         </div>
       </div>
     </div>
-    <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
+    <div class="ecommerce-modal-footer-buttons">
+      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
+      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isDownloading}}">
         <on type="click">
           <!-- 내려받기. 응답이 JSON 이 아니라 파일(blob)이라 코어 apiCall 로는 받지 못한다(apiCall 은 응답을
             JSON 으로만 읽는다) — 요청과 저장을 이 모듈의 `sirsoft-ecommerce.downloadFile` 이 한 번에 한다. 서버는
@@ -69,8 +69,8 @@
             </action>
           </sequence>
         </on>
-        <icon data-if="{{_global.isDownloading}}" name="spinner" class="spinner-sm"/>
-        <icon data-if="{{!_global.isDownloading}}" name="download" class="text-base"/>
+        <icon data-if="{{_global.isDownloading}}" name="spinner" class="ecommerce-spinner-sm"/>
+        <icon data-if="{{!_global.isDownloading}}" name="download" class="ecommerce:text-base"/>
         <span>{{_global.isDownloading ? '$t:common.downloading' : '$t:sirsoft-ecommerce.admin.order.excel.download'}}</span>
       </button>
     </div>

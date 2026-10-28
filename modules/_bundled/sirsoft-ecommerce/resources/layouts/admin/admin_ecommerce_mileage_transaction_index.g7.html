@@ -110,14 +110,14 @@
     <set-state target="global" :ecommerceExportTracking="null" :ecommerceExportTrackingDownloading="false"/>
   </init>
   <slot name="content">
-    <div data-ref="mileage_transactions_content" class="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div data-ref="page_header" class="page-header">
+    <div data-ref="mileage_transactions_content" class="ecommerce:p-6 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:min-h-screen">
+      <div data-ref="page_header" class="ecommerce-page-header">
         <div data-ref="page_header_left">
-          <h1 class="page-title">$t:sirsoft-ecommerce.admin.mileage_transactions.title</h1>
-          <p class="page-description">$t:sirsoft-ecommerce.admin.mileage_transactions.description</p>
+          <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.mileage_transactions.title</h1>
+          <p class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.mileage_transactions.description</p>
         </div>
-        <div data-ref="page_header_actions" class="page-actions">
-          <button data-ref="manual_action_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true}}" class="btn btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+        <div data-ref="page_header_actions" class="ecommerce-page-actions">
+          <button data-ref="manual_action_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true}}" class="ecommerce-btn ecommerce-btn-primary ecommerce:text-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
             <on type="click">
               <!-- 수동 지급/회수 창을 연다. 창이 지난번 입력을 물고 뜨지 않도록 열기 전에 입력값 전체를 처음 상태로 깔아 둔다(창은 별도 컨텍스트라 이 값들이 _global 이어야 한다).
                    모달 진입 시 설정의 기본 통화로 채운다 — 특정 통화를 박으면 그 통화 원장이 없는 상점에서 잘못된 통화로 적립된다 -->
@@ -147,9 +147,9 @@
         </div>
       </div>
       <include src="partials/admin_ecommerce_mileage_transaction_index/_filters.g7.html"/>
-      <div data-ref="bulk_action_bar" class="bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3">
-        <span class="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}</span>
-        <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+      <div data-ref="bulk_action_bar" class="ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700/50 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:p-3 ecommerce:mb-4 ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-between ecommerce:gap-3">
+        <span class="ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-nowrap">$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.selected|count={{(_local.selectedItems ?? []).length}}</span>
+        <button data-ref="bulk_extend_button" type="button" disabled="{{transactions?.data?.abilities?.can_manage !== true || (_local.selectedItems ?? []).length === 0}}" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
           <on type="click">
             <!-- 선택한 적립 건들의 만료일 연장 창을 연다. 적립건만 넘기고 회원은 지정하지 않는다 — 여러 회원의 적립건을 함께 골라도 서버가 전부 연장한다(첫 건의 회원만 보내면 나머지 회원 적립건이 조용히 빠졌다) -->
             <sequence>
@@ -167,10 +167,10 @@
           <span>$t:sirsoft-ecommerce.admin.mileage_transactions.bulk.extend_expiry</span>
         </button>
       </div>
-      <div data-ref="table_header" class="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <span class="text-primary font-bold">$t:sirsoft-ecommerce.admin.mileage_transactions.table.total_count|count={{transactions?.data?.pagination?.total ?? 0}}</span>
-        <div data-ref="table_header_controls" class="flex flex-wrap items-center justify-end gap-3">
-          <select data-ref="sort_select" aria-label="$t:sirsoft-ecommerce.admin.mileage_transactions.sort.label" class="w-40 text-sm" value="{{query.sort || 'created_at_desc'}}">
+      <div data-ref="table_header" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-4">
+        <span class="ecommerce-text-primary ecommerce:font-bold">$t:sirsoft-ecommerce.admin.mileage_transactions.table.total_count|count={{transactions?.data?.pagination?.total ?? 0}}</span>
+        <div data-ref="table_header_controls" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-end ecommerce:gap-3">
+          <select data-ref="sort_select" aria-label="$t:sirsoft-ecommerce.admin.mileage_transactions.sort.label" class="ecommerce:w-40 ecommerce:text-sm" value="{{query.sort || 'created_at_desc'}}">
             <options>
               <option value="created_at_desc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.created_at_desc</option>
               <option value="created_at_asc">$t:sirsoft-ecommerce.admin.mileage_transactions.sort.created_at_asc</option>
@@ -184,7 +184,7 @@
               </navigate>
             </on>
           </select>
-          <select data-ref="per_page_select" aria-label="$t:common.per_page" class="w-32 text-sm" value="{{query.per_page || '20'}}">
+          <select data-ref="per_page_select" aria-label="$t:common.per_page" class="ecommerce:w-32 ecommerce:text-sm" value="{{query.per_page || '20'}}">
             <options>
               <option value="10">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.10</option>
               <option value="20">$t:sirsoft-ecommerce.admin.mileage_transactions.per_page.20</option>
@@ -200,11 +200,11 @@
           </select>
           <!-- 내보내기(#787) — 방금 요청한 작업의 진행 표시와 [내보내기] 버튼. 버튼은 목록 응답의 `abilities.can_export`(내보내기 요청 권한 — 목록 API 가 이미 조회 권한을 요구한다)가 참인
                운영자에게만 보인다. 창은 상품·주문·마일리지 목록이 함께 쓰는 공용 창이다 -->
-          <div data-ref="ecommerce_export_mileage_actions" class="flex flex-wrap items-center justify-end gap-3">
+          <div data-ref="ecommerce_export_mileage_actions" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-end ecommerce:gap-3">
             <include src="partials/admin_ecommerce_export/_partial_tracking_status.g7.html"/>
             <!-- 내보내기 — 마일리지 내역의 지금 조건으로 파일을 만든다. 창은 별도 컨텍스트라 지금 검색 조건(데이터 소스와 같은 매개변수)·선택 id·보이는 컬럼을 전역에 실어 건넨다. 중복 방지 키는 열 때마다 새로 만든다.
                  조건은 통째로 바꾼다(merge="shallow") — 깊은 병합이면 지운 검색어·다른 목록의 조건이 남아 화면과 다른 파일이 된다 -->
-            <button data-ref="ecommerce_export_mileage_button" data-if="{{transactions?.data?.abilities?.can_export === true}}" type="button" class="btn btn-outline whitespace-nowrap">
+            <button data-ref="ecommerce_export_mileage_button" data-if="{{transactions?.data?.abilities?.can_export === true}}" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:whitespace-nowrap">
               <on type="click">
                 <sequence>
                   <set-state target="global" merge="shallow" ecommerceExportContext="{{ { type: 'mileage', label: $t('sirsoft-ecommerce.enums.export_type.mileage'), filters: Object.fromEntries(Object.entries({ search_field: query.search_field || 'member', search_keyword: query.search_keyword, type: query.type, currency: query.currency, start_date: query.start_date, end_date: query.end_date }).filter(([k, v]) => v !== undefined &amp;&amp; v !== null &amp;&amp; v !== '' &amp;&amp; !(Array.isArray(v) &amp;&amp; v.length === 0))), selected_ids: (_local.selectedItems ?? []), total: (transactions?.data?.pagination?.total ?? 0), screen_columns: null } }}" ecommerceExportIdempotencyKey="{{$uuid()}}" :ecommerceExportCatalog="null" :ecommerceExportEstimate="null" :ecommerceExportErrors="null" :ecommerceExportIsRequesting="false" :ecommerceExportIsEstimating="false" :ecommerceExportEstimateFailed="false"/>
@@ -233,7 +233,7 @@
                   <refetch-data-source dataSourceId="ecommerceExportCatalog"/>
                 </sequence>
               </on>
-              <icon name="file-export" class="text-base"/>
+              <icon name="file-export" class="ecommerce:text-base"/>
               <span>$t:sirsoft-ecommerce.admin.export.button</span>
             </button>
           </div>

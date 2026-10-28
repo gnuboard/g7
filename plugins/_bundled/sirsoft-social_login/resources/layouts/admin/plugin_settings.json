@@ -167,7 +167,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content-responsive"
+                    "className": "sl-admin-page-content-responsive"
                 },
                 "children": [
                     {
@@ -200,7 +200,7 @@
                             }
                         ],
                         "props": {
-                            "className": "mt-6",
+                            "className": "sl:mt-6",
                             "activeTabId": "{{query.tab || 'providers'}}",
                             "variant": "underline",
                             "tabs": [
@@ -221,7 +221,7 @@
                         "name": "Div",
                         "if": "{{(query.tab || 'providers') === 'providers'}}",
                         "props": {
-                            "className": "mt-6 space-y-4"
+                            "className": "sl:mt-6 sl:space-y-4"
                         },
                         "children": [
                             {
@@ -231,7 +231,7 @@
                                 "if": "{{!_computed.canEditProviders && !!providers?.data}}",
                                 "props": {
                                     "role": "status",
-                                    "className": "alert-warning"
+                                    "className": "sl-alert-warning"
                                 },
                                 "children": [
                                     {
@@ -239,14 +239,14 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "lock",
-                                            "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                            "className": "sl:text-xl sl:leading-none sl:text-amber-600 sl:dark:text-amber-400 sl:flex-shrink-0"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-sm text-amber-800 dark:text-amber-200"
+                                            "className": "sl:text-sm sl:text-amber-800 sl:dark:text-amber-200"
                                         },
                                         "text": "$t:sirsoft-social_login.admin.providers.read_only"
                                     }
@@ -258,7 +258,7 @@
                                 "name": "Div",
                                 "if": "{{!providers?.data}}",
                                 "props": {
-                                    "className": "text-sm text-gray-500 dark:text-gray-400"
+                                    "className": "sl:text-sm sl:text-gray-500 sl:dark:text-gray-400"
                                 },
                                 "text": "$t:common.loading"
                             },
@@ -273,7 +273,7 @@
                                 },
                                 "dataKey": "{{provider.key}}",
                                 "props": {
-                                    "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
+                                    "className": "sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-gray-200 sl:dark:border-gray-700"
                                 },
                                 "children": [
                                     {
@@ -281,7 +281,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex flex-wrap items-center gap-3 px-4 sm:px-6 pt-5"
+                                            "className": "sl:flex sl:flex-wrap sl:items-center sl:gap-3 sl:px-4 sl:sm:px-6 sl:pt-5"
                                         },
                                         "children": [
                                             {
@@ -296,14 +296,14 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-1 min-w-0"
+                                                    "className": "sl:flex-1 sl:min-w-0"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "H2",
                                                         "props": {
-                                                            "className": "text-base font-semibold text-gray-900 dark:text-white"
+                                                            "className": "sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white"
                                                         },
                                                         "text": "{{provider.display_label}}"
                                                     },
@@ -311,7 +311,7 @@
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                            "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
                                                         },
                                                         "text": "{{provider.key}} · {{$t('sirsoft-social_login.admin.providers.types.' + provider.type)}}"
                                                     }
@@ -322,7 +322,7 @@
                                                 "name": "Span",
                                                 "if": "{{provider.enabled}}",
                                                 "props": {
-                                                    "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                                    "className": "sl:inline-flex sl:items-center sl:px-2 sl:py-0.5 sl:rounded-full sl:text-xs sl:font-medium sl:bg-green-100 sl:text-green-800 sl:dark:bg-green-900/30 sl:dark:text-green-300"
                                                 },
                                                 "text": "$t:sirsoft-social_login.admin.providers.enabled"
                                             },
@@ -331,7 +331,7 @@
                                                 "name": "Span",
                                                 "if": "{{!provider.enabled}}",
                                                 "props": {
-                                                    "className": "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                                                    "className": "sl:inline-flex sl:items-center sl:px-2 sl:py-0.5 sl:rounded-full sl:text-xs sl:font-medium sl:bg-gray-100 sl:text-gray-700 sl:dark:bg-gray-700 sl:dark:text-gray-300"
                                                 },
                                                 "text": "$t:sirsoft-social_login.admin.providers.disabled"
                                             },
@@ -340,7 +340,7 @@
                                                 "name": "Div",
                                                 "if": "{{!provider.read_only}}",
                                                 "props": {
-                                                    "className": "flex items-center gap-1"
+                                                    "className": "sl:flex sl:items-center sl:gap-1"
                                                 },
                                                 "children": [
                                                     {
@@ -377,7 +377,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn-icon",
+                                                            "className": "sl-btn-icon",
                                                             "title": "$t:sirsoft-social_login.admin.providers.move_up",
                                                             "aria-label": "$t:sirsoft-social_login.admin.providers.move_up",
                                                             "disabled": "{{!_computed.canEditProviders || _computed.sortableKeys.indexOf(provider.key) <= 0}}"
@@ -387,8 +387,8 @@
                                                                 "type": "basic",
                                                                 "name": "Icon",
                                                                 "props": {
-                                                                    "name": "fa-solid fa-chevron-up",
-                                                                    "className": "text-sm"
+                                                                    "name": "chevron-up",
+                                                                    "className": "sl:text-sm sl:leading-none"
                                                                 }
                                                             }
                                                         ]
@@ -427,7 +427,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn-icon",
+                                                            "className": "sl-btn-icon",
                                                             "title": "$t:sirsoft-social_login.admin.providers.move_down",
                                                             "aria-label": "$t:sirsoft-social_login.admin.providers.move_down",
                                                             "disabled": "{{!_computed.canEditProviders || _computed.sortableKeys.indexOf(provider.key) === -1 || _computed.sortableKeys.indexOf(provider.key) >= _computed.sortableKeys.length - 1}}"
@@ -437,8 +437,8 @@
                                                                 "type": "basic",
                                                                 "name": "Icon",
                                                                 "props": {
-                                                                    "name": "fa-solid fa-chevron-down",
-                                                                    "className": "text-sm"
+                                                                    "name": "chevron-down",
+                                                                    "className": "sl:text-sm sl:leading-none"
                                                                 }
                                                             }
                                                         ]
@@ -452,7 +452,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "px-4 sm:px-6 py-4 space-y-3"
+                                            "className": "sl:px-4 sl:sm:px-6 sl:py-4 sl:space-y-3"
                                         },
                                         "children": [
                                             {
@@ -461,7 +461,7 @@
                                                 "name": "Div",
                                                 "if": "{{provider.read_only}}",
                                                 "props": {
-                                                    "className": "text-sm text-gray-600 dark:text-gray-300"
+                                                    "className": "sl:text-sm sl:text-gray-600 sl:dark:text-gray-300"
                                                 },
                                                 "text": "$t:sirsoft-social_login.admin.providers.extension_notice"
                                             },
@@ -472,22 +472,22 @@
                                                 "if": "{{provider.credentials_unreadable}}",
                                                 "props": {
                                                     "role": "alert",
-                                                    "className": "alert-error"
+                                                    "className": "sl-alert-error"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "fa-solid fa-key",
-                                                            "className": "text-red-600 dark:text-red-400 flex-shrink-0"
+                                                            "name": "key",
+                                                            "className": "sl:text-red-600 sl:dark:text-red-400 sl:flex-shrink-0"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-sm text-red-800 dark:text-red-200"
+                                                            "className": "sl:text-sm sl:text-red-800 sl:dark:text-red-200"
                                                         },
                                                         "text": "$t:sirsoft-social_login.admin.providers.credentials_unreadable"
                                                     }
@@ -498,14 +498,14 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex flex-col sm:flex-row sm:items-center gap-2"
+                                                    "className": "sl:flex sl:flex-col sl:sm:flex-row sl:sm:items-center sl:gap-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-xs font-medium text-gray-500 dark:text-gray-400 sm:w-40 flex-shrink-0"
+                                                            "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:sm:w-40 sl:flex-shrink-0"
                                                         },
                                                         "text": "$t:sirsoft-social_login.admin.providers.redirect_uri"
                                                     },
@@ -514,7 +514,7 @@
                                                         "type": "basic",
                                                         "name": "Code",
                                                         "props": {
-                                                            "className": "flex-1 min-w-0 break-all text-xs bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 px-2 py-1.5 rounded"
+                                                            "className": "sl:flex-1 sl:min-w-0 sl:break-all sl-break-all sl:text-xs sl:bg-gray-50 sl:dark:bg-gray-900 sl:text-gray-800 sl:dark:text-gray-200 sl:px-2 sl:py-1.5 sl:rounded"
                                                         },
                                                         "text": "{{provider.redirect_uri}}"
                                                     },
@@ -534,7 +534,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-secondary text-xs flex-center gap-1",
+                                                            "className": "sl-btn sl-btn-secondary sl:text-xs sl-flex-center sl:gap-1",
                                                             "aria-label": "$t:sirsoft-social_login.admin.providers.copy"
                                                         },
                                                         "children": [
@@ -542,15 +542,16 @@
                                                                 "type": "basic",
                                                                 "name": "Icon",
                                                                 "props": {
-                                                                    "name": "fa-regular fa-copy",
-                                                                    "className": "text-xs"
+                                                                    "name": "copy",
+                                                                    "iconStyle": "regular",
+                                                                    "className": "sl:text-xs sl:leading-none"
                                                                 }
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "hidden sm:inline"
+                                                                    "className": "sl:hidden sl-hidden sl:sm:inline"
                                                                 },
                                                                 "text": "$t:sirsoft-social_login.admin.providers.copy"
                                                             }
@@ -567,14 +568,14 @@
                                                     "item_var": "hook"
                                                 },
                                                 "props": {
-                                                    "className": "flex flex-col sm:flex-row sm:items-center gap-2"
+                                                    "className": "sl:flex sl:flex-col sl:sm:flex-row sl:sm:items-center sl:gap-2"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-xs font-medium text-gray-500 dark:text-gray-400 sm:w-40 flex-shrink-0"
+                                                            "className": "sl:text-xs sl:font-medium sl:text-gray-500 sl:dark:text-gray-400 sl:sm:w-40 sl:flex-shrink-0"
                                                         },
                                                         "text": "{{$t('sirsoft-social_login.admin.providers.webhook_kinds.' + hook.kind)}}"
                                                     },
@@ -582,7 +583,7 @@
                                                         "type": "basic",
                                                         "name": "Code",
                                                         "props": {
-                                                            "className": "flex-1 min-w-0 break-all text-xs bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 px-2 py-1.5 rounded"
+                                                            "className": "sl:flex-1 sl:min-w-0 sl:break-all sl-break-all sl:text-xs sl:bg-gray-50 sl:dark:bg-gray-900 sl:text-gray-800 sl:dark:text-gray-200 sl:px-2 sl:py-1.5 sl:rounded"
                                                         },
                                                         "text": "{{hook.url}}"
                                                     },
@@ -601,7 +602,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-secondary text-xs flex-center gap-1",
+                                                            "className": "sl-btn sl-btn-secondary sl:text-xs sl-flex-center sl:gap-1",
                                                             "aria-label": "$t:sirsoft-social_login.admin.providers.copy"
                                                         },
                                                         "children": [
@@ -609,15 +610,16 @@
                                                                 "type": "basic",
                                                                 "name": "Icon",
                                                                 "props": {
-                                                                    "name": "fa-regular fa-copy",
-                                                                    "className": "text-xs"
+                                                                    "name": "copy",
+                                                                    "iconStyle": "regular",
+                                                                    "className": "sl:text-xs sl:leading-none"
                                                                 }
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "hidden sm:inline"
+                                                                    "className": "sl:hidden sl-hidden sl:sm:inline"
                                                                 },
                                                                 "text": "$t:sirsoft-social_login.admin.providers.copy"
                                                             }
@@ -631,7 +633,7 @@
                                                 "name": "Ul",
                                                 "if": "{{(provider.notes?.length ?? 0) > 0}}",
                                                 "props": {
-                                                    "className": "alert-info flex-col items-start gap-1 list-disc pl-8"
+                                                    "className": "sl-alert-info sl:flex-col sl:items-start sl:gap-1 sl:list-disc sl:pl-8"
                                                 },
                                                 "children": [
                                                     {
@@ -642,7 +644,7 @@
                                                             "item_var": "note"
                                                         },
                                                         "props": {
-                                                            "className": "text-xs text-blue-800 dark:text-blue-200"
+                                                            "className": "sl:text-xs sl:text-blue-800 sl:dark:text-blue-200"
                                                         },
                                                         "text": "{{$t(note)}}"
                                                     }
@@ -654,7 +656,7 @@
                                                 "name": "P",
                                                 "if": "{{!provider.read_only}}",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
                                                 },
                                                 "text": "{{$t('sirsoft-social_login.admin.providers.last_success') + ': ' + (provider.last_success_at ?? '-') + ' · ' + $t('sirsoft-social_login.admin.providers.last_error') + ': ' + (provider.last_error_at ? provider.last_error_at + ' (' + (provider.last_error_code ?? '') + ')' : '-')}}"
                                             },
@@ -665,29 +667,29 @@
                                                 "if": "{{_local.testResult?.key === provider.key}}",
                                                 "props": {
                                                     "role": "status",
-                                                    "className": "{{_local.testResult?.ok ? 'alert-success' : 'alert-warning'}}"
+                                                    "className": "{{_local.testResult?.ok ? 'sl-alert-success' : 'sl-alert-warning'}}"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Icon",
                                                         "props": {
-                                                            "name": "{{_local.testResult?.ok ? 'fa-solid fa-circle-check' : 'fa-solid fa-triangle-exclamation'}}",
-                                                            "className": "flex-shrink-0"
+                                                            "name": "{{_local.testResult?.ok ? 'circle-check' : 'triangle-exclamation'}}",
+                                                            "className": "sl:flex-shrink-0"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "text-sm"
+                                                            "className": "sl:text-sm"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "props": {
-                                                                    "className": "font-medium"
+                                                                    "className": "sl:font-medium"
                                                                 },
                                                                 "text": "{{$t('sirsoft-social_login.admin.providers.test_results.' + (_local.testResult?.result ?? 'unexpected'))}}"
                                                             },
@@ -696,7 +698,7 @@
                                                                 "name": "P",
                                                                 "if": "{{!!_local.testResult?.provider_code}}",
                                                                 "props": {
-                                                                    "className": "text-xs"
+                                                                    "className": "sl:text-xs"
                                                                 },
                                                                 "text": "{{$t('sirsoft-social_login.admin.providers.provider_code') + ': ' + _local.testResult?.provider_code}}"
                                                             }
@@ -713,12 +715,12 @@
                                                     "portable": {
                                                         "comment": "휴대폰·태블릿 폭(portable, 1023px 이하)은 단추를 한 줄에 하나씩 전폭으로 쌓는다(와이어프레임)",
                                                         "props": {
-                                                            "className": "flex flex-col gap-2 pt-1"
+                                                            "className": "sl:flex sl:flex-col sl:gap-2 sl:pt-1"
                                                         }
                                                     }
                                                 },
                                                 "props": {
-                                                    "className": "flex flex-wrap gap-2 pt-1"
+                                                    "className": "sl:flex sl:flex-wrap sl:gap-2 sl:pt-1"
                                                 },
                                                 "children": [
                                                     {
@@ -743,7 +745,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-primary text-sm",
+                                                            "className": "sl-btn sl-btn-primary sl:text-sm",
                                                             "disabled": "{{!_computed.canEditProviders}}"
                                                         },
                                                         "children": [
@@ -786,7 +788,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-secondary text-sm",
+                                                            "className": "sl-btn sl-btn-secondary sl:text-sm",
                                                             "disabled": "{{!_computed.canEditProviders}}"
                                                         },
                                                         "children": [
@@ -813,7 +815,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-secondary text-sm",
+                                                            "className": "sl-btn sl-btn-secondary sl:text-sm",
                                                             "disabled": "{{!_computed.canEditProviders}}"
                                                         },
                                                         "children": [
@@ -856,7 +858,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-secondary text-sm"
+                                                            "className": "sl-btn sl-btn-secondary sl:text-sm"
                                                         },
                                                         "children": [
                                                             {
@@ -908,7 +910,7 @@
                                                         ],
                                                         "props": {
                                                             "type": "button",
-                                                            "className": "btn btn-danger text-sm",
+                                                            "className": "sl-btn sl-btn-danger sl:text-sm",
                                                             "disabled": "{{!_computed.canEditProviders}}"
                                                         },
                                                         "children": [

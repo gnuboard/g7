@@ -14,7 +14,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card"
+                "className": "ecommerce-admin-card"
             },
             "children": [
                 {
@@ -22,7 +22,7 @@
                     "type": "basic",
                     "name": "H3",
                     "props": {
-                        "className": "card-title"
+                        "className": "ecommerce-card-title"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.title"
                 },
@@ -31,7 +31,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "card-description"
+                        "className": "ecommerce-card-description"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.description"
                 },
@@ -40,7 +40,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid-2col-responsive"
+                        "className": "ecommerce-grid-2col-responsive"
                     },
                     "children": [
                         {
@@ -48,14 +48,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.default_currency"
                                 },
@@ -66,7 +66,7 @@
                                         "name": "language_currency.default_currency",
                                         "value": "{{_local.form?.language_currency?.default_currency}}",
                                         "options": "{{((Array.isArray(_local.form?.language_currency?.currencies) ? _local.form.language_currency.currencies : []).map(c => ({ value: c.code, label: typeof c.name === 'object' ? $localized(c.name) : c.name }))) ?? []}}",
-                                        "className": "{{_local.errors?.['language_currency.default_currency'] ? 'w-full input-error' : 'w-full'}}",
+                                        "className": "{{_local.errors?.['language_currency.default_currency'] ? 'ecommerce:w-full ecommerce:border-red-500' : 'ecommerce:w-full'}}",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
@@ -75,7 +75,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['language_currency.default_currency']}}",
                                     "props": {
-                                        "className": "form-error"
+                                        "className": "ecommerce-form-error"
                                     },
                                     "text": "{{_local.errors?.['language_currency.default_currency']?.[0] ?? ''}}"
                                 },
@@ -83,7 +83,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "ecommerce-form-hint"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.language_settings.currency_change_warning"
                                 }
@@ -98,7 +98,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card"
+                "className": "ecommerce-admin-card"
             },
             "children": [
                 {
@@ -107,14 +107,14 @@
                     "name": "Div",
                     "if": "{{(settings?.data?.available_rate_providers ?? []).length > 0}}",
                     "props": {
-                        "className": "form-group mb-4"
+                        "className": "ecommerce-form-group ecommerce:mb-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label",
+                                "className": "ecommerce-form-label",
                                 "htmlFor": "exchange_rate_provider"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.label"
@@ -125,7 +125,7 @@
                             "props": {
                                 "id": "exchange_rate_provider",
                                 "aria-label": "$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.label",
-                                "className": "{{_local.errors?.['language_currency.rate_provider'] ? 'w-full input-error' : 'w-full'}}",
+                                "className": "{{_local.errors?.['language_currency.rate_provider'] ? 'ecommerce:w-full ecommerce:border-red-500' : 'ecommerce:w-full'}}",
                                 "name": "language_currency.rate_provider",
                                 "value": "{{_local.form?.language_currency?.rate_provider ?? ''}}",
                                 "options": "{{[{value: '', label: $t('sirsoft-ecommerce.admin.settings.language_currency.rate_provider.manual')}].concat((settings?.data?.available_rate_providers ?? []).map(p => ({value: p.id, label: $localized(p.name)})))}}",
@@ -137,7 +137,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['language_currency.rate_provider']}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "ecommerce-form-error"
                             },
                             "text": "{{_local.errors?.['language_currency.rate_provider']?.[0] ?? ''}}"
                         }
@@ -150,7 +150,7 @@
                     "if": "{{_computed.activeRateProvider !== null}}",
                     "props": {
                         "role": "status",
-                        "className": "alert-info mb-4 flex flex-wrap items-center gap-2"
+                        "className": "ecommerce-alert-info ecommerce:mb-4 ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -179,7 +179,7 @@
                             "name": "A",
                             "props": {
                                 "href": "{{_computed.activeRateProvider?.settings_url}}",
-                                "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                "className": "ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.rate_provider.settings"
                         }
@@ -190,7 +190,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-between mb-6"
+                        "className": "ecommerce-flex-between ecommerce:mb-6"
                     },
                     "children": [
                         {
@@ -202,7 +202,7 @@
                                     "type": "basic",
                                     "name": "H3",
                                     "props": {
-                                        "className": "card-title"
+                                        "className": "ecommerce-card-title"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.title"
                                 },
@@ -211,7 +211,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "card-description"
+                                        "className": "ecommerce-card-description"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.language_currency.exchange_settings.description"
                                 }
@@ -256,7 +256,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                 "disabled": "{{_computed.isReadOnly || _local.isAddingCurrency === true}}"
                             },
                             "children": [
@@ -265,7 +265,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "plus",
-                                        "className": "text-base mr-1"
+                                        "className": "ecommerce:text-base ecommerce:mr-1"
                                     }
                                 },
                                 {
@@ -291,7 +291,7 @@
                         }
                     },
                     "props": {
-                        "className": "w-full"
+                        "className": "ecommerce:w-full"
                     },
                     "children": [
                         {

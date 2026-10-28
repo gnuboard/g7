@@ -9,6 +9,7 @@ use App\Extension\Traits\ClearsTemplateCaches;
 use App\Http\View\Composers\TemplateComposer;
 use App\Support\AssetCssUrlRewriter;
 use App\Support\AssetUrl;
+use App\Support\CssLayerFlattener;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -130,6 +131,8 @@ class ExtensionBundleService
                 'cssAbsPath' => $cssAbsPath,
                 'cssRelPath' => $cssRelPath,
                 'priority' => (int) ($loadingConfig['priority'] ?? 100),
+                // 확장 CSS 앞글자 선언 — 선언한(자기 CSS 를 자기 앞글자로 공급하는) 확장만 층 평탄화 대상이다
+                'cssNamespace' => CssLayerFlattener::declaredNamespace($extension->getAssets()),
             ];
         }
 
@@ -468,6 +471,14 @@ class ExtensionBundleService
                         $version
                     )
                 );
+
+                // 확장 CSS 는 세 칸으로 실린다 — 의미 클래스 층(`g7-extension`)과 Tailwind 폴백 층(`properties`)만
+                // 남기고 나머지 층 래퍼·순서 선언을 벗겨 유틸리티가 층 없이 템플릿 뒤에 오게 한다.
+                // 앞글자(`assets.css.namespace`)를 선언한 확장만 대상이다 — 선언 전 확장 CSS 는 템플릿과 같은
+                // 이름의 유틸리티를 `@layer utilities` 로 재정의하기도 해서, 벗기면 템플릿 화면 전체를 이긴다.
+                if ($paths['cssNamespace'] ?? null) {
+                    $content = CssLayerFlattener::forExtension($content);
+                }
 
                 $segments[] = $this->processCssSourceMap($content, $isProduction);
             } catch (\Throwable $e) {

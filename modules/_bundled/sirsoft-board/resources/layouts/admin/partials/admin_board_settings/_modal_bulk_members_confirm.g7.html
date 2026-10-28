@@ -3,27 +3,27 @@
   카드에 남긴다. 실패는 창 안에 문구로 남긴다. 연타는 실행 버튼의 디바운스가 한 번으로 모은다. -->
 <partial description="게시판 관리자·스텝 일괄 지정 확인 모달" editor_label="$t:sirsoft-board.admin.settings.bulk_members.confirm_title">
   <modal data-type="composite" data-ref="bulk_members_confirm_modal" title="$t:sirsoft-board.admin.settings.bulk_members.confirm_title" size="sm">
-    <div class="space-y-3">
-      <p class="text-label">{{_global.boardBulkMembers?.mode === 'remove' ? ((_global.boardBulkMembers?.type ?? 'manager') === 'step' ? $t:sirsoft-board.admin.settings.bulk_members.confirm_remove_step : $t:sirsoft-board.admin.settings.bulk_members.confirm_remove_manager) : ((_global.boardBulkMembers?.type ?? 'manager') === 'step' ? $t:sirsoft-board.admin.settings.bulk_members.confirm_add_step : $t:sirsoft-board.admin.settings.bulk_members.confirm_add_manager)}}</p>
-      <div class="text-sm text-gray-700 dark:text-gray-300">
-        <span class="font-medium">$t:sirsoft-board.admin.settings.bulk_members.target_label</span>
-        <span data-if="{{_global.boardBulkMembers?.all !== false}}" class="ml-2">$t:sirsoft-board.admin.settings.bulk_members.target_all</span>
-        <span data-if="{{_global.boardBulkMembers?.all === false}}" class="ml-2">$t:sirsoft-board.admin.settings.bulk_members.boards_count|count={{(_global.boardBulkMembers?.boardIds ?? []).length}}</span>
+    <div class="board:space-y-3">
+      <p class="board-text-label">{{_global.boardBulkMembers?.mode === 'remove' ? ((_global.boardBulkMembers?.type ?? 'manager') === 'step' ? $t:sirsoft-board.admin.settings.bulk_members.confirm_remove_step : $t:sirsoft-board.admin.settings.bulk_members.confirm_remove_manager) : ((_global.boardBulkMembers?.type ?? 'manager') === 'step' ? $t:sirsoft-board.admin.settings.bulk_members.confirm_add_step : $t:sirsoft-board.admin.settings.bulk_members.confirm_add_manager)}}</p>
+      <div class="board:text-sm board:text-gray-700 board:dark:text-gray-300">
+        <span class="board:font-medium">$t:sirsoft-board.admin.settings.bulk_members.target_label</span>
+        <span data-if="{{_global.boardBulkMembers?.all !== false}}" class="board:ml-2">$t:sirsoft-board.admin.settings.bulk_members.target_all</span>
+        <span data-if="{{_global.boardBulkMembers?.all === false}}" class="board:ml-2">$t:sirsoft-board.admin.settings.bulk_members.boards_count|count={{(_global.boardBulkMembers?.boardIds ?? []).length}}</span>
       </div>
-      <div class="flex flex-wrap gap-1">
-        <span data-each="member in {{(_global.boardBulkMembers?.users ?? []).slice(0, 10)}}" class="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">{{member.name}}</span>
+      <div class="board:flex board:flex-wrap board:gap-1">
+        <span data-each="member in {{(_global.boardBulkMembers?.users ?? []).slice(0, 10)}}" class="board:px-2 board:py-0.5 board:text-xs board:bg-gray-100 board:dark:bg-gray-700 board:text-gray-700 board:dark:text-gray-300 board:rounded">{{member.name}}</span>
       </div>
-      <p data-if="{{_global.boardBulkMembers?.mode === 'remove' &amp;&amp; (_global.boardBulkMembers?.type ?? 'manager') === 'manager'}}" class="text-tertiary">$t:sirsoft-board.admin.settings.bulk_members.hint</p>
-      <div data-ref="bulk_members_confirm_error" data-if="{{!!_global.boardBulkMembers?.error}}" class="alert-danger text-sm">{{_global.boardBulkMembers?.error}}</div>
+      <p data-if="{{_global.boardBulkMembers?.mode === 'remove' &amp;&amp; (_global.boardBulkMembers?.type ?? 'manager') === 'manager'}}" class="board-text-tertiary">$t:sirsoft-board.admin.settings.bulk_members.hint</p>
+      <div data-ref="bulk_members_confirm_error" data-if="{{!!_global.boardBulkMembers?.error}}" class="board-alert-danger board:text-sm">{{_global.boardBulkMembers?.error}}</div>
     </div>
-    <div class="modal-footer-buttons">
-      <button type="button" disabled="{{_global.boardBulkMembers?.isApplying === true}}" class="btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed">
+    <div class="board-modal-footer-buttons">
+      <button type="button" disabled="{{_global.boardBulkMembers?.isApplying === true}}" class="board-btn board-btn-secondary board:disabled:opacity-50 board:disabled:cursor-not-allowed">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button data-ref="bulk_members_confirm_button" type="button" disabled="{{_global.boardBulkMembers?.isApplying === true}}" class="flex-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+      <button data-ref="bulk_members_confirm_button" type="button" disabled="{{_global.boardBulkMembers?.isApplying === true}}" class="board-flex-center board:gap-1.5 board:px-4 board:py-2 board:bg-gray-900 board:dark:bg-white board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-100 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed">
         <on type="click">
           <!-- 일괄 지정 실행. 진행 표시는 성공·실패·403 어느 갈래에서든 끈다. 버튼 잠금만으로는 같은 틱의 두 번째 클릭을 못 막아 300ms 디바운스로 연타를 한 번으로 모은다 -->
           <sequence :debounce="300">

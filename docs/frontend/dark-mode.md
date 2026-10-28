@@ -14,16 +14,18 @@
 3. 텍스트: text-gray-900 dark:text-white
 4. 테두리: border-gray-200 dark:border-gray-700
 5. 항상 light/dark 쌍으로 지정 필수!
+6. 확장(모듈·플러그인) CSS 는 .dark 대신 <html data-g7-color-scheme> 중립 표식만 본다 — 템플릿은 features.color_scheme 선언
 ```
 
 ---
 
 ## 템플릿별 지원 현황
 
-| 템플릿 식별자 | features.dark_mode | 설명 |
-|--------------|-------------------|------|
-| `sirsoft-admin_basic` | 미선언 | ThemeToggle 존재, dark: variant 동작 |
-| `sirsoft-basic` | `true` | template.json에 선언, 완전 지원 |
+| 템플릿 식별자 | features.dark_mode | features.color_scheme | 설명 |
+|--------------|-------------------|----------------------|------|
+| `sirsoft-admin_basic` | 미선언 | `ancestor-class` + `.dark` | ThemeToggle 존재, dark: variant 동작 |
+| `sirsoft-basic` | `true` | `ancestor-class` + `.dark` | template.json에 선언, 완전 지원 |
+| `gnuboard7-hello_user_template`·`gnuboard7-hello_admin_template` | `false`·미선언 | `none` | 학습용 — 다크 모드 없음 |
 
 > 상세 컴포넌트 목록: [sirsoft-admin_basic](../../templates/_bundled/sirsoft-admin_basic/docs/components.md), [sirsoft-basic](../../templates/_bundled/sirsoft-basic/docs/components.md)
 
@@ -41,6 +43,7 @@
 8. [테스트 요구사항](#8-테스트-요구사항)
 9. [주의사항](#9-주의사항)
 10. [참고 자료](#10-참고-자료)
+11. [확장은 중립 표식을 쓴다](#확장은-중립-표식을-쓴다)
 
 ---
 
@@ -324,8 +327,39 @@ export const Card: React.FC<CardProps> = ({ title, content }) => {
 
 ---
 
+## 확장은 중립 표식을 쓴다
+
+이 문서의 `dark:` variant·`.dark` 클래스는 **템플릿 자기 화면**의 방식이다. 확장(모듈·플러그인)은 자기 화면을 자기 CSS 로 그리는데, 템플릿마다 다크를 켜는 방식이 달라(`.dark` 클래스, 시스템 설정, 다크 모드 없음) 그중 하나를 전제할 수 없다. 그래서 코어가 템플릿의 선언을 읽어 **하나의 중립 표식**을 단다(7.2.0+, engine-v1.86.0).
+
+```html
+<html data-g7-color-scheme="dark">   <!-- 또는 "light" -->
+```
+
+| 템플릿 선언(`template.json` 의 `features.color_scheme`) | 표식이 따라가는 것 |
+| --- | --- |
+| `{ "strategy": "ancestor-class", "selector": ".dark" }` | `<html>`·`<body>` 의 클래스 — ThemeToggle 이 `.dark` 를 붙이고 떼면 표식도 바로 바뀐다 |
+| `{ "strategy": "media-query" }` | 시스템 설정(`prefers-color-scheme`)과 그 변경 |
+| `{ "strategy": "none" }` 또는 미선언 | 없음 — 늘 `light` |
+
+- 엔진이 부팅 초반, 확장 자산을 싣기 **전에** 관찰을 시작한다. 확장 CSS 가 실리는 순간 표식은 이미 맞는 값이다.
+- 현재 값은 `G7Core.colorScheme.get()`(`'dark'` 또는 `'light'`), 정규화된 선언은 `G7Core.colorScheme.getDeclaration()` 으로 읽는다. 확장 컴포넌트·핸들러가 다크 여부로 분기해야 하면 `.dark` 클래스를 직접 보지 말고 이 값을 쓴다.
+- **레이아웃 편집기 프리뷰**: 프리뷰 프레임이 「프리뷰 색상 테마」에 맞춰 `data-g7-color-scheme="dark|light"` 를 함께 단다. 관리자 화면이 다크여도 프리뷰를 라이트로 보면 프리뷰 안 확장 화면은 라이트로, 그 반대도 마찬가지다.
+- **검색엔진용 화면**(SEO 렌더)은 라이트로 그리므로 `<html data-g7-color-scheme="light">` 다.
+- 템플릿 선언 형식과 검증: [template-basics.md](../extension/template-basics.md#다크-모드-방식-featurescolor_scheme)
+
+확장 CSS 의 다크 규칙은 `.dark` 대신 다음 규격으로 쓴다. 템플릿 `.dark .x` 와 같은 특이도 (0,2,0) 이고, 「다크 안의 라이트」(관리자 다크 + 프리뷰 라이트)만 제외한다.
+
+```css
+.ns-x:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { … }
+```
+
+Tailwind 로 확장 CSS 를 빌드하면 `@custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));` 로 `dark:` 가 이 표식을 따르게 한다. 규약 전문(앞글자·우선순위 세 칸·작성 예시·정적 검사): [module-assets.md 「확장 CSS 자기 공급 규약」](../extension/module-assets.md#확장-css-자기-공급-규약)
+
+---
+
 ## 관련 문서
 
 - [컴포넌트 개발 규칙](components.md) - 기본/집합/레이아웃 컴포넌트
 - [반응형 레이아웃](responsive-layout.md) - Tailwind breakpoint 활용
 - [템플릿 개발 가이드라인](template-development.md) - 빌드 및 테스트
+- [확장 CSS 자기 공급 규약](../extension/module-assets.md#확장-css-자기-공급-규약) - 확장 화면의 다크 규칙

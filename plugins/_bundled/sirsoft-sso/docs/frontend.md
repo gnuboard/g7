@@ -69,6 +69,7 @@ _등록하는 액션 핸들러가 없습니다._
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
 | `dist/js/plugin.iife.js` | 빌드 산출물 (커밋 대상) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
@@ -76,5 +77,5 @@ _등록하는 액션 핸들러가 없습니다._
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-JS 하나(`resources/js/index.ts` → `dist/js/plugin.iife.js`)뿐이고 CSS 가 없습니다 — 화면은 템플릿 클래스만 씁니다. 소스를 바꾸면 `php artisan plugin:build sirsoft-sso --production` 으로 다시 굽습니다. 브라우저 로그인 테스트 결과, SAML 자동 제출 폼, 모의 IdP 화면은 서버가 그리는 단독 HTML 입니다.
+JS(`resources/js/index.ts` → `dist/js/plugin.iife.js`)와 CSS(`resources/css/main.css` → `dist/css/plugin.css`, 앞글자 `sso` — 레이아웃용 접두 유틸리티 `sso:*` 와 템플릿 의미 클래스 사본 `sso-*`)입니다. 화면은 템플릿 CSS 에 기대지 않고, 다크 모드는 템플릿이 선언한 다크 방식에 따라 코어가 다는 `<html data-g7-color-scheme="dark">` 표식을 따릅니다. 소스를 바꾸면 `php artisan plugin:build sirsoft-sso --production` 으로 다시 굽습니다. 브라우저 로그인 테스트 결과, SAML 자동 제출 폼, 모의 IdP 화면은 서버가 그리는 단독 HTML 입니다.
 <!-- @intent END -->

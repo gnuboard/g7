@@ -41,7 +41,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "sl-admin-page-content"
                 },
                 "children": [
                     {
@@ -49,7 +49,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex flex-wrap items-start justify-between gap-3 mb-6"
+                            "className": "sl:flex sl:flex-wrap sl:items-start sl:justify-between sl:gap-3 sl:mb-6"
                         },
                         "children": [
                             {
@@ -60,7 +60,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "sl-page-title"
                                         },
                                         "text": "$t:sirsoft-social_login.admin.stats.title"
                                     },
@@ -68,7 +68,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-label-subtle mt-1"
+                                            "className": "sl-text-label-subtle sl:mt-1"
                                         },
                                         "text": "$t:sirsoft-social_login.admin.stats.description"
                                     }
@@ -79,7 +79,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-1",
+                                    "className": "sl:flex sl:items-center sl:gap-1",
                                     "role": "group",
                                     "aria-label": "$t:sirsoft-social_login.admin.stats.period"
                                 },
@@ -105,7 +105,7 @@
                                         "props": {
                                             "type": "button",
                                             "aria-pressed": "{{String(query.days || 30) === '7'}}",
-                                            "className": "{{String(query.days || 30) === '7' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
+                                            "className": "{{String(query.days || 30) === '7' ? 'sl-btn sl-btn-primary sl:text-sm' : 'sl-btn sl-btn-secondary sl:text-sm'}}"
                                         },
                                         "children": [
                                             {
@@ -136,7 +136,7 @@
                                         "props": {
                                             "type": "button",
                                             "aria-pressed": "{{String(query.days || 30) === '30'}}",
-                                            "className": "{{String(query.days || 30) === '30' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
+                                            "className": "{{String(query.days || 30) === '30' ? 'sl-btn sl-btn-primary sl:text-sm' : 'sl-btn sl-btn-secondary sl:text-sm'}}"
                                         },
                                         "children": [
                                             {
@@ -167,7 +167,7 @@
                                         "props": {
                                             "type": "button",
                                             "aria-pressed": "{{String(query.days || 30) === '90'}}",
-                                            "className": "{{String(query.days || 30) === '90' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}"
+                                            "className": "{{String(query.days || 30) === '90' ? 'sl-btn sl-btn-primary sl:text-sm' : 'sl-btn sl-btn-secondary sl:text-sm'}}"
                                         },
                                         "children": [
                                             {
@@ -183,7 +183,7 @@
                                         "name": "A",
                                         "props": {
                                             "href": "/admin/plugins/sirsoft-social_login/diagnostics",
-                                            "className": "btn btn-secondary text-sm ml-2"
+                                            "className": "sl-btn sl-btn-secondary sl:text-sm sl:ml-2"
                                         },
                                         "text": "$t:sirsoft-social_login.admin.diagnostics.title"
                                     }
@@ -196,7 +196,7 @@
                         "type": "basic",
                         "name": "P",
                         "props": {
-                            "className": "text-xs text-gray-500 dark:text-gray-400 mb-3"
+                            "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3"
                         },
                         "text": "$t:sirsoft-social_login.admin.stats.since|since={{stats?.data?.since ?? '-'}}"
                     },
@@ -220,7 +220,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body whitespace-nowrap"
+                                                "className": "sl-text-body sl:whitespace-nowrap"
                                             },
                                             "text": "{{row.label}}"
                                         }
@@ -236,7 +236,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body"
+                                                "className": "sl-text-body"
                                             },
                                             "text": "{{row.signups}}"
                                         }
@@ -252,7 +252,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body"
+                                                "className": "sl-text-body"
                                             },
                                             "text": "{{row.logins}}"
                                         }
@@ -268,7 +268,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body"
+                                                "className": "sl-text-body"
                                             },
                                             "text": "{{row.links}}"
                                         }
@@ -284,7 +284,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "{{row.failures > 0 ? 'text-red-700 dark:text-red-300' : 'text-body'}}"
+                                                "className": "{{row.failures > 0 ? 'sl:text-red-700 sl:dark:text-red-300' : 'sl-text-body'}}"
                                             },
                                             "text": "{{row.failures}}"
                                         }
@@ -300,7 +300,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body"
+                                                "className": "sl-text-body"
                                             },
                                             "text": "{{row.linked_accounts}}"
                                         }
@@ -316,7 +316,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body"
+                                                "className": "sl-text-body"
                                             },
                                             "text": "{{row.social_only_users}}"
                                         }
@@ -330,7 +330,7 @@
                         "type": "basic",
                         "name": "P",
                         "props": {
-                            "className": "text-sm text-gray-700 dark:text-gray-300 mt-3"
+                            "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:mt-3"
                         },
                         "text": "$t:sirsoft-social_login.admin.stats.totals|signups={{stats?.data?.totals?.signups ?? 0}}|logins={{stats?.data?.totals?.logins ?? 0}}|failures={{stats?.data?.totals?.failures ?? 0}}"
                     }

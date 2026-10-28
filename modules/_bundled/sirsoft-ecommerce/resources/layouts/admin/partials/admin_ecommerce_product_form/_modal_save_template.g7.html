@@ -4,18 +4,18 @@
 <partial description="Product Form - Save Notice Template Modal">
   <modal data-type="composite" data-ref="modal_save_template" title="$t:sirsoft-ecommerce.admin.product.modal.save_template.title" size="md">
     <div>
-      <div data-ref="save_template_description" class="text-center">
-        <div class="flex-center w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 dark:bg-blue-900/30 justify-center">
-          <icon name="save" class="text-[2rem] text-blue-500 dark:text-blue-400"/>
+      <div data-ref="save_template_description" class="ecommerce:text-center">
+        <div class="ecommerce-flex-center ecommerce:w-16 ecommerce:h-16 ecommerce:mx-auto ecommerce:mb-4 ecommerce:rounded-full ecommerce:bg-blue-100 ecommerce:dark:bg-blue-900/30 ecommerce:justify-center">
+          <icon name="save" class="ecommerce:text-[2rem] ecommerce:text-blue-500 ecommerce:dark:text-blue-400"/>
         </div>
-        <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.product.modal.save_template.description</p>
+        <p class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.product.modal.save_template.description</p>
       </div>
       <div data-ref="save_template_form">
         <div data-ref="template_name_field">
           <div>
-            <label class="form-label">
+            <label class="ecommerce-form-label">
               <span>$t:sirsoft-ecommerce.admin.product.modal.save_template.template_name</span>
-              <span class="text-required">*</span>
+              <span class="ecommerce-text-required">*</span>
             </label>
             <input name="template_name" value="{{_global.ui.saveTemplateData?.name ?? ''}}" placeholder="$t:sirsoft-ecommerce.admin.product.modal.save_template.template_name_placeholder">
               <on type="change">
@@ -27,7 +27,7 @@
         </div>
         <div data-ref="template_category_field">
           <div>
-            <label class="form-label">$t:sirsoft-ecommerce.admin.product.modal.save_template.category</label>
+            <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.product.modal.save_template.category</label>
             <select name="template_category" value="{{_global.ui.saveTemplateData?.category_id}}" placeholder="$t:sirsoft-ecommerce.admin.product.modal.save_template.category_placeholder" options="{{(notice_template_categories?.data?.data ?? []).map(c => ({ value: c.id, label: $localized(c.name) }))}}" :clearable="true">
               <on type="change">
                 <!-- 어느 분류의 템플릿으로 묶을지 — 비워 두어도 저장된다 -->
@@ -36,47 +36,47 @@
             </select>
           </div>
         </div>
-        <label data-ref="template_set_default" class="flex-center gap-3 cursor-pointer">
+        <label data-ref="template_set_default" class="ecommerce-flex-center ecommerce:gap-3 ecommerce:cursor-pointer">
           <checkbox name="is_default" checked="{{_global.ui.saveTemplateData?.is_default ?? false}}">
             <on type="change">
               <!-- 기본 템플릿으로 지정 — 다음 상품 등록에서 자동으로 불려 온다 -->
               <set-state target="global" ui.saveTemplateData.is_default="{{$event.target.checked}}"/>
             </on>
           </checkbox>
-          <span class="text-label cursor-pointer">$t:sirsoft-ecommerce.admin.product.modal.save_template.set_as_default</span>
+          <span class="ecommerce-text-label ecommerce:cursor-pointer">$t:sirsoft-ecommerce.admin.product.modal.save_template.set_as_default</span>
         </label>
       </div>
-      <div data-ref="save_template_preview" class="toggle-group">
-        <div class="p-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <span class="text-body font-medium">$t:sirsoft-ecommerce.admin.product.modal.save_template.preview</span>
+      <div data-ref="save_template_preview" class="ecommerce-toggle-group">
+        <div class="ecommerce:p-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700">
+          <span class="ecommerce-text-body ecommerce:font-medium">$t:sirsoft-ecommerce.admin.product.modal.save_template.preview</span>
         </div>
-        <div class="p-4 max-h-48 overflow-y-auto">
-          <div class="text-label">
-            <p class="mb-2">$t:sirsoft-ecommerce.admin.product.modal.save_template.fields_count: {{Object.keys(_local.form.product_notice ?? {}).length}}</p>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-              <div data-each="entry, entryIdx in {{Object.entries(_local.form.product_notice ?? {}).slice(0, 6)}}" class="bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">
-                <span class="text-gray-600 dark:text-gray-300">{{entry[0]}}: </span>
-                <span class="text-gray-700 dark:text-gray-300">{{(entry[1] ?? '').toString().substring(0, 20)}}{{(entry[1] ?? '').toString().length > 20 ? '...' : ''}}</span>
+        <div class="ecommerce:p-4 ecommerce:max-h-48 ecommerce:overflow-y-auto">
+          <div class="ecommerce-text-label">
+            <p class="ecommerce:mb-2">$t:sirsoft-ecommerce.admin.product.modal.save_template.fields_count: {{Object.keys(_local.form.product_notice ?? {}).length}}</p>
+            <div class="ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-2 ecommerce:text-xs">
+              <div data-each="entry, entryIdx in {{Object.entries(_local.form.product_notice ?? {}).slice(0, 6)}}" class="ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded ecommerce:px-2 ecommerce:py-1">
+                <span class="ecommerce:text-gray-600 ecommerce:dark:text-gray-300">{{entry[0]}}: </span>
+                <span class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{(entry[1] ?? '').toString().substring(0, 20)}}{{(entry[1] ?? '').toString().length > 20 ? '...' : ''}}</span>
               </div>
             </div>
-            <p data-if="{{Object.keys(_local.form.product_notice ?? {}).length > 6}}" class="mt-2 text-gray-500 dark:text-gray-400 italic">... +{{Object.keys(_local.form.product_notice ?? {}).length - 6}} $t:sirsoft-ecommerce.admin.product.modal.save_template.more_fields</p>
+            <p data-if="{{Object.keys(_local.form.product_notice ?? {}).length > 6}}" class="ecommerce:mt-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:italic">... +{{Object.keys(_local.form.product_notice ?? {}).length - 6}} $t:sirsoft-ecommerce.admin.product.modal.save_template.more_fields</p>
           </div>
         </div>
       </div>
-      <div data-ref="save_template_info" class="alert-info">
-        <div class="flex-start gap-2">
-          <icon name="info-circle" class="text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
-          <p class="ecommerce-tone-info-soft text-xs">$t:sirsoft-ecommerce.admin.product.modal.save_template.info</p>
+      <div data-ref="save_template_info" class="ecommerce-alert-info">
+        <div class="ecommerce-flex-start ecommerce:gap-2">
+          <icon name="info-circle" class="ecommerce:text-base ecommerce:text-blue-500 ecommerce:dark:text-blue-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"/>
+          <p class="ecommerce-tone-info-soft ecommerce:text-xs">$t:sirsoft-ecommerce.admin.product.modal.save_template.info</p>
         </div>
       </div>
-      <div class="flex justify-end gap-3 mt-6">
-        <button type="button" class="btn btn-outline">
+      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-3 ecommerce:mt-6">
+        <button type="button" class="ecommerce-btn ecommerce-btn-outline">
           <on type="click">
             <close-modal/>
           </on>
           $t:sirsoft-ecommerce.common.cancel
         </button>
-        <button type="button" class="btn btn-primary" disabled="{{!_global.ui.saveTemplateData?.name}}">
+        <button type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{!_global.ui.saveTemplateData?.name}}">
           <on type="click">
             <action handler="sirsoft-ecommerce.confirmSaveNoticeTemplate"/>
           </on>

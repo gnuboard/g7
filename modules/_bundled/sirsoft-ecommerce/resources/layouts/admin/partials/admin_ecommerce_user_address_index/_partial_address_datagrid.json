@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "mt-6"
+        "className": "ecommerce:mt-6"
     },
     "children": [
         {
@@ -16,14 +16,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3"
+                "className": "ecommerce-flex-center ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700/50 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:p-3 ecommerce:mb-4 ecommerce:flex-wrap ecommerce:gap-3"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-body font-medium whitespace-nowrap"
+                        "className": "ecommerce-text-body ecommerce:font-medium ecommerce:whitespace-nowrap"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.user_addresses.table.selected_count|count={{(_local.selectedItems || []).length}}"
                 },
@@ -31,7 +31,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-1"
+                        "className": "ecommerce:flex-1"
                     }
                 },
                 {
@@ -61,7 +61,7 @@
                     "props": {
                         "data-testid": "admin-addresses-bulk-delete",
                         "type": "button",
-                        "className": "px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-700 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-800 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{!(_local.selectedItems || []).length || _computed.canManage !== true}}"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.user_addresses.bulk.delete"
@@ -73,14 +73,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-between flex-wrap gap-3 mb-4"
+                "className": "ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-label"
+                        "className": "ecommerce-text-label"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.user_addresses.table.total_count|count={{addresses?.data?.pagination?.total || 0}}"
                 },
@@ -88,7 +88,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center gap-3"
+                        "className": "ecommerce-flex-center ecommerce:gap-3"
                     },
                     "children": [
                         {
@@ -126,7 +126,7 @@
                             "props": {
                                 "name": "sort",
                                 "aria-label": "$t:common.sort_order",
-                                "className": "w-40",
+                                "className": "ecommerce:w-40",
                                 "value": "{{query.sort || 'created_at_desc'}}",
                                 "options": [
                                     {
@@ -175,7 +175,7 @@
                             "props": {
                                 "name": "perPage",
                                 "aria-label": "$t:common.per_page",
-                                "className": "w-20",
+                                "className": "ecommerce:w-20",
                                 "value": "{{query.per_page || '20'}}",
                                 "options": [
                                     {
@@ -363,7 +363,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "whitespace-nowrap"
+                                    "className": "ecommerce:whitespace-nowrap"
                                 },
                                 "text": "{{row.created_at}}"
                             }
@@ -438,7 +438,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors"
+                                            "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:rounded-lg ecommerce:px-1 ecommerce:py-0.5 ecommerce:transition-colors"
                                         },
                                         "children": [
                                             {
@@ -446,21 +446,21 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "fa-regular fa-user",
-                                                    "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                    "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "min-w-0 flex-1"
+                                                    "className": "ecommerce:min-w-0 ecommerce:flex-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "font-medium text-gray-900 dark:text-gray-100 truncate block"
+                                                            "className": "ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate ecommerce:block"
                                                         },
                                                         "text": "{{row.member?.name}}"
                                                     },
@@ -469,7 +469,7 @@
                                                         "name": "Span",
                                                         "if": "{{!!row.member?.email}}",
                                                         "props": {
-                                                            "className": "text-tertiary truncate block"
+                                                            "className": "ecommerce-text-tertiary ecommerce:truncate ecommerce:block"
                                                         },
                                                         "text": "({{row.member?.email}})"
                                                     }
@@ -484,7 +484,7 @@
                                 "name": "Div",
                                 "if": "{{!row.member?.uuid}}",
                                 "props": {
-                                    "className": "flex-center gap-2"
+                                    "className": "ecommerce-flex-center ecommerce:gap-2"
                                 },
                                 "children": [
                                     {
@@ -519,14 +519,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2"
+                                    "className": "ecommerce-flex-center ecommerce:gap-2"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "font-medium"
+                                            "className": "ecommerce:font-medium"
                                         },
                                         "text": "{{row.recipient_name}}"
                                     },
@@ -547,7 +547,7 @@
                                 "name": "Span",
                                 "if": "{{!!row.label}}",
                                 "props": {
-                                    "className": "text-tertiary block truncate"
+                                    "className": "ecommerce-text-tertiary ecommerce:block ecommerce:truncate"
                                 },
                                 "text": "{{row.label}}"
                             }
@@ -562,7 +562,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "whitespace-nowrap"
+                                    "className": "ecommerce:whitespace-nowrap"
                                 },
                                 "text": "{{row.recipient_phone ?? '-'}}"
                             }

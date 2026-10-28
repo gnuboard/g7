@@ -111,7 +111,7 @@
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-social_login` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스는 자기 앞글자(`sl:` 접두 유틸리티 · `sl-*`)로만 쓰고, 새 클래스를 쓰면 `php artisan plugin:build sirsoft-social_login --production` 으로 `dist/css/plugin.css` 를 다시 만든다(템플릿 CSS 에 기대지 않는다)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 로그인 관련 변경은 코어 로그인 인계 계약(`docs/backend/authentication.md` 「외부 인증 로그인」)과 맞는지 확인하고, 플러그인이 토큰을 직접 만들지 않는지 `grep -rnE "createToken\(|Auth::login\(" src` 로 0 을 확인
 

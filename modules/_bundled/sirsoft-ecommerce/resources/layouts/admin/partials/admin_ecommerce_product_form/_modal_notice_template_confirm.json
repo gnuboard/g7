@@ -20,7 +20,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "alert-warning"
+                        "className": "ecommerce-alert-warning"
                     },
                     "children": [
                         {
@@ -28,7 +28,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "triangle-exclamation",
-                                "className": "text-xl text-amber-600 shrink-0 mt-0.5"
+                                "className": "ecommerce:text-xl ecommerce:text-amber-600 ecommerce:shrink-0 ecommerce:mt-0.5"
                             }
                         },
                         {
@@ -39,7 +39,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-sm font-medium ecommerce-tone-warning-soft"
+                                        "className": "ecommerce:text-sm ecommerce:font-medium ecommerce-tone-warning-soft"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.notice.confirm_change_warning"
                                 },
@@ -47,7 +47,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "ecommerce-tone-warning-soft text-xs"
+                                        "className": "ecommerce-tone-warning-soft ecommerce:text-xs"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.notice.confirm_change_description"
                                 }
@@ -59,7 +59,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-3"
+                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-3"
                     },
                     "children": [
                         {
@@ -86,7 +86,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-outline"
+                                "className": "ecommerce-btn ecommerce-btn-outline"
                             },
                             "text": "$t:sirsoft-ecommerce.common.cancel"
                         },
@@ -120,7 +120,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-warning"
+                                "className": "ecommerce-btn ecommerce-btn-warning"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.notice.confirm_change_button"
                         }

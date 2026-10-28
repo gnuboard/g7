@@ -16,14 +16,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "py-2"
+                "className": "ecommerce:py-2"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-primary text-base"
+                        "className": "ecommerce-text-primary ecommerce:text-base"
                     },
                     "text": "{{_global.errorMessage || '$t:common.error_occurred'}}"
                 }
@@ -33,7 +33,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "ecommerce-modal-footer-buttons"
             },
             "children": [
                 {
@@ -47,7 +47,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-gray-900 ecommerce:dark:bg-gray-100 ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-200"
                     },
                     "children": [
                         {

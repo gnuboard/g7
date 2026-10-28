@@ -4,6 +4,7 @@
  *
  * 화면(모달, 버튼)은 레이아웃 확장(`resources/extensions/*.g7.html`)이 그리고, 이 번들은 레이아웃이 부를 핸들러만 싣는다.
  */
+import '../css/main.css';
 import { handlerMap } from './handlers';
 
 /** 플러그인 식별자 — 핸들러 이름 앞에 붙는다. */

@@ -39,7 +39,7 @@ describe('CKEditor5 평문 폴백 다국어 탭 글자 (#148)', () => {
             contentMap: { ko: '한국어 본문' },
         });
 
-        const tabs = container.querySelectorAll('.ckeditor5-locale-tabs button');
+        const tabs = container.querySelectorAll('.ckeditor-locale-tabs button');
 
         expect(tabs).toHaveLength(3);
         expect(tabs[0].textContent).toContain('한국어');
@@ -63,7 +63,7 @@ describe('CKEditor5 평문 폴백 다국어 탭 글자 (#148)', () => {
             contentMap: { ko: '한국어 본문' },
         });
 
-        const tabs = container.querySelectorAll('.ckeditor5-locale-tabs button');
+        const tabs = container.querySelectorAll('.ckeditor-locale-tabs button');
 
         expect(tabs[1].textContent).toContain('Filipino (Pilipinas)');
         expect(tabs[1].textContent).not.toContain('FIL-PH');

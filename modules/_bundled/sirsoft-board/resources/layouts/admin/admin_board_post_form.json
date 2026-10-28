@@ -166,7 +166,7 @@
                     ]
                 },
                 "props": {
-                    "className": "admin-page-content-responsive-fluid"
+                    "className": "board-admin-page-content-responsive-fluid"
                 },
                 "children": [
                     {
@@ -197,7 +197,7 @@
                                 "props": {
                                     "href": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}",
                                     "mergeQuery": true,
-                                    "className": "button btn btn-secondary"
+                                    "className": "board-button board-btn board-btn-secondary"
                                 },
                                 "children": [
                                     {
@@ -291,7 +291,7 @@
                                 "props": {
                                     "type": "button",
                                     "disabled": "{{_computed.isReadOnly || _local.isSaving || (!!route?.id && !_local.hasChanges)}}",
-                                    "className": "flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "board-flex-center board:gap-2 board:px-4 board:py-2 board:bg-blue-600 board:text-white board:rounded-lg board:hover:bg-blue-700 board:dark:bg-blue-600 board:dark:hover:bg-blue-700 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed"
                                 },
                                 "children": [
                                     {
@@ -309,7 +309,7 @@
                         "name": "Div",
                         "if": "{{_computed.isReadOnly}}",
                         "props": {
-                            "className": "alert-warning"
+                            "className": "board-alert-warning"
                         },
                         "children": [
                             {
@@ -317,14 +317,14 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "lock",
-                                    "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                    "className": "board:text-xl board:text-amber-600 board:dark:text-amber-400 board:flex-shrink-0"
                                 }
                             },
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-xs board-tone-warning"
+                                    "className": "board:text-xs board-tone-warning"
                                 },
                                 "text": "$t:sirsoft-board.admin.posts.form.read_only_message"
                             }
@@ -336,14 +336,14 @@
                         "name": "Div",
                         "if": "{{_local.errors}}",
                         "props": {
-                            "className": "alert-danger items-start mb-6"
+                            "className": "board-alert-danger board:items-start board:mb-6"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-start gap-3"
+                                    "className": "board:flex board:items-start board:gap-3"
                                 },
                                 "children": [
                                     {
@@ -351,7 +351,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "triangle-exclamation",
-                                            "className": "text-xl leading-5 text-red-600 dark:text-red-400 flex-shrink-0"
+                                            "className": "board:text-xl board:leading-5 board:text-red-600 board:dark:text-red-400 board:flex-shrink-0"
                                         }
                                     },
                                     {
@@ -362,7 +362,7 @@
                                                 "type": "basic",
                                                 "name": "H3",
                                                 "props": {
-                                                    "className": "text-error-strong"
+                                                    "className": "board-text-error-strong"
                                                 },
                                                 "text": "$t:sirsoft-board.admin.form.validation_error"
                                             },
@@ -371,7 +371,7 @@
                                                 "name": "P",
                                                 "if": "{{typeof _local.errors === 'string'}}",
                                                 "props": {
-                                                    "className": "text-error-soft mt-2"
+                                                    "className": "board-text-error-soft board:mt-2"
                                                 },
                                                 "text": "{{_local.errors}}"
                                             },
@@ -384,14 +384,14 @@
                                                     "item_var": "message"
                                                 },
                                                 "props": {
-                                                    "className": "mt-2 list-disc list-inside space-y-1"
+                                                    "className": "board:mt-2 board:list-disc board:list-inside board:space-y-1"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Li",
                                                         "props": {
-                                                            "className": "text-error-soft"
+                                                            "className": "board-text-error-soft"
                                                         },
                                                         "text": "{{message}}"
                                                     }
@@ -416,7 +416,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "row-stack"
+                                    "className": "board-row-stack"
                                 },
                                 "children": [
                                     {
@@ -437,7 +437,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "sticky-footer-buttons-between"
+                            "className": "board-sticky-footer-buttons-between"
                         },
                         "children": [
                             {
@@ -445,7 +445,7 @@
                                 "name": "Div",
                                 "if": "{{_local.hasChanges}}",
                                 "props": {
-                                    "className": "flex-center gap-1.5 text-sm text-amber-700 dark:text-amber-400"
+                                    "className": "board-flex-center board:gap-1.5 board:text-sm board:text-amber-700 board:dark:text-amber-400"
                                 },
                                 "children": [
                                     {
@@ -453,7 +453,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "circle-dot",
-                                            "className": "text-xs"
+                                            "className": "board:text-xs"
                                         }
                                     },
                                     {
@@ -475,7 +475,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-3"
+                                    "className": "board-flex-center board:gap-3"
                                 },
                                 "children": [
                                     {
@@ -497,7 +497,7 @@
                                         "props": {
                                             "href": "{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}",
                                             "mergeQuery": true,
-                                            "className": "button btn btn-secondary"
+                                            "className": "board-button board-btn board-btn-secondary"
                                         },
                                         "children": [
                                             {
@@ -591,7 +591,7 @@
                                         "props": {
                                             "type": "button",
                                             "disabled": "{{_computed.isReadOnly || _local.isSaving || (!!route?.id && !_local.hasChanges)}}",
-                                            "className": "btn btn-primary flex-center gap-1.5"
+                                            "className": "board-btn board-btn-primary board-flex-center board:gap-1.5"
                                         },
                                         "children": [
                                             {

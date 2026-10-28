@@ -16,6 +16,9 @@ effects:
   - datagrid_row_class_static_string_unchanged
   # 좁은 화면 카드 보기에도 같은 행 클래스가 붙는다 (7.1.0 실측 — 390px 공지 카드 배경 구분 없음)
   - datagrid_row_class_applies_to_mobile_cards
+  # 행 표현식이 선택 여부($selected)를 본다 — 확장 앞글자 배경(층 밖)이 표의 선택 강조를 이겨
+  # 선택된 공지 행이 옅어지지 않던 것(#816)을 확장 레이아웃이 직접 고칠 수 있게 한다
+  - datagrid_row_class_receives_selected
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/DataGrid.rowClassName.test.tsx

@@ -30,12 +30,12 @@
                 "responsive": {
                     "portable": {
                         "props": {
-                            "className": "admin-page-content-compact"
+                            "className": "ecommerce-admin-page-content-compact"
                         }
                     }
                 },
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "ecommerce-admin-page-content"
                 },
                 "children": [
                     {
@@ -45,12 +45,12 @@
                         "responsive": {
                             "portable": {
                                 "props": {
-                                    "className": "row-stack mb-6"
+                                    "className": "ecommerce-row-stack ecommerce:mb-6"
                                 }
                             }
                         },
                         "props": {
-                            "className": "flex-start justify-between gap-4 mb-6"
+                            "className": "ecommerce-flex-start ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -62,7 +62,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title mb-1"
+                                            "className": "ecommerce-page-title ecommerce:mb-1"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.main_banner.title"
                                     },
@@ -70,7 +70,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-secondary text-sm"
+                                            "className": "ecommerce-text-secondary ecommerce:text-sm"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.main_banner.description"
                                     }
@@ -81,7 +81,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2 flex-shrink-0"
+                                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-shrink-0"
                                 },
                                 "children": [
                                     {
@@ -100,7 +100,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-icon",
+                                            "className": "ecommerce-btn ecommerce-btn-icon",
                                             "aria-label": "$t:common.reset"
                                         },
                                         "children": [
@@ -109,7 +109,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "arrows-rotate",
-                                                    "className": "text-base"
+                                                    "className": "ecommerce:text-base"
                                                 }
                                             }
                                         ]
@@ -119,7 +119,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-outline"
+                                            "className": "ecommerce-btn ecommerce-btn-outline"
                                         },
                                         "children": [
                                             {
@@ -127,7 +127,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "eye-slash",
-                                                    "className": "text-base mr-1"
+                                                    "className": "ecommerce:text-base ecommerce:mr-1"
                                                 }
                                             },
                                             {
@@ -154,7 +154,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-primary"
+                                            "className": "ecommerce-btn ecommerce-btn-primary"
                                         },
                                         "children": [
                                             {
@@ -162,7 +162,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "plus",
-                                                    "className": "text-base mr-1"
+                                                    "className": "ecommerce:text-base ecommerce:mr-1"
                                                 }
                                             },
                                             {
@@ -184,7 +184,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "grid-cols-1-lg-3"
+                            "className": "ecommerce-grid-cols-1-lg-3"
                         },
                         "children": [
                             {
@@ -192,7 +192,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "col-span-1-lg"
+                                    "className": "ecommerce-col-span-1-lg"
                                 },
                                 "children": [
                                     {
@@ -205,7 +205,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "col-span-2-lg"
+                                    "className": "ecommerce-col-span-2-lg"
                                 },
                                 "children": [
                                     {
@@ -220,14 +220,14 @@
                                         "name": "Div",
                                         "if": "{{_local.viewMode === 'detail' && _local.selectedBannerId === null}}",
                                         "props": {
-                                            "className": "admin-card"
+                                            "className": "ecommerce-admin-card"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center flex-col justify-center py-12"
+                                                    "className": "ecommerce-flex-center ecommerce:flex-col ecommerce:justify-center ecommerce:py-12"
                                                 },
                                                 "children": [
                                                     {
@@ -235,14 +235,14 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "image",
-                                                            "className": "text-[4rem] text-gray-500 dark:text-gray-500 mb-4"
+                                                            "className": "ecommerce:text-[4rem] ecommerce:text-gray-500 ecommerce:dark:text-gray-500 ecommerce:mb-4"
                                                         }
                                                     },
                                                     {
                                                         "type": "basic",
                                                         "name": "P",
                                                         "props": {
-                                                            "className": "text-secondary text-sm"
+                                                            "className": "ecommerce-text-secondary ecommerce:text-sm"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.sample.misc.select_banner_hint"
                                                     }

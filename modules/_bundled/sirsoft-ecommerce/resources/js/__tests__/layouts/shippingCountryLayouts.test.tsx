@@ -106,7 +106,7 @@ describe('header-currency-selector-user.json — 헤더 공용 셀렉터 2섹션
     // 회귀(유저 헤더): if 마운트/언마운트 대신 항상 마운트 + className 기본 hidden(display:none) → 조건 충족 시 해제.
     expect(root.if).toBeUndefined();
     const cls = root.props?.className ?? '';
-    expect(cls).toContain("'hidden'");
+    expect(cls).toContain("'ecommerce:hidden");
     expect(cls).toContain('_global.availableCurrencies');
     expect(cls).toContain('_global.availableShippingCountries');
   });
@@ -159,7 +159,7 @@ describe('header-currency-selector-user.json — 헤더 공용 셀렉터 2섹션
     expect(summary).toContain('preferredCurrency');
     expect(summary).toContain('preferredShippingCountry');
     expect(summary).toContain('chevron-down');
-    expect(summary).toContain("{{_local.showCurrencyDropdown ? 'rotate-180' : ''}}");
+    expect(summary).toContain("{{_local.showCurrencyDropdown ? 'ecommerce:rotate-180' : ''}}");
   });
 
   /** @effects header_selector_portable_layout */
@@ -189,7 +189,7 @@ describe('header-currency-selector-user.json — 헤더 공용 셀렉터 2섹션
   /** @effects header_selector_portable_layout */
   it('배경 클릭 오버레이는 portable 에서 꺼진다 (드로어 전체를 덮어 클릭을 가로채는 회귀 방지)', () => {
     const backdrop = (root.children ?? []).find(
-      (n: any) => n.name === 'Div' && (n.props?.className ?? '').includes('fixed inset-0')
+      (n: any) => n.name === 'Div' && (n.props?.className ?? '').includes('ecommerce:fixed ecommerce:inset-0')
     );
     expect(backdrop).toBeTruthy();
     expect(backdrop.if).toBe('{{_local.showCurrencyDropdown}}');
@@ -321,7 +321,7 @@ describe('header-currency-selector-admin.json — 관리자 헤더 2섹션', () 
     // 항상 마운트하되 className 에 기본 hidden(display:none) 을 깔고 조건 충족 시에만 해제한다.
     expect(root.if).toBeUndefined();
     const cls = root.props?.className ?? '';
-    expect(cls).toContain("'hidden'");
+    expect(cls).toContain("'ecommerce:hidden");
     // 표시 조건은 파생 상태(availableCurrencies/availableShippingCountries)로 판정, G7Config 원본 직접 참조 금지.
     expect(cls).toContain('_global.availableCurrencies');
     expect(cls).toContain('_global.availableShippingCountries');

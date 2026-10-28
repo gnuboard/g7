@@ -17,14 +17,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-3"
+                "className": "board:space-y-3"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-label"
+                        "className": "board-text-label"
                     },
                     "text": "{{_global.boardBulkMembers?.mode === 'remove' ? ((_global.boardBulkMembers?.type ?? 'manager') === 'step' ? $t:sirsoft-board.admin.settings.bulk_members.confirm_remove_step : $t:sirsoft-board.admin.settings.bulk_members.confirm_remove_manager) : ((_global.boardBulkMembers?.type ?? 'manager') === 'step' ? $t:sirsoft-board.admin.settings.bulk_members.confirm_add_step : $t:sirsoft-board.admin.settings.bulk_members.confirm_add_manager)}}"
                 },
@@ -32,14 +32,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "text-sm text-gray-700 dark:text-gray-300"
+                        "className": "board:text-sm board:text-gray-700 board:dark:text-gray-300"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "font-medium"
+                                "className": "board:font-medium"
                             },
                             "text": "$t:sirsoft-board.admin.settings.bulk_members.target_label"
                         },
@@ -48,7 +48,7 @@
                             "name": "Span",
                             "if": "{{_global.boardBulkMembers?.all !== false}}",
                             "props": {
-                                "className": "ml-2"
+                                "className": "board:ml-2"
                             },
                             "text": "$t:sirsoft-board.admin.settings.bulk_members.target_all"
                         },
@@ -57,7 +57,7 @@
                             "name": "Span",
                             "if": "{{_global.boardBulkMembers?.all === false}}",
                             "props": {
-                                "className": "ml-2"
+                                "className": "board:ml-2"
                             },
                             "text": "$t:sirsoft-board.admin.settings.bulk_members.boards_count|count={{(_global.boardBulkMembers?.boardIds ?? []).length}}"
                         }
@@ -67,7 +67,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex flex-wrap gap-1"
+                        "className": "board:flex board:flex-wrap board:gap-1"
                     },
                     "children": [
                         {
@@ -78,7 +78,7 @@
                                 "item_var": "member"
                             },
                             "props": {
-                                "className": "px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
+                                "className": "board:px-2 board:py-0.5 board:text-xs board:bg-gray-100 board:dark:bg-gray-700 board:text-gray-700 board:dark:text-gray-300 board:rounded"
                             },
                             "text": "{{member.name}}"
                         }
@@ -89,7 +89,7 @@
                     "name": "P",
                     "if": "{{_global.boardBulkMembers?.mode === 'remove' && (_global.boardBulkMembers?.type ?? 'manager') === 'manager'}}",
                     "props": {
-                        "className": "text-tertiary"
+                        "className": "board-text-tertiary"
                     },
                     "text": "$t:sirsoft-board.admin.settings.bulk_members.hint"
                 },
@@ -99,7 +99,7 @@
                     "name": "Div",
                     "if": "{{!!_global.boardBulkMembers?.error}}",
                     "props": {
-                        "className": "alert-danger text-sm"
+                        "className": "board-alert-danger board:text-sm"
                     },
                     "text": "{{_global.boardBulkMembers?.error}}"
                 }
@@ -109,7 +109,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "board-modal-footer-buttons"
             },
             "children": [
                 {
@@ -124,7 +124,7 @@
                     "props": {
                         "type": "button",
                         "disabled": "{{_global.boardBulkMembers?.isApplying === true}}",
-                        "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                        "className": "board-btn board-btn-secondary board:disabled:opacity-50 board:disabled:cursor-not-allowed"
                     },
                     "children": [
                         {
@@ -217,7 +217,7 @@
                     "props": {
                         "type": "button",
                         "disabled": "{{_global.boardBulkMembers?.isApplying === true}}",
-                        "className": "flex-center gap-1.5 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        "className": "board-flex-center board:gap-1.5 board:px-4 board:py-2 board:bg-gray-900 board:dark:bg-white board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-100 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed"
                     },
                     "children": [
                         {

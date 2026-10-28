@@ -1,12 +1,12 @@
 <!-- 회원가입 화면 폼 위에 「…로 가입」 버튼을 붙이는 조각 — 켜진 제공자가 없거나 소셜 가입을 이어 가는 중이면(social_pending) 그리지 않는다.
      버튼 뒤에는 「또는 이메일로 가입」 구분선이 와서 아래 가입 폼과 나뉜다. -->
 <extension extension-point="auth_register_extensions" mode="append" priority="100">
-  <div data-ref="social_register_buttons_section" data-if="{{(socialProviders?.data ?? []).length > 0 &amp;&amp; !query.social_pending}}" class="mb-6">
+  <div data-ref="social_register_buttons_section" data-if="{{(socialProviders?.data ?? []).length > 0 &amp;&amp; !query.social_pending}}" class="sl:mb-6">
     <sirsoft-social_login.provider-buttons data-type="composite" data-ref="social_register_provider_buttons" providers="{{socialProviders?.data ?? []}}" intent="register" redirect="{{query.redirect ?? '/'}}"/>
-    <div class="flex items-center gap-3 mt-6">
-      <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"/>
-      <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-social_login.divider.or_email_signup</span>
-      <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"/>
+    <div class="sl:flex sl:items-center sl:gap-3 sl:mt-6">
+      <div class="sl:flex-1 sl:h-px sl:bg-gray-200 sl:dark:bg-gray-700"/>
+      <span class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.divider.or_email_signup</span>
+      <div class="sl:flex-1 sl:h-px sl:bg-gray-200 sl:dark:bg-gray-700"/>
     </div>
   </div>
   <!-- 켜진 제공자 목록 — 비로그인으로 읽는다. -->

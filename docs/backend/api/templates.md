@@ -1608,7 +1608,7 @@ Content-Type: text/css; charset=UTF-8
 
 <!-- @generated:end -->
 
-**설명** 레이아웃 편집기 프리뷰 전용 CSS를 서빙합니다. 편집기 진입 시에만 components.css의 다크 조상 셀렉터를 프리뷰 마커로 치환하고(editor-spec `darkMode.previewIsolation` 규칙), 필요 시 `@layer` 래퍼를 평탄화해 라이트/다크 프리뷰를 격리합니다. 변환 결과는 캐시 버전+파일 mtime 키로 캐시하며, CSS 부재 시 빈 응답으로 폴백합니다. CSS 와 치환 규칙(editor-spec)은 설치본만 읽으며, 설치본에 CSS 가 없으면 배포 원본을 대신 서빙하지 않고 빈 응답을 돌려줍니다. `core.templates.layouts.edit` 권한이 필요합니다.
+**설명** 레이아웃 편집기 프리뷰 전용 CSS를 서빙합니다. 편집기 진입 시에만 components.css의 다크 조상 셀렉터를 프리뷰 마커로 치환하고(editor-spec `darkMode.previewIsolation` 규칙), 필요 시(`flattenLayers`) 템플릿의 `@layer` 이름을 프리뷰 층 `g7-preview` 하나로 모아 관리자 화면 CSS 의 같은 층 이름과 섞이지 않게 합니다(층 밖 규칙은 그대로, 순서 선언은 삭제). 관리자 화면 머리가 `@layer g7-preview, g7-extension;` 을 선언하므로 프리뷰 템플릿 규칙은 관리자 층 규칙보다 위·확장 CSS 의미 칸보다 아래에 놓입니다. 변환 결과는 캐시 버전+파일 mtime 키로 캐시하며, CSS 부재 시 빈 응답으로 폴백합니다. CSS 와 치환 규칙(editor-spec)은 설치본만 읽으며, 설치본에 CSS 가 없으면 배포 원본을 대신 서빙하지 않고 빈 응답을 돌려줍니다. `core.templates.layouts.edit` 권한이 필요합니다.
 
 URI 가 `editor/components.css` 가 아니라 `editor/component-styles.css` 인 이유는 [자산 URL 이중 모드](README.md#자산-url-이중-모드) 때문입니다. 확장자를 뗀 형태(`editor/components`)가 `editor/components.json` 의 확장자 없는 형태와 충돌하므로 CSS 쪽 URI 를 분리했습니다. 확장자 없는 형태는 `editor/component-styles` 입니다.
 

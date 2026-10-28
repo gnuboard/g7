@@ -36,19 +36,19 @@
             "responsive": {
                 "portable": {
                     "props": {
-                        "className": "flex flex-col gap-2 items-start"
+                        "className": "sso:flex sso:flex-col sso:gap-2 sso:items-start"
                     }
                 }
             },
             "props": {
-                "className": "flex flex-col gap-2 md:flex-row md:items-center"
+                "className": "sso:flex sso:flex-col sso:gap-2 sso:md:flex-row sso:md:items-center"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 md:mb-0 shrink-0 md:flex md:items-center"
+                        "className": "sso:block sso:mb-2 sso:w-32 sso:text-sm sso:text-gray-600 sso:dark:text-gray-400 sso:md:mb-0 sso:shrink-0 sso:md:flex sso:md:items-center"
                     },
                     "text": "$t:sirsoft-sso.admin.user_list.filter_label"
                 },
@@ -56,7 +56,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center flex-wrap gap-2"
+                        "className": "sso:flex sso:items-center sso:flex-wrap sso:gap-2"
                     },
                     "children": [
                         {
@@ -76,7 +76,7 @@
                             ],
                             "props": {
                                 "name": "ssoIdpFilter",
-                                "className": "w-48",
+                                "className": "sso:w-48",
                                 "value": "{{(_local.userFilterExtraQuery || []).includes('sirsoft-sso.unlinked=1') ? '__unlinked__' : ((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-sso.idp=')) || '').slice('sirsoft-sso.idp='.length)}}",
                                 "aria-label": "$t:sirsoft-sso.admin.user_list.filter_label"
                             },

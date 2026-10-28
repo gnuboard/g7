@@ -49,7 +49,7 @@ describe('클레임 이력 모바일 카드 머리줄', () => {
   it('머리줄은 [번호(링크/글자 중 하나), 배지 묶음] 이고 배지 묶음 안에 배지 둘이 있다', () => {
     const header = find(claimHistory, (n) => String(n.id ?? '').startsWith('claim_history_card_header_'));
     expect(header, '카드 머리 노드가 없습니다.').toBeDefined();
-    const row = (header!.children ?? []).find((c: Json) => tokens(c.props?.className).includes('justify-between'));
+    const row = (header!.children ?? []).find((c: Json) => tokens(c.props?.className).includes('ecommerce:justify-between'));
     expect(row, '머리줄이 없습니다.').toBeDefined();
 
     const kids: Json[] = row.children ?? [];
@@ -61,7 +61,7 @@ describe('클레임 이력 모바일 카드 머리줄', () => {
 
     const group = kids.find((c) => !String(c.id ?? '').startsWith('claim_history_card_number_'));
     expect(kids.length).toBe(3);
-    expect(tokens(group!.props?.className)).toEqual(expect.arrayContaining(['flex-center', 'gap-1.5']));
+    expect(tokens(group!.props?.className)).toEqual(expect.arrayContaining(['ecommerce-flex-center', 'ecommerce:gap-1.5']));
     const badges = (group!.children ?? []).filter((c: Json) => c.name === 'Badge');
     expect(badges.length).toBe(2);
     expect(String(badges[1].if)).toContain('has_pending_refund');
@@ -75,11 +75,11 @@ describe('상품 목록 모바일 옵션 카드 묶음', () => {
    */
   it('옵션 카드의 portable 컨테이너는 row-stack 이 아니라 stack-flush 다', () => {
     const container = find(productDatagrid, (n) =>
-      (n.responsive?.portable?.children ?? []).some((c: Json) => c.iteration?.item_var === 'option' && tokens(c.props?.className).includes('admin-card')),
+      (n.responsive?.portable?.children ?? []).some((c: Json) => c.iteration?.item_var === 'option' && tokens(c.props?.className).includes('ecommerce-admin-card')),
     );
     expect(container, '옵션 카드 묶음이 없습니다.').toBeDefined();
     const cls = tokens(container!.responsive.portable.props?.className);
-    expect(cls).toContain('stack-flush');
-    expect(cls).not.toContain('row-stack');
+    expect(cls).toContain('ecommerce-stack-flush');
+    expect(cls).not.toContain('ecommerce-row-stack');
   });
 });

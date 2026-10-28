@@ -33,7 +33,8 @@
         },
         "css": {
             "entry": "resources/css/main.css",
-            "output": "dist/css/plugin.css"
+            "output": "dist/css/plugin.css",
+            "namespace": "pay-tosspayments"
         },
         "handlers": true
     },

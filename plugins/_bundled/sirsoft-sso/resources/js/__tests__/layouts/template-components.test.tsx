@@ -77,11 +77,12 @@ describe('대상 템플릿 컴포넌트', () => {
       [tab, ['admin.accounts.col.via', 'admin.accounts.col.linked_at', 'admin.accounts.col.last_login_at', 'admin.accounts.col.deprovisioned_at']],
       [diag, ['admin.settings.idp.last_success', 'admin.settings.idp.last_error', 'admin.settings.idp.periodic_checked_at', 'admin.settings.idp.cert_expires_at']],
     ] as const) {
-      const grid = nodes.find((n) => typeof n?.props?.className === 'string' && n.props.className.startsWith('grid grid-cols-3'));
+      // 클래스는 이 플러그인 자기 CSS 의 앞글자 이름이다(sso: 접두 유틸리티)
+      const grid = nodes.find((n) => typeof n?.props?.className === 'string' && n.props.className.startsWith('sso:grid sso:grid-cols-3'));
       expect(grid?.name).toBe('Div');
       const cells = grid.children as any[];
       expect(cells.map((c) => c.text).filter((t: string) => t?.startsWith('$t:'))).toEqual(labels.map((l) => `$t:sirsoft-sso.${l}`));
-      expect(cells.filter((c) => c.props?.className?.includes('col-span-2'))).toHaveLength(labels.length);
+      expect(cells.filter((c) => c.props?.className?.includes('sso:col-span-2'))).toHaveLength(labels.length);
     }
   });
 });

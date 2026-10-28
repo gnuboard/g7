@@ -30,7 +30,7 @@
             "props": {
                 "type": "text",
                 "placeholder": "$t:sirsoft-ecommerce.admin.product.modal.preset_save.placeholder",
-                "className": "input",
+                "className": "ecommerce-input",
                 "value": "{{_global.editingPresetName}}"
             }
         },
@@ -39,7 +39,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex justify-end gap-2 mt-4"
+                "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-4"
             },
             "children": [
                 {
@@ -53,7 +53,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-secondary"
+                        "className": "ecommerce-btn ecommerce-btn-secondary"
                     },
                     "text": "$t:common.cancel"
                 },
@@ -102,7 +102,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-primary",
+                        "className": "ecommerce-btn ecommerce-btn-primary",
                         "disabled": "{{!_global.editingPresetName || _global.editingPresetName.trim() === ''}}"
                     },
                     "text": "$t:common.save"

@@ -115,6 +115,7 @@ class AssetUrl
      * 모드를 강제로 지정합니다 (테스트 전용).
      *
      * @param  string|null  $mode  강제할 모드. null 이면 오버라이드 해제
+     * @return void 반환값 없음
      */
     public static function forceMode(?string $mode): void
     {
@@ -176,6 +177,8 @@ class AssetUrl
 
     /**
      * 정적 게시 베이스 메모를 초기화합니다 (테스트 전용).
+     *
+     * @return void 반환값 없음
      */
     public static function resetStaticExtBaseMemo(): void
     {
@@ -262,6 +265,7 @@ class AssetUrl
      * @param  string  $identifier  모듈 식별자
      * @param  string  $path  모듈 루트 기준 파일 경로 (예: `dist/js/x.iife.js`)
      * @param  int|string|null  $version  캐시 무효화 버전 (null 이면 미부착)
+     * @param  bool  $allowStatic  정적 게시 URL(`/build/ext/…`)을 허용할지 — 확장 CSS 자기 공급 자산처럼 정적 게시본이 있는 경우만 true
      * @return string 생성된 URL
      */
     public static function moduleAsset(
@@ -279,6 +283,7 @@ class AssetUrl
      * @param  string  $identifier  플러그인 식별자
      * @param  string  $path  플러그인 루트 기준 파일 경로 (예: `dist/js/x.iife.js`)
      * @param  int|string|null  $version  캐시 무효화 버전 (null 이면 미부착)
+     * @param  bool  $allowStatic  정적 게시 URL(`/build/ext/…`)을 허용할지 — 확장 CSS 자기 공급 자산처럼 정적 게시본이 있는 경우만 true
      * @return string 생성된 URL
      */
     public static function pluginAsset(
@@ -355,13 +360,14 @@ class AssetUrl
      * @param  string  $type  `modules` 또는 `plugins`
      * @param  string  $kind  `js` 또는 `css`
      * @param  int|string|null  $version  캐시 무효화 버전 (null 이면 미부착)
+     * @param  bool  $allowStatic  정적 게시본 경로 허용 여부 — 캐시 수명이 게시 GC 보다 긴 HTML(SEO)에 박을 때 false
      * @return string 생성된 URL
      */
-    public static function extensionBundle(string $type, string $kind, int|string|null $version = null): string
+    public static function extensionBundle(string $type, string $kind, int|string|null $version = null, bool $allowStatic = true): string
     {
         // 정적 게시본(bake) 우선 (#122) — `bundles/{modules|plugins}.{js|css}` 사본.
         // `$version` 명시 호출이 현재 게시 버전과 다르면 건너뛴다 (templateAsset 과 동일 계약)
-        $base = self::staticExtBase();
+        $base = $allowStatic ? self::staticExtBase() : null;
         $static = $base !== null && ($version === null || $base === '/build/ext/'.$version)
             ? self::staticTagUrl("bundles/{$type}.{$kind}")
             : null;

@@ -336,7 +336,21 @@ describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
     };
     roots.forEach(walk);
 
-    const words = (node: any): string[] => (typeof node?.props?.className === 'string' ? node.props.className.split(/\s+/) : []);
+    // 확장 레이아웃은 자기 CSS 의 앞글자 이름을 쓴다(접두 빌드 `{letters}:flex`, 의미 클래스 `{namespace}-kv-row` — #816).
+    // 앞글자를 떼고 읽어야 템플릿 화면과 같은 기준으로 판정한다. 앞글자는 manifest `assets.css.namespace` 에서 파생한다.
+    const prefixes = ['modules', 'plugins'].flatMap((kind) => {
+      const dir = path.join(repo, kind, '_bundled');
+      return fs.existsSync(dir) ? fs.readdirSync(dir).flatMap((id) => {
+        const manifest = path.join(dir, id, kind === 'modules' ? 'module.json' : 'plugin.json');
+        const ns = fs.existsSync(manifest) ? JSON.parse(fs.readFileSync(manifest, 'utf8'))?.assets?.css?.namespace : undefined;
+        return typeof ns === 'string' && ns ? [`${ns.replace(/[^a-z]/g, '')}:`, `${ns}-`] : [];
+      }) : [];
+    });
+    const unprefix = (w: string): string => {
+      const p = prefixes.find((x) => w.startsWith(x));
+      return p ? w.slice(p.length) : w;
+    };
+    const words = (node: any): string[] => (typeof node?.props?.className === 'string' ? node.props.className.split(/\s+/).map(unprefix) : []);
     const isPairRow = (row: any): boolean => {
       const kids = Array.isArray(row?.children) ? row.children : [];
       if (kids.length !== 2 || row.iteration) return false;

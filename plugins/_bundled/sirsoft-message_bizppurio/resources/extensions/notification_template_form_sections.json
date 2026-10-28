@@ -203,7 +203,7 @@
                 ]
             },
             "props": {
-                "className": "space-y-4"
+                "className": "bizppurio:space-y-4"
             },
             "children": [
                 {
@@ -211,36 +211,36 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "rounded-lg border border-teal-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 space-y-3"
+                        "className": "bizppurio:rounded-lg bizppurio:border bizppurio:border-teal-200 bizppurio:dark:border-gray-700 bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:p-4 bizppurio:space-y-3"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-between flex-wrap gap-2"
+                                "className": "bizppurio-flex-between bizppurio:flex-wrap bizppurio:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center flex-wrap gap-2"
+                                        "className": "bizppurio:flex bizppurio:items-center bizppurio:flex-wrap bizppurio:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "fas fa-comment-dots",
-                                                "className": "text-base text-teal-600 dark:text-teal-400 flex-shrink-0"
+                                                "name": "comment-dots",
+                                                "className": "bizppurio:text-base bizppurio:leading-none bizppurio:text-teal-600 bizppurio:dark:text-teal-400 bizppurio:flex-shrink-0"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "H4",
                                             "props": {
-                                                "className": "text-sm font-semibold text-gray-800 dark:text-gray-100"
+                                                "className": "bizppurio:text-sm bizppurio:font-semibold bizppurio:text-gray-800 bizppurio:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.section.alimtalk_title"
                                         },
@@ -249,7 +249,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "{{'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ' + ((((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'approved' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : (((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'requested' ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-200' : (((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'rejected' ? 'bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-100' : ((((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'stopped' || (((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'blocked') ? 'border border-red-400 dark:border-red-500 text-red-600 dark:text-red-400' : (((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'dormant' ? 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300')}}"
+                                                "className": "{{'bizppurio:inline-flex bizppurio:items-center bizppurio:gap-1 bizppurio:px-2 bizppurio:py-0.5 bizppurio:rounded bizppurio:text-xs bizppurio:font-medium bizppurio:flex-shrink-0 ' + ((((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'approved' ? 'bizppurio:bg-green-100 bizppurio:dark:bg-green-900 bizppurio:text-green-800 bizppurio:dark:text-green-200' : (((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'requested' ? 'bizppurio:bg-amber-100 bizppurio:dark:bg-amber-900 bizppurio:text-amber-700 bizppurio:dark:text-amber-200' : (((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'rejected' ? 'bizppurio:bg-red-100 bizppurio:dark:bg-red-800 bizppurio:text-red-700 bizppurio:dark:text-red-100' : ((((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'stopped' || (((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'blocked') ? 'bizppurio:border bizppurio:border-red-400 bizppurio:dark:border-red-500 bizppurio:text-red-600 bizppurio:dark:text-red-400' : (((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') === 'dormant' ? 'bizppurio:bg-orange-100 bizppurio:dark:bg-orange-900 bizppurio:text-orange-700 bizppurio:dark:text-orange-200' : 'bizppurio:bg-gray-100 bizppurio:dark:bg-gray-700 bizppurio:text-gray-600 bizppurio:dark:text-gray-300')}}"
                                             },
                                             "children": [
                                                 {
@@ -262,7 +262,7 @@
                                                     "name": "Span",
                                                     "if": "{{(((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten') !== 'approved'}}",
                                                     "props": {
-                                                        "className": "font-normal"
+                                                        "className": "bizppurio:font-normal"
                                                     },
                                                     "text": "{{'(' + $t('sirsoft-message_bizppurio.template.status.' + (((_global.bz_tpl_modal?.id) && (_global.bz_tpl_modal?.has_content)) ? (_global.bz_tpl_modal?.status ?? 'draft') : 'unwritten')) + ')'}}"
                                                 }
@@ -273,7 +273,7 @@
                                             "name": "Span",
                                             "if": "{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.row.requested_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.requested_at ?? '').slice(5, 10)}}"
                                         },
@@ -282,7 +282,7 @@
                                             "name": "Span",
                                             "if": "{{bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.row.synced_on|date={{(bizppurioTemplates?.data?.templates?.[extensionPointProps.definition?.type]?.last_synced_at ?? '').slice(5, 10)}}"
                                         }
@@ -292,7 +292,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center flex-wrap gap-1.5"
+                                        "className": "bizppurio:flex bizppurio:items-center bizppurio:flex-wrap bizppurio:gap-1.5"
                                     },
                                     "children": [
                                         {
@@ -403,7 +403,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "text-xs px-2.5 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed",
                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true || ((_global.bz_tpl_modal?.isSaving ?? false))}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.row.btn_refresh"
@@ -485,7 +485,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "text-xs px-2.5 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed",
                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true || ((_global.bz_tpl_modal?.isSaving ?? false))}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.row.btn_cancel_request"
@@ -598,7 +598,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "text-xs px-2.5 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed",
                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true || ((_global.bz_tpl_modal?.isSaving ?? false))}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.row.btn_release"
@@ -620,7 +620,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "text-xs px-2.5 py-1 rounded-md border border-amber-400 dark:border-gray-600 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                "className": "bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio:border bizppurio:border-amber-400 bizppurio:dark:border-gray-600 bizppurio:text-amber-700 bizppurio:dark:text-amber-300 bizppurio:hover:bg-amber-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.row.btn_edit_approved"
                                         }
@@ -633,7 +633,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "inline-flex items-center gap-1.5 cursor-pointer select-none"
+                                "className": "bizppurio:inline-flex bizppurio:items-center bizppurio:gap-1.5 bizppurio:cursor-pointer bizppurio:select-none"
                             },
                             "children": [
                                 {
@@ -653,14 +653,14 @@
                                     "props": {
                                         "autoBinding": false,
                                         "checked": "{{!!(_global.bz_tpl_modal?.alimtalk_enabled ?? true)}}",
-                                        "className": "h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 text-teal-600"
+                                        "className": "bizppurio:h-3.5 bizppurio:w-3.5 bizppurio:rounded bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-teal-600"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-gray-600 dark:text-gray-300"
+                                        "className": "bizppurio:text-xs bizppurio:text-gray-600 bizppurio:dark:text-gray-300"
                                     },
                                     "text": "$t:sirsoft-message_bizppurio.template.section.alimtalk_enabled"
                                 }
@@ -672,29 +672,29 @@
                             "name": "Div",
                             "if": "{{(_global.bz_tpl_ui?.confirmCancelApproval ?? false) && _global.bz_tpl_modal?.status === 'approved'}}",
                             "props": {
-                                "className": "p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 space-y-2"
+                                "className": "bizppurio:p-3 bizppurio:rounded-lg bizppurio:bg-amber-50 bizppurio:dark:bg-amber-900/30 bizppurio:border bizppurio:border-amber-200 bizppurio:dark:border-amber-700 bizppurio:space-y-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-start gap-2"
+                                        "className": "bizppurio:flex bizppurio:items-start bizppurio:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "fas fa-triangle-exclamation",
-                                                "className": "text-base text-amber-600 flex-shrink-0"
+                                                "name": "triangle-exclamation",
+                                                "className": "bizppurio:text-base bizppurio:leading-none bizppurio:text-amber-600 bizppurio:flex-shrink-0"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-sm text-amber-900 dark:text-amber-100"
+                                                "className": "bizppurio:text-sm bizppurio:text-amber-900 bizppurio:dark:text-amber-100"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.cancel_approval.warning|name={{_global.bz_tpl_modal?.notification_name ?? ''}}"
                                         }
@@ -704,7 +704,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex justify-end gap-2"
+                                        "className": "bizppurio:flex bizppurio:justify-end bizppurio:gap-2"
                                     },
                                     "children": [
                                         {
@@ -723,7 +723,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "text-xs px-2.5 py-1 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700 bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed",
                                                 "disabled": "{{(_global.bz_tpl_modal?.isSaving ?? false)}}"
                                             },
                                             "text": "$t:common.cancel"
@@ -806,7 +806,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "text-xs px-2.5 py-1 rounded-md bg-amber-700 text-white dark:bg-amber-700 bizppurio-btn-amber-solid disabled:opacity-50",
+                                                "className": "bizppurio:text-xs bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio:bg-amber-700 bizppurio:text-white bizppurio:dark:bg-amber-700 bizppurio-btn-amber-solid bizppurio:disabled:opacity-50",
                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true || ((_global.bz_tpl_modal?.isSaving ?? false))}}"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.cancel_approval.btn_confirm"
@@ -820,30 +820,30 @@
                             "name": "Div",
                             "if": "{{_global.bz_tpl_modal?.status === 'rejected' && (_global.bz_tpl_modal?.inspection_detail ?? []).length > 0}}",
                             "props": {
-                                "className": "p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700"
+                                "className": "bizppurio:p-3 bizppurio:rounded-lg bizppurio:bg-red-50 bizppurio:dark:bg-red-900/30 bizppurio:border bizppurio:border-red-200 bizppurio:dark:border-red-700"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center gap-2"
+                                        "className": "bizppurio:flex bizppurio:items-center bizppurio:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "fas fa-circle-exclamation",
+                                                "name": "circle-exclamation",
                                                 "size": "sm",
-                                                "className": "text-red-600 dark:text-red-400 flex-shrink-0"
+                                                "className": "bizppurio:text-red-600 bizppurio:dark:text-red-400 bizppurio:flex-shrink-0"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-xs font-medium text-red-800 dark:text-red-200"
+                                                "className": "bizppurio:text-xs bizppurio:font-medium bizppurio:text-red-800 bizppurio:dark:text-red-200"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.rejected_banner"
                                         }
@@ -857,7 +857,7 @@
                                         "item_var": "cm"
                                     },
                                     "props": {
-                                        "className": "text-xs text-red-700 dark:text-red-300 mt-1"
+                                        "className": "bizppurio:text-xs bizppurio:text-red-700 bizppurio:dark:text-red-300 bizppurio:mt-1"
                                     },
                                     "text": "{{(cm.createdAt ?? '').slice(0, 10)}} — {{cm.content ?? ''}}"
                                 }
@@ -868,23 +868,23 @@
                             "name": "Div",
                             "if": "{{_global.bz_tpl_modal?.error}}",
                             "props": {
-                                "className": "flex items-center gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700"
+                                "className": "bizppurio:flex bizppurio:items-center bizppurio:gap-2 bizppurio:p-3 bizppurio:rounded-lg bizppurio:bg-red-50 bizppurio:dark:bg-red-900/30 bizppurio:border bizppurio:border-red-200 bizppurio:dark:border-red-700"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Icon",
                                     "props": {
-                                        "name": "fas fa-triangle-exclamation",
+                                        "name": "triangle-exclamation",
                                         "size": "sm",
-                                        "className": "text-red-600 dark:text-red-400 flex-shrink-0"
+                                        "className": "bizppurio:text-red-600 bizppurio:dark:text-red-400 bizppurio:flex-shrink-0"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs text-red-800 dark:text-red-200"
+                                        "className": "bizppurio:text-xs bizppurio:text-red-800 bizppurio:dark:text-red-200"
                                     },
                                     "text": "{{_global.bz_tpl_modal?.error}}"
                                 }
@@ -895,14 +895,14 @@
                             "name": "Div",
                             "if": "{{_global.bz_tpl_modal?.errors && typeof _global.bz_tpl_modal?.errors === 'object'}}",
                             "props": {
-                                "className": "p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700"
+                                "className": "bizppurio:p-3 bizppurio:rounded-lg bizppurio:bg-red-50 bizppurio:dark:bg-red-900/30 bizppurio:border bizppurio:border-red-200 bizppurio:dark:border-red-700"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Ul",
                                     "props": {
-                                        "className": "list-disc pl-5 space-y-0.5"
+                                        "className": "bizppurio:list-disc bizppurio:pl-5 bizppurio:space-y-0.5"
                                     },
                                     "children": [
                                         {
@@ -913,7 +913,7 @@
                                                 "item_var": "msg"
                                             },
                                             "props": {
-                                                "className": "text-xs text-red-800 dark:text-red-200"
+                                                "className": "bizppurio:text-xs bizppurio:text-red-800 bizppurio:dark:text-red-200"
                                             },
                                             "text": "{{msg}}"
                                         }
@@ -928,7 +928,7 @@
                             "name": "Div",
                             "if": "{{!((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) && !(_global.bz_tpl_modal?.loading ?? false))}}",
                             "props": {
-                                "className": "flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 py-2"
+                                "className": "bizppurio:flex bizppurio:items-center bizppurio:gap-2 bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:py-2"
                             },
                             "children": [
                                 {
@@ -936,7 +936,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "animate-spin text-sm"
+                                        "className": "bizppurio:animate-spin bizppurio:text-sm bizppurio:leading-none"
                                     }
                                 },
                                 {
@@ -953,14 +953,14 @@
                             "name": "Div",
                             "if": "{{!(['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')) && ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) && !(_global.bz_tpl_modal?.loading ?? false))}}",
                             "props": {
-                                "className": "space-y-2"
+                                "className": "bizppurio:space-y-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs text-gray-600 dark:text-gray-300 p-3 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700"
+                                        "className": "bizppurio:text-xs bizppurio:text-gray-600 bizppurio:dark:text-gray-300 bizppurio:p-3 bizppurio:rounded-lg bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900 bizppurio:border bizppurio:border-gray-200 bizppurio:dark:border-gray-700"
                                     },
                                     "text": "$t:sirsoft-message_bizppurio.template.section.locked_hint"
                                 },
@@ -968,7 +968,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-300"
+                                        "className": "bizppurio:flex bizppurio:items-center bizppurio:flex-wrap bizppurio:gap-3 bizppurio:text-xs bizppurio:text-gray-600 bizppurio:dark:text-gray-300"
                                     },
                                     "children": [
                                         {
@@ -987,7 +987,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "text-sm font-mono whitespace-pre-wrap p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-100"
+                                        "className": "bizppurio:text-sm bizppurio:font-mono bizppurio:whitespace-pre-wrap bizppurio:p-3 bizppurio:rounded-lg bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-200 bizppurio:dark:border-gray-700 bizppurio:text-gray-800 bizppurio:dark:text-gray-100"
                                     },
                                     "text": "{{_global.bz_tpl_modal?.content?.templateContent ?? ''}}"
                                 }
@@ -1000,14 +1000,14 @@
                             "name": "Div",
                             "if": "{{(['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')) && ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) && !(_global.bz_tpl_modal?.loading ?? false))}}",
                             "props": {
-                                "className": "space-y-4"
+                                "className": "bizppurio:space-y-4"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "grid grid-cols-1 sm:grid-cols-2 gap-3"
+                                        "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:sm:grid-cols-2 bizppurio:gap-3"
                                     },
                                     "children": [
                                         {
@@ -1018,7 +1018,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
+                                                        "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.sender_profile"
                                                 },
@@ -1037,7 +1037,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "w-full text-sm",
+                                                        "className": "bizppurio:w-full bizppurio:text-sm",
                                                         "value": "{{_global.bz_tpl_modal?.sender_profile ?? ''}}",
                                                         "options": "{{[{value: '', label: $t('sirsoft-message_bizppurio.template.form.sender_profile_placeholder')}, ...((bizppurioProfiles?.data?.profiles ?? []).map(pr => ({value: pr.senderKey ?? '', label: (pr.name ?? pr.senderKey ?? '')})))]}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -1047,7 +1047,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                        "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:mt-1"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.sender_profile_hint"
                                                 }
@@ -1061,7 +1061,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
+                                                        "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.category *"
                                                 },
@@ -1080,7 +1080,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "w-full text-sm",
+                                                        "className": "bizppurio:w-full bizppurio:text-sm",
                                                         "value": "{{_global.bz_tpl_modal?.content?.categoryCode ?? ''}}",
                                                         "options": "{{[{value: '', label: $t('sirsoft-message_bizppurio.template.form.category_placeholder')}, ...((bizppurioCategories?.data?.categories ?? []).map(cat => ({value: cat.code ?? '', label: ((cat.groupName ? cat.groupName + ' › ' : '') + (cat.name ?? cat.code ?? ''))})))]}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -1098,7 +1098,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
+                                                "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.name *"
                                         },
@@ -1117,7 +1117,7 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
+                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100",
                                                 "value": "{{_global.bz_tpl_modal?.content.templateName ?? ''}}",
                                                 "name": "bz_template_name",
                                                 "maxLength": 200,
@@ -1134,7 +1134,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
+                                                "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.message_type *"
                                         },
@@ -1143,7 +1143,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex flex-wrap gap-1.5"
+                                                "className": "bizppurio:flex bizppurio:flex-wrap bizppurio:gap-1.5"
                                             },
                                             "children": [
                                                 {
@@ -1162,7 +1162,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'BA' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                        "className": "{{'bizppurio:px-3 bizppurio:py-1.5 bizppurio:rounded-md bizppurio:text-xs bizppurio:font-medium bizppurio:border bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'BA' ? 'bizppurio:border-teal-500 bizppurio:bg-teal-50 bizppurio:dark:bg-teal-900/40 bizppurio:text-teal-700 bizppurio:dark:text-teal-300' : 'bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-600 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700')}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.templateMessageType_options.BA"
@@ -1183,7 +1183,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'EX' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                        "className": "{{'bizppurio:px-3 bizppurio:py-1.5 bizppurio:rounded-md bizppurio:text-xs bizppurio:font-medium bizppurio:border bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'EX' ? 'bizppurio:border-teal-500 bizppurio:bg-teal-50 bizppurio:dark:bg-teal-900/40 bizppurio:text-teal-700 bizppurio:dark:text-teal-300' : 'bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-600 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700')}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.templateMessageType_options.EX"
@@ -1204,7 +1204,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'AD' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                        "className": "{{'bizppurio:px-3 bizppurio:py-1.5 bizppurio:rounded-md bizppurio:text-xs bizppurio:font-medium bizppurio:border bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'AD' ? 'bizppurio:border-teal-500 bizppurio:bg-teal-50 bizppurio:dark:bg-teal-900/40 bizppurio:text-teal-700 bizppurio:dark:text-teal-300' : 'bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-600 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700')}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.templateMessageType_options.AD"
@@ -1225,7 +1225,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'MI' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                        "className": "{{'bizppurio:px-3 bizppurio:py-1.5 bizppurio:rounded-md bizppurio:text-xs bizppurio:font-medium bizppurio:border bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateMessageType ?? 'BA') === 'MI' ? 'bizppurio:border-teal-500 bizppurio:bg-teal-50 bizppurio:dark:bg-teal-900/40 bizppurio:text-teal-700 bizppurio:dark:text-teal-300' : 'bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-600 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700')}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.templateMessageType_options.MI"
@@ -1242,7 +1242,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
+                                                "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.emphasize_type *"
                                         },
@@ -1251,7 +1251,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex flex-wrap gap-1.5"
+                                                "className": "bizppurio:flex bizppurio:flex-wrap bizppurio:gap-1.5"
                                             },
                                             "children": [
                                                 {
@@ -1270,7 +1270,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'NONE' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                        "className": "{{'bizppurio:px-3 bizppurio:py-1.5 bizppurio:rounded-md bizppurio:text-xs bizppurio:font-medium bizppurio:border bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'NONE' ? 'bizppurio:border-teal-500 bizppurio:bg-teal-50 bizppurio:dark:bg-teal-900/40 bizppurio:text-teal-700 bizppurio:dark:text-teal-300' : 'bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-600 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700')}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.templateEmphasizeType_options.NONE"
@@ -1291,7 +1291,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'TEXT' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                        "className": "{{'bizppurio:px-3 bizppurio:py-1.5 bizppurio:rounded-md bizppurio:text-xs bizppurio:font-medium bizppurio:border bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'TEXT' ? 'bizppurio:border-teal-500 bizppurio:bg-teal-50 bizppurio:dark:bg-teal-900/40 bizppurio:text-teal-700 bizppurio:dark:text-teal-300' : 'bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-600 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700')}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.templateEmphasizeType_options.TEXT"
@@ -1312,7 +1312,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'IMAGE' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                        "className": "{{'bizppurio:px-3 bizppurio:py-1.5 bizppurio:rounded-md bizppurio:text-xs bizppurio:font-medium bizppurio:border bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'IMAGE' ? 'bizppurio:border-teal-500 bizppurio:bg-teal-50 bizppurio:dark:bg-teal-900/40 bizppurio:text-teal-700 bizppurio:dark:text-teal-300' : 'bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-600 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700')}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.templateEmphasizeType_options.IMAGE"
@@ -1333,7 +1333,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "{{'px-3 py-1.5 rounded-md text-xs font-medium border disabled:opacity-50 disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'ITEM_LIST' ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700')}}",
+                                                        "className": "{{'bizppurio:px-3 bizppurio:py-1.5 bizppurio:rounded-md bizppurio:text-xs bizppurio:font-medium bizppurio:border bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed ' + ((_global.bz_tpl_modal?.content?.templateEmphasizeType ?? 'NONE') === 'ITEM_LIST' ? 'bizppurio:border-teal-500 bizppurio:bg-teal-50 bizppurio:dark:bg-teal-900/40 bizppurio:text-teal-700 bizppurio:dark:text-teal-300' : 'bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-600 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700')}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.templateEmphasizeType_options.ITEM_LIST"
@@ -1347,7 +1347,7 @@
                                     "name": "Div",
                                     "if": "{{_global.bz_tpl_modal?.content?.templateEmphasizeType === 'TEXT'}}",
                                     "props": {
-                                        "className": "grid grid-cols-2 gap-3"
+                                        "className": "bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-3"
                                     },
                                     "children": [
                                         {
@@ -1358,7 +1358,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
+                                                        "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.emphasize_title *"
                                                 },
@@ -1377,7 +1377,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
+                                                        "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100",
                                                         "value": "{{_global.bz_tpl_modal?.content.templateTitle ?? ''}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                     }
@@ -1392,7 +1392,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
+                                                        "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.emphasize_subtitle *"
                                                 },
@@ -1411,7 +1411,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
+                                                        "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100",
                                                         "value": "{{_global.bz_tpl_modal?.content.templateSubtitle ?? ''}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                     }
@@ -1425,14 +1425,14 @@
                                     "name": "Div",
                                     "if": "{{_global.bz_tpl_modal?.content?.templateEmphasizeType === 'IMAGE'}}",
                                     "props": {
-                                        "className": "space-y-1"
+                                        "className": "bizppurio:space-y-1"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
+                                                "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.image *"
                                         },
@@ -1455,7 +1455,7 @@
                                             "props": {
                                                 "type": "file",
                                                 "accept": ".jpg,.jpeg,.png",
-                                                "className": "block w-full text-xs text-gray-600 dark:text-gray-300",
+                                                "className": "bizppurio:block bizppurio:w-full bizppurio:text-xs bizppurio:text-gray-600 bizppurio:dark:text-gray-300",
                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                             }
                                         },
@@ -1463,7 +1463,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.image_hint|max=500&width=500"
                                         },
@@ -1472,7 +1472,7 @@
                                             "name": "Span",
                                             "if": "{{_global.bz_tpl_upload?.uploading}}",
                                             "props": {
-                                                "className": "text-xs text-amber-700 dark:text-amber-400"
+                                                "className": "bizppurio:text-xs bizppurio:text-amber-700 bizppurio:dark:text-amber-400"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.image_uploading"
                                         },
@@ -1481,7 +1481,7 @@
                                             "name": "Span",
                                             "if": "{{_global.bz_tpl_upload?.error}}",
                                             "props": {
-                                                "className": "text-xs text-red-600 dark:text-red-400"
+                                                "className": "bizppurio:text-xs bizppurio:text-red-600 bizppurio:dark:text-red-400"
                                             },
                                             "text": "{{_global.bz_tpl_upload?.error ?? ''}}"
                                         },
@@ -1490,7 +1490,7 @@
                                             "name": "Span",
                                             "if": "{{_global.bz_tpl_modal?.content?.templateImageUrl}}",
                                             "props": {
-                                                "className": "text-xs text-green-700 dark:text-green-400 break-all"
+                                                "className": "bizppurio:text-xs bizppurio:text-green-700 bizppurio:dark:text-green-400 bizppurio:break-all bizppurio-break-all"
                                             },
                                             "text": "{{_global.bz_tpl_modal?.content?.templateImageName}} — {{_global.bz_tpl_modal?.content?.templateImageUrl}}"
                                         }
@@ -1501,14 +1501,14 @@
                                     "name": "Div",
                                     "if": "{{_global.bz_tpl_modal?.content?.templateEmphasizeType === 'ITEM_LIST'}}",
                                     "props": {
-                                        "className": "space-y-2"
+                                        "className": "bizppurio:space-y-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-400 text-xs font-medium"
+                                                "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:text-xs bizppurio:font-medium"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.item_highlight"
                                         },
@@ -1516,7 +1516,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "grid grid-cols-2 gap-1.5"
+                                                "className": "bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-1.5"
                                             },
                                             "children": [
                                                 {
@@ -1534,7 +1534,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                        "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.hl_title",
                                                         "value": "{{_global.bz_tpl_modal?.content?.templateItemHighlight?.title ?? ''}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -1555,7 +1555,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                        "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.hl_description",
                                                         "value": "{{_global.bz_tpl_modal?.content?.templateItemHighlight?.description ?? ''}}",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -1578,7 +1578,7 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.hl_image_url",
                                                 "value": "{{_global.bz_tpl_modal?.content?.templateItemHighlight?.imageUrl ?? ''}}",
                                                 "maxLength": 500,
@@ -1589,14 +1589,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-between mt-2"
+                                                "className": "bizppurio-flex-between bizppurio:mt-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-gray-600 dark:text-gray-400 text-xs font-medium"
+                                                        "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:text-xs bizppurio:font-medium"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.item_list"
                                                 },
@@ -1616,7 +1616,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700",
+                                                        "className": "bizppurio:text-xs bizppurio:font-medium bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio:whitespace-nowrap bizppurio:flex-shrink-0 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-600 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true || (_global.bz_tpl_modal?.content?.templateItem?.list ?? []).length >= 10}}"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.item_add"
@@ -1627,7 +1627,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.item_list_hint"
                                         },
@@ -1640,7 +1640,7 @@
                                                 "index_var": "itmIdx"
                                             },
                                             "props": {
-                                                "className": "flex items-center gap-1.5"
+                                                "className": "bizppurio:flex bizppurio:items-center bizppurio:gap-1.5"
                                             },
                                             "children": [
                                                 {
@@ -1659,7 +1659,7 @@
                                                     ],
                                                     "props": {
                                                         "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: itmIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.item_title')}}",
-                                                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                        "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                         "maxLength": 6,
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.item_title",
                                                         "value": "{{itm.title ?? ''}}",
@@ -1682,7 +1682,7 @@
                                                     ],
                                                     "props": {
                                                         "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: itmIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.item_description')}}",
-                                                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                        "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                         "maxLength": 23,
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.item_description",
                                                         "value": "{{itm.description ?? ''}}",
@@ -1706,7 +1706,7 @@
                                                     "props": {
                                                         "type": "button",
                                                         "aria-label": "$t:sirsoft-message_bizppurio.template.form.btn_remove_item",
-                                                        "className": "p-1.5 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "bizppurio:p-1.5 bizppurio:rounded-md bizppurio:text-gray-500 bizppurio:hover:text-red-600 bizppurio:dark:hover:text-red-400 bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                     },
                                                     "children": [
@@ -1714,7 +1714,7 @@
                                                             "type": "basic",
                                                             "name": "Icon",
                                                             "props": {
-                                                                "name": "fas fa-trash-can",
+                                                                "name": "trash-can",
                                                                 "size": "sm"
                                                             }
                                                         }
@@ -1726,7 +1726,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-400 text-xs font-medium mt-2"
+                                                "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:text-xs bizppurio:font-medium bizppurio:mt-2"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.item_summary"
                                         },
@@ -1734,7 +1734,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "grid grid-cols-2 gap-1.5"
+                                                "className": "bizppurio:grid bizppurio:grid-cols-2 bizppurio:gap-1.5"
                                             },
                                             "children": [
                                                 {
@@ -1752,7 +1752,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                        "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                         "maxLength": 6,
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.item_title",
                                                         "value": "{{_global.bz_tpl_modal?.content?.templateItem?.summary?.title ?? ''}}",
@@ -1774,7 +1774,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                        "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                         "maxLength": 14,
                                                         "placeholder": "$t:sirsoft-message_bizppurio.template.form.summary_description",
                                                         "value": "{{_global.bz_tpl_modal?.content?.templateItem?.summary?.description ?? ''}}",
@@ -1793,14 +1793,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-between"
+                                                "className": "bizppurio-flex-between"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
+                                                        "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.content *"
                                                 },
@@ -1808,7 +1808,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
                                                     },
                                                     "text": "{{(_global.bz_tpl_modal?.content?.templateContent ?? '').length}}/1000"
                                                 }
@@ -1832,7 +1832,7 @@
                                                 "name": "bz_template_content",
                                                 "rows": 6,
                                                 "maxLength": 1000,
-                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 font-mono",
+                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:font-mono",
                                                 "value": "{{_global.bz_tpl_modal?.content?.templateContent ?? ''}}",
                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                             }
@@ -1844,14 +1844,14 @@
                                     "name": "Div",
                                     "if": "{{(_global.bz_tpl_modal?.variables ?? []).length > 0}}",
                                     "props": {
-                                        "className": "rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3"
+                                        "className": "bizppurio:rounded-lg bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900 bizppurio:border bizppurio:border-gray-200 bizppurio:dark:border-gray-700 bizppurio:p-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-xs text-gray-600 dark:text-gray-400 mb-1"
+                                                "className": "bizppurio:text-xs bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:mb-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.binding.variables_hint"
                                         },
@@ -1859,7 +1859,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex flex-wrap gap-1"
+                                                "className": "bizppurio:flex bizppurio:flex-wrap bizppurio:gap-1"
                                             },
                                             "children": [
                                                 {
@@ -1884,7 +1884,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-xs font-mono px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 bizppurio-chip-teal",
+                                                        "className": "bizppurio:text-xs bizppurio:font-mono bizppurio:px-1.5 bizppurio:py-0.5 bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-200 bizppurio:dark:border-gray-600 bizppurio:rounded bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio-chip-teal",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                     },
                                                     "text": "{{'#{' + (v.key ?? '') + '}'}}"
@@ -1902,7 +1902,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
+                                                "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.extra *"
                                         },
@@ -1922,7 +1922,7 @@
                                             ],
                                             "props": {
                                                 "rows": 2,
-                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
+                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100",
                                                 "value": "{{_global.bz_tpl_modal?.content?.templateExtra ?? ''}}",
                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                             }
@@ -1937,7 +1937,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
+                                                "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.header"
                                         },
@@ -1956,7 +1956,7 @@
                                                 }
                                             ],
                                             "props": {
-                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
+                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100",
                                                 "value": "{{_global.bz_tpl_modal?.content.templateHeader ?? ''}}",
                                                 "maxLength": 16,
                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -1966,7 +1966,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:mt-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.header_hint"
                                         }
@@ -1976,21 +1976,21 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "space-y-2"
+                                        "className": "bizppurio:space-y-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-between"
+                                                "className": "bizppurio-flex-between"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-gray-600 dark:text-gray-400 text-xs font-medium"
+                                                        "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:text-xs bizppurio:font-medium"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.buttons"
                                                 },
@@ -2010,7 +2010,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700",
+                                                        "className": "bizppurio:text-xs bizppurio:font-medium bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio:whitespace-nowrap bizppurio:flex-shrink-0 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-600 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true || (_global.bz_tpl_modal?.content?.buttons ?? []).length >= 5}}"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.button_add"
@@ -2026,14 +2026,14 @@
                                                 "index_var": "buttonsIdx"
                                             },
                                             "props": {
-                                                "className": "p-3 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2"
+                                                "className": "bizppurio:p-3 bizppurio:rounded-lg bizppurio:border bizppurio:border-gray-200 bizppurio:dark:border-gray-700 bizppurio:space-y-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex items-center gap-1.5"
+                                                        "className": "bizppurio:flex bizppurio:items-center bizppurio:gap-1.5"
                                                     },
                                                     "children": [
                                                         {
@@ -2051,7 +2051,7 @@
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "className": "w-40 text-xs",
+                                                                "className": "bizppurio:w-40 bizppurio:text-xs",
                                                                 "aria-label": "$t:sirsoft-message_bizppurio.template.form.button_link_type|index={{buttonsIdx + 1}}",
                                                                 "value": "{{buttonsItem.linkType ?? 'WL'}}",
                                                                 "options": "{{['WL','AL','DS','BK','MD','AC','BC','BT','P1','P2','P3','TN','MP'].map(v => ({value: v, label: $t('sirsoft-message_bizppurio.templates.link_type.' + v)}))}}",
@@ -2074,7 +2074,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.button_name')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.button_name",
                                                                 "value": "{{buttonsItem.name ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2097,7 +2097,7 @@
                                                             "props": {
                                                                 "type": "button",
                                                                 "aria-label": "$t:sirsoft-message_bizppurio.template.form.btn_remove_button",
-                                                                "className": "p-1.5 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "className": "bizppurio:p-1.5 bizppurio:rounded-md bizppurio:text-gray-500 bizppurio:hover:text-red-600 bizppurio:dark:hover:text-red-400 bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                             },
                                                             "children": [
@@ -2105,7 +2105,7 @@
                                                                     "type": "basic",
                                                                     "name": "Icon",
                                                                     "props": {
-                                                                        "name": "fas fa-trash-can",
+                                                                        "name": "trash-can",
                                                                         "size": "sm"
                                                                     }
                                                                 }
@@ -2117,7 +2117,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "grid grid-cols-1 sm:grid-cols-2 gap-1.5"
+                                                        "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:sm:grid-cols-2 bizppurio:gap-1.5"
                                                     },
                                                     "children": [
                                                         {
@@ -2137,7 +2137,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_mo')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_mo",
                                                                 "value": "{{buttonsItem.linkMo ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2160,7 +2160,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_pc')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_pc",
                                                                 "value": "{{buttonsItem.linkPc ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2183,7 +2183,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_and')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_and",
                                                                 "value": "{{buttonsItem.linkAnd ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2206,7 +2206,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_ios')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_ios",
                                                                 "value": "{{buttonsItem.linkIos ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2229,7 +2229,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.tel_number')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.tel_number",
                                                                 "value": "{{buttonsItem.telNumber ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2252,7 +2252,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: buttonsIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.plugin_id')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.plugin_id",
                                                                 "value": "{{buttonsItem.pluginId ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2268,21 +2268,21 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "space-y-2"
+                                        "className": "bizppurio:space-y-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-between"
+                                                "className": "bizppurio-flex-between"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-gray-600 dark:text-gray-400 text-xs font-medium"
+                                                        "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:text-xs bizppurio:font-medium"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.quick_replies"
                                                 },
@@ -2302,7 +2302,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-xs font-medium px-2.5 py-1 rounded-md whitespace-nowrap flex-shrink-0 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700",
+                                                        "className": "bizppurio:text-xs bizppurio:font-medium bizppurio:px-2.5 bizppurio:py-1 bizppurio:rounded-md bizppurio:whitespace-nowrap bizppurio:flex-shrink-0 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-gray-600 bizppurio:dark:text-gray-300 bizppurio:hover:bg-gray-50 bizppurio:dark:hover:bg-gray-700",
                                                         "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true || (_global.bz_tpl_modal?.content?.quickReplies ?? []).length >= 10}}"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.quick_reply_add"
@@ -2318,14 +2318,14 @@
                                                 "index_var": "quickRepliesIdx"
                                             },
                                             "props": {
-                                                "className": "p-3 rounded-lg border border-gray-200 dark:border-gray-700 space-y-2"
+                                                "className": "bizppurio:p-3 bizppurio:rounded-lg bizppurio:border bizppurio:border-gray-200 bizppurio:dark:border-gray-700 bizppurio:space-y-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex items-center gap-1.5"
+                                                        "className": "bizppurio:flex bizppurio:items-center bizppurio:gap-1.5"
                                                     },
                                                     "children": [
                                                         {
@@ -2343,7 +2343,7 @@
                                                                 }
                                                             ],
                                                             "props": {
-                                                                "className": "w-40 text-xs",
+                                                                "className": "bizppurio:w-40 bizppurio:text-xs",
                                                                 "aria-label": "$t:sirsoft-message_bizppurio.template.form.quick_reply_link_type|index={{quickRepliesIdx + 1}}",
                                                                 "value": "{{quickRepliesItem.linkType ?? 'WL'}}",
                                                                 "options": "{{['WL','AL','BK','MD','BC','BT'].map(v => ({value: v, label: $t('sirsoft-message_bizppurio.templates.link_type.' + v)}))}}",
@@ -2366,7 +2366,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.button_name')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.button_name",
                                                                 "value": "{{quickRepliesItem.name ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2389,7 +2389,7 @@
                                                             "props": {
                                                                 "type": "button",
                                                                 "aria-label": "$t:sirsoft-message_bizppurio.template.form.btn_remove_quick_reply",
-                                                                "className": "p-1.5 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "className": "bizppurio:p-1.5 bizppurio:rounded-md bizppurio:text-gray-500 bizppurio:hover:text-red-600 bizppurio:dark:hover:text-red-400 bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                                             },
                                                             "children": [
@@ -2397,7 +2397,7 @@
                                                                     "type": "basic",
                                                                     "name": "Icon",
                                                                     "props": {
-                                                                        "name": "fas fa-trash-can",
+                                                                        "name": "trash-can",
                                                                         "size": "sm"
                                                                     }
                                                                 }
@@ -2409,7 +2409,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "grid grid-cols-1 sm:grid-cols-2 gap-1.5"
+                                                        "className": "bizppurio:grid bizppurio:grid-cols-1 bizppurio:sm:grid-cols-2 bizppurio:gap-1.5"
                                                     },
                                                     "children": [
                                                         {
@@ -2429,7 +2429,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_mo')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_mo",
                                                                 "value": "{{quickRepliesItem.linkMo ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2452,7 +2452,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_pc')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_pc",
                                                                 "value": "{{quickRepliesItem.linkPc ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2475,7 +2475,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_and')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_and",
                                                                 "value": "{{quickRepliesItem.linkAnd ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2498,7 +2498,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.link_ios')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.link_ios",
                                                                 "value": "{{quickRepliesItem.linkIos ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2521,7 +2521,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.tel_number')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.tel_number",
                                                                 "value": "{{quickRepliesItem.telNumber ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2544,7 +2544,7 @@
                                                             ],
                                                             "props": {
                                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: quickRepliesIdx + 1})}}|column={{$t('sirsoft-message_bizppurio.template.form.plugin_id')}}",
-                                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 text-xs",
+                                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100 bizppurio:text-xs",
                                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.plugin_id",
                                                                 "value": "{{quickRepliesItem.pluginId ?? ''}}",
                                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2566,14 +2566,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-between"
+                                                "className": "bizppurio-flex-between"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-gray-600 dark:text-gray-400 block text-xs font-medium mb-1"
+                                                        "className": "bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:block bizppurio:text-xs bizppurio:font-medium bizppurio:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.form.request_comment"
                                                 },
@@ -2581,7 +2581,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400"
                                                     },
                                                     "text": "{{(_global.bz_tpl_modal?.request_comment ?? '').length}}/500"
                                                 }
@@ -2605,7 +2605,7 @@
                                                 "name": "bz_request_comment",
                                                 "rows": 3,
                                                 "maxLength": 500,
-                                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
+                                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100",
                                                 "placeholder": "$t:sirsoft-message_bizppurio.template.form.request_comment_placeholder",
                                                 "value": "{{_global.bz_tpl_modal?.request_comment ?? ''}}",
                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
@@ -2615,7 +2615,7 @@
                                             "type": "basic",
                                             "name": "P",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                "className": "bizppurio:text-xs bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:mt-1"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.form.request_comment_hint"
                                         }
@@ -2631,36 +2631,36 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3"
+                        "className": "bizppurio:rounded-lg bizppurio:border bizppurio:border-gray-200 bizppurio:dark:border-gray-700 bizppurio:p-4 bizppurio:space-y-3"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-between flex-wrap gap-2"
+                                "className": "bizppurio-flex-between bizppurio:flex-wrap bizppurio:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center gap-2"
+                                        "className": "bizppurio:flex bizppurio:items-center bizppurio:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "fas fa-comment-sms",
-                                                "className": "text-base text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                "name": "comment-sms",
+                                                "className": "bizppurio:text-base bizppurio:leading-none bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:flex-shrink-0"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "H4",
                                             "props": {
-                                                "className": "text-sm font-semibold text-gray-800 dark:text-gray-100"
+                                                "className": "bizppurio:text-sm bizppurio:font-semibold bizppurio:text-gray-800 bizppurio:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.template.section.sms_title"
                                         }
@@ -2670,14 +2670,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center flex-wrap gap-3"
+                                        "className": "bizppurio:flex bizppurio:items-center bizppurio:flex-wrap bizppurio:gap-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "inline-flex items-center gap-1.5 cursor-pointer select-none"
+                                                "className": "bizppurio:inline-flex bizppurio:items-center bizppurio:gap-1.5 bizppurio:cursor-pointer bizppurio:select-none"
                                             },
                                             "children": [
                                                 {
@@ -2697,14 +2697,14 @@
                                                     "props": {
                                                         "autoBinding": false,
                                                         "checked": "{{!!(_global.bz_sms_modal?.fallback_sms_enabled)}}",
-                                                        "className": "h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 text-teal-600"
+                                                        "className": "bizppurio:h-3.5 bizppurio:w-3.5 bizppurio:rounded bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-teal-600"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-600 dark:text-gray-300"
+                                                        "className": "bizppurio:text-xs bizppurio:text-gray-600 bizppurio:dark:text-gray-300"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.row.fallback_sms"
                                                 }
@@ -2714,7 +2714,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "inline-flex items-center gap-1.5 cursor-pointer select-none"
+                                                "className": "bizppurio:inline-flex bizppurio:items-center bizppurio:gap-1.5 bizppurio:cursor-pointer bizppurio:select-none"
                                             },
                                             "children": [
                                                 {
@@ -2734,14 +2734,14 @@
                                                     "props": {
                                                         "autoBinding": false,
                                                         "checked": "{{!!(_global.bz_sms_modal?.sms_only)}}",
-                                                        "className": "h-3.5 w-3.5 rounded border-gray-300 dark:border-gray-600 text-teal-600"
+                                                        "className": "bizppurio:h-3.5 bizppurio:w-3.5 bizppurio:rounded bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:text-teal-600"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-600 dark:text-gray-300"
+                                                        "className": "bizppurio:text-xs bizppurio:text-gray-600 bizppurio:dark:text-gray-300"
                                                     },
                                                     "text": "$t:sirsoft-message_bizppurio.template.row.sms_only"
                                                 }
@@ -2755,7 +2755,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-teal-700 dark:text-teal-300 p-3 rounded-lg bg-teal-50 dark:bg-teal-950 border border-teal-200 dark:border-gray-700"
+                                "className": "bizppurio:text-xs bizppurio:text-teal-700 bizppurio:dark:text-teal-300 bizppurio:p-3 bizppurio:rounded-lg bizppurio:bg-teal-50 bizppurio:dark:bg-teal-950 bizppurio:border bizppurio:border-teal-200 bizppurio:dark:border-gray-700"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.sms.hint"
                         },
@@ -2765,7 +2765,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex border-b border-gray-200 dark:border-gray-700"
+                                "className": "bizppurio:flex bizppurio:border-b bizppurio:border-gray-200 bizppurio:dark:border-gray-700"
                             },
                             "children": [
                                 {
@@ -2788,7 +2788,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "{{(_global.bz_sms_modal?.editLang ?? $locale) === loc ? 'border-b-2 border-teal-500 dark:border-teal-400 text-teal-700 dark:text-teal-400' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}} px-4 py-2 text-sm font-medium focus:outline-none"
+                                        "className": "{{(_global.bz_sms_modal?.editLang ?? $locale) === loc ? 'bizppurio:border-b-2 bizppurio:border-teal-500 bizppurio:dark:border-teal-400 bizppurio:text-teal-700 bizppurio:dark:text-teal-400' : 'bizppurio:text-gray-500 bizppurio:dark:text-gray-400 bizppurio:hover:text-gray-700 bizppurio:dark:hover:text-gray-300'}} bizppurio:px-4 bizppurio:py-2 bizppurio:text-sm bizppurio:font-medium bizppurio:focus:outline-none"
                                     },
                                     "text": "{{_global.appConfig?.localeNames?.[loc] ?? loc}}"
                                 }
@@ -2813,7 +2813,7 @@
                                 "aria-label": "{{($locales ?? []).length > 1 ? $t('common.field_in_language', {label: $t('sirsoft-message_bizppurio.template.sms.body_label'), language: _global.appConfig?.localeNames?.[_global.bz_sms_modal?.editLang ?? $locale] ?? (_global.bz_sms_modal?.editLang ?? $locale)}) : $t('sirsoft-message_bizppurio.template.sms.body_label')}}",
                                 "rows": 4,
                                 "maxLength": 2000,
-                                "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100",
+                                "className": "bizppurio:w-full bizppurio:px-3 bizppurio:py-2 bizppurio:text-sm bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-300 bizppurio:dark:border-gray-600 bizppurio:rounded-lg bizppurio:text-gray-900 bizppurio:dark:text-gray-100",
                                 "value": "{{_global.bz_sms_modal?.body?.[_global.bz_sms_modal?.editLang ?? $locale] ?? ''}}",
                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                             }
@@ -2823,14 +2823,14 @@
                             "name": "Div",
                             "if": "{{(_global.bz_sms_modal?.variables ?? []).length > 0}}",
                             "props": {
-                                "className": "rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-3"
+                                "className": "bizppurio:rounded-lg bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900 bizppurio:border bizppurio:border-gray-200 bizppurio:dark:border-gray-700 bizppurio:p-3"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs text-gray-600 dark:text-gray-400 mb-1"
+                                        "className": "bizppurio:text-xs bizppurio:text-gray-600 bizppurio:dark:text-gray-400 bizppurio:mb-1"
                                     },
                                     "text": "$t:sirsoft-message_bizppurio.binding.variables_hint"
                                 },
@@ -2838,7 +2838,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex flex-wrap gap-1"
+                                        "className": "bizppurio:flex bizppurio:flex-wrap bizppurio:gap-1"
                                     },
                                     "children": [
                                         {
@@ -2863,7 +2863,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "text-xs font-mono px-1.5 py-0.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 bizppurio-chip-teal",
+                                                "className": "bizppurio:text-xs bizppurio:font-mono bizppurio:px-1.5 bizppurio:py-0.5 bizppurio:bg-white bizppurio:dark:bg-gray-800 bizppurio:border bizppurio:border-gray-200 bizppurio:dark:border-gray-600 bizppurio:rounded bizppurio:text-gray-700 bizppurio:dark:text-gray-300 bizppurio-chip-teal",
                                                 "disabled": "{{bizppurioTemplates?.data?.abilities?.can_manage_messaging !== true}}"
                                             },
                                             "text": "{{'#{' + (v.key ?? '') + '}'}}"

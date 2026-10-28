@@ -32,6 +32,7 @@ import type { ErrorHandlingMap } from './types/ErrorHandling';
 import { createLogger, Logger } from './utils/Logger';
 import { webSocketManager } from './websocket/WebSocketManager';
 import { getModuleAssetLoader, parseModuleAssetsFromConfig, parsePluginAssetsFromConfig, parseBundleUrlsFromConfig } from './modules';
+import { getColorSchemeSignal } from './theme/ColorSchemeSignal';
 import { SystemBannerManager } from './template-engine/SystemBannerManager';
 import {
     installUnloadGuard,
@@ -602,6 +603,10 @@ export class TemplateApp {
             // 에러 화면을 그리지 않기 위함 (@since engine-v1.53.0)
             installUnloadGuard();
 
+            // 색상 테마 중립 표식 — 확장 CSS 가 템플릿 다크 방식과 무관하게 `<html data-g7-color-scheme>` 만
+            // 보도록, 확장 자산을 싣기 전에 관찰을 시작한다 (@since engine-v1.86.0)
+            this.startColorSchemeSignal();
+
             // 1. 템플릿 엔진 초기화, ComponentRegistry, routes.json, 사용자 정보를 병렬 로딩
             const componentRegistry = ComponentRegistry.getInstance();
             const authManager = AuthManager.getInstance();
@@ -954,6 +959,7 @@ export class TemplateApp {
             // bundleUrls 부재 시 개별 로딩 폴백 (회귀 안전)
             if (!bundleUrls) {
                 await this.loadExtensionAssetsIndividually();
+                await moduleAssetLoader.loadExtensionCssOverrides();
                 await moduleAssetLoader.loadCustomAssets();
 
                 return;
@@ -963,6 +969,10 @@ export class TemplateApp {
             await moduleAssetLoader.loadBundle('module', bundleUrls.moduleJs, bundleUrls.moduleCss);
             await moduleAssetLoader.loadBundle('plugin', bundleUrls.pluginJs, bundleUrls.pluginCss);
 
+            // 템플릿의 확장 CSS 덮기 파일은 확장 번들 뒤에 붙인다 — 같은 특이도의 확장 규칙을
+            // 나중에 와서 덮는다(engine-v1.86.0). 운영자 자산보다는 앞이다.
+            await moduleAssetLoader.loadExtensionCssOverrides();
+
             // 운영자가 덧붙인 자산은 **마지막**에 붙인다 — CSS 는 나중에 온 규칙이 이기므로,
             // 확장 번들보다 뒤에 와야 재정의가 성립한다.
             await moduleAssetLoader.loadCustomAssets();
@@ -971,6 +981,30 @@ export class TemplateApp {
         } catch (error) {
             // 에셋 로드 실패는 경고만 출력하고 앱 계속 진행
             logger.warn('Failed to load extension assets:', error);
+        }
+    }
+
+    /**
+     * 색상 테마 중립 표식 관찰을 시작하고 `G7Core.colorScheme` 을 노출한다.
+     *
+     * 선언은 서버가 활성 템플릿 `template.json` 의 `features.color_scheme` 을 `G7Config.colorScheme` 으로
+     * 넣어 준다. 실패해도 부팅을 막지 않는다 — 표식이 없으면 확장 CSS 는 라이트 모양으로 남을 뿐이다.
+     *
+     * @returns 없음
+     * @since engine-v1.86.0
+     */
+    private startColorSchemeSignal(): void {
+        try {
+            const signal = getColorSchemeSignal();
+            signal.start();
+
+            (window as any).G7Core = (window as any).G7Core || {};
+            (window as any).G7Core.colorScheme = {
+                get: () => signal.get(),
+                getDeclaration: () => signal.getDeclaration(),
+            };
+        } catch (error) {
+            logger.warn('Failed to start color scheme signal:', error);
         }
     }
 
@@ -1983,7 +2017,7 @@ export class TemplateApp {
                 // 표현식 평가 실패 시 어떤 키가 누락되었는지 확인용
                 logger.log('WebSocket binding context keys:', Object.keys(wsBindingContext));
 
-                this.currentWebSocketSubscriptions = dataSourceManager.subscribeWebSockets(
+                const webSocketSubscriptions = dataSourceManager.subscribeWebSockets(
                     dataSources,
                     (sourceId: string, data: unknown) => {
                         // WebSocket에서 데이터 수신 시 템플릿 업데이트
@@ -2024,7 +2058,16 @@ export class TemplateApp {
                     wsBindingContext
                 );
 
-                logger.log('WebSocket subscriptions established:', this.currentWebSocketSubscriptions);
+                // 구독을 준비하는 사이(모듈 import 대기) 새 화면 전환이 시작됐으면, 새 전환은 이미 해제 목록을 비운
+                // 뒤라 이 구독은 아무도 해제하지 않는다. 같은 channel:event 다중 구독이 각각 수신되는 지금은(engine-v1.86.0)
+                // 그대로 두면 새 화면 구독과 겹쳐 같은 이벤트를 두 번 받는다 — 바로 해제하고 목록에 싣지 않는다.
+                if (routeChangeId !== this.currentRouteChangeId) {
+                    logger.log('Route changed while subscribing WebSocket sources — releasing stale subscriptions:', webSocketSubscriptions);
+                    dataSourceManager.unsubscribeWebSockets(webSocketSubscriptions);
+                } else {
+                    this.currentWebSocketSubscriptions = webSocketSubscriptions;
+                    logger.log('WebSocket subscriptions established:', this.currentWebSocketSubscriptions);
+                }
             }
 
             logger.log('Layout rendered successfully');
@@ -3974,20 +4017,17 @@ export class TemplateApp {
                 logger.log('Navigate function and setGlobalState re-injected to ActionDispatcher');
             }
 
-            // 모듈 핸들러 재등록
-            // ActionDispatcher가 새로 생성되었으므로 모듈들이 핸들러를 다시 등록해야 함
+            // 핸들러 재등록 — ActionDispatcher 가 새로 생성되었으므로 모두 다시 등록해야 한다.
+            // 순서는 부트와 같게 모듈 → 플러그인 → 템플릿이다(부트: loadExtensionAssets → reinitializeTemplateHandlers).
+            // 종전에는 모듈 → 템플릿 → 플러그인이라 같은 이름이면 전환 전에는 템플릿, 전환 뒤에는 플러그인이 이겼다 (engine-v1.86.0)
             this.reinitializeModuleHandlers();
             logger.log('Module handlers re-initialized');
 
-            // 템플릿 핸들러 재등록
-            // 모듈 핸들러와 마찬가지로 템플릿 커스텀 핸들러도 재등록해야 함
-            this.reinitializeTemplateHandlers();
-            logger.log('Template handlers re-initialized');
-
-            // 플러그인 핸들러 재등록
-            // 모듈 핸들러와 마찬가지로 플러그인 핸들러도 재등록해야 함
             this.reinitializePluginHandlers();
             logger.log('Plugin handlers re-initialized');
+
+            this.reinitializeTemplateHandlers();
+            logger.log('Template handlers re-initialized');
 
             // 새 엔진·핸들러 준비 완료 — 기다리던 화면 전환을 놓아준다 (engine-v1.79.0)
             this.releaseLocaleSwitchEngineReady(releaseEngineReady);
@@ -4345,8 +4385,12 @@ export class TemplateApp {
             return;
         }
 
+        // 등록자를 활성 템플릿 식별자로 표시한다 — 다른 주인의 이름을 덮으면 엔진이 경고로 드러낸다 (engine-v1.86.0)
+        const source = this.config.templateId
+            || document.getElementById('app')?.getAttribute('data-template-id')
+            || 'unknown';
         Object.entries(templateHandlers).forEach(([name, handler]) => {
-            actionDispatcher.registerHandler(name, handler as any);
+            actionDispatcher.registerHandler(name, handler as any, { category: 'custom', source });
         });
 
         logger.log(`${Object.keys(templateHandlers).length} template handler(s) re-registered:`, Object.keys(templateHandlers));

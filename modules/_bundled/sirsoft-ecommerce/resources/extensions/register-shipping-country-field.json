@@ -18,7 +18,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mb-1"
                             },
                             "text": "$t:sirsoft-ecommerce.auth.register_shipping_country.label"
                         },
@@ -30,7 +30,7 @@
                                 "aria-label": "$t:sirsoft-ecommerce.auth.register_shipping_country.label",
                                 "value": "{{_local?.registerForm?.preferred_shipping_country ?? _global.preferredShippingCountry ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'}}",
                                 "options": "{{(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).filter(c => c.is_active).map(c => ({ value: c.code, label: ($localized(c.name, 'sirsoft-ecommerce::settings.countries.' + (c.code ?? '') + '.name') || c.code) }))}}",
-                                "className": "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
+                                "className": "ecommerce:w-full ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:focus:ring-2 ecommerce:focus:ring-blue-500 ecommerce:focus:border-blue-500",
                                 "disabled": "{{_local?.isRegistering}}"
                             }
                         },
@@ -38,7 +38,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-1"
                             },
                             "text": "$t:sirsoft-ecommerce.auth.register_shipping_country.hint"
                         }

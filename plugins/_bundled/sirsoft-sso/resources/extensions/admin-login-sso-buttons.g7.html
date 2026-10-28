@@ -2,19 +2,19 @@
      관리자 로그인 화면(admin_login_extensions)에 「회사 계정으로 로그인」 버튼 — 사용자 화면과 같은 버튼을 관리자 경로(guard=admin)로 연다.
      돌아오면 코어가 인계 코드를 관리자 로그인 응답 분기(applyAdminLoginResult)로 넘긴다. 켜진 IdP 가 없으면 그리지 않는다. -->
 <extension extension-point="admin_login_extensions" mode="prepend" priority="10">
-  <div data-ref="sso_admin_login_buttons_section" data-if="{{(ssoAdminPublicIdps?.data ?? []).length > 0}}" class="mt-6">
-    <div class="flex items-center gap-3 mb-4">
-      <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"/>
-      <span class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-sso.buttons.company_account</span>
-      <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"/>
+  <div data-ref="sso_admin_login_buttons_section" data-if="{{(ssoAdminPublicIdps?.data ?? []).length > 0}}" class="sso:mt-6">
+    <div class="sso:flex sso:items-center sso:gap-3 sso:mb-4">
+      <div class="sso:flex-1 sso:h-px sso:bg-gray-200 sso:dark:bg-gray-700"/>
+      <span class="sso:text-xs sso:text-gray-500 sso:dark:text-gray-400">$t:sirsoft-sso.buttons.company_account</span>
+      <div class="sso:flex-1 sso:h-px sso:bg-gray-200 sso:dark:bg-gray-700"/>
     </div>
-    <div data-ref="sso_admin_login_buttons" class="flex flex-col gap-2">
-      <button data-each="idp in ssoAdminPublicIdps?.data ?? []" data-key="{{idp.key}}" data-ref="sso_admin_login_button_{{idp.key}}" type="button" class="w-full inline-flex items-center justify-center gap-3 px-4 py-3 sm:py-2 text-sm font-medium rounded-lg border cursor-pointer {{idp.button_style?.bg ? '' : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}}" style="{{idp.button_style?.bg ? 'background-color:' + idp.button_style.bg + ';color:' + (idp.button_style.fg ?? '#ffffff') + ';border-color:' + (idp.button_style.border ?? idp.button_style.bg) : ''}}" aria-label="$t:sirsoft-sso.buttons.login_with|idp={{idp.label}}">
+    <div data-ref="sso_admin_login_buttons" class="sso:flex sso:flex-col sso:gap-2">
+      <button data-each="idp in ssoAdminPublicIdps?.data ?? []" data-key="{{idp.key}}" data-ref="sso_admin_login_button_{{idp.key}}" type="button" class="sso:w-full sso:inline-flex sso:items-center sso:justify-center sso:gap-3 sso:px-4 sso:py-3 sso:sm:py-2 sso:text-sm sso:font-medium sso:rounded-lg sso:border sso:cursor-pointer {{idp.button_style?.bg ? '' : 'sso:bg-white sso:dark:bg-gray-800 sso:text-gray-900 sso:dark:text-white sso:border-gray-300 sso:dark:border-gray-600 sso:hover:bg-gray-50 sso:dark:hover:bg-gray-700'}}" style="{{idp.button_style?.bg ? 'background-color:' + idp.button_style.bg + ';color:' + (idp.button_style.fg ?? '#ffffff') + ';border-color:' + (idp.button_style.border ?? idp.button_style.bg) : ''}}" aria-label="$t:sirsoft-sso.buttons.login_with|idp={{idp.label}}">
         <on type="click">
           <!-- 관리자 경로 왕복 시작 — 시작 주소에 guard=admin 이 실려 있다 -->
           <action handler="sirsoft-sso.startLogin" url="{{idp.start_url}}"/>
         </on>
-        <span aria-hidden="true" class="inline-flex items-center justify-center w-6 h-6 rounded-full ring-1 ring-current text-xs font-semibold">{{idp.initial}}</span>
+        <span aria-hidden="true" class="sso:inline-flex sso:items-center sso:justify-center sso:w-6 sso:h-6 sso:rounded-full sso:ring-1 sso:ring-current sso:text-xs sso:font-semibold">{{idp.initial}}</span>
         <span>$t:sirsoft-sso.buttons.login_with|idp={{idp.label}}</span>
       </button>
     </div>

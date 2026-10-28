@@ -270,7 +270,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "ecommerce-admin-page-content"
                 },
                 "children": [
                     {
@@ -278,14 +278,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "page-header"
+                            "className": "ecommerce-page-header"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-3"
+                                    "className": "ecommerce-flex-center ecommerce:gap-3"
                                 },
                                 "children": [
                                     {
@@ -296,7 +296,7 @@
                                         "responsive": {
                                             "portable": {
                                                 "props": {
-                                                    "className": "btn btn-ghost btn-icon flex"
+                                                    "className": "ecommerce-btn ecommerce-btn-ghost ecommerce-btn-icon ecommerce:flex"
                                                 }
                                             }
                                         },
@@ -310,7 +310,7 @@
                                         "props": {
                                             "aria-label": "$t:common.back",
                                             "type": "button",
-                                            "className": "btn btn-ghost btn-icon hidden"
+                                            "className": "ecommerce-btn ecommerce-btn-ghost ecommerce-btn-icon ecommerce:hidden ecommerce-hidden"
                                         },
                                         "children": [
                                             {
@@ -318,7 +318,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "arrow-left",
-                                                    "className": "text-xl"
+                                                    "className": "ecommerce:text-xl"
                                                 }
                                             }
                                         ]
@@ -332,7 +332,7 @@
                                                 "type": "basic",
                                                 "name": "H1",
                                                 "props": {
-                                                    "className": "page-title"
+                                                    "className": "ecommerce-page-title"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.claim.title"
                                             },
@@ -341,7 +341,7 @@
                                                 "type": "basic",
                                                 "name": "P",
                                                 "props": {
-                                                    "className": "page-description"
+                                                    "className": "ecommerce-page-description"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.claim.description"
                                             }
@@ -353,7 +353,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "page-actions"
+                                    "className": "ecommerce-page-actions"
                                 },
                                 "children": [
                                     {
@@ -376,7 +376,7 @@
                                             "aria-label": "$t:common.refresh",
                                             "title": "$t:common.refresh",
                                             "type": "button",
-                                            "className": "btn btn-icon"
+                                            "className": "ecommerce-btn ecommerce-btn-icon"
                                         },
                                         "children": [
                                             {
@@ -384,7 +384,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "arrows-rotate",
-                                                    "className": "text-xl"
+                                                    "className": "ecommerce:text-xl"
                                                 }
                                             }
                                         ]
@@ -401,12 +401,12 @@
                         "responsive": {
                             "portable": {
                                 "props": {
-                                    "className": "flex gap-2 mb-3"
+                                    "className": "ecommerce:flex ecommerce:gap-2 ecommerce:mb-3"
                                 }
                             }
                         },
                         "props": {
-                            "className": "hidden"
+                            "className": "ecommerce:hidden ecommerce-hidden"
                         },
                         "children": [
                             {
@@ -427,7 +427,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "btn btn-outline flex-1"
+                                    "className": "ecommerce-btn ecommerce-btn-outline ecommerce:flex-1"
                                 },
                                 "children": [
                                     {
@@ -435,7 +435,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "sliders",
-                                            "className": "text-base"
+                                            "className": "ecommerce:text-base"
                                         }
                                     },
                                     {
@@ -458,7 +458,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "btn btn-outline flex-1"
+                                    "className": "ecommerce-btn ecommerce-btn-outline ecommerce:flex-1"
                                 },
                                 "children": [
                                     {
@@ -466,7 +466,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "bookmark",
-                                            "className": "text-base"
+                                            "className": "ecommerce:text-base"
                                         }
                                     },
                                     {
@@ -526,7 +526,7 @@
                         "props": {
                             "activeTabId": "{{query.type ?? 'exchange'}}",
                             "variant": "default",
-                            "className": "mb-4",
+                            "className": "ecommerce:mb-4",
                             "tabs": [
                                 {
                                     "id": "exchange",
@@ -563,7 +563,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "mt-6"
+                            "className": "ecommerce:mt-6"
                         },
                         "children": [
                             {

@@ -28,7 +28,8 @@ export function initTemplate(): void {
     const actionDispatcher = (window as any).G7Core?.getActionDispatcher?.();
     if (actionDispatcher) {
       Object.entries(handlerMap).forEach(([name, handler]) => {
-        actionDispatcher.registerHandler(name, handler);
+        // 등록자를 템플릿 식별자로 밝힌다 (engine-v1.86.0 소유권 경고)
+        actionDispatcher.registerHandler(name, handler, { category: 'custom', source: 'my-template' });
       });
 
       // IDV launcher 는 핸들러 등록 직후 호출 — G7Core.identity 가 준비된 시점

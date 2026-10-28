@@ -7,14 +7,14 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card mb-4"
+        "className": "koreaexim-admin-card koreaexim:mb-4"
     },
     "children": [
         {
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "grid-2col-responsive"
+                "className": "koreaexim-grid-2col-responsive"
             },
             "children": [
                 {
@@ -25,7 +25,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "koreaexim-form-label"
                             },
                             "text": "$t:sirsoft-koreaexim.date_from"
                         },
@@ -65,7 +65,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "koreaexim-form-label"
                             },
                             "text": "$t:sirsoft-koreaexim.date_to"
                         },
@@ -105,7 +105,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "koreaexim-form-label"
                             },
                             "text": "$t:sirsoft-koreaexim.result"
                         },
@@ -197,7 +197,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "koreaexim-form-label"
                             },
                             "text": "$t:sirsoft-koreaexim.trigger"
                         },
@@ -262,7 +262,7 @@
             "if": "{{!!query.date_from && !!query.date_to && query.date_to < query.date_from}}",
             "props": {
                 "role": "alert",
-                "className": "form-error mt-2"
+                "className": "koreaexim-form-error koreaexim:mt-2"
             },
             "text": "$t:sirsoft-koreaexim.date_range_invalid"
         }

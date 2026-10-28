@@ -11,27 +11,27 @@
   넓은 화면은 표, 좁은 화면은 표가 카드로 바뀐다(`responsiveBreakpoint`). -->
 <partial description="쇼핑몰 설정 스케줄 탭 콘텐츠">
   <div data-ref="tab_content_schedules" data-if="{{(_global.activeEcommerceSettingsTab || query.tab) === 'schedules'}}">
-    <div data-ref="ecommerce_schedules_no_permission" data-if="{{_local.ecommerceSchedulesLoadError === 'forbidden'}}" class="admin-card">
-      <div class="flex gap-2 text-tertiary">
-        <icon name="lock" size="sm" class="mt-0.5 flex-shrink-0"/>
+    <div data-ref="ecommerce_schedules_no_permission" data-if="{{_local.ecommerceSchedulesLoadError === 'forbidden'}}" class="ecommerce-admin-card">
+      <div class="ecommerce:flex ecommerce:gap-2 ecommerce-text-tertiary">
+        <icon name="lock" size="sm" class="ecommerce:mt-0.5 ecommerce:flex-shrink-0"/>
         <span>$t:sirsoft-ecommerce.admin.settings.schedules.no_read_permission</span>
       </div>
     </div>
-    <div data-ref="ecommerce_schedules_card" data-if="{{_local.ecommerceSchedulesLoadError !== 'forbidden'}}" class="admin-card">
-      <h3 class="card-title">$t:sirsoft-ecommerce.admin.settings.schedules.title</h3>
-      <div class="card-description">$t:sirsoft-ecommerce.admin.settings.schedules.description</div>
+    <div data-ref="ecommerce_schedules_card" data-if="{{_local.ecommerceSchedulesLoadError !== 'forbidden'}}" class="ecommerce-admin-card">
+      <h3 class="ecommerce-card-title">$t:sirsoft-ecommerce.admin.settings.schedules.title</h3>
+      <div class="ecommerce-card-description">$t:sirsoft-ecommerce.admin.settings.schedules.description</div>
       <!-- 코어 스케줄 수정 권한(`core.schedules.update`)이 없으면 스위치가 잠긴다 — 왜 잠겼는지 알린다(목록 응답 abilities). 응답을 받기 전에는 띄우지 않는다 -->
-      <div data-ref="ecommerce_schedules_read_only_notice" data-if="{{ecommerceSchedules?.data?.abilities?.can_update === false}}" class="alert-warning mb-4">
-        <icon name="lock" size="lg" class="text-yellow-600 dark:text-yellow-400 flex-shrink-0"/>
+      <div data-ref="ecommerce_schedules_read_only_notice" data-if="{{ecommerceSchedules?.data?.abilities?.can_update === false}}" class="ecommerce-alert-warning ecommerce:mb-4">
+        <icon name="lock" size="lg" class="ecommerce:text-yellow-600 ecommerce:dark:text-yellow-400 ecommerce:flex-shrink-0"/>
         <span>$t:sirsoft-ecommerce.admin.settings.schedules.read_only_notice</span>
       </div>
       <!-- 「스케줄 관리에서 변경」 안내 — 설정 화면 공통 모양(파란 안내 상자 + 정보 아이콘 + 한 문장 + 링크). 링크는 같은 소유 쿼리를 실어 그 화면이 이 모듈 작업만 걸러 연다 -->
-      <div data-ref="ecommerce_schedules_manage_notice" class="alert-info mb-4">
-        <div class="flex gap-3">
-          <icon name="circle-info" class="text-xl flex-shrink-0 mt-0.5"/>
+      <div data-ref="ecommerce_schedules_manage_notice" class="ecommerce-alert-info ecommerce:mb-4">
+        <div class="ecommerce:flex ecommerce:gap-3">
+          <icon name="circle-info" class="ecommerce:text-xl ecommerce:flex-shrink-0 ecommerce:mt-0.5"/>
           <div>
-            <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.settings.schedules.manage_notice</p>
-            <a data-ref="ecommerce_schedules_manage_link" href="/admin/schedules?extension_type=module&amp;extension_identifier=sirsoft-ecommerce" class="text-link">$t:sirsoft-ecommerce.admin.settings.schedules.manage_link</a>
+            <p class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.settings.schedules.manage_notice</p>
+            <a data-ref="ecommerce_schedules_manage_link" href="/admin/schedules?extension_type=module&amp;extension_identifier=sirsoft-ecommerce" class="ecommerce-text-link">$t:sirsoft-ecommerce.admin.settings.schedules.manage_link</a>
           </div>
         </div>
       </div>
@@ -39,12 +39,12 @@
         <blur-until-loaded sources="ecommerceSchedules"/>
         <column field="name" header="$t:sirsoft-ecommerce.admin.settings.schedules.columns.name" :sortable="false" :required="true">
           <cell>
-            <div class="min-w-0">
-              <span class="font-medium text-gray-900 dark:text-white">{{row.label_localized}}</span>
-              <span class="block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">{{row.name}}</span>
-              <span data-if="{{row.description_localized}}" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{row.description_localized}}</span>
+            <div class="ecommerce:min-w-0">
+              <span class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white">{{row.label_localized}}</span>
+              <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:font-mono ecommerce:mt-0.5">{{row.name}}</span>
+              <span data-if="{{row.description_localized}}" class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5">{{row.description_localized}}</span>
               <!-- 실행 조건 미충족 — 그 설정이 꺼져 있어 예약 실행이 건너뛰어진다. 마우스를 올리면 조건 키가 보인다. -->
-              <span data-if="{{(row.unmet_conditions ?? []).length &gt; 0}}" title="{{(row.unmet_conditions ?? []).map(c => c.key).join(', ')}}" class="block mt-1">
+              <span data-if="{{(row.unmet_conditions ?? []).length &gt; 0}}" title="{{(row.unmet_conditions ?? []).map(c => c.key).join(', ')}}" class="ecommerce:block ecommerce:mt-1">
                 <badge data-type="composite" color="yellow" icon="triangle-exclamation" text="$t:sirsoft-ecommerce.admin.settings.schedules.condition_unmet" size="sm"/>
               </span>
             </div>
@@ -52,14 +52,14 @@
         </column>
         <column field="frequency" header="$t:sirsoft-ecommerce.admin.settings.schedules.columns.frequency" :sortable="false">
           <cell>
-            <span class="text-sm text-gray-900 dark:text-white">{{row.frequency_label}}</span>
-            <span data-if="{{row.frequency !== 'everyThirtySeconds'}}" class="block text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">{{row.expression}}</span>
+            <span class="ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white">{{row.frequency_label}}</span>
+            <span data-if="{{row.frequency !== 'everyThirtySeconds'}}" class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:font-mono ecommerce:mt-0.5">{{row.expression}}</span>
           </cell>
         </column>
         <column field="next_run_at" header="$t:sirsoft-ecommerce.admin.settings.schedules.columns.next_run" :sortable="false">
           <cell>
-            <span data-if="{{row.is_active &amp;&amp; row.next_run_at}}" class="text-label">{{row.next_run_at | datetime}}</span>
-            <span data-if="{{!(row.is_active &amp;&amp; row.next_run_at)}}" class="text-sm text-gray-400 dark:text-gray-500">-</span>
+            <span data-if="{{row.is_active &amp;&amp; row.next_run_at}}" class="ecommerce-text-label">{{row.next_run_at | datetime}}</span>
+            <span data-if="{{!(row.is_active &amp;&amp; row.next_run_at)}}" class="ecommerce:text-sm ecommerce:text-gray-400 ecommerce:dark:text-gray-500">-</span>
           </cell>
         </column>
         <column field="last_result" header="$t:sirsoft-ecommerce.admin.settings.schedules.columns.last_result" :sortable="false">

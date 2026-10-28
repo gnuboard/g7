@@ -25,7 +25,8 @@
         },
         "css": {
             "entry": "resources/css/main.css",
-            "output": "dist/css/plugin.css"
+            "output": "dist/css/plugin.css",
+            "namespace": "verification-nhnkcp"
         },
         "handlers": true
     },

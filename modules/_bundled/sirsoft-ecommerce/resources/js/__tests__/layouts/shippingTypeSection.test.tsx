@@ -108,9 +108,9 @@ describe('배송유형 관리 섹션 구조', () => {
      * @effects settings_shipping_type_section_structure
      */
     it('카드 구조 (admin-card → card-header + 테이블)를 가진다', () => {
-        expect(typeSection.props?.className).toBe('admin-card');
+        expect(typeSection.props?.className).toBe('ecommerce-admin-card');
         const cardHeaders = allNodes.filter(
-            (n: any) => n.props?.className === 'card-header'
+            (n: any) => n.props?.className === 'ecommerce-card-header'
         );
         expect(cardHeaders.length).toBeGreaterThanOrEqual(1);
     });
@@ -121,7 +121,7 @@ describe('배송유형 관리 섹션 구조', () => {
      */
     it('섹션 제목이 다국어 키를 사용한다', () => {
         const h3 = findAllByName(allNodes, 'H3').find(
-            (n: any) => n.props?.className === 'card-title'
+            (n: any) => n.props?.className === 'ecommerce-card-title'
         );
         expect(h3?.text).toBe('$t:sirsoft-ecommerce.admin.settings.shipping.types.section_title');
     });
@@ -395,7 +395,7 @@ describe('배송유형 카드뷰 구조', () => {
      */
     it('카드 헤더에 code 텍스트와 is_active Toggle이 있다', () => {
         const cardHeader = allNodes.find(
-            (n: any) => n.props?.className === 'excel-card-header'
+            (n: any) => n.props?.className === 'ecommerce-excel-card-header'
         );
         expect(cardHeader).toBeDefined();
         const headerNodes = flattenAll(cardHeader);
@@ -417,7 +417,7 @@ describe('배송유형 카드뷰 구조', () => {
      */
     it('카드 본문에 name(MultilingualInput)과 category(Select)가 있다', () => {
         const body = allNodes.find(
-            (n: any) => n.props?.className === 'excel-card-body'
+            (n: any) => n.props?.className === 'ecommerce-excel-card-body'
         );
         const bodyNodes = flattenAll(body);
 
@@ -434,7 +434,7 @@ describe('배송유형 카드뷰 구조', () => {
      */
     it('카드 푸터에 삭제 버튼이 있다', () => {
         const footer = allNodes.find(
-            (n: any) => n.props?.className === 'excel-card-footer'
+            (n: any) => n.props?.className === 'ecommerce-excel-card-footer'
         );
         const footerNodes = flattenAll(footer);
         const deleteBtn = findButtonWithIcon(footerNodes, 'fa-trash');

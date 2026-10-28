@@ -1,4 +1,4 @@
-<!-- 학습용 플러그인 환경설정 화면 — 코어의 플러그인 설정 규약(경로·엔드포인트·저장 흐름)을 그대로 따르는 최소 예다 -->
+<!-- 학습용 플러그인 환경설정 화면 — 코어의 플러그인 설정 규약(경로·엔드포인트·저장 흐름)을 그대로 따르는 최소 예다. 모양은 템플릿 CSS 가 아니라 이 플러그인의 순수 CSS(resources/css/main.css, helloplugin-*)가 싣는다 -->
 <layout name="plugin_settings" version="1.0.0" extends="_admin_base">
   <meta title="$t:gnuboard7-hello_plugin.settings.title" description="$t:gnuboard7-hello_plugin.settings.description"/>
   <!-- 현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) — 저장 후 되돌아왔을 때 낡은 값이 남지 않게 -->
@@ -22,31 +22,31 @@
     <permission>core.plugins.update</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="helloplugin-page">
       <page-header data-type="composite" data-ref="page_header" title="$t:gnuboard7-hello_plugin.settings.title" description="$t:gnuboard7-hello_plugin.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
-      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
-        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-xs text-yellow-700 dark:text-yellow-300">$t:gnuboard7-hello_plugin.plugin_read_only</span>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="helloplugin-alert">
+        <icon name="lock" class="helloplugin-alert__icon"/>
+        <span class="helloplugin-alert__text">$t:gnuboard7-hello_plugin.plugin_read_only</span>
       </div>
-      <div data-ref="settings_form" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div data-ref="settings_fields" class="p-6 space-y-6">
-          <div data-ref="field_log_enabled" class="flex-start gap-3">
-            <input type="checkbox" id="hello_plugin_log_enabled" name="log_enabled" class="mt-1 h-4 w-4 rounded text-blue-600" disabled="{{_computed.isPluginReadOnly}}"/>
+      <div data-ref="settings_form" class="helloplugin-card">
+        <div data-ref="settings_fields" class="helloplugin-card__body">
+          <div data-ref="field_log_enabled" class="helloplugin-field">
+            <input type="checkbox" id="hello_plugin_log_enabled" name="log_enabled" class="helloplugin-checkbox" disabled="{{_computed.isPluginReadOnly}}"/>
             <div>
-              <label class="form-label cursor-pointer" htmlFor="hello_plugin_log_enabled">$t:gnuboard7-hello_plugin.settings.fields.log_enabled.label</label>
-              <p class="form-hint">$t:gnuboard7-hello_plugin.settings.fields.log_enabled.hint</p>
+              <label class="helloplugin-label" htmlFor="hello_plugin_log_enabled">$t:gnuboard7-hello_plugin.settings.fields.log_enabled.label</label>
+              <p class="helloplugin-hint">$t:gnuboard7-hello_plugin.settings.fields.log_enabled.hint</p>
             </div>
           </div>
         </div>
       </div>
-      <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
+      <div data-ref="footer_buttons" class="helloplugin-footer">
+        <a href="/admin/plugins" data-ref="cancel_button" class="helloplugin-button helloplugin-button--secondary">
           <on type="click">
             <navigate/>
           </on>
           <span>$t:common.cancel</span>
         </a>
-        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="helloplugin-button helloplugin-button--primary helloplugin-footer__save">
           <on type="click">
             <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 -->
             <sequence>

@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "stack-tight"
+        "className": "ecommerce-stack-tight"
     },
     "children": [
         {
@@ -16,7 +16,7 @@
             "name": "Div",
             "if": "{{settings !== undefined && (!_local.form?.order_settings?.bank_accounts || _local.form.order_settings.bank_accounts.length === 0)}}",
             "props": {
-                "className": "text-center text-tertiary"
+                "className": "ecommerce:text-center ecommerce-text-tertiary"
             },
             "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.empty"
         },
@@ -29,21 +29,21 @@
                 "index_var": "accountIndex"
             },
             "props": {
-                "className": "excel-card"
+                "className": "ecommerce-excel-card"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "excel-card-header"
+                        "className": "ecommerce-excel-card-header"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 flex-1 min-w-0"
+                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-1 ecommerce:min-w-0"
                             },
                             "children": [
                                 {
@@ -63,7 +63,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-icon flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "ecommerce-btn-icon ecommerce:flex-shrink-0 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "aria-label": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_default",
                                         "aria-pressed": "{{account.is_default ? 'true' : 'false'}}"
@@ -74,7 +74,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "{{account.is_default ? 'circle-dot' : 'circle'}}",
-                                                "className": "{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
+                                                "className": "{{account.is_default ? 'ecommerce:text-blue-600 ecommerce:dark:text-blue-400' : 'ecommerce:text-gray-500 ecommerce:dark:text-gray-400'}}"
                                             }
                                         }
                                     ]
@@ -83,7 +83,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "font-medium text-gray-900 dark:text-gray-100"
+                                        "className": "ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                                     },
                                     "text": "{{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number') + ' ' + (accountIndex + 1)}}"
                                 }
@@ -93,7 +93,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 flex-shrink-0"
+                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-shrink-0"
                             },
                             "children": [
                                 {
@@ -124,7 +124,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-icon text-red-500 dark:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "ecommerce-btn-icon ecommerce:text-red-500 ecommerce:dark:text-red-400 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "aria-label": "$t:common.delete"
                                     },
@@ -146,7 +146,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "excel-card-body"
+                        "className": "ecommerce-excel-card-body"
                     },
                     "children": [
                         {
@@ -157,14 +157,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "form-group"
+                                        "className": "ecommerce-form-group"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.bank"
                                         },
@@ -175,7 +175,7 @@
                                                 "name": "{{'order_settings.bank_accounts.' + account._idx + '.bank_code'}}",
                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.bank')}}",
                                                 "value": "{{account.bank_code}}",
-                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'w-full input-error' : 'w-full'}}",
+                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'ecommerce:w-full ecommerce:border-red-500' : 'ecommerce:w-full'}}",
                                                 "options": "{{(_local.form?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: typeof b.name === 'object' ? $localized(b.name) : b.name }))}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
@@ -185,7 +185,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "ecommerce-form-error"
                                             },
                                             "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']?.[0] ?? ''}}"
                                         }
@@ -195,14 +195,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "form-group"
+                                        "className": "ecommerce-form-group"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number"
                                         },
@@ -215,7 +215,7 @@
                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number')}}",
                                                 "value": "{{account.account_number ?? ''}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number_placeholder",
-                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error' : 'input'}}",
+                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
@@ -224,7 +224,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "ecommerce-form-error"
                                             },
                                             "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']?.[0] ?? ''}}"
                                         }
@@ -234,14 +234,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "form-group"
+                                        "className": "ecommerce-form-group"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "ecommerce-form-label"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder"
                                         },
@@ -254,7 +254,7 @@
                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder')}}",
                                                 "value": "{{account.account_holder ?? ''}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder_placeholder",
-                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error' : 'input'}}",
+                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
@@ -263,7 +263,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "ecommerce-form-error"
                                             },
                                             "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']?.[0] ?? ''}}"
                                         }

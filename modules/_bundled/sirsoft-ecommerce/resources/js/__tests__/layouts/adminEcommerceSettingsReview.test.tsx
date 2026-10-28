@@ -147,7 +147,7 @@ describe('리뷰설정 탭 구조 검증 (_tab_review_settings.json)', () => {
          * @effects review_tab_structure_and_card_locked
          */
         it('admin-card 클래스를 가져야 한다', () => {
-            expect(card.props.className).toBe('admin-card');
+            expect(card.props.className).toBe('ecommerce-admin-card');
         });
 
         /**

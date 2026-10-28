@@ -22,7 +22,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "btn btn-outline"
+                    "className": "ecommerce-btn ecommerce-btn-outline"
                 },
                 "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.cancel"
             },
@@ -37,7 +37,7 @@
                 ],
                 "props": {
                     "type": "button",
-                    "className": "btn btn-primary"
+                    "className": "ecommerce-btn ecommerce-btn-primary"
                 },
                 "children": [
                     {
@@ -45,7 +45,7 @@
                         "name": "Icon",
                         "props": {
                             "name": "file-arrow-down",
-                            "className": "text-base"
+                            "className": "ecommerce:text-base"
                         }
                     },
                     {
@@ -62,7 +62,7 @@
             "type": "basic",
             "name": "P",
             "props": {
-                "className": "text-secondary text-sm mb-6"
+                "className": "ecommerce-text-secondary ecommerce:text-sm ecommerce:mb-6"
             },
             "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.description"
         },
@@ -78,7 +78,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "ecommerce-flex-start ecommerce:gap-3 ecommerce:p-4 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -89,7 +89,7 @@
                                         "name": "downloadType",
                                         "value": "search",
                                         "checked": true,
-                                        "className": "radio mt-0.5"
+                                        "className": "ecommerce-radio ecommerce:mt-0.5"
                                     }
                                 },
                                 {
@@ -100,7 +100,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "font-medium text-primary block"
+                                                "className": "ecommerce:font-medium ecommerce-text-primary ecommerce:block"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_search"
                                         },
@@ -108,7 +108,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-tertiary text-sm"
+                                                "className": "ecommerce-text-tertiary ecommerce:text-sm"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_search_desc|count=12"
                                         }
@@ -120,7 +120,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "ecommerce-flex-start ecommerce:gap-3 ecommerce:p-4 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -130,7 +130,7 @@
                                         "type": "radio",
                                         "name": "downloadType",
                                         "value": "selected",
-                                        "className": "radio mt-0.5"
+                                        "className": "ecommerce-radio ecommerce:mt-0.5"
                                     }
                                 },
                                 {
@@ -141,7 +141,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "font-medium text-primary block"
+                                                "className": "ecommerce:font-medium ecommerce-text-primary ecommerce:block"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_selected"
                                         },
@@ -149,7 +149,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-tertiary text-sm"
+                                                "className": "ecommerce-text-tertiary ecommerce:text-sm"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_selected_desc|count=10"
                                         }

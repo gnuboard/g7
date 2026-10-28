@@ -55,6 +55,14 @@ return [
         'translation_load_failed' => '多言語ファイルの読み込みに失敗しました: :error',
         'template_init_error' => 'テンプレートエンジンの初期化中にエラーが発生しました',
         'contact_admin_for_template' => 'システム管理者に問い合わせてテンプレートを有効化してください。',
+        // template.json 拡張 CSS 契約の検証メッセージ
+        'color_scheme_invalid_strategy' => 'features.color_scheme.strategy は ancestor-class、media-query、none のいずれかである必要があります。',
+        'color_scheme_selector_required' => 'features.color_scheme の ancestor-class 方式には selector が必要です。',
+        'extension_css_overrides_not_list' => 'extension_css_overrides は配列である必要があります。',
+        'extension_css_override_invalid' => 'extension_css_overrides の :index 番目の項目には target と dist/ 配下の path が必要です。',
+        'extension_css_override_invalid_version' => 'extension_css_overrides の :target 項目の targetVersion を解釈できません。',
+        'extension_css_override_duplicate' => 'extension_css_overrides に :target が二重に宣言されています。',
+
         'missing_error_config' => 'テンプレートに error_config セクションがありません。エラーページレイアウト設定が必要です。',
         'missing_error_layout' => ':code エラーレイアウトが定義されていません。',
         'error_layout_not_found' => ':code エラーレイアウトファイルが見つかりません: :path',

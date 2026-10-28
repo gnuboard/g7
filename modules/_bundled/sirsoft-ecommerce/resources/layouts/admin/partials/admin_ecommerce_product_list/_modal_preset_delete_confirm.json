@@ -17,7 +17,7 @@
             "type": "basic",
             "name": "P",
             "props": {
-                "className": "text-body"
+                "className": "ecommerce-text-body"
             },
             "text": "$t:sirsoft-ecommerce.admin.product.modal.preset_delete.confirm|name={{_global.deletingPresetName}}"
         },
@@ -26,7 +26,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex justify-end gap-2 mt-4"
+                "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-4"
             },
             "children": [
                 {
@@ -40,7 +40,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-secondary"
+                        "className": "ecommerce-btn ecommerce-btn-secondary"
                     },
                     "text": "$t:common.cancel"
                 },
@@ -86,7 +86,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-danger"
+                        "className": "ecommerce-btn ecommerce-btn-danger"
                     },
                     "text": "$t:common.delete"
                 }

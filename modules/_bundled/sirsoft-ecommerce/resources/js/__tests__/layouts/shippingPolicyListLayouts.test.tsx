@@ -419,7 +419,7 @@ describe('DataGrid Partial (_partial_datagrid.json)', () => {
             const allNodes = flattenAll({ children: subRow });
             // 국기 아이콘
             const flagNode = allNodes.find(
-                (n: any) => n.props?.className?.includes('fi-{{cs.country_code')
+                (n: any) => n.props?.className?.includes('ecommerce-flag-{{cs.country_code')
             );
             expect(flagNode).toBeDefined();
 

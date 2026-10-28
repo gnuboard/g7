@@ -203,6 +203,101 @@ const PREVIEW_SUPPRESSED_LAYOUT_FEATURES: ReadonlySet<string> = new Set([
     'redirect',         // 라우트 리다이렉트 속성
 ]);
 
+// ============================================================================
+// 엔진 핸들러 이름 — 소유권 경고의 기준 (engine-v1.86.0)
+// ============================================================================
+
+/**
+ * 엔진 자신의 등록자 표기. 기본 핸들러 등록과 엔진 내부 해제는 이 값으로 표시한다.
+ *
+ * @since engine-v1.83.0
+ */
+export const ENGINE_HANDLER_SOURCE = 'engine';
+
+/** `registerDefaultHandlers` 의 모든 등록에 넘기는 옵션 — 등록자를 엔진으로 표시한다 (engine-v1.86.0) */
+const ENGINE_DEFAULT_HANDLER_OPTIONS = { category: 'built-in', source: ENGINE_HANDLER_SOURCE } as const;
+
+/**
+ * `registerDefaultHandlers` 가 Map 에 등록하는 엔진 기본 핸들러 18종과 DevTools 설명.
+ *
+ * 기본 등록·DevTools 메타·소유권 경고가 모두 이 한 목록에서 나온다. 종전 DevTools 메타 배열은
+ * 따로 손으로 적혀 5종(scrollIntoView·reloadExtensions·reloadModuleHandlers·reloadPluginHandlers·suppress)이
+ * 빠져 있었다. 실제 등록과 같은지는 `ActionDispatcher.handlerOwnership.test.ts` 가 잠근다.
+ *
+ * @since engine-v1.83.0
+ */
+export const ENGINE_MAP_HANDLER_META: ReadonlyArray<{ name: string; description: string }> = [
+  { name: 'refetchDataSource', description: '데이터 소스를 다시 fetch합니다' },
+  { name: 'appendDataSource', description: '데이터 소스에 새 데이터를 병합합니다 (무한 스크롤용)' },
+  { name: 'updateDataSource', description: 'API 응답으로 데이터 소스를 직접 업데이트합니다 (refetch 대체)' },
+  { name: 'scrollIntoView', description: '지정한 요소가 보이도록 스크롤합니다' },
+  { name: 'reloadExtensions', description: '확장 에셋·라우트를 다시 불러옵니다' },
+  { name: 'reloadRoutes', description: '라우트를 다시 로드합니다' },
+  { name: 'refresh', description: '현재 페이지를 새로고침합니다' },
+  { name: 'remount', description: '컴포넌트를 리마운트합니다' },
+  { name: 'reloadTranslations', description: '다국어 파일을 다시 로드합니다' },
+  { name: 'reloadModuleHandlers', description: '모듈 핸들러 번들을 다시 불러와 재등록합니다' },
+  { name: 'reloadPluginHandlers', description: '플러그인 핸들러 번들을 다시 불러와 재등록합니다' },
+  { name: 'showErrorPage', description: '에러 페이지를 표시합니다' },
+  { name: 'emitEvent', description: '이벤트를 발생시킵니다' },
+  { name: 'updateProductField', description: '상품 필드를 인라인 수정합니다' },
+  { name: 'updateOptionField', description: '상품 옵션 필드를 인라인 수정합니다' },
+  { name: 'setLocale', description: '언어를 변경합니다 (DB 저장 + UI 리렌더링)' },
+  { name: 'refreshConsent', description: '방문자 동의 상태를 다시 조회합니다' },
+  { name: 'suppress', description: '오류 전파를 의도적으로 막는 빈 핸들러입니다' },
+];
+
+/**
+ * 엔진이 Map 에 등록하는 기본 핸들러 이름 18종 — 다른 등록자가 같은 이름으로 등록하면 기본 동작이 덮인다.
+ *
+ * @since engine-v1.83.0
+ */
+export const ENGINE_MAP_HANDLERS: ReadonlySet<string> = new Set(ENGINE_MAP_HANDLER_META.map((m) => m.name));
+
+/**
+ * `executeAction` 의 `switch (action.handler)` 가 직접 처리하는 이름 33종.
+ *
+ * switch 는 Map 을 보지 않으므로 이 이름으로 등록한 핸들러는 **영원히 호출되지 않는다**.
+ * switch 라벨과 이 목록이 같은지는 audit `handler-name-ownership` 테스트가 토크나이저로 대조한다.
+ *
+ * @since engine-v1.83.0
+ */
+export const ENGINE_SWITCH_HANDLERS: ReadonlySet<string> = new Set([
+    'ensureIdentityVerified',
+    'resolveIdentityChallenge',
+    'navigate',
+    'navigateBack',
+    'navigateForward',
+    'openWindow',
+    'redirect',
+    'replaceUrl',
+    'apiCall',
+    'login',
+    'loginTwoFactor',
+    'loginTwoFactorResend',
+    'loginPasswordChange',
+    'loginPasswordChangePostpone',
+    'loginHandoff',
+    'logout',
+    'setState',
+    'setError',
+    'openModal',
+    'closeModal',
+    'showAlert',
+    'toast',
+    'switch',
+    'conditions',
+    'sequence',
+    'parallel',
+    'startInterval',
+    'stopInterval',
+    'loadScript',
+    'callExternal',
+    'callExternalEmbed',
+    'saveToLocalStorage',
+    'loadFromLocalStorage',
+]);
+
 /**
  * 두 객체의 1단 키·값이 모두 같은지(참조 비교) 판정한다 — `G7Core.state.get()` 은 부를 때마다 얕은 사본을 돌려주므로
  * 객체 참조로는 「같은 상태」를 가릴 수 없다.
@@ -751,6 +846,16 @@ export class ActionDispatcher {
   /** 커스텀 액션 핸들러 맵 */
   private customHandlers: Map<string, ActionHandler> = new Map();
 
+  /**
+   * 핸들러 이름 → 등록자(`registerHandler` 의 `source`, 없으면 `'unknown'`) (engine-v1.86.0)
+   *
+   * 다른 주인의 이름을 덮는 등록을 경고하는 기준이다.
+   */
+  private handlerSources: Map<string, string> = new Map();
+
+  /** 이미 낸 소유권 경고의 (이름, 등록자) 키 — 같은 쌍은 1회만 경고한다 (engine-v1.86.0) */
+  private warnedHandlerPairs: Set<string> = new Set();
+
   /** 기본 컨텍스트 */
   private defaultContext: Partial<ActionContext>;
 
@@ -1165,7 +1270,7 @@ export class ActionDispatcher {
       } else {
         logger.warn('refetchDataSource: G7Core.dataSource.refetch is not available');
       }
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // appendDataSource: 데이터 소스에 새 데이터를 병합 (무한 스크롤용)
     // 참고: executeAction에서 resolveParams가 이미 호출되어 action.params는 해석된 상태로 전달됨
@@ -1195,7 +1300,7 @@ export class ActionDispatcher {
       } else {
         logger.warn('appendDataSource: G7Core.dataSource.updateData is not available');
       }
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // updateDataSource: API 응답 데이터로 데이터 소스 전체 교체 (refetch 없이 직접 업데이트)
     // 장바구니 수량 변경 등 API가 전체 데이터를 반환하는 경우, refetch 대신 사용하여 네트워크 왕복 감소
@@ -1222,7 +1327,7 @@ export class ActionDispatcher {
       } else {
         logger.warn('updateDataSource: G7Core.dataSource.set is not available');
       }
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // scrollIntoView: 특정 요소로 스크롤
     // params.selector: CSS 선택자 (예: "#loading_indicator", "[data-id='item-1']")
@@ -1373,7 +1478,7 @@ export class ActionDispatcher {
         block: block as ScrollLogicalPosition,
         inline: inline as ScrollLogicalPosition,
       });
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // reloadExtensions: 확장 상태(routes/translations/layouts) 원자적 재동기화
     //
@@ -1439,7 +1544,7 @@ export class ActionDispatcher {
       }
 
       logger.log('reloadExtensions: done');
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // reloadRoutes: 라우트 다시 로드 (하위 호환)
     //
@@ -1473,7 +1578,7 @@ export class ActionDispatcher {
           logger.log('reloadRoutes: Routes reloaded (legacy fallback)');
         }
       }
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // refresh: 현재 페이지 새로고침
     // params.delayMs (number, 기본 0) — 선행 토스트/모달 닫힘 애니메이션이 보이도록 지연 후 reload.
@@ -1490,7 +1595,7 @@ export class ActionDispatcher {
       }
 
       window.location.reload();
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // remount: 컴포넌트 ID 기반으로 리마운트 트리거
     // _remountKeys 객체에 컴포넌트 ID별 카운터를 저장하여 key prop으로 사용
@@ -1526,7 +1631,7 @@ export class ActionDispatcher {
       });
 
       logger.log(`remount: ${componentId} key incremented to ${currentValue + 1}`);
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // reloadTranslations: 다국어 파일 다시 로드 (하위 호환)
     //
@@ -1553,7 +1658,7 @@ export class ActionDispatcher {
           throw error;
         }
       }
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // reloadModuleHandlers: 모듈 핸들러 동적 로드/제거
     // 모듈 활성화/비활성화 시 window.G7Config.moduleAssets 병합/제거 및 JS 로드
@@ -1666,7 +1771,7 @@ export class ActionDispatcher {
         logger.error(`reloadModuleHandlers: Failed to ${actionType} module assets`, error);
         throw error;
       }
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // reloadPluginHandlers: 플러그인 핸들러 동적 로드/제거
     // 플러그인 활성화/비활성화 시 window.G7Config.pluginAssets 병합/제거 및 JS 로드
@@ -1779,7 +1884,7 @@ export class ActionDispatcher {
         logger.error(`reloadPluginHandlers: Failed to ${actionType} plugin assets`, error);
         throw error;
       }
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // showErrorPage: 에러 페이지 표시
     // ErrorPageHandler를 통해 에러 코드에 맞는 레이아웃을 로드하고 렌더링합니다.
@@ -1960,7 +2065,7 @@ export class ActionDispatcher {
           releaseActive();
         }
       }
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // emitEvent: 컴포넌트 이벤트 발생
     // G7Core.componentEvent.emit()을 통해 이벤트를 브로드캐스트하고 모든 리스너의 응답을 기다립니다.
@@ -2087,7 +2192,7 @@ export class ActionDispatcher {
 
         throw error;
       }
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // updateProductField: 상품 목록에서 개별 필드 인라인 수정
     // products 데이터 소스의 로컬 데이터를 업데이트하고, 변경된 상품 ID를 _local.modifiedProductIds에 추적합니다.
@@ -2161,7 +2266,7 @@ export class ActionDispatcher {
         logger.error('updateProductField: Error updating product field', error);
         throw error;
       }
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // updateOptionField: 상품 옵션 필드 인라인 수정
     // 상품 옵션의 필드를 수정하고 변경 추적합니다.
@@ -2234,7 +2339,7 @@ export class ActionDispatcher {
         logger.error('updateOptionField: Error updating option field', error);
         throw error;
       }
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // setLocale: 언어 변경 핸들러
     // TemplateApp.changeLocale()을 호출하여 언어 변경, DB 저장, UI 리렌더링을 수행합니다.
@@ -2267,7 +2372,7 @@ export class ActionDispatcher {
         }
         window.location.reload();
       }
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // refreshConsent: 방문자 동의 스냅샷을 다시 조회한다 (engine-v1.78.0, #639)
     // 동의를 저장한 화면(쿠키 배너·마이페이지 동의 카드)이 성공 뒤에 부른다. 코어 동의 런타임이
@@ -2284,7 +2389,7 @@ export class ActionDispatcher {
       }
 
       await runtime.refresh();
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // suppress: 에러 전파를 의도적으로 방지하는 no-op 핸들러
     // 데이터소스/apiCall의 errorHandling에서 특정 에러 코드를 상위 레벨로 전파하지 않을 때 사용
@@ -2292,7 +2397,7 @@ export class ActionDispatcher {
     // @since engine-v1.21.0
     this.registerHandler('suppress', async () => {
       logger.log('suppress: Error intentionally suppressed');
-    });
+    }, ENGINE_DEFAULT_HANDLER_OPTIONS);
 
     // DevTools에 빌트인 핸들러 메타데이터 일괄 등록
     this.registerBuiltInHandlerMetadata();
@@ -2305,24 +2410,9 @@ export class ActionDispatcher {
     const devTools = getDevTools();
     if (!devTools?.isEnabled()) return;
 
-    const builtInHandlers: Array<{ name: string; description: string }> = [
-      { name: 'refetchDataSource', description: '데이터 소스를 다시 fetch합니다' },
-      { name: 'appendDataSource', description: '데이터 소스에 새 데이터를 병합합니다 (무한 스크롤용)' },
-      { name: 'updateDataSource', description: 'API 응답으로 데이터 소스를 직접 업데이트합니다 (refetch 대체)' },
-      { name: 'reloadRoutes', description: '라우트를 다시 로드합니다' },
-      { name: 'refresh', description: '현재 페이지를 새로고침합니다' },
-      { name: 'remount', description: '컴포넌트를 리마운트합니다' },
-      { name: 'reloadTranslations', description: '다국어 파일을 다시 로드합니다' },
-      { name: 'showErrorPage', description: '에러 페이지를 표시합니다' },
-      { name: 'emitEvent', description: '이벤트를 발생시킵니다' },
-      { name: 'refreshConsent', description: '방문자 동의 상태를 다시 조회합니다' },
-      { name: 'updateProductField', description: '상품 필드를 인라인 수정합니다' },
-      { name: 'updateOptionField', description: '상품 옵션 필드를 인라인 수정합니다' },
-      { name: 'setLocale', description: '언어를 변경합니다 (DB 저장 + UI 리렌더링)' },
-    ];
-
-    for (const handler of builtInHandlers) {
-      devTools.trackHandlerRegistration(handler.name, 'built-in', handler.description);
+    // 기본 등록과 같은 한 목록(ENGINE_MAP_HANDLER_META)에서 읽는다 — 종전 손 목록은 5종이 빠져 있었다 (engine-v1.86.0)
+    for (const handler of ENGINE_MAP_HANDLER_META) {
+      devTools.trackHandlerRegistration(handler.name, 'built-in', handler.description, ENGINE_HANDLER_SOURCE);
     }
   }
 
@@ -8595,9 +8685,19 @@ export class ActionDispatcher {
   /**
    * 커스텀 액션 핸들러를 등록합니다.
    *
+   * 같은 이름이면 마지막 등록이 이긴다(종전 동작 그대로). 다만 다른 주인의 이름을 덮는 경우는
+   * `[G7]` 접두 `console.warn` 으로 드러낸다 — 디버그 모드와 무관하게, (이름, 등록자) 쌍마다 1회 (engine-v1.86.0, D3·D4):
+   *
+   * - switch 가 직접 처리하는 이름(`ENGINE_SWITCH_HANDLERS`) — 등록해도 호출되지 않는다
+   * - 엔진 기본 핸들러(`ENGINE_MAP_HANDLERS`)를 엔진이 아닌 쪽이 덮음
+   * - 다른 등록자가 등록한 이름을 다른 함수로 덮음
+   * - 점 있는 이름의 접두어가 등록자와 다름(남의 이름공간)
+   *
+   * 같은 등록자의 재등록(로케일 전환 재등록·`reloadPluginHandlers`)과 같은 함수의 재등록은 경고하지 않는다.
+   *
    * @param name 핸들러 이름
    * @param handler 핸들러 함수
-   * @param options 핸들러 옵션 (DevTools용)
+   * @param options 핸들러 옵션 — `source` 는 등록자(확장·템플릿 식별자, 엔진은 `'engine'`). 없으면 `'unknown'`
    */
   registerHandler(
     name: string,
@@ -8608,7 +8708,11 @@ export class ActionDispatcher {
       source?: string;
     }
   ): void {
+    const source = options?.source || 'unknown';
+    this.warnHandlerOwnership(name, handler, source);
+
     this.customHandlers.set(name, handler);
+    this.handlerSources.set(name, source);
 
     // DevTools에 핸들러 등록 추적
     const devTools = getDevTools();
@@ -8625,16 +8729,101 @@ export class ActionDispatcher {
   /**
    * 커스텀 액션 핸들러를 제거합니다.
    *
+   * 엔진 기본 핸들러를 엔진이 아닌 쪽이 지우면 `[G7]` 경고를 낸다. 해제 동작 자체는 그대로다 (engine-v1.86.0).
+   * switch 가 처리하는 이름은 Map 을 지워도 엔진 동작이 바뀌지 않으므로 경고 대상이 아니다.
+   *
    * @param name 핸들러 이름
+   * @param options 해제 옵션 — `source` 는 해제하는 쪽(엔진은 `'engine'`). 없으면 `'unknown'`
    */
-  unregisterHandler(name: string): void {
+  unregisterHandler(name: string, options?: { source?: string }): void {
+    const source = options?.source || 'unknown';
+    if (source !== ENGINE_HANDLER_SOURCE && ENGINE_MAP_HANDLERS.has(name)) {
+      this.warnOnce(
+        `unregister\u0000${name}\u0000${source}`,
+        `[G7] 엔진 기본 핸들러 "${name}" 을 ${source} 가 해제했습니다 — 이 액션을 쓰는 화면이 동작하지 않습니다. 해제는 그대로 진행합니다.`
+      );
+    }
+
     this.customHandlers.delete(name);
+    this.handlerSources.delete(name);
 
     // DevTools에 핸들러 해제 추적
     const devTools = getDevTools();
     if (devTools?.isEnabled()) {
       devTools.trackHandlerUnregistration(name);
     }
+  }
+
+  /**
+   * 핸들러를 등록한 주인(`registerHandler` 의 `source`)을 반환합니다.
+   *
+   * 편집기 캔버스의 격리 dispatcher 가 호스트 핸들러를 복제할 때 원래 주인을 그대로 넘기는 데 쓴다.
+   *
+   * @param name 핸들러 이름
+   * @returns 등록자 표기 (미등록이면 undefined)
+   * @since engine-v1.83.0
+   */
+  getHandlerSource(name: string): string | undefined {
+    return this.handlerSources.get(name);
+  }
+
+  /**
+   * 핸들러 이름 소유권 경고를 판정해 냅니다 (engine-v1.86.0).
+   *
+   * 여러 사유가 겹치면 한 건으로 묶는다 — (이름, 등록자) 쌍마다 1회.
+   *
+   * @param name 핸들러 이름
+   * @param handler 새로 등록하는 함수
+   * @param source 새 등록자
+   */
+  private warnHandlerOwnership(name: string, handler: ActionHandler, source: string): void {
+    if (source === ENGINE_HANDLER_SOURCE) {
+      return;
+    }
+
+    const reasons: string[] = [];
+    const previous = this.customHandlers.get(name);
+    const previousSource = this.handlerSources.get(name);
+
+    if (ENGINE_SWITCH_HANDLERS.has(name)) {
+      reasons.push('엔진이 직접 처리하는 이름이라 등록해도 호출되지 않습니다');
+    } else if (ENGINE_MAP_HANDLERS.has(name)) {
+      reasons.push(`엔진 기본 핸들러를 ${source} 가 덮어썼습니다`);
+    } else if (previous && previous !== handler && previousSource && previousSource !== source) {
+      reasons.push(`${previousSource} 가 등록한 "${name}" 을 ${source} 가 덮어썼습니다`);
+    }
+
+    const dot = name.indexOf('.');
+    if (dot > 0 && source !== 'unknown') {
+      const prefix = name.slice(0, dot);
+      if (prefix !== source) {
+        reasons.push(`다른 주인의 이름공간(${prefix})으로 등록했습니다`);
+      }
+    }
+
+    if (reasons.length === 0) {
+      return;
+    }
+
+    this.warnOnce(
+      `${name}\u0000${source}`,
+      `[G7] 핸들러 "${name}" (등록자: ${source}) — ${reasons.join(' / ')}. ` +
+        '등록은 그대로 진행합니다. 자기 핸들러에는 "{자기 식별자}." 접두어를 붙이세요.'
+    );
+  }
+
+  /**
+   * 같은 키의 경고를 1회만 냅니다.
+   *
+   * @param key 중복 억제 키
+   * @param message 경고 문구 (`[G7]` 접두)
+   */
+  private warnOnce(key: string, message: string): void {
+    if (this.warnedHandlerPairs.has(key)) {
+      return;
+    }
+    this.warnedHandlerPairs.add(key);
+    console.warn(message);
   }
 
   /**

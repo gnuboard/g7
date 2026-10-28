@@ -31,21 +31,21 @@
                     "if": "{{route?.id && user?.data?.ecommerce_preferred_currency !== undefined}}",
                     "props": {
                         "id": "ext_user_currency",
-                        "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-6"
+                        "className": "ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-6 ecommerce:mt-6"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-center justify-between mb-4"
+                                "className": "ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-4"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center gap-2"
+                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2"
                                     },
                                     "children": [
                                         {
@@ -54,14 +54,14 @@
                                             "props": {
                                                 "name": "coins",
                                                 "size": "md",
-                                                "className": "text-gray-600 dark:text-gray-400"
+                                                "className": "ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "H3",
                                             "props": {
-                                                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                                "className": "ecommerce:text-lg ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.user_currency.title"
                                         }
@@ -88,7 +88,7 @@
                                 "disabled": "{{user?.data?.ecommerce_currency_can_manage !== true}}",
                                 "value": "{{_local.form?.ecommerce_preferred_currency ?? user?.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}",
                                 "options": "{{(_global.modules?.['sirsoft-ecommerce']?.language_currency?.currencies ?? []).filter(c => c.is_default || (c.exchange_rate ?? 0) > 0).map(c => ({ value: c.code, label: c.code + ' (' + (c.symbol ?? c.code) + ')' }))}}",
-                                "className": "w-full md:w-64"
+                                "className": "ecommerce:w-full ecommerce:md:w-64"
                             }
                         },
                         {
@@ -97,7 +97,7 @@
                             "name": "P",
                             "if": "{{_local.errors?.ecommerce_preferred_currency}}",
                             "props": {
-                                "className": "text-red-600 dark:text-red-300 text-xs mt-1"
+                                "className": "ecommerce:text-red-600 ecommerce:dark:text-red-300 ecommerce:text-xs ecommerce:mt-1"
                             },
                             "text": "{{_local.errors?.ecommerce_preferred_currency?.[0] ?? ''}}"
                         },
@@ -105,7 +105,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400 mt-2"
+                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-2"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.user_currency.description"
                         }

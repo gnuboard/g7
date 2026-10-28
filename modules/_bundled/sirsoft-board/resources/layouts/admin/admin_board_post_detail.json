@@ -65,12 +65,12 @@
                 "responsive": {
                     "portable": {
                         "props": {
-                            "className": "admin-page-content-fluid-compact"
+                            "className": "board-admin-page-content-fluid-compact"
                         }
                     }
                 },
                 "props": {
-                    "className": "admin-page-content-fluid"
+                    "className": "board-admin-page-content-fluid"
                 },
                 "children": [
                     {
@@ -91,7 +91,7 @@
                                     "target": "_blank",
                                     "rel": "noopener noreferrer",
                                     "title": "$t:sirsoft-board.admin.posts.actions.view_user_page",
-                                    "className": "flex-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline"
+                                    "className": "board-flex-center board:gap-2 board:px-3 board:py-2 board:text-sm board:font-medium board:text-gray-600 board:dark:text-gray-300 board:bg-gray-100 board:dark:bg-gray-700 board:rounded-lg board:hover:bg-gray-200 board:dark:hover:bg-gray-600 board:transition-colors board:no-underline"
                                 },
                                 "children": [
                                     {
@@ -129,7 +129,7 @@
                                     "type": "button",
                                     "aria-label": "$t:common.refresh",
                                     "title": "$t:common.refresh",
-                                    "className": "btn-icon"
+                                    "className": "board-btn-icon"
                                 },
                                 "children": [
                                     {
@@ -137,7 +137,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "refresh",
-                                            "className": "text-xl"
+                                            "className": "board:text-xl"
                                         }
                                     }
                                 ]
@@ -160,7 +160,7 @@
                                 "props": {
                                     "href": "/admin/board/{{route.slug}}",
                                     "mergeQuery": true,
-                                    "className": "button flex-center gap-2 btn btn-secondary"
+                                    "className": "board-button board-flex-center board:gap-2 board-btn board-btn-secondary"
                                 },
                                 "children": [
                                     {
@@ -168,7 +168,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "arrow-left",
-                                            "className": "text-base"
+                                            "className": "board:text-base"
                                         }
                                     },
                                     {
@@ -189,14 +189,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "admin-card"
+                                    "className": "board-admin-card"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "row-stack"
+                                            "className": "board-row-stack"
                                         },
                                         "children": [
                                             {
@@ -219,7 +219,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2 mb-4"
+                                    "className": "board-flex-center board:gap-2 board:mb-4"
                                 },
                                 "children": [
                                     {
@@ -227,14 +227,14 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "comments",
-                                            "className": "text-xl text-blue-600 dark:text-blue-400"
+                                            "className": "board:text-xl board:text-blue-600 board:dark:text-blue-400"
                                         }
                                     },
                                     {
                                         "type": "basic",
                                         "name": "H3",
                                         "props": {
-                                            "className": "section-heading"
+                                            "className": "board-section-heading"
                                         },
                                         "text": "$t:sirsoft-board.admin.posts.detail.replies_title|count={{post?.data?.reply_count ?? 0}}"
                                     }
@@ -254,14 +254,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "admin-card"
+                                            "className": "board-admin-card"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "row-stack"
+                                                    "className": "board-row-stack"
                                                 },
                                                 "children": [
                                                     {
@@ -294,14 +294,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "py-2"
+                        "className": "board:py-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-700 dark:text-gray-300 mb-4"
+                                "className": "board:text-gray-700 board:dark:text-gray-300 board:mb-4"
                             },
                             "text": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_comment' : _global.modal_data?.type === 'reply' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_reply' : '$t:sirsoft-board.admin.posts.detail.delete_modal.confirm_post'}}"
                         },
@@ -310,7 +310,7 @@
                             "name": "P",
                             "if": "{{_global.modal_data?.type !== 'post'}}",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "board-text-label-subtle"
                             },
                             "text": "{{_global.modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_comment' : '$t:sirsoft-board.admin.posts.detail.delete_modal.warning_reply'}}"
                         }
@@ -320,7 +320,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "modal-footer-buttons"
+                        "className": "board-modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -334,7 +334,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -425,7 +425,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-600 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-700 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                 "disabled": "{{_global.deleteModalLoading}}"
                             },
                             "children": [
@@ -458,21 +458,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "py-2"
+                        "className": "board:py-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "alert-warning"
+                                "className": "board-alert-warning"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs board-tone-warning"
+                                        "className": "board:text-xs board-tone-warning"
                                     },
                                     "text": "$t:sirsoft-board.admin.posts.detail.report_modal.warning_notice"
                                 }
@@ -483,21 +483,21 @@
                             "name": "Div",
                             "if": "{{_global.modal_data?.type === 'comment'}}",
                             "props": {
-                                "className": "mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                                "className": "board:mb-4 board:p-3 board:bg-gray-50 board:dark:bg-gray-800 board:rounded-lg"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-body"
+                                        "className": "board-text-body"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "font-medium"
+                                                "className": "board:font-medium"
                                             },
                                             "text": "$t:sirsoft-board.admin.posts.detail.report_modal.report_target"
                                         },
@@ -514,14 +514,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "mb-4"
+                                "className": "board:mb-4"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "board-form-label"
                                     },
                                     "text": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_type_label"
                                 },
@@ -540,7 +540,7 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800"
+                                        "className": "board:w-full board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800"
                                     },
                                     "children": [
                                         {
@@ -572,14 +572,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "mb-4"
+                                "className": "board:mb-4"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "board-form-label"
                                     },
                                     "text": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_detail_label"
                                 },
@@ -598,7 +598,7 @@
                                         }
                                     ],
                                     "props": {
-                                        "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400",
+                                        "className": "board:w-full board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:focus:ring-2 board:focus:ring-blue-500 board:dark:focus:ring-blue-400",
                                         "rows": 4,
                                         "placeholder": "$t:sirsoft-board.admin.posts.detail.report_modal.reason_placeholder"
                                     }
@@ -611,7 +611,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "modal-footer-buttons"
+                        "className": "board-modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -625,7 +625,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -735,7 +735,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "board:px-4 board:py-2 board:bg-yellow-700 board:dark:bg-yellow-700 board:text-white board:rounded-lg board:hover:bg-yellow-800 board:dark:hover:bg-yellow-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                 "disabled": "{{_global.reportSubmitting}}"
                             },
                             "children": [
@@ -745,7 +745,7 @@
                                     "if": "{{_global.reportSubmitting}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "spinner-sm"
+                                        "className": "board-spinner-sm"
                                     }
                                 },
                                 {
@@ -777,14 +777,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "py-2"
+                        "className": "board:py-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-700 dark:text-gray-300 mb-4"
+                                "className": "board:text-gray-700 board:dark:text-gray-300 board:mb-4"
                             },
                             "text": "{{_global.blind_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.blind_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.blind_confirm'}}"
                         },
@@ -792,7 +792,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "board-form-label"
                             },
                             "children": [
                                 {
@@ -804,7 +804,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400 ml-1"
+                                        "className": "board:text-gray-500 board:dark:text-gray-400 board:ml-1"
                                     },
                                     "text": "$t:sirsoft-board.common.optional"
                                 }
@@ -828,7 +828,7 @@
                                 "id": "blind_reason",
                                 "rows": 3,
                                 "placeholder": "$t:sirsoft-board.admin.posts.modals.blind_reason_placeholder",
-                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                                "className": "board:w-full board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:focus:ring-2 board:focus:ring-blue-500 board:dark:focus:ring-blue-400"
                             }
                         }
                     ]
@@ -837,7 +837,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "modal-footer-buttons"
+                        "className": "board-modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -851,7 +851,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -934,7 +934,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "board:px-4 board:py-2 board:bg-yellow-700 board:dark:bg-yellow-700 board:text-white board:rounded-lg board:hover:bg-yellow-800 board:dark:hover:bg-yellow-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                 "disabled": "{{_global.blindModalLoading}}"
                             },
                             "children": [
@@ -967,14 +967,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "py-2"
+                        "className": "board:py-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-gray-700 dark:text-gray-300 mb-4"
+                                "className": "board:text-gray-700 board:dark:text-gray-300 board:mb-4"
                             },
                             "text": "{{_global.restore_modal_data?.type === 'comment' ? '$t:sirsoft-board.admin.posts.modals.restore_comment_confirm' : '$t:sirsoft-board.admin.posts.modals.restore_confirm'}}"
                         }
@@ -984,7 +984,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "modal-footer-buttons"
+                        "className": "board-modal-footer-buttons"
                     },
                     "children": [
                         {
@@ -998,7 +998,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "board:px-4 board:py-2 board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -1078,7 +1078,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-green-700 dark:bg-green-700 text-white rounded-lg hover:bg-green-800 dark:hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "board:px-4 board:py-2 board:bg-green-700 board:dark:bg-green-700 board:text-white board:rounded-lg board:hover:bg-green-800 board:dark:hover:bg-green-800 board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                 "disabled": "{{_global.restoreModalLoading}}"
                             },
                             "children": [

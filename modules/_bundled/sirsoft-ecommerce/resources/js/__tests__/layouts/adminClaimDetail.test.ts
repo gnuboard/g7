@@ -740,11 +740,11 @@ describe('신청상품 — 일괄 변경 바와 표 (D24·D25)', () => {
     expect(mobileChevron.name).toBe('Div');
     expect(collect(pcChevron, (n) => n.name === 'Icon')[0].props.name).toBe('chevron-right');
     expect(pcChevron.if).toContain('length - 1');
-    expect(pcChevron.responsive.portable.props.className).toBe('hidden');
+    expect(pcChevron.responsive.portable.props.className).toBe('ecommerce:hidden ecommerce-hidden');
     expect(mobileChevron.if).toContain('% 4 !== 3');
-    expect(mobileChevron.props.className).toBe('hidden');
+    expect(mobileChevron.props.className).toBe('ecommerce:hidden ecommerce-hidden');
     expect(mobileChevron.responsive.portable.props.className).not.toContain('hidden');
-    expect(icons.some((n) => String(n.props?.className ?? '').split(' ').includes('hidden'))).toBe(false);
+    expect(icons.some((n) => String(n.props?.className ?? '').split(' ').includes('ecommerce:hidden'))).toBe(false);
 
     // 라벨은 nowrap 이 아니라 칸 안에서 줄바꿈한다.
     const label = collect(step, (n) => n.name === 'Span' && String(n.text ?? '').includes('step.label'))[0];
@@ -836,7 +836,7 @@ describe('결제 정보 — 주문상세 정본 동형 (D17-③)', () => {
     new Set(
       collect(
         node,
-        (n) => typeof n.props?.className === 'string' && n.props.className.includes('flex justify-between'),
+        (n) => typeof n.props?.className === 'string' && n.props.className.includes('ecommerce:flex ecommerce:justify-between'),
       ).map((n) => n.props.className as string),
     );
 

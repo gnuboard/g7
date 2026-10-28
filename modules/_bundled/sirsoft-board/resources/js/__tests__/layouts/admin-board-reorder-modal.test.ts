@@ -172,10 +172,10 @@ describe('순서 변경 모달 — 옮기기', () => {
         expect(badge.text ?? JSON.stringify(badge.children)).toContain('sirsoft-board.admin.board.index.reorder.inactive');
 
         const row = find(list, byTestId('board-reorder-row-'))!;
-        expect(row.props.className).toContain("row.is_active ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'");
+        expect(row.props.className).toContain("row.is_active ? 'board:text-gray-900 board:dark:text-gray-100' : 'board:text-gray-400 board:dark:text-gray-500'");
 
         const handle = find(list, byTestId('board-reorder-drag-'))!;
-        expect(handle.props.className).toContain('hidden md:flex');
+        expect(handle.props.className).toContain('board:hidden board-hidden board:md:flex');
         expect(handle.props['aria-hidden']).toBe('true');
         // 이름은 `$t()` 식의 인자로 넘긴다 — `$t:키|name={{row.name}}` 꼴은 이름의 `&`(예: Q&A)에서 인자가 잘린다(실측 「Q 위로 옮기기」)
         const t = (key: string, params: Record<string, string>) => `${key}:${params.name}`;
@@ -183,7 +183,7 @@ describe('순서 변경 모달 — 옮기기', () => {
         expect(evaluate(downButton.props['aria-label'], { $t: t, row: { name: 'Q&A' } })).toBe('sirsoft-board.admin.board.index.reorder.move_down:Q&A');
         expect(evaluate(handle.props.title, { $t: t, row: { name: 'Q&A' } })).toBe('sirsoft-board.admin.board.index.reorder.drag_handle:Q&A');
         // 좁은 화면에서도 ▲▼ 의 누르는 영역은 40px 이상이다
-        expect(upButton.props.className).toContain('w-10 h-10');
+        expect(upButton.props.className).toContain('board:w-10 board:h-10');
 
         // 행마다 슬러그 배지 — 목록 카드의 슬러그 배지와 같은 컴포넌트
         const slug = find(list, byTestId('board-reorder-slug-'))!;

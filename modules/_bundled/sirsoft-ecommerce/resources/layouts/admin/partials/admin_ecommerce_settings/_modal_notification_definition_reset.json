@@ -16,7 +16,7 @@
             "type": "basic",
             "name": "P",
             "props": {
-                "className": "text-gray-700 dark:text-gray-300"
+                "className": "ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
             },
             "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.reset_modal.confirm_message"
         },
@@ -24,14 +24,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
+                "className": "ecommerce:mt-4 ecommerce:p-3 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:rounded-lg"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "form-sub-label"
+                        "className": "ecommerce-form-sub-label"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.reset_modal.target_label"
                 },
@@ -39,7 +39,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-primary font-medium"
+                        "className": "ecommerce-text-primary ecommerce:font-medium"
                     },
                     "text": "{{_global.resetTargetName ?? ''}}"
                 }
@@ -49,14 +49,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "alert-danger"
+                "className": "ecommerce-alert-danger"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "ecommerce-tone-error-soft text-sm"
+                        "className": "ecommerce-tone-error-soft ecommerce:text-sm"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.reset_modal.warning_message"
                 }
@@ -66,7 +66,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "ecommerce-modal-footer-buttons"
             },
             "children": [
                 {
@@ -81,7 +81,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{_global.isResettingNotification}}"
                     },
                     "text": "$t:common.cancel"
@@ -159,7 +159,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-orange-700 dark:bg-orange-700 text-white rounded-lg hover:bg-orange-800 dark:hover:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-orange-700 ecommerce:dark:bg-orange-700 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-orange-800 ecommerce:dark:hover:bg-orange-800 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{_global.isResettingNotification}}"
                     },
                     "children": [
@@ -169,7 +169,7 @@
                             "if": "{{_global.isResettingNotification}}",
                             "props": {
                                 "name": "spinner",
-                                "className": "spinner-sm"
+                                "className": "ecommerce-spinner-sm"
                             }
                         },
                         {

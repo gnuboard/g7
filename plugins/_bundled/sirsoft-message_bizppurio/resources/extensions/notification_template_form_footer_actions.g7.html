@@ -1,7 +1,7 @@
 <!-- 코어 알림 템플릿 [편집] 모달 푸터에 주입되는 통합 저장 버튼(제품 결정 2026-08-23 — 저장은 하나로). 채널 메타 hidden_template_editor 로 코어 [저장]/[미리보기]가 숨겨진 자리에서, [저장] 한 번으로 ① 알림톡 템플릿(draft/rejected 만 내용 갱신) + 발송 설정·SMS 본문 ② 수신자 규칙이 바뀐 경우에만 코어 채널 템플릿을 순차 저장한다(앞 단계 실패 시 중단). [저장 후 검수 신청]은 알림톡 본문이 있고 수정 가능한 상태에서만 노출된다 — 카카오 검수는 알림톡 템플릿만 대상이며 SMS 는 검수 없이 즉시 반영된다. 더블클릭 재진입은 click if + disabled 로 막고, 중복 검수 신청의 SSoT 는 서버 원자 선점이다. -->
 <extension extension-point="notification_template_form_footer_actions" priority="320">
-  <div data-ref="bizppurio_tpl_footer_actions" data-if="{{extensionPointProps.channel === 'alimtalk'}}" class="flex gap-2">
-    <button data-if="{{(['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')) &amp;&amp; ((_global.bz_tpl_modal?.content?.templateContent ?? '').trim() !== '') &amp;&amp; ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}" type="button" class="text-sm px-4 py-2 rounded-md bg-teal-700 text-white dark:bg-teal-700 bizppurio-btn-teal-solid disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false) || !((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}">
+  <div data-ref="bizppurio_tpl_footer_actions" data-if="{{extensionPointProps.channel === 'alimtalk'}}" class="bizppurio:flex bizppurio:gap-2">
+    <button data-if="{{(['draft', 'rejected'].includes(_global.bz_tpl_modal?.status ?? 'draft')) &amp;&amp; ((_global.bz_tpl_modal?.content?.templateContent ?? '').trim() !== '') &amp;&amp; ((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}" type="button" class="bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-teal-700 bizppurio:text-white bizppurio:dark:bg-teal-700 bizppurio-btn-teal-solid bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed" disabled="{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false) || !((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}">
 <permissions>
 <permission>sirsoft-message_bizppurio.messaging.manage</permission>
 </permissions>
@@ -91,7 +91,7 @@
       </on>
       $t:sirsoft-message_bizppurio.template.form.btn_save_request
     </button>
-    <button type="button" class="flex items-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false) || !((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}">
+    <button type="button" class="bizppurio:flex bizppurio:items-center bizppurio:gap-2 bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-indigo-600 bizppurio:text-white bizppurio:hover:bg-indigo-700 bizppurio:dark:bg-indigo-500 bizppurio:dark:hover:bg-indigo-600 bizppurio:transition-colors bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed" disabled="{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false) || !((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) &amp;&amp; !(_global.bz_tpl_modal?.loading ?? false))}}">
 <permissions>
 <permission>sirsoft-message_bizppurio.messaging.manage</permission>
 </permissions>
@@ -194,7 +194,7 @@
           </api-call>
         </sequence>
       </on>
-      <icon data-if="{{(_global.bz_tpl_modal?.isSaving ?? false)}}" name="spinner" class="animate-spin text-sm"/>
+      <icon data-if="{{(_global.bz_tpl_modal?.isSaving ?? false)}}" name="spinner" class="bizppurio:animate-spin bizppurio:text-sm bizppurio:leading-none"/>
       <span>{{(_global.bz_tpl_modal?.isSaving ?? false) ? '$t:common.saving' : '$t:common.save'}}</span>
     </button>
   </div>

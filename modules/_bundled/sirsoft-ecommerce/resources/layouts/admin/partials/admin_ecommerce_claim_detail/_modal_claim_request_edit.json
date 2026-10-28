@@ -16,7 +16,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-4"
+                "className": "ecommerce:space-y-4"
             },
             "children": [
                 {
@@ -24,7 +24,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-label"
+                        "className": "ecommerce-text-label"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.request_edit.description"
                 },
@@ -46,7 +46,7 @@
                     "props": {
                         "aria-label": "$t:sirsoft-ecommerce.admin.claim.detail.reason.reason_label",
                         "name": "reasonCode",
-                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                        "className": "ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg",
                         "value": "{{_global.claimRequestEditReasonCode ?? ''}}",
                         "options": "{{_global.claimRequestEditContext?.reasonOptions ?? []}}"
                     }
@@ -70,7 +70,7 @@
                         "name": "reasonDetail",
                         "rows": 3,
                         "maxLength": 1000,
-                        "className": "w-full px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg",
+                        "className": "ecommerce:w-full ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg",
                         "placeholder": "$t:sirsoft-ecommerce.admin.claim.detail.request_edit.detail_placeholder",
                         "value": "{{_global.claimRequestEditReasonDetail ?? ''}}"
                     }
@@ -80,7 +80,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.claim.detail.request_edit.fee_hint"
                 },
@@ -88,7 +88,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-2 pt-2"
+                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:pt-2"
                     },
                     "children": [
                         {
@@ -103,7 +103,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors"
                             },
                             "text": "$t:common.cancel"
                         },
@@ -129,7 +129,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                 "disabled": "{{_global.isEditingClaimRequest === true || (_global.claimRequestEditReasonCode ?? '') === ''}}"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.claim.detail.request_edit.save"

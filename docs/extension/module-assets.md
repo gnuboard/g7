@@ -10,8 +10,9 @@
 1. module.json에 에셋 매니페스트 정의 (js, css, loading strategy)
 2. Vite IIFE 빌드로 dist/에 번들 생성
 3. TemplateApp 초기화 시 자동 로드 (global 전략)
-4. 핸들러 네이밍: {module-identifier}.{handler-name}
+4. 핸들러 네이밍: {module-identifier}.{handler-name} — 남의 접두어·엔진 이름 금지, 등록 시 source 에 자기 식별자 (덮으면 [G7] 경고)
 5. 빌드 명령: php artisan module:build [identifier] (기본: _bundled, --active로 활성)
+6. 화면 스타일은 확장이 자기 CSS 로 싣는다 — assets.css.namespace 앞글자, 세 칸(@layer g7-extension · 층 없는 규칙 · 템플릿 덮기 파일), 다크는 data-g7-color-scheme 표식만
 ```
 
 ---
@@ -20,6 +21,8 @@
 
 - [개요](#개요)
 - [에셋 매니페스트 스키마](#에셋-매니페스트-스키마)
+- [확장 CSS 자기 공급 규약](#확장-css-자기-공급-규약)
+- [템플릿 확장 CSS 덮기](#템플릿-확장-css-덮기)
 - [모듈 프론트엔드 구조](#모듈-프론트엔드-구조)
 - [핸들러 등록](#핸들러-등록)
 - [빌드 및 배포](#빌드-및-배포)
@@ -113,7 +116,8 @@ React 는 반드시 external 로 둔다 — 번들이 자기 React 사본을 품
         },
         "css": {
             "entry": "resources/css/main.css",
-            "output": "dist/css/module.css"
+            "output": "dist/css/module.css",
+            "namespace": "ecommerce"
         },
         "handlers": true,
         "static": "resources/assets/"
@@ -200,6 +204,7 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 | `assets.js.output` | 빌드된 JS 출력 경로 |
 | `assets.css.entry` | CSS 소스 엔트리 포인트 |
 | `assets.css.output` | 빌드된 CSS 출력 경로 |
+| `assets.css.namespace` | 확장 CSS 클래스 앞글자. `assets.css` 를 선언하면 함께 선언한다. 형식 `^[a-z][a-z0-9]*(-[a-z0-9]+)*$` — [확장 CSS 자기 공급 규약](#확장-css-자기-공급-규약) |
 | `assets.handlers` | 핸들러 포함 여부 |
 | `assets.static` | 정적 에셋 소스 디렉토리 |
 | `loading.strategy` | 로딩 전략 (global, layout, lazy) |
@@ -212,29 +217,297 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 정상입니다 — 스타일 규칙이 아직 없는 확장이 CSS 를 선언하는 것은 어긋남이 아닙니다. 자동 검증이
 번들 확장 전수를 대상으로 두 조건(객체 형식 · 산출물 실재)을 확인합니다.
 
-### 확장 화면의 의미 색은 확장 CSS 가 싣는다
+---
 
-확장 레이아웃(환경설정 화면, 조각)의 경고, 성공, 위험, 안내 글자색은 템플릿의 의미 색 클래스(`text-warning-soft`,
-`text-success-soft` 등)에 기대지 않고 **확장이 자기 CSS 에 접두 클래스로 직접 정의**합니다. 템플릿은 자기 화면에 맞춰
-의미 클래스의 이름이나 색을 바꿀 수 있고, 그러면 확장 화면의 색이 오류도 없이 따라 바뀝니다(경고 본문이 초록으로 보이는 식).
+## 확장 CSS 자기 공급 규약
 
-- 이름은 확장 고유 접두를 붙입니다. 번들 결제 플러그인은 `pay-<id>-tone-{warning|success|danger|info}` 와 진한 제목용
-  `-strong` 짝을 씁니다(예: `pay-kginicis-tone-warning-strong`). 다른 확장의 클래스는 참조하지 않습니다.
-- 다크 모드 짝을 함께 둡니다. 관리자 템플릿은 `<html class="dark">` 로 전환하므로 `.dark .pay-kginicis-tone-warning` 처럼
-  조상 선택자로 씁니다.
-- 글자 크기와 굵기는 레이아웃의 유틸리티 클래스가 정하고, 접두 클래스는 색만 맡습니다.
-- 그 화면에만 있는 임의값 배치(`grid-cols-[150px_1fr]`, `min-w-[180px]` 등)도 같은 파일에 접두 클래스로 둡니다. 템플릿은
-  자기 레이아웃만 훑어 CSS 를 만들므로 확장 레이아웃에만 있는 임의값 유틸리티는 규칙이 생성되지 않습니다.
-- 배선은 세 곳입니다. manifest 에 `assets.css`(`entry`·`output`)를 선언하고, JS 엔트리가 CSS 를 import 하며,
-  `vite.config.ts` 의 `assetFileNames` 가 CSS 를 `output` 과 같은 경로(예: `{확장}/dist/css/plugin.css`)로 냅니다.
+확장(모듈·플러그인) 화면의 모양은 **확장이 자기 CSS 로 싣는다**. 레이아웃·조각의 클래스, 확장 컴포넌트(TSX)의 클래스, 핸들러가 실행 중에 붙이는 클래스, PHP 가 내보내는 클래스 문자열이 모두 대상이다(2026-10-22 결정 7·8).
+
+템플릿 CSS 는 템플릿이 **자기 소스만** 훑어 만든다. 확장 화면이 템플릿 CSS 의 클래스에 기대면 그 클래스가 템플릿 산출물에 우연히 있을 때만 그려진다. Tailwind 를 쓰지 않는 템플릿이나 CSS 가 거의 없는 템플릿에서는 확장 화면 모양이 오류 없이 통째로 사라지고, 템플릿이 의미 클래스의 이름·색을 바꾸면 확장 화면도 말없이 따라 바뀐다.
+
+그누보드7 은 **Tailwind 를 전제하지 않는다.** 코어와 정적 검사가 확인하는 것은 「자기 앞글자가 붙은 자기 CSS」 하나다. 그 CSS 를 손으로 쓰든 Tailwind·Sass 로 만들든 확장이 고른다.
+
+| 항목 | 규약 |
+| --- | --- |
+| 앞글자 | manifest `assets.css.namespace` 로 선언. 손 CSS 는 `{namespace}-…`, 접두 빌드는 `{letters}:…` |
+| 우선순위 | 세 칸 — ① `@layer g7-extension`(의미) ② 층 없는 규칙(배치·유틸리티) ③ 템플릿의 확장 CSS 덮기 파일 |
+| 다크 모드 | `<html data-g7-color-scheme>` 중립 표식(`dark`·`light`)만 본다. `.dark` 선택자는 쓰지 않는다 |
+| 서빙 | 코어가 층을 평탄화한다(`g7-extension`·`properties` 만 남김) |
+| 정적 검사 | `extension-css-namespace`, `extension-class-self-contained` |
+
+### 앞글자 선언 — `assets.css.namespace`
+
+```json
+"assets": {
+    "css": { "entry": "resources/css/main.css", "output": "dist/css/plugin.css", "namespace": "pay-kginicis" }
+}
+```
+
+- 형식은 `^[a-z][a-z0-9]*(-[a-z0-9]+)*$` 다. 영문 소문자로 시작하고, 소문자·숫자 마디를 하이픈으로 잇는다.
+- `letters` 는 namespace 에서 영문 소문자만 남긴 값이다(`pay-kginicis` → `paykginicis`). Tailwind 접두는 a-z 만 받으므로(4.1.16 기준) 접두 빌드는 `letters` 를 쓴다(2026-10-22 결정 11).
+- `assets.css` 를 선언한 확장은 namespace 도 선언한다. 이미 쓰던 앞글자가 있으면 그대로 namespace 로 선언한다(2026-10-22 결정 10).
+
+| 작성 방식 | 클래스 표기 | 예 |
+| --- | --- | --- |
+| 손으로 쓴 CSS(순수 CSS·Sass 등) | `{namespace}-…` | `pay-kginicis-tone-warning` |
+| 접두 빌드(Tailwind 등) | `{letters}:…` | `paykginicis:flex`, `paykginicis:dark:bg-gray-800` |
+
+- 사용자 정의 속성과 `@property` 이름도 `--{letters}-*`·`--{namespace}-*` 로 시작한다. Tailwind 가 쓰는 `--tw-*` 는 예외다.
+- **겹치면 안 된다.** 다른 확장과 namespace 가 같거나, `letters` 가 같거나, 한쪽이 다른 쪽의 앞마디이면(`acme` 와 `acme-pay` — `acme-` 공간이 `acme-pay-` 를 품는다) 두 확장의 규칙이 서로를 덮는다. 번들 확장끼리는 정적 검사가 막는다. 직접 만드는 확장은 벤더·확장 이름을 넣어 고른다.
+
+### 우선순위 세 칸
+
+화면 `<head>` 와 부팅 뒤에 CSS 가 붙는 순서는 다음과 같다.
+
+```text
+템플릿 CSS <link>
+<style>@layer g7-extension;</style>          ← 코어가 템플릿 CSS 바로 뒤에 선언
+── 부팅 뒤 ──
+모듈 번들 CSS → 플러그인 번들 CSS → 템플릿의 확장 CSS 덮기 파일 → 운영자 추가 자산(custom/)
+```
+
+CSS 층은 **먼저 선언된 층이 진다.** 그래서 이기는 순서는 다음과 같다.
+
+```text
+템플릿의 층 규칙(@layer base·components·utilities 등)
+  < ① @layer g7-extension
+  < 층 없는 규칙 — 템플릿의 층 없는 CSS · ② 확장 유틸리티 · ③ 덮기 파일 · 운영자 CSS
+    (이 안에서는 특이도가 같으면 나중에 실린 것이 이긴다)
+```
+
+| 칸 | 어디에 쓰나 | 무엇을 두나 | 결과 |
+| --- | --- | --- | --- |
+| ① 기본값 칸 | `@layer g7-extension { … }` 안 | 의미 클래스 — 색·테두리·배경·글자 모양. 제목·입력칸·오류 상자처럼 템플릿이 자기 모양으로 바꾸고 싶어 할 만한 것 | 템플릿 층 규칙(예: Tailwind 초기화 `*{margin:0}`·`h1{font-size:inherit}`)보다 위, 층 없는 모든 규칙보다 아래. 템플릿 덮기 파일이 특이도와 무관하게 이긴다 |
+| ② 일반 칸 | 층 밖 | 배치·간격·크기·그 화면에만 있는 임의값, 접두 빌드의 유틸리티 | 템플릿 CSS 뒤에 실린다. 앞글자가 달라 템플릿 규칙과 이름이 겹치지 않는다 |
+| ③ 덮기 파일 | 템플릿 쪽 파일 | 템플릿이 그 확장 화면을 자기 모양으로 맞추는 규칙 | 모든 확장 CSS 뒤에 실린다 — [템플릿 확장 CSS 덮기](#템플릿-확장-css-덮기) |
+
+- 층 이름은 `g7-extension` 하나만 쓴다. 다른 이름의 층은 서빙할 때 벗겨진다(아래 「서빙 — 층 평탄화」).
+- 템플릿 컴포넌트에 넘기는 클래스(예: DataGrid `rowClassName`)에 배경·색을 주면, 그 컴포넌트가 스스로 붙이는 상태 색(마우스 올림·선택)보다 **항상 이긴다** — 확장 클래스는 층 밖, 템플릿 상태 클래스는 층 안이기 때문이다. 상태 색이 보여야 하는 자리면 확장이 상태 색도 함께 넘긴다(예: `board:bg-blue-50 board:hover:bg-gray-50 board:dark:hover:bg-gray-700/30`). 같은 확장 CSS 안에서는 변형(`hover:`)이 기본 클래스 뒤에 생성되므로 상태 색이 이긴다. 선택처럼 CSS 변형으로 나타낼 수 없는 상태는 컴포넌트가 식에 넘기는 값으로 고른다(DataGrid `rowClassName` 의 `$selected`: `($selected ? 'board:bg-blue-50/50' : 'board:bg-blue-50')`).
+- 레이아웃 편집기 프리뷰에서도 순서가 같다. 관리자 화면 머리는 관리자 템플릿 CSS 뒤에 `@layer g7-preview, g7-extension;` 을 선언하고, 편집기는 사용자 템플릿 CSS 의 층 이름을 `g7-preview` 하나로 모아 싣는다(층 밖 규칙은 층 밖 그대로). 그래서 프리뷰에서도 「템플릿 층 규칙 < ① 의미 칸 < 층 없는 규칙」이 사용자 화면과 같다.
+- 층 선언이 템플릿 CSS **뒤**에 오는 이유: 앞에 두면 템플릿의 초기화 층이 의미 클래스를 이겨 여백·글자 크기·테두리가 사라진다.
+- 템플릿의 의미 클래스(`section-heading-md`, `input`, `text-error-strong` 등)에 기대던 확장 화면은 그 정의를 확장 CSS 의 ① 칸으로 옮기고 자기 앞글자를 붙인다(2026-10-22 결정 14). 템플릿은 덮기 파일로 그 모양을 바꿀 수 있다.
+
+### 다크 모드 — 중립 표식
+
+템플릿마다 다크 방식이 다르다(`<html class="dark">`, 시스템 설정, 다크 모드 없음). 확장 CSS 가 그중 하나를 전제하면 다른 템플릿에서 다크가 맞지 않는다. 그래서 템플릿이 `template.json` 의 `features.color_scheme` 으로 다크 방식을 선언하면 코어가 그 방식에 맞춰 `<html data-g7-color-scheme="dark">`(또는 `"light"`)를 달고, **확장 CSS 는 이 표식만 본다**(2026-10-22 결정 9). 선언 형식은 [template-basics.md](template-basics.md#다크-모드-방식-featurescolor_scheme), 표식이 바뀌는 시점은 [dark-mode.md](../frontend/dark-mode.md#확장은-중립-표식을-쓴다) 에 있다.
+
+다크 규칙은 다음 선택자 규격으로 쓴다.
+
+```css
+.ns-x:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) { … }
+```
+
+- `:is(…)` — 표식이 dark 인 요소 자신이거나 그 안. 클래스 하나만큼 특이도가 더해져 (0,2,0) 이 된다. 템플릿의 `.dark .x` 와 같은 강도라서 `hover` 같은 변형과 겹쳐도 우선순위가 템플릿 화면과 같다.
+- `:not(:where(…))` — 「다크 안의 라이트」만 뺀다. 관리자 화면은 다크인데 레이아웃 편집기 프리뷰를 라이트로 보는 경우다(프리뷰 프레임이 `data-g7-color-scheme="light"` 를 단다). `:where` 는 특이도를 더하지 않는다. 관리자 화면이 라이트이고 프리뷰만 다크이면 프리뷰 프레임의 dark 표식으로 다크가 된다.
+- 다크를 선언하지 않은 템플릿에서는 표식이 늘 `light` 라 다크 규칙이 쓰이지 않는다.
+- `.dark` 선택자는 쓰지 않는다. 정적 검사가 막는다.
+
+### 서빙 — 층 평탄화
+
+namespace 를 선언한 확장의 CSS 는 코어가 서빙할 때 층을 정리한다.
+
+- `@layer g7-extension { … }` 와 `@layer properties { … }` 블록은 그대로 둔다.
+- 그 밖의 층 래퍼(빌드 도구가 만든 `theme`·`utilities` 등)는 벗겨 안쪽 규칙을 층 없는 규칙으로 만든다. 중첩된 층도 같다. `@media`·`@supports` 감싸기는 그대로다.
+- `@layer a, b;` 순서 선언에서는 위 두 이름 밖을 지우고, 남는 이름이 없으면 문장을 지운다.
+- 주석(`/* … */`)·문자열·백슬래시 이스케이프(`.after\:content-\[\'\'\]`) 안의 `@layer`·중괄호·따옴표는 층으로 읽지 않고 그대로 둔다. 주석에 층 설명을 적어도 된다.
+
+`properties` 층을 남기는 이유: Tailwind 는 `@property` 를 지원하지 않는 브라우저를 위해 `*, ::before, ::after { --tw-*: 초기값 }` 을 이 최하위 층에 둔다. 층을 벗기면 이 전체 선택자 규칙이 템플릿 층의 `--tw-*` 값(예: `.shadow` 의 `--tw-shadow`)을 모든 요소에서 이긴다.
+
+적용 경로는 확장 병합 번들(`/api/{modules|plugins}/bundle.css` 와 그 정적 게시본)과 개별 자산 서빙(`/api/{modules|plugins}/assets/...`) 두 곳이며 처리는 같다. namespace 를 선언하지 않은 확장의 CSS 는 손대지 않고 종전처럼 내보낸다 — 그런 CSS 는 템플릿과 같은 이름의 규칙을 층 안에 둘 수 있어서, 층을 벗기면 템플릿 화면 전체를 이길 수 있다.
+
+### 작성 예시
+
+세 방식 모두 결과는 같다 — 자기 앞글자가 붙은 클래스, ① 칸의 의미 규칙, ② 칸의 배치 규칙, 중립 표식 다크.
+
+**순수 CSS** (namespace `acme-memo`) — 빌드 도구 없이 손으로 쓴다. 번들 학습용 샘플 `modules/_bundled/gnuboard7-hello_module/resources/css/main.css` 가 이 방식이다.
+
+```css
+/* resources/css/main.css */
+
+/* ① 기본값 칸 — 의미(색·테두리·배경·글자). 템플릿 덮기 파일이 바꿀 수 있다 */
+@layer g7-extension {
+    .acme-memo-card {
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+    }
+
+    .acme-memo-card:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        background-color: #1f2937;
+        border-color: #374151;
+    }
+
+    .acme-memo-card__title {
+        font-weight: 600;
+        color: #111827;
+    }
+}
+
+/* ② 일반 칸 — 배치 */
+.acme-memo-list {
+    display: grid;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .acme-memo-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+```
+
+```html
+<div class="acme-memo-list">
+    <div class="acme-memo-card"><h3 class="acme-memo-card__title">{{memo.title}}</h3></div>
+</div>
+```
+
+**Tailwind 접두 빌드** (namespace `acme-memo`, letters `acmememo`) — Tailwind 를 확장 자신의 작성 도구로 쓴다. 초기화(preflight)는 싣지 않는다. 확장 CSS 가 페이지 전체 기본값을 바꾸면 안 되기 때문이다.
+
+```css
+/* resources/css/main.css */
+@import "tailwindcss/theme.css" layer(theme) prefix(acmememo);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(acmememo) source(none);
+@source "../layouts";
+@source "../extensions";
+@source "../js";
+@custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
+
+@layer g7-extension {
+    .acme-memo-card__title {
+        font-weight: 600;
+        color: #111827;
+    }
+}
+```
+
+```html
+<div class="acmememo:grid acmememo:gap-4 acmememo:md:grid-cols-2">
+    <h3 class="acme-memo-card__title acmememo:dark:text-white">{{memo.title}}</h3>
+</div>
+```
+
+- `@custom-variant dark` 로 `{letters}:dark:` 가 중립 표식을 따르게 한다.
+- `theme`·`utilities` 층은 서빙 때 벗겨져 유틸리티가 ② 칸에 실린다.
+- 빌드 배선(`@tailwindcss/vite`, `package.json`)과, 기존 레이아웃 클래스를 자동으로 옮기는 변환 도구는 [확장 CSS 도구](../../scripts/extension-css/README.md) 에 있다.
+
+**Sass** (namespace `acme-memo`) — 설정 예다. 확장 `package.json` devDependencies 에 `sass` 를 넣으면 Vite 가 `.scss` 를 처리한다. JS 엔트리는 `import '../css/main.scss';`, manifest `assets.css.entry` 는 `"resources/css/main.scss"` 로 둔다.
+
+```scss
+// resources/css/main.scss
+$ns: 'acme-memo';
+
+@mixin dark {
+    &:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        @content;
+    }
+}
+
+// ① 기본값 칸
+@layer g7-extension {
+    .#{$ns}-card {
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+
+        @include dark {
+            background-color: #1f2937;
+            border-color: #374151;
+        }
+    }
+}
+
+// ② 일반 칸
+.#{$ns}-list {
+    display: grid;
+    gap: 1rem;
+}
+```
+
+Sass 원본(`.scss`)은 CSS 정적 검사가 보지 않는다. 산출물(`dist/css/*.css`)이 검사 대상이다.
+
+### 배선 — 세 곳
+
+manifest 에 `assets.css`(`entry`·`output`·`namespace`)를 선언하고, JS 엔트리가 CSS 를 import 하며, `vite.config.ts` 의 `assetFileNames` 가 CSS 를 `output` 과 같은 경로(예: `{확장}/dist/css/plugin.css`)로 낸다.
 
 ```ts
 // vite.config.ts — rollupOptions.output
 assetFileNames: (info) => (info.name?.endsWith('.css') ? 'css/plugin.css' : 'assets/[name][extname]'),
 ```
 
-입력 줄 배치(`grid-3col-responsive`), 섹션 제목(`section-heading-md`), 저장 오류 상자(`text-error-strong`·`text-error-soft`)처럼
-코어 플러그인 설정 화면 규약이 정한 구조 클래스는 계속 템플릿 것을 씁니다. 이 절은 확장 화면에서 **뜻이 있는 색**을 고를 때의 규약입니다.
+### 확장 화면의 의미 색은 확장 CSS 가 싣는다
+
+경고·성공·위험·안내 글자색처럼 **뜻이 있는 색**도 템플릿의 의미 색 클래스(`text-warning-soft`, `text-success-soft` 등)에 기대지 않는다. 템플릿이 자기 화면에 맞춰 그 클래스의 이름이나 색을 바꾸면 확장 화면의 색이 오류 없이 따라 바뀐다(경고 본문이 초록으로 보이는 식).
+
+- 확장 앞글자를 붙여 ① 칸에 둔다. 번들 결제 플러그인은 `pay-<id>-tone-{warning|success|danger|info}` 와 진한 제목용 `-strong` 짝을 쓴다(예: `pay-kginicis-tone-warning-strong`). 다른 확장의 클래스는 참조하지 않는다.
+- 다크 짝을 함께 두고, 위 중립 표식 규격으로 쓴다.
+
+### 정적 검사
+
+그누보드7 번들 확장은 두 규칙으로 소스 단계에서 검사한다. 두 규칙은 manifest 의 namespace 로 판정한다.
+
+| 규칙 | 보는 곳 | 오류로 보는 것 |
+| --- | --- | --- |
+| `extension-css-namespace` | 확장 CSS 소스(`resources/css/**/*.css`)·산출물(`dist/css/*.css`)·manifest | 선택자의 클래스가 `{namespace}-`·`{letters}:` 로 시작하지 않음 · `.dark` 선택자 · 자기 클래스로 묶이지 않은 요소·전체 선택자(`h1`, `*`, `html`, `:root` 등. `.ns-card h3` 처럼 자기 클래스 아래의 요소, 선언이 모두 `--tw-*`·`--{letters}-*`·`--{namespace}-*` 인 사용자 정의 속성 블록은 허용) · 범위 밖 `@property` 이름 · namespace 형식 위반과 다른 확장과의 겹침 |
+| `extension-class-self-contained` | 레이아웃·조각의 `class`·`className`·`*ClassName`·`classMap`(정적 값과 `{{ }}` 안 문자열), 컴포넌트·핸들러의 `className` 과 `classList.add/remove/toggle/replace` 인자, PHP 의 `'class'`·`'className'`·`'*ClassName' =>` 값 | 자기 namespace 형태가 아닌 클래스 · 그 확장 산출 CSS(`dist/css/*.css`)에 선택자로 없는 클래스(Tailwind 표지 `{letters}:group`·`{letters}:peer` 는 실재 확인 제외) |
+
+- 비교 피연산자·함수 인자·객체 키처럼 클래스가 아닌 문자열은 보지 않는다. 문자열을 이어 붙여 만든 이름(`'ns-tone-' + level`)은 이름을 알 수 없어 판정하지 않는다.
+- 부득이한 경우 그 줄이나 바로 위 주석에 `audit:allow <규칙 이름> <사유>` 를 남긴다(레이아웃은 노드의 주석).
+
+---
+
+## 템플릿 확장 CSS 덮기
+
+확장 CSS 는 확장이 싣지만 화면 외관의 최종 책임은 템플릿에 있다. 템플릿이 확장 화면을 자기 모양에 맞추려면 확장 CSS 를 고치지 않고 **덮기 파일**을 둔다. 컴포넌트 대체(`components.json` 의 `overrides`)와 같은 관례다 — 대상과 허용 버전을 선언하고, 맞지 않으면 빠져서 확장 원래 모양으로 돌아온다(2026-10-22 결정 15).
+
+`template.json`:
+
+```json
+"extension_css_overrides": [
+    {
+        "target": "gnuboard7-hello_module",
+        "targetVersion": "^0.3",
+        "path": "dist/css/overrides/gnuboard7-hello_module.css"
+    }
+]
+```
+
+| 필드 | 뜻 |
+| --- | --- |
+| `target` | 덮을 확장(모듈·플러그인) 식별자 |
+| `targetVersion` | 대상 확장의 허용 버전 제약(Semver). 미선언이면 무제한 |
+| `path` | 템플릿 빌드 산출물 경로. `dist/` 아래여야 하고 `..` 를 쓸 수 없다 |
+
+- 원본은 템플릿의 `src/styles/overrides/<확장식별자>.css` 에 두고 템플릿 빌드가 `dist/css/overrides/` 로 낸다(관례).
+- 덮기 파일은 대상 확장의 클래스(`{namespace}-…`, `{letters}:…`)만 덮는다. 다른 확장이나 요소 전체를 건드리지 않는다.
+- 덮기 파일은 층 없이 실리므로 확장의 ① 칸 규칙은 특이도와 무관하게 이기고, ② 칸 규칙은 특이도가 같으면 나중에 실린 덮기 파일이 이긴다.
+- 대상 확장이 클래스 이름을 바꾼 새 판을 내면 낡은 덮기 파일은 엉뚱한 곳을 칠하거나 아무것도 덮지 못한다. `targetVersion` 은 그 판에서 덮기 파일을 빼 확장 원래 모양으로 돌려보내는 장치이므로, 확인한 판 범위로 좁게 잡는다.
+
+### 판정
+
+판정은 서버가 한다. 대상 확장의 실제 버전을 아는 것이 서버이기 때문이다.
+
+| 상황 | 결과 |
+| --- | --- |
+| 대상 확장 활성 + 버전 호환 | 싣는다 |
+| 대상 확장 활성 + 버전 비호환 | 싣지 않고 정보 로그를 남긴다 — 화면은 확장 원래 모양 |
+| 대상 확장 비활성·미설치 | 조용히 뺀다(나중에 설치될 수 있다) |
+| 같은 `target` 을 두 번 선언 | 템플릿 검증 오류 |
+
+- 선언한 `path` 의 파일이 빌드 산출물에 없으면 싣지 않고 정보 로그를 남긴다.
+- `extension_css_overrides` 가 배열이 아니거나, 항목에 `target`·`dist/` 아래 `path` 가 없거나, `targetVersion` 을 해석할 수 없어도 템플릿 검증 오류다 — [template-basics.md](template-basics.md#확장-css-덮기-파일-extension_css_overrides).
+
+### 로드 순서와 서빙
+
+```text
+모듈 번들 CSS → 플러그인 번들 CSS → 템플릿의 확장 CSS 덮기 파일(선언 순서) → 운영자 추가 자산(custom/)
+```
+
+- 서버가 호환 판정을 끝낸 목록을 화면 설정 `G7Config.extensionCssOverrides`(`[{ target, url }]`)로 내려 주고, 엔진이 확장 번들 CSS 뒤·운영자 추가 자산 앞에 붙인다. 번들 대신 확장별 개별 로딩으로 실을 때도 순서가 같다.
+- 덮기 파일은 템플릿 자산 API(`/api/templates/assets/...`)로 서빙되고 확장 CSS 와 같은 층 평탄화를 거친다. 템플릿이 선언한 덮기 파일 경로에만 적용되며 템플릿 자기 CSS 는 손대지 않는다. 그래서 덮기 파일 주소는 정적 게시본이 아니라 늘 API 경로다.
+- 로드에 실패해도 부팅을 막지 않고 자산 실패 안내로 드러낸다.
+- 검색엔진용 화면(SEO 렌더)도 같은 순서로 싣는다 — 템플릿 CSS 뒤에 `@layer g7-extension;` 을 선언하고, 모듈 번들 CSS → 플러그인 번들 CSS → 호환 덮기 파일을 링크한다. 봇 화면은 라이트로 그리므로 `<html data-g7-color-scheme="light">` 다.
+
+번들 학습용 샘플: `templates/_bundled/gnuboard7-hello_user_template/src/styles/overrides/gnuboard7-hello_module.css` 가 `gnuboard7-hello_module` 메모 목록의 제목 색을 바꾼다.
 
 ---
 
@@ -344,7 +617,11 @@ export function initModule(): void {
         if (actionDispatcher) {
             Object.entries(handlerMap).forEach(([name, handler]) => {
                 const fullName = `${MODULE_IDENTIFIER}.${name}`;
-                actionDispatcher.registerHandler(fullName, handler);
+                // source 로 등록자(자기 식별자)를 밝힌다 — 아래 "핸들러 이름 규칙과 소유권" 참조
+                actionDispatcher.registerHandler(fullName, handler, {
+                    category: 'module',          // 플러그인은 'plugin'
+                    source: MODULE_IDENTIFIER,
+                });
             });
             console.log(`[Module:${MODULE_IDENTIFIER}] Handlers registered`);
         } else {
@@ -369,6 +646,43 @@ initModule();
     initModule,
 };
 ```
+
+### 핸들러 이름 규칙과 소유권
+
+액션 핸들러는 엔진의 한 저장소에 이름으로 담기고, 같은 이름을 다시 등록하면 **마지막 등록이 이깁니다**. 그래서 남의 이름을 쓰면 다른 확장·템플릿·엔진의 동작을 조용히 바꾸게 됩니다. 다음 규칙을 지킵니다.
+
+| 규칙 | 이유 |
+| --- | --- |
+| 확장(모듈·플러그인)은 `{자기 식별자}.{핸들러명}` 으로 등록한다(예: `sirsoft-ecommerce.updateProductField`) | 점 없는 이름은 템플릿·엔진 이름과 부딪친다 |
+| 점 앞 접두어는 **자기 식별자**만 쓴다 | `sirsoft-basic.formatCurrency` 를 플러그인이 등록하면 템플릿 핸들러를 덮는다 |
+| 엔진 이름으로 등록하지 않는다 | 아래 표 |
+| `registerHandler(name, fn, { category, source })` 의 `source` 에 자기 식별자를 넘긴다 | 경고에 등록자가 정확히 나오고, 같은 주인의 재등록은 경고 대상에서 빠진다 |
+| 템플릿은 `handlerMap` 의 키를 그대로 등록한다. 새 핸들러는 `{템플릿 식별자}.{핸들러명}` 을 권장한다 | 템플릿 등록자는 코어가 템플릿 식별자로 표시한다 |
+
+엔진 이름은 두 종류입니다.
+
+| 종류 | 예 | 같은 이름으로 등록하면 |
+| --- | --- | --- |
+| 엔진이 직접 처리하는 액션 | `navigate`·`apiCall`·`setState`·`toast`·`openModal`·`closeModal`·`sequence`·`login` 등 | **영원히 호출되지 않는다** — 엔진이 등록된 핸들러를 보기 전에 처리한다 |
+| 엔진 기본 핸들러 | `refetchDataSource`·`refresh`·`remount`·`emitEvent`·`setLocale`·`suppress` 등 | 엔진 기본 동작이 덮여 이 액션을 쓰는 모든 화면이 바뀐다 |
+
+엔진 액션별 사용법은 [액션 핸들러](../frontend/actions-handlers.md)를 봅니다. 위 표의 이름은 예시이며, 엔진에 새 액션이 늘면 그 이름도 같은 규칙을 받습니다.
+
+**실행 중 경고 (engine-v1.86.0)** — 다음 등록은 디버그 모드와 무관하게 브라우저 콘솔에 `[G7]` 경고를 냅니다. 같은 (이름, 등록자) 쌍은 한 번만 냅니다. 등록 자체는 종전처럼 진행되므로 동작은 바뀌지 않습니다.
+
+- 엔진이 직접 처리하는 이름 등록 — 「엔진이 직접 처리하는 이름이라 등록해도 호출되지 않습니다」
+- 엔진 기본 핸들러를 덮음 — 「엔진 기본 핸들러를 {등록자} 가 덮어썼습니다」
+- 다른 등록자가 등록한 이름을 다른 함수로 덮음 — 「{기존 등록자} 가 등록한 "{이름}" 을 {등록자} 가 덮어썼습니다」
+- 점 앞 접두어가 등록자와 다름 — 「다른 주인의 이름공간({접두어})으로 등록했습니다」
+- `unregisterHandler(name, { source })` 로 엔진 기본 핸들러를 지움 — 해제는 그대로 하고 경고만 냅니다
+
+같은 등록자가 같은 이름을 다시 등록하는 경우(언어 전환 뒤 재등록, 확장 활성화 뒤 핸들러 다시 불러오기)와 같은 함수를 다시 등록하는 경우는 경고하지 않습니다. `source` 를 넘기지 않으면 등록자는 `unknown` 으로 기록되고 접두어 판정에서 빠지므로, 경고로 실수를 잡으려면 `source` 를 넘기세요.
+
+**정적 검사** — 그누보드7 번들 확장·템플릿은 위 규칙을 소스 단계에서도 검사합니다. 엔진 이름 등록, 남의 접두어, 확장의 점 없는 이름은 정적 검사가 차단합니다. 부득이한 경우 그 줄이나 바로 위 주석에 `// audit:allow handler-name-ownership reason: …` 로 사유를 남깁니다.
+
+**하지 않는 것** — 템플릿이 확장 핸들러를 대신하는 기능과, 확장이 템플릿마다 다른 핸들러 판본을 내는 기능은 제공하지 않습니다(2026-10-22 결정 1). 화면별 차이는 레이아웃과 컴포넌트에서 다룹니다.
+
+**로드 순서** — 처음 접속할 때와 언어를 바꾼 뒤 모두 모듈 → 플러그인 → 템플릿 순서로 등록됩니다(engine-v1.86.0 부터 언어 전환 뒤 순서도 같음). 규칙을 지키면 이름이 겹치지 않으므로 순서에 기대는 코드를 쓰지 않습니다.
 
 ### 코어 재초기화 시 핸들러 재등록
 
@@ -576,9 +890,11 @@ GET /api/plugins/bundle.css?v={version}
    └─ ModuleAssetLoader.loadBundle('module', ...) → loadBundle('plugin', ...)
        ├─ 단일 <script async=false> + 단일 <link> append
        └─ 번들 내부 물리 순서(=priority 정렬)로 IIFE 자가등록 실행
+   └─ ModuleAssetLoader.loadExtensionCssOverrides()   ← 템플릿의 확장 CSS 덮기 파일
+   └─ ModuleAssetLoader.loadCustomAssets()            ← 운영자 추가 자산(마지막)
 ```
 
-`bundleUrls` 가 없으면(구버전 blade) `ModuleAssetLoader.loadActiveExtensionAssets` 개별 로딩으로 폴백한다.
+`bundleUrls` 가 없으면(구버전 blade) `ModuleAssetLoader.loadActiveExtensionAssets` 개별 로딩으로 폴백한다. 폴백에서도 덮기 파일 → 운영자 추가 자산 순서는 같다.
 
 ### 병합 규율
 
@@ -591,6 +907,7 @@ GET /api/plugins/bundle.css?v={version}
 | 절대경로 게터 | `getBuiltAssetAbsolutePaths()` 사용. `base_path("modules"\|"plugins")` 직접 조립 금지. 소실 판정만 선언 축 게터 `getDeclaredAssetAbsolutePaths()` | `extension-bundle-asset-path-getter` |
 | 확장별 try/catch | 파일 읽기 실패 시 해당 확장만 skip, 나머지 병합 지속 | (메모리+회귀테스트) |
 | CSS url() | 상대 `url()`·`@import` 참조는 그 확장의 절대 자산 URL 로 **치환**해 병합. 병합본의 주소는 어느 확장의 dist 디렉토리도 아니라 상대 해석이 반드시 어긋난다 | (계약 테스트) |
+| CSS 층 평탄화 | `assets.css.namespace` 를 선언한 확장의 CSS 만 `g7-extension`·`properties` 층을 남기고 나머지 층 래퍼·순서 선언을 걷어 병합. 개별 자산 서빙과 같은 처리 — [서빙 — 층 평탄화](#서빙--층-평탄화) | (계약 테스트) |
 | 디스크 캐시 fail-soft | 캐시 쓰기 실패는 **500 이 아니다** — 메모리 병합 결과를 그대로 200 으로 서빙 | (계약 테스트) |
 | 빈 번들 판정 | 선언한 산출물이 소실·판독 불가면 **503**, 존재하되 비었으면 빈 200 (선언 0 도 빈 200) | (계약 테스트) |
 | 캐시 우선 | 프로덕션은 `(type, kind, version)` 캐시 파일 존재를 **빌드보다 먼저** 확인한다. 캐시 미스는 같은 키의 잠금으로 1회 빌드에 수렴(잠금 실패는 각자 빌드). 병합 단계에서 건너뛴 확장이 있는 결과는 캐시하지 않는다 | (계약 테스트) |
@@ -852,13 +1169,14 @@ plugins/{id}/custom/
 
 ### 로드 순서
 
-```
-① 템플릿 외부 리소스 → 코어 엔진 → 템플릿 CSS
+```text
+① 템플릿 외부 리소스 → 코어 엔진 → 템플릿 CSS → @layer g7-extension 선언
 ② 확장 병합 번들 (모듈 → 플러그인)
-③ 사용자 추가 에셋 (모듈 → 플러그인 → 템플릿)   ← 언제나 마지막
+③ 템플릿의 확장 CSS 덮기 파일 (선언한 템플릿만)
+④ 사용자 추가 에셋 (모듈 → 플러그인 → 템플릿)   ← 언제나 마지막
 ```
 
-CSS 는 나중에 온 규칙이 이긴다. 운영자가 덧붙인 스타일이 확장 스타일보다 뒤에 와야 재정의가 성립한다. 템플릿이 ③ 의 마지막인 이유는 화면 외관의 최종 책임이 템플릿에 있어서다.
+CSS 는 나중에 온 규칙이 이긴다. 운영자가 덧붙인 스타일이 확장 스타일과 템플릿 덮기 파일보다 뒤에 와야 재정의가 성립한다. 템플릿이 ④ 의 마지막인 이유는 화면 외관의 최종 책임이 템플릿에 있어서다. ①~③ 의 층 관계는 [우선순위 세 칸](#우선순위-세-칸) 을 본다.
 
 같은 확장 안에서는 선언 순서(없으면 파일명 오름차순), CSS 를 JS 보다 먼저 싣는다.
 
@@ -971,3 +1289,7 @@ AbstractModule은 에셋 관련 헬퍼 메서드를 제공합니다:
 - [hooks.md](./hooks.md) - 훅 시스템 (핸들러와 연계)
 - [module-commands.md](./module-commands.md) - 모듈 Artisan 커맨드
 - [../frontend/components.md](../frontend/components.md) - 컴포넌트 핸들러 호출
+- [extension-components.md](./extension-components.md) - 확장 컴포넌트 제공·대체와 스타일
+- [template-basics.md](./template-basics.md#다크-모드-방식-featurescolor_scheme) - 템플릿의 다크 방식·확장 CSS 덮기 선언
+- [../frontend/dark-mode.md](../frontend/dark-mode.md#확장은-중립-표식을-쓴다) - 확장의 다크 중립 표식
+- [../../scripts/extension-css/README.md](../../scripts/extension-css/README.md) - 확장 CSS 변환·지문 비교 도구

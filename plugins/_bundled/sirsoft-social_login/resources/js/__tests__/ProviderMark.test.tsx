@@ -12,6 +12,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /** 버튼 스타일시트에서 선택자 하나의 선언을 꺼낸다(정확히 그 선택자만 가진 규칙). */
+/** 사이트 다크 — 템플릿 종류와 무관한 중립 표식(`<html data-g7-color-scheme="dark">`) 규격. 「다크 안의 라이트」는 제외한다 */
+const SITE_DARK = ':is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"]))';
+
 const cssRule = (css: string, selector: string): Record<string, string> | null => {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const match = css.match(new RegExp(`(?:^|\\})\\s*${escaped}\\s*\\{([^}]*)\\}`));
@@ -57,12 +60,12 @@ describe('ProviderMark', () => {
    * @effects mypage_row_shows_provider_symbol
    */
   it('원 색은 제공자 버튼 색과 같고, 구글은 사이트 다크에서만 어두워진다', () => {
-    const css = readFileSync(resolve(__dirname, '../../css/buttons.css'), 'utf8');
+    const css = readFileSync(resolve(__dirname, '../../css/main.css'), 'utf8');
 
     expect(cssRule(css, '.sl-mark--kakao')).toEqual({ 'background-color': '#fee500' });
     expect(cssRule(css, '.sl-mark--naver')).toEqual({ 'background-color': '#03a94d' });
     expect(cssRule(css, '.sl-mark--google')).toEqual({ 'background-color': '#ffffff', 'border-color': '#747775' });
-    expect(cssRule(css, '.dark .sl-mark--google')).toEqual({ 'background-color': '#131314', 'border-color': '#8e918f' });
+    expect(cssRule(css, `.sl-mark--google${SITE_DARK}`)).toEqual({ 'background-color': '#131314', 'border-color': '#8e918f' });
     expect(cssRule(css, '.sl-mark--facebook')).toEqual({ 'background-color': '#1877f2' });
     expect(css).not.toMatch(/\.sl-badge/);
   });

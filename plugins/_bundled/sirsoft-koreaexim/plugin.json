@@ -20,6 +20,13 @@
     },
     "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-koreaexim",
     "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-koreaexim/blob/main/CHANGELOG.md",
+    "assets": {
+        "css": {
+            "entry": "resources/css/main.css",
+            "output": "dist/css/plugin.css",
+            "namespace": "koreaexim"
+        }
+    },
     "loading": {
         "strategy": "global",
         "priority": 100

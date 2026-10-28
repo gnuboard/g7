@@ -25,7 +25,8 @@
         },
         "css": {
             "entry": "resources/css/main.css",
-            "output": "dist/css/module.css"
+            "output": "dist/css/module.css",
+            "namespace": "page"
         },
         "handlers": true
     },

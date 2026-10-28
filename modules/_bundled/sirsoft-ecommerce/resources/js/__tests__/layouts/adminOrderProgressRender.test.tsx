@@ -104,11 +104,11 @@ describe('관리자 주문 상세 — 진행단계 스텝퍼', () => {
 
     for (const step of PROGRESS_STEPS) {
       const cell = document.querySelector(`[data-step-value="${step.value}"]`)!;
-      expect(cell.querySelector(`.rounded-full i[data-icon="${step.icon}"]`), step.value).not.toBeNull();
+      expect(cell.querySelector(`.ecommerce\\:rounded-full i[data-icon="${step.icon}"]`), step.value).not.toBeNull();
       expect(cell.textContent).toContain(step.label);
     }
 
-    expect(document.querySelector('[data-step-value="preparing"] .rounded-full')!.className).toContain('border-blue-600');
+    expect(document.querySelector('[data-step-value="preparing"] .ecommerce\\:rounded-full')!.className).toContain('border-blue-600');
     expect(document.querySelectorAll('[data-step-chevron="pc"]')).toHaveLength(6);
     expect(document.querySelectorAll('[data-step-chevron="mobile"]')).toHaveLength(5);
     expect(document.body.textContent).toContain('진행 단계');
@@ -126,8 +126,8 @@ describe('관리자 주문 상세 — 진행단계 스텝퍼', () => {
     const hold = document.querySelector('[data-step-value="shipping_hold"]')!;
     expect(hold.getAttribute('data-step-state')).toBe('off_path');
     // 흰 글자 대비 4.5 이상 — red-500(3.82) 대신 red-600(4.76)
-    expect(hold.querySelector('.rounded-full')!.className).toContain('bg-red-600');
-    expect(hold.querySelector('.rounded-full')!.className).not.toContain('bg-red-500');
+    expect(hold.querySelector('.ecommerce\\:rounded-full')!.className).toContain('bg-red-600');
+    expect(hold.querySelector('.ecommerce\\:rounded-full')!.className).not.toContain('bg-red-500');
   });
 
   /**

@@ -406,6 +406,10 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 - id 가 없는 라벨에는 겹치지 않는 `g7-auto-label-N` 을 단다. Label 부품 자체는 훅을 쓰지 않는다 — 확장 레이아웃 시험이 엔진(저장소 루트 React)과 이 템플릿 부품(템플릿 React)을 함께 그려 훅이 깨지기 때문이다.
 - 그룹 제목처럼 칸 이름이 아닌 라벨을 칸 바로 앞에 둘 때는 칸에 `aria-label` 을 직접 준다.
 
+##### 선택 상자 폭 (Select `options` 모드)
+
+호출처 `className` 의 폭 토큰(`w-*`·`min-w-*`·`max-w-*`·`flex-1`·`grow`, `sm:`~`xl:` 변형 포함)은 **바깥 상자**로 올리고, 버튼은 `w-full` 로 그 상자를 채운다. 확장 자체 CSS 의 앞글자 붙은 토큰(`ecommerce:w-40`)도 앞글자를 떼고 같은 뜻으로 읽는다. 버튼에 `w-full` 이 있으면 앞글자 붙은 변형 없는 고정 폭(`ecommerce:w-40`)은 버튼에서 뺀다 — 확장 CSS 는 템플릿 CSS 층 밖이라 버튼에 남기면 `w-full` 을 이겨 상자 안에서 버튼이 고정 폭으로 굳는다. `min-w-*`·`max-w-*`·변형 붙은 폭·앞글자 없는 폭은 버튼에도 그대로 둔다. 회귀 테스트: `src/components/basic/__tests__/Select.test.tsx` 「확장 접두 빌드 클래스」.
+
 #### 테이블
 
 | 컴포넌트 | 설명 |
@@ -470,6 +474,14 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 >
 > 저장소 전역 정합은 `resources/js/core/template-engine/__tests__/DataGrid.selectedCountParity.test.ts`
 > 가 모집단을 저작본에서 파생해 강제한다.
+>
+> **행 배경을 주는 확장은 선택 색도 직접 고른다 — `rowClassName` 의 `$selected`**
+>
+> `rowClassName` 식은 행마다 풀리며 `row`·`$item` 과 함께 `$selected`(그 행이 선택됐는지)를 읽는다.
+> 이 템플릿의 클래스로 행 배경을 주면 표가 붙이는 선택 강조가 그 뒤에 놓여 덮어쓰지만, 모듈·플러그인의
+> 앞글자 클래스(`board:` 등)는 층 밖이라 선택 강조를 늘 이긴다. 그래서 공지 행처럼 배경을 주는 확장은
+> `($selected ? '<선택 배경>' : '<기본 배경>')` 로 선택 색을 함께 고른다(게시판 관리자 글 목록, #816).
+> 카드 보기는 선택 강조 색이 없어 `$selected` 가 늘 거짓이다.
 >
 > **`ExtensionCardGrid` 스위치 재동기 — `resyncKey`**
 >

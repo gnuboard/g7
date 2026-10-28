@@ -49,8 +49,8 @@ describe('관리자 긴 글 넘침', () => {
     const meta = findAll(layout, (n) => typeof n.id === 'string' && n.id.startsWith('latest_post_meta_'));
     expect(meta.length).toBe(1);
     const [names, time] = meta[0].children ?? [];
-    expect(tokens(names)).toEqual(expect.arrayContaining(['min-w-0', 'truncate']));
-    expect(tokens(time)).toEqual(expect.arrayContaining(['shrink-0', 'whitespace-nowrap']));
+    expect(tokens(names)).toEqual(expect.arrayContaining(['board:min-w-0', 'board:truncate']));
+    expect(tokens(time)).toEqual(expect.arrayContaining(['board:shrink-0', 'board:whitespace-nowrap']));
     expect(String(time.text)).toContain('created_at');
   });
 
@@ -63,9 +63,9 @@ describe('관리자 긴 글 넘침', () => {
     // 제목은 글 상세로 가는 링크(A, #757)다 — 예전 Span 과 같은 클래스 계약을 진다
     const title = findAll(layout, (n) => (n.name === 'A' || n.name === 'Span') && n.text === '{{row.title}}');
     expect(title.length).toBe(1);
-    expect(tokens(title[0])).toEqual(expect.arrayContaining(['min-w-0', 'wrap-anywhere']));
-    const column = findAll(layout, (n) => tokens(n).includes('flex-1') && findAll(n.children ?? [], (c) => c === title[0]).length > 0);
+    expect(tokens(title[0])).toEqual(expect.arrayContaining(['board:min-w-0', 'board:wrap-anywhere']));
+    const column = findAll(layout, (n) => tokens(n).includes('board:flex-1') && findAll(n.children ?? [], (c) => c === title[0]).length > 0);
     expect(column.length).toBe(1);
-    expect(tokens(column[0])).toContain('min-w-0');
+    expect(tokens(column[0])).toContain('board:min-w-0');
   });
 });

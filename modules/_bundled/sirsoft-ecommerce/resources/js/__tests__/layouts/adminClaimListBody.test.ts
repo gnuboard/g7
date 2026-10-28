@@ -1015,16 +1015,16 @@ describe('빌드 CSS 에 있는 간격 클래스만 쓴다 (3차 검증 인터�
    *
    * @effects claim_list_spacing_classes_exist_in_the_admin_build
    */
-  it('완료 창·목록의 gap-*·min-w-* 클래스가 관리자 빌드 CSS 에 있다', () => {
+  it('완료 창·목록의 gap-*·min-w-* 클래스가 이 모듈 빌드 CSS 에 있다', () => {
     const here = path.dirname(fileURLToPath(import.meta.url));
-    const css = fs.readFileSync(path.resolve(here, '../../../../../../../templates/_bundled/sirsoft-admin_basic/dist/css/components.css'), 'utf8');
+    const css = fs.readFileSync(path.resolve(here, '../../../../dist/css/module.css'), 'utf8');
     const dir = path.resolve(here, '../../../layouts/admin/partials/admin_ecommerce_claim_list');
     const classes = new Set<string>();
 
     for (const file of ['_modal_claim_complete.g7.html', '_partial_claim_datagrid.g7.html']) {
       const source = fs.readFileSync(path.join(dir, file), 'utf8');
       for (const [, list] of source.matchAll(/class="([^"]*)"/g)) {
-        list.split(/\s+/).filter((c) => /^(gap|gap-x|gap-y|min-w)-/.test(c)).forEach((c) => classes.add(c));
+        list.split(/\s+/).filter((c) => /^ecommerce:(gap|gap-x|gap-y|min-w)-/.test(c)).forEach((c) => classes.add(c));
       }
     }
 

@@ -47,11 +47,11 @@ describe('회원관리 목록 확장 필터 조각', () => {
   // (check-extension-css-coverage 「어휘 오용」).
   it.each(FRAGMENTS)('%s — 행은 유틸로 편 필터 행이고 서버 리스너와 같은 권한으로만 보인다', (_label, fragment, permission) => {
     const classes = (n: any) => String(n?.props?.className ?? '').split(' ');
-    const rows = collect(fragment, (n) => !!n?.id && classes(n).includes('md:flex-row'));
+    const rows = collect(fragment, (n) => !!n?.id && classes(n).includes('ecommerce:md:flex-row'));
 
     expect(rows).toHaveLength(1);
     expect(JSON.stringify(rows[0].permissions)).toContain(permission);
-    expect(collect(rows[0], (n) => classes(n).includes('w-32') && classes(n).includes('shrink-0'))).toHaveLength(1);
+    expect(collect(rows[0], (n) => classes(n).includes('ecommerce:w-32') && classes(n).includes('ecommerce:shrink-0'))).toHaveLength(1);
 
     const templateOnly = ['filter-row', 'filter-label', 'flex-center', 'text-body', 'text-label-subtle'];
     expect(collect(fragment, (n) => classes(n).some((c) => templateOnly.includes(c)))).toHaveLength(0);

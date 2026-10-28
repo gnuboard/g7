@@ -1681,8 +1681,8 @@ _등록하는 브로드캐스트 채널이 없습니다._
 
 ## 활동 로그 훅
 
-> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 **139종**입니다
-> (등록 건수는 141건 — `order.after_create` 와 `order-option.after_confirm` 은 관리자 관점과
+> 이 확장이 코어 활동 로그(`activity_logs`)에 기록을 남기기 위해 구독하는 훅 **149종**입니다
+> (등록 건수는 151건 — `order.after_create` 와 `order-option.after_confirm` 은 관리자 관점과
 > 구매자 관점 두 리스너가 각각 구독합니다).
 > 코어 `docs/backend/activity-log-hooks.md` 에 있던 목록을 이 확장 소유로 옮긴 것입니다(#601) —
 > 확장이 훅을 더할 때 코어 문서를 고쳐야 하던 역방향 의존을 없애기 위해서입니다. 코어 문서에는
@@ -1696,7 +1696,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 ### 이커머스 모듈 훅
 
 **모듈**: `sirsoft-ecommerce`
-**등록 141건 / 훅 139종** (8개 Listener)
+**등록 151건 / 훅 149종** (9개 Listener)
 
 #### OrderActivityLogListener (27훅)
 
@@ -2051,3 +2051,22 @@ LogType 은 요청 주체로 정해진다(관리자 화면이면 Admin, 고객 �
 | `sirsoft-ecommerce.claim-image.after_upload` | `handleImageUploaded` | `claim_image.upload` | User | ClaimImage |
 | `sirsoft-ecommerce.claim-image.after_delete` | `handleImageDeleted` | `claim_image.delete` | User | ClaimImage (`loggable_type`/`loggable_id` 직접 지정 — 행이 이미 삭제됨) |
 
+
+#### ExportActivityLogListener (10훅)
+
+**파일**: `modules/_bundled/sirsoft-ecommerce/src/Listeners/ExportActivityLogListener.php`
+
+상품·주문·마일리지 내보내기(#787). 작업 행이 지워진 뒤에도 해석되도록 `loggable_type`/`loggable_id` 와 파일 이름을 직접 남긴다.
+
+| 훅 이름 | Listener 메서드 | Action (DB) | LogType | Loggable |
+|---------|----------------|-------------|---------|----------|
+| `sirsoft-ecommerce.export.after_request` | `handleAfterRequest` | `export.request` | 요청 주체 | Export |
+| `sirsoft-ecommerce.export.request_denied` | `handleRequestDenied` | `export.request_denied` | 요청 주체 | - |
+| `sirsoft-ecommerce.export.after_start` | `handleAfterStart` | `export.start` | System (큐 작업) | Export |
+| `sirsoft-ecommerce.export.after_complete` | `handleAfterComplete` | `export.complete` | System (큐 작업) | Export |
+| `sirsoft-ecommerce.export.after_fail` | `handleAfterFail` | `export.fail` | System (큐 작업) | Export |
+| `sirsoft-ecommerce.export.after_download` | `handleAfterDownload` | `export.download` | 요청 주체 | Export |
+| `sirsoft-ecommerce.export.after_view_downloads` | `handleAfterViewDownloads` | `export.view_downloads` | 요청 주체 | Export |
+| `sirsoft-ecommerce.export.after_delete` | `handleAfterDelete` | `export.delete` | 요청 주체 | Export |
+| `sirsoft-ecommerce.export.after_expire` | `handleAfterExpire` | `export.expire` | System (정리 스케줄) | Export |
+| `sirsoft-ecommerce.export.after_retry` | `handleAfterRetry` | `export.retry` | 요청 주체 | Export (새 작업) |

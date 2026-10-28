@@ -5,11 +5,11 @@
   모르면 운영자가 같은 삭제를 반복한다. -->
 <partial description="User Address - Error Modal">
   <modal data-type="composite" data-ref="modal_addresses_error" title="$t:common.error" size="sm">
-    <div class="py-2">
-      <p class="text-primary text-base">{{_global.errorMessage || '$t:common.error_occurred'}}</p>
+    <div class="ecommerce:py-2">
+      <p class="ecommerce-text-primary ecommerce:text-base">{{_global.errorMessage || '$t:common.error_occurred'}}</p>
     </div>
-    <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200">
+    <div class="ecommerce-modal-footer-buttons">
+      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-gray-900 ecommerce:dark:bg-gray-100 ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-200">
         <on type="click">
           <close-modal/>
         </on>

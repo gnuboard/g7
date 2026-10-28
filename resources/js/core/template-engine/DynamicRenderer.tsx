@@ -30,6 +30,7 @@ import { ActionDispatcher, ActionDefinition } from './ActionDispatcher';
 import { resolveIterationSource, evaluateIfCondition, evaluateRenderCondition, bindComponentActions, resolveClassMap, buildExtensionPointHostProps } from './helpers/RenderHelpers';
 import { hasPipes } from './PipeRegistry';
 import { evaluateComputedDefinitions, isInheritableDefinitions } from './helpers/ComputedEvaluator';
+import { splitExtensionClassPrefix } from './helpers/StyleHelpers';
 import { makeLayoutListenerResult } from './helpers/componentEventResult';
 import { toExpressionData } from './helpers/expressionData';
 import { getEngineFlags } from './EngineFlags';
@@ -4716,7 +4717,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
          * 이 전환으로 막히는 정상 사용은 없고, 앞으로의 탈출구만 열어 둔다.
          */
         // 규칙은 반복 컨텍스트(renderItemChildren)의 확장점과 공유한다 (engine-v1.73.0).
-        const host = buildExtensionPointHostProps(effectiveComponentDef.props);
+        // 평가·번역을 마친 props 로 만든다 — 반복 컨텍스트는 처음부터 평가한 props 를 넘겼는데 이 경로만 원본을 넘겨,
+        // className·data-*·aria-* 의 `{{…}}` 가 식 원문 그대로 붙었다(게시판 관리자 글 상세 본문 래퍼, engine-v1.86.0).
+        const host = buildExtensionPointHostProps(stableResolvedProps);
 
         return (
           <div
@@ -5131,7 +5134,9 @@ const DynamicRenderer: React.FC<DynamicRendererProps> = memo(
       const innerClassList: string[] = [];
 
       for (const cls of classes) {
-        const isGridItemClass = gridItemPatterns.some(pattern => pattern.test(cls));
+        // 확장 접두 빌드 클래스(`ecommerce:col-span-2`)도 같은 뜻으로 판정한다 (engine-v1.86.0)
+        const bare = splitExtensionClassPrefix(cls).rest;
+        const isGridItemClass = gridItemPatterns.some(pattern => pattern.test(bare));
         if (isGridItemClass) {
           wrapperClassList.push(cls);
         } else {

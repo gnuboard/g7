@@ -5,19 +5,19 @@
   선택은 `replace-url` 로 주소에 남겨 새로고침·공유에는 살아 있되 뒤로가기 이력은 늘리지 않는다.
   행의 노출 스위치는 클릭이 행 선택으로 번지지 않도록 전파를 끊는다. -->
 <partial description="Product Notice Template List Panel - Left Sidebar with Search">
-  <div data-ref="template_list_panel" class="admin-card col-span-1-lg flex flex-col">
+  <div data-ref="template_list_panel" class="ecommerce-admin-card ecommerce-col-span-1-lg ecommerce:flex ecommerce:flex-col">
     <on event="mount">
       <action handler="sirsoft-ecommerce.initNoticeFromUrl"/>
     </on>
-    <div data-ref="template_list_header" class="px-4 panel-header">
-      <div class="flex-center gap-2">
-        <icon name="file-alt" class="text-gray-700 dark:text-gray-300" size="md"/>
-        <h3 class="text-heading">$t:sirsoft-ecommerce.admin.product_notice_template.list.title</h3>
-        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">{{templates?.data?.pagination?.total ?? templates?.data?.data?.length ?? 0}}</span>
+    <div data-ref="template_list_header" class="ecommerce:px-4 ecommerce-panel-header">
+      <div class="ecommerce-flex-center ecommerce:gap-2">
+        <icon name="file-alt" class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300" size="md"/>
+        <h3 class="ecommerce-text-heading">$t:sirsoft-ecommerce.admin.product_notice_template.list.title</h3>
+        <span class="ecommerce:px-2 ecommerce:py-0.5 ecommerce:text-xs ecommerce:font-medium ecommerce:rounded-full ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700 ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{templates?.data?.pagination?.total ?? templates?.data?.data?.length ?? 0}}</span>
       </div>
     </div>
-    <div data-ref="search_area" class="px-4 panel-header">
-      <search-bar data-type="composite" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.list.search_placeholder" value="{{query.search || ''}}" class="w-full">
+    <div data-ref="search_area" class="ecommerce:px-4 ecommerce-panel-header">
+      <search-bar data-type="composite" placeholder="$t:sirsoft-ecommerce.admin.product_notice_template.list.search_placeholder" value="{{query.search || ''}}" class="ecommerce:w-full">
         <on type="submit">
           <!-- 검색 — 조건을 URL 에 실어 다시 들어간다. 화면이 다시 뜨면서 무한 스크롤 상태도 처음으로 돌아간다. -->
           <navigate path="/admin/ecommerce/product-notices" :mergeQuery="true">
@@ -26,7 +26,7 @@
         </on>
       </search-bar>
     </div>
-    <div data-ref="template_list" data-if="{{(templates?.data?.data?.length ?? 0) > 0}}" class="p-2 max-h-[calc(90vh-140px)] overflow-y-auto">
+    <div data-ref="template_list" data-if="{{(templates?.data?.data?.length ?? 0) > 0}}" class="ecommerce:p-2 ecommerce:max-h-[calc(90vh-140px)] ecommerce:overflow-y-auto">
       <on type="scroll">
         <!-- 무한 스크롤. 대기시간(200ms) 뒤에도 세 조건이 모두 참일 때만 요청한다 — 바닥 100px 안에
           닿았고 · 더 받을 것이 남았고 · 지금 받는 중이 아님. 받은 쪽은 갈아끼우지 않고 뒤에 잇는다.
@@ -51,7 +51,7 @@
         </sequence>
       </on>
       <div data-ref="template_list_items_{{templateIdx}}" data-each="template, templateIdx in {{templates?.data?.data ?? []}}">
-        <div data-ref="template_item_{{template.id}}" class="{{_global.selectedTemplateId === template.id ? 'admin-card-selected' : 'admin-card-clickable'}}">
+        <div data-ref="template_item_{{template.id}}" class="{{_global.selectedTemplateId === template.id ? 'ecommerce-admin-card-selected' : 'ecommerce-admin-card-clickable'}}">
           <on type="click">
             <!-- 항목 선택 — 편집·등록 중이면 곧바로 넘어가지 않고 고른 항목을 대기 자리에 두고 이탈 확인 창을 연다(공통정보 목록과 같은 규칙). 이동을 완결하는 것은 그 창이다. 편집 중이 아니면 목록이 들고 있는 행 전체를 전역에 옮기고 주소를 갈아끼운다. -->
             <sequence>
@@ -70,11 +70,11 @@
               </switch>
             </sequence>
           </on>
-          <div class="flex-between">
+          <div class="ecommerce-flex-between">
             <!-- 항목 이름은 링크 — 가운데 클릭·Ctrl+클릭으로 그 템플릿을 새 탭에 연다(#757 결정 2026-10-15). 카드 전체를
                  링크로 감싸지 않는 것은 노출 스위치가 링크 안에 들어가기 때문이다. 보통 클릭은 카드와 같은 선택을 하고
                  전파를 끊어 카드 클릭이 한 번 더 돌지 않게 한다(카드의 나머지 자리는 카드 클릭이 맡는다). -->
-            <a href="/admin/ecommerce/product-notices?id={{template.id}}&amp;mode=view" :mergeQuery="true" class="text-primary text-sm font-medium hover:underline">
+            <a href="/admin/ecommerce/product-notices?id={{template.id}}&amp;mode=view" :mergeQuery="true" class="ecommerce-text-primary ecommerce:text-sm ecommerce:font-medium ecommerce:hover:underline">
               <on type="click">
                 <sequence :stopPropagation="true">
                   <switch on="{{_global.panelMode === 'edit' || _global.panelMode === 'create'}}">
@@ -93,8 +93,8 @@
               </on>
               {{$localized(template.name)}}
             </a>
-            <div class="flex-center gap-2">
-              <span class="text-secondary dark:text-gray-300 px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700">{{template.fields_count ?? 0}}</span>
+            <div class="ecommerce-flex-center ecommerce:gap-2">
+              <span class="ecommerce-text-secondary ecommerce:dark:text-gray-300 ecommerce:px-2 ecommerce:py-0.5 ecommerce:text-xs ecommerce:rounded-full ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700">{{template.fields_count ?? 0}}</span>
               <toggle data-type="composite" ariaLabel="$t:common.item_enabled|name={{$localized(template.name)}}" size="sm" checked="{{template.is_active}}" disabled="{{!template.abilities?.can_update}}">
                 <on type="change">
                   <!-- 행의 노출 스위치. `stopPropagation` 이 없으면 이 클릭이 행 선택으로 번져, 스위치를 눌렀을 뿐인데 오른쪽 패널이 바뀐다. -->
@@ -113,11 +113,11 @@
           </div>
         </div>
       </div>
-      <loading-spinner data-type="composite" data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="py-3"/>
+      <loading-spinner data-type="composite" data-ref="loading_indicator" data-if="{{_global.infiniteScroll.isLoadingMore}}" size="sm" text="$t:sirsoft-ecommerce.common.loading" color="text-blue-600 dark:text-blue-400" class="ecommerce:py-3"/>
     </div>
-    <div data-ref="empty_template_state" data-if="{{templates !== undefined &amp;&amp; ((templates?.data?.data?.length ?? 0) === 0)}}" class="flex-center flex-1 justify-center gap-3 px-4 py-8">
-      <icon name="file-alt" class="text-gray-500 dark:text-gray-500" size="md"/>
-      <p class="text-label-subtle">$t:sirsoft-ecommerce.admin.product_notice_template.list.empty</p>
+    <div data-ref="empty_template_state" data-if="{{templates !== undefined &amp;&amp; ((templates?.data?.data?.length ?? 0) === 0)}}" class="ecommerce-flex-center ecommerce:flex-1 ecommerce:justify-center ecommerce:gap-3 ecommerce:px-4 ecommerce:py-8">
+      <icon name="file-alt" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-500" size="md"/>
+      <p class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.product_notice_template.list.empty</p>
     </div>
   </div>
 </partial>

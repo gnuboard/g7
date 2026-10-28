@@ -2,22 +2,22 @@
   되돌린다. 되돌리면 그동안의 수정이 사라지므로 되묻는다. -->
 <partial description="알림 정의 기본값 복원 확인">
   <modal data-type="composite" data-ref="modal_gdpr_notification_definition_reset" title="$t:sirsoft-gdpr.notification_definitions.reset_modal.title" size="sm">
-    <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-gdpr.notification_definitions.reset_modal.confirm_message</p>
-    <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-      <span class="form-sub-label">$t:sirsoft-gdpr.notification_definitions.reset_modal.target_label</span>
-      <span class="text-primary font-medium">{{_global.resetTargetName ?? ''}}</span>
+    <p class="gdpr:text-gray-700 gdpr:dark:text-gray-300">$t:sirsoft-gdpr.notification_definitions.reset_modal.confirm_message</p>
+    <div class="gdpr:mt-4 gdpr:p-3 gdpr:bg-gray-100 gdpr:dark:bg-gray-700 gdpr:rounded-lg">
+      <span class="gdpr-form-sub-label">$t:sirsoft-gdpr.notification_definitions.reset_modal.target_label</span>
+      <span class="gdpr-text-primary gdpr:font-medium">{{_global.resetTargetName ?? ''}}</span>
     </div>
-    <div class="alert-danger">
-      <p class="text-error-soft">$t:sirsoft-gdpr.notification_definitions.reset_modal.warning_message</p>
+    <div class="gdpr-alert-danger">
+      <p class="gdpr-text-error-soft">$t:sirsoft-gdpr.notification_definitions.reset_modal.warning_message</p>
     </div>
-    <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
+    <div class="gdpr-modal-footer-buttons">
+      <button type="button" class="gdpr:px-4 gdpr:py-2 gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:rounded-lg gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
         <on type="click">
           <close-modal target="modal_gdpr_notification_definition_reset"/>
         </on>
         $t:common.cancel
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-orange-700 dark:bg-orange-700 text-white dark:text-white rounded-lg hover:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
+      <button type="button" class="gdpr-flex-center gdpr:gap-2 gdpr:px-4 gdpr:py-2 gdpr:bg-orange-700 gdpr:dark:bg-orange-700 gdpr:text-white gdpr:dark:text-white gdpr:rounded-lg gdpr:hover:bg-orange-800 gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed" disabled="{{_global.isResettingNotification}}">
         <on type="click">
           <!-- 초기화. 성공하면 알림 목록을 다시 불러 되돌아간 값을 보여 준다. -->
           <sequence>
@@ -36,7 +36,7 @@
             </api-call>
           </sequence>
         </on>
-        <icon data-if="{{_global.isResettingNotification}}" name="spinner" class="spinner-sm"/>
+        <icon data-if="{{_global.isResettingNotification}}" name="spinner" class="gdpr-spinner-sm"/>
         <span>{{_global.isResettingNotification ? '$t:sirsoft-gdpr.notification_definitions.reset_modal.btn_confirming' : '$t:sirsoft-gdpr.notification_definitions.reset_modal.btn_confirm'}}</span>
       </button>
     </div>

@@ -74,7 +74,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // 워커는 항상 1 — 코어 config 와 같은 이유다. 이 스위트는 한 대의 서버와 한 개 DB 를 공유하므로,
+  // 로컬 기본값(CPU 절반)으로 돌면 관리자 spec 이 설정을 저장하는 사이 공개 화면 spec(쿠키 배너)이
+  // 배너를 보지 못해 실패했다(5 워커 3/5, 1 워커 5/5 실측).
+  workers: 1,
   reporter: [
     ['html', { outputFolder: resolve(CORE_ROOT, 'playwright-report', ARTIFACT_SLUG), open: 'never' }],
     ['list'],

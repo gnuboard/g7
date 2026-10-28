@@ -5,20 +5,20 @@
   `target_screen` 이 "orders" 로 고정돼 있어 상품·쿠폰 목록의 프리셋과 한 저장소를 나눠 쓴다. -->
 <partial description="Order List - Preset Save Modal">
   <modal data-type="composite" data-ref="modal_preset_save" title="$t:sirsoft-ecommerce.admin.order.modal.preset_save.title" size="sm">
-    <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.modal.preset_save.placeholder" class="input" value="{{_local.presetName}}">
+    <input type="text" placeholder="$t:sirsoft-ecommerce.admin.order.modal.preset_save.placeholder" class="ecommerce-input" value="{{_local.presetName}}">
       <on type="input">
         <!-- 이름만 이 창의 `_local` 에 둔다 — 저장할 조건은 이미 `_global` 에 담겨 왔고, 이름은 저장이 끝나면 비워 다음 저장에 남지 않게 한다. -->
         <set-state target="local" presetName="{{$event.target.value}}"/>
       </on>
     </input>
-    <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSaving}}">
+    <div class="ecommerce-modal-footer-buttons">
+      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isSaving}}">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_local.presetName || _local.presetName.trim() === '' || _global.isSaving}}">
+      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{!_local.presetName || _local.presetName.trim() === '' || _global.isSaving}}">
         <on type="click">
           <!-- 저장. 조건을 통째로 넘기지 않고 `<field>` 트리로 하나씩 펴는 이유는 두 가지다 — 화면이
             쓰지 않는 키가 섞여 들어가지 않고, 조건이 하나 늘 때 고칠 자리가 여기 한 곳으로 보인다.
@@ -76,7 +76,7 @@
             </api-call>
           </sequence>
         </on>
-        <icon data-if="{{_global.isSaving}}" name="spinner" class="spinner-sm"/>
+        <icon data-if="{{_global.isSaving}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>{{_global.isSaving ? '$t:common.saving' : '$t:sirsoft-ecommerce.admin.order.modal.preset_save.save'}}</span>
       </button>
     </div>

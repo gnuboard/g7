@@ -319,7 +319,7 @@ describe('주문 목록 DataGrid 컬럼 검증', () => {
     it('country 컬럼 국기가 address?.recipient_country_code 경로를 사용해야 함', () => {
         const countryColumn = columns.find((c: any) => c.field === 'country');
         const flagNodes = findNodes({ children: countryColumn.cellChildren }, (n: any) =>
-            n.props?.className?.includes('fi fi-')
+            n.props?.className?.includes('ecommerce-flag ecommerce-flag-')
         );
         expect(flagNodes.length).toBeGreaterThanOrEqual(1);
         // 올바른 경로 사용

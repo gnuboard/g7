@@ -13,7 +13,7 @@
   행 편집 버튼은 서버가 준 권한(`abilities.can_edit`)으로 잠기고, 누르면 편집 창이 쓸 값을
   `_global.mileageEdit` 에 조립해 넘긴다 — 표시용 문구(부호 붙은 금액 등)를 여기서 만든다. -->
 <partial description="마일리지 내역 DataGrid (셀 인터랙션 + 행 확장 연결 거래)">
-  <div data-ref="mileage_transactions_grid_wrap" class="overflow-hidden mb-4">
+  <div data-ref="mileage_transactions_grid_wrap" class="ecommerce:overflow-hidden ecommerce:mb-4">
     <data-grid data-type="composite" data-ref="mileage_transactions_datagrid" pageHref="/admin/ecommerce/mileage-transactions?page={page}" :pageHrefMergeQuery="true" rowLabelField="number" data="{{transactions?.data?.data || []}}" :selectable="true" selectionScope="page" selectedIds="{{_local.selectedItems || []}}" :expandable="true" expandedRowIds="{{_local.expandedRows || []}}" :showColumnSelector="false" selectedCountText="" :responsiveBreakpoint="768" emptyMessage="{{transactions === undefined ? '' : $t('sirsoft-ecommerce.admin.mileage_transactions.message.empty')}}" :pagination="true" :serverSidePagination="true" serverCurrentPage="{{transactions?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{transactions?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{transactions?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{query.per_page || 20}}" sortField="{{(query.sort || 'created_at_desc').split('_').slice(0, -1).join('_')}}" sortDirection="{{(query.sort || 'created_at_desc').split('_').pop()}}" :alwaysShowPagination="true">
       <blur-until-loaded sources="transactions"/>
       <prop name="expandContext">
@@ -21,12 +21,12 @@
       </prop>
       <column field="number" header="NO" width="56px" :sortable="false">
         <cell>
-          <span class="text-gray-500 dark:text-gray-400">{{row.number}}</span>
+          <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{row.number}}</span>
         </cell>
       </column>
       <column field="created_at" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.datetime" width="150px" :sortable="true">
         <cell>
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{row.created_at_formatted}}</span>
+          <span class="ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{row.created_at_formatted}}</span>
         </cell>
       </column>
       <column field="member" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.member" width="160px" :sortable="false">
@@ -46,51 +46,51 @@
                 </case>
               </switch>
             </on>
-            <div class="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
-              <icon name="fa-regular fa-user" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
-              <span class="font-medium text-gray-900 dark:text-gray-100 truncate">{{row.user_name ?? ('#' + (row.user_id ?? ''))}}</span>
+            <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:rounded-lg ecommerce:px-1 ecommerce:py-0.5 ecommerce:transition-colors ecommerce:cursor-pointer">
+              <icon name="fa-regular fa-user" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"/>
+              <span class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate">{{row.user_name ?? ('#' + (row.user_id ?? ''))}}</span>
             </div>
           </action-menu>
-          <span data-if="{{!row.user_uuid &amp;&amp; row.user_id}}" class="text-gray-700 dark:text-gray-300">{{row.user_name ?? ('#' + (row.user_id ?? ''))}}</span>
+          <span data-if="{{!row.user_uuid &amp;&amp; row.user_id}}" class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{row.user_name ?? ('#' + (row.user_id ?? ''))}}</span>
           <!-- 회원을 완전 삭제하면 거래 기록은 남기고 회원 연결만 끊는다(E3) — 「#」 만 보이지 않게 그 사실을 적는다. -->
-          <span data-if="{{!row.user_id}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.deleted_member</span>
+          <span data-if="{{!row.user_id}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.deleted_member</span>
         </cell>
       </column>
       <column field="type" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.type" width="96px" :sortable="false">
         <cell>
-          <span class="{{'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' + (row.admin_badge_group === 'green' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : (row.admin_badge_group === 'blue' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : (row.admin_badge_group === 'teal' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300' : (row.admin_badge_group === 'amber' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'))))}}">{{row.type_label}}</span>
+          <span class="{{'ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:font-medium ' + (row.admin_badge_group === 'green' ? 'ecommerce:bg-green-100 ecommerce:text-green-800 ecommerce:dark:bg-green-900/30 ecommerce:dark:text-green-300' : (row.admin_badge_group === 'blue' ? 'ecommerce:bg-blue-100 ecommerce:text-blue-700 ecommerce:dark:bg-blue-900/30 ecommerce:dark:text-blue-300' : (row.admin_badge_group === 'teal' ? 'ecommerce:bg-teal-100 ecommerce:text-teal-700 ecommerce:dark:bg-teal-900/30 ecommerce:dark:text-teal-300' : (row.admin_badge_group === 'amber' ? 'ecommerce:bg-amber-100 ecommerce:text-amber-700 ecommerce:dark:bg-amber-900/30 ecommerce:dark:text-amber-300' : 'ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300'))))}}">{{row.type_label}}</span>
         </cell>
       </column>
       <column field="amount" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.amount" width="110px" :sortable="true">
         <cell>
-          <span class="{{row.amount >= 0 ? 'font-medium text-green-700 dark:text-green-400' : 'font-medium text-red-600 dark:text-red-400'}}">{{(row.amount >= 0 ? '+' : '') + row.amount_formatted}}</span>
+          <span class="{{row.amount >= 0 ? 'ecommerce:font-medium ecommerce:text-green-700 ecommerce:dark:text-green-400' : 'ecommerce:font-medium ecommerce:text-red-600 ecommerce:dark:text-red-400'}}">{{(row.amount >= 0 ? '+' : '') + row.amount_formatted}}</span>
         </cell>
       </column>
       <column field="remaining" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.remaining" width="96px" :sortable="false">
         <cell>
-          <span class="text-sm text-gray-700 dark:text-gray-300">{{row.remaining_amount > 0 ? row.remaining_amount_formatted : '-'}}</span>
+          <span class="ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{row.remaining_amount > 0 ? row.remaining_amount_formatted : '-'}}</span>
         </cell>
       </column>
       <column field="expiry" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.expiry" width="150px" :sortable="false">
         <cell>
-          <div data-if="{{row.expiry_state === 'fully_expired' || row.expiry_state === 'partial_expired'}}" class="flex flex-col gap-0.5 text-sm">
-            <span data-if="{{!!row.expires_at}}" class="text-gray-700 dark:text-gray-300">{{row.expires_at_formatted}}</span>
-            <div class="flex items-center gap-1.5">
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 w-fit">{{row.expiry_state === 'partial_expired' ? $t('sirsoft-ecommerce.admin.mileage_transactions.cell.partial_expired') : $t('sirsoft-ecommerce.admin.mileage_transactions.cell.expired')}}</span>
-              <span class="text-xs text-gray-500 dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.mileage_transactions.cell.expired_amount|amount={{row.expired_amount_formatted}}</span>
+          <div data-if="{{row.expiry_state === 'fully_expired' || row.expiry_state === 'partial_expired'}}" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-0.5 ecommerce:text-sm">
+            <span data-if="{{!!row.expires_at}}" class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{row.expires_at_formatted}}</span>
+            <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-1.5">
+              <span class="ecommerce:inline-flex ecommerce:items-center ecommerce:px-1.5 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:font-medium ecommerce:bg-red-100 ecommerce:text-red-700 ecommerce:dark:bg-red-900/30 ecommerce:dark:text-red-300 ecommerce:w-fit">{{row.expiry_state === 'partial_expired' ? $t('sirsoft-ecommerce.admin.mileage_transactions.cell.partial_expired') : $t('sirsoft-ecommerce.admin.mileage_transactions.cell.expired')}}</span>
+              <span class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:defer:sirsoft-ecommerce.admin.mileage_transactions.cell.expired_amount|amount={{row.expired_amount_formatted}}</span>
             </div>
           </div>
-          <span data-if="{{row.expiry_state === 'active' &amp;&amp; !!row.expires_at}}" class="text-sm text-gray-700 dark:text-gray-300">{{row.expires_at_formatted}}</span>
-          <span data-if="{{row.expiry_state === 'active' &amp;&amp; !row.expires_at &amp;&amp; row.is_earning &amp;&amp; row.remaining_amount > 0}}" class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.unlimited</span>
-          <span data-if="{{row.expiry_state === 'active' &amp;&amp; !row.expires_at &amp;&amp; !(row.is_earning &amp;&amp; row.remaining_amount > 0)}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.none</span>
+          <span data-if="{{row.expiry_state === 'active' &amp;&amp; !!row.expires_at}}" class="ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300">{{row.expires_at_formatted}}</span>
+          <span data-if="{{row.expiry_state === 'active' &amp;&amp; !row.expires_at &amp;&amp; row.is_earning &amp;&amp; row.remaining_amount > 0}}" class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.unlimited</span>
+          <span data-if="{{row.expiry_state === 'active' &amp;&amp; !row.expires_at &amp;&amp; !(row.is_earning &amp;&amp; row.remaining_amount > 0)}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.none</span>
         </cell>
       </column>
       <column field="order" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.order" width="120px" :sortable="false">
         <cell>
-          <a href="/admin/ecommerce/orders/{{row.order_number}}" target="_blank" rel="noopener noreferrer" data-if="{{row.order_number}}" class="font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
+          <a href="/admin/ecommerce/orders/{{row.order_number}}" target="_blank" rel="noopener noreferrer" data-if="{{row.order_number}}" class="ecommerce:font-medium ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:cursor-pointer ecommerce:hover:underline">
             {{row.order_number}}
           </a>
-          <span data-if="{{!row.order_number}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.none</span>
+          <span data-if="{{!row.order_number}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.none</span>
         </cell>
       </column>
       <column field="granted_by" header="$t:sirsoft-ecommerce.admin.mileage_transactions.column.granted_by" width="110px" :sortable="false">
@@ -99,38 +99,38 @@
             <prop name="items">
               <item id="view_admin" href="/admin/users/{{row.granted_by_uuid}}" target="_blank" label="$t:sirsoft-ecommerce.admin.mileage_transactions.cell.view_admin" iconName="user-shield"/>
             </prop>
-            <div class="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-1 py-0.5 transition-colors cursor-pointer">
-              <icon name="fa-solid fa-user-shield" class="text-gray-500 dark:text-gray-400 flex-shrink-0"/>
-              <span class="font-medium text-gray-900 dark:text-gray-100 truncate">{{row.granted_by_name}}</span>
+            <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:rounded-lg ecommerce:px-1 ecommerce:py-0.5 ecommerce:transition-colors ecommerce:cursor-pointer">
+              <icon name="fa-solid fa-user-shield" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:flex-shrink-0"/>
+              <span class="ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-gray-100 ecommerce:truncate">{{row.granted_by_name}}</span>
             </div>
           </action-menu>
-          <span data-if="{{!row.granted_by_uuid}}" class="text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.system</span>
+          <span data-if="{{!row.granted_by_uuid}}" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.system</span>
         </cell>
       </column>
       <prop name="rowActions">
         <item id="edit" label="$t:sirsoft-ecommerce.admin.mileage_transactions.row_action.edit" iconName="pen-to-square" disabledField="abilities.can_edit"/>
       </prop>
       <expand>
-        <div class="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
-          <div data-if="{{(linkedTransactions?.[row.id] ?? []).length > 0}}" class="space-y-1">
-            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">$t:sirsoft-ecommerce.admin.mileage_transactions.linked.title</p>
-            <div data-each="linked, linkedIndex in linkedTransactions?.[row.id] ?? []" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 py-1">
-              <span class="text-gray-500 dark:text-gray-400">{{linked.created_at_formatted}}</span>
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">{{linked.type_label}}</span>
-              <span class="{{linked.amount >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}}">{{(linked.amount >= 0 ? '+' : '') + (linked.amount_formatted ?? linked.amount)}}</span>
-              <a href="/admin/ecommerce/orders/{{linked.order_number}}" target="_blank" rel="noopener noreferrer" data-if="{{linked.order_number}}" class="inline-flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
+        <div class="ecommerce:p-4 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:border-t ecommerce:border-gray-100 ecommerce:dark:border-gray-700">
+          <div data-if="{{(linkedTransactions?.[row.id] ?? []).length > 0}}" class="ecommerce:space-y-1">
+            <p class="ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-2">$t:sirsoft-ecommerce.admin.mileage_transactions.linked.title</p>
+            <div data-each="linked, linkedIndex in linkedTransactions?.[row.id] ?? []" class="ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:py-1">
+              <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">{{linked.created_at_formatted}}</span>
+              <span class="ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded-full ecommerce:text-xs ecommerce:bg-gray-100 ecommerce:text-gray-600 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300">{{linked.type_label}}</span>
+              <span class="{{linked.amount >= 0 ? 'ecommerce:text-green-700 ecommerce:dark:text-green-400' : 'ecommerce:text-red-600 ecommerce:dark:text-red-400'}}">{{(linked.amount >= 0 ? '+' : '') + (linked.amount_formatted ?? linked.amount)}}</span>
+              <a href="/admin/ecommerce/orders/{{linked.order_number}}" target="_blank" rel="noopener noreferrer" data-if="{{linked.order_number}}" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1 ecommerce:font-medium ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:cursor-pointer ecommerce:hover:underline">
                 {{linked.order_number}}
               </a>
-              <span data-if="{{linked.granted_by_name}}" class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                <icon name="fa-solid fa-user-shield" class="text-gray-500 dark:text-gray-500"/>
+              <span data-if="{{linked.granted_by_name}}" class="ecommerce:inline-flex ecommerce:items-center ecommerce:gap-1 ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">
+                <icon name="fa-solid fa-user-shield" class="ecommerce:text-gray-500 ecommerce:dark:text-gray-500"/>
                 <span>{{linked.granted_by_name}}</span>
               </span>
-              <span data-if="{{!linked.granted_by_name &amp;&amp; !linked.order_number}}" class="text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.system</span>
+              <span data-if="{{!linked.granted_by_name &amp;&amp; !linked.order_number}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.cell.system</span>
             </div>
           </div>
           <!-- 펼친 행의 딸린 거래는 응답이 와야 안다 — 받기 전(값 없음)에는 「연결된 거래가 없습니다」를 띄우지 않고, 받기에 실패하면(값 null) 실패를 알린다 -->
-          <div data-if="{{linkedTransactions?.[row.id] !== undefined &amp;&amp; linkedTransactions?.[row.id] !== null &amp;&amp; (linkedTransactions?.[row.id] ?? []).length === 0}}" class="text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.linked.empty</div>
-          <p data-ref="linked_transactions_load_failed" data-if="{{linkedTransactions?.[row.id] === null}}" role="alert" class="text-sm text-red-600 dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
+          <div data-if="{{linkedTransactions?.[row.id] !== undefined &amp;&amp; linkedTransactions?.[row.id] !== null &amp;&amp; (linkedTransactions?.[row.id] ?? []).length === 0}}" class="ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.mileage_transactions.linked.empty</div>
+          <p data-ref="linked_transactions_load_failed" data-if="{{linkedTransactions?.[row.id] === null}}" role="alert" class="ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400">$t:sirsoft-ecommerce.common.error.list_load_failed</p>
         </div>
       </expand>
       <on type="change" event="onSelectionChange">

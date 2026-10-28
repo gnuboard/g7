@@ -85,11 +85,12 @@ _프론트 엔트리포인트가 없습니다._
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
 로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-기존 관리자 템플릿의 컴포넌트와 CSS 유틸리티를 사용하므로 런타임 에셋 번들이 없습니다. 레이아웃 변경 후 플러그인 업데이트로 반영하며, 관리 배지는 입력줄 아래에서 한 줄을 유지합니다.
+화면 스크립트는 없고 화면 스타일 CSS 하나(`resources/css/main.css` → `dist/css/plugin.css`, 앞글자 `koreaexim`)만 빌드합니다. 레이아웃은 관리자 템플릿 컴포넌트를 쓰되 클래스는 `koreaexim:` 접두 유틸리티와 `koreaexim-*` 의미 클래스만 써서, 템플릿 CSS 에 그 규칙이 있는지와 무관하게 보입니다. 새 클래스를 쓰면 `php artisan plugin:build sirsoft-koreaexim --production` 으로 CSS 를 다시 만들고, 레이아웃만 고쳤다면 플러그인 업데이트로 반영합니다. 관리 배지는 입력줄 아래에서 한 줄을 유지합니다.
 <!-- @intent END -->

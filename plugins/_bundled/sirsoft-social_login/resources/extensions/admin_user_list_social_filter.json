@@ -32,19 +32,19 @@
             "responsive": {
                 "portable": {
                     "props": {
-                        "className": "flex flex-col gap-2 items-start"
+                        "className": "sl:flex sl:flex-col sl:gap-2 sl:items-start"
                     }
                 }
             },
             "props": {
-                "className": "flex flex-col gap-2 md:flex-row md:items-center"
+                "className": "sl:flex sl:flex-col sl:gap-2 sl:md:flex-row sl:md:items-center"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 md:mb-0 shrink-0 md:flex md:items-center"
+                        "className": "sl:block sl:mb-2 sl:w-32 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:md:mb-0 sl:shrink-0 sl:md:flex sl:md:items-center"
                     },
                     "text": "$t:sirsoft-social_login.admin.users.filter_label"
                 },
@@ -52,7 +52,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center flex-wrap gap-2"
+                        "className": "sl:flex sl:items-center sl:flex-wrap sl:gap-2"
                     },
                     "children": [
                         {
@@ -72,7 +72,7 @@
                             ],
                             "props": {
                                 "name": "socialLoginProvider",
-                                "className": "w-48",
+                                "className": "sl:w-48",
                                 "value": "{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-social_login.provider=')) || '').slice('sirsoft-social_login.provider='.length)}}",
                                 "aria-label": "$t:sirsoft-social_login.admin.users.filter_label"
                             },

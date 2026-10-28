@@ -201,7 +201,7 @@ describe('채널 추가 창 — 확정 전 입력 검증', () => {
       key: 'kakao_subscription', label: { ko: '카카오 알림', en: '' }, page_slug: '', enabled: true, is_system: false, _editing: false,
     });
     expect(confirm.disabled).toBe(false);
-    expect(container.querySelectorAll('p.text-error-soft')).toHaveLength(0);
+    expect(container.querySelectorAll('p.marketing-text-error-soft')).toHaveLength(0);
   });
 
   /**
@@ -212,7 +212,7 @@ describe('채널 추가 창 — 확정 전 입력 검증', () => {
     const { container } = await confirmButtonFor({
       key: 'Bad-Key', label: { ko: '문자', en: '' }, page_slug: '', enabled: true, is_system: false, _editing: false,
     });
-    const hints = [...container.querySelectorAll('p.text-error-soft')].map((p) => p.textContent);
+    const hints = [...container.querySelectorAll('p.marketing-text-error-soft')].map((p) => p.textContent);
     expect(hints.join(' ')).toContain('key_invalid');
   });
 });
@@ -233,7 +233,7 @@ describe('채널 추가 창 — 항목명 안내는 입력칸을 떠나거나 �
   }
 
   /** 창 안의 빨간 안내 문구 */
-  const hintsOf = (container: HTMLElement) => [...container.querySelectorAll('p.text-error-soft')].map((p) => p.textContent ?? '');
+  const hintsOf = (container: HTMLElement) => [...container.querySelectorAll('p.marketing-text-error-soft')].map((p) => p.textContent ?? '');
 
   const BLANK = { key: '', label: { ko: '', en: '' }, page_slug: '', enabled: true, is_system: false, _editing: false };
 

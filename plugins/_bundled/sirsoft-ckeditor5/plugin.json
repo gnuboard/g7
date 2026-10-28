@@ -19,6 +19,11 @@
     "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-ckeditor5",
     "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-ckeditor5/blob/main/CHANGELOG.md",
     "assets": {
+        "css": {
+            "entry": "resources/css/main.css",
+            "output": "dist/css/plugin.css",
+            "namespace": "ckeditor"
+        },
         "js": {
             "entry": "resources/js/index.ts",
             "output": "dist/js/plugin.iife.js"

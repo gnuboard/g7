@@ -8,14 +8,14 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "ecommerce-admin-card"
     },
     "children": [
         {
             "type": "basic",
             "name": "H2",
             "props": {
-                "className": "card-title"
+                "className": "ecommerce-card-title"
             },
             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.section_claim_addresses"
         },
@@ -23,7 +23,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "card-description"
+                "className": "ecommerce-card-description"
             },
             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_description"
         },
@@ -34,7 +34,7 @@
             "name": "Div",
             "if": "{{!!route.id && _local.claimAddresses?._loaded !== true}}",
             "props": {
-                "className": "text-sm text-amber-700 dark:text-amber-400 mb-3"
+                "className": "ecommerce:text-sm ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:mb-3"
             },
             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_loading_notice"
         },
@@ -45,7 +45,7 @@
             "name": "Div",
             "if": "{{!route.id && _computed.lacksUpdate}}",
             "props": {
-                "className": "text-sm text-amber-700 dark:text-amber-400 mb-3"
+                "className": "ecommerce:text-sm ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:mb-3"
             },
             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_requires_update"
         },
@@ -54,7 +54,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "alert-info"
+                "className": "ecommerce-alert-info"
             },
             "children": [
                 {
@@ -62,14 +62,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "circle-info",
-                        "className": "text-base text-blue-600 dark:text-blue-400 flex-shrink-0"
+                        "className": "ecommerce:text-base ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:flex-shrink-0"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "ecommerce-tone-info-soft text-xs"
+                        "className": "ecommerce-tone-info-soft ecommerce:text-xs"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_addresses_snapshot_notice"
                 }
@@ -81,7 +81,7 @@
             "name": "Div",
             "if": "{{!!route.id || !_computed.lacksUpdate}}",
             "props": {
-                "className": "grid-2col-responsive"
+                "className": "ecommerce-grid-2col-responsive"
             },
             "children": [
                 {
@@ -89,14 +89,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "ecommerce-row-stack"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "text-sm font-semibold text-gray-900 dark:text-gray-100"
+                                "className": "ecommerce:text-sm ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_exchange"
                         },
@@ -108,7 +108,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "children": [
                                         {
@@ -120,7 +120,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-required"
+                                                "className": "ecommerce-text-required"
                                             },
                                             "text": "*"
                                         }
@@ -144,7 +144,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "{{_local.errors?.['addresses.exchange.recipient_name'] ? 'input input-error w-full' : 'input w-full'}}",
+                                        "className": "{{_local.errors?.['addresses.exchange.recipient_name'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-full' : 'ecommerce-input ecommerce:w-full'}}",
                                         "value": "{{_local.claimAddresses?.addresses?.exchange?.recipient_name ?? ''}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_recipient_name_placeholder",
                                         "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
@@ -155,7 +155,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['addresses.exchange.recipient_name']}}",
                                     "props": {
-                                        "className": "form-error-xs mt-0.5"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-0.5"
                                     },
                                     "text": "{{_local.errors?.['addresses.exchange.recipient_name']?.[0]}}"
                                 }
@@ -169,7 +169,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_phone"
                                 },
@@ -191,7 +191,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "input w-full",
+                                        "className": "ecommerce-input ecommerce:w-full",
                                         "value": "{{_local.claimAddresses?.addresses?.exchange?.phone ?? ''}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_phone_placeholder",
                                         "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
@@ -207,7 +207,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_zipcode"
                                 },
@@ -229,7 +229,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "input w-full",
+                                        "className": "ecommerce-input ecommerce:w-full",
                                         "value": "{{_local.claimAddresses?.addresses?.exchange?.zipcode ?? ''}}",
                                         "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
                                     }
@@ -244,7 +244,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "children": [
                                         {
@@ -256,7 +256,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-required"
+                                                "className": "ecommerce-text-required"
                                             },
                                             "text": "*"
                                         }
@@ -280,7 +280,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "{{_local.errors?.['addresses.exchange.address1'] ? 'input input-error w-full' : 'input w-full'}}",
+                                        "className": "{{_local.errors?.['addresses.exchange.address1'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-full' : 'ecommerce-input ecommerce:w-full'}}",
                                         "value": "{{_local.claimAddresses?.addresses?.exchange?.address1 ?? ''}}",
                                         "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
                                     }
@@ -290,7 +290,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['addresses.exchange.address1']}}",
                                     "props": {
-                                        "className": "form-error-xs mt-0.5"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-0.5"
                                     },
                                     "text": "{{_local.errors?.['addresses.exchange.address1']?.[0]}}"
                                 }
@@ -304,7 +304,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_address2"
                                 },
@@ -326,7 +326,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "input w-full",
+                                        "className": "ecommerce-input ecommerce:w-full",
                                         "value": "{{_local.claimAddresses?.addresses?.exchange?.address2 ?? ''}}",
                                         "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
                                     }
@@ -353,7 +353,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "text-xs text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 self-start underline",
+                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:hover:text-red-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-red-400 ecommerce:self-start ecommerce:underline",
                                 "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
                             },
                             "children": [
@@ -371,14 +371,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "ecommerce-row-stack"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "text-sm font-semibold text-gray-900 dark:text-gray-100"
+                                "className": "ecommerce:text-sm ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-gray-100"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_return"
                         },
@@ -390,7 +390,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "children": [
                                         {
@@ -402,7 +402,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-required"
+                                                "className": "ecommerce-text-required"
                                             },
                                             "text": "*"
                                         }
@@ -426,7 +426,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "{{_local.errors?.['addresses.return.recipient_name'] ? 'input input-error w-full' : 'input w-full'}}",
+                                        "className": "{{_local.errors?.['addresses.return.recipient_name'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-full' : 'ecommerce-input ecommerce:w-full'}}",
                                         "value": "{{_local.claimAddresses?.addresses?.return?.recipient_name ?? ''}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_recipient_name_placeholder",
                                         "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
@@ -437,7 +437,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['addresses.return.recipient_name']}}",
                                     "props": {
-                                        "className": "form-error-xs mt-0.5"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-0.5"
                                     },
                                     "text": "{{_local.errors?.['addresses.return.recipient_name']?.[0]}}"
                                 }
@@ -451,7 +451,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_phone"
                                 },
@@ -473,7 +473,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "input w-full",
+                                        "className": "ecommerce-input ecommerce:w-full",
                                         "value": "{{_local.claimAddresses?.addresses?.return?.phone ?? ''}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_phone_placeholder",
                                         "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
@@ -489,7 +489,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_zipcode"
                                 },
@@ -511,7 +511,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "input w-full",
+                                        "className": "ecommerce-input ecommerce:w-full",
                                         "value": "{{_local.claimAddresses?.addresses?.return?.zipcode ?? ''}}",
                                         "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
                                     }
@@ -526,7 +526,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "children": [
                                         {
@@ -538,7 +538,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-required"
+                                                "className": "ecommerce-text-required"
                                             },
                                             "text": "*"
                                         }
@@ -562,7 +562,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "{{_local.errors?.['addresses.return.address1'] ? 'input input-error w-full' : 'input w-full'}}",
+                                        "className": "{{_local.errors?.['addresses.return.address1'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-full' : 'ecommerce-input ecommerce:w-full'}}",
                                         "value": "{{_local.claimAddresses?.addresses?.return?.address1 ?? ''}}",
                                         "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
                                     }
@@ -572,7 +572,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['addresses.return.address1']}}",
                                     "props": {
-                                        "className": "form-error-xs mt-0.5"
+                                        "className": "ecommerce-form-error-xs ecommerce:mt-0.5"
                                     },
                                     "text": "{{_local.errors?.['addresses.return.address1']?.[0]}}"
                                 }
@@ -586,7 +586,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.shipping_policy.form.claim_address_address2"
                                 },
@@ -608,7 +608,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "input w-full",
+                                        "className": "ecommerce-input ecommerce:w-full",
                                         "value": "{{_local.claimAddresses?.addresses?.return?.address2 ?? ''}}",
                                         "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
                                     }
@@ -635,7 +635,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "text-xs text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 self-start underline",
+                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:hover:text-red-600 ecommerce:dark:text-gray-400 ecommerce:dark:hover:text-red-400 ecommerce:self-start ecommerce:underline",
                                 "disabled": "{{_computed.isReadOnly || (!!route.id && _local.claimAddresses?._loaded !== true)}}"
                             },
                             "children": [

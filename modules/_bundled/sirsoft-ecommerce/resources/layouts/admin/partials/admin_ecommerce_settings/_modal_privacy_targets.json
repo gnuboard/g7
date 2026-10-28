@@ -11,7 +11,7 @@
     "props": {
         "title": "{{_global.privacyTargets?.title ?? ''}}",
         "width": "800px",
-        "className": "max-w-[calc(100vw-2rem)]"
+        "className": "ecommerce:max-w-[calc(100vw-2rem)]"
     },
     "children": [
         {
@@ -19,21 +19,21 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-3"
+                "className": "ecommerce:space-y-3"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-between"
+                        "className": "ecommerce-flex-between"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label"
+                                "className": "ecommerce-text-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.total|count={{_global.privacyTargets?.loadFailed === true ? 0 : (privacyTargets?.data?.pagination?.total ?? 0)}}"
                         }
@@ -45,7 +45,7 @@
                     "name": "Div",
                     "if": "{{_global.privacyTargets?.loadFailed !== true && (privacyTargets?.data?.data ?? []).length > 0}}",
                     "props": {
-                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg"
+                        "className": "ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg"
                     },
                     "children": [
                         {
@@ -132,21 +132,21 @@
                                 }
                             ],
                             "props": {
-                                "className": "max-h-96 overflow-y-auto overflow-x-auto"
+                                "className": "ecommerce:max-h-96 ecommerce:overflow-y-auto ecommerce:overflow-x-auto"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Table",
                                     "props": {
-                                        "className": "table whitespace-nowrap"
+                                        "className": "ecommerce:table ecommerce-table ecommerce:whitespace-nowrap"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Thead",
                                             "props": {
-                                                "className": "sticky top-0 z-10 bg-white dark:bg-gray-800"
+                                                "className": "ecommerce:sticky ecommerce:top-0 ecommerce:z-10 ecommerce:bg-white ecommerce:dark:bg-gray-800"
                                             },
                                             "children": [
                                                 {
@@ -175,7 +175,7 @@
                                                             "name": "Th",
                                                             "if": "{{privacyTargets?.data?.columns?.date}}",
                                                             "props": {
-                                                                "className": "w-28"
+                                                                "className": "ecommerce:w-28"
                                                             },
                                                             "text": "{{privacyTargets?.data?.columns?.date ?? ''}}"
                                                         }
@@ -206,7 +206,7 @@
                                                                     "props": {
                                                                         "href": "{{target.url}}",
                                                                         "target": "_blank",
-                                                                        "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                                        "className": "ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline"
                                                                     },
                                                                     "text": "{{target.title}}"
                                                                 },
@@ -235,7 +235,7 @@
                                                             "name": "Td",
                                                             "if": "{{privacyTargets?.data?.columns?.date}}",
                                                             "props": {
-                                                                "className": "tabular-nums"
+                                                                "className": "ecommerce:tabular-nums"
                                                             },
                                                             "text": "{{target.date ?? ''}}"
                                                         }
@@ -254,7 +254,7 @@
                                         "size": "sm",
                                         "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.loading",
                                         "color": "text-blue-600 dark:text-blue-400",
-                                        "className": "py-3"
+                                        "className": "ecommerce:py-3"
                                     }
                                 }
                             ]
@@ -269,7 +269,7 @@
                     "if": "{{_global.privacyTargets?.loadFailed === true}}",
                     "props": {
                         "role": "alert",
-                        "className": "py-6 text-center text-sm text-red-600 dark:text-red-400"
+                        "className": "ecommerce:py-6 ecommerce:text-center ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400"
                     },
                     "text": "$t:sirsoft-ecommerce.common.error.list_load_failed"
                 },
@@ -280,7 +280,7 @@
                     "name": "Div",
                     "if": "{{privacyTargets !== undefined && privacyTargets !== null && _global.privacyTargets?.loadFailed !== true && (privacyTargets?.data?.data ?? []).length === 0}}",
                     "props": {
-                        "className": "flex flex-col items-center gap-3 text-center text-gray-500 dark:text-gray-400 py-6"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:items-center ecommerce:gap-3 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:py-6"
                     },
                     "children": [
                         {
@@ -288,14 +288,14 @@
                             "name": "Icon",
                             "props": {
                                 "name": "inbox",
-                                "className": "text-4xl"
+                                "className": "ecommerce:text-4xl"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm"
+                                "className": "ecommerce:text-sm"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.empty"
                         }
@@ -308,7 +308,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex justify-end mt-6"
+                "className": "ecommerce:flex ecommerce:justify-end ecommerce:mt-6"
             },
             "children": [
                 {
@@ -322,7 +322,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-secondary"
+                        "className": "ecommerce-btn ecommerce-btn-secondary"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.settings.privacy_retention.targets.close"
                 }

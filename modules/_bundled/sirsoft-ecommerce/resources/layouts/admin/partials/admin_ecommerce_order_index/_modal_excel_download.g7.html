@@ -6,35 +6,35 @@
 <partial description="Order Excel Download Modal">
   <modal data-type="composite" data-ref="modal_excel_download" title="$t:sirsoft-ecommerce.admin.order.modal.excel_download.title" size="sm">
     <footer>
-      <button type="button" class="btn btn-outline">
+      <button type="button" class="ecommerce-btn ecommerce-btn-outline">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.admin.order.modal.excel_download.cancel
       </button>
-      <button type="button" class="btn btn-primary">
+      <button type="button" class="ecommerce-btn ecommerce-btn-primary">
         <on type="click">
           <close-modal/>
         </on>
-        <icon name="file-arrow-down" class="text-base"/>
+        <icon name="file-arrow-down" class="ecommerce:text-base"/>
         <span>$t:sirsoft-ecommerce.admin.order.modal.excel_download.download</span>
       </button>
     </footer>
-    <p class="text-secondary text-sm mb-6">$t:sirsoft-ecommerce.admin.order.modal.excel_download.description</p>
+    <p class="ecommerce-text-secondary ecommerce:text-sm ecommerce:mb-6">$t:sirsoft-ecommerce.admin.order.modal.excel_download.description</p>
     <div>
       <div>
-        <label class="flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
-          <input type="radio" name="downloadType" value="search" :checked="true" class="radio mt-0.5"/>
+        <label class="ecommerce-flex-start ecommerce:gap-3 ecommerce:p-4 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+          <input type="radio" name="downloadType" value="search" :checked="true" class="ecommerce-radio ecommerce:mt-0.5"/>
           <div>
-            <span class="font-medium text-primary block">$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_search</span>
-            <span class="text-tertiary text-sm">$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_search_desc|count=12</span>
+            <span class="ecommerce:font-medium ecommerce-text-primary ecommerce:block">$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_search</span>
+            <span class="ecommerce-text-tertiary ecommerce:text-sm">$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_search_desc|count=12</span>
           </div>
         </label>
-        <label class="flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
-          <input type="radio" name="downloadType" value="selected" class="radio mt-0.5"/>
+        <label class="ecommerce-flex-start ecommerce:gap-3 ecommerce:p-4 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
+          <input type="radio" name="downloadType" value="selected" class="ecommerce-radio ecommerce:mt-0.5"/>
           <div>
-            <span class="font-medium text-primary block">$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_selected</span>
-            <span class="text-tertiary text-sm">$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_selected_desc|count=10</span>
+            <span class="ecommerce:font-medium ecommerce-text-primary ecommerce:block">$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_selected</span>
+            <span class="ecommerce-text-tertiary ecommerce:text-sm">$t:sirsoft-ecommerce.admin.order.modal.excel_download.option_selected_desc|count=10</span>
           </div>
         </label>
       </div>

@@ -70,13 +70,13 @@
     </set-state>
   </init>
   <slot name="content">
-    <div data-ref="post_form_wrapper" data-key="form" data-track-changes class="admin-page-content-responsive-fluid">
+    <div data-ref="post_form_wrapper" data-key="form" data-track-changes class="board-admin-page-content-responsive-fluid">
       <blur-until-loaded>
         <item>form_data</item>
         <item>form_meta</item>
       </blur-until-loaded>
       <page-header data-type="composite" data-ref="page_header" title="{{form_meta?.data?.board?.name}} {{route?.id ? '$t:sirsoft-board.admin.posts.form.edit_title' : (query?.parent_id ? '$t:sirsoft-board.admin.posts.reply.title' : '$t:sirsoft-board.admin.posts.form.create_title')}}" description="{{form_meta?.data?.board?.name}}$t:sirsoft-board.admin.posts.page_description_with_board">
-        <a href="{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}" :mergeQuery="true" data-ref="header_cancel_button" class="button btn btn-secondary">
+        <a href="{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}" :mergeQuery="true" data-ref="header_cancel_button" class="board-button board-btn board-btn-secondary">
           <on type="click">
             <!-- 취소. 수정 중이면 그 글로, 새 글이면 게시판 글 목록으로 돌아가며 보던 목록 상태를 이고 간다 -->
             <navigate :bypassLeaveGuard="true" :mergeQuery="true">
@@ -85,7 +85,7 @@
           </on>
           <span>$t:sirsoft-board.common.cancel</span>
         </a>
-        <button type="button" data-ref="header_save_button" disabled="{{_computed.isReadOnly || _local.isSaving || (!!route?.id &amp;&amp; !_local.hasChanges)}}" class="flex-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        <button type="button" data-ref="header_save_button" disabled="{{_computed.isReadOnly || _local.isSaving || (!!route?.id &amp;&amp; !_local.hasChanges)}}" class="board-flex-center board:gap-2 board:px-4 board:py-2 board:bg-blue-600 board:text-white board:rounded-lg board:hover:bg-blue-700 board:dark:bg-blue-600 board:dark:hover:bg-blue-700 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed">
           <on type="click">
             <!-- 저장. 등록과 수정은 글 번호 유무로 갈리며, 성공하면 목록으로 나가므로 폼을 되받지 않는다 -->
             <sequence>
@@ -109,37 +109,37 @@
           <span>{{_local.isSaving ? '$t:sirsoft-board.common.saving' : '$t:sirsoft-board.common.save'}}</span>
         </button>
       </page-header>
-      <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
-        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-xs board-tone-warning">$t:sirsoft-board.admin.posts.form.read_only_message</span>
+      <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="board-alert-warning">
+        <icon name="lock" class="board:text-xl board:text-amber-600 board:dark:text-amber-400 board:flex-shrink-0"/>
+        <span class="board:text-xs board-tone-warning">$t:sirsoft-board.admin.posts.form.read_only_message</span>
       </div>
-      <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger items-start mb-6">
-        <div class="flex items-start gap-3">
-          <icon name="triangle-exclamation" class="text-xl leading-5 text-red-600 dark:text-red-400 flex-shrink-0"/>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="board-alert-danger board:items-start board:mb-6">
+        <div class="board:flex board:items-start board:gap-3">
+          <icon name="triangle-exclamation" class="board:text-xl board:leading-5 board:text-red-600 board:dark:text-red-400 board:flex-shrink-0"/>
           <div>
-            <h3 class="text-error-strong">$t:sirsoft-board.admin.form.validation_error</h3>
-            <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
-            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-              <li class="text-error-soft">{{message}}</li>
+            <h3 class="board-text-error-strong">$t:sirsoft-board.admin.form.validation_error</h3>
+            <p data-if="{{typeof _local.errors === 'string'}}" class="board-text-error-soft board:mt-2">{{_local.errors}}</p>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="board:mt-2 board:list-disc board:list-inside board:space-y-1">
+              <li class="board-text-error-soft">{{message}}</li>
             </ul>
           </div>
         </div>
       </div>
       <form data-ref="post_form" id="post_form">
-        <div data-ref="form_content" class="row-stack">
+        <div data-ref="form_content" class="board-row-stack">
           <include src="partials/admin_board_post_form/_parent_post.g7.html"/>
           <include src="partials/admin_board_post_form/_form_fields.g7.html"/>
           <include src="partials/admin_board_post_form/_attachments.g7.html"/>
         </div>
       </form>
-      <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
-        <div data-if="{{_local.hasChanges}}" class="flex-center gap-1.5 text-sm text-amber-700 dark:text-amber-400">
-          <icon name="circle-dot" class="text-xs"/>
+      <div data-ref="footer_buttons" class="board-sticky-footer-buttons-between">
+        <div data-if="{{_local.hasChanges}}" class="board-flex-center board:gap-1.5 board:text-sm board:text-amber-700 board:dark:text-amber-400">
+          <icon name="circle-dot" class="board:text-xs"/>
           <span>$t:sirsoft-board.admin.settings.unsaved_changes</span>
         </div>
         <div data-if="{{!_local.hasChanges}}" class=""/>
-        <div class="flex-center gap-3">
-          <a href="{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}" :mergeQuery="true" data-ref="footer_cancel_button" class="button btn btn-secondary">
+        <div class="board-flex-center board:gap-3">
+          <a href="{{route?.id ? '/admin/board/' + route.slug + '/post/' + route.id : '/admin/board/' + route.slug}}" :mergeQuery="true" data-ref="footer_cancel_button" class="board-button board-btn board-btn-secondary">
             <on type="click">
               <!-- 취소(화면 아래 버튼). 위쪽 취소와 같은 자리로 돌아간다 -->
               <navigate :bypassLeaveGuard="true" :mergeQuery="true">
@@ -148,7 +148,7 @@
             </on>
             <span>$t:sirsoft-board.common.cancel</span>
           </a>
-          <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || _local.isSaving || (!!route?.id &amp;&amp; !_local.hasChanges)}}" class="btn btn-primary flex-center gap-1.5">
+          <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || _local.isSaving || (!!route?.id &amp;&amp; !_local.hasChanges)}}" class="board-btn board-btn-primary board-flex-center board:gap-1.5">
             <on type="click">
               <!-- 저장(화면 아래 버튼). 위쪽 저장과 같은 처리이며 긴 폼에서 위로 올라가지 않아도 되게 둘 다 둔다 -->
               <sequence>

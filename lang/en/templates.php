@@ -62,6 +62,14 @@ return [
         'template_init_error' => 'An error occurred while initializing the template engine',
         'contact_admin_for_template' => 'Please contact your system administrator to activate a template.',
 
+        // template.json extension CSS contract validation messages
+        'color_scheme_invalid_strategy' => 'features.color_scheme.strategy must be one of ancestor-class, media-query, none.',
+        'color_scheme_selector_required' => 'The ancestor-class strategy of features.color_scheme requires a selector.',
+        'extension_css_overrides_not_list' => 'extension_css_overrides must be an array.',
+        'extension_css_override_invalid' => 'Item :index of extension_css_overrides needs a target and a path under dist/.',
+        'extension_css_override_invalid_version' => 'The targetVersion of the :target item in extension_css_overrides cannot be parsed.',
+        'extension_css_override_duplicate' => ':target is declared twice in extension_css_overrides.',
+
         // Error layout validation messages
         'missing_error_config' => 'Template is missing error_config section. Error page layout configuration is required.',
         'missing_error_layout' => 'Error layout for :code is not defined.',

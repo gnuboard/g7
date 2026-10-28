@@ -8,15 +8,15 @@
   <modal data-type="composite" data-ref="set_default_modal" title="$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.title" size="medium">
     <div>
       <div>
-        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.message</p>
-        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-          <span class="text-primary font-medium">{{_global.targetDefaultPolicy?.name_localized}}</span>
+        <p class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.message</p>
+        <div class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/50 ecommerce:rounded-lg ecommerce:p-4">
+          <span class="ecommerce-text-primary ecommerce:font-medium">{{_global.targetDefaultPolicy?.name_localized}}</span>
         </div>
       </div>
     </div>
-    <div class="modal-footer-buttons">
+    <div class="ecommerce-modal-footer-buttons">
       <!-- 기본 정책 지정. 성공하면 목록을 다시 부르므로 다른 정책의 기본 표시가 풀린 것도 함께 반영된다 — 그래서 화면에서 직접 되돌리는 처리가 없다 -->
-      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}">
+      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}">
         <on type="click">
           <remount componentId="is_default_toggle_{{_global.targetDefaultPolicy?.id}}"/>
           <set-state target="global" :targetDefaultPolicy="null"/>
@@ -24,7 +24,7 @@
         </on>
         $t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.cancel
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}">
+      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.isSettingDefault}}">
         <on type="click">
           <!-- 기본 정책 지정 실행. 성공하면 목록을 다시 부르므로 다른 정책의 기본 표시가 풀린 것도 함께 반영된다(그래서 여기에는 취소 쪽 같은 되돌리기가 없다). -->
           <sequence>
@@ -43,7 +43,7 @@
             </api-call>
           </sequence>
         </on>
-        <icon data-if="{{_global.isSettingDefault}}" name="spinner" class="spinner-sm"/>
+        <icon data-if="{{_global.isSettingDefault}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>$t:sirsoft-ecommerce.admin.shipping_policy.modal.set_default.confirm</span>
       </button>
     </div>

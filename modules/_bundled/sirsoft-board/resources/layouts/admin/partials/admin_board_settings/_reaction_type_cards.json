@@ -18,21 +18,21 @@
             },
             "props": {
                 "data-testid": "reaction-type-row-m-{{row.code}}",
-                "className": "excel-card mb-3"
+                "className": "board-excel-card board:mb-3"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "excel-card-header"
+                        "className": "board-excel-card-header"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 min-w-0"
+                                "className": "board-flex-center board:gap-2 board:min-w-0"
                             },
                             "children": [
                                 {
@@ -43,7 +43,7 @@
                                         "data-testid": "reaction-type-icon-m-{{row.code}}",
                                         "src": "{{row.icon_url}}",
                                         "alt": "",
-                                        "className": "w-5 h-5 object-contain shrink-0"
+                                        "className": "board:w-5 board:h-5 board:object-contain board:shrink-0"
                                     }
                                 },
                                 {
@@ -59,14 +59,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "min-w-0"
+                                        "className": "board:min-w-0"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "excel-card-title font-mono"
+                                                "className": "board-excel-card-title board:font-mono"
                                             },
                                             "text": "{{row.code}}"
                                         }
@@ -78,7 +78,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 shrink-0"
+                                "className": "board-flex-center board:gap-2 board:shrink-0"
                             },
                             "children": [
                                 {
@@ -100,7 +100,7 @@
                                     "props": {
                                         "data-testid": "reaction-type-up-m-{{row.code}}",
                                         "type": "button",
-                                        "className": "p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded transition-colors board-move-button disabled:cursor-not-allowed",
+                                        "className": "board:p-1 board:text-gray-500 board:hover:text-gray-700 board:dark:hover:text-gray-200 board:rounded board:transition-colors board-move-button board:disabled:cursor-not-allowed",
                                         "title": "$t:sirsoft-board.admin.settings.reaction_types.actions.move_up",
                                         "disabled": "{{_computed.isReadOnly || row._idx === 0}}"
                                     },
@@ -110,7 +110,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "fa-solid fa-chevron-up",
-                                                "className": "text-xs"
+                                                "className": "board:text-xs"
                                             }
                                         }
                                     ]
@@ -133,7 +133,7 @@
                                     "props": {
                                         "data-testid": "reaction-type-down-m-{{row.code}}",
                                         "type": "button",
-                                        "className": "p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 rounded transition-colors board-move-button disabled:cursor-not-allowed",
+                                        "className": "board:p-1 board:text-gray-500 board:hover:text-gray-700 board:dark:hover:text-gray-200 board:rounded board:transition-colors board-move-button board:disabled:cursor-not-allowed",
                                         "title": "$t:sirsoft-board.admin.settings.reaction_types.actions.move_down",
                                         "disabled": "{{_computed.isReadOnly || row._idx === (_local.form?.basic_defaults?.reaction_types ?? []).length - 1}}"
                                     },
@@ -143,7 +143,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "fa-solid fa-chevron-down",
-                                                "className": "text-xs"
+                                                "className": "board:text-xs"
                                             }
                                         }
                                     ]
@@ -187,21 +187,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "excel-card-body"
+                        "className": "board-excel-card-body"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "excel-card-row"
+                                "className": "board-excel-card-row"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "excel-card-label"
+                                        "className": "board-excel-card-label"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.name"
                                 },
@@ -209,7 +209,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "excel-card-value flex-1"
+                                        "className": "board-excel-card-value board:flex-1"
                                     },
                                     "children": [
                                         {
@@ -244,14 +244,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "excel-card-row"
+                                "className": "board-excel-card-row"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "excel-card-label"
+                                        "className": "board-excel-card-label"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.icon"
                                 },
@@ -260,7 +260,7 @@
                                     "name": "Div",
                                     "props": {
                                         "data-testid": "reaction-type-uploader-m-{{row.code}}",
-                                        "className": "excel-card-value flex-1"
+                                        "className": "board-excel-card-value board:flex-1"
                                     },
                                     "children": [
                                         {
@@ -336,14 +336,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "excel-card-row"
+                                "className": "board-excel-card-row"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "excel-card-label"
+                                        "className": "board-excel-card-label"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.reaction_count"
                                 },
@@ -351,7 +351,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "excel-card-value"
+                                        "className": "board-excel-card-value"
                                     },
                                     "text": "{{row.reaction_count ?? 0}}"
                                 }
@@ -363,7 +363,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "excel-card-footer"
+                        "className": "board-excel-card-footer"
                     },
                     "children": [
                         {
@@ -376,7 +376,7 @@
                             "name": "Div",
                             "props": {
                                 "data-testid": "reaction-type-delete-wrap-m-{{row.code}}",
-                                "className": "inline-block",
+                                "className": "board:inline-block",
                                 "title": "{{(row.reaction_count ?? 0) > 0 ? (row.reaction_count ?? 0) + '$t:sirsoft-board.admin.settings.reaction_types.delete_blocked_suffix|count=' + (row.reaction_count ?? 0) : ''}}"
                             },
                             "children": [
@@ -401,7 +401,7 @@
                                         "aria-label": "$t:common.delete",
                                         "data-testid": "reaction-type-delete-m-{{row.code}}",
                                         "type": "button",
-                                        "className": "p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "board:p-1.5 board:text-gray-500 board:hover:text-red-600 board:dark:text-gray-500 board:dark:hover:text-red-400 board:hover:bg-red-50 board:dark:hover:bg-red-900/20 board:rounded board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                         "disabled": "{{_computed.isReadOnly || (row.reaction_count ?? 0) > 0}}"
                                     },
                                     "children": [
@@ -410,7 +410,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "fa-solid fa-trash",
-                                                "className": "text-sm"
+                                                "className": "board:text-sm"
                                             }
                                         }
                                     ]
@@ -429,21 +429,21 @@
             "if": "{{_local.isAddingReactionType}}",
             "props": {
                 "data-testid": "reaction-type-draft-card",
-                "className": "excel-card border-2 border-dashed border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                "className": "board-excel-card board:border-2 board:border-dashed board:border-blue-300 board:dark:border-blue-600 board:bg-blue-50 board:dark:bg-blue-900/20"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "excel-card-header"
+                        "className": "board-excel-card-header"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 min-w-0"
+                                "className": "board-flex-center board:gap-2 board:min-w-0"
                             },
                             "children": [
                                 {
@@ -452,14 +452,14 @@
                                     "props": {
                                         "name": "fa-solid fa-plus-circle",
                                         "size": "lg",
-                                        "className": "text-blue-500 dark:text-blue-400"
+                                        "className": "board:text-blue-500 board:dark:text-blue-400"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "excel-card-title"
+                                        "className": "board-excel-card-title"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.reaction_types.add_button"
                                 }
@@ -469,7 +469,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 shrink-0"
+                                "className": "board-flex-center board:gap-2 board:shrink-0"
                             },
                             "children": [
                                 {
@@ -510,21 +510,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "excel-card-body"
+                        "className": "board-excel-card-body"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "excel-card-row"
+                                "className": "board-excel-card-row"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "excel-card-label"
+                                        "className": "board-excel-card-label"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.code"
                                 },
@@ -532,7 +532,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "excel-card-value"
+                                        "className": "board-excel-card-value"
                                     },
                                     "children": [
                                         {
@@ -554,7 +554,7 @@
                                                 "type": "text",
                                                 "aria-label": "$t:sirsoft-board.admin.settings.reaction_types.columns.code",
                                                 "value": "{{_local.reactionTypeForm?.code ?? ''}}",
-                                                "className": "{{_local.reactionTypeFormErrors?.code ? 'input input-error font-mono w-full' : 'input font-mono w-full'}}",
+                                                "className": "{{_local.reactionTypeFormErrors?.code ? 'board-input board-input-error board:font-mono board:w-full' : 'board-input board:font-mono board:w-full'}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
@@ -563,7 +563,7 @@
                                             "name": "Span",
                                             "if": "{{_local.reactionTypeFormErrors?.code === 'required'}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "board-form-error"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.reaction_types.validation.code_required"
                                         },
@@ -572,7 +572,7 @@
                                             "name": "Span",
                                             "if": "{{_local.reactionTypeFormErrors?.code === 'duplicate'}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "board-form-error"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.reaction_types.validation.code_duplicate"
                                         },
@@ -581,7 +581,7 @@
                                             "name": "Span",
                                             "if": "{{_local.reactionTypeFormErrors?.code === 'format'}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "board-form-error"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.reaction_types.validation.code_format"
                                         }
@@ -593,14 +593,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "excel-card-row"
+                                "className": "board-excel-card-row"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "excel-card-label"
+                                        "className": "board-excel-card-label"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.name"
                                 },
@@ -608,7 +608,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "excel-card-value"
+                                        "className": "board-excel-card-value"
                                     },
                                     "children": [
                                         {
@@ -642,14 +642,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "excel-card-row"
+                                "className": "board-excel-card-row"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "excel-card-label"
+                                        "className": "board-excel-card-label"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.icon"
                                 },
@@ -657,7 +657,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "excel-card-value"
+                                        "className": "board-excel-card-value"
                                     },
                                     "children": [
                                         {
@@ -666,7 +666,7 @@
                                             "name": "Div",
                                             "props": {
                                                 "data-testid": "reaction-type-uploader-m-new",
-                                                "className": "min-w-0"
+                                                "className": "board:min-w-0"
                                             },
                                             "children": [
                                                 {
@@ -738,7 +738,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "excel-card-footer"
+                        "className": "board-excel-card-footer"
                     },
                     "children": [
                         {
@@ -760,7 +760,7 @@
                             "props": {
                                 "data-testid": "reaction-type-form-cancel-m",
                                 "type": "button",
-                                "className": "px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "board:px-3 board:py-1.5 board-text-body board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                 "disabled": "{{_computed.isReadOnly}}"
                             },
                             "children": [
@@ -812,7 +812,7 @@
                             "props": {
                                 "data-testid": "reaction-type-form-confirm-m",
                                 "type": "button",
-                                "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "board:px-3 board:py-1.5 board:text-sm board:bg-gray-900 board:dark:bg-white board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-100 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                 "disabled": "{{_computed.isReadOnly}}"
                             },
                             "children": [

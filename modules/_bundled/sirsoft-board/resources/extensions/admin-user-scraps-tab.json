@@ -30,7 +30,7 @@
                     "if": "{{!!user?.data?.board_scraps}}",
                     "props": {
                         "id": "ext_board_scraps",
-                        "className": "scroll-mt-32"
+                        "className": "board:scroll-mt-32"
                     },
                     "children": [
                         {
@@ -38,21 +38,21 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "admin-card"
+                                "className": "board-admin-card"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center justify-between mb-4"
+                                        "className": "board:flex board:items-center board:justify-between board:mb-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-2"
+                                                "className": "board:flex board:items-center board:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -60,14 +60,14 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "bookmark",
-                                                        "className": "text-xl text-gray-600 dark:text-gray-400"
+                                                        "className": "board:text-xl board:text-gray-600 board:dark:text-gray-400"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "H3",
                                                     "props": {
-                                                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                                        "className": "board:text-lg board:font-semibold board:text-gray-900 board:dark:text-white"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.scraps.title"
                                                 }
@@ -88,7 +88,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "grid grid-cols-2 gap-4 mb-4"
+                                        "className": "board:grid board:grid-cols-2 board:gap-4 board:mb-4"
                                     },
                                     "children": [
                                         {
@@ -96,14 +96,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                                                "className": "board:p-3 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                                        "className": "board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.scraps.count"
                                                 },
@@ -111,7 +111,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block text-lg font-semibold text-gray-900 dark:text-white"
+                                                        "className": "board:block board:text-lg board:font-semibold board:text-gray-900 board:dark:text-white"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.scraps.count_unit|count={{user?.data?.board_scraps?.count ?? 0}}"
                                                 }
@@ -122,14 +122,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                                                "className": "board:p-3 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block text-xs text-gray-500 dark:text-gray-400 mb-1"
+                                                        "className": "board:block board:text-xs board:text-gray-500 board:dark:text-gray-400 board:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.scraps.latest_scrapped_at"
                                                 },
@@ -137,7 +137,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block text-lg font-semibold text-gray-900 dark:text-white"
+                                                        "className": "board:block board:text-lg board:font-semibold board:text-gray-900 board:dark:text-white"
                                                     },
                                                     "text": "{{user?.data?.board_scraps?.latest_scrapped_at ?? '-'}}"
                                                 }
@@ -151,7 +151,7 @@
                                     "name": "P",
                                     "if": "{{(user?.data?.board_scraps?.count ?? 0) === 0}}",
                                     "props": {
-                                        "className": "flex items-center gap-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm text-gray-500 dark:text-gray-400"
+                                        "className": "board:flex board:items-center board:gap-2 board:p-4 board:bg-gray-50 board:dark:bg-gray-900 board:rounded-lg board:text-sm board:text-gray-500 board:dark:text-gray-400"
                                     },
                                     "children": [
                                         {
@@ -159,7 +159,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "circle-info",
-                                                "className": "text-base flex-shrink-0"
+                                                "className": "board:text-base board:flex-shrink-0"
                                             }
                                         },
                                         {
@@ -190,7 +190,7 @@
                                     "props": {
                                         "href": "/admin/boards/scraps?user_uuid={{user?.data?.uuid ?? ''}}",
                                         "data-testid": "user-scraps-link",
-                                        "className": "inline-flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                        "className": "board:inline-flex board:items-center board:gap-1.5 board:px-3 board:py-2 board:text-sm board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:cursor-pointer"
                                     },
                                     "children": [
                                         {
@@ -198,7 +198,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "list",
-                                                "className": "text-base"
+                                                "className": "board:text-base"
                                             }
                                         },
                                         {

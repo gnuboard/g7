@@ -40,7 +40,7 @@ async function firstOrderDetailUrl(page: Page): Promise<string> {
   await page.goto('/admin/ecommerce/orders');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
-  const orderNumber = page.locator('table tbody tr span.cursor-pointer').first();
+  const orderNumber = page.locator('table tbody tr a[href^="/admin/ecommerce/orders/"]').first();
   await orderNumber.waitFor({ state: 'visible', timeout: 30_000 });
   await orderNumber.click();
 

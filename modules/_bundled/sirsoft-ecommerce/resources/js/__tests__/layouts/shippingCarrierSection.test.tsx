@@ -1734,8 +1734,9 @@ describe('택배사 카드 validation 에러', () => {
             (s: any) => s.props?.value?.includes('$carrier.type')
         );
         expect(typeSelect?.props?.className).toContain('_local.errors');
-        // 관리자 템플릿에 `select-error` 규칙은 없다 — 오류 테두리는 입력칸과 같은 `input-error` (7.1.0 출시 점검)
-        expect(typeSelect?.props?.className).toContain('input-error');
+        // 관리자 Select 단추는 기본 외형의 border-0 이 테두리 두께를 정하므로 오류 표시는 테두리 색(red-500)만 얹는다
+        // (전환 전 input-error 가 실제로 남기던 값 — 확장 CSS 자기 공급 전환, 계산값 동일)
+        expect(typeSelect?.props?.className).toContain('ecommerce:border-red-500');
         expect(typeSelect?.props?.className).not.toContain('select-error');
     });
 

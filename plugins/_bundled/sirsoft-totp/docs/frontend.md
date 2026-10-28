@@ -128,8 +128,13 @@
 `plugin.json` 의 `assets.css` 가 그 경로를 선언합니다. 설정 화면의 경고 문구 색(`totp-tone-warning`,
 다크 모드 짝 포함)을 이 플러그인이 직접 싣습니다 — 관리자 템플릿의 의미 색 클래스(`text-warning-soft`)에
 기대면 템플릿이 그 이름이나 색을 바꿀 때 이 화면의 경고 색이 오류 없이 함께 바뀌기 때문입니다. 글자 크기는
-레이아웃의 `text-xs` 가 정하고 이 클래스는 색만 맡습니다. 새 의미 색이 필요하면 같은 파일에
-`totp-tone-{success|danger|info}` 로 더하고 다시 빌드합니다.
+레이아웃의 `totp:text-xs` 가 정하고 이 클래스는 색만 맡습니다(가장 낮은 칸 `@layer g7-extension`). 새 의미 색이 필요하면
+같은 파일에 `totp-tone-{success|danger|info}` 로 더하고 다시 빌드합니다.
+
+이 CSS 는 플러그인 화면(설정 화면, 회원 상세의 2단계 인증 카드)의 스타일 전부를 싣습니다 — 템플릿 CSS 에 기대지 않습니다.
+배치·색 유틸리티는 `totp:` 접두 Tailwind 빌드(파일 맨 앞 생성 블록), 템플릿에서 가져온 의미 클래스는 `totp-*` 사본
+(생성 파일 `resources/css/g7-extension.generated.css`)이고, 다크 모드는 템플릿의 `.dark` 대신 코어의 중립 표식
+(`data-g7-color-scheme`)을 따릅니다.
 
 `resources/js/` 를 고쳤다면 `php artisan plugin:build --production` 으로 다시 만들고
 (`sourceMappingURL` 잔존 금지) `php artisan plugin:update sirsoft-totp --force` 로 반영합니다.

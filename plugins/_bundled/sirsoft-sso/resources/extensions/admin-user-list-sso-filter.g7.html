@@ -13,14 +13,14 @@
       </on-code>
     </error-handling>
   </data-source>
-  <div data-ref="ext_sso_idp_filter_row" data-if="{{_local.ssoFilterForbidden !== true}}" class="flex flex-col gap-2 md:flex-row md:items-center">
+  <div data-ref="ext_sso_idp_filter_row" data-if="{{_local.ssoFilterForbidden !== true}}" class="sso:flex sso:flex-col sso:gap-2 sso:md:flex-row sso:md:items-center">
     <permissions>
       <permission>sirsoft-sso.accounts.view</permission>
     </permissions>
-    <responsive on="portable" class="flex flex-col gap-2 items-start"/>
-    <span class="block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 md:mb-0 shrink-0 md:flex md:items-center">$t:sirsoft-sso.admin.user_list.filter_label</span>
-    <div class="flex items-center flex-wrap gap-2">
-      <select data-ref="sso_idp_filter" name="ssoIdpFilter" class="w-48" value="{{(_local.userFilterExtraQuery || []).includes('sirsoft-sso.unlinked=1') ? '__unlinked__' : ((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-sso.idp=')) || '').slice('sirsoft-sso.idp='.length)}}" aria-label="$t:sirsoft-sso.admin.user_list.filter_label">
+    <responsive on="portable" class="sso:flex sso:flex-col sso:gap-2 sso:items-start"/>
+    <span class="sso:block sso:mb-2 sso:w-32 sso:text-sm sso:text-gray-600 sso:dark:text-gray-400 sso:md:mb-0 sso:shrink-0 sso:md:flex sso:md:items-center">$t:sirsoft-sso.admin.user_list.filter_label</span>
+    <div class="sso:flex sso:items-center sso:flex-wrap sso:gap-2">
+      <select data-ref="sso_idp_filter" name="ssoIdpFilter" class="sso:w-48" value="{{(_local.userFilterExtraQuery || []).includes('sirsoft-sso.unlinked=1') ? '__unlinked__' : ((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-sso.idp=')) || '').slice('sirsoft-sso.idp='.length)}}" aria-label="$t:sirsoft-sso.admin.user_list.filter_label">
         <option value="">$t:sirsoft-sso.admin.user_list.filter_all</option>
         <option value="__unlinked__">$t:sirsoft-sso.admin.user_list.filter_unlinked</option>
         <option data-each="item in ssoFilterIdps?.data?.idps ?? []" value="{{item.key}}">{{item.label}}</option>

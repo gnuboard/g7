@@ -11,19 +11,19 @@
             "responsive": {
                 "portable": {
                     "props": {
-                        "className": "flex flex-col gap-2 items-start"
+                        "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:items-start"
                     }
                 }
             },
             "props": {
-                "className": "flex flex-col gap-2 md:flex-row md:items-center"
+                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:md:flex-row ecommerce:md:items-center"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 md:mb-0 shrink-0 md:flex md:items-center"
+                        "className": "ecommerce:block ecommerce:mb-2 ecommerce:w-32 ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:md:mb-0 ecommerce:shrink-0 ecommerce:md:flex ecommerce:md:items-center"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.user_filter.mileage"
                 },
@@ -31,7 +31,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex items-center flex-wrap gap-2"
+                        "className": "ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -65,7 +65,7 @@
                                 "type": "number",
                                 "name": "ecommerceMileageMin",
                                 "min": "0",
-                                "className": "input w-32",
+                                "className": "ecommerce-input ecommerce:w-32",
                                 "placeholder": "$t:sirsoft-ecommerce.admin.user_filter.mileage_min",
                                 "value": "{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-ecommerce.mileage_min=')) || '').slice('sirsoft-ecommerce.mileage_min='.length)}}"
                             }
@@ -74,7 +74,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                             },
                             "text": "~"
                         },
@@ -109,7 +109,7 @@
                                 "type": "number",
                                 "name": "ecommerceMileageMax",
                                 "min": "0",
-                                "className": "input w-32",
+                                "className": "ecommerce-input ecommerce:w-32",
                                 "placeholder": "$t:sirsoft-ecommerce.admin.user_filter.mileage_max",
                                 "value": "{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-ecommerce.mileage_max=')) || '').slice('sirsoft-ecommerce.mileage_max='.length)}}"
                             }

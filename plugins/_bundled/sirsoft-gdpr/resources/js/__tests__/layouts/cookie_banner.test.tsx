@@ -257,7 +257,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         it('기본(bottom_bar) 위치는 풀폭 팝업 카드 (bottom-4 left-4 right-4 rounded-lg)', () => {
             // 회귀 가드: 이전엔 화면 하단에 딱 붙는 띠(bottom-0)였지만,
             // 설계 결정으로 화면에서 살짝 떠 있는 풀폭 카드 형태로 변경됨.
-            expect(className).toContain('bottom-4 left-4 right-4 rounded-lg');
+            expect(className).toContain('gdpr:bottom-4 gdpr:left-4 gdpr:right-4 gdpr:rounded-lg');
         });
 
         /** @effects banner_position_variants_render_as_popup_box */

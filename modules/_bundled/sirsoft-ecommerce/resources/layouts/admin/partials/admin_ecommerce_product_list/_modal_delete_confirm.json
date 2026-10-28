@@ -25,7 +25,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-body"
+                                "className": "ecommerce-text-body"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.confirm_question"
                         },
@@ -33,7 +33,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "ecommerce-text-label-subtle"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.related_data_notice"
                         },
@@ -41,7 +41,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "ecommerce-text-label-subtle"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.related_images|count={{_global.deleteProduct?.relatedData?.images ?? 0}}"
                         },
@@ -49,7 +49,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "ecommerce-text-label-subtle"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.related_options|count={{_global.deleteProduct?.relatedData?.options ?? 0}}"
                         },
@@ -57,7 +57,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "ecommerce-text-label-subtle"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product.modal.delete.related_additional_options|count={{_global.deleteProduct?.relatedData?.additionalOptions ?? 0}}"
                         },
@@ -94,7 +94,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "ecommerce-modal-footer-buttons"
             },
             "children": [
                 {
@@ -108,7 +108,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{_global.isProductDeleting}}"
                     },
                     "children": [
@@ -189,7 +189,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{!_global.deleteProduct?.canDelete || _global.isProductDeleting}}"
                     },
                     "children": [
@@ -199,7 +199,7 @@
                             "if": "{{_global.isProductDeleting}}",
                             "props": {
                                 "name": "spinner",
-                                "className": "spinner-sm"
+                                "className": "ecommerce-spinner-sm"
                             }
                         },
                         {

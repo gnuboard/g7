@@ -9,29 +9,29 @@
   <modal data-type="composite" data-ref="delete_confirm_modal" title="$t:sirsoft-ecommerce.admin.brand.delete_modal.title" size="medium">
     <div>
       <div>
-        <p class="text-primary text-base">{{_global.modal_data?.brandName}}{{$t('sirsoft-ecommerce.admin.brand.delete_modal.message_suffix')}}</p>
-        <div data-if="{{(_global.modal_data?.productsCount ?? 0) > 0}}" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4">
-          <div class="flex-start gap-3">
-            <div class="flex-shrink-0 mt-0.5">
-              <icon name="times-circle" class="text-xl text-red-600 dark:text-red-400"/>
+        <p class="ecommerce-text-primary ecommerce:text-base">{{_global.modal_data?.brandName}}{{$t('sirsoft-ecommerce.admin.brand.delete_modal.message_suffix')}}</p>
+        <div data-if="{{(_global.modal_data?.productsCount ?? 0) > 0}}" class="ecommerce:bg-red-50 ecommerce:dark:bg-red-900/20 ecommerce:border ecommerce:border-red-200 ecommerce:dark:border-red-700 ecommerce:rounded-lg ecommerce:p-4">
+          <div class="ecommerce-flex-start ecommerce:gap-3">
+            <div class="ecommerce:flex-shrink-0 ecommerce:mt-0.5">
+              <icon name="times-circle" class="ecommerce:text-xl ecommerce:text-red-600 ecommerce:dark:text-red-400"/>
             </div>
-            <div class="flex-1">
-              <p class="text-sm font-semibold ecommerce-tone-error-soft mb-1">$t:sirsoft-ecommerce.admin.brand.delete_modal.cannot_delete_title</p>
-              <p class="ecommerce-tone-error-soft text-sm">$t:sirsoft-ecommerce.admin.brand.delete_modal.has_products_cannot_delete|count={{_global.modal_data?.productsCount ?? 0}}</p>
+            <div class="ecommerce:flex-1">
+              <p class="ecommerce:text-sm ecommerce:font-semibold ecommerce-tone-error-soft ecommerce:mb-1">$t:sirsoft-ecommerce.admin.brand.delete_modal.cannot_delete_title</p>
+              <p class="ecommerce-tone-error-soft ecommerce:text-sm">$t:sirsoft-ecommerce.admin.brand.delete_modal.has_products_cannot_delete|count={{_global.modal_data?.productsCount ?? 0}}</p>
             </div>
           </div>
         </div>
-        <p data-if="{{(_global.modal_data?.productsCount ?? 0) === 0}}" class="text-sm text-red-600 dark:text-red-400 font-medium">$t:sirsoft-ecommerce.admin.brand.delete_modal.irreversible_warning</p>
+        <p data-if="{{(_global.modal_data?.productsCount ?? 0) === 0}}" class="ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:font-medium">$t:sirsoft-ecommerce.admin.brand.delete_modal.irreversible_warning</p>
       </div>
     </div>
-    <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
+    <div class="ecommerce-modal-footer-buttons">
+      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_local.isDeleting || (_global.modal_data?.productsCount ?? 0) > 0}}">
+      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-700 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_local.isDeleting || (_global.modal_data?.productsCount ?? 0) > 0}}">
         <on type="click">
           <!-- 삭제 실행. `isDeleting` 은 버튼 잠금과 라벨을 함께 쥐고 있어 성공·실패 **양쪽 갈래에서
             모두** 풀어야 한다 — 한쪽만 풀면 실패한 뒤 버튼이 영영 잠긴 채 "처리 중" 으로 남는다.

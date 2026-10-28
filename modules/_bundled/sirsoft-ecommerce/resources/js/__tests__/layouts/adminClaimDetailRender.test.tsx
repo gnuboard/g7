@@ -737,14 +737,14 @@ describe('신청 정보 섹션 — 스텝퍼·상품·완료 카드', () => {
     const cells = [...document.querySelectorAll('[id^="claim_progress_step_"]')];
     expect(cells.map((el) => el.getAttribute('data-step-state'))).toEqual(PROGRESS_STEPS.map((s) => s.state));
 
-    const icons = cells.map((el) => el.querySelector('.rounded-full [data-icon]')?.getAttribute('data-icon'));
+    const icons = cells.map((el) => el.querySelector('.ecommerce\\:rounded-full [data-icon]')?.getAttribute('data-icon'));
     expect(icons).toEqual(PROGRESS_STEPS.map((s) => s.icon));
 
     // 현재 칸(교환회수중)은 primary 팔레트의 '현재' 색을, 지나간 칸은 채움색을 입는다.
-    const current = cells[3].querySelector('.rounded-full') as HTMLElement;
+    const current = cells[3].querySelector('.ecommerce\\:rounded-full') as HTMLElement;
     expect(current.className).toContain('border-indigo-600');
     expect(current.className).toContain('bg-indigo-100');
-    const done = cells[1].querySelector('.rounded-full') as HTMLElement;
+    const done = cells[1].querySelector('.ecommerce\\:rounded-full') as HTMLElement;
     expect(done.className).toContain('bg-blue-600');
 
     expect(document.querySelectorAll('[data-step-chevron="pc"]')).toHaveLength(PROGRESS_STEPS.length - 1);

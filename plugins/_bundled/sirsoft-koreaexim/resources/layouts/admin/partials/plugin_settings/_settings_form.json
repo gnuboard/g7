@@ -7,14 +7,14 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card mb-4"
+        "className": "koreaexim-admin-card koreaexim:mb-4"
     },
     "children": [
         {
             "type": "basic",
             "name": "H3",
             "props": {
-                "className": "card-title"
+                "className": "koreaexim-card-title"
             },
             "text": "$t:sirsoft-koreaexim.settings_tab"
         },
@@ -22,21 +22,21 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "grid-2col-responsive"
+                "className": "koreaexim-grid-2col-responsive"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "form-group"
+                        "className": "koreaexim-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label",
+                                "className": "koreaexim-form-label",
                                 "htmlFor": "koreaexim_auth_key"
                             },
                             "text": "$t:sirsoft-koreaexim.fields.auth_key"
@@ -57,7 +57,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['auth_key']}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "koreaexim-form-error"
                             },
                             "text": "{{_local.errors?.['auth_key']?.[0] ?? ''}}"
                         }
@@ -67,14 +67,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "form-group"
+                        "className": "koreaexim-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label",
+                                "className": "koreaexim-form-label",
                                 "htmlFor": "koreaexim_auto_manage"
                             },
                             "text": "$t:sirsoft-koreaexim.fields.auto_manage"
@@ -93,7 +93,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['auto_manage']}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "koreaexim-form-error"
                             },
                             "text": "{{_local.errors?.['auto_manage']?.[0] ?? ''}}"
                         }
@@ -105,14 +105,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "form-group md:col-span-2"
+                        "className": "koreaexim-form-group koreaexim:md:col-span-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "form-label"
+                                "className": "koreaexim-form-label"
                             },
                             "text": "$t:sirsoft-koreaexim.schedule.title"
                         },
@@ -121,7 +121,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-sm"
+                                "className": "koreaexim:text-sm"
                             },
                             "text": "$t:sirsoft-koreaexim.next_run {{koreaeximStatus?.data?.next_run_at ?? '-'}}"
                         },
@@ -129,7 +129,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "koreaexim-form-hint"
                             },
                             "text": "$t:sirsoft-koreaexim.site_time {{koreaeximStatus?.data?.update_time_site ?? '-'}}"
                         },
@@ -140,7 +140,7 @@
                             "if": "{{koreaeximStatus?.data?.schedule?.is_active === false}}",
                             "props": {
                                 "role": "status",
-                                "className": "alert-warning"
+                                "className": "koreaexim-alert-warning"
                             },
                             "text": "$t:sirsoft-koreaexim.schedule.inactive"
                         },
@@ -151,7 +151,7 @@
                             "if": "{{!!koreaeximStatus?.data && !koreaeximStatus?.data?.schedule}}",
                             "props": {
                                 "role": "status",
-                                "className": "alert-warning"
+                                "className": "koreaexim-alert-warning"
                             },
                             "text": "$t:sirsoft-koreaexim.schedule.missing"
                         },
@@ -159,7 +159,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "koreaexim-form-hint"
                             },
                             "text": "$t:sirsoft-koreaexim.time_hint"
                         },
@@ -168,14 +168,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "alert-info"
+                                "className": "koreaexim-alert-info"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex gap-3"
+                                        "className": "koreaexim:flex koreaexim:gap-3"
                                     },
                                     "children": [
                                         {
@@ -183,7 +183,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "circle-info",
-                                                "className": "text-xl flex-shrink-0 mt-0.5"
+                                                "className": "koreaexim:text-xl koreaexim:leading-none koreaexim:flex-shrink-0 koreaexim:mt-0.5"
                                             }
                                         },
                                         {
@@ -194,7 +194,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-label-subtle"
+                                                        "className": "koreaexim-text-label-subtle"
                                                     },
                                                     "text": "$t:sirsoft-koreaexim.schedule.managed_hint"
                                                 },
@@ -204,7 +204,7 @@
                                                     "name": "A",
                                                     "props": {
                                                         "href": "/admin/schedules?extension_type=plugin&extension_identifier=sirsoft-koreaexim",
-                                                        "className": "text-link"
+                                                        "className": "koreaexim-text-link"
                                                     },
                                                     "text": "$t:sirsoft-koreaexim.schedule.manage_link"
                                                 }
@@ -220,14 +220,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "form-group"
+                        "className": "koreaexim-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label",
+                                "className": "koreaexim-form-label",
                                 "htmlFor": "koreaexim_rate_type"
                             },
                             "text": "$t:sirsoft-koreaexim.fields.rate_type"
@@ -260,7 +260,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['rate_type']}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "koreaexim-form-error"
                             },
                             "text": "{{_local.errors?.['rate_type']?.[0] ?? ''}}"
                         }
@@ -270,14 +270,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "form-group"
+                        "className": "koreaexim-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label",
+                                "className": "koreaexim-form-label",
                                 "htmlFor": "koreaexim_retry_max"
                             },
                             "text": "$t:sirsoft-koreaexim.fields.retry_max"
@@ -299,7 +299,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['retry_max']}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "koreaexim-form-error"
                             },
                             "text": "{{_local.errors?.['retry_max']?.[0] ?? ''}}"
                         }
@@ -309,14 +309,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "form-group"
+                        "className": "koreaexim-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label",
+                                "className": "koreaexim-form-label",
                                 "htmlFor": "koreaexim_rate_decimal_places"
                             },
                             "text": "$t:sirsoft-koreaexim.fields.rate_decimal_places"
@@ -338,7 +338,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['rate_decimal_places']}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "koreaexim-form-error"
                             },
                             "text": "{{_local.errors?.['rate_decimal_places']?.[0] ?? ''}}"
                         }
@@ -348,14 +348,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "form-group"
+                        "className": "koreaexim-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label",
+                                "className": "koreaexim-form-label",
                                 "htmlFor": "koreaexim_lookback_days"
                             },
                             "text": "$t:sirsoft-koreaexim.fields.lookback_days"
@@ -377,7 +377,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['lookback_days']}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "koreaexim-form-error"
                             },
                             "text": "{{_local.errors?.['lookback_days']?.[0] ?? ''}}"
                         }
@@ -387,14 +387,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "form-group"
+                        "className": "koreaexim-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label",
+                                "className": "koreaexim-form-label",
                                 "htmlFor": "koreaexim_history_retention_days"
                             },
                             "text": "$t:sirsoft-koreaexim.fields.history_retention_days"
@@ -416,7 +416,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['history_retention_days']}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "koreaexim-form-error"
                             },
                             "text": "{{_local.errors?.['history_retention_days']?.[0] ?? ''}}"
                         }
@@ -426,14 +426,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "form-group"
+                        "className": "koreaexim-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label",
+                                "className": "koreaexim-form-label",
                                 "htmlFor": "koreaexim_notify_on_failure"
                             },
                             "text": "$t:sirsoft-koreaexim.fields.notify_on_failure"
@@ -452,7 +452,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['notify_on_failure']}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "koreaexim-form-error"
                             },
                             "text": "{{_local.errors?.['notify_on_failure']?.[0] ?? ''}}"
                         },
@@ -460,7 +460,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "koreaexim-form-hint"
                             },
                             "text": "$t:sirsoft-koreaexim.hints.notify_on_failure"
                         }
@@ -470,14 +470,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "form-group"
+                        "className": "koreaexim-form-group"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "koreaexim-form-label"
                             },
                             "text": "$t:sirsoft-koreaexim.fields.run_days"
                         },
@@ -485,14 +485,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex flex-wrap gap-2"
+                                "className": "koreaexim:flex koreaexim:flex-wrap koreaexim:gap-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-flex items-center gap-2"
+                                        "className": "koreaexim:inline-flex koreaexim:items-center koreaexim:gap-2"
                                     },
                                     "children": [
                                         {
@@ -527,7 +527,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-flex items-center gap-2"
+                                        "className": "koreaexim:inline-flex koreaexim:items-center koreaexim:gap-2"
                                     },
                                     "children": [
                                         {
@@ -562,7 +562,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-flex items-center gap-2"
+                                        "className": "koreaexim:inline-flex koreaexim:items-center koreaexim:gap-2"
                                     },
                                     "children": [
                                         {
@@ -597,7 +597,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-flex items-center gap-2"
+                                        "className": "koreaexim:inline-flex koreaexim:items-center koreaexim:gap-2"
                                     },
                                     "children": [
                                         {
@@ -632,7 +632,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-flex items-center gap-2"
+                                        "className": "koreaexim:inline-flex koreaexim:items-center koreaexim:gap-2"
                                     },
                                     "children": [
                                         {
@@ -667,7 +667,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-flex items-center gap-2"
+                                        "className": "koreaexim:inline-flex koreaexim:items-center koreaexim:gap-2"
                                     },
                                     "children": [
                                         {
@@ -702,7 +702,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "inline-flex items-center gap-2"
+                                        "className": "koreaexim:inline-flex koreaexim:items-center koreaexim:gap-2"
                                     },
                                     "children": [
                                         {
@@ -740,7 +740,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.run_days}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "koreaexim-form-error"
                             },
                             "text": "{{_local.errors?.run_days?.[0] ?? ''}}"
                         }

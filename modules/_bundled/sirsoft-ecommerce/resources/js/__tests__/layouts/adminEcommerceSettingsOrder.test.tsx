@@ -224,7 +224,7 @@ describe('주문설정 탭 구조 검증 (_tab_order_settings.json)', () => {
          * @effects card_header_flattened
          */
         it('admin-card 클래스를 가져야 한다', () => {
-            expect(card.props.className).toBe('admin-card');
+            expect(card.props.className).toBe('ecommerce-admin-card');
         });
 
         /**
@@ -946,7 +946,7 @@ describe('계좌번호 테이블 구조 검증 (_bank_accounts_table.json)', () 
          */
         it('Table 컴포넌트를 사용해야 한다', () => {
             expect(table.name).toBe('Table');
-            expect(table.props.className).toBe('table');
+            expect(table.props.className).toBe('ecommerce:table ecommerce-table');
         });
 
         /**
@@ -1108,7 +1108,7 @@ describe('계좌번호 모바일 카드 구조 검증 (_bank_accounts_cards.json
      */
     it('excel-card 클래스를 사용해야 한다', () => {
         const cardContainer = layout.children[1];
-        expect(cardContainer.props.className).toBe('excel-card');
+        expect(cardContainer.props.className).toBe('ecommerce-excel-card');
     });
 });
 

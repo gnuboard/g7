@@ -7,17 +7,17 @@
 <partial description="Coupon - Cancel Issue Confirm Modal (발급취소 확인)">
   <modal data-type="composite" data-ref="modal_cancel_issue_confirm" title="$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.title" width="420px">
     <div>
-      <p class="text-primary text-base">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.message|name={{_global.cancelIssueTarget?.user_name}}</p>
-      <p class="text-sm text-red-600 dark:text-red-400 font-medium mt-2">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.warning</p>
+      <p class="ecommerce-text-primary ecommerce:text-base">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.message|name={{_global.cancelIssueTarget?.user_name}}</p>
+      <p class="ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:font-medium ecommerce:mt-2">$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.warning</p>
     </div>
-    <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.cancelIssueSubmitting}}">
+    <div class="ecommerce-modal-footer-buttons">
+      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.cancelIssueSubmitting}}">
         <on type="click">
           <close-modal/>
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.cancelIssueSubmitting || _global.issueHistoryCoupon?.can_update !== true}}">
+      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-red-600 ecommerce:dark:bg-red-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.cancelIssueSubmitting || _global.issueHistoryCoupon?.can_update !== true}}">
         <on type="click">
           <!-- 발급취소. 되돌릴 수 없는 동작이라 확인 창을 거치고, 성공하면 대상까지 비워 같은 값이 다음 열림에 남지 않게 한다. -->
           <sequence>
@@ -37,7 +37,7 @@
             </api-call>
           </sequence>
         </on>
-        <icon data-if="{{_global.cancelIssueSubmitting}}" name="spinner" class="spinner-sm"/>
+        <icon data-if="{{_global.cancelIssueSubmitting}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>$t:sirsoft-ecommerce.admin.promotion_coupon.modal.cancel_issue.confirm_btn</span>
       </button>
     </div>

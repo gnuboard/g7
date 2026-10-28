@@ -8,14 +8,14 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "table-container"
+        "className": "ecommerce-table-container"
     },
     "children": [
         {
             "type": "basic",
             "name": "Table",
             "props": {
-                "className": "table"
+                "className": "ecommerce:table ecommerce-table"
             },
             "children": [
                 {
@@ -61,7 +61,7 @@
                                     "type": "basic",
                                     "name": "Th",
                                     "props": {
-                                        "className": "w-16 text-center"
+                                        "className": "ecommerce:w-16 ecommerce:text-center"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.delete"
                                 }
@@ -87,7 +87,7 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top"
+                                        "className": "ecommerce:align-top"
                                     },
                                     "children": [
                                         {
@@ -99,7 +99,7 @@
                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: rule._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.mileage_settings.currency.code')}}",
                                                 "value": "{{rule.currency_code ?? ''}}",
                                                 "maxLength": "3",
-                                                "className": "input w-20 uppercase",
+                                                "className": "ecommerce-input ecommerce:w-20 ecommerce:uppercase",
                                                 "disabled": "{{_computed.isReadOnly || rule._idx === 0}}"
                                             }
                                         },
@@ -108,7 +108,7 @@
                                             "name": "Span",
                                             "if": "{{rule._idx === 0}}",
                                             "props": {
-                                                "className": "block text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-1"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.default_label"
                                         },
@@ -117,7 +117,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['mileage.currency_rules.' + rule._idx + '.currency_code']}}",
                                             "props": {
-                                                "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                                                "className": "ecommerce:block ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:text-xs ecommerce:mt-1"
                                             },
                                             "text": "{{_local.errors?.['mileage.currency_rules.' + rule._idx + '.currency_code']?.[0] ?? ''}}"
                                         }
@@ -127,7 +127,7 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top"
+                                        "className": "ecommerce:align-top"
                                     },
                                     "children": [
                                         {
@@ -140,7 +140,7 @@
                                                 "value": "{{rule.point_value ?? 1}}",
                                                 "min": "0.001",
                                                 "step": "0.001",
-                                                "className": "input w-24 text-center",
+                                                "className": "ecommerce-input ecommerce:w-24 ecommerce:text-center",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
@@ -149,7 +149,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['mileage.currency_rules.' + rule._idx + '.point_value']}}",
                                             "props": {
-                                                "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                                                "className": "ecommerce:block ecommerce:text-red-600 ecommerce:dark:text-red-400 ecommerce:text-xs ecommerce:mt-1"
                                             },
                                             "text": "{{_local.errors?.['mileage.currency_rules.' + rule._idx + '.point_value']?.[0] ?? ''}}"
                                         }
@@ -159,14 +159,14 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top"
+                                        "className": "ecommerce:align-top"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-1"
+                                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1"
                                             },
                                             "children": [
                                                 {
@@ -178,7 +178,7 @@
                                                         "aria-label": "$t:common.row_cell|row={{rule.currency_code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.mileage_settings.currency.min_use')}}",
                                                         "value": "{{rule.min_use_amount ?? 0}}",
                                                         "min": "0",
-                                                        "className": "input w-24 text-center",
+                                                        "className": "ecommerce-input ecommerce:w-24 ecommerce:text-center",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -186,7 +186,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.min_use_suffix"
                                                 }
@@ -198,14 +198,14 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top"
+                                        "className": "ecommerce:align-top"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-1"
+                                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1"
                                             },
                                             "children": [
                                                 {
@@ -217,7 +217,7 @@
                                                         "aria-label": "$t:common.row_cell|row={{rule.currency_code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.mileage_settings.currency.use_unit')}}",
                                                         "value": "{{rule.use_unit ?? 1}}",
                                                         "min": "1",
-                                                        "className": "input w-20 text-center",
+                                                        "className": "ecommerce-input ecommerce:w-20 ecommerce:text-center",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -225,7 +225,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.use_unit_suffix"
                                                 }
@@ -237,14 +237,14 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top"
+                                        "className": "ecommerce:align-top"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "space-y-2"
+                                                "className": "ecommerce:space-y-2"
                                             },
                                             "children": [
                                                 {
@@ -264,7 +264,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "flex items-center gap-2 cursor-pointer"
+                                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -297,7 +297,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-600 dark:text-gray-400"
+                                                                "className": "ecommerce:text-xs ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use_percent"
                                                         },
@@ -311,7 +311,7 @@
                                                                 "value": "{{rule.max_use_percent ?? 30}}",
                                                                 "min": "0",
                                                                 "max": "100",
-                                                                "className": "input w-16 text-center",
+                                                                "className": "ecommerce-input ecommerce:w-16 ecommerce:text-center",
                                                                 "disabled": "{{_computed.isReadOnly || rule.max_use_type !== 'percent'}}"
                                                             }
                                                         },
@@ -319,7 +319,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use_percent_suffix"
                                                         }
@@ -342,7 +342,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "flex items-center gap-2 cursor-pointer"
+                                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -375,7 +375,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-600 dark:text-gray-400"
+                                                                "className": "ecommerce:text-xs ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use_fixed"
                                                         },
@@ -388,7 +388,7 @@
                                                                 "aria-label": "$t:common.row_cell|row={{rule.currency_code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.mileage_settings.currency.max_use_fixed')}}",
                                                                 "value": "{{rule.max_use_value ?? 0}}",
                                                                 "min": "0",
-                                                                "className": "input w-24 text-center",
+                                                                "className": "ecommerce-input ecommerce:w-24 ecommerce:text-center",
                                                                 "disabled": "{{_computed.isReadOnly || rule.max_use_type !== 'fixed'}}"
                                                             }
                                                         }
@@ -403,14 +403,14 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top"
+                                        "className": "ecommerce:align-top"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-1"
+                                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1"
                                             },
                                             "children": [
                                                 {
@@ -421,7 +421,7 @@
                                                         "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_unit_of|currency={{rule.currency_code ?? ''}}",
                                                         "value": "{{rule.earn_rounding_unit ?? '1'}}",
                                                         "options": "{{[{ value: '1', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.100') }]}}",
-                                                        "className": "w-24",
+                                                        "className": "ecommerce:w-24",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "data-testid": "{{'mileage-earn-rounding-unit-' + (rule.currency_code ?? rule._idx)}}"
                                                     }
@@ -433,7 +433,7 @@
                                                         "name": "{{'mileage.currency_rules.' + rule._idx + '.earn_rounding_method'}}",
                                                         "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_method_of|currency={{rule.currency_code ?? ''}}",
                                                         "value": "{{rule.earn_rounding_method ?? 'floor'}}",
-                                                        "className": "w-24",
+                                                        "className": "ecommerce:w-24",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "data-testid": "{{'mileage-earn-rounding-method-' + (rule.currency_code ?? rule._idx)}}",
                                                         "options": [
@@ -458,7 +458,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "block text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                                "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-1"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_hint"
                                         }
@@ -468,7 +468,7 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top text-center"
+                                        "className": "ecommerce:align-top ecommerce:text-center"
                                     },
                                     "children": [
                                         {
@@ -489,7 +489,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-30 disabled:cursor-not-allowed",
+                                                "className": "ecommerce:text-red-500 ecommerce:hover:text-red-700 ecommerce:dark:text-red-400 ecommerce:dark:hover:text-red-300 ecommerce:disabled:opacity-30 ecommerce:disabled:cursor-not-allowed",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "aria-label": "$t:common.delete"
                                             },
@@ -514,14 +514,14 @@
                             "name": "Tr",
                             "if": "{{_local.isAddingMileageCurrency === true}}",
                             "props": {
-                                "className": "bg-blue-50 dark:bg-blue-900/20"
+                                "className": "ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top"
+                                        "className": "ecommerce:align-top"
                                     },
                                     "children": [
                                         {
@@ -543,7 +543,7 @@
                                                 "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.code",
                                                 "value": "{{_local.form?.newMileageCurrency?.currency_code ?? ''}}",
                                                 "options": "{{[{ value: '', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.code_placeholder') }].concat((_local.form?.language_currency?.currencies ?? []).filter(lc => !(_local.form?.mileage?.currency_rules ?? []).some(r => (r.currency_code || '').toUpperCase() === (lc.code || '').toUpperCase())).map(lc => ({ value: lc.code, label: lc.code })))}}",
-                                                "className": "{{_local.form?.newMileageCurrency?.hasError ? 'input w-24 border border-red-500 dark:border-red-500 focus:ring-red-500' : 'input w-24'}}",
+                                                "className": "{{_local.form?.newMileageCurrency?.hasError ? 'ecommerce:h-9 ecommerce:w-24 ecommerce:border-red-500 ecommerce:dark:border-red-500' : 'ecommerce:h-9 ecommerce:w-24'}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         }
@@ -553,7 +553,7 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top"
+                                        "className": "ecommerce:align-top"
                                     },
                                     "children": [
                                         {
@@ -566,7 +566,7 @@
                                                 "value": "{{_local.form?.newMileageCurrency?.point_value ?? 1}}",
                                                 "min": "{{_local?.form?._meta?.limits?.point_value_min ?? 0}}",
                                                 "step": "0.001",
-                                                "className": "input w-24 text-center",
+                                                "className": "ecommerce-input ecommerce:w-24 ecommerce:text-center",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         }
@@ -576,14 +576,14 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top"
+                                        "className": "ecommerce:align-top"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-1"
+                                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1"
                                             },
                                             "children": [
                                                 {
@@ -595,7 +595,7 @@
                                                         "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.min_use",
                                                         "value": "{{_local.form?.newMileageCurrency?.min_use_amount ?? 0}}",
                                                         "min": "{{_local?.form?._meta?.limits?.min_use_amount_min ?? 0}}",
-                                                        "className": "input w-24 text-center",
+                                                        "className": "ecommerce-input ecommerce:w-24 ecommerce:text-center",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -603,7 +603,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-600 dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.min_use_suffix"
                                                 }
@@ -615,14 +615,14 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top"
+                                        "className": "ecommerce:align-top"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-1"
+                                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1"
                                             },
                                             "children": [
                                                 {
@@ -634,7 +634,7 @@
                                                         "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.use_unit",
                                                         "value": "{{_local.form?.newMileageCurrency?.use_unit ?? 1}}",
                                                         "min": "{{_local?.form?._meta?.limits?.use_unit_min ?? 1}}",
-                                                        "className": "input w-20 text-center",
+                                                        "className": "ecommerce-input ecommerce:w-20 ecommerce:text-center",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -642,7 +642,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-xs text-gray-600 dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.use_unit_suffix"
                                                 }
@@ -654,14 +654,14 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top"
+                                        "className": "ecommerce:align-top"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "space-y-2"
+                                                "className": "ecommerce:space-y-2"
                                             },
                                             "children": [
                                                 {
@@ -680,7 +680,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "flex items-center gap-2 cursor-pointer"
+                                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -711,7 +711,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-600 dark:text-gray-400"
+                                                                "className": "ecommerce:text-xs ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use_percent"
                                                         },
@@ -724,7 +724,7 @@
                                                                 "value": "{{_local.form?.newMileageCurrency?.max_use_percent ?? 30}}",
                                                                 "min": "{{_local?.form?._meta?.limits?.max_use_percent_min ?? 0}}",
                                                                 "max": "{{_local?.form?._meta?.limits?.max_use_percent_max ?? 100}}",
-                                                                "className": "input w-16 text-center",
+                                                                "className": "ecommerce-input ecommerce:w-16 ecommerce:text-center",
                                                                 "disabled": "{{_computed.isReadOnly || (_local.form?.newMileageCurrency?.max_use_type ?? 'percent') !== 'percent'}}"
                                                             }
                                                         },
@@ -732,7 +732,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-600 dark:text-gray-400"
+                                                                "className": "ecommerce:text-xs ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use_percent_suffix"
                                                         }
@@ -754,7 +754,7 @@
                                                         }
                                                     ],
                                                     "props": {
-                                                        "className": "flex items-center gap-2 cursor-pointer"
+                                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -785,7 +785,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-xs text-gray-600 dark:text-gray-400"
+                                                                "className": "ecommerce:text-xs ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.max_use_fixed"
                                                         },
@@ -797,7 +797,7 @@
                                                                 "name": "newMileageCurrency.max_use_value",
                                                                 "value": "{{_local.form?.newMileageCurrency?.max_use_value ?? 0}}",
                                                                 "min": "{{_local?.form?._meta?.limits?.max_use_value_min ?? 0}}",
-                                                                "className": "input w-24 text-center",
+                                                                "className": "ecommerce-input ecommerce:w-24 ecommerce:text-center",
                                                                 "disabled": "{{_computed.isReadOnly || (_local.form?.newMileageCurrency?.max_use_type ?? 'percent') !== 'fixed'}}"
                                                             }
                                                         }
@@ -811,14 +811,14 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top"
+                                        "className": "ecommerce:align-top"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-1"
+                                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1"
                                             },
                                             "children": [
                                                 {
@@ -829,7 +829,7 @@
                                                         "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_unit_label",
                                                         "value": "{{_local.form?.newMileageCurrency?.earn_rounding_unit ?? '1'}}",
                                                         "options": "{{[{ value: '1', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.1') }, { value: '10', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.10') }, { value: '100', label: $t('sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_units.100') }]}}",
-                                                        "className": "w-24",
+                                                        "className": "ecommerce:w-24",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "data-testid": "mileage-new-earn-rounding-unit"
                                                     }
@@ -841,7 +841,7 @@
                                                         "name": "newMileageCurrency.earn_rounding_method",
                                                         "aria-label": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.earn_rounding_method_label",
                                                         "value": "{{_local.form?.newMileageCurrency?.earn_rounding_method ?? 'floor'}}",
-                                                        "className": "w-24",
+                                                        "className": "ecommerce:w-24",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "data-testid": "mileage-new-earn-rounding-method",
                                                         "options": [
@@ -868,14 +868,14 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "align-top text-center"
+                                        "className": "ecommerce:align-top ecommerce:text-center"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center justify-center gap-1"
+                                                "className": "ecommerce:flex ecommerce:items-center ecommerce:justify-center ecommerce:gap-1"
                                             },
                                             "children": [
                                                 {
@@ -919,7 +919,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-green-700 hover:text-green-700 dark:hover:text-green-600 dark:text-green-400 disabled:opacity-30 disabled:cursor-not-allowed",
+                                                        "className": "ecommerce:text-green-700 ecommerce:hover:text-green-700 ecommerce:dark:hover:text-green-600 ecommerce:dark:text-green-400 ecommerce:disabled:opacity-30 ecommerce:disabled:cursor-not-allowed",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "aria-label": "$t:common.add"
                                                     },
@@ -951,7 +951,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 disabled:opacity-30 disabled:cursor-not-allowed",
+                                                        "className": "ecommerce:text-gray-500 ecommerce:hover:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:dark:hover:text-gray-100 ecommerce:disabled:opacity-30 ecommerce:disabled:cursor-not-allowed",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "aria-label": "$t:common.cancel"
                                                     },
@@ -981,7 +981,7 @@
             "name": "Div",
             "if": "{{settings !== undefined && ((_local.form?.mileage?.currency_rules ?? []).length === 0 && _local.isAddingMileageCurrency !== true)}}",
             "props": {
-                "className": "py-6 text-center text-sm text-gray-500 dark:text-gray-400"
+                "className": "ecommerce:py-6 ecommerce:text-center ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
             },
             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.empty"
         }

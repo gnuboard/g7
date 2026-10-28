@@ -18,14 +18,14 @@
                     "type": "layout",
                     "name": "SectionLayout",
                     "props": {
-                        "className": "admin-card"
+                        "className": "board-admin-card"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "card-title"
+                                "className": "board-card-title"
                             },
                             "text": "$t:sirsoft-board.admin.settings.sections.permissions"
                         },
@@ -33,7 +33,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "card-description"
+                                "className": "board-card-description"
                             },
                             "text": "$t:sirsoft-board.admin.settings.permissions_table.description"
                         },
@@ -41,7 +41,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "alert-info"
+                                "className": "board-alert-info"
                             },
                             "children": [
                                 {
@@ -49,7 +49,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "circle-info",
-                                        "className": "text-blue-500 dark:text-blue-400 flex-shrink-0",
+                                        "className": "board:text-blue-500 board:dark:text-blue-400 board:flex-shrink-0",
                                         "size": "sm"
                                     }
                                 },
@@ -57,7 +57,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs board-tone-info"
+                                        "className": "board:text-xs board-tone-info"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.permissions_table.bulk_apply_notice"
                                 }
@@ -68,14 +68,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "toggle-group mb-6"
+                                "className": "board-toggle-group board:mb-6"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "section-header-row"
+                                        "className": "board-section-header-row"
                                     },
                                     "children": [
                                         {
@@ -94,7 +94,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox flex-shrink-0",
+                                                "className": "board-checkbox board:flex-shrink-0",
                                                 "checked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}",
                                                 "disabled": "{{!_computed.canBulkApply}}"
                                             }
@@ -105,14 +105,14 @@
                                             "props": {
                                                 "name": "shield",
                                                 "size": "sm",
-                                                "className": "text-purple-500 dark:text-purple-400"
+                                                "className": "board:text-purple-500 board:dark:text-purple-400"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-base font-semibold text-gray-800 dark:text-gray-100"
+                                                "className": "board:text-base board:font-semibold board:text-gray-800 board:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.permissions_table.admin_section"
                                         }
@@ -122,7 +122,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "divider-list"
+                                        "className": "board-divider-list"
                                     },
                                     "children": [
                                         {
@@ -133,14 +133,14 @@
                                                 "item_var": "perm"
                                             },
                                             "props": {
-                                                "className": "stack-tight list-row-hover {{(_local.bulkApplyFields ?? []).includes(perm?.[0])? 'bg-purple-50 dark:bg-purple-900/20' : ''}}"
+                                                "className": "board-stack-tight board-list-row-hover {{(_local.bulkApplyFields ?? []).includes(perm?.[0])? 'board:bg-purple-50 board:dark:bg-purple-900/20' : ''}}"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex-start gap-2 cursor-pointer"
+                                                        "className": "board-flex-start board:gap-2 board:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -159,7 +159,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "checkbox",
-                                                                "className": "checkbox-aligned",
+                                                                "className": "board-checkbox-aligned",
                                                                 "checked": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0])}}",
                                                                 "disabled": "{{!_computed.canBulkApply}}"
                                                             }
@@ -168,14 +168,14 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "stack-flush gap-0.5"
+                                                                "className": "board-stack-flush board:gap-0.5"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-body font-medium"
+                                                                        "className": "board-text-body board:font-medium"
                                                                     },
                                                                     "text": "$t:sirsoft-board.board.permissions.{{perm?.[0]}}"
                                                                 },
@@ -183,7 +183,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-hint"
+                                                                        "className": "board-text-hint"
                                                                     },
                                                                     "text": "$t:sirsoft-board.board.permissions.{{perm?.[0]}}_desc"
                                                                 }
@@ -195,7 +195,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "row-content-indent"
+                                                        "className": "board-row-content-indent"
                                                     },
                                                     "children": [
                                                         {
@@ -219,7 +219,7 @@
                                                                 "value": "{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}",
                                                                 "options": "{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}",
                                                                 "placeholder": "$t:sirsoft-board.admin.settings.permissions_table.select_roles",
-                                                                "className": "w-full",
+                                                                "className": "board:w-full",
                                                                 "defaultVariant": "purple",
                                                                 "disabled": "{{_computed.isReadOnly}}"
                                                             }
@@ -237,14 +237,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "toggle-group"
+                                "className": "board-toggle-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "section-header-row"
+                                        "className": "board-section-header-row"
                                     },
                                     "children": [
                                         {
@@ -263,7 +263,7 @@
                                             ],
                                             "props": {
                                                 "type": "checkbox",
-                                                "className": "checkbox flex-shrink-0",
+                                                "className": "board-checkbox board:flex-shrink-0",
                                                 "checked": "{{Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).length > 0 && Object.keys(settings?.data?.basic_defaults?.default_board_permissions ?? {}).filter(k => !k.startsWith('admin.')).every(k => (_local.bulkApplyFields ?? []).includes(k))}}",
                                                 "disabled": "{{!_computed.canBulkApply}}"
                                             }
@@ -274,14 +274,14 @@
                                             "props": {
                                                 "name": "users",
                                                 "size": "sm",
-                                                "className": "text-blue-500 dark:text-blue-400"
+                                                "className": "board:text-blue-500 board:dark:text-blue-400"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-base font-semibold text-gray-800 dark:text-gray-100"
+                                                "className": "board:text-base board:font-semibold board:text-gray-800 board:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.permissions_table.user_section"
                                         }
@@ -291,7 +291,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "divider-list"
+                                        "className": "board-divider-list"
                                     },
                                     "children": [
                                         {
@@ -302,14 +302,14 @@
                                                 "item_var": "perm"
                                             },
                                             "props": {
-                                                "className": "stack-tight list-row-hover {{(_local.bulkApplyFields ?? []).includes(perm?.[0])? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"
+                                                "className": "board-stack-tight board-list-row-hover {{(_local.bulkApplyFields ?? []).includes(perm?.[0])? 'board:bg-blue-50 board:dark:bg-blue-900/20' : ''}}"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex-start gap-2 cursor-pointer"
+                                                        "className": "board-flex-start board:gap-2 board:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -328,7 +328,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "checkbox",
-                                                                "className": "checkbox-aligned",
+                                                                "className": "board-checkbox-aligned",
                                                                 "checked": "{{(_local.bulkApplyFields ?? []).includes(perm?.[0])}}",
                                                                 "disabled": "{{!_computed.canBulkApply}}"
                                                             }
@@ -337,14 +337,14 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "stack-flush gap-0.5"
+                                                                "className": "board-stack-flush board:gap-0.5"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-body font-medium"
+                                                                        "className": "board-text-body board:font-medium"
                                                                     },
                                                                     "text": "$t:sirsoft-board.board.permissions.{{perm?.[0]}}"
                                                                 },
@@ -352,7 +352,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-hint"
+                                                                        "className": "board-text-hint"
                                                                     },
                                                                     "text": "$t:sirsoft-board.board.permissions.{{perm?.[0]}}_desc"
                                                                 }
@@ -364,7 +364,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "row-content-indent"
+                                                        "className": "board-row-content-indent"
                                                     },
                                                     "children": [
                                                         {
@@ -388,7 +388,7 @@
                                                                 "value": "{{(_local.form.basic_defaults.default_board_permissions ?? {})[perm?.[0]] ?? []}}",
                                                                 "options": "{{(roles?.data?.data ?? []).map(r => ({ value: r.identifier, label: r.name ?? r.identifier }))}}",
                                                                 "placeholder": "$t:sirsoft-board.admin.settings.permissions_table.select_roles",
-                                                                "className": "w-full",
+                                                                "className": "board:w-full",
                                                                 "defaultVariant": "blue",
                                                                 "disabled": "{{_computed.isReadOnly}}"
                                                             }

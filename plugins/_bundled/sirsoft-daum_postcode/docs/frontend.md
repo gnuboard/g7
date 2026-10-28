@@ -86,6 +86,7 @@ SDK 가 막힌 환경에서 필드가 잠긴 채 남아 주소를 아예 입력�
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
 | `dist/js/plugin.iife.js` | 빌드 산출물 (커밋 대상) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
@@ -93,7 +94,8 @@ SDK 가 막힌 환경에서 필드가 잠긴 채 남아 주소를 아예 입력�
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-커밋되는 산출물은 `dist/js/plugin.iife.js` 하나이며, 동봉 제3자 자산은 없습니다 — **Daum SDK
+커밋되는 산출물은 `dist/js/plugin.iife.js` 와 화면 스타일 `dist/css/plugin.css`(앞글자 `daumpostcode` — 설정 화면 클래스와,
+주소 검색으로만 채우는 읽기 전용 칸에 핸들러가 다는 `daumpostcode-readonly` — 옅은 회색 바탕·기본 커서, 다크 짝 포함)이며, 동봉 제3자 자산은 없습니다 — **Daum SDK
 는 동봉하지 않고 외부 호스트에서 로드**하기 때문입니다.
 
 그 예외의 근거는 대상이 라이브러리가 아니라 **서비스**라는 점입니다. 자체 호스팅해도 Daum

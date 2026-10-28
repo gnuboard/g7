@@ -195,12 +195,14 @@ partial 파일이므로 한쪽만 고치면 다른 화면은 그대로입니다 
 
 <!-- @intent START -->
 JS 번들 `dist/js/module.iife.js` 는 액션 핸들러만 담은 경량 IIFE 입니다(컴포넌트 없음).
-관리자 화면에만 있는 호버·다크 짝·반투명 배경은 `resources/css/main.css` 에 ``board-`` 접두 클래스로 두고,
-JS 엔트리가 불러와 빌드가 `dist/css/module.css` 로 냅니다(module.json `assets.css`). 관리자 템플릿은 자기
-레이아웃만 훑어 Tailwind 규칙을 만들므로, 이 모듈 레이아웃에만 있는 유틸리티(`dark:bg-gray-700/30` 같은 것)는
-규칙이 생성되지 않아 조용히 빠집니다. 새 레이아웃에 템플릿 CSS 에 없는 유틸리티가 필요하면 여기에 접두 클래스로
-정의합니다 — 이 파일은 템플릿의 `@layer utilities` 밖에 실려 같은 속성의 유틸리티보다 앞서므로 다크·호버 짝을
-함께 둡니다(규약: 코어 문서 `docs/extension/module-assets.md` 「확장 화면의 의미 색은 확장 CSS 가 싣는다」).
+화면 스타일은 이 모듈 자기 CSS 입니다 — `resources/css/main.css` 를 JS 엔트리가 불러와 빌드가 `dist/css/module.css` 로
+냅니다(module.json `assets.css`, 앞글자 `namespace: board`). 템플릿 CSS 라이브러리에 기대지 않습니다.
+배치·색 유틸리티는 `board:` 접두 Tailwind(이 모듈의 작성 도구, preflight 없음)가 레이아웃에 쓰인 것만 만들고,
+템플릿 의미 클래스는 `board-*` 사본(`resources/css/g7-extension.generated.css`, 가장 낮은 칸 `@layer g7-extension`)을
+씁니다. 이 모듈 고유의 호버·다크 짝과 의미 색(`board-tone-*`)은 생성 블록 아래 손 CSS 이고, 다크 모드는 템플릿의
+`.dark` 가 아니라 코어 중립 표식(`data-g7-color-scheme`)을 봅니다. 레이아웃에 새 클래스를 쓰면
+`php artisan module:build sirsoft-board --production` 으로 CSS 를 다시 만듭니다(규약: 코어 문서
+`docs/extension/module-assets.md` 「확장 CSS 자기 공급 규약」).
 
 소스는 `resources/js/` 이고 `--production` 빌드(소스맵을 남기지 않는 배포용)로 굽습니다 — 이 모듈
 디렉토리에서 `npm run build` 를 `G7_BUILD_SOURCEMAP=0` 으로 실행하거나, 설치본 manifest 에 에셋이

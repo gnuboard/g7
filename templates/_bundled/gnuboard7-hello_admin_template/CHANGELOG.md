@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [0.2.4] - 2026-10-24
+
+### Added
+
+- 다크 모드 방식 선언(`features.color_scheme`)을 넣었습니다. 이 템플릿은 다크 모드가 없다고 코어에 알리므로, 확장 화면은 이 템플릿에서 늘 밝은 색으로 그려집니다(코어 7.2.0 이상).
+
 ## [0.2.3] - 2026-10-23
 
 ### Added

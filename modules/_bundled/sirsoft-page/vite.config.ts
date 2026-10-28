@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
 /**
@@ -7,12 +8,18 @@ import path from 'path';
  * 액션 핸들러와 관리자 화면 전용 접두 클래스 CSS(dist/css/module.css)를 담은 경량 IIFE 번들이다(컴포넌트 없음).
  * 코어가 활성 모듈 번들을 페이지에 실으면 엔트리가 즉시 실행되어 핸들러를 ActionDispatcher 에 등록한다.
  *
+ * 화면 스타일은 이 모듈 자기 CSS(resources/css/main.css)다. Tailwind 는 이 모듈의 작성 도구로만 쓰며 `page:` 접두
+ * 유틸리티만 만든다(preflight 없음). 엔트리가 CSS 를 import 하면 아래 assetFileNames 가 module.json
+ * `assets.css.output` 과 같은 dist/css/module.css 로 낸다.
+ *
  * 빌드: php artisan module:build sirsoft-page --production
  */
 export default defineConfig({
     define: {
         'process.env.NODE_ENV': JSON.stringify('production'),
     },
+
+    plugins: [tailwindcss()],
 
     build: {
         lib: {
@@ -39,6 +46,11 @@ export default defineConfig({
 
         minify: 'esbuild',
         target: 'es2020',
+        // CSS 는 lightningcss 로 줄인다 — 기본(esbuild) 압축은 oklch() 색을 근삿값 16진수로 바꿔 템플릿 CSS 와 같은 색이
+        // 계산값에서 달라진다(Tailwind 산출과 같은 도구로 압축).
+        cssMinify: 'lightningcss',
+        // CSS 대상 브라우저는 Tailwind 4 기준(Safari 16.4·Chrome 111·Firefox 128) — 색·중첩을 낮추지 않는다.
+        cssTarget: ['chrome111', 'edge111', 'firefox128', 'safari16.4'],
     },
 
     resolve: {

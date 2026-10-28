@@ -6,21 +6,21 @@
   찾기 때문이다. -->
 <partial description="Common Info Editing In Progress Confirm Modal">
   <modal data-type="composite" data-ref="editing_confirm_modal" title="$t:sirsoft-ecommerce.admin.common_info.modal.editing.title" size="sm">
-    <div class="flex justify-center mb-4">
-      <div class="flex-center w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 justify-center">
-        <icon name="exclamation" size="lg" class="text-yellow-700 dark:text-yellow-400"/>
+    <div class="ecommerce:flex ecommerce:justify-center ecommerce:mb-4">
+      <div class="ecommerce-flex-center ecommerce:w-12 ecommerce:h-12 ecommerce:rounded-full ecommerce:bg-yellow-100 ecommerce:dark:bg-yellow-900/30 ecommerce:justify-center">
+        <icon name="exclamation" size="lg" class="ecommerce:text-yellow-700 ecommerce:dark:text-yellow-400"/>
       </div>
     </div>
-    <p class="text-body mb-2 text-center">$t:sirsoft-ecommerce.admin.common_info.modal.editing.message</p>
-    <p class="text-body text-center">$t:sirsoft-ecommerce.admin.common_info.modal.editing.confirm_message</p>
-    <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 text-body border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+    <p class="ecommerce-text-body ecommerce:mb-2 ecommerce:text-center">$t:sirsoft-ecommerce.admin.common_info.modal.editing.message</p>
+    <p class="ecommerce-text-body ecommerce:text-center">$t:sirsoft-ecommerce.admin.common_info.modal.editing.confirm_message</p>
+    <div class="ecommerce-modal-footer-buttons">
+      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce-text-body ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.admin.common_info.modal.editing.continue
       </button>
-      <button type="button" class="px-4 py-2 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100">
         <on type="click">
           <!-- 입력을 버리고 대기 중이던 항목으로 이동 — 주소를 그 항목으로 갈아끼우고(대기 값을 비우기 전에), 대기 값을 실제 선택으로
             옮기고 폼을 빈 초깃값으로 다시 세운다. 주소를 안 바꾸면 새로고침했을 때 이전 항목이 열린다(7.1.1 출시 전). -->

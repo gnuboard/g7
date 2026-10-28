@@ -253,14 +253,42 @@ const CONFLICTING_CLASS_GROUPS: Record<string, string[]> = {
 };
 
 /**
+ * 확장 CSS 접두 빌드 앞글자를 떼어 냅니다.
+ *
+ * 확장은 자기 CSS 를 앞글자 붙은 클래스로 공급한다(접두 빌드 `{letters}:utility` — 예 `ecommerce:px-2`,
+ * `ecommerce:md:hidden`). 클래스 문자열을 Tailwind 이름으로 해석하는 코어·템플릿 코드는 이 앞글자를 먼저
+ * 떼고 나머지를 해석해야, 확장이 준 클래스를 템플릿 클래스와 같은 뜻으로 읽는다. 앞글자 목록은 서버가
+ * 활성 확장의 `assets.css.namespace` 로 계산해 `G7Config.extensionClassPrefixes` 로 내려 준다 — 목록에 없는
+ * 첫 구간(`hover:`·`md:` 같은 변형)은 앞글자로 보지 않는다.
+ *
+ * @param token - 클래스 토큰 1개
+ * @returns `{ prefix, rest }` — prefix 는 `ecommerce:` 형태(없으면 빈 문자열), rest 는 나머지
+ * @since engine-v1.86.0
+ */
+export function splitExtensionClassPrefix(token: string): { prefix: string; rest: string } {
+  const colon = token.indexOf(':');
+  if (colon <= 0) {
+    return { prefix: '', rest: token };
+  }
+
+  const head = token.slice(0, colon);
+  const prefixes = typeof window !== 'undefined' ? (window as any).G7Config?.extensionClassPrefixes : undefined;
+  if (Array.isArray(prefixes) && prefixes.includes(head)) {
+    return { prefix: `${head}:`, rest: token.slice(colon + 1) };
+  }
+
+  return { prefix: '', rest: token };
+}
+
+/**
  * 클래스가 속한 그룹을 찾습니다.
  *
  * @param className - 검사할 클래스명
  * @returns 그룹명 또는 null
  */
 function findClassGroup(className: string): string | null {
-  // dark: 등의 variant prefix 제거
-  const baseClass = className.replace(/^(dark:|hover:|focus:|active:|disabled:|group-hover:|sm:|md:|lg:|xl:|2xl:)+/, '');
+  // 확장 앞글자(`ecommerce:`)와 dark: 등의 variant prefix 제거
+  const baseClass = splitExtensionClassPrefix(className).rest.replace(/^(dark:|hover:|focus:|active:|disabled:|group-hover:|sm:|md:|lg:|xl:|2xl:)+/, '');
 
   for (const [groupName, pattern] of Object.entries(TAILWIND_CLASS_GROUPS)) {
     if (pattern.test(baseClass)) {
@@ -277,7 +305,8 @@ function findClassGroup(className: string): string | null {
  * @returns variant prefix 또는 빈 문자열
  */
 function extractVariant(className: string): string {
-  const match = className.match(/^((dark:|hover:|focus:|active:|disabled:|group-hover:|sm:|md:|lg:|xl:|2xl:)+)/);
+  // 확장 앞글자는 변형이 아니다 — `ecommerce:px-2` 는 `px-4` 와 같은 변형(없음)으로 충돌한다
+  const match = splitExtensionClassPrefix(className).rest.match(/^((dark:|hover:|focus:|active:|disabled:|group-hover:|sm:|md:|lg:|xl:|2xl:)+)/);
   return match ? match[1] : '';
 }
 

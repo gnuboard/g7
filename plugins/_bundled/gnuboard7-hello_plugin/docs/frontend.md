@@ -64,18 +64,22 @@ _프론트 엔트리포인트가 없습니다._
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
 로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-없습니다. 이 샘플의 프론트엔드는 설정 화면 레이아웃 JSON 하나와 다국어 JSON 뿐이라 빌드할
-실행 코드가 없습니다.
+실행 코드(JS)는 없습니다. 화면 모양은 손으로 쓴 **순수 CSS** `resources/css/main.css` 하나가 싣고
+(앞글자 `helloplugin`, `plugin.json` 의 `assets.css`), 빌드는 그 파일을 `dist/css/plugin.css` 로 옮기기만 합니다
+(Tailwind·전처리기 없음, 압축 없음). 확장 화면 모양을 템플릿 CSS 에 기대지 않고 확장이 스스로 싣는 가장 짧은
+예입니다 — 색·테두리 같은 「의미」는 템플릿이 덮을 수 있는 `@layer g7-extension` 안에, 여백·정렬 같은 「배치」는
+층 밖에 두고, 다크 모드는 코어의 중립 표식(`data-g7-color-scheme`)만 봅니다.
 
-그래서 반영이 `php artisan plugin:update gnuboard7-hello_plugin --force` 하나로 끝납니다.
-JS 를 더하면 그때 빌드(`plugin:build --production`)·`dist/` 커밋·전역 진입점 셋이 함께
-필요해집니다.
+CSS 를 고치면 `php artisan plugin:build gnuboard7-hello_plugin --production` 후 `plugin:update` 로 반영합니다.
+레이아웃 JSON 만 고쳤다면 `php artisan plugin:update gnuboard7-hello_plugin --force` 하나로 끝납니다.
+JS 를 더하면 그때 엔트리·`dist/js` 커밋·전역 진입점이 함께 필요해집니다.
 
 구동에 필요한 제3자 자산은 외부 CDN 에서 받지 않고 확장이 동봉합니다 — CDN 도달 실패는 예외도
 서버 로그도 남기지 않고 화면 기능만 조용히 사라지기 때문입니다. 부득이 외부 호스트가 필요하면

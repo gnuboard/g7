@@ -70,7 +70,7 @@ test.describe('설정 클레임 탭', () => {
     //
     // 사유 카탈로그가 하위 탭으로 갈린 뒤에는 한 번에 한 유형만 그려진다 — 정책 5 + 사유 1.
     await expect
-      .poll(async () => page.locator('#tab_content_claim .admin-card').count(), {
+      .poll(async () => page.locator('#tab_content_claim .ecommerce-admin-card').count(), {
         timeout: 20_000,
         message: '클레임 탭 카드가 6개 이상 그려져야 한다 (정책 5 + 보이는 사유 1)',
       })

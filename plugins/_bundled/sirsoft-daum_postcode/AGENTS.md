@@ -128,7 +128,7 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 - [ ] `_bundled` 에서만 수정하고 `php artisan plugin:update sirsoft-daum_postcode --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스는 자기 앞글자(`daumpostcode:` 접두 유틸리티 · `daumpostcode-*`)로만 쓰고, 새 클래스를 쓰면 `php artisan plugin:build sirsoft-daum_postcode --production` 으로 `dist/css/plugin.css` 를 다시 만든다(템플릿 CSS 에 기대지 않는다)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 외부 스크립트 호스트를 늘린다면 `trusted_script_hosts` 와 **사유**(`trusted_script_hosts_reason`)를 함께 선언 — 자체 제공이 원칙이고 이 플러그인은 예외 기재의 선례다
 - [ ] SDK 확보 실패 경로(통지·재시도·직접 입력)를 건드렸다면 `resources/js/__tests__/postcode-fallback.test.ts` 를 함께 갱신·실행
@@ -157,9 +157,9 @@ Daum SDK 를 로드 → 컨테이너 `onMount` 에서 `sirsoft-daum_postcode.set
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 2개 | `plugins/_bundled/sirsoft-daum_postcode/tests` |
-| Vitest | 9개 | `vitest.config.ts` |
+| Vitest | 10개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 10개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 11개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -190,26 +190,22 @@ cd plugins/_bundled/sirsoft-daum_postcode && powershell -Command "npm run test:r
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
 
-## 확장 조각의 CSS 클래스 규약
+## 화면 클래스 규약 — 플러그인 자기 CSS
 
-resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
-클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+레이아웃·확장 조각·핸들러가 쓰는 클래스는 모두 이 플러그인 CSS(`resources/css/main.css` → `dist/css/plugin.css`)에
+정의된 **자기 앞글자** 이름이다(`plugin.json` 의 `assets.css.namespace` = `daumpostcode`). 조각이 관리자·사용자 어느 템플릿
+화면에 들어가든, 템플릿이 Tailwind 를 쓰든 안 쓰든 같은 모양으로 보인다.
 
-두 가지를 지킨다.
+1. **유틸리티는 접두 유틸리티로 쓴다** — `daumpostcode:flex`, `daumpostcode:dark:bg-gray-800` 처럼. 이 플러그인이 Tailwind 를 자기
+   작성 도구로 빌드한다(접두 빌드, 페이지 초기화 규칙 없음). 템플릿 CSS 에 그 규칙이 있는지와 무관하다.
+2. **템플릿 의미 클래스에 해당하는 이름은 `daumpostcode-` 판본을 쓴다** — `daumpostcode-section-heading-md`·`daumpostcode-form-error` 등.
+   정의는 생성 파일 `resources/css/g7-extension.generated.css` 의 가장 낮은 칸(`@layer g7-extension`)에 있어 템플릿이
+   덮을 수 있다. 템플릿에 없던 의미 클래스를 새로 쓰려면 변환 도구(`node scripts/extension-css/convert-layout-classes.mjs
+   plugins/_bundled/sirsoft-daum_postcode`)를 다시 돌린다.
+3. **다크 모드는 `daumpostcode:dark:` 변형 또는 중립 표식 규격**(`data-g7-color-scheme`)으로 쓴다. `.dark` 선택자는 쓰지 않는다.
+4. **아이콘은 `<icon name="…">` 에 라이브러리 중립 이름**(`circle-info`)을 준다. `fas fa-*` 같은 아이콘 글꼴 클래스를
+   직접 쓰지 않는다.
+5. **새 클래스를 쓰면 다시 빌드한다** — `php artisan plugin:build sirsoft-daum_postcode --production` 후 `dist/` 를 함께 올린다.
 
-1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
-   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
-   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
-   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
-   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
-   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
-
-2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
-   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
-   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
-   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
-
-이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
-열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
-떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
-정적 검사가 대조한다.
+앞글자 없는 클래스는 정적 검사(`extension-class-self-contained`)가, 이 플러그인 CSS 의 앞글자 위반·`.dark` 는
+`extension-css-namespace` 가 막는다.

@@ -1,0 +1,642 @@
+/*
+ * 생성 파일 — 손으로 고치지 않는다.
+ * scripts/extension-css/convert-layout-classes.mjs 가 템플릿 의미 클래스 정의를 복사해 만든다.
+ * 템플릿이 같은 이름을 덮을 수 있도록 가장 낮은 칸(@layer g7-extension)에 둔다.
+ * 다만 템플릿에서 층 밖(@layer 미소속)이던 규칙은 유틸리티를 이기던 우선순위를 지키려고 층 밖에 둔다.
+ */
+@layer g7-extension {
+  @supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))) {
+    *, ::before, ::after, ::backdrop {
+      --tw-border-style: solid;
+      --tw-divide-y-reverse: 0;
+      --tw-duration: initial;
+      --tw-ease: initial;
+      --tw-font-weight: initial;
+      --tw-gradient-from: #0000;
+      --tw-gradient-to: #0000;
+      --tw-gradient-via: #0000;
+      --tw-leading: initial;
+    }
+  }
+
+  @keyframes daumpostcode-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .daumpostcode-text-label {
+    font-size: .875rem;
+    line-height: var(--tw-leading,calc(1.25 / .875));
+    color: oklch(44.6% .03 256.802);
+  }
+
+  .daumpostcode-text-label:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(87.2% .01 258.338);
+  }
+
+  .daumpostcode-section-heading {
+    font-size: 1.125rem;
+    line-height: var(--tw-leading,calc(1.75 / 1.125));
+    --tw-font-weight: 600;
+    font-weight: 600;
+    color: oklch(21% .034 264.665);
+  }
+
+  .daumpostcode-section-heading:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: #fff;
+  }
+
+  .daumpostcode-card-header {
+    margin-bottom: calc(.25rem * 0);
+    align-items: center;
+    gap: calc(.25rem * 2);
+    --tw-leading: 1;
+    line-height: 1;
+    display: flex;
+  }
+
+  .daumpostcode-card-header>* {
+    --tw-leading: 1;
+    line-height: 1;
+  }
+
+  .daumpostcode-button {
+    cursor: pointer;
+    justify-content: center;
+    align-items: center;
+    display: inline-flex;
+  }
+
+  .daumpostcode-button:disabled,
+  .daumpostcode-button[aria-disabled=true] {
+    cursor: not-allowed;
+  }
+
+  .daumpostcode-btn {
+    cursor: pointer;
+    justify-content: center;
+    align-items: center;
+    gap: calc(.25rem * 2);
+    border-radius: .5rem;
+    padding-inline: calc(.25rem * 4);
+    padding-block: calc(.25rem * 2);
+    font-size: .875rem;
+    line-height: var(--tw-leading,calc(1.25 / .875));
+    --tw-font-weight: 500;
+    font-weight: 500;
+    transition-property: color,background-color,border-color,outline-color,text-decoration-color,fill,stroke,--tw-gradient-from,--tw-gradient-via,--tw-gradient-to;
+    transition-timing-function: var(--tw-ease,cubic-bezier(.4, 0, .2, 1));
+    transition-duration: var(--tw-duration,.15s);
+    --tw-duration: .2s;
+    transition-duration: .2s;
+    display: inline-flex;
+  }
+
+  .daumpostcode-btn:disabled,
+  .daumpostcode-btn[aria-disabled=true] {
+    cursor: not-allowed;
+    opacity: .5;
+  }
+
+  .daumpostcode-btn-primary {
+    background-color: oklch(21% .034 264.665);
+    color: #fff;
+  }
+
+  @media (hover:hover) {
+    .daumpostcode-btn-primary:hover {
+      background-color: oklch(27.8% .033 256.848);
+    }
+  }
+
+  .daumpostcode-btn-primary:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background-color: #fff;
+    color: oklch(21% .034 264.665);
+  }
+
+  @media (hover:hover) {
+    .daumpostcode-btn-primary:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+      background-color: oklch(96.7% .003 264.542);
+    }
+  }
+
+  .daumpostcode-btn-secondary {
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: oklch(87.2% .01 258.338);
+    background-color: #fff;
+    color: oklch(37.3% .034 259.733);
+  }
+
+  @media (hover:hover) {
+    .daumpostcode-btn-secondary:hover {
+      background-color: oklch(98.5% .002 247.839);
+    }
+  }
+
+  .daumpostcode-btn-secondary:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(44.6% .03 256.802);
+    background-color: oklch(27.8% .033 256.848);
+    color: oklch(87.2% .01 258.338);
+  }
+
+  @media (hover:hover) {
+    .daumpostcode-btn-secondary:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+      background-color: oklch(37.3% .034 259.733);
+    }
+  }
+
+  .daumpostcode-form-error {
+    margin-top: calc(.25rem * 1);
+    font-size: .75rem;
+    line-height: var(--tw-leading,calc(1 / .75));
+    color: oklch(50.5% .213 27.518);
+    display: block;
+  }
+
+  .daumpostcode-form-error:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(80.8% .114 19.571);
+  }
+
+  .daumpostcode-alert-error {
+    align-items: center;
+    gap: calc(.25rem * 3);
+    border-radius: .375rem;
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: oklch(88.5% .062 18.334);
+    background-color: oklch(97.1% .013 17.38);
+    padding-inline: calc(.25rem * 3);
+    padding-block: calc(.25rem * 3);
+    font-size: .875rem;
+    line-height: var(--tw-leading,calc(1.25 / .875));
+    color: oklch(39.6% .141 25.723);
+    display: flex;
+  }
+
+  .daumpostcode-alert-error:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(44.4% .177 26.899);
+    background-color: #82181a33;
+  }
+
+  @supports (color:color-mix(in lab,red,red)) {
+    .daumpostcode-alert-error:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+      background-color: color-mix(in oklab,oklch(39.6% .141 25.723) 20%,transparent);
+    }
+  }
+
+  .daumpostcode-alert-error:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(93.6% .032 17.717);
+  }
+
+  .daumpostcode-modal-footer-row {
+    justify-content: flex-end;
+    gap: calc(.25rem * 3);
+    border-top-style: var(--tw-border-style);
+    border-top-width: 1px;
+    border-color: oklch(92.8% .006 264.531);
+    padding-inline: calc(.25rem * 6);
+    padding-block: calc(.25rem * 4);
+    display: flex;
+  }
+
+  .daumpostcode-modal-footer-row:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(37.3% .034 259.733);
+  }
+
+  .daumpostcode-modal-footer {
+    margin-top: calc(.25rem * 6);
+    justify-content: flex-end;
+    gap: calc(.25rem * 3);
+    display: flex;
+  }
+
+  .daumpostcode-admin-card-accordion {
+    margin-bottom: calc(.25rem * 6);
+    border-radius: .5rem;
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: oklch(92.8% .006 264.531);
+    background-color: #fff;
+    padding: calc(.25rem * 4);
+  }
+
+  .daumpostcode-admin-card-accordion:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(37.3% .034 259.733);
+    background-color: oklch(27.8% .033 256.848);
+  }
+
+  .daumpostcode-admin-card-accordion {
+    flex-direction: column;
+    display: flex;
+  }
+
+  .daumpostcode-admin-card-accordion>.daumpostcode-card-header {
+    cursor: pointer;
+  }
+
+  .daumpostcode-admin-card-accordion>.daumpostcode-row-stack {
+    margin-top: calc(.25rem * 6);
+  }
+
+  .daumpostcode-form-label {
+    margin-bottom: calc(.25rem * 1);
+    font-size: .875rem;
+    line-height: var(--tw-leading,calc(1.25 / .875));
+    --tw-font-weight: 500;
+    font-weight: 500;
+    color: oklch(21% .034 264.665);
+    display: block;
+  }
+
+  .daumpostcode-form-label:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: #fff;
+  }
+
+  .daumpostcode-form-hint {
+    margin-top: calc(.25rem * 1);
+    font-size: .75rem;
+    line-height: var(--tw-leading,calc(1 / .75));
+    color: oklch(44.6% .03 256.802);
+  }
+
+  .daumpostcode-form-hint:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(87.2% .01 258.338);
+  }
+
+  .daumpostcode-flex-center {
+    align-items: center;
+    display: flex;
+  }
+
+  .daumpostcode-row-stack {
+    flex-direction: column;
+    display: flex;
+  }
+
+  :where(.daumpostcode-row-stack>:not(:last-child)) {
+    --tw-divide-y-reverse: 0;
+    border-bottom-style: var(--tw-border-style);
+    border-top-style: var(--tw-border-style);
+    border-top-width: calc(1px * var(--tw-divide-y-reverse));
+    border-bottom-width: calc(1px * calc(1 - var(--tw-divide-y-reverse)));
+    border-color: oklch(92.8% .006 264.531);
+  }
+
+  :where(.daumpostcode-row-stack>:not(:last-child):is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"]))) {
+    border-color: oklch(37.3% .034 259.733);
+  }
+
+  .daumpostcode-row-stack>* {
+    padding-block: calc(.25rem * 2);
+  }
+
+  .daumpostcode-row-stack>:first-child {
+    padding-top: calc(.25rem * 0);
+  }
+
+  .daumpostcode-row-stack>:last-child {
+    padding-bottom: calc(.25rem * 0);
+  }
+
+  .daumpostcode-alert-info {
+    align-items: center;
+    gap: calc(.25rem * 3);
+    border-radius: .375rem;
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: oklch(88.2% .059 254.128);
+    background-color: oklch(97% .014 254.604);
+    padding-inline: calc(.25rem * 3);
+    padding-block: calc(.25rem * 3);
+    font-size: .875rem;
+    line-height: var(--tw-leading,calc(1.25 / .875));
+    color: oklch(37.9% .146 265.522);
+    display: flex;
+  }
+
+  .daumpostcode-alert-info:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(42.4% .199 265.638);
+    background-color: #1c398e33;
+  }
+
+  @supports (color:color-mix(in lab,red,red)) {
+    .daumpostcode-alert-info:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+      background-color: color-mix(in oklab,oklch(37.9% .146 265.522) 20%,transparent);
+    }
+  }
+
+  .daumpostcode-alert-info:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(93.2% .032 255.585);
+  }
+
+  .daumpostcode-alert-warning {
+    align-items: center;
+    gap: calc(.25rem * 3);
+    border-radius: .375rem;
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: oklch(94.5% .129 101.54);
+    background-color: oklch(98.7% .026 102.212);
+    padding-inline: calc(.25rem * 3);
+    padding-block: calc(.25rem * 3);
+    font-size: .875rem;
+    line-height: var(--tw-leading,calc(1.25 / .875));
+    color: oklch(42.1% .095 57.708);
+    display: flex;
+  }
+
+  .daumpostcode-alert-warning:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(47.6% .114 61.907);
+    background-color: #733e0a33;
+  }
+
+  @supports (color:color-mix(in lab,red,red)) {
+    .daumpostcode-alert-warning:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+      background-color: color-mix(in oklab,oklch(42.1% .095 57.708) 20%,transparent);
+    }
+  }
+
+  .daumpostcode-alert-warning:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(97.3% .071 103.193);
+  }
+
+  .daumpostcode-alert-danger {
+    align-items: center;
+    gap: calc(.25rem * 3);
+    border-radius: .375rem;
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: oklch(88.5% .062 18.334);
+    background-color: oklch(97.1% .013 17.38);
+    padding-inline: calc(.25rem * 3);
+    padding-block: calc(.25rem * 3);
+    font-size: .875rem;
+    line-height: var(--tw-leading,calc(1.25 / .875));
+    color: oklch(39.6% .141 25.723);
+    display: flex;
+  }
+
+  .daumpostcode-alert-danger:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(44.4% .177 26.899);
+    background-color: #82181a33;
+  }
+
+  @supports (color:color-mix(in lab,red,red)) {
+    .daumpostcode-alert-danger:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+      background-color: color-mix(in oklab,oklch(39.6% .141 25.723) 20%,transparent);
+    }
+  }
+
+  .daumpostcode-alert-danger:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(93.6% .032 17.717);
+  }
+
+  .daumpostcode-alert-success {
+    align-items: center;
+    gap: calc(.25rem * 3);
+    border-radius: .375rem;
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: oklch(92.5% .084 155.995);
+    background-color: oklch(98.2% .018 155.826);
+    padding-inline: calc(.25rem * 3);
+    padding-block: calc(.25rem * 3);
+    font-size: .875rem;
+    line-height: var(--tw-leading,calc(1.25 / .875));
+    color: oklch(39.3% .095 152.535);
+    display: flex;
+  }
+
+  .daumpostcode-alert-success:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(44.8% .119 151.328);
+    background-color: #0d542b33;
+  }
+
+  @supports (color:color-mix(in lab,red,red)) {
+    .daumpostcode-alert-success:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+      background-color: color-mix(in oklab,oklch(39.3% .095 152.535) 20%,transparent);
+    }
+  }
+
+  .daumpostcode-alert-success:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(96.2% .044 156.743);
+  }
+
+  .daumpostcode-alert-info:has(+.daumpostcode-row-stack),
+  .daumpostcode-alert-warning:has(+.daumpostcode-row-stack),
+  .daumpostcode-alert-danger:has(+.daumpostcode-row-stack),
+  .daumpostcode-alert-success:has(+.daumpostcode-row-stack),
+  .daumpostcode-alert-error:has(+.daumpostcode-row-stack),
+  .daumpostcode-alert-info:has(+.daumpostcode-toggle-group),
+  .daumpostcode-alert-warning:has(+.daumpostcode-toggle-group),
+  .daumpostcode-alert-danger:has(+.daumpostcode-toggle-group),
+  .daumpostcode-alert-success:has(+.daumpostcode-toggle-group),
+  .daumpostcode-alert-error:has(+.daumpostcode-toggle-group),
+  .daumpostcode-alert-info:has(+.daumpostcode-grid-2col-responsive),
+  .daumpostcode-alert-warning:has(+.daumpostcode-grid-2col-responsive),
+  .daumpostcode-alert-danger:has(+.daumpostcode-grid-2col-responsive),
+  .daumpostcode-alert-success:has(+.daumpostcode-grid-2col-responsive),
+  .daumpostcode-alert-error:has(+.daumpostcode-grid-2col-responsive) {
+    margin-bottom: calc(.25rem * 4);
+  }
+
+  .daumpostcode-row-stack>.daumpostcode-alert-info,
+  .daumpostcode-row-stack>.daumpostcode-alert-warning,
+  .daumpostcode-row-stack>.daumpostcode-alert-danger,
+  .daumpostcode-row-stack>.daumpostcode-alert-success,
+  .daumpostcode-row-stack>.daumpostcode-alert-error {
+    padding-top: calc(.25rem * 3);
+    padding-bottom: calc(.25rem * 3);
+  }
+
+  .daumpostcode-row-stack>*+.daumpostcode-alert-info,
+  .daumpostcode-row-stack>*+.daumpostcode-alert-warning,
+  .daumpostcode-row-stack>*+.daumpostcode-alert-danger,
+  .daumpostcode-row-stack>*+.daumpostcode-alert-success,
+  .daumpostcode-row-stack>*+.daumpostcode-alert-error {
+    margin-top: calc(.25rem * 3);
+  }
+
+  .daumpostcode-toggle-group {
+    border-radius: .5rem;
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: oklch(92.8% .006 264.531);
+    overflow: hidden;
+  }
+
+  .daumpostcode-toggle-group:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(37.3% .034 259.733);
+  }
+
+  .daumpostcode-spinner-sm {
+    height: calc(.25rem * 4);
+    width: calc(.25rem * 4);
+    animation: daumpostcode-spin 1s linear infinite;
+  }
+
+  .daumpostcode-grid-3col-responsive {
+    align-items: flex-start;
+    gap: calc(.25rem * 4);
+    grid-template-columns: repeat(1,minmax(0,1fr));
+    display: grid;
+  }
+
+  @media (min-width:64rem) {
+    .daumpostcode-grid-3col-responsive {
+      grid-template-columns: repeat(3,minmax(0,1fr));
+    }
+  }
+
+  .daumpostcode-text-error-soft {
+    font-size: .875rem;
+    line-height: var(--tw-leading,calc(1.25 / .875));
+    color: oklch(50.5% .213 27.518);
+  }
+
+  .daumpostcode-text-error-soft:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(80.8% .114 19.571);
+  }
+
+  .daumpostcode-text-error-strong {
+    font-size: .875rem;
+    line-height: var(--tw-leading,calc(1.25 / .875));
+    --tw-font-weight: 500;
+    font-weight: 500;
+    color: oklch(44.4% .177 26.899);
+  }
+
+  .daumpostcode-text-error-strong:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    color: oklch(88.5% .062 18.334);
+  }
+
+  .daumpostcode-grid-2col-responsive {
+    gap: calc(.25rem * 4);
+    grid-template-columns: repeat(1,minmax(0,1fr));
+    display: grid;
+  }
+
+  @media (min-width:48rem) {
+    .daumpostcode-grid-2col-responsive {
+      grid-template-columns: repeat(2,minmax(0,1fr));
+    }
+  }
+
+  .daumpostcode-sticky-footer-buttons {
+    bottom: calc(.25rem * 0);
+    z-index: 10;
+    margin-top: calc(.25rem * 6);
+    justify-content: flex-end;
+    align-items: center;
+    gap: calc(.25rem * 3);
+    padding-inline: calc(.25rem * 4);
+    padding-block: calc(.25rem * 3);
+    border-radius: .5rem;
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: oklch(92.8% .006 264.531);
+    background-color: oklch(98.5% .002 247.839);
+    display: flex;
+    position: sticky;
+  }
+
+  .daumpostcode-sticky-footer-buttons:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    border-color: oklch(37.3% .034 259.733);
+    background-color: oklch(27.8% .033 256.848);
+  }
+
+  .daumpostcode-admin-page-content-responsive {
+    background-color: oklch(98.5% .002 247.839);
+    min-height: 100vh;
+    padding: calc(.25rem * 4);
+  }
+
+  @media (min-width:40rem) {
+    .daumpostcode-admin-page-content-responsive {
+      padding: calc(.25rem * 6);
+    }
+  }
+
+  @media (min-width:64rem) {
+    .daumpostcode-admin-page-content-responsive {
+      padding: calc(.25rem * 8);
+    }
+  }
+
+  .daumpostcode-admin-page-content-responsive:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+    background-color: oklch(21% .034 264.665);
+  }
+}
+
+/* 템플릿에서 층 밖이던 의미 규칙 — 확장 유틸리티 뒤에서 이기도록 층 밖에 둔다 */
+@media (max-width:640px) {
+  .daumpostcode-modal-footer,
+  .daumpostcode-modal-footer-row {
+    flex-direction: column;
+    gap: .5rem;
+  }
+}
+
+@media (max-width:640px) {
+  .daumpostcode-modal-footer .daumpostcode-btn,
+  .daumpostcode-modal-footer-row .daumpostcode-btn {
+    width: 100%;
+  }
+}
+
+@property --tw-border-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+
+@property --tw-divide-y-reverse {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --tw-duration {
+  syntax: "*";
+  inherits: false;
+}
+
+@property --tw-ease {
+  syntax: "*";
+  inherits: false;
+}
+
+@property --tw-font-weight {
+  syntax: "*";
+  inherits: false;
+}
+
+@property --tw-gradient-from {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #0000;
+}
+
+@property --tw-gradient-to {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #0000;
+}
+
+@property --tw-gradient-via {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #0000;
+}
+
+@property --tw-leading {
+  syntax: "*";
+  inherits: false;
+}
+
+/* 아이콘(<icon>)에 단 글자 크기 유틸리티 — 템플릿 아이콘 글꼴 CSS 의 line-height:1 이 이기던 것을 보존한다 */
+i:is(.daumpostcode\:text-xl) {
+  line-height: 1;
+}

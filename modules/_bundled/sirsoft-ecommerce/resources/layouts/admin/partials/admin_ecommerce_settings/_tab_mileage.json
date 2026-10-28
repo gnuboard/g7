@@ -9,7 +9,7 @@
     "name": "Div",
     "if": "{{(_global.activeEcommerceSettingsTab || query.tab || 'basic_info') === 'mileage'}}",
     "props": {
-        "className": "mt-6 space-y-6"
+        "className": "ecommerce:mt-6 ecommerce:space-y-6"
     },
     "children": [
         {
@@ -20,21 +20,21 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card"
+                "className": "ecommerce-admin-card"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-between mb-4 gap-2 flex-wrap"
+                        "className": "ecommerce-flex-between ecommerce:mb-4 ecommerce:gap-2 ecommerce:flex-wrap"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "section-heading"
+                                "className": "ecommerce-section-heading"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.mileage_settings.currency.title"
                         },
@@ -64,7 +64,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                 "disabled": "{{_computed.isReadOnly || _local.isAddingMileageCurrency === true}}"
                             },
                             "children": [
@@ -99,7 +99,7 @@
                         }
                     },
                     "props": {
-                        "className": "w-full"
+                        "className": "ecommerce:w-full"
                     },
                     "children": [
                         {

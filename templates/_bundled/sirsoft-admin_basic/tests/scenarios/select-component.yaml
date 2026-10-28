@@ -1,0 +1,84 @@
+feature: 관리자 템플릿 Select 컴포넌트 계약
+
+description: |
+  Select 의 children·options 두 모드 렌더, 이벤트, 제어 값, HTML 속성, 라벨·오류 표시, 기본 외형 병합을 잠근다.
+  #816 에서 확장 접두 빌드 클래스(ecommerce:bg-…·ecommerce:w-…)를 앞글자를 떼고 해석해 커스텀 외형 판정·폭 토큰의 바깥 상자 이동이
+  템플릿 클래스와 같게 동작하도록 했다. 시험 하나가 시나리오 하나다.
+
+axes:
+  case:
+    # templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Select.test.tsx — Select 렌더·이벤트·값·속성·라벨/오류·기본 외형 병합(확장 앞글자 클래스 포함)
+    - select_c01
+    - select_c02
+    - select_c03
+    - select_c04
+    - select_c05
+    - select_c06
+    - select_c07
+    - select_c08
+    - select_c09
+    - select_c10
+    - select_c11
+    - select_c12
+    - select_c13
+    - select_c14
+    - select_c15
+    - select_c16
+    - select_c17
+    - select_c18
+    - select_c19
+    - select_c20
+    - select_c21
+    - select_c22
+    - select_c23
+    - select_c24
+    - select_c25
+    - select_c26
+    - select_c27
+    - select_c28
+    - select_c29
+    - select_c30
+    - select_c31
+    - select_c32
+    - select_c33
+    - select_c34
+    - select_c35
+    - select_c36
+    - select_c37
+    - select_c38
+    - select_c39
+    - select_c40
+    - select_c41
+    - select_c42
+    - select_c43
+    - select_c44
+    - select_c45
+    - select_c46
+    - select_c47
+    - select_c48
+    - select_c49
+    - select_c50
+    - select_c51
+    - select_c52
+    - select_c53
+    - select_c54
+    - select_c55
+    - select_c56
+    - select_c57
+    - select_c58
+    - select_c59
+    - select_c60
+    - select_c61
+    - select_c62
+    - select_c63
+    - select_c64
+    - select_c65
+    - select_c66
+    - select_c67
+    - select_c68
+
+effects:
+  - select_component_contract_holds   # Select 렌더·이벤트·값·속성·라벨/오류·기본 외형 병합(확장 앞글자 클래스 포함)
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/basic/__tests__/Select.test.tsx

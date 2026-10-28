@@ -18,14 +18,14 @@
                     "type": "layout",
                     "name": "SectionLayout",
                     "props": {
-                        "className": "admin-card"
+                        "className": "board-admin-card"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "card-title"
+                                "className": "board-card-title"
                             },
                             "text": "$t:sirsoft-board.admin.settings.sections.post"
                         },
@@ -33,7 +33,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "row-stack"
+                                "className": "board-row-stack"
                             },
                             "children": [
                                 {
@@ -48,14 +48,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-4"
+                                                "className": "board-flex-center board:gap-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
+                                                        "className": "board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -74,7 +74,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "checkbox",
-                                                                "className": "checkbox-aligned",
+                                                                "className": "board-checkbox-aligned",
                                                                 "checked": "{{(_local.bulkApplyFields ?? []).includes('min_title_length')}}",
                                                                 "disabled": "{{!_computed.canBulkApply}}"
                                                             }
@@ -92,7 +92,7 @@
                                                                     "type": "basic",
                                                                     "name": "P",
                                                                     "props": {
-                                                                        "className": "text-field-hint"
+                                                                        "className": "board-text-field-hint"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.descriptions.min_title_length|min={{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}|max={{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}"
                                                                 }
@@ -104,7 +104,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-shrink-0"
+                                                        "className": "board:flex-shrink-0"
                                                     },
                                                     "children": [
                                                         {
@@ -116,7 +116,7 @@
                                                                 "name": "basic_defaults.min_title_length",
                                                                 "min": "{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}",
                                                                 "max": "{{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}",
-                                                                "className": "{{(_local.errors?.['basic_defaults.min_title_length']) ? 'w-32 input-error' : 'w-32'}}",
+                                                                "className": "{{(_local.errors?.['basic_defaults.min_title_length']) ? 'board:w-32 board-input-error' : 'board:w-32'}}",
                                                                 "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         },
@@ -125,7 +125,7 @@
                                                             "name": "Span",
                                                             "if": "{{_local.errors?.['basic_defaults.min_title_length']}}",
                                                             "props": {
-                                                                "className": "text-xs text-red-600 dark:text-red-400 block mt-1"
+                                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
                                                             },
                                                             "text": "{{(Array.isArray(_local.errors?.['basic_defaults.min_title_length']) ? _local.errors['basic_defaults.min_title_length'][0] : _local.errors?.['basic_defaults.min_title_length']) ?? ''}}"
                                                         }
@@ -147,14 +147,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-4"
+                                                "className": "board-flex-center board:gap-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
+                                                        "className": "board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -173,7 +173,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "checkbox",
-                                                                "className": "checkbox-aligned",
+                                                                "className": "board-checkbox-aligned",
                                                                 "checked": "{{(_local.bulkApplyFields ?? []).includes('max_title_length')}}",
                                                                 "disabled": "{{!_computed.canBulkApply}}"
                                                             }
@@ -191,7 +191,7 @@
                                                                     "type": "basic",
                                                                     "name": "P",
                                                                     "props": {
-                                                                        "className": "text-field-hint"
+                                                                        "className": "board-text-field-hint"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.descriptions.max_title_length|min={{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}"
                                                                 }
@@ -203,7 +203,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-shrink-0"
+                                                        "className": "board:flex-shrink-0"
                                                     },
                                                     "children": [
                                                         {
@@ -215,7 +215,7 @@
                                                                 "name": "basic_defaults.max_title_length",
                                                                 "min": "{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}",
                                                                 "max": "{{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}",
-                                                                "className": "{{(_local.errors?.['basic_defaults.max_title_length']) ? 'w-32 input-error' : 'w-32'}}",
+                                                                "className": "{{(_local.errors?.['basic_defaults.max_title_length']) ? 'board:w-32 board-input-error' : 'board:w-32'}}",
                                                                 "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         },
@@ -224,7 +224,7 @@
                                                             "name": "Span",
                                                             "if": "{{_local.errors?.['basic_defaults.max_title_length']}}",
                                                             "props": {
-                                                                "className": "text-xs text-red-600 dark:text-red-400 block mt-1"
+                                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
                                                             },
                                                             "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_title_length']) ? _local.errors['basic_defaults.max_title_length'][0] : _local.errors?.['basic_defaults.max_title_length']) ?? ''}}"
                                                         }
@@ -246,14 +246,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-4"
+                                                "className": "board-flex-center board:gap-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
+                                                        "className": "board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -272,7 +272,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "checkbox",
-                                                                "className": "checkbox-aligned",
+                                                                "className": "board-checkbox-aligned",
                                                                 "checked": "{{(_local.bulkApplyFields ?? []).includes('min_content_length')}}",
                                                                 "disabled": "{{!_computed.canBulkApply}}"
                                                             }
@@ -290,7 +290,7 @@
                                                                     "type": "basic",
                                                                     "name": "P",
                                                                     "props": {
-                                                                        "className": "text-field-hint"
+                                                                        "className": "board-text-field-hint"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.descriptions.min_content_length|min={{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}|max={{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}"
                                                                 }
@@ -302,7 +302,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-shrink-0"
+                                                        "className": "board:flex-shrink-0"
                                                     },
                                                     "children": [
                                                         {
@@ -314,7 +314,7 @@
                                                                 "name": "basic_defaults.min_content_length",
                                                                 "min": "{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}",
                                                                 "max": "{{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}",
-                                                                "className": "{{(_local.errors?.['basic_defaults.min_content_length']) ? 'w-32 input-error' : 'w-32'}}",
+                                                                "className": "{{(_local.errors?.['basic_defaults.min_content_length']) ? 'board:w-32 board-input-error' : 'board:w-32'}}",
                                                                 "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         },
@@ -323,7 +323,7 @@
                                                             "name": "Span",
                                                             "if": "{{_local.errors?.['basic_defaults.min_content_length']}}",
                                                             "props": {
-                                                                "className": "text-xs text-red-600 dark:text-red-400 block mt-1"
+                                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
                                                             },
                                                             "text": "{{(Array.isArray(_local.errors?.['basic_defaults.min_content_length']) ? _local.errors['basic_defaults.min_content_length'][0] : _local.errors?.['basic_defaults.min_content_length']) ?? ''}}"
                                                         }
@@ -345,14 +345,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-4"
+                                                "className": "board-flex-center board:gap-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex-start gap-2 text-body font-medium flex-1 cursor-pointer"
+                                                        "className": "board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -371,7 +371,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "checkbox",
-                                                                "className": "checkbox-aligned",
+                                                                "className": "board-checkbox-aligned",
                                                                 "checked": "{{(_local.bulkApplyFields ?? []).includes('max_content_length')}}",
                                                                 "disabled": "{{!_computed.canBulkApply}}"
                                                             }
@@ -389,7 +389,7 @@
                                                                     "type": "basic",
                                                                     "name": "P",
                                                                     "props": {
-                                                                        "className": "text-field-hint"
+                                                                        "className": "board-text-field-hint"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.descriptions.max_content_length|min={{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}"
                                                                 }
@@ -401,7 +401,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-shrink-0"
+                                                        "className": "board:flex-shrink-0"
                                                     },
                                                     "children": [
                                                         {
@@ -413,7 +413,7 @@
                                                                 "name": "basic_defaults.max_content_length",
                                                                 "min": "{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}",
                                                                 "max": "{{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}",
-                                                                "className": "{{(_local.errors?.['basic_defaults.max_content_length']) ? 'w-32 input-error' : 'w-32'}}",
+                                                                "className": "{{(_local.errors?.['basic_defaults.max_content_length']) ? 'board:w-32 board-input-error' : 'board:w-32'}}",
                                                                 "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         },
@@ -422,7 +422,7 @@
                                                             "name": "Span",
                                                             "if": "{{_local.errors?.['basic_defaults.max_content_length']}}",
                                                             "props": {
-                                                                "className": "text-xs text-red-600 dark:text-red-400 block mt-1"
+                                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
                                                             },
                                                             "text": "{{(Array.isArray(_local.errors?.['basic_defaults.max_content_length']) ? _local.errors['basic_defaults.max_content_length'][0] : _local.errors?.['basic_defaults.max_content_length']) ?? ''}}"
                                                         }
@@ -444,14 +444,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "px-3 py-2"
+                                                "className": "board:px-3 board:py-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex-start gap-2 text-heading cursor-pointer mb-2"
+                                                        "className": "board-flex-start board:gap-2 board-text-heading board:cursor-pointer board:mb-2"
                                                     },
                                                     "children": [
                                                         {
@@ -470,7 +470,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "checkbox",
-                                                                "className": "checkbox-aligned",
+                                                                "className": "board-checkbox-aligned",
                                                                 "checked": "{{(_local.bulkApplyFields ?? []).includes('blocked_keywords')}}",
                                                                 "disabled": "{{!_computed.canBulkApply}}"
                                                             }
@@ -488,7 +488,7 @@
                                                                     "type": "basic",
                                                                     "name": "P",
                                                                     "props": {
-                                                                        "className": "text-field-hint"
+                                                                        "className": "board-text-field-hint"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.descriptions.blocked_keywords"
                                                                 }
@@ -504,7 +504,7 @@
                                                         "name": "basic_defaults.blocked_keywords",
                                                         "placeholder": "$t:sirsoft-board.admin.settings.fields.blocked_keywords_placeholder",
                                                         "creatable": true,
-                                                        "className": "w-full",
+                                                        "className": "board:w-full",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 }
@@ -524,14 +524,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex-center gap-4"
+                                                "className": "board-flex-center board:gap-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "flex-start gap-2 text-heading flex-1 cursor-pointer"
+                                                        "className": "board-flex-start board:gap-2 board-text-heading board:flex-1 board:cursor-pointer"
                                                     },
                                                     "children": [
                                                         {
@@ -550,7 +550,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "checkbox",
-                                                                "className": "checkbox-aligned",
+                                                                "className": "board-checkbox-aligned",
                                                                 "checked": "{{(_local.bulkApplyFields ?? []).includes('new_display_hours')}}",
                                                                 "disabled": "{{!_computed.canBulkApply}}"
                                                             }
@@ -568,7 +568,7 @@
                                                                     "type": "basic",
                                                                     "name": "P",
                                                                     "props": {
-                                                                        "className": "text-field-hint"
+                                                                        "className": "board-text-field-hint"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.descriptions.new_display_hours"
                                                                 }
@@ -580,7 +580,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-shrink-0"
+                                                        "className": "board:flex-shrink-0"
                                                     },
                                                     "children": [
                                                         {
@@ -592,7 +592,7 @@
                                                                 "name": "basic_defaults.new_display_hours",
                                                                 "min": "{{_local?.form?._meta?.limits?.new_display_hours_min ?? 1}}",
                                                                 "max": "{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}",
-                                                                "className": "{{(_local.errors?.['basic_defaults.new_display_hours']) ? 'w-32 input-error' : 'w-32'}}",
+                                                                "className": "{{(_local.errors?.['basic_defaults.new_display_hours']) ? 'board:w-32 board-input-error' : 'board:w-32'}}",
                                                                 "disabled": "{{_computed.isReadOnly}}"
                                                             }
                                                         },
@@ -601,7 +601,7 @@
                                                             "name": "Span",
                                                             "if": "{{_local.errors?.['basic_defaults.new_display_hours']}}",
                                                             "props": {
-                                                                "className": "text-xs text-red-600 dark:text-red-400 block mt-1"
+                                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1"
                                                             },
                                                             "text": "{{(Array.isArray(_local.errors?.['basic_defaults.new_display_hours']) ? _local.errors['basic_defaults.new_display_hours'][0] : _local.errors?.['basic_defaults.new_display_hours']) ?? ''}}"
                                                         }

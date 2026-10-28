@@ -33,7 +33,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "gdpr-admin-page-content"
                 },
                 "children": [
                     {
@@ -49,7 +49,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-between my-4"
+                            "className": "gdpr-flex-between gdpr:my-4"
                         },
                         "children": [
                             {
@@ -71,7 +71,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "btn btn-secondary"
+                                    "className": "gdpr-btn gdpr-btn-secondary"
                                 },
                                 "children": [
                                     {

@@ -81,6 +81,8 @@ describe('WebSocketManager', () => {
   }
 
   describe('configure', () => {
+    // @scenario case=ws_manager_c01
+    // @effects websocket_manager_subscription_contract
     it('should set configuration correctly', async () => {
       const { webSocketManager } = await import('../WebSocketManager');
 
@@ -96,6 +98,8 @@ describe('WebSocketManager', () => {
       expect(webSocketManager.isConfigured()).toBe(true);
     });
 
+    // @scenario case=ws_manager_c02
+    // @effects websocket_manager_subscription_contract
     it('should not allow reconfiguration after initialization', async () => {
       const webSocketManager = await getConfiguredManager();
       const callback = vi.fn();
@@ -118,6 +122,8 @@ describe('WebSocketManager', () => {
   });
 
   describe('subscribe', () => {
+    // @scenario case=ws_manager_c03
+    // @effects websocket_manager_subscription_contract
     it('should create subscription key correctly', async () => {
       const webSocketManager = await getConfiguredManager();
       const callback = vi.fn();
@@ -128,10 +134,13 @@ describe('WebSocketManager', () => {
         callback
       );
 
-      expect(key).toBe('admin.dashboard:dashboard.stats.updated');
+      // engine-v1.86.0: 구독마다 고유 키 `channel:event#n` — 같은 키를 두 주인이 나눠 들지 않는다
+      expect(key).toMatch(/^admin\.dashboard:dashboard\.stats\.updated#\d+$/);
     });
 
-    it('should not duplicate subscriptions for same channel:event', async () => {
+    // @scenario case=ws_manager_c04
+    // @effects websocket_manager_subscription_contract
+    it('should listen once per channel:event but give each subscriber its own key', async () => {
       const webSocketManager = await getConfiguredManager();
       const callback1 = vi.fn();
       const callback2 = vi.fn();
@@ -139,9 +148,13 @@ describe('WebSocketManager', () => {
       const key1 = webSocketManager.subscribe('test.channel', 'test.event', callback1);
       const key2 = webSocketManager.subscribe('test.channel', 'test.event', callback2);
 
-      expect(key1).toBe(key2);
+      // engine-v1.86.0: 종전에는 key1 === key2 이고 callback2 가 연결되지 않았다(F7)
+      expect(key1).not.toBe(key2);
+      expect(mockListen).toHaveBeenCalledTimes(1);
     });
 
+    // @scenario case=ws_manager_c05
+    // @effects websocket_manager_subscription_contract
     it('should use private channel by default', async () => {
       const webSocketManager = await getConfiguredManager();
       const callback = vi.fn();
@@ -151,6 +164,8 @@ describe('WebSocketManager', () => {
       expect(mockPrivate).toHaveBeenCalledWith('admin.dashboard');
     });
 
+    // @scenario case=ws_manager_c06
+    // @effects websocket_manager_subscription_contract
     it('should use public channel when specified', async () => {
       const webSocketManager = await getConfiguredManager();
       const callback = vi.fn();
@@ -162,6 +177,8 @@ describe('WebSocketManager', () => {
       expect(mockChannel).toHaveBeenCalledWith('public.channel');
     });
 
+    // @scenario case=ws_manager_c07
+    // @effects websocket_manager_subscription_contract
     it('should use presence channel when specified', async () => {
       const webSocketManager = await getConfiguredManager();
       const callback = vi.fn();
@@ -173,17 +190,25 @@ describe('WebSocketManager', () => {
       expect(mockJoin).toHaveBeenCalledWith('presence.channel');
     });
 
+    // @scenario case=ws_manager_c08
+    // @effects websocket_manager_subscription_contract
     it('should listen with dot prefix for event name', async () => {
       const webSocketManager = await getConfiguredManager();
       const callback = vi.fn();
 
       webSocketManager.subscribe('test.channel', 'test.event', callback);
 
-      expect(mockListen).toHaveBeenCalledWith('.test.event', callback);
+      // engine-v1.86.0: listen 에는 구독자들을 부르는 디스패처가 걸린다
+      expect(mockListen).toHaveBeenCalledWith('.test.event', expect.any(Function));
+      const dispatcher = mockListen.mock.calls[0][1] as (data: unknown) => void;
+      dispatcher({ ok: 1 });
+      expect(callback).toHaveBeenCalledWith({ ok: 1 });
     });
   });
 
   describe('unsubscribe', () => {
+    // @scenario case=ws_manager_c09
+    // @effects websocket_manager_subscription_contract
     it('should handle non-existent subscription gracefully', async () => {
       const webSocketManager = await getConfiguredManager();
 
@@ -194,6 +219,8 @@ describe('WebSocketManager', () => {
   });
 
   describe('disconnect', () => {
+    // @scenario case=ws_manager_c10
+    // @effects websocket_manager_subscription_contract
     it('should call echo disconnect', async () => {
       const webSocketManager = await getConfiguredManager();
       const callback = vi.fn();
@@ -206,6 +233,8 @@ describe('WebSocketManager', () => {
       expect(mockDisconnect).toHaveBeenCalled();
     });
 
+    // @scenario case=ws_manager_c11
+    // @effects websocket_manager_subscription_contract
     it('should reset initialized state after disconnect', async () => {
       const webSocketManager = await getConfiguredManager();
       const callback = vi.fn();
@@ -219,6 +248,8 @@ describe('WebSocketManager', () => {
   });
 
   describe('getSubscriptionCount', () => {
+    // @scenario case=ws_manager_c12
+    // @effects websocket_manager_subscription_contract
     it('should return correct subscription count', async () => {
       const webSocketManager = await getConfiguredManager();
       const callback = vi.fn();
@@ -234,6 +265,8 @@ describe('WebSocketManager', () => {
   });
 
   describe('initialization', () => {
+    // @scenario case=ws_manager_c13
+    // @effects websocket_manager_subscription_contract
     it('should not initialize without configuration', async () => {
       const { webSocketManager } = await import('../WebSocketManager');
       const callback = vi.fn();
@@ -246,6 +279,8 @@ describe('WebSocketManager', () => {
       expect(webSocketManager.isConfigured()).toBe(false);
     });
 
+    // @scenario case=ws_manager_c14
+    // @effects websocket_manager_subscription_contract
     it('should not initialize with empty appKey', async () => {
       const { webSocketManager } = await import('../WebSocketManager');
 

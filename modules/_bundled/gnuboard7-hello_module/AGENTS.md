@@ -20,8 +20,12 @@
 
 도메인은 메모(Memo) 하나이고 필드는 셋뿐입니다. 그 위에 Model · Migration · Factory ·
 Seeder · Repository(인터페이스 + 구현) · Service · FormRequest · Resource · Controller ·
-Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1개씩 있습니다. 실제
-모듈은 이 계층을 엔티티 수만큼 늘린 것입니다.
+Listener · Layout · 컴포넌트 · 스타일시트(순수 CSS) · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1개씩
+있습니다. 실제 모듈은 이 계층을 엔티티 수만큼 늘린 것입니다.
+
+화면 모양은 모듈이 자기 CSS 로 싣습니다. 스타일시트는 빌드 도구 없이 손으로 쓴 순수 CSS 한 장이며,
+템플릿 CSS 뒤에 선언되는 기본값 칸(`@layer g7-extension` — 템플릿의 층 없는 규칙·덮기 파일만 이를 이긴다)과 층 없는 일반 칸을 함께 보여 줍니다
+([docs/frontend.md](docs/frontend.md#스타일--모듈-자기-css)).
 
 **설계 원칙: 짧게 유지한다.** 샘플의 가치는 완결성이 아니라 **한눈에 읽히는 것**입니다.
 여기에 기능을 더하면 계층 구조를 보러 온 사람이 도메인 로직을 읽게 되므로, 새 기능이
@@ -127,7 +131,9 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:gnuboard7-hello_module` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰면 `hellomodule-*` 로 `resources/css/main.css` 에 정의하고 `php artisan module:build gnuboard7-hello_module --production` 으로 `dist/css/module.css` 를 다시 굽는다
+- [ ] CSS 는 색·테두리·글자(의미)를 `@layer g7-extension { }` 안에, 여백·정렬(배치)을 층 밖에 둔다. 다크는 `.dark` 가 아니라 `data-g7-color-scheme` 표식 규격으로 쓴다 ([docs/frontend.md](docs/frontend.md#스타일--모듈-자기-css))
+- [ ] `hellomodule-*` 클래스 이름을 바꾸거나 지우면 Hello 사용자 템플릿의 확장 CSS 덮기 파일(`templates/_bundled/gnuboard7-hello_user_template/src/styles/overrides/gnuboard7-hello_module.css`)이 엉뚱한 곳을 겨누게 된다 — 그런 판은 메이저(0.x 는 마이너)를 올려 그 템플릿의 `targetVersion` 범위 밖으로 낸다
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 계층을 늘리기 전에 "이것이 샘플에 필요한가" 를 먼저 묻는다 — 샘플의 가치는 한눈에 읽히는 것이다
 - [ ] `manifest.hidden = true` 를 유지 (복제본에서만 제거)
@@ -148,6 +154,8 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 | 검증 로직을 `MemoService` 에 넣기 | `MemoRequest` (FormRequest) | 샘플이 잘못된 본을 보이면 그것을 따라 한 모듈이 전부 같은 형태가 된다 |
 | `MemoService` 가 `MemoRepository` 구체 클래스를 타입힌트 | `MemoRepositoryInterface` | 위와 같은 이유 — 샘플은 규약의 본보기다 |
 | 훅 발행 없이 Service 안에서 로그·알림을 직접 수행 | 훅 발행 + 리스너 | 부가 작업이 Service 에 쌓이면 그 Service 를 재사용할 수 없다 |
+| 레이아웃·컴포넌트에 Tailwind 유틸리티나 템플릿 서식 클래스(`text-page-heading` 등) 쓰기 | 자기 CSS 의 `hellomodule-*` | 그 클래스는 템플릿 CSS 가 우연히 만들어 둔 것이라, 스타일시트가 다른 템플릿에서는 오류 없이 모양이 빠진다 |
+| 다크 규칙을 `.dark .x` 로 쓰기 | `data-g7-color-scheme` 표식 규격 | 템플릿마다 다크 방식이 다르다. 표식은 코어가 템플릿 선언을 읽어 단다 |
 | 쓰기 버튼·폼을 권한과 무관하게 열어 두고 서버 403 에만 기대기 | 응답 `abilities` 로 `disabled`·읽기 전용 ([docs/frontend.md](docs/frontend.md#권한-게이트-abilities)) | 사용자가 다 입력한 뒤에야 거절된다. 샘플이 이 형태를 보여야 복제한 모듈도 따른다 |
 <!-- @intent END -->
 
@@ -157,9 +165,9 @@ Listener · Layout · Test · 다국어(백엔드 PHP + 프론트 JSON)가 각 1
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 7개 | `modules/_bundled/gnuboard7-hello_module/tests` |
-| Vitest | 7개 | `vitest.config.ts` |
+| Vitest | 8개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 12개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 13개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

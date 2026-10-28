@@ -62,6 +62,14 @@ return [
         'template_init_error' => '템플릿 엔진을 초기화하는 중 오류가 발생했습니다',
         'contact_admin_for_template' => '시스템 관리자에게 문의하여 템플릿을 활성화해주세요.',
 
+        // template.json 확장 CSS 계약 검증 메시지
+        'color_scheme_invalid_strategy' => 'features.color_scheme.strategy 는 ancestor-class, media-query, none 중 하나여야 합니다.',
+        'color_scheme_selector_required' => 'features.color_scheme 의 ancestor-class 방식에는 selector 가 필요합니다.',
+        'extension_css_overrides_not_list' => 'extension_css_overrides 는 배열이어야 합니다.',
+        'extension_css_override_invalid' => 'extension_css_overrides 의 :index 번째 항목에 target 과 dist/ 아래 path 가 필요합니다.',
+        'extension_css_override_invalid_version' => 'extension_css_overrides 의 :target 항목 targetVersion 을 해석할 수 없습니다.',
+        'extension_css_override_duplicate' => 'extension_css_overrides 에 :target 이 두 번 선언되었습니다.',
+
         // 에러 레이아웃 검증 메시지
         'missing_error_config' => '템플릿에 error_config 섹션이 없습니다. 에러 페이지 레이아웃 설정이 필요합니다.',
         'missing_error_layout' => ':code 에러 레이아웃이 정의되지 않았습니다.',

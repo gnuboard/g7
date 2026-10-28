@@ -632,7 +632,7 @@ export const Card: React.FC<CardProps> = ({ title, onClick }) => (
 
 `src/index.ts` 의 `initTemplate()` 함수에서 다음을 등록해야 합니다:
 
-1. 커스텀 핸들러 등록 — `actionDispatcher.registerHandler(name, handler)` (모든 템플릿 공통)
+1. 커스텀 핸들러 등록 — `actionDispatcher.registerHandler(name, handler, { category: 'custom', source: '<템플릿 식별자>' })` (모든 템플릿 공통). 이름 규칙과 덮어쓰기 경고는 [핸들러 이름 규칙과 소유권](../extension/module-assets.md#핸들러-이름-규칙과-소유권)
 2. **IDV 모달 launcher 등록** — `window.G7Core.identity.setLauncher(launcher)` (engine-v1.46.0+ 신규)
 
 본인인증 정책이 활성화되면 코어 `IdentityGuardInterceptor` 가 428 응답을 가로채 launcher 를 호출합니다. launcher 미등록 시 코어 `defaultLauncher` 가 토스트 + `/identity/challenge` 풀페이지 navigate 로 폴백합니다.
@@ -649,7 +649,8 @@ export function initTemplate(): void {
     const actionDispatcher = (window as any).G7Core?.getActionDispatcher?.();
     if (actionDispatcher) {
       Object.entries(handlerMap).forEach(([name, handler]) => {
-        actionDispatcher.registerHandler(name, handler);
+        // 등록자를 템플릿 식별자로 밝힌다 (engine-v1.86.0 소유권 경고)
+        actionDispatcher.registerHandler(name, handler, { category: 'custom', source: 'my-template' });
       });
       // IDV launcher 는 핸들러 등록 직후 — G7Core.identity 준비됨
       registerMyTemplateIdentityLauncher();

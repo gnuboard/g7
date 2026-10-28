@@ -237,7 +237,7 @@ describe('C3 — 이커머스 환경설정 넘침', () => {
     expect(nav).toBeTruthy();
     // 콘텐츠 래퍼가 p-4 sm:p-6 lg:p-8 이라 고정 24px 를 가정하는 sticky-tab-nav(-mx-6 px-6)는
     // 폰에서 좌우 8px 씩 과다 bleed 된다.
-    expect(nav.props.className).toBe('sticky-tab-nav-responsive');
+    expect(nav.props.className).toBe('ecommerce-sticky-tab-nav-responsive');
   });
 
   /**
@@ -248,7 +248,7 @@ describe('C3 — 이커머스 환경설정 넘침', () => {
     const layout = load('partials/admin_ecommerce_settings/_tab_basic_info.json');
     const emailGroup = collect(layout, (n) => n.id === 'field_email')[0];
     expect(emailGroup).toBeTruthy();
-    const row = collect(emailGroup, (n) => cls(n).startsWith('flex-center'))[0];
+    const row = collect(emailGroup, (n) => cls(n).startsWith('ecommerce-flex-center'))[0];
     expect(row.responsive.portable.props.className).toContain('flex-wrap');
   });
 
@@ -288,7 +288,7 @@ describe('C5 — 엑셀 다운로드 날짜 필터 행', () => {
     expect(cls(parent)).toContain('flex-wrap');
 
     // 부모만 wrap 이면 nowrap 인 자식 행(입력 2개 × w-36)이 11px 넘친다.
-    const child = (parent.children ?? []).find((c: any) => cls(c).startsWith('flex-center'));
+    const child = (parent.children ?? []).find((c: any) => cls(c).startsWith('ecommerce-flex-center'));
     expect(child).toBeTruthy();
     expect(cls(child)).toContain('flex-wrap');
   });

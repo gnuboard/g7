@@ -10,7 +10,7 @@
     "if": "{{_global.ecommerceExportTracking?.id}}",
     "props": {
         "role": "status",
-        "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-nowrap"
     },
     "children": [
         {
@@ -18,7 +18,7 @@
             "name": "Span",
             "if": "{{_global.ecommerceExportTracking?.status === 'pending' || _global.ecommerceExportTracking?.status === 'processing'}}",
             "props": {
-                "className": "flex items-center gap-1"
+                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1"
             },
             "children": [
                 {
@@ -26,7 +26,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "spinner",
-                        "className": "spinner-sm"
+                        "className": "ecommerce-spinner-sm"
                     }
                 },
                 {
@@ -41,7 +41,7 @@
             "name": "Span",
             "if": "{{_global.ecommerceExportTracking?.status === 'completed'}}",
             "props": {
-                "className": "text-green-700 dark:text-green-400"
+                "className": "ecommerce:text-green-700 ecommerce:dark:text-green-400"
             },
             "text": "$t:sirsoft-ecommerce.admin.export.tracking.ready"
         },
@@ -97,7 +97,7 @@
             ],
             "props": {
                 "type": "button",
-                "className": "flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50 disabled:cursor-not-allowed",
+                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                 "disabled": "{{_global.ecommerceExportTrackingDownloading === true}}"
             },
             "children": [
@@ -107,7 +107,7 @@
                     "if": "{{_global.ecommerceExportTrackingDownloading === true}}",
                     "props": {
                         "name": "spinner",
-                        "className": "spinner-sm"
+                        "className": "ecommerce-spinner-sm"
                     }
                 },
                 {
@@ -122,7 +122,7 @@
             "name": "Span",
             "if": "{{_global.ecommerceExportTracking?.status === 'failed' || _global.ecommerceExportTracking?.status === 'expired'}}",
             "props": {
-                "className": "text-red-600 dark:text-red-400"
+                "className": "ecommerce:text-red-600 ecommerce:dark:text-red-400"
             },
             "text": "$t:sirsoft-ecommerce.admin.export.tracking.failed"
         },
@@ -132,7 +132,7 @@
             "if": "{{['completed', 'failed', 'expired'].includes(_global.ecommerceExportTracking?.status) && !(_global.ecommerceExportTracking?.status === 'completed' && _global.ecommerceExportTracking?.can_download === true)}}",
             "props": {
                 "href": "/admin/ecommerce/exports",
-                "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                "className": "ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline"
             },
             "children": [
                 {
@@ -170,7 +170,7 @@
             "props": {
                 "type": "button",
                 "aria-label": "$t:sirsoft-ecommerce.admin.export.tracking.dismiss",
-                "className": "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                "className": "ecommerce:text-gray-400 ecommerce:hover:text-gray-600 ecommerce:dark:text-gray-500 ecommerce:dark:hover:text-gray-300"
             },
             "children": [
                 {
@@ -178,7 +178,7 @@
                     "name": "Icon",
                     "props": {
                         "name": "xmark",
-                        "className": "text-xs"
+                        "className": "ecommerce:text-xs"
                     }
                 }
             ]

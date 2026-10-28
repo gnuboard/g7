@@ -786,7 +786,7 @@ describe('게시판 유형 관리 모달 레이아웃', () => {
       expect(slugInput.classMap).toBeDefined();
       expect(slugInput.classMap.key).toContain('btFormErrors?.slug');
       // Input 외형은 시맨틱 .input 이 디폴트로 제공, 에러는 input-error 토글로 통일 (#369)
-      expect(slugInput.classMap.variants.error).toBe('input-error');
+      expect(slugInput.classMap.variants.error).toBe('board-input-error');
       expect(slugInput.classMap.variants.normal).toBe('');
     });
 

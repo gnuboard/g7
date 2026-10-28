@@ -45,16 +45,16 @@
     <permission>sirsoft-social_login.settings.view</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="social_login_diagnostics_content" class="admin-page-content">
-      <div data-ref="page_header" class="flex-between mb-6">
+    <div data-ref="social_login_diagnostics_content" class="sl-admin-page-content">
+      <div data-ref="page_header" class="sl-flex-between sl:mb-6">
         <div>
-          <h1 class="page-title">$t:sirsoft-social_login.admin.diagnostics.title</h1>
-          <p class="text-label-subtle mt-1">$t:sirsoft-social_login.admin.diagnostics.description</p>
+          <h1 class="sl-page-title">$t:sirsoft-social_login.admin.diagnostics.title</h1>
+          <p class="sl-text-label-subtle sl:mt-1">$t:sirsoft-social_login.admin.diagnostics.description</p>
         </div>
-        <div class="flex-center gap-2">
-          <a data-ref="stats_link" href="/admin/plugins/sirsoft-social_login/stats" class="btn btn-secondary text-sm">$t:sirsoft-social_login.admin.stats.title</a>
-          <a data-ref="settings_link" href="/admin/plugins/sirsoft-social_login/settings" class="btn btn-secondary text-sm">$t:sirsoft-social_login.settings.title</a>
-          <button data-ref="refresh_button" type="button" class="btn-icon" title="$t:sirsoft-social_login.admin.diagnostics.refresh" aria-label="$t:sirsoft-social_login.admin.diagnostics.refresh">
+        <div class="sl-flex-center sl:gap-2">
+          <a data-ref="stats_link" href="/admin/plugins/sirsoft-social_login/stats" class="sl-btn sl-btn-secondary sl:text-sm">$t:sirsoft-social_login.admin.stats.title</a>
+          <a data-ref="settings_link" href="/admin/plugins/sirsoft-social_login/settings" class="sl-btn sl-btn-secondary sl:text-sm">$t:sirsoft-social_login.settings.title</a>
+          <button data-ref="refresh_button" type="button" class="sl-btn-icon" title="$t:sirsoft-social_login.admin.diagnostics.refresh" aria-label="$t:sirsoft-social_login.admin.diagnostics.refresh">
             <on type="click">
               <!-- 진단 요약·시도 기록·웹훅 기록을 다시 받는다 -->
               <sequence>
@@ -63,70 +63,70 @@
                 <refetch-data-source dataSourceId="webhookEvents"/>
               </sequence>
             </on>
-            <icon name="fa-solid fa-arrows-rotate" class="text-xl"/>
+            <icon name="arrows-rotate" class="sl:text-xl sl:leading-none"/>
           </button>
         </div>
       </div>
-      <div data-ref="summary_cards" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <div data-ref="queue_card" class="admin-card">
-          <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">$t:sirsoft-social_login.admin.diagnostics.queue.title</h2>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{$t('sirsoft-social_login.admin.diagnostics.queue.connection') + ': ' + (diagnostics?.data?.queue?.connection ?? '-')}}</p>
-          <p data-ref="queue_pending_value" class="text-sm text-gray-800 dark:text-gray-200">{{$t('sirsoft-social_login.admin.diagnostics.queue.pending') + ': ' + (diagnostics?.data?.queue?.pending ?? '-')}}</p>
-          <p data-ref="queue_failed_value" class="{{(diagnostics?.data?.queue?.failed_jobs ?? 0) > 0 ? 'text-sm text-red-700 dark:text-red-300' : 'text-sm text-gray-800 dark:text-gray-200'}}">{{$t('sirsoft-social_login.admin.diagnostics.queue.failed_jobs') + ': ' + (diagnostics?.data?.queue?.failed_jobs ?? '-')}}</p>
-          <p data-if="{{diagnostics?.data?.queue?.connection === 'sync'}}" class="text-xs text-amber-700 dark:text-amber-300 mt-1">$t:sirsoft-social_login.admin.diagnostics.queue.sync_hint</p>
+      <div data-ref="summary_cards" class="sl:grid sl:grid-cols-1 sl:md:grid-cols-2 sl:xl:grid-cols-4 sl:gap-4 sl:mb-6">
+        <div data-ref="queue_card" class="sl-admin-card">
+          <h2 class="sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-2">$t:sirsoft-social_login.admin.diagnostics.queue.title</h2>
+          <p class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">{{$t('sirsoft-social_login.admin.diagnostics.queue.connection') + ': ' + (diagnostics?.data?.queue?.connection ?? '-')}}</p>
+          <p data-ref="queue_pending_value" class="sl:text-sm sl:text-gray-800 sl:dark:text-gray-200">{{$t('sirsoft-social_login.admin.diagnostics.queue.pending') + ': ' + (diagnostics?.data?.queue?.pending ?? '-')}}</p>
+          <p data-ref="queue_failed_value" class="{{(diagnostics?.data?.queue?.failed_jobs ?? 0) > 0 ? 'sl:text-sm sl:text-red-700 sl:dark:text-red-300' : 'sl:text-sm sl:text-gray-800 sl:dark:text-gray-200'}}">{{$t('sirsoft-social_login.admin.diagnostics.queue.failed_jobs') + ': ' + (diagnostics?.data?.queue?.failed_jobs ?? '-')}}</p>
+          <p data-if="{{diagnostics?.data?.queue?.connection === 'sync'}}" class="sl:text-xs sl:text-amber-700 sl:dark:text-amber-300 sl:mt-1">$t:sirsoft-social_login.admin.diagnostics.queue.sync_hint</p>
         </div>
-        <div data-ref="mail_card" class="admin-card">
-          <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">$t:sirsoft-social_login.admin.diagnostics.mail.title</h2>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{$t('sirsoft-social_login.admin.diagnostics.mail.mailer') + ': ' + (diagnostics?.data?.mail?.mailer ?? '-')}}</p>
-          <p data-ref="mail_status_value" class="{{diagnostics?.data?.mail?.delivering ? 'text-sm text-green-700 dark:text-green-300' : 'text-sm text-red-700 dark:text-red-300'}}">{{diagnostics?.data?.mail?.delivering ? $t('sirsoft-social_login.admin.diagnostics.mail.delivering') : $t('sirsoft-social_login.admin.diagnostics.mail.not_delivering')}}</p>
-          <p data-ref="mail_failures_value" class="text-sm text-gray-800 dark:text-gray-200">$t:sirsoft-social_login.admin.diagnostics.mail.recent_failures|count={{diagnostics?.data?.mail?.recent_code_failures ?? 0}}</p>
+        <div data-ref="mail_card" class="sl-admin-card">
+          <h2 class="sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-2">$t:sirsoft-social_login.admin.diagnostics.mail.title</h2>
+          <p class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">{{$t('sirsoft-social_login.admin.diagnostics.mail.mailer') + ': ' + (diagnostics?.data?.mail?.mailer ?? '-')}}</p>
+          <p data-ref="mail_status_value" class="{{diagnostics?.data?.mail?.delivering ? 'sl:text-sm sl:text-green-700 sl:dark:text-green-300' : 'sl:text-sm sl:text-red-700 sl:dark:text-red-300'}}">{{diagnostics?.data?.mail?.delivering ? $t('sirsoft-social_login.admin.diagnostics.mail.delivering') : $t('sirsoft-social_login.admin.diagnostics.mail.not_delivering')}}</p>
+          <p data-ref="mail_failures_value" class="sl:text-sm sl:text-gray-800 sl:dark:text-gray-200">$t:sirsoft-social_login.admin.diagnostics.mail.recent_failures|count={{diagnostics?.data?.mail?.recent_code_failures ?? 0}}</p>
         </div>
-        <div data-ref="mock_card" class="admin-card">
-          <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">$t:sirsoft-social_login.admin.diagnostics.mock.title</h2>
-          <span data-ref="mock_badge_on" data-if="{{diagnostics?.data?.mock?.enabled}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">$t:sirsoft-social_login.admin.diagnostics.mock.on|until={{diagnostics?.data?.mock?.expires_at ?? ''}}</span>
-          <span data-ref="mock_badge_off" data-if="{{diagnostics?.data &amp;&amp; !diagnostics?.data?.mock?.enabled}}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">$t:sirsoft-social_login.admin.diagnostics.mock.off</span>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">$t:sirsoft-social_login.admin.diagnostics.mock.hint</p>
+        <div data-ref="mock_card" class="sl-admin-card">
+          <h2 class="sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-2">$t:sirsoft-social_login.admin.diagnostics.mock.title</h2>
+          <span data-ref="mock_badge_on" data-if="{{diagnostics?.data?.mock?.enabled}}" class="sl:inline-flex sl:items-center sl:px-2 sl:py-0.5 sl:rounded-full sl:text-xs sl:font-medium sl:bg-red-100 sl:text-red-800 sl:dark:bg-red-900/30 sl:dark:text-red-300">$t:sirsoft-social_login.admin.diagnostics.mock.on|until={{diagnostics?.data?.mock?.expires_at ?? ''}}</span>
+          <span data-ref="mock_badge_off" data-if="{{diagnostics?.data &amp;&amp; !diagnostics?.data?.mock?.enabled}}" class="sl:inline-flex sl:items-center sl:px-2 sl:py-0.5 sl:rounded-full sl:text-xs sl:font-medium sl:bg-gray-100 sl:text-gray-700 sl:dark:bg-gray-700 sl:dark:text-gray-300">$t:sirsoft-social_login.admin.diagnostics.mock.off</span>
+          <p class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mt-2">$t:sirsoft-social_login.admin.diagnostics.mock.hint</p>
         </div>
-        <div data-ref="members_card" class="admin-card">
-          <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">$t:sirsoft-social_login.admin.diagnostics.members.title</h2>
-          <p data-ref="members_linked_value" class="text-sm text-gray-800 dark:text-gray-200">$t:sirsoft-social_login.admin.diagnostics.members.linked|count={{diagnostics?.data?.members?.linked_users ?? 0}}</p>
-          <p data-ref="members_passwordless_value" class="text-sm text-gray-800 dark:text-gray-200">$t:sirsoft-social_login.admin.diagnostics.members.passwordless|count={{diagnostics?.data?.members?.passwordless_users ?? 0}}</p>
-          <p data-ref="webhook_summary_value" class="text-xs text-gray-500 dark:text-gray-400 mt-2">$t:sirsoft-social_login.admin.diagnostics.webhooks.summary|days={{diagnostics?.data?.webhooks?.days ?? 7}}|received={{diagnostics?.data?.webhooks?.received ?? 0}}|ignored={{diagnostics?.data?.webhooks?.ignored ?? 0}}|failed={{diagnostics?.data?.webhooks?.failed ?? 0}}</p>
-          <p data-if="{{(diagnostics?.data?.webhooks?.ignored ?? 0) > 0 &amp;&amp; !diagnostics?.data?.webhooks?.trusted_proxy_configured}}" class="text-xs text-amber-700 dark:text-amber-300 mt-1">$t:sirsoft-social_login.admin.diagnostics.webhooks.proxy_hint</p>
+        <div data-ref="members_card" class="sl-admin-card">
+          <h2 class="sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-2">$t:sirsoft-social_login.admin.diagnostics.members.title</h2>
+          <p data-ref="members_linked_value" class="sl:text-sm sl:text-gray-800 sl:dark:text-gray-200">$t:sirsoft-social_login.admin.diagnostics.members.linked|count={{diagnostics?.data?.members?.linked_users ?? 0}}</p>
+          <p data-ref="members_passwordless_value" class="sl:text-sm sl:text-gray-800 sl:dark:text-gray-200">$t:sirsoft-social_login.admin.diagnostics.members.passwordless|count={{diagnostics?.data?.members?.passwordless_users ?? 0}}</p>
+          <p data-ref="webhook_summary_value" class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mt-2">$t:sirsoft-social_login.admin.diagnostics.webhooks.summary|days={{diagnostics?.data?.webhooks?.days ?? 7}}|received={{diagnostics?.data?.webhooks?.received ?? 0}}|ignored={{diagnostics?.data?.webhooks?.ignored ?? 0}}|failed={{diagnostics?.data?.webhooks?.failed ?? 0}}</p>
+          <p data-if="{{(diagnostics?.data?.webhooks?.ignored ?? 0) > 0 &amp;&amp; !diagnostics?.data?.webhooks?.trusted_proxy_configured}}" class="sl:text-xs sl:text-amber-700 sl:dark:text-amber-300 sl:mt-1">$t:sirsoft-social_login.admin.diagnostics.webhooks.proxy_hint</p>
         </div>
       </div>
-      <div data-ref="providers_status_card" class="admin-card mb-6">
-        <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-3">$t:sirsoft-social_login.admin.diagnostics.providers.title</h2>
-        <div class="overflow-x-auto">
-          <table data-ref="providers_status_table" class="w-full text-sm">
+      <div data-ref="providers_status_card" class="sl-admin-card sl:mb-6">
+        <h2 class="sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-3">$t:sirsoft-social_login.admin.diagnostics.providers.title</h2>
+        <div class="sl:overflow-x-auto">
+          <table data-ref="providers_status_table" class="sl:w-full sl:text-sm">
             <thead>
-              <tr class="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                <th class="py-2 pr-3">$t:sirsoft-social_login.admin.diagnostics.providers.provider</th>
-                <th class="py-2 pr-3">$t:sirsoft-social_login.admin.diagnostics.providers.state</th>
-                <th class="py-2 pr-3">$t:sirsoft-social_login.admin.diagnostics.providers.last_success</th>
-                <th class="py-2 pr-3">$t:sirsoft-social_login.admin.diagnostics.providers.last_error</th>
-                <th class="py-2 pr-3">$t:sirsoft-social_login.admin.diagnostics.providers.last_webhook</th>
+              <tr class="sl:text-left sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:border-b sl:border-gray-200 sl:dark:border-gray-700">
+                <th class="sl:py-2 sl:pr-3">$t:sirsoft-social_login.admin.diagnostics.providers.provider</th>
+                <th class="sl:py-2 sl:pr-3">$t:sirsoft-social_login.admin.diagnostics.providers.state</th>
+                <th class="sl:py-2 sl:pr-3">$t:sirsoft-social_login.admin.diagnostics.providers.last_success</th>
+                <th class="sl:py-2 sl:pr-3">$t:sirsoft-social_login.admin.diagnostics.providers.last_error</th>
+                <th class="sl:py-2 sl:pr-3">$t:sirsoft-social_login.admin.diagnostics.providers.last_webhook</th>
               </tr>
             </thead>
             <tbody>
-              <tr data-each="row in diagnostics?.data?.providers ?? []" data-key="{{row.key}}" class="border-b border-gray-100 dark:border-gray-700">
-                <td class="py-2 pr-3 whitespace-nowrap text-gray-900 dark:text-white">{{row.label}}</td>
-                <td class="py-2 pr-3 whitespace-nowrap">
-                  <span class="{{row.credentials_unreadable ? 'text-red-700 dark:text-red-300' : (row.enabled ? 'text-green-700 dark:text-green-300' : 'text-gray-600 dark:text-gray-300')}}">{{row.credentials_unreadable ? $t('sirsoft-social_login.admin.diagnostics.providers.unreadable') : (row.enabled ? $t('sirsoft-social_login.admin.providers.enabled') : (row.configured ? $t('sirsoft-social_login.admin.diagnostics.providers.configured') : $t('sirsoft-social_login.admin.diagnostics.providers.not_configured')))}}</span>
+              <tr data-each="row in diagnostics?.data?.providers ?? []" data-key="{{row.key}}" class="sl:border-b sl:border-gray-100 sl:dark:border-gray-700">
+                <td class="sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-gray-900 sl:dark:text-white">{{row.label}}</td>
+                <td class="sl:py-2 sl:pr-3 sl:whitespace-nowrap">
+                  <span class="{{row.credentials_unreadable ? 'sl:text-red-700 sl:dark:text-red-300' : (row.enabled ? 'sl:text-green-700 sl:dark:text-green-300' : 'sl:text-gray-600 sl:dark:text-gray-300')}}">{{row.credentials_unreadable ? $t('sirsoft-social_login.admin.diagnostics.providers.unreadable') : (row.enabled ? $t('sirsoft-social_login.admin.providers.enabled') : (row.configured ? $t('sirsoft-social_login.admin.diagnostics.providers.configured') : $t('sirsoft-social_login.admin.diagnostics.providers.not_configured')))}}</span>
                 </td>
-                <td class="py-2 pr-3 whitespace-nowrap text-gray-700 dark:text-gray-300">{{row.last_success_at ?? '-'}}</td>
-                <td class="py-2 pr-3 whitespace-nowrap text-gray-700 dark:text-gray-300">{{row.last_error_at ? row.last_error_at + ' (' + (row.last_error_code ?? '') + ')' : '-'}}</td>
-                <td class="py-2 pr-3 whitespace-nowrap text-gray-700 dark:text-gray-300">{{row.last_webhook_at ?? '-'}}</td>
+                <td class="sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-gray-700 sl:dark:text-gray-300">{{row.last_success_at ?? '-'}}</td>
+                <td class="sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-gray-700 sl:dark:text-gray-300">{{row.last_error_at ? row.last_error_at + ' (' + (row.last_error_code ?? '') + ')' : '-'}}</td>
+                <td class="sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-gray-700 sl:dark:text-gray-300">{{row.last_webhook_at ?? '-'}}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
-      <div data-ref="attempts_section" class="admin-card mb-6">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h2 class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-social_login.admin.diagnostics.attempts.title</h2>
-          <div class="flex flex-wrap items-center gap-2">
-            <select data-ref="attempt_provider_filter" class="w-40" value="{{query.attempt_provider || ''}}" aria-label="$t:sirsoft-social_login.admin.diagnostics.filters.provider">
+      <div data-ref="attempts_section" class="sl-admin-card sl:mb-6">
+        <div class="sl:flex sl:flex-wrap sl:items-center sl:justify-between sl:gap-2 sl:mb-3">
+          <h2 class="sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white">$t:sirsoft-social_login.admin.diagnostics.attempts.title</h2>
+          <div class="sl:flex sl:flex-wrap sl:items-center sl:gap-2">
+            <select data-ref="attempt_provider_filter" class="sl:w-40" value="{{query.attempt_provider || ''}}" aria-label="$t:sirsoft-social_login.admin.diagnostics.filters.provider">
               <option value="">$t:sirsoft-social_login.admin.diagnostics.filters.all_providers</option>
               <option data-each="row in diagnostics?.data?.providers ?? []" value="{{row.key}}">{{row.label}}</option>
               <on type="change">
@@ -136,7 +136,7 @@
                 </navigate>
               </on>
             </select>
-            <select data-ref="attempt_outcome_filter" class="w-40" value="{{query.attempt_outcome || 'failed'}}" aria-label="$t:sirsoft-social_login.admin.diagnostics.filters.outcome">
+            <select data-ref="attempt_outcome_filter" class="sl:w-40" value="{{query.attempt_outcome || 'failed'}}" aria-label="$t:sirsoft-social_login.admin.diagnostics.filters.outcome">
               <option value="all">$t:sirsoft-social_login.admin.diagnostics.filters.all_outcomes</option>
               <option value="failed">$t:sirsoft-social_login.admin.diagnostics.outcomes.failed</option>
               <option value="denied">$t:sirsoft-social_login.admin.diagnostics.outcomes.denied</option>
@@ -162,36 +162,36 @@
           </on>
           <column field="created_at" header="$t:sirsoft-social_login.admin.diagnostics.attempts.col.created_at" :sortable="false" width="170px">
             <cell>
-              <span class="text-label whitespace-nowrap">{{row.created_at ?? '-'}}</span>
+              <span class="sl-text-label sl:whitespace-nowrap">{{row.created_at ?? '-'}}</span>
             </cell>
           </column>
           <column field="provider_key" header="$t:sirsoft-social_login.admin.diagnostics.attempts.col.provider" :sortable="false" width="120px">
             <cell>
-              <span class="text-body">{{row.provider_key}}</span>
+              <span class="sl-text-body">{{row.provider_key}}</span>
             </cell>
           </column>
           <column field="intent" header="$t:sirsoft-social_login.admin.diagnostics.attempts.col.intent" :sortable="false" width="90px">
             <cell>
-              <span class="text-body">{{$t('sirsoft-social_login.admin.diagnostics.intents.' + row.intent)}}</span>
+              <span class="sl-text-body">{{$t('sirsoft-social_login.admin.diagnostics.intents.' + row.intent)}}</span>
             </cell>
           </column>
           <column field="outcome" header="$t:sirsoft-social_login.admin.diagnostics.attempts.col.outcome" :sortable="false" width="90px">
             <cell>
-              <span class="{{row.outcome === 'failed' || row.outcome === 'denied' ? 'text-red-700 dark:text-red-300' : 'text-gray-800 dark:text-gray-200'}}">{{$t('sirsoft-social_login.admin.diagnostics.outcomes.' + row.outcome)}}</span>
+              <span class="{{row.outcome === 'failed' || row.outcome === 'denied' ? 'sl:text-red-700 sl:dark:text-red-300' : 'sl:text-gray-800 sl:dark:text-gray-200'}}">{{$t('sirsoft-social_login.admin.diagnostics.outcomes.' + row.outcome)}}</span>
             </cell>
           </column>
           <column field="error_code" header="$t:sirsoft-social_login.admin.diagnostics.attempts.col.error" :sortable="false">
             <cell>
-              <span class="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">{{(row.error_code ?? '-') + (row.error_message ? ' — ' + row.error_message : '')}}</span>
+              <span class="sl:text-xs sl:font-mono sl:text-gray-700 sl:dark:text-gray-300 sl:break-all sl-break-all">{{(row.error_code ?? '-') + (row.error_message ? ' — ' + row.error_message : '')}}</span>
             </cell>
           </column>
         </data-grid>
       </div>
-      <div data-ref="webhooks_section" class="admin-card">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h2 class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-social_login.admin.diagnostics.webhooks.title</h2>
-          <div class="flex flex-wrap items-center gap-2">
-            <select data-ref="webhook_provider_filter" class="w-40" value="{{query.webhook_provider || ''}}" aria-label="$t:sirsoft-social_login.admin.diagnostics.filters.provider">
+      <div data-ref="webhooks_section" class="sl-admin-card">
+        <div class="sl:flex sl:flex-wrap sl:items-center sl:justify-between sl:gap-2 sl:mb-3">
+          <h2 class="sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white">$t:sirsoft-social_login.admin.diagnostics.webhooks.title</h2>
+          <div class="sl:flex sl:flex-wrap sl:items-center sl:gap-2">
+            <select data-ref="webhook_provider_filter" class="sl:w-40" value="{{query.webhook_provider || ''}}" aria-label="$t:sirsoft-social_login.admin.diagnostics.filters.provider">
               <option value="">$t:sirsoft-social_login.admin.diagnostics.filters.all_providers</option>
               <option value="kakao">$t:sirsoft-social_login.admin.diagnostics.webhooks.providers.kakao</option>
               <option value="naver">$t:sirsoft-social_login.admin.diagnostics.webhooks.providers.naver</option>
@@ -203,7 +203,7 @@
                 </navigate>
               </on>
             </select>
-            <select data-ref="webhook_status_filter" class="w-40" value="{{query.webhook_status || ''}}" aria-label="$t:sirsoft-social_login.admin.diagnostics.filters.status">
+            <select data-ref="webhook_status_filter" class="sl:w-40" value="{{query.webhook_status || ''}}" aria-label="$t:sirsoft-social_login.admin.diagnostics.filters.status">
               <option value="">$t:sirsoft-social_login.admin.diagnostics.filters.all_statuses</option>
               <option value="received">$t:sirsoft-social_login.admin.diagnostics.statuses.received</option>
               <option value="processed">$t:sirsoft-social_login.admin.diagnostics.statuses.processed</option>
@@ -227,27 +227,27 @@
           </on>
           <column field="received_at" header="$t:sirsoft-social_login.admin.diagnostics.webhooks.col.received_at" :sortable="false" width="170px">
             <cell>
-              <span class="text-label whitespace-nowrap">{{row.received_at ?? '-'}}</span>
+              <span class="sl-text-label sl:whitespace-nowrap">{{row.received_at ?? '-'}}</span>
             </cell>
           </column>
           <column field="provider_key" header="$t:sirsoft-social_login.admin.diagnostics.webhooks.col.provider" :sortable="false" width="100px">
             <cell>
-              <span class="text-body">{{row.provider_key}}</span>
+              <span class="sl-text-body">{{row.provider_key}}</span>
             </cell>
           </column>
           <column field="event_type" header="$t:sirsoft-social_login.admin.diagnostics.webhooks.col.event_type" :sortable="false" width="140px">
             <cell>
-              <span class="text-body">{{$t('sirsoft-social_login.admin.diagnostics.event_types.' + row.event_type)}}</span>
+              <span class="sl-text-body">{{$t('sirsoft-social_login.admin.diagnostics.event_types.' + row.event_type)}}</span>
             </cell>
           </column>
           <column field="status" header="$t:sirsoft-social_login.admin.diagnostics.webhooks.col.status" :sortable="false" width="100px">
             <cell>
-              <span class="{{row.status === 'failed' ? 'text-red-700 dark:text-red-300' : (row.status === 'ignored' ? 'text-amber-700 dark:text-amber-300' : 'text-gray-800 dark:text-gray-200')}}">{{$t('sirsoft-social_login.admin.diagnostics.statuses.' + row.status)}}</span>
+              <span class="{{row.status === 'failed' ? 'sl:text-red-700 sl:dark:text-red-300' : (row.status === 'ignored' ? 'sl:text-amber-700 sl:dark:text-amber-300' : 'sl:text-gray-800 sl:dark:text-gray-200')}}">{{$t('sirsoft-social_login.admin.diagnostics.statuses.' + row.status)}}</span>
             </cell>
           </column>
           <column field="error" header="$t:sirsoft-social_login.admin.diagnostics.webhooks.col.detail" :sortable="false">
             <cell>
-              <span class="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">{{(row.provider_user_id_prefix ? row.provider_user_id_prefix + '… ' : '') + (row.error ?? '') + ' · ' + $t('sirsoft-social_login.admin.diagnostics.webhooks.attempts') + ' ' + (row.attempts ?? 0)}}</span>
+              <span class="sl:text-xs sl:font-mono sl:text-gray-700 sl:dark:text-gray-300 sl:break-all sl-break-all">{{(row.provider_user_id_prefix ? row.provider_user_id_prefix + '… ' : '') + (row.error ?? '') + ' · ' + $t('sirsoft-social_login.admin.diagnostics.webhooks.attempts') + ' ' + (row.attempts ?? 0)}}</span>
             </cell>
           </column>
         </data-grid>

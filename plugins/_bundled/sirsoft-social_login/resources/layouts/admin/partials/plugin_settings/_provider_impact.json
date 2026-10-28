@@ -12,14 +12,14 @@
     "props": {
         "role": "dialog",
         "aria-label": "$t:sirsoft-social_login.admin.providers.impact_title",
-        "className": "rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 space-y-3"
+        "className": "sl:rounded-lg sl:border sl:border-amber-300 sl:dark:border-amber-700 sl:bg-amber-50 sl:dark:bg-amber-900/20 sl:p-4 sl:space-y-3"
     },
     "children": [
         {
             "type": "basic",
             "name": "P",
             "props": {
-                "className": "text-sm font-semibold text-gray-900 dark:text-white"
+                "className": "sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white"
             },
             "text": "$t:sirsoft-social_login.admin.providers.impact_title"
         },
@@ -27,7 +27,7 @@
             "type": "basic",
             "name": "P",
             "props": {
-                "className": "text-sm text-gray-700 dark:text-gray-300"
+                "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
             },
             "text": "$t:sirsoft-social_login.admin.providers.impact_body|provider={{_local.impact?.label ?? ''}}"
         },
@@ -35,21 +35,21 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "grid grid-cols-2 gap-3"
+                "className": "sl:grid sl:grid-cols-2 sl:gap-3"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "p-3 rounded-lg bg-white dark:bg-gray-800"
+                        "className": "sl:p-3 sl:rounded-lg sl:bg-white sl:dark:bg-gray-800"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.impact_social_only"
                         },
@@ -58,7 +58,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                "className": "sl:text-lg sl:font-semibold sl:text-gray-900 sl:dark:text-white"
                             },
                             "text": "{{_local.impact?.social_only_users ?? 0}}"
                         }
@@ -68,14 +68,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "p-3 rounded-lg bg-white dark:bg-gray-800"
+                        "className": "sl:p-3 sl:rounded-lg sl:bg-white sl:dark:bg-gray-800"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.impact_linked"
                         },
@@ -84,7 +84,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                                "className": "sl:text-lg sl:font-semibold sl:text-gray-900 sl:dark:text-white"
                             },
                             "text": "{{_local.impact?.linked_users ?? 0}}"
                         }
@@ -98,7 +98,7 @@
             "if": "{{(_local.impact?.social_only_users ?? 0) > 0}}",
             "props": {
                 "role": "alert",
-                "className": "text-sm text-red-700 dark:text-red-300"
+                "className": "sl:text-sm sl:text-red-700 sl:dark:text-red-300"
             },
             "text": "$t:sirsoft-social_login.admin.providers.impact_warning"
         },
@@ -106,7 +106,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex justify-end gap-2"
+                "className": "sl:flex sl:justify-end sl:gap-2"
             },
             "children": [
                 {
@@ -126,7 +126,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-secondary text-sm"
+                        "className": "sl-btn sl-btn-secondary sl:text-sm"
                     },
                     "children": [
                         {
@@ -150,7 +150,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-primary text-sm",
+                        "className": "sl-btn sl-btn-primary sl:text-sm",
                         "disabled": "{{_local.isSavingProvider}}"
                     },
                     "children": [

@@ -1,62 +1,62 @@
 <!-- 마이페이지 프로필에 마케팅 동의 현황을 읽기 전용으로 덧붙이는 조각 — 수정은 프로필 편집 쪽에서 한다 -->
 <extension target-layout="mypage/profile" priority="100">
   <inject target-id="profile_view_bio_card" position="append">
-    <div data-ref="profile_view_marketing_consent_section" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
-      <div class="flex-between mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-        <responsive on="portable" class="flex flex-col gap-1 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"/>
-        <h3 class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-marketing.marketing_consent_title</h3>
-        <span class="text-xs text-blue-600 dark:text-blue-400">$t:sirsoft-marketing.marketing_consent_edit_hint</span>
+    <div data-ref="profile_view_marketing_consent_section" class="marketing:bg-white marketing:dark:bg-gray-800 marketing:rounded-lg marketing:shadow-sm marketing:border marketing:border-gray-200 marketing:dark:border-gray-700 marketing:p-6">
+      <responsive on="portable" class="marketing:bg-white marketing:dark:bg-gray-800 marketing:rounded-lg marketing:shadow-sm marketing:border marketing:border-gray-200 marketing:dark:border-gray-700 marketing:p-4"/>
+      <div class="marketing-user-flex-between marketing:mb-4 marketing:pb-3 marketing:border-b marketing:border-gray-200 marketing:dark:border-gray-700">
+        <responsive on="portable" class="marketing:flex marketing:flex-col marketing:gap-1 marketing:mb-4 marketing:pb-3 marketing:border-b marketing:border-gray-200 marketing:dark:border-gray-700"/>
+        <h3 class="marketing:text-base marketing:font-semibold marketing:text-gray-900 marketing:dark:text-white">$t:sirsoft-marketing.marketing_consent_title</h3>
+        <span class="marketing:text-xs marketing:text-blue-600 marketing:dark:text-blue-400">$t:sirsoft-marketing.marketing_consent_edit_hint</span>
       </div>
-      <div class="grid grid-cols-1 gap-4">
-        <div class="space-y-3">
-          <label data-if="{{user.data?.marketing_consent_enabled === true}}" class="flex items-start gap-3">
-            <checkbox checked="{{!!user.data?.marketing_consent}}" :disabled="true" class="mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
-            <div class="flex-1 space-y-1">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.marketing_consent</span>
-                <span data-if="{{user.data?.marketing_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">{{user.data?.marketing_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.marketing_consent_at).toLocaleDateString() : ''}}</span>
-                <span data-if="{{!user.data?.marketing_consent_at}}" class="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+      <div class="marketing:grid marketing:grid-cols-1 marketing:gap-4">
+        <div class="marketing:space-y-3">
+          <label data-if="{{user.data?.marketing_consent_enabled === true}}" class="marketing:flex marketing:items-start marketing:gap-3">
+            <checkbox checked="{{!!user.data?.marketing_consent}}" :disabled="true" class="marketing:mt-0.5 marketing:text-blue-600 marketing:bg-gray-100 marketing:dark:bg-gray-700 marketing:border-gray-300 marketing:dark:border-gray-600 marketing:rounded marketing:cursor-not-allowed"/>
+            <div class="marketing:flex-1 marketing:space-y-1">
+              <div class="marketing:flex marketing:items-center marketing:gap-2 marketing:flex-wrap">
+                <span class="marketing:text-sm marketing:font-medium marketing:text-gray-900 marketing:dark:text-white">$t:sirsoft-marketing.marketing_consent</span>
+                <span data-if="{{user.data?.marketing_consent_at}}" class="marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:text-xs marketing:font-medium marketing:bg-green-100 marketing:dark:bg-green-900 marketing:text-green-800 marketing:dark:text-green-400">{{user.data?.marketing_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.marketing_consent_at).toLocaleDateString() : ''}}</span>
+                <span data-if="{{!user.data?.marketing_consent_at}}" class="marketing:text-xs marketing:text-gray-600 marketing:dark:text-gray-300 marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:font-medium marketing:bg-gray-100 marketing:dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
               </div>
-              <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.marketing_consent_desc</span>
+              <span class="marketing:block marketing:text-xs marketing:text-gray-500 marketing:dark:text-gray-400">$t:sirsoft-marketing.marketing_consent_desc</span>
             </div>
           </label>
-          <label data-if="{{user.data?.marketing_consent_enabled === true}}" data-each="channel in (user.data?.channels ?? []).filter(ch => ch.enabled !== false)" class="flex items-start gap-3 ml-8">
-            <checkbox checked="{{!!user.data?.[channel.key]}}" :disabled="true" class="mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
-            <div class="flex-1 space-y-1">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-sm font-medium text-gray-900 dark:text-white">{{channel.label}}</span>
-                <span data-if="{{user.data?.[channel.key + '_at']}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">{{user.data?.[channel.key + '_at'] ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data[channel.key + '_at']).toLocaleDateString() : ''}}</span>
-                <span data-if="{{!user.data?.[channel.key + '_at']}}" class="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+          <label data-if="{{user.data?.marketing_consent_enabled === true}}" data-each="channel in (user.data?.channels ?? []).filter(ch => ch.enabled !== false)" class="marketing:flex marketing:items-start marketing:gap-3 marketing:ml-8">
+            <checkbox checked="{{!!user.data?.[channel.key]}}" :disabled="true" class="marketing:mt-0.5 marketing:text-blue-600 marketing:bg-gray-100 marketing:dark:bg-gray-700 marketing:border-gray-300 marketing:dark:border-gray-600 marketing:rounded marketing:cursor-not-allowed"/>
+            <div class="marketing:flex-1 marketing:space-y-1">
+              <div class="marketing:flex marketing:items-center marketing:gap-2 marketing:flex-wrap">
+                <span class="marketing:text-sm marketing:font-medium marketing:text-gray-900 marketing:dark:text-white">{{channel.label}}</span>
+                <span data-if="{{user.data?.[channel.key + '_at']}}" class="marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:text-xs marketing:font-medium marketing:bg-green-100 marketing:dark:bg-green-900 marketing:text-green-800 marketing:dark:text-green-400">{{user.data?.[channel.key + '_at'] ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data[channel.key + '_at']).toLocaleDateString() : ''}}</span>
+                <span data-if="{{!user.data?.[channel.key + '_at']}}" class="marketing:text-xs marketing:text-gray-600 marketing:dark:text-gray-300 marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:font-medium marketing:bg-gray-100 marketing:dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
               </div>
             </div>
           </label>
         </div>
-        <div class="space-y-3">
-          <label data-if="{{user.data?.third_party_consent_enabled === true}}" class="flex items-start gap-3">
-            <checkbox checked="{{!!user.data?.third_party_consent}}" :disabled="true" class="mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
-            <div class="flex-1 space-y-1">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.third_party_consent</span>
-                <span data-if="{{user.data?.third_party_consent_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">{{user.data?.third_party_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.third_party_consent_at).toLocaleDateString() : ''}}</span>
-                <span data-if="{{!user.data?.third_party_consent_at}}" class="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+        <div class="marketing:space-y-3">
+          <label data-if="{{user.data?.third_party_consent_enabled === true}}" class="marketing:flex marketing:items-start marketing:gap-3">
+            <checkbox checked="{{!!user.data?.third_party_consent}}" :disabled="true" class="marketing:mt-0.5 marketing:text-blue-600 marketing:bg-gray-100 marketing:dark:bg-gray-700 marketing:border-gray-300 marketing:dark:border-gray-600 marketing:rounded marketing:cursor-not-allowed"/>
+            <div class="marketing:flex-1 marketing:space-y-1">
+              <div class="marketing:flex marketing:items-center marketing:gap-2 marketing:flex-wrap">
+                <span class="marketing:text-sm marketing:font-medium marketing:text-gray-900 marketing:dark:text-white">$t:sirsoft-marketing.third_party_consent</span>
+                <span data-if="{{user.data?.third_party_consent_at}}" class="marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:text-xs marketing:font-medium marketing:bg-green-100 marketing:dark:bg-green-900 marketing:text-green-800 marketing:dark:text-green-400">{{user.data?.third_party_consent_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.third_party_consent_at).toLocaleDateString() : ''}}</span>
+                <span data-if="{{!user.data?.third_party_consent_at}}" class="marketing:text-xs marketing:text-gray-600 marketing:dark:text-gray-300 marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:font-medium marketing:bg-gray-100 marketing:dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
               </div>
-              <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.third_party_consent_desc</span>
+              <span class="marketing:block marketing:text-xs marketing:text-gray-500 marketing:dark:text-gray-400">$t:sirsoft-marketing.third_party_consent_desc</span>
             </div>
           </label>
-          <div data-if="{{user.data?.info_disclosure_enabled === true}}" class="space-y-1">
-            <label class="flex items-start gap-3">
-              <checkbox checked="{{!!user.data?.info_disclosure}}" :disabled="true" class="mt-0.5 text-blue-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"/>
-              <div class="flex-1 space-y-1">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-sm font-medium text-gray-900 dark:text-white">$t:sirsoft-marketing.info_disclosure</span>
-                  <span data-if="{{user.data?.info_disclosure_at}}" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">{{user.data?.info_disclosure_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.info_disclosure_at).toLocaleDateString() : ''}}</span>
-                  <span data-if="{{!user.data?.info_disclosure_at}}" class="text-xs text-gray-600 dark:text-gray-300 inline-flex items-center px-1.5 py-0.5 rounded font-medium bg-gray-100 dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
+          <div data-if="{{user.data?.info_disclosure_enabled === true}}" class="marketing:space-y-1">
+            <label class="marketing:flex marketing:items-start marketing:gap-3">
+              <checkbox checked="{{!!user.data?.info_disclosure}}" :disabled="true" class="marketing:mt-0.5 marketing:text-blue-600 marketing:bg-gray-100 marketing:dark:bg-gray-700 marketing:border-gray-300 marketing:dark:border-gray-600 marketing:rounded marketing:cursor-not-allowed"/>
+              <div class="marketing:flex-1 marketing:space-y-1">
+                <div class="marketing:flex marketing:items-center marketing:gap-2 marketing:flex-wrap">
+                  <span class="marketing:text-sm marketing:font-medium marketing:text-gray-900 marketing:dark:text-white">$t:sirsoft-marketing.info_disclosure</span>
+                  <span data-if="{{user.data?.info_disclosure_at}}" class="marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:text-xs marketing:font-medium marketing:bg-green-100 marketing:dark:bg-green-900 marketing:text-green-800 marketing:dark:text-green-400">{{user.data?.info_disclosure_at ? '$t:sirsoft-marketing.consent_date_prefix ' + new Date(user.data.info_disclosure_at).toLocaleDateString() : ''}}</span>
+                  <span data-if="{{!user.data?.info_disclosure_at}}" class="marketing:text-xs marketing:text-gray-600 marketing:dark:text-gray-300 marketing:inline-flex marketing:items-center marketing:px-1.5 marketing:py-0.5 marketing:rounded marketing:font-medium marketing:bg-gray-100 marketing:dark:bg-gray-700">$t:sirsoft-marketing.not_agreed</span>
                 </div>
-                <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-marketing.info_disclosure_desc</span>
+                <span class="marketing:block marketing:text-xs marketing:text-gray-500 marketing:dark:text-gray-400">$t:sirsoft-marketing.info_disclosure_desc</span>
               </div>
             </label>
-            <span class="text-xs text-gray-500 dark:text-gray-400 block ml-8">$t:sirsoft-marketing.info_disclosure_warning</span>
+            <span class="marketing:text-xs marketing:text-gray-500 marketing:dark:text-gray-400 marketing:block marketing:ml-8">$t:sirsoft-marketing.info_disclosure_warning</span>
           </div>
         </div>
       </div>

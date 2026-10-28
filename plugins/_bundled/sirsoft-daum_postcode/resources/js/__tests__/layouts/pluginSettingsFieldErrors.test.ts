@@ -54,7 +54,7 @@ describe('우편번호 설정 — 칸 아래 저장 오류', () => {
      * @effects postcode_settings_field_error_under_input
      */
     it.each(['display_mode', 'popup_width', 'popup_height', 'theme_color'])('%s 오류는 그 칸 아래에 첫 문구를 보인다', (field) => {
-        const span = nodes.find((n) => n.props?.className === 'form-error' && String(n.if ?? '').includes(`errors?.${field}`));
+        const span = nodes.find((n) => n.props?.className === 'daumpostcode-form-error' && String(n.if ?? '').includes(`errors?.${field}`));
         expect(span).toBeTruthy();
         const ctx = { _local: { errors: { [field]: ['팝업 너비 (px) 필드는 최소 100 이상이어야 합니다.'] } } };
         expect(evaluate(span.if, ctx)).toBeTruthy();

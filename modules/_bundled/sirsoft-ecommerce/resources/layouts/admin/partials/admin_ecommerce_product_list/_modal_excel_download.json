@@ -26,7 +26,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "ecommerce-flex-start ecommerce:gap-3 ecommerce:p-4 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -47,21 +47,21 @@
                                         "type": "radio",
                                         "name": "excelDownloadType",
                                         "value": "search",
-                                        "className": "radio mt-0.5"
+                                        "className": "ecommerce-radio ecommerce:mt-0.5"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-1"
+                                        "className": "ecommerce:flex-1"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary block font-medium"
+                                                "className": "ecommerce-text-primary ecommerce:block ecommerce:font-medium"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_search"
                                         },
@@ -69,7 +69,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "block text-label-subtle mt-1"
+                                                "className": "ecommerce:block ecommerce-text-label-subtle ecommerce:mt-1"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_search_desc|count=12"
                                         }
@@ -82,7 +82,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "flex-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "ecommerce-flex-start ecommerce:gap-3 ecommerce:p-4 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:cursor-pointer ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -103,21 +103,21 @@
                                         "type": "radio",
                                         "name": "excelDownloadType",
                                         "value": "selected",
-                                        "className": "radio mt-0.5"
+                                        "className": "ecommerce-radio ecommerce:mt-0.5"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-1"
+                                        "className": "ecommerce:flex-1"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary block font-medium"
+                                                "className": "ecommerce-text-primary ecommerce:block ecommerce:font-medium"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_selected"
                                         },
@@ -125,7 +125,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "block text-label-subtle mt-1"
+                                                "className": "ecommerce:block ecommerce-text-label-subtle ecommerce:mt-1"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.product.modal.excel_download.option_selected_desc|count=10"
                                         }
@@ -142,7 +142,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex justify-end gap-2 mt-6"
+                "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6"
             },
             "children": [
                 {
@@ -156,7 +156,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-outline"
+                        "className": "ecommerce-btn ecommerce-btn-outline"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product.modal.common.cancel"
                 },
@@ -165,7 +165,7 @@
                     "name": "Button",
                     "props": {
                         "type": "button",
-                        "className": "btn btn-primary"
+                        "className": "ecommerce-btn ecommerce-btn-primary"
                     },
                     "children": [
                         {
@@ -173,7 +173,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "download",
-                                "className": "text-base mr-2"
+                                "className": "ecommerce:text-base ecommerce:mr-2"
                             }
                         },
                         {

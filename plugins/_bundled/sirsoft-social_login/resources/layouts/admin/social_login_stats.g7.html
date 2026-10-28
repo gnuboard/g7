@@ -15,14 +15,14 @@
     <permission>sirsoft-social_login.settings.view</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="social_login_stats_content" class="admin-page-content">
-      <div data-ref="page_header" class="flex flex-wrap items-start justify-between gap-3 mb-6">
+    <div data-ref="social_login_stats_content" class="sl-admin-page-content">
+      <div data-ref="page_header" class="sl:flex sl:flex-wrap sl:items-start sl:justify-between sl:gap-3 sl:mb-6">
         <div>
-          <h1 class="page-title">$t:sirsoft-social_login.admin.stats.title</h1>
-          <p class="text-label-subtle mt-1">$t:sirsoft-social_login.admin.stats.description</p>
+          <h1 class="sl-page-title">$t:sirsoft-social_login.admin.stats.title</h1>
+          <p class="sl-text-label-subtle sl:mt-1">$t:sirsoft-social_login.admin.stats.description</p>
         </div>
-        <div data-ref="period_buttons" class="flex items-center gap-1" role="group" aria-label="$t:sirsoft-social_login.admin.stats.period">
-          <button data-ref="period_7" type="button" aria-pressed="{{String(query.days || 30) === '7'}}" class="{{String(query.days || 30) === '7' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
+        <div data-ref="period_buttons" class="sl:flex sl:items-center sl:gap-1" role="group" aria-label="$t:sirsoft-social_login.admin.stats.period">
+          <button data-ref="period_7" type="button" aria-pressed="{{String(query.days || 30) === '7'}}" class="{{String(query.days || 30) === '7' ? 'sl-btn sl-btn-primary sl:text-sm' : 'sl-btn sl-btn-secondary sl:text-sm'}}">
             <on type="click">
               <!-- 집계 기간을 최근 7일로 — 주소 쿼리에 담아 새로고침 뒤에도 남긴다 -->
               <navigate path="/admin/plugins/sirsoft-social_login/stats" :mergeQuery="true">
@@ -31,7 +31,7 @@
             </on>
             <span>$t:sirsoft-social_login.admin.stats.days_7</span>
           </button>
-          <button data-ref="period_30" type="button" aria-pressed="{{String(query.days || 30) === '30'}}" class="{{String(query.days || 30) === '30' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
+          <button data-ref="period_30" type="button" aria-pressed="{{String(query.days || 30) === '30'}}" class="{{String(query.days || 30) === '30' ? 'sl-btn sl-btn-primary sl:text-sm' : 'sl-btn sl-btn-secondary sl:text-sm'}}">
             <on type="click">
               <!-- 집계 기간을 최근 30일(기본)로 -->
               <navigate path="/admin/plugins/sirsoft-social_login/stats" :mergeQuery="true">
@@ -40,7 +40,7 @@
             </on>
             <span>$t:sirsoft-social_login.admin.stats.days_30</span>
           </button>
-          <button data-ref="period_90" type="button" aria-pressed="{{String(query.days || 30) === '90'}}" class="{{String(query.days || 30) === '90' ? 'btn btn-primary text-sm' : 'btn btn-secondary text-sm'}}">
+          <button data-ref="period_90" type="button" aria-pressed="{{String(query.days || 30) === '90'}}" class="{{String(query.days || 30) === '90' ? 'sl-btn sl-btn-primary sl:text-sm' : 'sl-btn sl-btn-secondary sl:text-sm'}}">
             <on type="click">
               <!-- 집계 기간을 최근 90일로 -->
               <navigate path="/admin/plugins/sirsoft-social_login/stats" :mergeQuery="true">
@@ -49,48 +49,48 @@
             </on>
             <span>$t:sirsoft-social_login.admin.stats.days_90</span>
           </button>
-          <a data-ref="diagnostics_link" href="/admin/plugins/sirsoft-social_login/diagnostics" class="btn btn-secondary text-sm ml-2">$t:sirsoft-social_login.admin.diagnostics.title</a>
+          <a data-ref="diagnostics_link" href="/admin/plugins/sirsoft-social_login/diagnostics" class="sl-btn sl-btn-secondary sl:text-sm sl:ml-2">$t:sirsoft-social_login.admin.diagnostics.title</a>
         </div>
       </div>
-      <p data-ref="stats_since" class="text-xs text-gray-500 dark:text-gray-400 mb-3">$t:sirsoft-social_login.admin.stats.since|since={{stats?.data?.since ?? '-'}}</p>
+      <p data-ref="stats_since" class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3">$t:sirsoft-social_login.admin.stats.since|since={{stats?.data?.since ?? '-'}}</p>
       <data-grid data-type="composite" data-ref="stats_datagrid" data="{{stats?.data?.rows ?? []}}" :pagination="false" idField="provider_key" :selectable="false" emptyMessage="$t:sirsoft-social_login.admin.stats.empty">
         <column field="label" header="$t:sirsoft-social_login.admin.stats.col.provider" :sortable="false">
           <cell>
-            <span class="text-body whitespace-nowrap">{{row.label}}</span>
+            <span class="sl-text-body sl:whitespace-nowrap">{{row.label}}</span>
           </cell>
         </column>
         <column field="signups" header="$t:sirsoft-social_login.admin.stats.col.signups" :sortable="false" width="100px">
           <cell>
-            <span class="text-body">{{row.signups}}</span>
+            <span class="sl-text-body">{{row.signups}}</span>
           </cell>
         </column>
         <column field="logins" header="$t:sirsoft-social_login.admin.stats.col.logins" :sortable="false" width="100px">
           <cell>
-            <span class="text-body">{{row.logins}}</span>
+            <span class="sl-text-body">{{row.logins}}</span>
           </cell>
         </column>
         <column field="links" header="$t:sirsoft-social_login.admin.stats.col.links" :sortable="false" width="100px">
           <cell>
-            <span class="text-body">{{row.links}}</span>
+            <span class="sl-text-body">{{row.links}}</span>
           </cell>
         </column>
         <column field="failures" header="$t:sirsoft-social_login.admin.stats.col.failures" :sortable="false" width="100px">
           <cell>
-            <span class="{{row.failures > 0 ? 'text-red-700 dark:text-red-300' : 'text-body'}}">{{row.failures}}</span>
+            <span class="{{row.failures > 0 ? 'sl:text-red-700 sl:dark:text-red-300' : 'sl-text-body'}}">{{row.failures}}</span>
           </cell>
         </column>
         <column field="linked_accounts" header="$t:sirsoft-social_login.admin.stats.col.linked_accounts" :sortable="false" width="120px">
           <cell>
-            <span class="text-body">{{row.linked_accounts}}</span>
+            <span class="sl-text-body">{{row.linked_accounts}}</span>
           </cell>
         </column>
         <column field="social_only_users" header="$t:sirsoft-social_login.admin.stats.col.social_only_users" :sortable="false" width="140px">
           <cell>
-            <span class="text-body">{{row.social_only_users}}</span>
+            <span class="sl-text-body">{{row.social_only_users}}</span>
           </cell>
         </column>
       </data-grid>
-      <p data-ref="stats_totals" class="text-sm text-gray-700 dark:text-gray-300 mt-3">$t:sirsoft-social_login.admin.stats.totals|signups={{stats?.data?.totals?.signups ?? 0}}|logins={{stats?.data?.totals?.logins ?? 0}}|failures={{stats?.data?.totals?.failures ?? 0}}</p>
+      <p data-ref="stats_totals" class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:mt-3">$t:sirsoft-social_login.admin.stats.totals|signups={{stats?.data?.totals?.signups ?? 0}}|logins={{stats?.data?.totals?.logins ?? 0}}|failures={{stats?.data?.totals?.failures ?? 0}}</p>
     </div>
   </slot>
 </layout>

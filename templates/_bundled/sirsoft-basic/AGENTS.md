@@ -161,6 +161,7 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 - [ ] 텍스트를 담는 새 컴포넌트 prop 을 도입했다면 `seo-config.json` 의 `text_props` 에 추가 (봇 화면에서만 글자가 사라진다)
 - [ ] 의존 모듈(게시판·이커머스·페이지)의 공개 API 응답 형태가 바뀌면 이 템플릿의 화면이 조용히 빈다 — 그 모듈을 올릴 때 함께 확인
 - [ ] `extensions/sirsoft-daum_postcode/` 오버라이드는 원본이 바뀌어도 따라가지 않는다 — 그 플러그인 업그레이드 후 확인
+- [ ] 모듈·플러그인 화면 클래스는 `safelist.txt` 에 넣지 않는다 — 확장은 자기 CSS(`{letters}:`·`{namespace}-`)로 모양을 싣는다(공개 문서 「확장 CSS 자기 공급 규약」). 다크 방식을 바꾸면 `template.json` 의 `features.color_scheme` 도 함께 바꾼다(확장 CSS 가 보는 중립 다크 표식의 근거). className 을 Tailwind 이름으로 해석하는 컴포넌트(`PageSkeleton` 등)는 `G7Core.style.splitExtensionClassPrefix` 로 확장 앞글자를 떼고 읽는다
 - [ ] TSX/TS 를 고쳤다면 `template:build --production` 후 `dist/` 동반 커밋 (`sourceMappingURL` 잔존 금지)
 - [ ] 프론트엔드 변경은 Playwright spec 동반 — 단위 테스트만으로는 화면 회귀가 드러나지 않는다
 - [ ] 사용자·운영자가 입력한 글(사이트·게시판·상품·회원 이름, 제목·본문·댓글, 알림)을 그리는 노드는 넘침 규칙을 따른다 — 상단 바 이름은 감싼 칸 `min-w-0 flex-1` + `truncate` + 옆 단추 `shrink-0`, 블록 글은 `break-words`, 단추·배지와 같은 flex 줄의 글은 `min-w-0 wrap-anywhere`(`break-words` 는 flex 최소 폭을 줄이지 못한다), 배지·메뉴 라벨 같은 좁은 칸은 `truncate` + 폭 상한(줄지 않는 배지 `max-w-32`), 표의 긴 칸은 `w-full max-w-0` + `block truncate`(자동 표 배치는 칸을 글 폭만큼 늘린다). 공백 없는 긴 글(`https://example.com/aaaa…`)로 297px·1280px 를 재고, 레이아웃 클래스는 `@source` 로 스캔되지 않으므로 새 클래스는 `safelist.txt` 에 있어야 한다 (#143)
@@ -206,7 +207,7 @@ PG 플러그인의 닫힘 보고(close-report)가 이 토큰으로 주문 소유
 | PHPUnit | 0개 | — |
 | Vitest | 323개 | `vitest.config.ts` |
 | Playwright | 34개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 130개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 131개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

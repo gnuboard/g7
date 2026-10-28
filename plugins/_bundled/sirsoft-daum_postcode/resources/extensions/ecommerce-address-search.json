@@ -27,7 +27,7 @@
                 ]
             },
             "props": {
-                "className": "inline-flex"
+                "className": "daumpostcode:inline-flex"
             },
             "children": [
                 {
@@ -54,7 +54,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-3 py-2 bg-gray-100 dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "daumpostcode:px-3 daumpostcode:py-2 daumpostcode:bg-gray-100 daumpostcode:dark:bg-gray-700 daumpostcode:text-sm daumpostcode:text-gray-700 daumpostcode:dark:text-gray-300 daumpostcode:border daumpostcode:border-gray-300 daumpostcode:dark:border-gray-600 daumpostcode:rounded-lg daumpostcode:hover:bg-gray-200 daumpostcode:dark:hover:bg-gray-600 daumpostcode:font-medium daumpostcode:transition-colors daumpostcode:disabled:opacity-50 daumpostcode:disabled:cursor-not-allowed",
                         "disabled": "{{String(extensionPointProps.disabled ?? false) === 'true'}}"
                     },
                     "text": "$t:sirsoft-daum_postcode.search_address"

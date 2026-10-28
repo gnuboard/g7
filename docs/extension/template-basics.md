@@ -56,6 +56,8 @@ G7의 템플릿 시스템은 JSON 기반 레이아웃 정의를 통해 동적으
 
 규약 전문: **[extension-components.md](extension-components.md)**
 
+확장 화면의 **스타일**은 확장이 자기 CSS 로 싣는다. 템플릿이 그 모양을 바꾸려면 같은 관례(대상·허용 버전 선언, 맞지 않으면 원본으로 폴백)의 확장 CSS 덮기 파일을 둔다 — 아래 [확장 CSS 덮기 파일](#확장-css-덮기-파일-extension_css_overrides).
+
 ## 템플릿 타입
 
 ### Admin 템플릿
@@ -240,7 +242,8 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
   "features": {
     "responsive": true,
     "darkMode": true,
-    "rtl": false
+    "rtl": false,
+    "color_scheme": { "strategy": "ancestor-class", "selector": ".dark" }
   },
   "assets": {
     "css": ["dist/bundle.css"],
@@ -352,6 +355,54 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
 `externals`는 페이지 최초 진입에 항상 필요한 리소스만 선언합니다. 라우트별 조건부 스크립트나 액션 실행 중 동적 로딩은 layout `scripts`와 `loadScript` 책임입니다.
 
 세 경로 모두 **같은 출처 정책**을 받습니다 — same-origin 경로이거나 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 합니다. 상세: [module-assets.md](module-assets.md#trusted_script_hosts--외부-스크립트-신뢰-호스트) · [frontend/security.md](../frontend/security.md#외부-스크립트-신뢰-출처-허용목록)
+
+### 다크 모드 방식 (`features.color_scheme`)
+
+확장 화면은 확장이 자기 CSS 로 그리는데, 확장은 템플릿이 다크 모드를 어떻게 켜는지 모릅니다. 그래서 템플릿이 자기 다크 방식을 선언하면 코어가 그 방식에 맞춰 `<html data-g7-color-scheme="dark">`(또는 `"light"`)라는 **중립 표식**을 달고, 확장 CSS 는 이 표식만 봅니다(7.2.0+).
+
+| 선언 | 뜻 | 표식이 dark 가 되는 때 |
+| --- | --- | --- |
+| `{ "strategy": "ancestor-class", "selector": ".dark" }` | 템플릿이 루트 요소의 클래스로 다크를 켠다 | `<html>` 또는 `<body>` 가 `selector` 에 맞을 때. 클래스가 바뀌면 바로 따라간다 |
+| `{ "strategy": "media-query" }` | 시스템 설정을 따른다 | `prefers-color-scheme: dark` 일 때. 시스템 설정이 바뀌면 따라간다 |
+| `{ "strategy": "none" }` | 다크 모드가 없다 | 없음 — 늘 `light` |
+
+```json
+"features": {
+    "color_scheme": { "strategy": "ancestor-class", "selector": ".dark" }
+}
+```
+
+- 선언하지 않으면 `none` 으로 봅니다. 다크 모드가 있는 템플릿이 선언을 빠뜨리면 확장 화면만 늘 라이트로 그려집니다.
+- `strategy` 가 세 값 밖이거나 `ancestor-class` 에 `selector` 가 없으면 **템플릿 검증 오류**입니다 — 필수 필드가 빠진 것과 같이 그 템플릿을 불러오지 않고 오류 로그를 남깁니다.
+- 번들 템플릿: `sirsoft-basic`·`sirsoft-admin_basic` 은 `ancestor-class` + `.dark`, 학습용 `gnuboard7-hello_user_template`·`gnuboard7-hello_admin_template` 은 `none`.
+- 템플릿 자기 CSS 는 이 선언과 무관하게 종전 방식(예: Tailwind `dark:`)을 그대로 씁니다. 표식은 확장 CSS 를 위한 것입니다 — [dark-mode.md](../frontend/dark-mode.md#확장은-중립-표식을-쓴다).
+- `features.dark_mode`(불리언)는 표식을 만들지 않습니다. 다크 방식은 `color_scheme` 으로만 선언합니다.
+- 레이아웃 편집기 프리뷰의 다크 치환(`editor-spec.json` 의 `darkMode`)은 별개 선언이며 그대로 둡니다.
+
+### 확장 CSS 덮기 파일 (`extension_css_overrides`)
+
+템플릿은 확장(모듈·플러그인) 화면의 스타일을 확장 CSS 를 고치지 않고 자기 모양으로 바꿀 수 있습니다. 확장별 CSS 파일을 만들어 대상과 허용 버전을 선언합니다(7.2.0+).
+
+```json
+"extension_css_overrides": [
+    {
+        "target": "gnuboard7-hello_module",
+        "targetVersion": "^0.3",
+        "path": "dist/css/overrides/gnuboard7-hello_module.css"
+    }
+]
+```
+
+| 필드 | 필수 | 뜻 |
+| --- | --- | --- |
+| `target` | 필수 | 덮을 확장 식별자 |
+| `targetVersion` | 선택 | 대상 확장의 허용 버전 제약(Semver). 미선언이면 무제한 |
+| `path` | 필수 | 템플릿 빌드 산출물 경로 — `dist/` 아래, `..` 금지. 원본은 `src/styles/overrides/<확장식별자>.css` 에 두는 것이 관례 |
+
+- 대상이 활성이고 버전이 맞을 때만 화면에 실립니다. 버전이 맞지 않으면 빠지고(정보 로그) 화면은 확장 원래 모양이며, 대상이 꺼져 있거나 설치되지 않았으면 조용히 빠집니다.
+- 모든 확장 CSS 뒤, 운영자 추가 자산(`custom/`) 앞에 실립니다. 검색엔진용 화면도 같은 순서입니다.
+- 배열이 아니거나, 항목에 `target`·`dist/` 아래 `path` 가 없거나, `targetVersion` 을 해석할 수 없거나, 같은 `target` 을 두 번 선언하면 **템플릿 검증 오류**입니다(위 `features.color_scheme` 과 같은 처리).
+- 덮기 파일에는 대상 확장의 클래스만 씁니다. 판정·로드 순서·서빙 가공의 전문: [module-assets.md 「템플릿 확장 CSS 덮기」](module-assets.md#템플릿-확장-css-덮기)
 
 ---
 

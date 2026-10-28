@@ -7,5 +7,6 @@
   "close": "閉じる",
   "retry_failed": "再試行しましたが失敗しました。しばらく後に再度お試しください。",
   "module_styles": "モジュールスタイル",
-  "plugin_styles": "プラグインスタイル"
+  "plugin_styles": "プラグインスタイル",
+  "extension_style_overrides": "テンプレートの拡張スタイル調整"
 }

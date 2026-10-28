@@ -123,6 +123,7 @@
         }
     },
     "features": {
+        "color_scheme": { "strategy": "ancestor-class", "selector": ".dark" },
         "dark_mode": true,
         "responsive": true,
         "multi_language": true,

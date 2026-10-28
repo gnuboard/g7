@@ -17,6 +17,9 @@ const logger = (window as any).G7Core?.createLogger?.(`Module:${MODULE_IDENTIFIE
     warn: (...args: unknown[]) => console.warn(`[Module:${MODULE_IDENTIFIER}]`, ...args),
 };
 
+// 화면 스타일(순수 CSS) — 빌드가 dist/css/module.css 로 뽑아내고, 코어가 활성 모듈 CSS 를 페이지에 싣는다
+import '../css/main.css';
+
 import { MemoCard } from './components/composite/MemoCard';
 import { MemoCard as MemoCardForAdmin } from './components/for/gnuboard7-hello_admin_template/MemoCard';
 

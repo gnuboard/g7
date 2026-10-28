@@ -135,7 +135,7 @@ describe('게시판 설정 스케줄 탭', () => {
      */
     it('카드 제목은 탭 이름과 같은 말이고 설명은 card-description div 다', () => {
         const card = nodes(tabSchedules).find((n) => n.id === 'board_schedules_card');
-        const desc = nodes(card).find((n) => n.props?.className === 'card-description');
+        const desc = nodes(card).find((n) => n.props?.className === 'board-card-description');
         expect(desc?.name).toBe('Div');
         expect(desc.text).toBe('$t:sirsoft-board.admin.settings.schedules.description');
         expect((ko as any).schedules.title).toBe((ko as any).tabs.schedules);

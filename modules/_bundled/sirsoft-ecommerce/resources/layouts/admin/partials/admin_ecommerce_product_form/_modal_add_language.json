@@ -16,7 +16,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "grid grid-cols-2 gap-3"
+                "className": "ecommerce:grid ecommerce:grid-cols-2 ecommerce:gap-3"
             },
             "children": [
                 {
@@ -31,14 +31,14 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center flex-col justify-center py-4 px-6 rounded-lg bg-blue-700 dark:bg-blue-700 text-white"
+                        "className": "ecommerce-flex-center ecommerce:flex-col ecommerce:justify-center ecommerce:py-4 ecommerce:px-6 ecommerce:rounded-lg ecommerce:bg-blue-700 ecommerce:dark:bg-blue-700 ecommerce:text-white"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-base font-medium"
+                                "className": "ecommerce:text-base ecommerce:font-medium"
                             },
                             "text": "한국어"
                         },
@@ -46,7 +46,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm opacity-80 mt-0.5"
+                                "className": "ecommerce:text-sm ecommerce:opacity-80 ecommerce:mt-0.5"
                             },
                             "text": "KO"
                         }
@@ -64,21 +64,21 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "admin-card"
+                        "className": "ecommerce-admin-card"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "row-stack"
+                                "className": "ecommerce-row-stack"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-base font-medium"
+                                        "className": "ecommerce:text-base ecommerce:font-medium"
                                     },
                                     "text": "English"
                                 },
@@ -86,7 +86,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle mt-0.5"
+                                        "className": "ecommerce-text-label-subtle ecommerce:mt-0.5"
                                     },
                                     "text": "EN"
                                 }
@@ -106,21 +106,21 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "admin-card"
+                        "className": "ecommerce-admin-card"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "row-stack"
+                                "className": "ecommerce-row-stack"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-base font-medium"
+                                        "className": "ecommerce:text-base ecommerce:font-medium"
                                     },
                                     "text": "日本語"
                                 },
@@ -128,7 +128,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle mt-0.5"
+                                        "className": "ecommerce-text-label-subtle ecommerce:mt-0.5"
                                     },
                                     "text": "JP"
                                 }
@@ -148,21 +148,21 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "admin-card"
+                        "className": "ecommerce-admin-card"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "row-stack"
+                                "className": "ecommerce-row-stack"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-base font-medium"
+                                        "className": "ecommerce:text-base ecommerce:font-medium"
                                     },
                                     "text": "中文(简体)"
                                 },
@@ -170,7 +170,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle mt-0.5"
+                                        "className": "ecommerce-text-label-subtle ecommerce:mt-0.5"
                                     },
                                     "text": "CN"
                                 }
@@ -190,21 +190,21 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "admin-card"
+                        "className": "ecommerce-admin-card"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "row-stack"
+                                "className": "ecommerce-row-stack"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-base font-medium"
+                                        "className": "ecommerce:text-base ecommerce:font-medium"
                                     },
                                     "text": "中文(繁體)"
                                 },
@@ -212,7 +212,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-label-subtle mt-0.5"
+                                        "className": "ecommerce-text-label-subtle ecommerce:mt-0.5"
                                     },
                                     "text": "TW"
                                 }

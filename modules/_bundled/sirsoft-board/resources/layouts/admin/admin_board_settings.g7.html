@@ -233,15 +233,15 @@
     <set-state target="_local" notificationDefinitionCurrentPage="{{+(query.page || 1)}}"/>
   </init>
   <slot name="content">
-    <div data-ref="settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+    <div data-ref="settings_content" data-key="form" data-track-changes class="board-admin-page-content-responsive">
       <div data-ref="page_header_wrapper">
         <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-board.admin.settings.title" description="$t:sirsoft-board.admin.settings.description"/>
       </div>
-      <div data-ref="sticky_header" class="sticky-section-header">
+      <div data-ref="sticky_header" class="board-sticky-section-header">
         <div data-ref="header_content">
-          <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
-            <icon name="lock" size="lg" class="text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-            <span class="text-xs board-tone-warning">$t:sirsoft-board.admin.settings.read_only_message</span>
+          <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="board-alert-warning">
+            <icon name="lock" size="lg" class="board:text-amber-600 board:dark:text-amber-400 board:flex-shrink-0"/>
+            <span class="board:text-xs board-tone-warning">$t:sirsoft-board.admin.settings.read_only_message</span>
           </div>
           <tab-navigation data-type="composite" data-ref="tab_navigation" activeTabId="{{_global.activeBoardSettingsTab || query.tab || 'general'}}" variant="default">
             <prop name="tabs">
@@ -278,7 +278,7 @@
             </on>
           </tab-navigation>
         </div>
-        <tab-navigation-scroll data-type="composite" data-ref="sub_tab_navigation" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}" class="sub-tab-nav" sectionIdPrefix="" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
+        <tab-navigation-scroll data-type="composite" data-ref="sub_tab_navigation" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}" class="board-sub-tab-nav" sectionIdPrefix="" :enableScrollSpy="true" scrollContainerId="right_content_area" :scrollSpyOffset="180" :scrollOffset="180">
           <prop name="tabs">
             <item id="basic" label="$t:sirsoft-board.admin.settings.board_settings_tabs.basic"/>
             <item id="permissions" label="$t:sirsoft-board.admin.settings.board_settings_tabs.permissions"/>
@@ -293,15 +293,15 @@
           </prop>
         </tab-navigation-scroll>
       </div>
-      <div data-ref="tab_content" class="tab-content">
-        <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger items-start mb-6">
-          <div class="flex items-start gap-3">
-            <icon name="triangle-exclamation" class="text-xl leading-5 text-red-600 dark:text-red-400 flex-shrink-0"/>
+      <div data-ref="tab_content" class="board-tab-content">
+        <div data-ref="validation_error" data-if="{{_local.errors}}" class="board-alert-danger board:items-start board:mb-6">
+          <div class="board:flex board:items-start board:gap-3">
+            <icon name="triangle-exclamation" class="board:text-xl board:leading-5 board:text-red-600 board:dark:text-red-400 board:flex-shrink-0"/>
             <div>
-              <h3 class="text-error-strong">$t:sirsoft-board.admin.settings.validation_error</h3>
-              <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
-              <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-                <li class="text-error-soft">{{message}}</li>
+              <h3 class="board-text-error-strong">$t:sirsoft-board.admin.settings.validation_error</h3>
+              <p data-if="{{typeof _local.errors === 'string'}}" class="board-text-error-soft board:mt-2">{{_local.errors}}</p>
+              <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="board:mt-2 board:list-disc board:list-inside board:space-y-1">
+                <li class="board-text-error-soft">{{message}}</li>
               </ul>
             </div>
           </div>
@@ -324,12 +324,12 @@
         <include src="partials/admin_board_settings/_tab_identity_policies.g7.html"/>
         <include src="partials/admin_board_settings/_tab_privacy_retention.g7.html"/>
         <include src="partials/admin_board_settings/_tab_schedules.g7.html"/>
-        <div data-ref="footer_buttons" data-if="{{!_computed.isReadOnly}}" class="sticky-footer-buttons">
-          <div data-if="{{_local.hasChanges}}" class="flex-center gap-1.5 text-sm text-amber-700 dark:text-amber-400 mr-auto">
+        <div data-ref="footer_buttons" data-if="{{!_computed.isReadOnly}}" class="board-sticky-footer-buttons">
+          <div data-if="{{_local.hasChanges}}" class="board-flex-center board:gap-1.5 board:text-sm board:text-amber-700 board:dark:text-amber-400 board:mr-auto">
             <icon name="circle-dot" size="xs"/>
             <span>$t:sirsoft-board.admin.settings.unsaved_changes</span>
           </div>
-          <a href="/admin" data-ref="footer_cancel_button" class="button btn btn-secondary text-sm">
+          <a href="/admin" data-ref="footer_cancel_button" class="board-button board-btn board-btn-secondary board:text-sm">
             <on type="click">
               <navigate :bypassLeaveGuard="true"/>
             </on>
@@ -337,7 +337,7 @@
           </a>
           <!-- 설정 본체(settings)를 받기 전에는 잠근다 — 입력칸이 먼저 그려져 받기 전에 칸 하나를 고치면 그 칸만 실린 본문이 나가고,
                서버는 그 구획을 통째로 갈아 써 기본 권한·금지어·스위치 기본값이 지워졌다(7.1.0 실측 K3) -->
-          <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || !settings?.data || !_local.hasChanges || _local.isSaving}}" class="btn btn-primary flex-center gap-1.5 text-sm">
+          <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || !settings?.data || !_local.hasChanges || _local.isSaving}}" class="board-btn board-btn-primary board-flex-center board:gap-1.5 board:text-sm">
             <on type="click">
               <!-- 저장 — 폼 전체가 아니라 «지금 탭이 소유한 구획만» 골라 보낸다(`_tab` 이 서버에 어느 구획인지 알린다). 한 폼을 여러 탭이 나눠 쓰므로 통째로 보내면 열어 보지도 않은 탭의 값이 함께 덮어써진다 -->
               <sequence>

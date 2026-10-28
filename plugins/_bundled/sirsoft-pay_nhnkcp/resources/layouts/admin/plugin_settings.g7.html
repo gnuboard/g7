@@ -32,251 +32,251 @@
     <permission>core.plugins.update</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="paynhnkcp:p-4 paynhnkcp:sm:p-6 paynhnkcp:lg:p-8 paynhnkcp:min-h-screen paynhnkcp:bg-gray-50 paynhnkcp:dark:bg-gray-900">
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-pay_nhnkcp.settings.title" description="$t:sirsoft-pay_nhnkcp.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
-      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
-        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="pay-nhnkcp-alert-warning paynhnkcp:mt-6">
+        <icon name="lock" class="paynhnkcp:text-xl paynhnkcp:leading-none paynhnkcp:text-amber-600 paynhnkcp:dark:text-amber-400 paynhnkcp:flex-shrink-0"/>
         <span class="pay-nhnkcp-tone-warning">$t:sirsoft-pay_nhnkcp.plugin_read_only</span>
       </div>
       <!-- 시스템 점검 — PC 결제(CLI 바이너리)와 모바일 결제(SOAP 확장) 사전조건 진단 -->
-      <p data-ref="health_check_forbidden" data-if="{{_local.healthForbidden === true}}" class="mt-6 form-hint">$t:sirsoft-pay_nhnkcp.settings.health.forbidden</p>
-      <div data-ref="health_check_card" data-if="{{health.data}}" class="mt-6 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+      <p data-ref="health_check_forbidden" data-if="{{_local.healthForbidden === true}}" class="paynhnkcp:mt-6 pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.health.forbidden</p>
+      <div data-ref="health_check_card" data-if="{{health.data}}" class="paynhnkcp:mt-6 paynhnkcp:rounded-lg paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">
         <!-- 헤더 — PC/모바일 결제 가능 여부 요약 + 새로고침 버튼 -->
-        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <div class="flex-center gap-3">
-            <icon name="{{health.data.summary.error_count > 0 ? 'triangle-exclamation' : (health.data.summary.warning_count > 0 ? 'circle-info' : 'circle-check')}}" class="{{health.data.summary.error_count > 0 ? 'text-xl text-red-600 dark:text-red-400' : (health.data.summary.warning_count > 0 ? 'text-xl text-amber-600 dark:text-amber-400' : 'text-xl text-green-600 dark:text-green-400')}}"/>
-            <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.health.title</h2>
-            <span data-if="{{health.data.summary.error_count > 0}}" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">$t:sirsoft-pay_nhnkcp.settings.health.error_count|count={{health.data.summary.error_count}}</span>
-            <span data-if="{{health.data.summary.warning_count > 0}}" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">$t:sirsoft-pay_nhnkcp.settings.health.warning_count|count={{health.data.summary.warning_count}}</span>
-            <span data-if="{{health.data.summary.fixed_count > 0}}" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">$t:sirsoft-pay_nhnkcp.settings.health.fixed_count|count={{health.data.summary.fixed_count}}</span>
-            <span data-if="{{health.data.summary.error_count === 0 &amp;&amp; health.data.summary.warning_count === 0 &amp;&amp; health.data.summary.fixed_count === 0}}" class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">$t:sirsoft-pay_nhnkcp.settings.health.all_ok</span>
+        <div class="paynhnkcp:flex paynhnkcp:items-center paynhnkcp:justify-between paynhnkcp:p-4 paynhnkcp:border-b paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">
+          <div class="pay-nhnkcp-flex-center paynhnkcp:gap-3">
+            <icon name="{{health.data.summary.error_count > 0 ? 'triangle-exclamation' : (health.data.summary.warning_count > 0 ? 'circle-info' : 'circle-check')}}" class="paynhnkcp:leading-none {{health.data.summary.error_count > 0 ? 'paynhnkcp:text-xl paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400' : (health.data.summary.warning_count > 0 ? 'paynhnkcp:text-xl paynhnkcp:text-amber-600 paynhnkcp:dark:text-amber-400' : 'paynhnkcp:text-xl paynhnkcp:text-green-600 paynhnkcp:dark:text-green-400')}}"/>
+            <h2 class="paynhnkcp:text-base paynhnkcp:font-semibold paynhnkcp:text-gray-900 paynhnkcp:dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.health.title</h2>
+            <span data-if="{{health.data.summary.error_count > 0}}" class="paynhnkcp:ml-2 paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:px-2 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:bg-red-100 paynhnkcp:text-red-800 paynhnkcp:dark:bg-red-900/30 paynhnkcp:dark:text-red-300">$t:sirsoft-pay_nhnkcp.settings.health.error_count|count={{health.data.summary.error_count}}</span>
+            <span data-if="{{health.data.summary.warning_count > 0}}" class="paynhnkcp:ml-2 paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:px-2 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:bg-amber-100 paynhnkcp:text-amber-800 paynhnkcp:dark:bg-amber-900/30 paynhnkcp:dark:text-amber-300">$t:sirsoft-pay_nhnkcp.settings.health.warning_count|count={{health.data.summary.warning_count}}</span>
+            <span data-if="{{health.data.summary.fixed_count > 0}}" class="paynhnkcp:ml-2 paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:px-2 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:bg-blue-100 paynhnkcp:text-blue-800 paynhnkcp:dark:bg-blue-900/30 paynhnkcp:dark:text-blue-300">$t:sirsoft-pay_nhnkcp.settings.health.fixed_count|count={{health.data.summary.fixed_count}}</span>
+            <span data-if="{{health.data.summary.error_count === 0 &amp;&amp; health.data.summary.warning_count === 0 &amp;&amp; health.data.summary.fixed_count === 0}}" class="paynhnkcp:ml-2 paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:px-2 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:bg-green-100 paynhnkcp:text-green-800 paynhnkcp:dark:bg-green-900/30 paynhnkcp:dark:text-green-300">$t:sirsoft-pay_nhnkcp.settings.health.all_ok</span>
           </div>
-          <button type="button" class="px-3 py-1.5 text-sm border rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-200 inline-flex items-center gap-1.5">
+          <button type="button" class="paynhnkcp:px-3 paynhnkcp:py-1.5 paynhnkcp:text-sm paynhnkcp:border paynhnkcp:rounded paynhnkcp:hover:bg-gray-50 paynhnkcp:dark:hover:bg-gray-700 paynhnkcp:dark:border-gray-600 paynhnkcp:dark:text-gray-200 paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:gap-1.5">
             <on type="click">
               <refetch-data-source dataSourceId="health"/>
             </on>
-            <icon name="arrows-rotate" class="text-base"/>
+            <icon name="arrows-rotate" class="paynhnkcp:text-base paynhnkcp:leading-none"/>
             <span>$t:sirsoft-pay_nhnkcp.settings.health.recheck</span>
           </button>
         </div>
         <!-- PC/모바일 카드/모바일 가상계좌 결제 가능 여부 요약 배지 -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 border-b border-gray-200 dark:border-gray-700">
-          <div class="{{health.data.summary.pc_payment_ready ? 'p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}}">
-            <div class="flex-center gap-2">
-              <icon name="{{health.data.summary.pc_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="{{health.data.summary.pc_payment_ready ? 'text-base text-green-700 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"/>
-              <span class="font-medium text-sm text-gray-900 dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.health.pc_payment</span>
-              <span class="{{health.data.summary.pc_payment_ready ? 'text-xs pay-nhnkcp-tone-success' : 'text-xs pay-nhnkcp-tone-danger'}}">{{health.data.summary.pc_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}</span>
+        <div class="paynhnkcp:grid paynhnkcp:grid-cols-1 paynhnkcp:sm:grid-cols-3 paynhnkcp:gap-3 paynhnkcp:p-4 paynhnkcp:border-b paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">
+          <div class="{{health.data.summary.pc_payment_ready ? 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-green-200 paynhnkcp:bg-green-50 paynhnkcp:dark:bg-green-900/20 paynhnkcp:dark:border-green-800' : 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-red-200 paynhnkcp:bg-red-50 paynhnkcp:dark:bg-red-900/20 paynhnkcp:dark:border-red-800'}}">
+            <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2">
+              <icon name="{{health.data.summary.pc_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="paynhnkcp:leading-none {{health.data.summary.pc_payment_ready ? 'paynhnkcp:text-base paynhnkcp:text-green-700 paynhnkcp:dark:text-green-400' : 'paynhnkcp:text-base paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400'}}"/>
+              <span class="paynhnkcp:font-medium paynhnkcp:text-sm paynhnkcp:text-gray-900 paynhnkcp:dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.health.pc_payment</span>
+              <span class="{{health.data.summary.pc_payment_ready ? 'paynhnkcp:text-xs pay-nhnkcp-tone-success' : 'paynhnkcp:text-xs pay-nhnkcp-tone-danger'}}">{{health.data.summary.pc_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}</span>
             </div>
-            <p class="text-secondary text-xs mt-1 ml-6">$t:sirsoft-pay_nhnkcp.settings.health.pc_payment_requires</p>
+            <p class="pay-nhnkcp-text-secondary paynhnkcp:text-xs paynhnkcp:mt-1 paynhnkcp:ml-6">$t:sirsoft-pay_nhnkcp.settings.health.pc_payment_requires</p>
           </div>
           <!-- 모바일 카드/일반결제 — SOAP + CLI 모두 필요 (KCP가 enc_data를 콜백으로 보냄) -->
-          <div class="{{health.data.summary.mobile_payment_ready ? 'p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}}">
-            <div class="flex-center gap-2">
-              <icon name="{{health.data.summary.mobile_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="{{health.data.summary.mobile_payment_ready ? 'text-base text-green-700 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"/>
-              <span class="font-medium text-sm text-gray-900 dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.health.mobile_payment</span>
-              <span class="{{health.data.summary.mobile_payment_ready ? 'text-xs pay-nhnkcp-tone-success' : 'text-xs pay-nhnkcp-tone-danger'}}">{{health.data.summary.mobile_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}</span>
+          <div class="{{health.data.summary.mobile_payment_ready ? 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-green-200 paynhnkcp:bg-green-50 paynhnkcp:dark:bg-green-900/20 paynhnkcp:dark:border-green-800' : 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-red-200 paynhnkcp:bg-red-50 paynhnkcp:dark:bg-red-900/20 paynhnkcp:dark:border-red-800'}}">
+            <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2">
+              <icon name="{{health.data.summary.mobile_payment_ready ? 'circle-check' : 'circle-xmark'}}" class="paynhnkcp:leading-none {{health.data.summary.mobile_payment_ready ? 'paynhnkcp:text-base paynhnkcp:text-green-700 paynhnkcp:dark:text-green-400' : 'paynhnkcp:text-base paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400'}}"/>
+              <span class="paynhnkcp:font-medium paynhnkcp:text-sm paynhnkcp:text-gray-900 paynhnkcp:dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.health.mobile_payment</span>
+              <span class="{{health.data.summary.mobile_payment_ready ? 'paynhnkcp:text-xs pay-nhnkcp-tone-success' : 'paynhnkcp:text-xs pay-nhnkcp-tone-danger'}}">{{health.data.summary.mobile_payment_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}</span>
             </div>
-            <p class="text-secondary text-xs mt-1 ml-6">$t:sirsoft-pay_nhnkcp.settings.health.mobile_payment_requires</p>
+            <p class="pay-nhnkcp-text-secondary paynhnkcp:text-xs paynhnkcp:mt-1 paynhnkcp:ml-6">$t:sirsoft-pay_nhnkcp.settings.health.mobile_payment_requires</p>
           </div>
           <!-- 모바일 가상계좌 — SOAP만 필요 (KCP가 평문 콜백) -->
-          <div class="{{health.data.summary.mobile_vbank_only_ready ? 'p-3 rounded border border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'p-3 rounded border border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800'}}">
-            <div class="flex-center gap-2">
-              <icon name="{{health.data.summary.mobile_vbank_only_ready ? 'circle-check' : 'circle-xmark'}}" class="{{health.data.summary.mobile_vbank_only_ready ? 'text-base text-green-700 dark:text-green-400' : 'text-base text-red-600 dark:text-red-400'}}"/>
-              <span class="font-medium text-sm text-gray-900 dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.health.mobile_vbank</span>
-              <span class="{{health.data.summary.mobile_vbank_only_ready ? 'text-xs pay-nhnkcp-tone-success' : 'text-xs pay-nhnkcp-tone-danger'}}">{{health.data.summary.mobile_vbank_only_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}</span>
+          <div class="{{health.data.summary.mobile_vbank_only_ready ? 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-green-200 paynhnkcp:bg-green-50 paynhnkcp:dark:bg-green-900/20 paynhnkcp:dark:border-green-800' : 'paynhnkcp:p-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-red-200 paynhnkcp:bg-red-50 paynhnkcp:dark:bg-red-900/20 paynhnkcp:dark:border-red-800'}}">
+            <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2">
+              <icon name="{{health.data.summary.mobile_vbank_only_ready ? 'circle-check' : 'circle-xmark'}}" class="paynhnkcp:leading-none {{health.data.summary.mobile_vbank_only_ready ? 'paynhnkcp:text-base paynhnkcp:text-green-700 paynhnkcp:dark:text-green-400' : 'paynhnkcp:text-base paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400'}}"/>
+              <span class="paynhnkcp:font-medium paynhnkcp:text-sm paynhnkcp:text-gray-900 paynhnkcp:dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.health.mobile_vbank</span>
+              <span class="{{health.data.summary.mobile_vbank_only_ready ? 'paynhnkcp:text-xs pay-nhnkcp-tone-success' : 'paynhnkcp:text-xs pay-nhnkcp-tone-danger'}}">{{health.data.summary.mobile_vbank_only_ready ? '$t:sirsoft-pay_nhnkcp.settings.health.ready' : '$t:sirsoft-pay_nhnkcp.settings.health.not_ready'}}</span>
             </div>
-            <p class="text-secondary text-xs mt-1 ml-6">$t:sirsoft-pay_nhnkcp.settings.health.mobile_vbank_requires</p>
+            <p class="pay-nhnkcp-text-secondary paynhnkcp:text-xs paynhnkcp:mt-1 paynhnkcp:ml-6">$t:sirsoft-pay_nhnkcp.settings.health.mobile_vbank_requires</p>
           </div>
         </div>
         <!-- 개별 점검 항목 리스트 -->
-        <div data-each="check in {{health.data.checks ?? []}}" class="divide-y dark:divide-gray-700">
-          <div class="p-4">
-            <div class="panel-header-row">
-              <icon name="{{check.status === 'ok' ? 'circle-check' : (check.status === 'fixed' ? 'wrench' : (check.status === 'warning' ? 'circle-info' : 'circle-xmark'))}}" class="{{check.status === 'ok' ? 'text-xl text-green-600 dark:text-green-400 mt-0.5' : (check.status === 'fixed' ? 'text-xl text-blue-600 dark:text-blue-400 mt-0.5' : (check.status === 'warning' ? 'text-xl text-amber-600 dark:text-amber-400 mt-0.5' : 'text-xl text-red-600 dark:text-red-400 mt-0.5'))}}"/>
-              <div class="flex-1 min-w-0">
-                <div class="flex-center gap-2 flex-wrap">
-                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{check.label}}</span>
-                  <span class="{{check.category === 'pc' ? 'text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300' : 'text-xs px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'}}">{{check.category === 'pc' ? '$t:sirsoft-pay_nhnkcp.settings.health.category_pc' : '$t:sirsoft-pay_nhnkcp.settings.health.category_mobile'}}</span>
-                  <span data-if="{{check.status === 'fixed'}}" class="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">$t:sirsoft-pay_nhnkcp.settings.health.auto_fixed</span>
+        <div data-each="check in {{health.data.checks ?? []}}" class="paynhnkcp:divide-y paynhnkcp:dark:divide-gray-700">
+          <div class="paynhnkcp:p-4">
+            <div class="pay-nhnkcp-panel-header-row">
+              <icon name="{{check.status === 'ok' ? 'circle-check' : (check.status === 'fixed' ? 'wrench' : (check.status === 'warning' ? 'circle-info' : 'circle-xmark'))}}" class="paynhnkcp:leading-none {{check.status === 'ok' ? 'paynhnkcp:text-xl paynhnkcp:text-green-600 paynhnkcp:dark:text-green-400 paynhnkcp:mt-0.5' : (check.status === 'fixed' ? 'paynhnkcp:text-xl paynhnkcp:text-blue-600 paynhnkcp:dark:text-blue-400 paynhnkcp:mt-0.5' : (check.status === 'warning' ? 'paynhnkcp:text-xl paynhnkcp:text-amber-600 paynhnkcp:dark:text-amber-400 paynhnkcp:mt-0.5' : 'paynhnkcp:text-xl paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400 paynhnkcp:mt-0.5'))}}"/>
+              <div class="paynhnkcp:flex-1 paynhnkcp:min-w-0">
+                <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2 paynhnkcp:flex-wrap">
+                  <span class="paynhnkcp:text-sm paynhnkcp:font-medium paynhnkcp:text-gray-900 paynhnkcp:dark:text-gray-100">{{check.label}}</span>
+                  <span class="{{check.category === 'pc' ? 'paynhnkcp:text-xs paynhnkcp:px-1.5 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:bg-gray-100 paynhnkcp:dark:bg-gray-700 paynhnkcp:text-gray-600 paynhnkcp:dark:text-gray-300' : 'paynhnkcp:text-xs paynhnkcp:px-1.5 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:bg-indigo-100 paynhnkcp:dark:bg-indigo-900/30 paynhnkcp:text-indigo-700 paynhnkcp:dark:text-indigo-300'}}">{{check.category === 'pc' ? '$t:sirsoft-pay_nhnkcp.settings.health.category_pc' : '$t:sirsoft-pay_nhnkcp.settings.health.category_mobile'}}</span>
+                  <span data-if="{{check.status === 'fixed'}}" class="paynhnkcp:text-xs paynhnkcp:px-1.5 paynhnkcp:py-0.5 paynhnkcp:rounded paynhnkcp:bg-blue-100 paynhnkcp:text-blue-800 paynhnkcp:dark:bg-blue-900/30 paynhnkcp:dark:text-blue-300">$t:sirsoft-pay_nhnkcp.settings.health.auto_fixed</span>
                 </div>
-                <p class="text-secondary text-xs mt-1">{{check.detail}}</p>
+                <p class="pay-nhnkcp-text-secondary paynhnkcp:text-xs paynhnkcp:mt-1">{{check.detail}}</p>
                 <!-- 사용자 조치 안내 — error/warning에서만 표시 -->
-                <div data-if="{{check.remediation}}" class="mt-2 pay-nhnkcp-remediation-box rounded bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
-                  <p class="text-xs font-medium text-amber-900 dark:text-amber-200 mb-1">$t:sirsoft-pay_nhnkcp.settings.health.action_required</p>
-                  <pre class="text-xs text-amber-900 dark:text-amber-100 whitespace-pre-wrap font-mono leading-relaxed">{{check.remediation}}</pre>
+                <div data-if="{{check.remediation}}" class="paynhnkcp:mt-2 pay-nhnkcp-remediation-box paynhnkcp:rounded paynhnkcp:bg-amber-50 paynhnkcp:border paynhnkcp:border-amber-200 paynhnkcp:dark:bg-amber-900/20 paynhnkcp:dark:border-amber-800">
+                  <p class="paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:text-amber-900 paynhnkcp:dark:text-amber-200 paynhnkcp:mb-1">$t:sirsoft-pay_nhnkcp.settings.health.action_required</p>
+                  <pre class="paynhnkcp:text-xs paynhnkcp:text-amber-900 paynhnkcp:dark:text-amber-100 paynhnkcp:whitespace-pre-wrap paynhnkcp:font-mono paynhnkcp:leading-relaxed">{{check.remediation}}</pre>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div data-ref="validation_error" data-if="{{_local.errors}}" class="alert-danger">
-        <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="pay-nhnkcp-alert-danger">
+        <div class="paynhnkcp:flex paynhnkcp:gap-3">
+          <icon name="triangle-exclamation" class="paynhnkcp:text-xl paynhnkcp:leading-none paynhnkcp:text-red-600 paynhnkcp:dark:text-red-400 paynhnkcp:flex-shrink-0 paynhnkcp:mt-0.5"/>
           <div>
-            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
-            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-              <li class="text-error-soft">{{message}}</li>
+            <h3 class="pay-nhnkcp-text-error-strong">$t:admin.plugins.settings.validation_error</h3>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="paynhnkcp:mt-2 paynhnkcp:list-disc paynhnkcp:list-inside paynhnkcp:space-y-1">
+              <li class="pay-nhnkcp-text-error-soft">{{message}}</li>
             </ul>
           </div>
         </div>
       </div>
-      <div data-ref="test_mode_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="p-6">
-          <div class="flex items-center justify-between">
+      <div data-ref="test_mode_card" class="paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">
+        <div class="paynhnkcp:p-6">
+          <div class="paynhnkcp:flex paynhnkcp:items-center paynhnkcp:justify-between">
             <div>
-              <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.test_mode</label>
-              <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.test_mode_hint</p>
+              <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.test_mode</label>
+              <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.test_mode_hint</p>
             </div>
             <toggle data-type="composite" name="is_test_mode" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
         </div>
       </div>
-      <div data-ref="live_mode_warning" data-if="{{_local.form &amp;&amp; !_local.form.is_test_mode}}" class="mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
-        <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
+      <div data-ref="live_mode_warning" data-if="{{_local.form &amp;&amp; !_local.form.is_test_mode}}" class="paynhnkcp:mt-6 paynhnkcp:bg-amber-50 paynhnkcp:dark:bg-amber-900/20 paynhnkcp:border paynhnkcp:border-amber-200 paynhnkcp:dark:border-amber-700 paynhnkcp:rounded-lg paynhnkcp:p-4">
+        <div class="paynhnkcp:flex paynhnkcp:gap-3">
+          <icon name="triangle-exclamation" class="paynhnkcp:text-xl paynhnkcp:leading-none paynhnkcp:text-amber-600 paynhnkcp:dark:text-amber-400 paynhnkcp:flex-shrink-0 paynhnkcp:mt-0.5"/>
           <div>
-            <h3 class="text-sm font-semibold pay-nhnkcp-tone-warning-strong">$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_title</h3>
-            <p class="mt-1 text-sm pay-nhnkcp-tone-warning">$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_body</p>
+            <h3 class="paynhnkcp:text-sm paynhnkcp:font-semibold pay-nhnkcp-tone-warning-strong">$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_title</h3>
+            <p class="paynhnkcp:mt-1 paynhnkcp:text-sm pay-nhnkcp-tone-warning">$t:sirsoft-pay_nhnkcp.settings.live_mode_warning_body</p>
           </div>
         </div>
       </div>
-      <div data-ref="live_keys_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="flex-start justify-between px-6 py-4">
-          <h3 class="section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_live_keys</h3>
+      <div data-ref="live_keys_section" class="paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">
+        <div class="pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4">
+          <h3 class="pay-nhnkcp-section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_live_keys</h3>
         </div>
-        <div class="p-6 space-y-6">
-          <div data-ref="field_live_site_cd" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.live_site_cd</label>
-              <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.live_site_cd_hint</p>
+        <div class="paynhnkcp:p-6 paynhnkcp:space-y-6">
+          <div data-ref="field_live_site_cd" class="pay-nhnkcp-grid-3col-responsive">
+            <div class="paynhnkcp:lg:col-span-1">
+              <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.live_site_cd</label>
+              <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.live_site_cd_hint</p>
             </div>
-            <div class="lg:col-span-2">
-              <div class="flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 pay-nhnkcp-focus-group">
-                <span class="inline-flex items-center px-3 bg-gray-100 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 text-body font-mono font-bold select-none">SR</span>
-                <input type="text" name="live_site_cd" placeholder="xxxxxx" class="flex-1 font-mono outline-none border-0" disabled="{{_computed.isPluginReadOnly}}"/>
+            <div class="paynhnkcp:lg:col-span-2">
+              <div class="paynhnkcp:flex paynhnkcp:rounded-lg paynhnkcp:border paynhnkcp:border-gray-300 paynhnkcp:dark:border-gray-600 paynhnkcp:overflow-hidden paynhnkcp:focus-within:ring-2 paynhnkcp:focus-within:ring-blue-500 pay-nhnkcp-focus-group">
+                <span class="paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:px-3 paynhnkcp:bg-gray-100 paynhnkcp:dark:bg-gray-600 paynhnkcp:border-r paynhnkcp:border-gray-300 paynhnkcp:dark:border-gray-600 pay-nhnkcp-text-body paynhnkcp:font-mono paynhnkcp:font-bold paynhnkcp:select-none">SR</span>
+                <input type="text" name="live_site_cd" placeholder="xxxxxx" class="paynhnkcp:flex-1 paynhnkcp:font-mono paynhnkcp:outline-none paynhnkcp:border-0" disabled="{{_computed.isPluginReadOnly}}"/>
               </div>
-              <p class="mt-1.5 text-tertiary">$t:sirsoft-pay_nhnkcp.settings.live_site_cd_example</p>
+              <p class="paynhnkcp:mt-1.5 pay-nhnkcp-text-tertiary">$t:sirsoft-pay_nhnkcp.settings.live_site_cd_example</p>
             </div>
           </div>
-          <div data-ref="field_live_site_key" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.live_site_key</label>
-              <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.live_site_key_hint</p>
+          <div data-ref="field_live_site_key" class="pay-nhnkcp-grid-3col-responsive">
+            <div class="paynhnkcp:lg:col-span-1">
+              <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.live_site_key</label>
+              <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.live_site_key_hint</p>
             </div>
-            <div class="lg:col-span-2">
-              <input type="password" name="live_site_key" placeholder="••••••••••••••••" class="dark:focus:ring-blue-400 focus:border-transparent font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
+            <div class="paynhnkcp:lg:col-span-2">
+              <input type="password" name="live_site_key" placeholder="••••••••••••••••" class="paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent paynhnkcp:font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
         </div>
       </div>
-      <div data-ref="easy_pay_section" data-if="{{false}}" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="flex-start justify-between px-6 py-4">
-          <h3 class="section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_easy_pay</h3>
-          <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.section_easy_pay_hint</p>
+      <div data-ref="easy_pay_section" data-if="{{false}}" class="paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">
+        <div class="pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4">
+          <h3 class="pay-nhnkcp-section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_easy_pay</h3>
+          <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.section_easy_pay_hint</p>
         </div>
-        <div class="divide-y divide-gray-100 dark:divide-gray-700">
-          <div class="flex items-center justify-between px-6 py-4 bg-blue-50 dark:bg-blue-900/20">
+        <div class="paynhnkcp:divide-y paynhnkcp:divide-gray-100 paynhnkcp:dark:divide-gray-700">
+          <div class="paynhnkcp:flex paynhnkcp:items-center paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4 paynhnkcp:bg-blue-50 paynhnkcp:dark:bg-blue-900/20">
             <div>
-              <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_allow_with_other_pg</label>
-              <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.easy_pay_allow_with_other_pg_hint</p>
+              <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_allow_with_other_pg</label>
+              <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.easy_pay_allow_with_other_pg_hint</p>
             </div>
             <toggle data-type="composite" name="easy_pay_allow_with_other_pg" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div class="flex items-center justify-between px-6 py-4">
-            <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_payco</label>
+          <div class="paynhnkcp:flex paynhnkcp:items-center paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4">
+            <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_payco</label>
             <toggle data-type="composite" name="easy_pay_payco" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div class="flex-start justify-between px-6 py-4">
+          <div class="pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4">
             <div>
-              <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay</label>
-              <p class="mt-1 text-xs text-amber-700 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay_hint</p>
+              <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay</label>
+              <p class="paynhnkcp:mt-1 paynhnkcp:text-xs paynhnkcp:text-amber-700 paynhnkcp:dark:text-amber-400">$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay_hint</p>
             </div>
             <toggle data-type="composite" name="easy_pay_naverpay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div class="flex-start justify-between px-6 py-4">
+          <div class="pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4">
             <div>
-              <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay_point</label>
-              <p class="mt-1 text-xs text-amber-700 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay_point_hint</p>
+              <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay_point</label>
+              <p class="paynhnkcp:mt-1 paynhnkcp:text-xs paynhnkcp:text-amber-700 paynhnkcp:dark:text-amber-400">$t:sirsoft-pay_nhnkcp.settings.easy_pay_naverpay_point_hint</p>
             </div>
             <toggle data-type="composite" name="easy_pay_naverpay_point" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div class="flex-start justify-between px-6 py-4">
+          <div class="pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4">
             <div>
-              <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_kakaopay</label>
-              <p class="mt-1 text-xs text-amber-700 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.settings.easy_pay_kakaopay_hint</p>
+              <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_kakaopay</label>
+              <p class="paynhnkcp:mt-1 paynhnkcp:text-xs paynhnkcp:text-amber-700 paynhnkcp:dark:text-amber-400">$t:sirsoft-pay_nhnkcp.settings.easy_pay_kakaopay_hint</p>
             </div>
             <toggle data-type="composite" name="easy_pay_kakaopay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div class="flex-start justify-between px-6 py-4">
+          <div class="pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4">
             <div>
-              <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_applepay</label>
-              <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.easy_pay_applepay_hint</p>
+              <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.easy_pay_applepay</label>
+              <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.easy_pay_applepay_hint</p>
             </div>
             <toggle data-type="composite" name="easy_pay_applepay" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
         </div>
       </div>
-      <div data-ref="redirect_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="flex-start justify-between px-6 py-4">
-          <h3 class="section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_redirect</h3>
+      <div data-ref="redirect_section" class="paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">
+        <div class="pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4">
+          <h3 class="pay-nhnkcp-section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_redirect</h3>
         </div>
-        <div class="p-6 space-y-6">
-          <div data-ref="field_redirect_success_url" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.redirect_success_url</label>
-              <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.redirect_success_url_hint</p>
+        <div class="paynhnkcp:p-6 paynhnkcp:space-y-6">
+          <div data-ref="field_redirect_success_url" class="pay-nhnkcp-grid-3col-responsive">
+            <div class="paynhnkcp:lg:col-span-1">
+              <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.redirect_success_url</label>
+              <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.redirect_success_url_hint</p>
             </div>
-            <div class="lg:col-span-2">
-              <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="dark:focus:ring-blue-400 focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            <div class="paynhnkcp:lg:col-span-2">
+              <input type="text" name="redirect_success_url" placeholder="/shop/orders/{orderId}/complete" class="paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
-          <div data-ref="field_redirect_fail_url" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.redirect_fail_url</label>
-              <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.redirect_fail_url_hint</p>
+          <div data-ref="field_redirect_fail_url" class="pay-nhnkcp-grid-3col-responsive">
+            <div class="paynhnkcp:lg:col-span-1">
+              <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.redirect_fail_url</label>
+              <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.redirect_fail_url_hint</p>
             </div>
-            <div class="lg:col-span-2">
-              <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="dark:focus:ring-blue-400 focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            <div class="paynhnkcp:lg:col-span-2">
+              <input type="text" name="redirect_fail_url" placeholder="/shop/checkout" class="paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
         </div>
       </div>
-      <div data-ref="vbank_settings_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="flex-start justify-between px-6 py-4">
-          <h3 class="section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_vbank</h3>
-          <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.section_vbank_hint</p>
+      <div data-ref="vbank_settings_section" class="paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">
+        <div class="pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4">
+          <h3 class="pay-nhnkcp-section-heading-md">$t:sirsoft-pay_nhnkcp.settings.section_vbank</h3>
+          <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.section_vbank_hint</p>
         </div>
-        <div class="p-6">
-          <div data-ref="field_vbank_expire_days" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days</label>
-              <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days_hint</p>
+        <div class="paynhnkcp:p-6">
+          <div data-ref="field_vbank_expire_days" class="pay-nhnkcp-grid-3col-responsive">
+            <div class="paynhnkcp:lg:col-span-1">
+              <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days</label>
+              <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days_hint</p>
             </div>
-            <div class="lg:col-span-2">
-              <div class="flex-center gap-2">
-                <input type="number" name="vbank_expire_days" min="1" max="7" placeholder="3" class="w-24 dark:focus:ring-blue-400 focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
-                <span class="text-label-subtle">$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days_unit</span>
+            <div class="paynhnkcp:lg:col-span-2">
+              <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2">
+                <input type="number" name="vbank_expire_days" min="1" max="7" placeholder="3" class="paynhnkcp:w-24 paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+                <span class="pay-nhnkcp-text-label-subtle">$t:sirsoft-pay_nhnkcp.settings.vbank_expire_days_unit</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div data-ref="cancel_server_ip_notice" class="mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
-        <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
-          <div class="flex-1 min-w-0">
-            <h3 class="text-sm font-semibold pay-nhnkcp-tone-warning-strong">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_title</h3>
-            <p class="mt-1 text-sm pay-nhnkcp-tone-warning">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_body</p>
-            <div class="mt-3 rounded border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-gray-900/30 px-3 py-2">
-              <p class="text-xs font-medium text-amber-900 dark:text-amber-200">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_path</p>
-              <p class="mt-1 text-xs text-amber-800 dark:text-amber-100">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_effect</p>
+      <div data-ref="cancel_server_ip_notice" class="paynhnkcp:mt-6 paynhnkcp:bg-amber-50 paynhnkcp:dark:bg-amber-900/20 paynhnkcp:border paynhnkcp:border-amber-200 paynhnkcp:dark:border-amber-700 paynhnkcp:rounded-lg paynhnkcp:p-4">
+        <div class="paynhnkcp:flex paynhnkcp:gap-3">
+          <icon name="triangle-exclamation" class="paynhnkcp:text-xl paynhnkcp:leading-none paynhnkcp:text-amber-600 paynhnkcp:dark:text-amber-400 paynhnkcp:flex-shrink-0 paynhnkcp:mt-0.5"/>
+          <div class="paynhnkcp:flex-1 paynhnkcp:min-w-0">
+            <h3 class="paynhnkcp:text-sm paynhnkcp:font-semibold pay-nhnkcp-tone-warning-strong">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_title</h3>
+            <p class="paynhnkcp:mt-1 paynhnkcp:text-sm pay-nhnkcp-tone-warning">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_body</p>
+            <div class="paynhnkcp:mt-3 paynhnkcp:rounded paynhnkcp:border paynhnkcp:border-amber-200 paynhnkcp:dark:border-amber-800 paynhnkcp:bg-white/70 paynhnkcp:dark:bg-gray-900/30 paynhnkcp:px-3 paynhnkcp:py-2">
+              <p class="paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:text-amber-900 paynhnkcp:dark:text-amber-200">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_path</p>
+              <p class="paynhnkcp:mt-1 paynhnkcp:text-xs paynhnkcp:text-amber-800 paynhnkcp:dark:text-amber-100">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_effect</p>
             </div>
-            <div class="mt-3">
-              <p class="text-xs font-medium text-amber-900 dark:text-amber-200 mb-1.5">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_value_label</p>
-              <div class="flex-center gap-2">
-                <input type="text" :readOnly="true" aria-label="$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_value_label" value="{{health.data.summary.cancel_server_ip.address ?? ''}}" placeholder="$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_unavailable" class="input-readonly flex-1 font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
-                <button type="button" data-if="{{!!health.data.summary.cancel_server_ip.address}}" class="flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap">
+            <div class="paynhnkcp:mt-3">
+              <p class="paynhnkcp:text-xs paynhnkcp:font-medium paynhnkcp:text-amber-900 paynhnkcp:dark:text-amber-200 paynhnkcp:mb-1.5">$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_value_label</p>
+              <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2">
+                <input type="text" :readOnly="true" aria-label="$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_value_label" value="{{health.data.summary.cancel_server_ip.address ?? ''}}" placeholder="$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_unavailable" class="pay-nhnkcp-input-readonly paynhnkcp:flex-1 paynhnkcp:font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
+                <button type="button" data-if="{{!!health.data.summary.cancel_server_ip.address}}" class="pay-nhnkcp-flex-center paynhnkcp:gap-1.5 paynhnkcp:px-3 paynhnkcp:py-2 paynhnkcp:bg-gray-100 paynhnkcp:dark:bg-gray-700 paynhnkcp:hover:bg-gray-200 paynhnkcp:dark:hover:bg-gray-600 pay-nhnkcp-text-body paynhnkcp:border paynhnkcp:border-gray-300 paynhnkcp:dark:border-gray-600 paynhnkcp:rounded-lg paynhnkcp:font-medium paynhnkcp:transition-colors paynhnkcp:whitespace-nowrap">
                   <on type="click">
                     <!-- 취소 요청 서버 IP 복사 — KCP 상점 관리자에 등록해야 하는 값이다 -->
                     <sequence>
@@ -284,32 +284,32 @@
                       <toast type="success" message="$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_copied"/>
                     </sequence>
                   </on>
-                  <icon name="copy" class="text-base"/>
+                  <icon name="copy" class="paynhnkcp:text-base paynhnkcp:leading-none"/>
                   <span>$t:sirsoft-pay_nhnkcp.settings.copy</span>
                 </button>
               </div>
-              <p class="mt-1.5 text-xs text-amber-800 dark:text-amber-100">{{health.data.summary.cancel_server_ip.source_label ?? ''}}</p>
+              <p class="paynhnkcp:mt-1.5 paynhnkcp:text-xs paynhnkcp:text-amber-800 paynhnkcp:dark:text-amber-100">{{health.data.summary.cancel_server_ip.source_label ?? ''}}</p>
             </div>
-            <a href="https://partner.kcp.co.kr/" target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-amber-800 dark:text-amber-200 pay-nhnkcp-link-warning">
-              <icon name="external-link" class="text-base"/>
+            <a href="https://partner.kcp.co.kr/" target="_blank" rel="noopener noreferrer" class="paynhnkcp:mt-3 paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:gap-1.5 paynhnkcp:text-sm paynhnkcp:font-medium paynhnkcp:text-amber-800 paynhnkcp:dark:text-amber-200 pay-nhnkcp-link-warning">
+              <icon name="external-link" class="paynhnkcp:text-base paynhnkcp:leading-none"/>
               <span>$t:sirsoft-pay_nhnkcp.settings.cancel_server_ip_link</span>
             </a>
           </div>
         </div>
       </div>
-      <div data-ref="vbank_notify_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-blue-200 dark:border-blue-800">
-        <div class="px-6 py-4 border-b border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 rounded-t-lg">
-          <div class="flex-center gap-2">
-            <icon name="bell" class="text-base text-blue-600 dark:text-blue-400"/>
-            <h3 class="text-base font-semibold text-blue-900 dark:text-blue-100">$t:sirsoft-pay_nhnkcp.settings.section_vbank_notify</h3>
+      <div data-ref="vbank_notify_section" class="paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-blue-200 paynhnkcp:dark:border-blue-800">
+        <div class="paynhnkcp:px-6 paynhnkcp:py-4 paynhnkcp:border-b paynhnkcp:border-blue-200 paynhnkcp:dark:border-blue-800 paynhnkcp:bg-blue-50 paynhnkcp:dark:bg-blue-900/20 paynhnkcp:rounded-t-lg">
+          <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2">
+            <icon name="bell" class="paynhnkcp:text-base paynhnkcp:leading-none paynhnkcp:text-blue-600 paynhnkcp:dark:text-blue-400"/>
+            <h3 class="paynhnkcp:text-base paynhnkcp:font-semibold paynhnkcp:text-blue-900 paynhnkcp:dark:text-blue-100">$t:sirsoft-pay_nhnkcp.settings.section_vbank_notify</h3>
           </div>
         </div>
-        <div class="p-6">
-          <p class="text-label mb-3">$t:sirsoft-pay_nhnkcp.settings.vbank_notify_hint</p>
-          <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">$t:sirsoft-pay_nhnkcp.settings.vbank_notify_path</p>
-          <div class="flex-center gap-2">
-            <input type="text" :readOnly="true" aria-label="$t:sirsoft-pay_nhnkcp.settings.section_vbank_notify" value="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify'}}" class="input-readonly flex-1 font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
-            <button type="button" class="flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap">
+        <div class="paynhnkcp:p-6">
+          <p class="pay-nhnkcp-text-label paynhnkcp:mb-3">$t:sirsoft-pay_nhnkcp.settings.vbank_notify_hint</p>
+          <p class="paynhnkcp:text-xs paynhnkcp:text-gray-600 paynhnkcp:dark:text-gray-400 paynhnkcp:mb-4">$t:sirsoft-pay_nhnkcp.settings.vbank_notify_path</p>
+          <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2">
+            <input type="text" :readOnly="true" aria-label="$t:sirsoft-pay_nhnkcp.settings.section_vbank_notify" value="{{_local.vbankInfo?.url ?? '/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify'}}" class="pay-nhnkcp-input-readonly paynhnkcp:flex-1 paynhnkcp:font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
+            <button type="button" class="pay-nhnkcp-flex-center paynhnkcp:gap-1.5 paynhnkcp:px-3 paynhnkcp:py-2 paynhnkcp:bg-gray-100 paynhnkcp:dark:bg-gray-700 paynhnkcp:hover:bg-gray-200 paynhnkcp:dark:hover:bg-gray-600 pay-nhnkcp-text-body paynhnkcp:border paynhnkcp:border-gray-300 paynhnkcp:dark:border-gray-600 paynhnkcp:rounded-lg paynhnkcp:font-medium paynhnkcp:transition-colors paynhnkcp:whitespace-nowrap">
               <on type="click">
                 <!-- 가상계좌 입금통보 URL 복사 — 상점 관리자에 그대로 붙여 넣는 값이다 -->
                 <sequence>
@@ -317,51 +317,51 @@
                   <toast type="success" message="$t:sirsoft-pay_nhnkcp.settings.vbank_notify_copied"/>
                 </sequence>
               </on>
-              <icon name="copy" class="text-base"/>
+              <icon name="copy" class="paynhnkcp:text-base paynhnkcp:leading-none"/>
               <span>$t:sirsoft-pay_nhnkcp.settings.copy</span>
             </button>
           </div>
         </div>
       </div>
-      <div data-ref="escrow_settings_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="flex-start justify-between px-6 py-4">
-          <div class="flex-center gap-2">
-            <icon name="shield-halved" class="text-secondary text-base"/>
-            <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.section_escrow</h3>
+      <div data-ref="escrow_settings_section" class="paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">
+        <div class="pay-nhnkcp-flex-start paynhnkcp:justify-between paynhnkcp:px-6 paynhnkcp:py-4">
+          <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2">
+            <icon name="shield-halved" class="pay-nhnkcp-text-secondary paynhnkcp:text-base paynhnkcp:leading-none"/>
+            <h3 class="paynhnkcp:text-base paynhnkcp:font-semibold paynhnkcp:text-gray-900 paynhnkcp:dark:text-gray-100">$t:sirsoft-pay_nhnkcp.settings.section_escrow</h3>
           </div>
-          <p class="mt-1 text-label-subtle">$t:sirsoft-pay_nhnkcp.settings.section_escrow_hint</p>
+          <p class="paynhnkcp:mt-1 pay-nhnkcp-text-label-subtle">$t:sirsoft-pay_nhnkcp.settings.section_escrow_hint</p>
         </div>
-        <div class="p-6 space-y-4">
-          <div class="flex items-center justify-between">
+        <div class="paynhnkcp:p-6 paynhnkcp:space-y-4">
+          <div class="paynhnkcp:flex paynhnkcp:items-center paynhnkcp:justify-between">
             <div>
-              <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.use_escrow</label>
-              <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.use_escrow_hint</p>
+              <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.use_escrow</label>
+              <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.use_escrow_hint</p>
             </div>
             <toggle data-type="composite" name="use_escrow" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
-          <div data-if="{{_local.form.use_escrow &amp;&amp; _local.form.is_test_mode}}" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-pay_nhnkcp.settings.escrow_test_site_cd</label>
-              <p class="form-hint">$t:sirsoft-pay_nhnkcp.settings.escrow_test_site_cd_hint</p>
+          <div data-if="{{_local.form.use_escrow &amp;&amp; _local.form.is_test_mode}}" class="pay-nhnkcp-grid-3col-responsive">
+            <div class="paynhnkcp:lg:col-span-1">
+              <label class="pay-nhnkcp-form-label">$t:sirsoft-pay_nhnkcp.settings.escrow_test_site_cd</label>
+              <p class="pay-nhnkcp-form-hint">$t:sirsoft-pay_nhnkcp.settings.escrow_test_site_cd_hint</p>
             </div>
-            <div class="lg:col-span-2">
-              <input type="text" name="escrow_test_site_cd" placeholder="T0007" class="dark:focus:ring-blue-400 focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
+            <div class="paynhnkcp:lg:col-span-2">
+              <input type="text" name="escrow_test_site_cd" placeholder="T0007" class="paynhnkcp:dark:focus:ring-blue-400 paynhnkcp:focus:border-transparent" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
         </div>
       </div>
-      <div data-ref="escrow_notify_section" data-if="{{_local.form.use_escrow}}" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-purple-200 dark:border-purple-800">
-        <div class="px-6 py-4 border-b border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 rounded-t-lg">
-          <div class="flex-center gap-2">
-            <icon name="bell" class="text-base text-purple-600 dark:text-purple-400"/>
-            <h3 class="text-base font-semibold text-purple-900 dark:text-purple-100">$t:sirsoft-pay_nhnkcp.settings.section_escrow_notify</h3>
+      <div data-ref="escrow_notify_section" data-if="{{_local.form.use_escrow}}" class="paynhnkcp:mt-6 paynhnkcp:bg-white paynhnkcp:dark:bg-gray-800 paynhnkcp:rounded-lg paynhnkcp:shadow-sm paynhnkcp:border paynhnkcp:border-purple-200 paynhnkcp:dark:border-purple-800">
+        <div class="paynhnkcp:px-6 paynhnkcp:py-4 paynhnkcp:border-b paynhnkcp:border-purple-200 paynhnkcp:dark:border-purple-800 paynhnkcp:bg-purple-50 paynhnkcp:dark:bg-purple-900/20 paynhnkcp:rounded-t-lg">
+          <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2">
+            <icon name="bell" class="paynhnkcp:text-base paynhnkcp:leading-none paynhnkcp:text-purple-600 paynhnkcp:dark:text-purple-400"/>
+            <h3 class="paynhnkcp:text-base paynhnkcp:font-semibold paynhnkcp:text-purple-900 paynhnkcp:dark:text-purple-100">$t:sirsoft-pay_nhnkcp.settings.section_escrow_notify</h3>
           </div>
         </div>
-        <div class="p-6">
-          <p class="text-label mb-3">$t:sirsoft-pay_nhnkcp.settings.escrow_common_notify_hint</p>
-          <div class="flex-center gap-2">
-            <input type="text" :readOnly="true" aria-label="$t:sirsoft-pay_nhnkcp.settings.section_escrow_notify" value="{{_local.vbankInfo?.escrow_common_notify_url ?? '/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify'}}" class="input-readonly flex-1 font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
-            <button type="button" class="flex-center gap-1.5 px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-body border border-gray-300 dark:border-gray-600 rounded-lg font-medium transition-colors whitespace-nowrap">
+        <div class="paynhnkcp:p-6">
+          <p class="pay-nhnkcp-text-label paynhnkcp:mb-3">$t:sirsoft-pay_nhnkcp.settings.escrow_common_notify_hint</p>
+          <div class="pay-nhnkcp-flex-center paynhnkcp:gap-2">
+            <input type="text" :readOnly="true" aria-label="$t:sirsoft-pay_nhnkcp.settings.section_escrow_notify" value="{{_local.vbankInfo?.escrow_common_notify_url ?? '/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify'}}" class="pay-nhnkcp-input-readonly paynhnkcp:flex-1 paynhnkcp:font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
+            <button type="button" class="pay-nhnkcp-flex-center paynhnkcp:gap-1.5 paynhnkcp:px-3 paynhnkcp:py-2 paynhnkcp:bg-gray-100 paynhnkcp:dark:bg-gray-700 paynhnkcp:hover:bg-gray-200 paynhnkcp:dark:hover:bg-gray-600 pay-nhnkcp-text-body paynhnkcp:border paynhnkcp:border-gray-300 paynhnkcp:dark:border-gray-600 paynhnkcp:rounded-lg paynhnkcp:font-medium paynhnkcp:transition-colors paynhnkcp:whitespace-nowrap">
               <on type="click">
                 <!-- 에스크로 공통 통보 URL 복사 -->
                 <sequence>
@@ -369,20 +369,20 @@
                   <toast type="success" message="$t:sirsoft-pay_nhnkcp.settings.escrow_common_notify_copied"/>
                 </sequence>
               </on>
-              <icon name="copy" class="text-base"/>
+              <icon name="copy" class="paynhnkcp:text-base paynhnkcp:leading-none"/>
               <span>$t:sirsoft-pay_nhnkcp.settings.copy</span>
             </button>
           </div>
         </div>
       </div>
-      <div data-ref="footer_buttons" class="sticky bottom-0 z-10 flex justify-end items-center gap-3 mt-6 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg dark:bg-gray-800 dark:border-gray-700">
-        <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
+      <div data-ref="footer_buttons" class="paynhnkcp:sticky paynhnkcp:bottom-0 paynhnkcp:z-10 paynhnkcp:flex paynhnkcp:justify-end paynhnkcp:items-center paynhnkcp:gap-3 paynhnkcp:mt-6 paynhnkcp:px-4 paynhnkcp:py-3 paynhnkcp:bg-gray-50 paynhnkcp:border paynhnkcp:border-gray-200 paynhnkcp:rounded-lg paynhnkcp:dark:bg-gray-800 paynhnkcp:dark:border-gray-700">
+        <a href="/admin/plugins" data-ref="cancel_button" class="pay-nhnkcp-button pay-nhnkcp-btn pay-nhnkcp-btn-secondary">
           <on type="click">
             <navigate :bypassLeaveGuard="true"/>
           </on>
           <span>$t:common.cancel</span>
         </a>
-        <button type="button" data-ref="save_button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+        <button type="button" data-ref="save_button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="pay-nhnkcp-btn pay-nhnkcp-btn-primary pay-nhnkcp-flex-center paynhnkcp:gap-1.5">
           <on type="click">
             <!-- 설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다 — 서버가 비밀키를 마스크해 돌려주므로 다시 싣지 않으면 화면 값과 저장값이 어긋난다 -->
             <sequence>
@@ -400,7 +400,7 @@
               </api-call>
             </sequence>
           </on>
-          <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+          <icon data-if="{{_local.isSaving}}" name="spinner" class="pay-nhnkcp-spinner-sm"/>
           <span data-if="{{!_local.isSaving}}">$t:common.save</span>
           <span data-if="{{_local.isSaving}}">$t:common.saving</span>
         </button>

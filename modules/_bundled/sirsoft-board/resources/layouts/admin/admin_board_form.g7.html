@@ -71,18 +71,18 @@
     <set-state if="{{!route?.slug}}" target="local" :form="null" :hasChanges="false"/>
   </init>
   <slot name="content">
-    <div data-ref="board_form_wrapper" data-key="form" data-track-changes class="admin-page-content">
-      <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="alert-warning">
-        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-xs board-tone-warning">{{route?.slug ? '$t:sirsoft-board.admin.form.read_only_message' : '$t:sirsoft-board.admin.form.create_read_only_message'}}</span>
+    <div data-ref="board_form_wrapper" data-key="form" data-track-changes class="board-admin-page-content">
+      <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="board-alert-warning">
+        <icon name="lock" class="board:text-xl board:text-amber-600 board:dark:text-amber-400 board:flex-shrink-0"/>
+        <span class="board:text-xs board-tone-warning">{{route?.slug ? '$t:sirsoft-board.admin.form.read_only_message' : '$t:sirsoft-board.admin.form.create_read_only_message'}}</span>
       </div>
-      <div data-ref="page_header" class="page-header-fullbleed">
+      <div data-ref="page_header" class="board-page-header-fullbleed">
         <div>
-          <h1 class="page-title">{{route?.slug ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}</h1>
-          <p class="page-description">$t:sirsoft-board.admin.form.description</p>
+          <h1 class="board-page-title">{{route?.slug ? '$t:sirsoft-board.admin.form.title_edit' : '$t:sirsoft-board.admin.form.title_create'}}</h1>
+          <p class="board-page-description">$t:sirsoft-board.admin.form.description</p>
         </div>
       </div>
-      <tab-navigation-scroll data-type="composite" data-ref="tab_navigation" class="sticky-tab-nav tab-nav-default" activeTabId="{{_local.activeTab ?? 'section_basic_card'}}" :enableScrollSpy="true" :scrollSpyOffset="56" sectionIdPrefix="">
+      <tab-navigation-scroll data-type="composite" data-ref="tab_navigation" class="board-sticky-tab-nav board-tab-nav-default" activeTabId="{{_local.activeTab ?? 'section_basic_card'}}" :enableScrollSpy="true" :scrollSpyOffset="56" sectionIdPrefix="">
         <prop name="tabs">
           <item id="section_basic_card" label="$t:sirsoft-board.admin.form.tabs.basic"/>
           <item id="section_permissions_card" label="$t:sirsoft-board.admin.form.tabs.permissions"/>
@@ -93,20 +93,20 @@
       </tab-navigation-scroll>
       <!-- 입력 오류 상자 — 아이콘을 제목 첫 줄에 맞추고(items-start + leading-5) 아래 폼과 띄운다(mb-6). 게시글 작성·환경설정 상자와 같은 서식이다.
            #524 에서 고친 서식이 15차 병합에서 빠져 아이콘이 상자 가운데로 내려가고(제목보다 15~43px 아래) 폼과 0px 로 붙어 있었다(K3 실측 2026-10-07) -->
-      <div data-ref="validation_error" data-if="{{_local.errors}}" class="pt-4">
-        <div class="alert-danger items-start mb-6">
-          <icon name="triangle-exclamation" class="text-xl leading-5 text-red-600 dark:text-red-400 flex-shrink-0"/>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="board:pt-4">
+        <div class="board-alert-danger board:items-start board:mb-6">
+          <icon name="triangle-exclamation" class="board:text-xl board:leading-5 board:text-red-600 board:dark:text-red-400 board:flex-shrink-0"/>
           <div>
-            <h3 class="text-error-strong">$t:sirsoft-board.admin.form.validation_error</h3>
-            <p data-if="{{typeof _local.errors === 'string'}}" class="text-error-soft mt-2">{{_local.errors}}</p>
-            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-              <li class="text-error-soft">{{message}}</li>
+            <h3 class="board-text-error-strong">$t:sirsoft-board.admin.form.validation_error</h3>
+            <p data-if="{{typeof _local.errors === 'string'}}" class="board-text-error-soft board:mt-2">{{_local.errors}}</p>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="board:mt-2 board:list-disc board:list-inside board:space-y-1">
+              <li class="board-text-error-soft">{{message}}</li>
             </ul>
           </div>
         </div>
       </div>
       <form data-ref="board_form" id="board_form">
-        <div data-ref="board_form_tab_content" class="tab-content">
+        <div data-ref="board_form_tab_content" class="board-tab-content">
           <include src="partials/admin_board_form/_tab_basic.g7.html"/>
           <include src="partials/admin_board_form/_tab_permissions.g7.html"/>
           <include src="partials/admin_board_form/_tab_list.g7.html"/>
@@ -114,8 +114,8 @@
           <include src="partials/admin_board_form/_tab_notification.g7.html"/>
         </div>
       </form>
-      <div data-ref="footer_buttons" class="sticky-footer-buttons-between">
-        <a href="/admin/boards" :mergeQuery="true" data-ref="footer_list_button" class="button flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors">
+      <div data-ref="footer_buttons" class="board-sticky-footer-buttons-between">
+        <a href="/admin/boards" :mergeQuery="true" data-ref="footer_list_button" class="board-button board-flex-center board:gap-2 board:px-4 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:text-gray-700 board:dark:text-gray-200 board:bg-white board:dark:bg-gray-800 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:font-medium board:transition-colors">
           <on type="click">
             <!-- 취소. 게시판 목록으로 돌아가며 보던 목록 상태를 이고 간다 -->
             <navigate :mergeQuery="true">
@@ -124,8 +124,8 @@
           </on>
           <span>$t:common.list</span>
         </a>
-        <div class="flex-center gap-3">
-          <a href="/admin/boards" :mergeQuery="true" data-ref="footer_cancel_button" class="button btn btn-secondary">
+        <div class="board-flex-center board:gap-3">
+          <a href="/admin/boards" :mergeQuery="true" data-ref="footer_cancel_button" class="board-button board-btn board-btn-secondary">
             <on type="click">
               <!-- 취소(화면 아래 버튼). 위쪽 취소와 같은 자리로 돌아간다 -->
               <navigate :bypassLeaveGuard="true" :mergeQuery="true">
@@ -134,7 +134,7 @@
             </on>
             <span>$t:common.cancel</span>
           </a>
-          <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || _local.isSaving || (!!route?.slug &amp;&amp; !_local.hasChanges)}}" class="btn btn-primary flex-center gap-1.5">
+          <button data-ref="footer_save_button" type="button" disabled="{{_computed.isReadOnly || _local.isSaving || (!!route?.slug &amp;&amp; !_local.hasChanges)}}" class="board-btn board-btn-primary board-flex-center board:gap-1.5">
             <on type="click">
               <!-- 저장 — 신규는 POST 후 발급된 slug 의 편집 화면으로 갈아타고(그래야 이어지는 저장이 PUT 이 된다), 편집은 PUT 하고 그 자리에 머문다. 성공하면 변경 표시를 지워 저장 버튼이 다시 잠긴다 -->
               <sequence>
@@ -152,7 +152,7 @@
                 </api-call>
               </sequence>
             </on>
-            <icon data-if="{{_local.isSaving}}" name="spinner" class="spinner-sm"/>
+            <icon data-if="{{_local.isSaving}}" name="spinner" class="board-spinner-sm"/>
             <span>{{_local.isSaving ? '$t:sirsoft-board.common.saving' : '$t:sirsoft-board.common.save'}}</span>
           </button>
         </div>

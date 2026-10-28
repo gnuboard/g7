@@ -200,7 +200,7 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
     expect(count).toBeGreaterThan(1);
 
     // 칸마다 서버가 준 상태 아이콘 하나
-    await expect(page.locator('[id^="claim_progress_step_"] .rounded-full i[class*="fa-"]')).toHaveCount(count);
+    await expect(page.locator('[id^="claim_progress_step_"] .ecommerce\\:rounded-full i[class*="fa-"]')).toHaveCount(count);
     // 상태 속성은 서버 배열의 값 그대로
     const states = await cells.evaluateAll((els) => els.map((el) => el.getAttribute('data-step-state')));
     expect(states.every((s) => ['done', 'current', 'upcoming', 'off_path'].includes(s ?? ''))).toBe(true);
@@ -221,8 +221,8 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
         const chevron = el.querySelector('[data-step-chevron="pc"] i');
         const next = els[i + 1];
         if (!chevron || !next || getComputedStyle(chevron.parentElement as Element).display === 'none') return;
-        const a = (el.querySelector('.rounded-full') as Element).getBoundingClientRect();
-        const b = (next.querySelector('.rounded-full') as Element).getBoundingClientRect();
+        const a = (el.querySelector('.ecommerce\\:rounded-full') as Element).getBoundingClientRect();
+        const b = (next.querySelector('.ecommerce\\:rounded-full') as Element).getBoundingClientRect();
         const g = chevron.getBoundingClientRect();
         out.push(Math.abs((g.left - a.right) - (b.left - g.right)));
       });

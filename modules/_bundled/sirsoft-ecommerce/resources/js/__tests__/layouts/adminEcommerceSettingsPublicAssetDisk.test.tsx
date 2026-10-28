@@ -278,7 +278,7 @@ describe('이커머스 공개 자산 디스크 오버라이드 필드 — 렌더
         testUtils = makeUtils();
         const { container } = await testUtils.render();
 
-        expect(container.querySelector('h3.card-title')?.textContent ?? '').toContain(
+        expect(container.querySelector('h3.ecommerce-card-title')?.textContent ?? '').toContain(
             '공개 자산 스토리지',
         );
         expect(container.textContent ?? '').toContain('미설정 시 코어 전역 설정을 따릅니다.');

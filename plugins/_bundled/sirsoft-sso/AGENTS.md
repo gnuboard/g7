@@ -118,7 +118,7 @@
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-sso` 재실행 + `docs/api/**` 갱신 (SCIM 주소는 SCIM 응답 형식 그대로라 G7 응답 봉투를 쓰지 않는다)
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 — 빌드 없이 update 만, 새 Tailwind 클래스는 빌드된 CSS 에 있는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스는 자기 앞글자(`sso:` 접두 유틸리티 · `sso-*`)로만 쓰고, 새 클래스를 쓰면 `php artisan plugin:build sirsoft-sso --production` 으로 `dist/css/plugin.css` 를 다시 만든다(템플릿 CSS 에 기대지 않는다)
 - [ ] `composer.json` 의존성을 바꾸면 `php artisan plugin:vendor-bundle sirsoft-sso` 로 vendor-bundle 을 다시 만들고 `composer.lock` 과 함께 반영
 - [ ] 로그인 관련 변경은 코어 로그인 인계 계약(`docs/backend/authentication.md` 「외부 인증 로그인」, 「외부 인증 확장점」)과 맞는지 확인하고, `grep -rnE "createToken\(|Auth::login\(" src` 가 0 인지 확인
 - [ ] IdP 콘솔에 넣는 주소(ACS, SLS, Redirect URI, 메타데이터, back-channel, 로그아웃 복귀)는 `SiteUrl::absolute()` 로 만든다 — `url()`, `route()` 절대 주소 금지

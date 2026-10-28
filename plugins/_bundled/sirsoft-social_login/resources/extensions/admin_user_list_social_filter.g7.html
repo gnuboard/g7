@@ -11,14 +11,14 @@
       </on-code>
     </error-handling>
   </data-source>
-  <div data-ref="ext_social_login_provider_filter_row" class="flex flex-col gap-2 md:flex-row md:items-center">
+  <div data-ref="ext_social_login_provider_filter_row" class="sl:flex sl:flex-col sl:gap-2 sl:md:flex-row sl:md:items-center">
     <permissions>
       <permission>sirsoft-social_login.accounts.view</permission>
     </permissions>
-    <responsive on="portable" class="flex flex-col gap-2 items-start"/>
-    <span class="block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 md:mb-0 shrink-0 md:flex md:items-center">$t:sirsoft-social_login.admin.users.filter_label</span>
-    <div class="flex items-center flex-wrap gap-2">
-      <select data-ref="social_login_provider_filter" name="socialLoginProvider" class="w-48" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-social_login.provider=')) || '').slice('sirsoft-social_login.provider='.length)}}" aria-label="$t:sirsoft-social_login.admin.users.filter_label">
+    <responsive on="portable" class="sl:flex sl:flex-col sl:gap-2 sl:items-start"/>
+    <span class="sl:block sl:mb-2 sl:w-32 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:md:mb-0 sl:shrink-0 sl:md:flex sl:md:items-center">$t:sirsoft-social_login.admin.users.filter_label</span>
+    <div class="sl:flex sl:items-center sl:flex-wrap sl:gap-2">
+      <select data-ref="social_login_provider_filter" name="socialLoginProvider" class="sl:w-48" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-social_login.provider=')) || '').slice('sirsoft-social_login.provider='.length)}}" aria-label="$t:sirsoft-social_login.admin.users.filter_label">
         <option value="">$t:sirsoft-social_login.admin.users.filter_all</option>
         <option data-each="item in socialFilterProviders?.data ?? []" value="{{item.key}}">{{item.label}}</option>
         <on type="change">

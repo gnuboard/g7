@@ -16,7 +16,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-3 text-sm text-gray-700 dark:text-gray-200"
+                "className": "gdpr:space-y-3 gdpr:text-sm gdpr:text-gray-700 gdpr:dark:text-gray-200"
             },
             "children": [
                 {
@@ -24,7 +24,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "bg-amber-50 dark:bg-gray-900 border border-amber-200 dark:border-gray-700 border-l-4 gdpr-accent-warning rounded-lg p-3 flex-center gap-2"
+                        "className": "gdpr:bg-amber-50 gdpr:dark:bg-gray-900 gdpr:border gdpr:border-amber-200 gdpr:dark:border-gray-700 gdpr:border-l-4 gdpr-accent-warning gdpr:rounded-lg gdpr:p-3 gdpr-flex-center gdpr:gap-2"
                     },
                     "children": [
                         {
@@ -33,14 +33,14 @@
                             "props": {
                                 "name": "circle-exclamation",
                                 "size": "sm",
-                                "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                "className": "gdpr:text-amber-600 gdpr:dark:text-amber-400 gdpr:flex-shrink-0"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-800 dark:text-gray-100 leading-relaxed"
+                                "className": "gdpr:text-sm gdpr:text-gray-800 gdpr:dark:text-gray-100 gdpr:leading-relaxed"
                             },
                             "text": "$t:sirsoft-gdpr.settings.policy_version.material_modal.body"
                         }
@@ -50,7 +50,7 @@
                     "type": "basic",
                     "name": "Ul",
                     "props": {
-                        "className": "list-disc list-inside text-xs text-gray-600 dark:text-gray-300 space-y-1 pl-1"
+                        "className": "gdpr:list-disc gdpr:list-inside gdpr:text-xs gdpr:text-gray-600 gdpr:dark:text-gray-300 gdpr:space-y-1 gdpr:pl-1"
                     },
                     "children": [
                         {
@@ -74,14 +74,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "pt-2"
+                        "className": "gdpr:pt-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                "className": "gdpr:block gdpr:text-xs gdpr:font-medium gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:mb-1"
                             },
                             "text": "$t:sirsoft-gdpr.settings.policy_version.material_modal.memo_label"
                         },
@@ -104,7 +104,7 @@
                                 "rows": 3,
                                 "placeholder": "$t:sirsoft-gdpr.settings.policy_version.material_modal.memo_placeholder",
                                 "value": "{{_local.publishMemo ?? ''}}",
-                                "className": "text-primary w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400",
+                                "className": "gdpr-text-primary gdpr:w-full gdpr:px-3 gdpr:py-2 gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:rounded-lg gdpr:bg-white gdpr:dark:bg-gray-700 gdpr:text-sm gdpr:focus:ring-2 gdpr:focus:ring-blue-500 gdpr:dark:focus:ring-blue-400 gdpr:focus:border-blue-500 gdpr:dark:focus:border-blue-400",
                                 "disabled": "{{$parent._computed.isPluginReadOnly}}"
                             }
                         }
@@ -114,7 +114,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-gray-700 mt-3"
+                        "className": "gdpr:flex gdpr:justify-end gdpr:gap-2 gdpr:pt-3 gdpr:border-t gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:mt-3"
                     },
                     "children": [
                         {
@@ -129,7 +129,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{_local.isPublishing}}",
-                                "className": "px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                "className": "gdpr:px-4 gdpr:py-2 gdpr:bg-gray-100 gdpr:dark:bg-gray-700 gdpr:text-gray-700 gdpr:dark:text-gray-200 gdpr:rounded-lg gdpr:text-sm gdpr:font-medium gdpr:hover:bg-gray-200 gdpr:dark:hover:bg-gray-600 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed"
                             },
                             "children": [
                                 {
@@ -218,7 +218,7 @@
                             "props": {
                                 "type": "button",
                                 "disabled": "{{$parent._computed.isPluginReadOnly || (!(_local.publishMemo ?? '').trim() || _local.isPublishing)}}",
-                                "className": "px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center"
+                                "className": "gdpr:px-4 gdpr:py-2 gdpr:bg-gray-900 gdpr:dark:bg-white gdpr:text-white gdpr:dark:text-gray-900 gdpr:rounded-lg gdpr:text-sm gdpr:font-medium gdpr:hover:bg-gray-800 gdpr:dark:hover:bg-gray-100 gdpr:transition-colors gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed gdpr:inline-flex gdpr:items-center"
                             },
                             "children": [
                                 {
@@ -229,7 +229,7 @@
                                         "name": "spinner",
                                         "size": "sm",
                                         "spin": true,
-                                        "className": "mr-1"
+                                        "className": "gdpr:mr-1"
                                     }
                                 },
                                 {

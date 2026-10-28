@@ -5,6 +5,8 @@ import { PageSkeleton } from '../PageSkeleton';
 describe('PageSkeleton', () => {
     const defaultOptions = { animation: 'pulse' as const, iteration_count: 3 };
 
+    // @scenario case=skeleton_c01
+    // @effects page_skeleton_renders_placeholders
     it('빈 components 배열 시 컨테이너만 렌더링해야 한다', () => {
         render(<PageSkeleton components={[]} options={defaultOptions} />);
 
@@ -14,6 +16,8 @@ describe('PageSkeleton', () => {
         expect(container.children.length).toBe(0);
     });
 
+    // @scenario case=skeleton_c02
+    // @effects page_skeleton_renders_placeholders
     it('레이아웃 컨테이너(Div)는 props.className을 유지하고 자식을 순회해야 한다', () => {
         const components = [
             {
@@ -37,6 +41,8 @@ describe('PageSkeleton', () => {
         expect(wrapper!.children.length).toBe(2);
     });
 
+    // @scenario case=skeleton_c03
+    // @effects page_skeleton_renders_placeholders
     it('텍스트 컴포넌트(H1, P 등)를 회색 바로 치환해야 한다', () => {
         const components = [
             { name: 'H1', type: 'basic' },
@@ -56,6 +62,8 @@ describe('PageSkeleton', () => {
         expect(bars[1].className).toContain('w-full');
     });
 
+    // @scenario case=skeleton_c04
+    // @effects page_skeleton_renders_placeholders
     it('인풋 컴포넌트(Input)를 사각형으로 치환해야 한다', () => {
         const components = [
             { name: 'Input', type: 'basic' },
@@ -71,6 +79,8 @@ describe('PageSkeleton', () => {
         expect(input.className).toContain('border');
     });
 
+    // @scenario case=skeleton_c05
+    // @effects page_skeleton_renders_placeholders
     it('Textarea를 큰 사각형으로 치환해야 한다', () => {
         const components = [
             { name: 'Textarea', type: 'basic' },
@@ -84,6 +94,8 @@ describe('PageSkeleton', () => {
         expect(status.children[0].className).toContain('h-20');
     });
 
+    // @scenario case=skeleton_c06
+    // @effects page_skeleton_renders_placeholders
     it('Avatar를 원형으로 치환해야 한다', () => {
         const components = [
             { name: 'Avatar', type: 'composite' },
@@ -99,6 +111,8 @@ describe('PageSkeleton', () => {
         expect(status.children[0].className).toContain('w-10');
     });
 
+    // @scenario case=skeleton_c07
+    // @effects page_skeleton_renders_placeholders
     it('Button을 작은 사각형으로 치환해야 한다', () => {
         const components = [
             { name: 'Button', type: 'basic' },
@@ -113,6 +127,8 @@ describe('PageSkeleton', () => {
         expect(status.children[0].className).toContain('w-24');
     });
 
+    // @scenario case=skeleton_c08
+    // @effects page_skeleton_renders_placeholders
     it('iteration 블록을 iteration_count만큼 반복해야 한다', () => {
         const components = [
             {
@@ -139,6 +155,8 @@ describe('PageSkeleton', () => {
         expect(items.length).toBe(4);
     });
 
+    // @scenario case=skeleton_c09
+    // @effects page_skeleton_renders_placeholders
     it('DataGrid를 테이블 형태 스켈레톤으로 치환해야 한다', () => {
         const components = [
             { name: 'DataGrid', type: 'composite' },
@@ -154,6 +172,8 @@ describe('PageSkeleton', () => {
         expect(gridContainer).toBeTruthy();
     });
 
+    // @scenario case=skeleton_c10
+    // @effects page_skeleton_renders_placeholders
     it('Modal/Toast/ConfirmDialog는 빈 Fragment로 렌더링해야 한다', () => {
         const components = [
             { name: 'Modal', type: 'composite' },
@@ -176,6 +196,8 @@ describe('PageSkeleton', () => {
         });
     });
 
+    // @scenario case=skeleton_c11
+    // @effects page_skeleton_renders_placeholders
     it('pulse 애니메이션 시 animate-pulse 클래스가 포함되어야 한다', () => {
         const components = [
             { name: 'P', type: 'basic' },
@@ -189,6 +211,8 @@ describe('PageSkeleton', () => {
         expect(status.children[0].className).toContain('animate-pulse');
     });
 
+    // @scenario case=skeleton_c12
+    // @effects page_skeleton_renders_placeholders
     it('none 애니메이션 시 animate-pulse 클래스가 없어야 한다', () => {
         const components = [
             { name: 'P', type: 'basic' },
@@ -202,6 +226,8 @@ describe('PageSkeleton', () => {
         expect(status.children[0].className).not.toContain('animate-pulse');
     });
 
+    // @scenario case=skeleton_c13
+    // @effects page_skeleton_renders_placeholders
     it('깊은 중첩 컴포넌트 트리를 올바르게 순회해야 한다', () => {
         const components = [
             {
@@ -239,6 +265,8 @@ describe('PageSkeleton', () => {
         expect(level3!.children.length).toBe(1); // Span 스켈레톤 바
     });
 
+    // @scenario case=skeleton_c14
+    // @effects page_skeleton_renders_placeholders
     it('다크 모드 클래스가 포함되어야 한다', () => {
         const components = [
             { name: 'P', type: 'basic' },
@@ -253,6 +281,8 @@ describe('PageSkeleton', () => {
         expect(status.children[0].className).toContain('dark:bg-gray-700');
     });
 
+    // @scenario case=skeleton_c15
+    // @effects page_skeleton_renders_placeholders
     it('name이 없는 컴포넌트는 건너뛰어야 한다', () => {
         const components = [
             { type: 'basic' } as any,
@@ -268,6 +298,8 @@ describe('PageSkeleton', () => {
         expect(status.children.length).toBe(1);
     });
 
+    // @scenario case=skeleton_c16
+    // @effects page_skeleton_renders_placeholders
     it('미인식 컴포넌트(children 있음)를 컨테이너로 처리해야 한다', () => {
         const components = [
             {
@@ -289,6 +321,8 @@ describe('PageSkeleton', () => {
         expect(customEl!.children.length).toBe(1);
     });
 
+    // @scenario case=skeleton_c17
+    // @effects page_skeleton_renders_placeholders
     it('미인식 컴포넌트(children 없음)를 범용 바로 치환해야 한다', () => {
         const components = [
             { name: 'UnknownComponent', type: 'composite' },
@@ -303,6 +337,8 @@ describe('PageSkeleton', () => {
         expect(status.children[0].className).toContain('bg-gray-200');
     });
 
+    // @scenario case=skeleton_c18
+    // @effects page_skeleton_renders_placeholders
     it('Checkbox/Radio/Toggle을 작은 사각형으로 치환해야 한다', () => {
         const components = [
             { name: 'Checkbox', type: 'basic' },
@@ -320,6 +356,8 @@ describe('PageSkeleton', () => {
         expect(status.children[1].className).toContain('w-5');
     });
 
+    // @scenario case=skeleton_c19
+    // @effects page_skeleton_renders_placeholders
     it('Icon을 작은 사각형으로 치환해야 한다', () => {
         const components = [
             { name: 'Icon', type: 'basic' },
@@ -334,6 +372,8 @@ describe('PageSkeleton', () => {
         expect(status.children[0].className).toContain('w-5');
     });
 
+    // @scenario case=skeleton_c20
+    // @effects page_skeleton_renders_placeholders
     it('Img를 큰 사각형으로 치환해야 한다', () => {
         const components = [
             { name: 'Img', type: 'basic' },
@@ -348,6 +388,8 @@ describe('PageSkeleton', () => {
         expect(status.children[0].className).toContain('w-full');
     });
 
+    // @scenario case=skeleton_c21
+    // @effects page_skeleton_renders_placeholders
     it('Flex 컨테이너의 레이아웃 클래스를 유지하고 시각적 클래스를 제거해야 한다', () => {
         const components = [
             {
@@ -378,6 +420,8 @@ describe('PageSkeleton', () => {
         expect(flex!.className).not.toContain('shadow-md');
     });
 
+    // @scenario case=skeleton_c22
+    // @effects page_skeleton_renders_placeholders
     it('Grid 컬럼 수를 유지해야 한다 (4 이하)', () => {
         const components = [
             {
@@ -403,6 +447,8 @@ describe('PageSkeleton', () => {
         expect(grid!.className).toContain('grid-cols-3');
     });
 
+    // @scenario case=skeleton_c23
+    // @effects page_skeleton_renders_placeholders
     it('Grid 컬럼 수가 5 이상이면 절반으로 축소해야 한다', () => {
         const components = [
             {
@@ -427,6 +473,8 @@ describe('PageSkeleton', () => {
         expect(grid!.className).toContain('grid-cols-3');
     });
 
+    // @scenario case=skeleton_c24
+    // @effects page_skeleton_renders_placeholders
     it('props.className에서 className을 올바르게 읽어야 한다', () => {
         const components = [
             {
@@ -451,6 +499,8 @@ describe('PageSkeleton', () => {
         expect(div!.className).toContain('px-8');
     });
 
+    // @scenario case=skeleton_c25
+    // @effects page_skeleton_renders_placeholders
     it('루트 컨테이너에 불필요한 배경/패딩이 없어야 한다', () => {
         const { container } = render(
             <PageSkeleton components={[]} options={defaultOptions} />
@@ -464,6 +514,8 @@ describe('PageSkeleton', () => {
 
     // === Flex/Grid 레이아웃 props → Tailwind 클래스 변환 ===
 
+    // @scenario case=skeleton_c26
+    // @effects page_skeleton_renders_placeholders
     it('Flex 컴포넌트의 justify/align props를 Tailwind 클래스로 변환해야 한다', () => {
         const components = [
             {
@@ -497,6 +549,8 @@ describe('PageSkeleton', () => {
         expect(flex!.children.length).toBe(2);
     });
 
+    // @scenario case=skeleton_c27
+    // @effects page_skeleton_renders_placeholders
     it('Flex 컴포넌트의 direction/wrap/gap props를 Tailwind 클래스로 변환해야 한다', () => {
         const components = [
             {
@@ -526,6 +580,8 @@ describe('PageSkeleton', () => {
         expect(flex!.className).toContain('p-4');
     });
 
+    // @scenario case=skeleton_c28
+    // @effects page_skeleton_renders_placeholders
     it('Grid 컴포넌트의 cols/gap props를 Tailwind 클래스로 변환해야 한다', () => {
         const components = [
             {
@@ -554,6 +610,8 @@ describe('PageSkeleton', () => {
         expect(grid!.className).toContain('mt-4');
     });
 
+    // @scenario case=skeleton_c29
+    // @effects page_skeleton_renders_placeholders
     it('Grid 컴포넌트의 반응형 cols props를 Tailwind 클래스로 변환해야 한다', () => {
         Object.defineProperty(window, 'innerWidth', { value: 1280, writable: true });
 
@@ -588,6 +646,8 @@ describe('PageSkeleton', () => {
         Object.defineProperty(window, 'innerWidth', { value: 0, writable: true });
     });
 
+    // @scenario case=skeleton_c30
+    // @effects page_skeleton_renders_placeholders
     it('Flex props 없이 className만 있는 경우 기존 동작을 유지해야 한다', () => {
         const components = [
             {
@@ -616,6 +676,8 @@ describe('PageSkeleton', () => {
 
     // === Leaf 컨테이너 처리 ===
 
+    // @scenario case=skeleton_c31
+    // @effects page_skeleton_renders_placeholders
     it('자식 없는 Div(leaf 컨테이너)를 스켈레톤 바로 표시해야 한다', () => {
         const components = [
             { name: 'Div', type: 'basic', props: { className: 'h-8 w-48' } },
@@ -632,6 +694,8 @@ describe('PageSkeleton', () => {
         expect(bar.className).toContain('bg-gray-200');
     });
 
+    // @scenario case=skeleton_c32
+    // @effects page_skeleton_renders_placeholders
     it('자식 없는 Div에 크기 클래스 없으면 기본 크기 바를 렌더해야 한다', () => {
         const components = [
             { name: 'Div', type: 'basic' },
@@ -650,6 +714,8 @@ describe('PageSkeleton', () => {
 
     // === 조건부 분기 필터링 ===
 
+    // @scenario case=skeleton_c33
+    // @effects page_skeleton_renders_placeholders
     it('부정 조건(!)의 if 분기를 스킵해야 한다', () => {
         const components = [
             {
@@ -683,6 +749,8 @@ describe('PageSkeleton', () => {
         expect(contentBranch!.children.length).toBe(2); // H1 + P
     });
 
+    // @scenario case=skeleton_c34
+    // @effects page_skeleton_renders_placeholders
     it('hasError 조건의 if 분기를 스킵해야 한다', () => {
         const components = [
             {
@@ -716,6 +784,8 @@ describe('PageSkeleton', () => {
         expect(mainContent!.children.length).toBe(3); // H1 + P + Button
     });
 
+    // @scenario case=skeleton_c35
+    // @effects page_skeleton_renders_placeholders
     it('상호 배타적 긍정 분기 중 가장 풍부한 것을 선택해야 한다', () => {
         const components = [
             {
@@ -753,6 +823,8 @@ describe('PageSkeleton', () => {
         expect(status.querySelector('.gallery-branch')).toBeFalsy();
     });
 
+    // @scenario case=skeleton_c36
+    // @effects page_skeleton_renders_placeholders
     it('if 없는 컴포넌트와 if 있는 컴포넌트가 혼재하면 둘 다 렌더해야 한다', () => {
         const components = [
             {
@@ -779,6 +851,8 @@ describe('PageSkeleton', () => {
         expect(status.querySelector('.conditional-content')).toBeTruthy();
     });
 
+    // @scenario case=skeleton_c37
+    // @effects page_skeleton_renders_placeholders
     it('혼재(withoutIf + withIf) 시 상호 배타적 값 분기(=== value)는 richest만 선택해야 한다', () => {
         // _type_renderer 패턴: navigation(no if) + basic/gallery/card(if)
         const components = [
@@ -841,6 +915,8 @@ describe('PageSkeleton', () => {
         expect(status.querySelector('.card-type')).toBeFalsy();
     });
 
+    // @scenario case=skeleton_c38
+    // @effects page_skeleton_renders_placeholders
     it('혼재 시 비-상호배타적 조건(독립 조건)은 모두 렌더해야 한다', () => {
         const components = [
             {
@@ -878,6 +954,8 @@ describe('PageSkeleton', () => {
 
     // === 복합 컴포넌트 스켈레톤 ===
 
+    // @scenario case=skeleton_c39
+    // @effects page_skeleton_renders_placeholders
     it('ProductCard를 이미지+텍스트 카드 스켈레톤으로 치환해야 한다', () => {
         const components = [
             { name: 'ProductCard', type: 'composite' },
@@ -894,6 +972,8 @@ describe('PageSkeleton', () => {
         expect(card.querySelector('.h-48')).toBeTruthy(); // 이미지 영역
     });
 
+    // @scenario case=skeleton_c40
+    // @effects page_skeleton_renders_placeholders
     it('UserInfo를 작은 텍스트 바로 치환해야 한다', () => {
         const components = [
             { name: 'UserInfo', type: 'composite' },
@@ -909,6 +989,8 @@ describe('PageSkeleton', () => {
         expect(userInfo.className).toContain('w-14');
     });
 
+    // @scenario case=skeleton_c41
+    // @effects page_skeleton_renders_placeholders
     it('QuantitySelector를 인풋 형태 스켈레톤으로 치환해야 한다', () => {
         const components = [
             { name: 'QuantitySelector', type: 'composite' },
@@ -924,6 +1006,8 @@ describe('PageSkeleton', () => {
         expect(qty.className).toContain('w-28');
     });
 
+    // @scenario case=skeleton_c42
+    // @effects page_skeleton_renders_placeholders
     it('ProductImageViewer를 큰 이미지 사각형으로 치환해야 한다', () => {
         const components = [
             { name: 'ProductImageViewer', type: 'composite' },
@@ -940,6 +1024,8 @@ describe('PageSkeleton', () => {
 
     // === Tailwind 반응형 display 해석 ===
 
+    // @scenario case=skeleton_c43
+    // @effects page_skeleton_renders_placeholders
     it('hidden lg:grid 패턴을 데스크톱에서 grid로 해석해야 한다', () => {
         // jsdom에서 window.innerWidth 기본값은 0 → 1024로 설정
         Object.defineProperty(window, 'innerWidth', { value: 1280, writable: true });
@@ -974,6 +1060,46 @@ describe('PageSkeleton', () => {
         Object.defineProperty(window, 'innerWidth', { value: 0, writable: true });
     });
 
+    // @scenario case=skeleton_c44
+    // @effects page_skeleton_renders_placeholders
+    it('확장 접두 빌드 클래스(ecommerce:hidden ecommerce:lg:grid)도 같은 뜻으로 해석하고 앞글자를 유지한다', () => {
+        Object.defineProperty(window, 'innerWidth', { value: 1280, writable: true });
+        const prevCore = (window as any).G7Core;
+        const prevConfig = (window as any).G7Config;
+        (window as any).G7Config = { extensionClassPrefixes: ['ecommerce'] };
+        (window as any).G7Core = {
+            ...(prevCore ?? {}),
+            style: {
+                ...(prevCore?.style ?? {}),
+                splitExtensionClassPrefix: (t: string) =>
+                    t.startsWith('ecommerce:') ? { prefix: 'ecommerce:', rest: t.slice(10) } : { prefix: '', rest: t },
+            },
+        };
+
+        const components = [
+            {
+                name: 'Div',
+                type: 'basic',
+                props: { className: 'ecommerce:hidden ecommerce:lg:grid ecommerce:lg:gap-4 ecommerce:px-4' },
+                children: [{ name: 'Span', type: 'basic' }],
+            },
+        ];
+
+        const { container } = render(<PageSkeleton components={components} options={defaultOptions} />);
+        const status = container.querySelector('[role="status"]')!;
+        const div = status.children[0] as HTMLElement;
+        expect(div).toBeTruthy();
+        expect(div.className).toContain('ecommerce:grid');
+        expect(div.className).toContain('ecommerce:gap-4');
+        expect(div.className).not.toContain('ecommerce:hidden');
+
+        (window as any).G7Core = prevCore;
+        (window as any).G7Config = prevConfig;
+        Object.defineProperty(window, 'innerWidth', { value: 0, writable: true });
+    });
+
+    // @scenario case=skeleton_c45
+    // @effects page_skeleton_renders_placeholders
     it('lg:hidden 패턴을 데스크톱에서 숨겨야 한다', () => {
         Object.defineProperty(window, 'innerWidth', { value: 1280, writable: true });
 
@@ -1001,6 +1127,8 @@ describe('PageSkeleton', () => {
         Object.defineProperty(window, 'innerWidth', { value: 0, writable: true });
     });
 
+    // @scenario case=skeleton_c46
+    // @effects page_skeleton_renders_placeholders
     it('모바일에서 hidden lg:grid 패턴을 숨겨야 한다', () => {
         Object.defineProperty(window, 'innerWidth', { value: 375, writable: true });
 
@@ -1028,6 +1156,8 @@ describe('PageSkeleton', () => {
         Object.defineProperty(window, 'innerWidth', { value: 0, writable: true });
     });
 
+    // @scenario case=skeleton_c47
+    // @effects page_skeleton_renders_placeholders
     it('모바일에서 lg:hidden 패턴을 표시해야 한다', () => {
         Object.defineProperty(window, 'innerWidth', { value: 375, writable: true });
 
@@ -1059,6 +1189,8 @@ describe('PageSkeleton', () => {
 
     // === Arbitrary grid-cols-[...] → inline style ===
 
+    // @scenario case=skeleton_c48
+    // @effects page_skeleton_renders_placeholders
     it('arbitrary grid-cols-[...] 값을 inline gridTemplateColumns style로 변환해야 한다', () => {
         Object.defineProperty(window, 'innerWidth', { value: 1280, writable: true });
 
@@ -1097,6 +1229,8 @@ describe('PageSkeleton', () => {
 
     // === 로딩/에러 wrapper 전체 스킵 ===
 
+    // @scenario case=skeleton_c49
+    // @effects page_skeleton_renders_placeholders
     it('모든 자식이 부정 조건이면 컨테이너 자체를 스킵해야 한다 (_loading_error 패턴)', () => {
         // _loading_error.g7.html 구조: Div(no if) → [Container(!data), Container(hasError)]
         const components = [
@@ -1151,6 +1285,8 @@ describe('PageSkeleton', () => {
 
     // === {{...}} 표현식 + 반응형 통합 ===
 
+    // @scenario case=skeleton_c50
+    // @effects page_skeleton_renders_placeholders
     it('{{...}} 삼항 표현식과 hidden lg:grid를 함께 처리해야 한다', () => {
         Object.defineProperty(window, 'innerWidth', { value: 1280, writable: true });
 
@@ -1184,6 +1320,8 @@ describe('PageSkeleton', () => {
 
     // === empty state 조건 스킵 ===
 
+    // @scenario case=skeleton_c51
+    // @effects page_skeleton_renders_placeholders
     it('empty state 조건(=== 0)을 부정 조건으로 감지하여 스킵해야 한다', () => {
         // _empty_states.g7.html 패턴: 모든 자식이 === 0 조건
         const components = [
@@ -1232,6 +1370,8 @@ describe('PageSkeleton', () => {
 
     // === Button-as-container (게시판 행 래퍼) ===
 
+    // @scenario case=skeleton_c52
+    // @effects page_skeleton_renders_placeholders
     it('children이 있는 Button은 컨테이너로 처리하여 자식을 렌더해야 한다', () => {
         Object.defineProperty(window, 'innerWidth', { value: 1280, writable: true });
 
@@ -1278,6 +1418,8 @@ describe('PageSkeleton', () => {
         Object.defineProperty(window, 'innerWidth', { value: 0, writable: true });
     });
 
+    // @scenario case=skeleton_c53
+    // @effects page_skeleton_renders_placeholders
     it('children이 없는 Button은 고정 크기 바로 렌더해야 한다', () => {
         const components = [
             { name: 'Button', type: 'basic' },
@@ -1296,6 +1438,8 @@ describe('PageSkeleton', () => {
 
     // === 게시판/상품 레이아웃 시뮬레이션 ===
 
+    // @scenario case=skeleton_c54
+    // @effects page_skeleton_renders_placeholders
     it('게시판 목록 레이아웃 구조를 올바르게 반영해야 한다', () => {
         // 실제 게시판 레이아웃의 핵심 구조 시뮬레이션
         const components = [

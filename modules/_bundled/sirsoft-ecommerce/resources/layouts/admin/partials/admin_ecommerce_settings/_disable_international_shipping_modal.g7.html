@@ -4,14 +4,14 @@
   <modal data-type="composite" data-ref="disable_international_shipping_modal" title="$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.title" size="md">
     <div>
       <!-- 경고 메시지 -->
-      <div class="alert-warning">
-        <icon name="triangle-exclamation" class="text-amber-600 dark:text-amber-400 text-lg mt-0.5 shrink-0"/>
-        <span class="ecommerce-tone-warning-soft text-xs">$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.message</span>
+      <div class="ecommerce-alert-warning">
+        <icon name="triangle-exclamation" class="ecommerce:text-amber-600 ecommerce:dark:text-amber-400 ecommerce:text-lg ecommerce:mt-0.5 ecommerce:shrink-0"/>
+        <span class="ecommerce-tone-warning-soft ecommerce:text-xs">$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.message</span>
       </div>
       <!-- 버튼 영역 -->
-      <div class="flex justify-end gap-2">
+      <div class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2">
         <!-- 취소 버튼 -->
-        <button type="button" class="btn btn-secondary">
+        <button type="button" class="ecommerce-btn ecommerce-btn-secondary">
           <on type="click">
             <!-- 해외배송을 끈 지점이 배송가능국가 추가 폼도 함께 내렸다(그 폼이 도달 불가가 되기 때문). [취소] 는 그 결정을 되돌리는 경로이므로 입력 중이던 국가도 함께 되살린다 — 되살리지 않으면 "끄지 않겠다" 를 고른 운영자의 입력이 안내 없이 사라진다. -->
             <set-state target="$parent._local" isAddingCountry="{{$parent._local.disableIntlWasAddingCountry === true}}" newCountry="{{$parent._local.disableIntlCountryBuffer}}" :disableIntlWasAddingCountry="false" :disableIntlCountryBuffer="null">
@@ -26,7 +26,7 @@
           <span>$t:sirsoft-ecommerce.admin.settings.shipping.modal.disable_international.cancel</span>
         </button>
         <!-- 확인 버튼 — 해외배송 비활성화 + 외국 국가 비활성화 -->
-        <button type="button" class="btn btn-danger">
+        <button type="button" class="ecommerce-btn ecommerce-btn-danger">
           <on type="click">
             <set-state target="$parent._local" :hasChanges="true" :disableIntlWasAddingCountry="false" :disableIntlCountryBuffer="null">
               <field name="form">

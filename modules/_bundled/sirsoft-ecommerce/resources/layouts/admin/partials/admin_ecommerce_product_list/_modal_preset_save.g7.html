@@ -5,20 +5,20 @@
   `target_screen` 이 "products" 로 고정돼 있어 주문·쿠폰 목록의 프리셋과 한 저장소를 나눠 쓴다. -->
 <partial description="Product Index - Preset Save Modal">
   <modal data-type="composite" data-ref="modal_preset_save" title="$t:sirsoft-ecommerce.admin.product.modal.preset_save.title" size="sm">
-    <input data-ref="preset_name_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.product.modal.preset_save.placeholder" class="input" value="{{_local.presetName}}">
+    <input data-ref="preset_name_input" type="text" placeholder="$t:sirsoft-ecommerce.admin.product.modal.preset_save.placeholder" class="ecommerce-input" value="{{_local.presetName}}">
       <on type="input">
         <!-- 이름만 이 창의 `_local` 에 둔다 — 저장할 조건은 이미 `_global` 에 담겨 왔고, 이름은 저장이 끝나면 비워 다음 저장에 남지 않게 한다. -->
         <set-state target="local" presetName="{{$event.target.value}}"/>
       </on>
     </input>
-    <div data-ref="preset_save_footer" class="flex justify-end gap-2 mt-4">
-      <button type="button" class="btn btn-secondary">
+    <div data-ref="preset_save_footer" class="ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-4">
+      <button type="button" class="ecommerce-btn ecommerce-btn-secondary">
         <on type="click">
           <close-modal/>
         </on>
         $t:common.cancel
       </button>
-      <button type="button" class="btn btn-primary" disabled="{{!_local.presetName || _local.presetName.trim() === ''}}">
+      <button type="button" class="ecommerce-btn ecommerce-btn-primary" disabled="{{!_local.presetName || _local.presetName.trim() === ''}}">
         <on type="click">
           <!-- 저장. 조건을 통째로 넘기지 않고 `<field>` 트리로 하나씩 펴는 이유는 화면이 쓰지 않는 키가 섞여 들지 않고, 조건이 하나 늘 때 고칠 자리가 여기 한 곳으로 보이기 때문이다. -->
           <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/presets" method="POST">

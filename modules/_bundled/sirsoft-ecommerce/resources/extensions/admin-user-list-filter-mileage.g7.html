@@ -9,14 +9,14 @@
   서버 쪽 규칙·조건은 `UserListMileageFilterListener` 가 맡는다. 잔액은 상점 기본 통화 기준이다.
   마일리지를 볼 권한이 없는 운영자에게는 행 자체를 내지 않는다(서버도 조건을 무시한다). -->
 <extension extension-point="admin_user_list_filters" mode="append" priority="200">
-  <div data-ref="ext_ecommerce_mileage_filter_row" class="flex flex-col gap-2 md:flex-row md:items-center">
+  <div data-ref="ext_ecommerce_mileage_filter_row" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:md:flex-row ecommerce:md:items-center">
     <permissions>
       <permission>sirsoft-ecommerce.mileage.read</permission>
     </permissions>
-    <responsive on="portable" class="flex flex-col gap-2 items-start"/>
-    <span class="block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 md:mb-0 shrink-0 md:flex md:items-center">$t:sirsoft-ecommerce.admin.user_filter.mileage</span>
-    <div class="flex items-center flex-wrap gap-2">
-      <input type="number" name="ecommerceMileageMin" min="0" class="input w-32" placeholder="$t:sirsoft-ecommerce.admin.user_filter.mileage_min" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-ecommerce.mileage_min=')) || '').slice('sirsoft-ecommerce.mileage_min='.length)}}">
+    <responsive on="portable" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:items-start"/>
+    <span class="ecommerce:block ecommerce:mb-2 ecommerce:w-32 ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:md:mb-0 ecommerce:shrink-0 ecommerce:md:flex ecommerce:md:items-center">$t:sirsoft-ecommerce.admin.user_filter.mileage</span>
+    <div class="ecommerce:flex ecommerce:items-center ecommerce:flex-wrap ecommerce:gap-2">
+      <input type="number" name="ecommerceMileageMin" min="0" class="ecommerce-input ecommerce:w-32" placeholder="$t:sirsoft-ecommerce.admin.user_filter.mileage_min" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-ecommerce.mileage_min=')) || '').slice('sirsoft-ecommerce.mileage_min='.length)}}">
         <on type="change">
           <!-- 잔액 하한. 0 도 유효한 값이다 — 비우면 조건에서 빠진다(핸들러가 빈 값의 원소를 지운다). -->
           <sequence>
@@ -25,8 +25,8 @@
           </sequence>
         </on>
       </input>
-      <span class="text-gray-500 dark:text-gray-400">~</span>
-      <input type="number" name="ecommerceMileageMax" min="0" class="input w-32" placeholder="$t:sirsoft-ecommerce.admin.user_filter.mileage_max" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-ecommerce.mileage_max=')) || '').slice('sirsoft-ecommerce.mileage_max='.length)}}">
+      <span class="ecommerce:text-gray-500 ecommerce:dark:text-gray-400">~</span>
+      <input type="number" name="ecommerceMileageMax" min="0" class="ecommerce-input ecommerce:w-32" placeholder="$t:sirsoft-ecommerce.admin.user_filter.mileage_max" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('sirsoft-ecommerce.mileage_max=')) || '').slice('sirsoft-ecommerce.mileage_max='.length)}}">
         <on type="change">
           <!-- 잔액 상한. 하한보다 작으면 서버가 422 로 거절한다. 잔액 행이 없는 회원은 0 으로 보고 상한 안에 든다. -->
           <sequence>

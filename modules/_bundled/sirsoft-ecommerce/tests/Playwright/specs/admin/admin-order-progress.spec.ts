@@ -21,7 +21,8 @@ async function gotoFirstOrderDetail(page: Page): Promise<void> {
   await page.goto('/admin/ecommerce/orders');
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
 
-  const orderNumber = page.locator('table tbody tr span.cursor-pointer').first();
+  // 주문번호 칸은 상세로 가는 링크다(base 부터 <a> — 옛 span 선택자는 아무것도 잡지 못했다)
+  const orderNumber = page.locator('table tbody tr a[href^="/admin/ecommerce/orders/"]').first();
   await orderNumber.waitFor({ state: 'visible', timeout: 30_000 });
   await orderNumber.click();
 
@@ -49,7 +50,7 @@ test.describe('@sirsoft-ecommerce 관리자 주문 상세 진행단계', () => {
     expect(cardTop).toBeLessThan(tabTop);
 
     // 칸마다 원 안에 서버 토큰이 해석된 글리프 하나 (토큰 원문 fa-status-* 는 없다)
-    await expect(page.locator('[id^="order_progress_step_"] .rounded-full i[class*="fa-"]')).toHaveCount(count);
+    await expect(page.locator('[id^="order_progress_step_"] .ecommerce\\:rounded-full i[class*="fa-"]')).toHaveCount(count);
     await expect(page.locator('[id^="order_progress_step_"] i[class*="fa-status-"]')).toHaveCount(0);
 
     const states = await cells.evaluateAll((els) => els.map((el) => el.getAttribute('data-step-state')));
@@ -70,8 +71,8 @@ test.describe('@sirsoft-ecommerce 관리자 주문 상세 진행단계', () => {
         const chevron = el.querySelector('[data-step-chevron="pc"] i');
         const next = els[i + 1];
         if (!chevron || !next) return;
-        const a = (el.querySelector('.rounded-full') as Element).getBoundingClientRect();
-        const b = (next.querySelector('.rounded-full') as Element).getBoundingClientRect();
+        const a = (el.querySelector('.ecommerce\\:rounded-full') as Element).getBoundingClientRect();
+        const b = (next.querySelector('.ecommerce\\:rounded-full') as Element).getBoundingClientRect();
         const g = chevron.getBoundingClientRect();
         out.push(Math.abs((g.left - a.right) - (b.left - g.right)));
       });
@@ -145,7 +146,7 @@ test.describe('@sirsoft-ecommerce 관리자 주문 상세 진행단계', () => {
     await expect(page.locator('[data-step-state="current"]')).toHaveCount(0);
     const last = page.locator('[data-step-state="off_path"]');
     await expect(last).toHaveAttribute('data-step-value', 'shipping_hold');
-    await expect(last.locator('.rounded-full.border-2')).toHaveClass(/(^|\s)bg-red-600(\s|$)/);
+    await expect(last.locator('.ecommerce\\:rounded-full.ecommerce\\:border-2')).toHaveClass(/(^|\s)ecommerce:bg-red-600(\s|$)/);
     await expect(last.locator('i[class*="fa-pause"]')).toHaveCount(1);
     await expect(page.locator('[data-step-chevron="pc"]:visible')).toHaveCount(7);
 

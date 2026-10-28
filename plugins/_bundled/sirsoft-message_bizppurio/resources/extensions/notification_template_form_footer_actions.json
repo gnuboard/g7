@@ -9,7 +9,7 @@
             "name": "Div",
             "if": "{{extensionPointProps.channel === 'alimtalk'}}",
             "props": {
-                "className": "flex gap-2"
+                "className": "bizppurio:flex bizppurio:gap-2"
             },
             "children": [
                 {
@@ -329,7 +329,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "text-sm px-4 py-2 rounded-md bg-teal-700 text-white dark:bg-teal-700 bizppurio-btn-teal-solid disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-teal-700 bizppurio:text-white bizppurio:dark:bg-teal-700 bizppurio-btn-teal-solid bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed",
                         "disabled": "{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false) || !((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) && !(_global.bz_tpl_modal?.loading ?? false))}}"
                     },
                     "text": "$t:sirsoft-message_bizppurio.template.form.btn_save_request",
@@ -736,7 +736,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex items-center gap-2 text-sm px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "bizppurio:flex bizppurio:items-center bizppurio:gap-2 bizppurio:text-sm bizppurio:px-4 bizppurio:py-2 bizppurio:rounded-md bizppurio:bg-indigo-600 bizppurio:text-white bizppurio:hover:bg-indigo-700 bizppurio:dark:bg-indigo-500 bizppurio:dark:hover:bg-indigo-600 bizppurio:transition-colors bizppurio:disabled:opacity-50 bizppurio:disabled:cursor-not-allowed",
                         "disabled": "{{(_global.bz_tpl_modal?.isSaving ?? false) || (_global.bz_tpl_upload?.uploading ?? false) || !((_global.bz_tpl_modal?.notification_type === extensionPointProps.definition?.type) && !(_global.bz_tpl_modal?.loading ?? false))}}"
                     },
                     "children": [
@@ -746,7 +746,7 @@
                             "if": "{{(_global.bz_tpl_modal?.isSaving ?? false)}}",
                             "props": {
                                 "name": "spinner",
-                                "className": "animate-spin text-sm"
+                                "className": "bizppurio:animate-spin bizppurio:text-sm bizppurio:leading-none"
                             }
                         },
                         {

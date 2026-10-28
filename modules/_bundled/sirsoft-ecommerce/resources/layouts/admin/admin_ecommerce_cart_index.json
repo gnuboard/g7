@@ -117,7 +117,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "p-6 bg-gray-50 dark:bg-gray-900 min-h-screen"
+                    "className": "ecommerce:p-6 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:min-h-screen"
                 },
                 "children": [
                     {
@@ -125,7 +125,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "page-header"
+                            "className": "ecommerce-page-header"
                         },
                         "children": [
                             {
@@ -137,7 +137,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "ecommerce-page-title"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.carts.title"
                                     },
@@ -145,7 +145,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "page-description"
+                                            "className": "ecommerce-page-description"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.carts.description"
                                     }
@@ -160,7 +160,7 @@
                         "name": "Div",
                         "if": "{{!!query.user_uuid}}",
                         "props": {
-                            "className": "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4 flex items-center gap-2"
+                            "className": "ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:border ecommerce:border-blue-200 ecommerce:dark:border-blue-800 ecommerce:rounded-lg ecommerce:p-3 ecommerce:mb-4 ecommerce:flex ecommerce:items-center ecommerce:gap-2"
                         },
                         "children": [
                             {
@@ -168,14 +168,14 @@
                                 "name": "Icon",
                                 "props": {
                                     "name": "circle-info",
-                                    "className": "text-base text-blue-600 dark:text-blue-400"
+                                    "className": "ecommerce:text-base ecommerce:text-blue-600 ecommerce:dark:text-blue-400"
                                 }
                             },
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-sm text-blue-700 dark:text-blue-300 flex-1"
+                                    "className": "ecommerce:text-sm ecommerce:text-blue-700 ecommerce:dark:text-blue-300 ecommerce:flex-1"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.carts.filters.member_filter_notice"
                             },
@@ -202,7 +202,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "px-3 py-1.5 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                    "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                                 },
                                 "children": [
                                     {
@@ -219,7 +219,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-4"
+                            "className": "ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-4 ecommerce:mb-4"
                         },
                         "children": [
                             {
@@ -227,7 +227,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex flex-wrap items-end gap-3"
+                                    "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-end ecommerce:gap-3"
                                 },
                                 "children": [
                                     {
@@ -235,14 +235,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex flex-col gap-1"
+                                            "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.carts.filters.search_label"
                                             },
@@ -264,7 +264,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "w-32 text-sm",
+                                                    "className": "ecommerce:w-32 ecommerce:text-sm",
                                                     "value": "{{_local.filter.searchField ?? 'member'}}",
                                                     "options": [
                                                         {
@@ -293,14 +293,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex flex-col gap-1 flex-1 min-w-[200px]"
+                                            "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:flex-1 ecommerce:min-w-[200px]"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.carts.filters.keyword_label"
                                             },
@@ -328,7 +328,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "text",
-                                                    "className": "text-sm",
+                                                    "className": "ecommerce:text-sm",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.carts.filters.keyword_placeholder",
                                                     "value": "{{_local.filter.searchKeyword ?? ''}}"
                                                 }
@@ -340,14 +340,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex flex-col gap-1"
+                                            "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.carts.filters.date_label"
                                             },
@@ -355,7 +355,7 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex items-center gap-2"
+                                                    "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -378,7 +378,7 @@
                                                         "props": {
                                                             "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.carts.filters.date_label')}}",
                                                             "type": "date",
-                                                            "className": "text-sm",
+                                                            "className": "ecommerce:text-sm",
                                                             "value": "{{_local.filter.startDate ?? ''}}"
                                                         }
                                                     },
@@ -386,7 +386,7 @@
                                                         "type": "basic",
                                                         "name": "Span",
                                                         "props": {
-                                                            "className": "text-gray-500 dark:text-gray-400"
+                                                            "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                         },
                                                         "text": "~"
                                                     },
@@ -410,7 +410,7 @@
                                                         "props": {
                                                             "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.carts.filters.date_label')}}",
                                                             "type": "date",
-                                                            "className": "text-sm",
+                                                            "className": "ecommerce:text-sm",
                                                             "value": "{{_local.filter.endDate ?? ''}}"
                                                         }
                                                     }
@@ -423,14 +423,14 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex flex-col gap-1"
+                                            "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Label",
                                                 "props": {
-                                                    "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                    "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.carts.filters.owner_label"
                                             },
@@ -452,7 +452,7 @@
                                                     }
                                                 ],
                                                 "props": {
-                                                    "className": "w-32 text-sm",
+                                                    "className": "ecommerce:w-32 ecommerce:text-sm",
                                                     "value": "{{_local.filter.owner ?? 'all'}}",
                                                     "options": [
                                                         {
@@ -477,7 +477,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-center gap-2"
+                                            "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2"
                                         },
                                         "children": [
                                             {
@@ -521,7 +521,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "px-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                                                 },
                                                 "children": [
                                                     {
@@ -543,7 +543,7 @@
                                                 ],
                                                 "props": {
                                                     "type": "button",
-                                                    "className": "px-4 py-2 text-sm bg-gray-800 dark:bg-gray-600 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-500 font-medium"
+                                                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-gray-800 ecommerce:dark:bg-gray-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-gray-900 ecommerce:dark:hover:bg-gray-500 ecommerce:font-medium"
                                                 },
                                                 "children": [
                                                     {
@@ -564,14 +564,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex flex-wrap items-center justify-between gap-3"
+                            "className": "ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700/50 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:p-3 ecommerce:mb-4 ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-between ecommerce:gap-3"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                    "className": "ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-nowrap"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.carts.bulk.selected_count|count={{(_global.selectedItems_carts ?? []).length}}"
                             },
@@ -590,7 +590,7 @@
                                     "data-testid": "admin-carts-bulk-delete",
                                     "type": "button",
                                     "disabled": "{{carts?.data?.abilities?.can_manage !== true || (_global.selectedItems_carts ?? []).length === 0}}",
-                                    "className": "px-4 py-2 text-sm bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-red-600 ecommerce:dark:bg-red-700 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-800 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
                                 },
                                 "children": [
                                     {
@@ -607,14 +607,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex flex-wrap items-center justify-between gap-4 mb-4"
+                            "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-4"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-primary font-bold"
+                                    "className": "ecommerce-text-primary ecommerce:font-bold"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.carts.table.total_count|count={{carts?.data?.pagination?.total ?? 0}}"
                             },
@@ -623,7 +623,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex items-center gap-3"
+                                    "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-3"
                                 },
                                 "children": [
                                     {
@@ -661,7 +661,7 @@
                                         ],
                                         "props": {
                                             "aria-label": "$t:common.sort_order",
-                                            "className": "w-40 text-sm",
+                                            "className": "ecommerce:w-40 ecommerce:text-sm",
                                             "value": "{{query.sort || 'created_at_desc'}}",
                                             "options": [
                                                 {
@@ -710,7 +710,7 @@
                                         ],
                                         "props": {
                                             "aria-label": "$t:common.per_page",
-                                            "className": "w-32 text-sm",
+                                            "className": "ecommerce:w-32 ecommerce:text-sm",
                                             "value": "{{query.per_page || '20'}}",
                                             "options": [
                                                 {
@@ -854,7 +854,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white"
+                                                "className": "ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white"
                                             },
                                             "text": "{{row.created_at}}"
                                         }
@@ -868,14 +868,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex flex-col"
+                                                "className": "ecommerce:flex ecommerce:flex-col"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex items-center gap-2"
+                                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2"
                                                     },
                                                     "children": [
                                                         {
@@ -891,7 +891,7 @@
                                                             ],
                                                             "props": {
                                                                 "href": "/admin/users/{{row.member?.uuid}}",
-                                                                "className": "font-medium text-gray-900 dark:text-white cursor-pointer hover:underline"
+                                                                "className": "ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:cursor-pointer ecommerce:hover:underline"
                                                             },
                                                             "text": "{{row.member?.name}}"
                                                         },
@@ -900,7 +900,7 @@
                                                             "name": "Span",
                                                             "if": "{{!row.member}}",
                                                             "props": {
-                                                                "className": "text-gray-500 dark:text-gray-400"
+                                                                "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                             },
                                                             "text": "$t:sirsoft-ecommerce.admin.carts.badges.guest"
                                                         },
@@ -921,7 +921,7 @@
                                                     "name": "Span",
                                                     "if": "{{row.member?.email}}",
                                                     "props": {
-                                                        "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "{{row.member?.email}}"
                                                 }
@@ -937,14 +937,14 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex flex-col"
+                                                "className": "ecommerce:flex ecommerce:flex-col"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "font-medium text-gray-900 dark:text-white"
+                                                        "className": "ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white"
                                                     },
                                                     "text": "{{row.product?.name ?? '-'}}"
                                                 },
@@ -952,7 +952,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex items-center gap-1 flex-wrap"
+                                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce:flex-wrap"
                                                     },
                                                     "children": [
                                                         {
@@ -989,7 +989,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                                "className": "ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                             },
                                             "text": "{{row.option_name ?? '-'}}"
                                         }
@@ -1003,7 +1003,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white"
+                                                "className": "ecommerce:text-sm ecommerce:text-gray-900 ecommerce:dark:text-white"
                                             },
                                             "text": "{{row.quantity ?? 0}}"
                                         }
@@ -1031,14 +1031,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "py-2"
+                        "className": "ecommerce:py-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.carts.modal.delete.message"
                         }
@@ -1048,7 +1048,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-2 mt-6"
+                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6"
                     },
                     "children": [
                         {
@@ -1062,7 +1062,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -1139,7 +1139,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-red-600 ecommerce:dark:bg-red-700 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-800 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                 "disabled": "{{_global.deleting_carts}}"
                             },
                             "children": [
@@ -1172,14 +1172,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "py-2"
+                        "className": "ecommerce:py-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.carts.modal.bulk_delete.message|count={{(_global.selectedItems_carts ?? []).length}}"
                         }
@@ -1189,7 +1189,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-2 mt-6"
+                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-6"
                     },
                     "children": [
                         {
@@ -1203,7 +1203,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                             },
                             "children": [
                                 {
@@ -1283,7 +1283,7 @@
                             "props": {
                                 "data-testid": "admin-carts-bulk-delete-confirm",
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-red-600 ecommerce:dark:bg-red-700 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-red-700 ecommerce:dark:hover:bg-red-800 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                 "disabled": "{{_global.bulkDeleting_carts}}"
                             },
                             "children": [
@@ -1322,14 +1322,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "py-2"
+                        "className": "ecommerce:py-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-sm text-gray-700 dark:text-gray-300"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                             },
                             "text": "{{_global.errorMessage || $t:common.error_occurred}}"
                         }
@@ -1339,7 +1339,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end mt-6"
+                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:mt-6"
                     },
                     "children": [
                         {
@@ -1353,7 +1353,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-4 py-2 text-sm bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200"
+                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-gray-100 ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-200"
                             },
                             "children": [
                                 {

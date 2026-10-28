@@ -31,28 +31,28 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex flex-col gap-4"
+                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-4"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid grid-cols-1 md:grid-cols-2 gap-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 text-sm"
+                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:md:grid-cols-2 ecommerce:gap-3 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/50 ecommerce:rounded-lg ecommerce:p-4 ecommerce:text-sm"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex flex-col gap-1 min-w-0"
+                                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.export.modal_downloads.file"
                                 },
@@ -60,7 +60,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-primary font-medium break-all"
+                                        "className": "ecommerce-text-primary ecommerce:font-medium ecommerce:break-all ecommerce-break-all"
                                     },
                                     "text": "{{_global.ecommerceExportTarget?.file_name ?? '-'}}"
                                 },
@@ -68,7 +68,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-600 dark:text-gray-400"
+                                        "className": "ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
                                     },
                                     "text": "{{_global.ecommerceExportTarget?.type_label}} · {{_global.ecommerceExportTarget?.status_label}}{{_global.ecommerceExportTarget?.file_size_label ? ' · ' + _global.ecommerceExportTarget.file_size_label : ''}}"
                                 }
@@ -78,14 +78,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex flex-col gap-1 min-w-0"
+                                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.export.modal_downloads.requested"
                                 },
@@ -93,7 +93,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-primary"
+                                        "className": "ecommerce-text-primary"
                                     },
                                     "text": "{{_global.ecommerceExportTarget?.requester?.name ?? '-'}}"
                                 },
@@ -101,7 +101,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-600 dark:text-gray-400"
+                                        "className": "ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
                                     },
                                     "text": "{{_global.ecommerceExportTarget?.requested_at ?? '-'}}"
                                 }
@@ -111,14 +111,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex flex-col gap-1 md:col-span-2"
+                                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:md:col-span-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.export.modal_downloads.conditions"
                                 },
@@ -126,7 +126,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "flex flex-wrap gap-x-1 text-gray-700 dark:text-gray-300"
+                                        "className": "ecommerce:flex ecommerce:flex-wrap ecommerce:gap-x-1 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                     },
                                     "children": [
                                         {
@@ -153,14 +153,14 @@
                             "name": "Div",
                             "if": "{{_global.ecommerceExportTarget?.reason}}",
                             "props": {
-                                "className": "flex flex-col gap-1 md:col-span-2"
+                                "className": "ecommerce:flex ecommerce:flex-col ecommerce:gap-1 ecommerce:md:col-span-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.export.modal_downloads.reason"
                                 },
@@ -168,7 +168,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-700 dark:text-gray-300 whitespace-pre-line break-all"
+                                        "className": "ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-pre-line ecommerce:break-all ecommerce-break-all"
                                     },
                                     "text": "{{_global.ecommerceExportTarget?.reason}}"
                                 }
@@ -179,14 +179,14 @@
                             "name": "Div",
                             "if": "{{(_global.ecommerceExportTarget?.warnings ?? []).length > 0}}",
                             "props": {
-                                "className": "flex items-center gap-2 flex-wrap md:col-span-2"
+                                "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap ecommerce:md:col-span-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.export.modal_downloads.warnings"
                                 },
@@ -198,7 +198,7 @@
                                         "item_var": "warning"
                                     },
                                     "props": {
-                                        "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                                        "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:px-1.5 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:bg-yellow-100 ecommerce:text-yellow-800 ecommerce:dark:bg-yellow-900/30 ecommerce:dark:text-yellow-300"
                                     },
                                     "text": "{{warning.label}}"
                                 }
@@ -210,21 +210,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg"
+                        "className": "ecommerce:overflow-x-auto ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Table",
                             "props": {
-                                "className": "min-w-full text-sm"
+                                "className": "ecommerce:min-w-full ecommerce:text-sm"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Thead",
                                     "props": {
-                                        "className": "bg-gray-50 dark:bg-gray-800"
+                                        "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"
                                     },
                                     "children": [
                                         {
@@ -235,7 +235,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 w-16"
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:w-16"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.export.modal_downloads.column.sequence"
                                                 },
@@ -243,7 +243,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.export.modal_downloads.column.user"
                                                 },
@@ -251,7 +251,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.export.modal_downloads.column.downloaded_at"
                                                 },
@@ -259,7 +259,7 @@
                                                     "type": "basic",
                                                     "name": "Th",
                                                     "props": {
-                                                        "className": "px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-left ecommerce:text-xs ecommerce:font-medium ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "$t:sirsoft-ecommerce.admin.export.modal_downloads.column.ip"
                                                 }
@@ -271,7 +271,7 @@
                                     "type": "basic",
                                     "name": "Tbody",
                                     "props": {
-                                        "className": "divide-y divide-gray-200 dark:divide-gray-700"
+                                        "className": "ecommerce:divide-y ecommerce:divide-gray-200 ecommerce:dark:divide-gray-700"
                                     },
                                     "children": [
                                         {
@@ -286,7 +286,7 @@
                                                     "type": "basic",
                                                     "name": "Td",
                                                     "props": {
-                                                        "className": "px-3 py-2 text-gray-500 dark:text-gray-400"
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                     },
                                                     "text": "{{item.sequence}}"
                                                 },
@@ -294,7 +294,7 @@
                                                     "type": "basic",
                                                     "name": "Td",
                                                     "props": {
-                                                        "className": "px-3 py-2 text-gray-700 dark:text-gray-300"
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                                                     },
                                                     "text": "{{item.user?.name ?? '-'}}"
                                                 },
@@ -302,7 +302,7 @@
                                                     "type": "basic",
                                                     "name": "Td",
                                                     "props": {
-                                                        "className": "px-3 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:whitespace-nowrap"
                                                     },
                                                     "text": "{{item.downloaded_at ?? '-'}}"
                                                 },
@@ -310,7 +310,7 @@
                                                     "type": "basic",
                                                     "name": "Td",
                                                     "props": {
-                                                        "className": "px-3 py-2 text-gray-700 dark:text-gray-300 font-mono"
+                                                        "className": "ecommerce:px-3 ecommerce:py-2 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:font-mono"
                                                     },
                                                     "text": "{{item.ip_address ?? '-'}}"
                                                 }
@@ -325,7 +325,7 @@
                             "name": "Div",
                             "if": "{{(_global.ecommerceExportDownloadHistory?.data ?? []).length === 0}}",
                             "props": {
-                                "className": "px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400"
+                                "className": "ecommerce:px-3 ecommerce:py-6 ecommerce:text-center ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.export.modal_downloads.empty"
                         }
@@ -336,7 +336,7 @@
                     "name": "Div",
                     "if": "{{(_global.ecommerceExportDownloadHistory?.pagination?.current_page ?? 1) > 1 || _global.ecommerceExportDownloadHistory?.pagination?.has_more_pages === true}}",
                     "props": {
-                        "className": "flex-center justify-center gap-3"
+                        "className": "ecommerce-flex-center ecommerce:justify-center ecommerce:gap-3"
                     },
                     "children": [
                         {
@@ -366,7 +366,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary btn-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                 "disabled": "{{(_global.ecommerceExportDownloadHistory?.pagination?.current_page ?? 1) <= 1}}",
                                 "aria-label": "$t:common.prev_page"
                             },
@@ -376,7 +376,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "chevron-left",
-                                        "className": "text-sm"
+                                        "className": "ecommerce:text-sm"
                                     }
                                 }
                             ]
@@ -385,7 +385,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-600 dark:text-gray-400"
+                                "className": "ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
                             },
                             "text": "{{_global.ecommerceExportDownloadHistory?.pagination?.current_page ?? 1}}"
                         },
@@ -416,7 +416,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary btn-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "ecommerce-btn ecommerce-btn-secondary ecommerce-btn-sm ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                 "disabled": "{{_global.ecommerceExportDownloadHistory?.pagination?.has_more_pages !== true}}",
                                 "aria-label": "$t:common.next"
                             },
@@ -426,7 +426,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "chevron-right",
-                                        "className": "text-sm"
+                                        "className": "ecommerce:text-sm"
                                     }
                                 }
                             ]
@@ -439,7 +439,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "ecommerce-modal-footer-buttons"
             },
             "children": [
                 {
@@ -453,7 +453,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.export.modal.close"
                 }

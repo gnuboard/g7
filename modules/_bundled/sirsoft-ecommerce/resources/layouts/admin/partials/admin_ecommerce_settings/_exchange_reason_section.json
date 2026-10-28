@@ -6,14 +6,14 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "ecommerce-admin-card"
     },
     "children": [
         {
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "card-header"
+                "className": "ecommerce-card-header"
             },
             "children": [
                 {
@@ -21,7 +21,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-between w-full"
+                        "className": "ecommerce-flex-between ecommerce:w-full"
                     },
                     "children": [
                         {
@@ -32,7 +32,7 @@
                                     "type": "basic",
                                     "name": "H3",
                                     "props": {
-                                        "className": "card-title"
+                                        "className": "ecommerce-card-title"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.section_title"
                                 }
@@ -57,7 +57,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                 "disabled": "{{_computed.isReadOnly}}"
                             },
                             "children": [
@@ -66,7 +66,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "plus",
-                                        "className": "text-xs"
+                                        "className": "ecommerce:text-xs"
                                     }
                                 },
                                 {
@@ -85,14 +85,14 @@
             "name": "Div",
             "if": "{{_local.isAddingExchangeReason}}",
             "props": {
-                "className": "p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50"
+                "className": "ecommerce:p-4 ecommerce:border-b ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800/50"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+                        "className": "ecommerce:grid ecommerce:grid-cols-1 ecommerce:sm:grid-cols-2 ecommerce:lg:grid-cols-4 ecommerce:gap-3"
                     },
                     "children": [
                         {
@@ -103,7 +103,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-secondary block text-xs font-medium mb-1"
+                                        "className": "ecommerce-text-secondary ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:mb-1"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.form.code"
                                 },
@@ -125,7 +125,7 @@
                                         "type": "text",
                                         "value": "{{_local.exchangeReasonForm?.code ?? ''}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.form.code_placeholder",
-                                        "className": "{{_local.exchangeReasonFormErrors?.code ? 'input input-error font-mono' : 'input font-mono'}}",
+                                        "className": "{{_local.exchangeReasonFormErrors?.code ? 'ecommerce-input ecommerce-input-error ecommerce:font-mono' : 'ecommerce-input ecommerce:font-mono'}}",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
@@ -134,7 +134,7 @@
                                     "name": "Span",
                                     "if": "{{_local.exchangeReasonFormErrors?.code}}",
                                     "props": {
-                                        "className": "form-error"
+                                        "className": "ecommerce-form-error"
                                     },
                                     "text": "{{_local.exchangeReasonFormErrors?.code === 'format' ? '$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.validation.code_format' : (_local.exchangeReasonFormErrors?.code === 'length' ? '$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.validation.code_length' : (_local.exchangeReasonFormErrors?.code === 'duplicate' ? '$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.validation.code_duplicate' : '$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.validation.code_required'))}}"
                                 }
@@ -148,7 +148,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-secondary block text-xs font-medium mb-1"
+                                        "className": "ecommerce-text-secondary ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:mb-1"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.form.name"
                                 },
@@ -185,7 +185,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-secondary block text-xs font-medium mb-1"
+                                        "className": "ecommerce-text-secondary ecommerce:block ecommerce:text-xs ecommerce:font-medium ecommerce:mb-1"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.form.fault_type"
                                 },
@@ -205,7 +205,7 @@
                                     ],
                                     "props": {
                                         "value": "{{_local.exchangeReasonForm?.fault_type ?? 'customer'}}",
-                                        "className": "w-full",
+                                        "className": "ecommerce:w-full",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "options": [
                                             {
@@ -229,14 +229,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-end"
+                                "className": "ecommerce:flex ecommerce:items-end"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "flex-center gap-2 cursor-pointer"
+                                        "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:cursor-pointer"
                                     },
                                     "children": [
                                         {
@@ -256,7 +256,7 @@
                                             "props": {
                                                 "type": "checkbox",
                                                 "checked": "{{_local.exchangeReasonForm?.is_user_selectable ?? true}}",
-                                                "className": "checkbox",
+                                                "className": "ecommerce-checkbox",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
@@ -264,7 +264,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body"
+                                                "className": "ecommerce-text-body"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.form.is_user_selectable"
                                         }
@@ -278,7 +278,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-2 mt-3"
+                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-2 ecommerce:mt-3"
                     },
                     "children": [
                         {
@@ -299,7 +299,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-3 py-1.5 text-body bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce-text-body ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                 "disabled": "{{_computed.isReadOnly}}"
                             },
                             "children": [
@@ -350,7 +350,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                 "disabled": "{{_computed.isReadOnly}}"
                             },
                             "children": [
@@ -370,7 +370,7 @@
             "name": "Div",
             "if": "{{settings !== undefined && ((_local.form?.claim?.exchange_reasons ?? []).length === 0 && !_local.isAddingExchangeReason)}}",
             "props": {
-                "className": "p-8 text-center text-gray-500 dark:text-gray-400"
+                "className": "ecommerce:p-8 ecommerce:text-center ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
             },
             "text": "$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.empty"
         },
@@ -392,14 +392,14 @@
                 }
             },
             "props": {
-                "className": "overflow-x-clip"
+                "className": "ecommerce:overflow-x-clip"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Table",
                     "props": {
-                        "className": "w-full"
+                        "className": "ecommerce:w-full"
                     },
                     "children": [
                         {
@@ -414,7 +414,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-tertiary text-left font-medium px-4 py-2 w-32"
+                                                "className": "ecommerce-text-tertiary ecommerce:text-left ecommerce:font-medium ecommerce:px-4 ecommerce:py-2 ecommerce:w-32"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.columns.code"
                                         },
@@ -422,7 +422,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-tertiary text-left font-medium px-4 py-2 w-56"
+                                                "className": "ecommerce-text-tertiary ecommerce:text-left ecommerce:font-medium ecommerce:px-4 ecommerce:py-2 ecommerce:w-56"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.columns.name"
                                         },
@@ -430,7 +430,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-tertiary text-left font-medium px-4 py-2 w-32"
+                                                "className": "ecommerce-text-tertiary ecommerce:text-left ecommerce:font-medium ecommerce:px-4 ecommerce:py-2 ecommerce:w-32"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.columns.fault_type"
                                         },
@@ -438,7 +438,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-tertiary text-center font-medium px-4 py-2 w-20"
+                                                "className": "ecommerce-text-tertiary ecommerce:text-center ecommerce:font-medium ecommerce:px-4 ecommerce:py-2 ecommerce:w-20"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.columns.is_user_selectable"
                                         },
@@ -446,7 +446,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-tertiary text-center font-medium px-4 py-2 w-16"
+                                                "className": "ecommerce-text-tertiary ecommerce:text-center ecommerce:font-medium ecommerce:px-4 ecommerce:py-2 ecommerce:w-16"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.columns.is_active"
                                         },
@@ -454,7 +454,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-tertiary text-center font-medium px-4 py-2 w-16"
+                                                "className": "ecommerce-text-tertiary ecommerce:text-center ecommerce:font-medium ecommerce:px-4 ecommerce:py-2 ecommerce:w-16"
                                             },
                                             "text": "$t:sirsoft-ecommerce.admin.settings.claim.exchange_reasons.columns.actions"
                                         }
@@ -475,14 +475,14 @@
                                         "index_var": "rIdx"
                                     },
                                     "props": {
-                                        "className": "border-t border-gray-200 dark:border-gray-700"
+                                        "className": "ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-2"
+                                                "className": "ecommerce:px-4 ecommerce:py-2"
                                             },
                                             "children": [
                                                 {
@@ -490,7 +490,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "{{_local.errors?.['claim.exchange_reasons.' + reason._idx + '.code'] ? 'font-mono text-red-600 dark:text-red-400' : 'font-mono text-body'}}"
+                                                        "className": "{{_local.errors?.['claim.exchange_reasons.' + reason._idx + '.code'] ? 'ecommerce:font-mono ecommerce:text-red-600 ecommerce:dark:text-red-400' : 'ecommerce:font-mono ecommerce-text-body'}}"
                                                     },
                                                     "text": "{{reason.code}}"
                                                 },
@@ -499,7 +499,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['claim.exchange_reasons.' + reason._idx + '.code']}}",
                                                     "props": {
-                                                        "className": "form-error"
+                                                        "className": "ecommerce-form-error"
                                                     },
                                                     "text": "{{_local.errors?.['claim.exchange_reasons.' + reason._idx + '.code']?.[0] ?? ''}}"
                                                 }
@@ -509,7 +509,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-2"
+                                                "className": "ecommerce:px-4 ecommerce:py-2"
                                             },
                                             "children": [
                                                 {
@@ -542,7 +542,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-2"
+                                                "className": "ecommerce:px-4 ecommerce:py-2"
                                             },
                                             "children": [
                                                 {
@@ -563,7 +563,7 @@
                                                     "props": {
                                                         "value": "{{reason.fault_type ?? 'customer'}}",
                                                         "aria-label": "$t:common.row_cell|row={{reason.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.claim.exchange_reasons.columns.fault_type')}}",
-                                                        "className": "w-full",
+                                                        "className": "ecommerce:w-full",
                                                         "disabled": "{{_computed.isReadOnly}}",
                                                         "options": [
                                                             {
@@ -587,7 +587,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-2 text-center"
+                                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-center"
                                             },
                                             "children": [
                                                 {
@@ -609,7 +609,7 @@
                                                         "type": "checkbox",
                                                         "checked": "{{reason.is_user_selectable ?? false}}",
                                                         "aria-label": "$t:common.row_cell|row={{reason.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.claim.exchange_reasons.columns.is_user_selectable')}}",
-                                                        "className": "checkbox",
+                                                        "className": "ecommerce-checkbox",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 }
@@ -619,7 +619,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-2 text-center"
+                                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-center"
                                             },
                                             "children": [
                                                 {
@@ -650,7 +650,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-2 text-center"
+                                                "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:text-center"
                                             },
                                             "children": [
                                                 {
@@ -672,7 +672,7 @@
                                                     ],
                                                     "props": {
                                                         "type": "button",
-                                                        "className": "p-1.5 text-gray-500 hover:text-red-700 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                        "className": "ecommerce:p-1.5 ecommerce:text-gray-500 ecommerce:hover:text-red-700 ecommerce:dark:text-gray-500 ecommerce:dark:hover:text-red-400 ecommerce:hover:bg-red-50 ecommerce:dark:hover:bg-red-900/20 ecommerce:rounded ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                                         "title": "$t:common.delete",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     },
@@ -682,7 +682,7 @@
                                                             "name": "Icon",
                                                             "props": {
                                                                 "name": "fa-solid fa-trash",
-                                                                "className": "text-sm"
+                                                                "className": "ecommerce:text-sm"
                                                             }
                                                         }
                                                     ]

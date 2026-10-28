@@ -6,14 +6,14 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card mt-3"
+        "className": "board-admin-card board:mt-3"
     },
     "children": [
         {
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "card-header"
+                "className": "board-card-header"
             },
             "children": [
                 {
@@ -21,7 +21,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-between w-full"
+                        "className": "board-flex-between board:w-full"
                     },
                     "children": [
                         {
@@ -32,7 +32,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "card-title"
+                                        "className": "board-card-title"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.reaction_types.title"
                                 }
@@ -66,7 +66,7 @@
                             "props": {
                                 "data-testid": "reaction-type-add-btn",
                                 "type": "button",
-                                "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "board-flex-center board:gap-1.5 board:px-3 board:py-1.5 board:text-sm board:bg-gray-900 board:dark:bg-white board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-100 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                 "disabled": "{{_computed.isReadOnly}}"
                             },
                             "children": [
@@ -75,7 +75,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "plus",
-                                        "className": "text-xs"
+                                        "className": "board:text-xs"
                                     }
                                 },
                                 {
@@ -95,7 +95,7 @@
             "if": "{{(_local.form?.basic_defaults?.reaction_types ?? []).length === 0 && !_local.isAddingReactionType}}",
             "props": {
                 "data-testid": "reaction-type-empty",
-                "className": "p-8 text-center text-gray-500 dark:text-gray-400"
+                "className": "board:p-8 board:text-center board:text-gray-500 board:dark:text-gray-400"
             },
             "text": "$t:sirsoft-board.admin.settings.reaction_types.empty"
         },
@@ -117,14 +117,14 @@
                 }
             },
             "props": {
-                "className": "overflow-x-clip"
+                "className": "board:overflow-x-clip"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Table",
                     "props": {
-                        "className": "w-full"
+                        "className": "board:w-full"
                     },
                     "children": [
                         {
@@ -139,14 +139,14 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-tertiary text-center font-medium px-2 py-2 w-10"
+                                                "className": "board-text-tertiary board:text-center board:font-medium board:px-2 board:py-2 board:w-10"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-tertiary text-left font-medium px-4 py-2 w-32"
+                                                "className": "board-text-tertiary board:text-left board:font-medium board:px-4 board:py-2 board:w-32"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.code"
                                         },
@@ -154,7 +154,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-tertiary text-left font-medium px-4 py-2 w-56"
+                                                "className": "board-text-tertiary board:text-left board:font-medium board:px-4 board:py-2 board:w-56"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.name"
                                         },
@@ -162,7 +162,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-tertiary text-left font-medium px-4 py-2 w-48"
+                                                "className": "board-text-tertiary board:text-left board:font-medium board:px-4 board:py-2 board:w-48"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.icon"
                                         },
@@ -170,7 +170,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-tertiary text-center font-medium px-4 py-2 w-16"
+                                                "className": "board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-16"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.is_active"
                                         },
@@ -178,7 +178,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-tertiary text-center font-medium px-4 py-2 w-20"
+                                                "className": "board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-20"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.reaction_types.columns.reaction_count"
                                         },
@@ -186,7 +186,7 @@
                                             "type": "basic",
                                             "name": "Th",
                                             "props": {
-                                                "className": "text-tertiary text-center font-medium px-4 py-2 w-16"
+                                                "className": "board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-16"
                                             },
                                             "text": "$t:common.delete"
                                         }
@@ -210,14 +210,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "border-t border-gray-200 dark:border-gray-700 contents"
+                                    "className": "board:border-t board:border-gray-200 board:dark:border-gray-700 board:contents"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Td",
                                         "props": {
-                                            "className": "px-2 py-2 text-center"
+                                            "className": "board:px-2 board:py-2 board:text-center"
                                         },
                                         "children": [
                                             {
@@ -228,7 +228,7 @@
                                                 "props": {
                                                     "data-testid": "reaction-type-drag-{{row.code}}",
                                                     "data-drag-handle": true,
-                                                    "className": "cursor-grab text-gray-500 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                                                    "className": "board:cursor-grab board:text-gray-500 board:hover:text-gray-600 board:dark:text-gray-500 board:dark:hover:text-gray-300"
                                                 },
                                                 "children": [
                                                     {
@@ -236,7 +236,7 @@
                                                         "name": "Icon",
                                                         "props": {
                                                             "name": "fa-solid fa-grip-vertical",
-                                                            "className": "text-sm"
+                                                            "className": "board:text-sm"
                                                         }
                                                     }
                                                 ]
@@ -247,14 +247,14 @@
                                         "type": "basic",
                                         "name": "Td",
                                         "props": {
-                                            "className": "px-4 py-2"
+                                            "className": "board:px-4 board:py-2"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "font-mono text-body"
+                                                    "className": "board:font-mono board-text-body"
                                                 },
                                                 "text": "{{row.code}}"
                                             }
@@ -264,7 +264,7 @@
                                         "type": "basic",
                                         "name": "Td",
                                         "props": {
-                                            "className": "px-4 py-2"
+                                            "className": "board:px-4 board:py-2"
                                         },
                                         "children": [
                                             {
@@ -297,14 +297,14 @@
                                         "type": "basic",
                                         "name": "Td",
                                         "props": {
-                                            "className": "px-4 py-2"
+                                            "className": "board:px-4 board:py-2"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "flex-center gap-2"
+                                                    "className": "board-flex-center board:gap-2"
                                                 },
                                                 "children": [
                                                     {
@@ -315,7 +315,7 @@
                                                             "data-testid": "reaction-type-icon-{{row.code}}",
                                                             "src": "{{row.icon_url}}",
                                                             "alt": "",
-                                                            "className": "w-5 h-5 object-contain"
+                                                            "className": "board:w-5 board:h-5 board:object-contain"
                                                         }
                                                     },
                                                     {
@@ -332,7 +332,7 @@
                                                         "name": "Div",
                                                         "props": {
                                                             "data-testid": "reaction-type-uploader-{{row.code}}",
-                                                            "className": "flex-1 min-w-0"
+                                                            "className": "board:flex-1 board:min-w-0"
                                                         },
                                                         "children": [
                                                             {
@@ -410,7 +410,7 @@
                                         "type": "basic",
                                         "name": "Td",
                                         "props": {
-                                            "className": "px-4 py-2 text-center"
+                                            "className": "board:px-4 board:py-2 board:text-center"
                                         },
                                         "children": [
                                             {
@@ -450,14 +450,14 @@
                                         "type": "basic",
                                         "name": "Td",
                                         "props": {
-                                            "className": "px-4 py-2 text-center"
+                                            "className": "board:px-4 board:py-2 board:text-center"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-body"
+                                                    "className": "board-text-body"
                                                 },
                                                 "text": "{{row.reaction_count ?? 0}}"
                                             }
@@ -467,7 +467,7 @@
                                         "type": "basic",
                                         "name": "Td",
                                         "props": {
-                                            "className": "px-4 py-2 text-center"
+                                            "className": "board:px-4 board:py-2 board:text-center"
                                         },
                                         "children": [
                                             {
@@ -476,7 +476,7 @@
                                                 "name": "Div",
                                                 "props": {
                                                     "data-testid": "reaction-type-delete-wrap-{{row.code}}",
-                                                    "className": "inline-block",
+                                                    "className": "board:inline-block",
                                                     "title": "{{(row.reaction_count ?? 0) > 0 ? (row.reaction_count ?? 0) + '$t:sirsoft-board.admin.settings.reaction_types.delete_blocked_suffix|count=' + (row.reaction_count ?? 0) : ''}}"
                                                 },
                                                 "children": [
@@ -501,7 +501,7 @@
                                                             "aria-label": "$t:common.delete",
                                                             "data-testid": "reaction-type-delete-{{row.code}}",
                                                             "type": "button",
-                                                            "className": "p-1.5 text-gray-500 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                            "className": "board:p-1.5 board:text-gray-500 board:hover:text-red-600 board:dark:text-gray-500 board:dark:hover:text-red-400 board:hover:bg-red-50 board:dark:hover:bg-red-900/20 board:rounded board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                                             "disabled": "{{_computed.isReadOnly || (row.reaction_count ?? 0) > 0}}"
                                                         },
                                                         "children": [
@@ -510,7 +510,7 @@
                                                                 "name": "Icon",
                                                                 "props": {
                                                                     "name": "fa-solid fa-trash",
-                                                                    "className": "text-sm"
+                                                                    "className": "board:text-sm"
                                                                 }
                                                             }
                                                         ]
@@ -547,14 +547,14 @@
                                     "if": "{{_local.isAddingReactionType}}",
                                     "props": {
                                         "data-testid": "reaction-type-draft-row",
-                                        "className": "border-t border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20"
+                                        "className": "board:border-t board:border-gray-200 board:dark:border-gray-700 board:bg-blue-50 board:dark:bg-blue-900/20"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-2 py-2 text-center align-top"
+                                                "className": "board:px-2 board:py-2 board:text-center board:align-top"
                                             },
                                             "children": [
                                                 {
@@ -562,7 +562,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "fa-solid fa-plus",
-                                                        "className": "text-sm text-blue-500 dark:text-blue-400"
+                                                        "className": "board:text-sm board:text-blue-500 board:dark:text-blue-400"
                                                     }
                                                 }
                                             ]
@@ -571,7 +571,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-2 align-top"
+                                                "className": "board:px-4 board:py-2 board:align-top"
                                             },
                                             "children": [
                                                 {
@@ -593,7 +593,7 @@
                                                         "type": "text",
                                                         "aria-label": "$t:sirsoft-board.admin.settings.reaction_types.columns.code",
                                                         "value": "{{_local.reactionTypeForm?.code ?? ''}}",
-                                                        "className": "{{_local.reactionTypeFormErrors?.code ? 'input input-error font-mono w-full' : 'input font-mono w-full'}}",
+                                                        "className": "{{_local.reactionTypeFormErrors?.code ? 'board-input board-input-error board:font-mono board:w-full' : 'board-input board:font-mono board:w-full'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -602,7 +602,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.reactionTypeFormErrors?.code === 'required'}}",
                                                     "props": {
-                                                        "className": "form-error"
+                                                        "className": "board-form-error"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.reaction_types.validation.code_required"
                                                 },
@@ -611,7 +611,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.reactionTypeFormErrors?.code === 'duplicate'}}",
                                                     "props": {
-                                                        "className": "form-error"
+                                                        "className": "board-form-error"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.reaction_types.validation.code_duplicate"
                                                 },
@@ -620,7 +620,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.reactionTypeFormErrors?.code === 'format'}}",
                                                     "props": {
-                                                        "className": "form-error"
+                                                        "className": "board-form-error"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.reaction_types.validation.code_format"
                                                 }
@@ -630,7 +630,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-2 align-top"
+                                                "className": "board:px-4 board:py-2 board:align-top"
                                             },
                                             "children": [
                                                 {
@@ -662,7 +662,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-2 align-top"
+                                                "className": "board:px-4 board:py-2 board:align-top"
                                             },
                                             "children": [
                                                 {
@@ -671,7 +671,7 @@
                                                     "name": "Div",
                                                     "props": {
                                                         "data-testid": "reaction-type-uploader-new",
-                                                        "className": "min-w-0"
+                                                        "className": "board:min-w-0"
                                                     },
                                                     "children": [
                                                         {
@@ -749,7 +749,7 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-2 text-center align-top"
+                                                "className": "board:px-4 board:py-2 board:text-center board:align-top"
                                             },
                                             "children": [
                                                 {
@@ -788,14 +788,14 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-2 text-center align-top"
+                                                "className": "board:px-4 board:py-2 board:text-center board:align-top"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-body"
+                                                        "className": "board-text-body"
                                                     },
                                                     "text": "0"
                                                 }
@@ -805,14 +805,14 @@
                                             "type": "basic",
                                             "name": "Td",
                                             "props": {
-                                                "className": "px-4 py-2 text-center align-top"
+                                                "className": "board:px-4 board:py-2 board:text-center board:align-top"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-center gap-1"
+                                                        "className": "board-flex-center board:gap-1"
                                                     },
                                                     "children": [
                                                         {
@@ -856,7 +856,7 @@
                                                             "props": {
                                                                 "data-testid": "reaction-type-form-confirm",
                                                                 "type": "button",
-                                                                "className": "p-1.5 text-green-700 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 board-confirm-button rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "className": "board:p-1.5 board:text-green-700 board:hover:text-green-700 board:dark:text-green-400 board:dark:hover:text-green-300 board-confirm-button board:rounded board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                                                 "title": "$t:sirsoft-board.admin.settings.reaction_types.form.confirm",
                                                                 "disabled": "{{_computed.isReadOnly}}"
                                                             },
@@ -866,7 +866,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "fa-solid fa-check",
-                                                                        "className": "text-sm"
+                                                                        "className": "board:text-sm"
                                                                     }
                                                                 }
                                                             ]
@@ -890,7 +890,7 @@
                                                             "props": {
                                                                 "data-testid": "reaction-type-form-cancel",
                                                                 "type": "button",
-                                                                "className": "p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                                                                "className": "board:p-1.5 board:text-gray-500 board:hover:text-gray-700 board:dark:text-gray-400 board:dark:hover:text-gray-200 board:hover:bg-gray-100 board:dark:hover:bg-gray-700 board:rounded board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed",
                                                                 "title": "$t:common.cancel",
                                                                 "disabled": "{{_computed.isReadOnly}}"
                                                             },
@@ -900,7 +900,7 @@
                                                                     "name": "Icon",
                                                                     "props": {
                                                                         "name": "fa-solid fa-xmark",
-                                                                        "className": "text-sm"
+                                                                        "className": "board:text-sm"
                                                                     }
                                                                 }
                                                             ]

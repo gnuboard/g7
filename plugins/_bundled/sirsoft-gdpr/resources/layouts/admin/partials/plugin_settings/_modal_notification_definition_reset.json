@@ -16,7 +16,7 @@
             "type": "basic",
             "name": "P",
             "props": {
-                "className": "text-gray-700 dark:text-gray-300"
+                "className": "gdpr:text-gray-700 gdpr:dark:text-gray-300"
             },
             "text": "$t:sirsoft-gdpr.notification_definitions.reset_modal.confirm_message"
         },
@@ -24,14 +24,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
+                "className": "gdpr:mt-4 gdpr:p-3 gdpr:bg-gray-100 gdpr:dark:bg-gray-700 gdpr:rounded-lg"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "form-sub-label"
+                        "className": "gdpr-form-sub-label"
                     },
                     "text": "$t:sirsoft-gdpr.notification_definitions.reset_modal.target_label"
                 },
@@ -39,7 +39,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-primary font-medium"
+                        "className": "gdpr-text-primary gdpr:font-medium"
                     },
                     "text": "{{_global.resetTargetName ?? ''}}"
                 }
@@ -49,14 +49,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "alert-danger"
+                "className": "gdpr-alert-danger"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-error-soft"
+                        "className": "gdpr-text-error-soft"
                     },
                     "text": "$t:sirsoft-gdpr.notification_definitions.reset_modal.warning_message"
                 }
@@ -66,7 +66,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "gdpr-modal-footer-buttons"
             },
             "children": [
                 {
@@ -81,7 +81,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "gdpr:px-4 gdpr:py-2 gdpr:bg-white gdpr:dark:bg-gray-800 gdpr:text-gray-700 gdpr:dark:text-gray-300 gdpr:border gdpr:border-gray-300 gdpr:dark:border-gray-600 gdpr:rounded-lg gdpr:hover:bg-gray-50 gdpr:dark:hover:bg-gray-700 gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed",
                         "disabled": "{{_global.isResettingNotification}}"
                     },
                     "text": "$t:common.cancel"
@@ -159,7 +159,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-orange-700 dark:bg-orange-700 text-white dark:text-white rounded-lg hover:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "gdpr-flex-center gdpr:gap-2 gdpr:px-4 gdpr:py-2 gdpr:bg-orange-700 gdpr:dark:bg-orange-700 gdpr:text-white gdpr:dark:text-white gdpr:rounded-lg gdpr:hover:bg-orange-800 gdpr:disabled:opacity-50 gdpr:disabled:cursor-not-allowed",
                         "disabled": "{{_global.isResettingNotification}}"
                     },
                     "children": [
@@ -169,7 +169,7 @@
                             "if": "{{_global.isResettingNotification}}",
                             "props": {
                                 "name": "spinner",
-                                "className": "spinner-sm"
+                                "className": "gdpr-spinner-sm"
                             }
                         },
                         {

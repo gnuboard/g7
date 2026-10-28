@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card col-span-1-lg flex flex-col"
+        "className": "ecommerce-admin-card ecommerce-col-span-1-lg ecommerce:flex ecommerce:flex-col"
     },
     "children": [
         {
@@ -16,14 +16,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "px-4 panel-header flex-between"
+                "className": "ecommerce:px-4 ecommerce-panel-header ecommerce-flex-between"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center gap-2"
+                        "className": "ecommerce-flex-center ecommerce:gap-2"
                     },
                     "children": [
                         {
@@ -31,14 +31,14 @@
                             "name": "Icon",
                             "props": {
                                 "name": "folder",
-                                "className": "text-xl text-gray-700 dark:text-gray-300"
+                                "className": "ecommerce:text-xl ecommerce:text-gray-700 ecommerce:dark:text-gray-300"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "text-heading"
+                                "className": "ecommerce-text-heading"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.category.tree.title"
                         }
@@ -225,11 +225,11 @@
                         "selectedId": "{{_global.selectedCategoryId}}",
                         "enableDrag": "{{categories?.data?.abilities?.can_update === true}}",
                         "toggleDisabled": "{{categories?.data?.abilities?.can_update !== true}}",
-                        "className": "p-2 max-h-[calc(90vh-140px)] overflow-y-auto",
-                        "itemClassName": "py-1 px-3 mb-1 rounded-lg border",
-                        "itemSelectedClassName": "bg-blue-50 dark:bg-blue-900/30 border-blue-500",
-                        "itemDefaultClassName": "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
-                        "childrenContainerClassName": "bg-gray-50 dark:bg-gray-900/50"
+                        "className": "ecommerce:p-2 ecommerce:max-h-[calc(90vh-140px)] ecommerce:overflow-y-auto",
+                        "itemClassName": "ecommerce:py-1 ecommerce:px-3 ecommerce:mb-1 ecommerce:rounded-lg ecommerce:border",
+                        "itemSelectedClassName": "ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/30 ecommerce:border-blue-500",
+                        "itemDefaultClassName": "ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:hover:border-gray-300 ecommerce:dark:hover:border-gray-600",
+                        "childrenContainerClassName": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900/50"
                     }
                 }
             ]
@@ -240,7 +240,7 @@
             "name": "Div",
             "if": "{{categories !== undefined && ((categories?.data?.data?.length ?? 0) === 0)}}",
             "props": {
-                "className": "flex-center flex-1 justify-center gap-3 px-4"
+                "className": "ecommerce-flex-center ecommerce:flex-1 ecommerce:justify-center ecommerce:gap-3 ecommerce:px-4"
             },
             "children": [
                 {
@@ -248,14 +248,14 @@
                     "name": "Icon",
                     "props": {
                         "name": "folder",
-                        "className": "text-xl text-gray-500 dark:text-gray-500"
+                        "className": "ecommerce:text-xl ecommerce:text-gray-500 ecommerce:dark:text-gray-500"
                     }
                 },
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-label-subtle"
+                        "className": "ecommerce-text-label-subtle"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.category.tree.empty"
                 }

@@ -24,7 +24,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-primary text-base"
+                                "className": "ecommerce-text-primary ecommerce:text-base"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.product_review.modal.status_change.message|count={{(_global.reviewBatchIds ?? []).length}}|status={{_global.reviewBatchAction === 'visible' ? $t('sirsoft-ecommerce.admin.product_review.filter.visible') : $t('sirsoft-ecommerce.admin.product_review.filter.hidden')}}"
                         }
@@ -36,7 +36,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "ecommerce-modal-footer-buttons"
             },
             "children": [
                 {
@@ -64,7 +64,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-outline"
+                        "className": "ecommerce-btn ecommerce-btn-outline"
                     },
                     "text": "$t:sirsoft-ecommerce.admin.product_review.modal.status_change.cancel"
                 },
@@ -130,7 +130,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                         "disabled": "{{(_local.isBatchProcessing ?? false) || reviews.data?.abilities?.can_update !== true}}"
                     },
                     "children": [

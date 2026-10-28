@@ -5,10 +5,10 @@
   두 버튼 모두 서버 권한(`abilities`)까지 함께 본다 — 삭제 권한과 수정 권한이 갈린다.
   이 줄은 아무것도 실행하지 않는다. 실제 처리는 각 확인 창의 몫이다. -->
 <partial description="Shipping Policy List Bulk Actions Bar">
-  <div data-ref="bulk_action_bar" class="flex-center bg-gray-100 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-4 flex-wrap gap-3">
-    <span class="text-body font-medium whitespace-nowrap">$t:sirsoft-ecommerce.admin.shipping_policy.bulk.selected_count|count={{(_global.bulkSelectedItems || []).length}}</span>
-    <div class="flex-center gap-2">
-      <select name="bulkToggleValue" aria-label="$t:sirsoft-ecommerce.admin.shipping_policy.table.column.is_active" class="w-36 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50" value="{{_local.bulkToggleValue || ''}}" disabled="{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || shipping_policies?.data?.abilities?.can_update !== true}}">
+  <div data-ref="bulk_action_bar" class="ecommerce-flex-center ecommerce:bg-gray-100 ecommerce:dark:bg-gray-700/50 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:p-3 ecommerce:mb-4 ecommerce:flex-wrap ecommerce:gap-3">
+    <span class="ecommerce-text-body ecommerce:font-medium ecommerce:whitespace-nowrap">$t:sirsoft-ecommerce.admin.shipping_policy.bulk.selected_count|count={{(_global.bulkSelectedItems || []).length}}</span>
+    <div class="ecommerce-flex-center ecommerce:gap-2">
+      <select name="bulkToggleValue" aria-label="$t:sirsoft-ecommerce.admin.shipping_policy.table.column.is_active" class="ecommerce:w-36 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:disabled:opacity-50" value="{{_local.bulkToggleValue || ''}}" disabled="{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || shipping_policies?.data?.abilities?.can_update !== true}}">
         <options>
           <option value="" disabled>$t:sirsoft-ecommerce.admin.shipping_policy.bulk.select_status</option>
           <option value="true">$t:sirsoft-ecommerce.admin.shipping_policy.bulk.toggle_active</option>
@@ -20,14 +20,14 @@
         </on>
       </select>
     </div>
-    <div class="flex-1"/>
-    <button type="button" class="px-3 py-1.5 text-sm border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || shipping_policies?.data?.abilities?.can_delete !== true}}">
+    <div class="ecommerce:flex-1"/>
+    <button type="button" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:border ecommerce:border-red-300 ecommerce:dark:border-red-600 ecommerce:text-red-700 ecommerce:dark:text-red-400 ecommerce:rounded-lg ecommerce:hover:bg-red-50 ecommerce:dark:hover:bg-red-900/20 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || shipping_policies?.data?.abilities?.can_delete !== true}}">
       <on type="click">
         <open-modal target="bulk_delete_modal"/>
       </on>
       $t:sirsoft-ecommerce.admin.shipping_policy.action.bulk_delete
     </button>
-    <button type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || !_local.bulkToggleValue || shipping_policies?.data?.abilities?.can_update !== true}}">
+    <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700 ecommerce:font-medium ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{!_global.bulkSelectedItems || _global.bulkSelectedItems.length === 0 || !_local.bulkToggleValue || shipping_policies?.data?.abilities?.can_update !== true}}">
       <on type="click">
         <!-- [적용] — 고른 상태를 전역으로 옮긴 뒤 확인 창을 연다. 창은 지역 상태를 볼 수 없으므로 이 옮겨 담기가 빠지면 창의 미리보기 배지가 늘 '중지' 로 보인다. -->
         <sequence>

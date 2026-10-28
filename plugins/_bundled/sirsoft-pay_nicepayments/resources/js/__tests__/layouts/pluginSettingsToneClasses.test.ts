@@ -67,11 +67,24 @@ function byText(test: (text: string) => boolean): LayoutNode[] {
     return nodes.filter((n) => typeof n.text === 'string' && test(n.text));
 }
 
-/** 플러그인 CSS 원본 */
-const cssSource = (() => {
-    const file = path.join(EXT_ROOT, 'resources/css/main.css');
+/**
+ * 플러그인 CSS 원본 — 손으로 쓴 `main.css`(진입 블록 아래)와 변환 도구가 템플릿 의미 클래스를 복사해 만든
+ * `g7-extension.generated.css` 를 합친 것. 레이아웃이 쓰는 접두 클래스는 둘 중 한 곳에 정의된다.
+ */
+const readCss = (rel: string) => {
+    const file = path.join(EXT_ROOT, rel);
     return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-})();
+};
+const handCss = readCss('resources/css/main.css');
+const cssSource = `${handCss}\n${readCss('resources/css/g7-extension.generated.css')}`;
+
+/** 손 CSS 중 진입 블록(변환 도구가 관리하는 Tailwind 접두 빌드 설정) 아래 부분 */
+const handRules = handCss.slice(Math.max(0, handCss.indexOf('*/', handCss.indexOf('g7-extension-css:end')) + 2));
+
+/** 확장 CSS 다크 규격 — 템플릿의 `.dark` 대신 중립 표식(`data-g7-color-scheme`)을 쓰고 「다크 안의 라이트」는 제외한다 */
+const DARK_SUFFIX =
+    ':is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"]))';
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** 레이아웃이 쓰는 플러그인 접두 클래스 전부 */
 const usedPrefixed = [
@@ -111,7 +124,7 @@ describe('나이스페이먼츠 결제 환경설정 — 플러그인 자체 글�
         expect(usedPrefixed.length).toBeGreaterThanOrEqual(2);
         for (const name of usedPrefixed.filter((c) => c.startsWith(`${PREFIX}tone-`))) {
             const light = new RegExp(`(^|[\\s,}])\\.${name}\\s*\\{[^}]*color\\s*:`, 'm');
-            const dark = new RegExp(`\\.dark\\s+\\.${name}\\s*\\{[^}]*color\\s*:`, 'm');
+            const dark = new RegExp(`\\.${name}${escapeRe(DARK_SUFFIX)}\\s*\\{[^}]*color\\s*:`, 'm');
             expect({ name, light: light.test(cssSource), dark: dark.test(cssSource) }).toEqual({ name, light: true, dark: true });
         }
     });
@@ -122,12 +135,14 @@ describe('나이스페이먼츠 결제 환경설정 — 플러그인 자체 글�
      * @effects css_is_self_contained
      */
     it('플러그인 CSS 의 선택자는 모두 자기 접두 클래스다(다른 확장·템플릿 클래스를 정의하거나 덮지 않는다)', () => {
-        const body = cssSource.replace(/\/\*[\s\S]*?\*\//g, '');
+        // 손으로 쓴 규칙만 본다 — 진입 블록의 접두 Tailwind 빌드와 생성 파일은 정적 검사(extension-css-namespace)가 산출물째 본다
+        const body = handRules.replace(/\/\*[\s\S]*?\*\//g, '').split(DARK_SUFFIX).join('');
         const selectors = [...body.matchAll(/([^{}]+)\{/g)].map((m) => m[1].trim()).filter((s) => !s.startsWith('@'));
         expect(selectors.length).toBeGreaterThan(0);
+        expect(body).not.toMatch(/\.dark\b/);
         for (const group of selectors) {
             for (const sel of group.split(',').map((s) => s.trim())) {
-                expect(sel).toMatch(new RegExp(`^(\\.dark\\s+)?\\.${PREFIX}[a-z-]+(:(hover|focus|focus-within))?$`));
+                expect(sel).toMatch(new RegExp(`^\\.${PREFIX}[a-z-]+(:(hover|focus|focus-within))?$`));
             }
         }
     });
@@ -139,7 +154,7 @@ describe('나이스페이먼츠 결제 환경설정 — 플러그인 자체 글�
      */
     it('plugin.json 이 CSS 자산을 선언하고, 엔트리가 CSS 를 불러오며, 빌드 산출물에 클래스가 실려 있다', () => {
         const manifest = JSON.parse(fs.readFileSync(path.join(EXT_ROOT, 'plugin.json'), 'utf8'));
-        expect(manifest.assets?.css).toEqual({ entry: 'resources/css/main.css', output: 'dist/css/plugin.css' });
+        expect(manifest.assets?.css).toEqual({ entry: 'resources/css/main.css', output: 'dist/css/plugin.css', namespace: 'pay-nicepayments' });
 
         const entry = fs.readFileSync(path.join(EXT_ROOT, 'resources/js/index.ts'), 'utf8');
         expect(entry).toMatch(/import\s+['"]\.\.\/css\/main\.css['"]/);

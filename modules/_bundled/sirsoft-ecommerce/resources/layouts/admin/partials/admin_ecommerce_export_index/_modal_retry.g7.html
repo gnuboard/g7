@@ -5,34 +5,34 @@
 <partial description="Export Retry Confirmation Modal">
   <modal data-type="composite" data-ref="export_retry_modal" title="$t:sirsoft-ecommerce.admin.export.modal_retry.title" size="medium">
     <div>
-      <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-ecommerce.admin.export.modal_retry.message</p>
-      <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 flex flex-col gap-1">
-        <span class="text-primary font-medium">{{_global.ecommerceExportTarget?.type_label}} · {{_global.ecommerceExportTarget?.requested_at}}</span>
-        <span data-if="{{_global.ecommerceExportTarget?.error_message}}" class="text-sm text-red-600 dark:text-red-400">{{_global.ecommerceExportTarget?.error_message}}</span>
+      <p class="ecommerce:text-gray-700 ecommerce:dark:text-gray-300">$t:sirsoft-ecommerce.admin.export.modal_retry.message</p>
+      <div class="ecommerce:bg-gray-50 ecommerce:dark:bg-gray-700/50 ecommerce:rounded-lg ecommerce:p-4 ecommerce:flex ecommerce:flex-col ecommerce:gap-1">
+        <span class="ecommerce-text-primary ecommerce:font-medium">{{_global.ecommerceExportTarget?.type_label}} · {{_global.ecommerceExportTarget?.requested_at}}</span>
+        <span data-if="{{_global.ecommerceExportTarget?.error_message}}" class="ecommerce:text-sm ecommerce:text-red-600 ecommerce:dark:text-red-400">{{_global.ecommerceExportTarget?.error_message}}</span>
       </div>
-      <div class="alert-info">
-        <icon name="circle-info" class="text-blue-500 dark:text-blue-400 shrink-0"/>
-        <span class="text-xs text-blue-700 dark:text-blue-300">$t:sirsoft-ecommerce.admin.export.modal_retry.hint</span>
+      <div class="ecommerce-alert-info">
+        <icon name="circle-info" class="ecommerce:text-blue-500 ecommerce:dark:text-blue-400 ecommerce:shrink-0"/>
+        <span class="ecommerce:text-xs ecommerce:text-blue-700 ecommerce:dark:text-blue-300">$t:sirsoft-ecommerce.admin.export.modal_retry.hint</span>
       </div>
-      <div data-if="{{_global.ecommerceExportTarget?.abilities?.retry_needs_reason === true}}" class="flex flex-col gap-2">
-        <span class="form-label">$t:sirsoft-ecommerce.admin.export.modal.reason</span>
-        <textarea name="retryReason" rows="2" maxlength="500" placeholder="$t:sirsoft-ecommerce.admin.export.modal.reason_placeholder" class="input w-full" value="{{_global.ecommerceExportRetryReason ?? ''}}">
+      <div data-if="{{_global.ecommerceExportTarget?.abilities?.retry_needs_reason === true}}" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2">
+        <span class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.export.modal.reason</span>
+        <textarea name="retryReason" rows="2" maxlength="500" placeholder="$t:sirsoft-ecommerce.admin.export.modal.reason_placeholder" class="ecommerce-input ecommerce:w-full" value="{{_global.ecommerceExportRetryReason ?? ''}}">
           <on type="change">
             <!-- 다른 운영자의 개인정보 작업을 다시 요청할 때 적는 내 사유 — [확인]이 본문에 싣는다 -->
             <set-state target="global" ecommerceExportRetryReason="{{$event.target.value}}"/>
           </on>
         </textarea>
-        <p class="form-hint">$t:sirsoft-ecommerce.admin.export.modal_retry.reason_hint</p>
+        <p class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.export.modal_retry.reason_hint</p>
       </div>
     </div>
-    <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsRetrying}}">
+    <div class="ecommerce-modal-footer-buttons">
+      <button type="button" class="ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsRetrying}}">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.admin.export.common.cancel
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsRetrying}}">
+      <button type="button" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-500 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed" disabled="{{_global.ecommerceExportIsRetrying}}">
         <on type="click">
           <!-- 다시 요청 실행. 새 작업이 목록 맨 위에 대기로 나타나고, 목록 응답의 `has_active` 가 자동 갱신을 다시 건다. -->
           <sequence>
@@ -52,7 +52,7 @@
             </api-call>
           </sequence>
         </on>
-        <icon data-if="{{_global.ecommerceExportIsRetrying}}" name="spinner" class="spinner-sm"/>
+        <icon data-if="{{_global.ecommerceExportIsRetrying}}" name="spinner" class="ecommerce-spinner-sm"/>
         <span>{{_global.ecommerceExportIsRetrying ? '$t:sirsoft-ecommerce.admin.export.common.processing' : '$t:sirsoft-ecommerce.admin.export.common.confirm'}}</span>
       </button>
     </div>

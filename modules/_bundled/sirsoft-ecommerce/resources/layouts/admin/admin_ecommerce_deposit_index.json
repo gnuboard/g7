@@ -29,7 +29,7 @@
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "ecommerce-admin-page-content"
                 },
                 "children": [
                     {
@@ -37,7 +37,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-start justify-between mb-6"
+                            "className": "ecommerce-flex-start ecommerce:justify-between ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -48,7 +48,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title"
+                                            "className": "ecommerce-page-title"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.title"
                                     },
@@ -56,7 +56,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "page-description"
+                                            "className": "ecommerce-page-description"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.description"
                                     }
@@ -69,7 +69,7 @@
                                     "aria-label": "$t:common.refresh",
                                     "title": "$t:common.refresh",
                                     "type": "button",
-                                    "className": "btn btn-icon"
+                                    "className": "ecommerce-btn ecommerce-btn-icon"
                                 },
                                 "children": [
                                     {
@@ -77,7 +77,7 @@
                                         "name": "Icon",
                                         "props": {
                                             "name": "arrows-rotate",
-                                            "className": "text-xl"
+                                            "className": "ecommerce:text-xl"
                                         }
                                     }
                                 ]
@@ -89,7 +89,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "admin-card mb-6"
+                            "className": "ecommerce-admin-card ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -97,7 +97,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center flex-wrap gap-3 mb-6"
+                                    "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-6"
                                 },
                                 "children": [
                                     {
@@ -117,7 +117,7 @@
                                         "props": {
                                             "name": "searchField",
                                             "aria-label": "$t:common.search_field",
-                                            "className": "w-32",
+                                            "className": "ecommerce:w-32",
                                             "value": "{{_local.searchField}}",
                                             "options": [
                                                 {
@@ -143,7 +143,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-1 min-w-64 relative"
+                                            "className": "ecommerce:flex-1 ecommerce:min-w-64 ecommerce:relative"
                                         },
                                         "children": [
                                             {
@@ -163,7 +163,7 @@
                                                 "props": {
                                                     "type": "text",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.deposit.search.placeholder",
-                                                    "className": "input pr-10",
+                                                    "className": "ecommerce-input ecommerce:pr-10",
                                                     "value": "{{_local.searchKeyword}}"
                                                 }
                                             },
@@ -172,7 +172,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "search",
-                                                    "className": "text-base absolute right-3 top-1/2 -translate-y-1/2 icon-muted text-gray-500 dark:text-gray-400 pointer-events-none"
+                                                    "className": "ecommerce:text-base ecommerce:absolute ecommerce:right-3 ecommerce:top-1/2 ecommerce:-translate-y-1/2 ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:pointer-events-none"
                                                 }
                                             }
                                         ]
@@ -184,7 +184,7 @@
                                             "aria-label": "$t:common.refresh",
                                             "title": "$t:common.refresh",
                                             "type": "button",
-                                            "className": "btn btn-icon"
+                                            "className": "ecommerce-btn ecommerce-btn-icon"
                                         },
                                         "children": [
                                             {
@@ -192,7 +192,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "arrows-rotate",
-                                                    "className": "text-base"
+                                                    "className": "ecommerce:text-base"
                                                 }
                                             }
                                         ]
@@ -218,7 +218,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-outline"
+                                            "className": "ecommerce-btn ecommerce-btn-outline"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.search.reset"
                                     }
@@ -229,14 +229,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center flex-wrap gap-3 mb-4"
+                                    "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-label w-20"
+                                            "className": "ecommerce-text-label ecommerce:w-20"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.matching_type"
                                     },
@@ -256,7 +256,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "{{_local.matchingType === '' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                            "className": "{{_local.matchingType === '' ? 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-gray-900 ecommerce:text-white ecommerce:dark:bg-white ecommerce:dark:text-gray-900' : 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-white ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600'}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.all"
                                     },
@@ -276,7 +276,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "{{_local.matchingType === 'unmatched' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                            "className": "{{_local.matchingType === 'unmatched' ? 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-gray-900 ecommerce:text-white ecommerce:dark:bg-white ecommerce:dark:text-gray-900' : 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-white ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600'}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.unmatched"
                                     },
@@ -296,7 +296,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "{{_local.matchingType === 'auto' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                            "className": "{{_local.matchingType === 'auto' ? 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-gray-900 ecommerce:text-white ecommerce:dark:bg-white ecommerce:dark:text-gray-900' : 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-white ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600'}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.auto_matched"
                                     },
@@ -316,7 +316,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "{{_local.matchingType === 'manual' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                            "className": "{{_local.matchingType === 'manual' ? 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-gray-900 ecommerce:text-white ecommerce:dark:bg-white ecommerce:dark:text-gray-900' : 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-white ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600'}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.manual_matched"
                                     }
@@ -327,14 +327,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center flex-wrap gap-3 mb-4"
+                                    "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3 ecommerce:mb-4"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-label w-20"
+                                            "className": "ecommerce-text-label ecommerce:w-20"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.payment_method"
                                     },
@@ -354,7 +354,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "{{_local.paymentMethod === '' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                            "className": "{{_local.paymentMethod === '' ? 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-gray-900 ecommerce:text-white ecommerce:dark:bg-white ecommerce:dark:text-gray-900' : 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-white ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600'}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.all"
                                     },
@@ -374,7 +374,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "{{_local.paymentMethod === 'bank_transfer' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                            "className": "{{_local.paymentMethod === 'bank_transfer' ? 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-gray-900 ecommerce:text-white ecommerce:dark:bg-white ecommerce:dark:text-gray-900' : 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-white ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600'}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.bank_transfer"
                                     },
@@ -394,7 +394,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "{{_local.paymentMethod === 'virtual_account' ? 'btn btn-sm bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'}}"
+                                            "className": "{{_local.paymentMethod === 'virtual_account' ? 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-gray-900 ecommerce:text-white ecommerce:dark:bg-white ecommerce:dark:text-gray-900' : 'ecommerce-btn ecommerce-btn-sm ecommerce:bg-white ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600'}}"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.virtual_account"
                                     }
@@ -405,14 +405,14 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center flex-wrap gap-3"
+                                    "className": "ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-3"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-label w-20"
+                                            "className": "ecommerce-text-label ecommerce:w-20"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.deposit_date"
                                     },
@@ -420,7 +420,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2"
+                                            "className": "ecommerce-flex-center ecommerce:gap-2"
                                         },
                                         "children": [
                                             {
@@ -428,7 +428,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "calendar",
-                                                    "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
+                                                    "className": "ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 }
                                             },
                                             {
@@ -449,7 +449,7 @@
                                                     "type": "date",
                                                     "aria-label": "$t:common.range_start|label={{$t('sirsoft-ecommerce.admin.deposit.filter.deposit_date')}}",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.deposit.filter.start_date",
-                                                    "className": "input w-36",
+                                                    "className": "ecommerce-input ecommerce:w-36",
                                                     "value": "{{_local.startDate}}"
                                                 }
                                             }
@@ -459,7 +459,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex-center gap-2"
+                                            "className": "ecommerce-flex-center ecommerce:gap-2"
                                         },
                                         "children": [
                                             {
@@ -467,7 +467,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "calendar",
-                                                    "className": "text-base icon-muted text-gray-500 dark:text-gray-400"
+                                                    "className": "ecommerce:text-base ecommerce-icon-muted ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                                 }
                                             },
                                             {
@@ -488,7 +488,7 @@
                                                     "type": "date",
                                                     "aria-label": "$t:common.range_end|label={{$t('sirsoft-ecommerce.admin.deposit.filter.deposit_date')}}",
                                                     "placeholder": "$t:sirsoft-ecommerce.admin.deposit.filter.end_date",
-                                                    "className": "input w-36",
+                                                    "className": "ecommerce-input ecommerce:w-36",
                                                     "value": "{{_local.endDate}}"
                                                 }
                                             }
@@ -499,7 +499,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+                                            "className": "ecommerce-btn ecommerce-btn-sm ecommerce:bg-white ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.1_day"
                                     },
@@ -508,7 +508,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+                                            "className": "ecommerce-btn ecommerce-btn-sm ecommerce:bg-white ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.1_week"
                                     },
@@ -517,7 +517,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+                                            "className": "ecommerce-btn ecommerce-btn-sm ecommerce:bg-white ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.1_month"
                                     },
@@ -526,7 +526,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+                                            "className": "ecommerce-btn ecommerce-btn-sm ecommerce:bg-white ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.3_months"
                                     },
@@ -535,7 +535,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600"
+                                            "className": "ecommerce-btn ecommerce-btn-sm ecommerce:bg-white ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:bg-gray-800 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.deposit.filter.all"
                                     }
@@ -548,14 +548,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-center gap-4 mb-4 px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-lg"
+                            "className": "ecommerce-flex-center ecommerce:gap-4 ecommerce:mb-4 ecommerce:px-4 ecommerce:py-3 ecommerce:bg-gray-100 ecommerce:dark:bg-gray-800 ecommerce:rounded-lg"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-sm text-secondary"
+                                    "className": "ecommerce:text-sm ecommerce-text-secondary"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.sample.fmt.selected_count|count=0"
                             },
@@ -571,7 +571,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "btn btn-sm bg-white text-gray-700 border border-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
+                                    "className": "ecommerce-btn ecommerce-btn-sm ecommerce:bg-white ecommerce:text-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:bg-gray-700 ecommerce:dark:text-gray-300 ecommerce:dark:border-gray-600"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.deposit.batch.batch_match"
                             }
@@ -582,14 +582,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex-between mb-4"
+                            "className": "ecommerce-flex-between ecommerce:mb-4"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "text-sm text-secondary"
+                                    "className": "ecommerce:text-sm ecommerce-text-secondary"
                                 },
                                 "text": "$t:sirsoft-ecommerce.admin.sample.fmt.total_count|count=11"
                             },
@@ -597,7 +597,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-3"
+                                    "className": "ecommerce-flex-center ecommerce:gap-3"
                                 },
                                 "children": [
                                     {
@@ -617,7 +617,7 @@
                                         "props": {
                                             "name": "sortBy",
                                             "aria-label": "$t:common.sort_order",
-                                            "className": "w-44",
+                                            "className": "ecommerce:w-44",
                                             "value": "{{_local.sortBy}}",
                                             "options": [
                                                 {
@@ -656,7 +656,7 @@
                                         "props": {
                                             "name": "perPage",
                                             "aria-label": "$t:common.per_page",
-                                            "className": "w-32",
+                                            "className": "ecommerce:w-32",
                                             "value": "{{_local.perPage}}",
                                             "options": [
                                                 {
@@ -694,7 +694,7 @@
                                         "type": "basic",
                                         "name": "Label",
                                         "props": {
-                                            "className": "flex-center gap-2 mb-4 cursor-pointer"
+                                            "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:mb-4 ecommerce:cursor-pointer"
                                         },
                                         "children": [
                                             {
@@ -702,14 +702,14 @@
                                                 "name": "Input",
                                                 "props": {
                                                     "type": "checkbox",
-                                                    "className": "rounded"
+                                                    "className": "ecommerce:rounded"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-sm text-primary"
+                                                    "className": "ecommerce:text-sm ecommerce-text-primary"
                                                 },
                                                 "text": "$t:sirsoft-ecommerce.admin.sample.fmt.select_all_count|selected=10|total=10"
                                             }
@@ -725,14 +725,14 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "admin-card"
+                                                    "className": "ecommerce-admin-card"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex items-start gap-3 mb-3"
+                                                            "className": "ecommerce:flex ecommerce:items-start ecommerce:gap-3 ecommerce:mb-3"
                                                         },
                                                         "children": [
                                                             {
@@ -741,28 +741,28 @@
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "aria-label": "$t:common.select_item|name=ORD20240127-002",
-                                                                    "className": "rounded mt-1"
+                                                                    "className": "ecommerce:rounded ecommerce:mt-1"
                                                                 }
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex-1"
+                                                                    "className": "ecommerce:flex-1"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex-between mb-1"
+                                                                            "className": "ecommerce-flex-between ecommerce:mb-1"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary font-medium"
+                                                                                    "className": "ecommerce-text-primary ecommerce:font-medium"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                                                             },
@@ -770,7 +770,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "badge-status badge-status-ready"
+                                                                                    "className": "ecommerce-badge-status ecommerce-badge-status-ready"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.deposit.status.virtual_account"
                                                                             }
@@ -780,7 +780,7 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "text-lg font-semibold text-primary"
+                                                                            "className": "ecommerce:text-lg ecommerce:font-semibold ecommerce-text-primary"
                                                                         },
                                                                         "text": "₩159,000"
                                                                     }
@@ -792,21 +792,21 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "space-y-2 text-sm mb-4"
+                                                            "className": "ecommerce:space-y-2 ecommerce:text-sm ecommerce:mb-4"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex justify-between"
+                                                                    "className": "ecommerce:flex ecommerce:justify-between"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-label-subtle"
+                                                                            "className": "ecommerce-text-label-subtle"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.mobile.deposit_time"
                                                                     },
@@ -814,7 +814,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-primary"
+                                                                            "className": "ecommerce-text-primary"
                                                                         },
                                                                         "text": "2024-01-27 14:32:15"
                                                                     }
@@ -824,14 +824,14 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex justify-between"
+                                                                    "className": "ecommerce:flex ecommerce:justify-between"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-label-subtle"
+                                                                            "className": "ecommerce-text-label-subtle"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.mobile.bank_account"
                                                                     },
@@ -839,7 +839,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-primary"
+                                                                            "className": "ecommerce-text-primary"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.sample.fmt.bank_account|bank=$t:sirsoft-ecommerce.admin.sample.banks.woori|account=1002-467-890123"
                                                                     }
@@ -849,14 +849,14 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex justify-between"
+                                                                    "className": "ecommerce:flex ecommerce:justify-between"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-label-subtle"
+                                                                            "className": "ecommerce-text-label-subtle"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.mobile.member"
                                                                     },
@@ -864,7 +864,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-primary"
+                                                                            "className": "ecommerce-text-primary"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                                                     }
@@ -876,14 +876,14 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "border-t border-gray-200 dark:border-gray-700 pt-3"
+                                                            "className": "ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-3"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-xs text-label-subtle mb-1"
+                                                                    "className": "ecommerce:text-xs ecommerce-text-label-subtle ecommerce:mb-1"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.deposit.mobile.order_number"
                                                             },
@@ -891,14 +891,14 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex-between"
+                                                                    "className": "ecommerce-flex-between"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-primary font-medium"
+                                                                            "className": "ecommerce-text-primary ecommerce:font-medium"
                                                                         },
                                                                         "text": "ORD20240127-002"
                                                                     },
@@ -914,7 +914,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "btn btn-sm btn-outline"
+                                                                            "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.actions.view_history"
                                                                     }
@@ -924,14 +924,14 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "mt-2"
+                                                                    "className": "ecommerce:mt-2"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "badge-status badge-status-progress"
+                                                                            "className": "ecommerce-badge-status ecommerce-badge-status-progress"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.status.manual"
                                                                     }
@@ -946,14 +946,14 @@
                                                 "type": "basic",
                                                 "name": "Div",
                                                 "props": {
-                                                    "className": "admin-card"
+                                                    "className": "ecommerce-admin-card"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "flex items-start gap-3 mb-3"
+                                                            "className": "ecommerce:flex ecommerce:items-start ecommerce:gap-3 ecommerce:mb-3"
                                                         },
                                                         "children": [
                                                             {
@@ -962,28 +962,28 @@
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "aria-label": "$t:common.select_row_n|n=2",
-                                                                    "className": "rounded mt-1"
+                                                                    "className": "ecommerce:rounded ecommerce:mt-1"
                                                                 }
                                                             },
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex-1"
+                                                                    "className": "ecommerce:flex-1"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "flex-between mb-1"
+                                                                            "className": "ecommerce-flex-between ecommerce:mb-1"
                                                                         },
                                                                         "children": [
                                                                             {
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "text-primary font-medium"
+                                                                                    "className": "ecommerce-text-primary ecommerce:font-medium"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                                                             },
@@ -991,7 +991,7 @@
                                                                                 "type": "basic",
                                                                                 "name": "Span",
                                                                                 "props": {
-                                                                                    "className": "badge-status badge-status-processing"
+                                                                                    "className": "ecommerce-badge-status ecommerce-badge-status-processing"
                                                                                 },
                                                                                 "text": "$t:sirsoft-ecommerce.admin.deposit.status.bank_transfer"
                                                                             }
@@ -1001,7 +1001,7 @@
                                                                         "type": "basic",
                                                                         "name": "Div",
                                                                         "props": {
-                                                                            "className": "text-lg font-semibold text-primary"
+                                                                            "className": "ecommerce:text-lg ecommerce:font-semibold ecommerce-text-primary"
                                                                         },
                                                                         "text": "₩49,000"
                                                                     }
@@ -1013,21 +1013,21 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "space-y-2 text-sm mb-4"
+                                                            "className": "ecommerce:space-y-2 ecommerce:text-sm ecommerce:mb-4"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex justify-between"
+                                                                    "className": "ecommerce:flex ecommerce:justify-between"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-label-subtle"
+                                                                            "className": "ecommerce-text-label-subtle"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.mobile.deposit_time"
                                                                     },
@@ -1035,7 +1035,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-primary"
+                                                                            "className": "ecommerce-text-primary"
                                                                         },
                                                                         "text": "2024-01-27 11:25:45"
                                                                     }
@@ -1045,14 +1045,14 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex justify-between"
+                                                                    "className": "ecommerce:flex ecommerce:justify-between"
                                                                 },
                                                                 "children": [
                                                                     {
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-label-subtle"
+                                                                            "className": "ecommerce-text-label-subtle"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.mobile.bank_account"
                                                                     },
@@ -1060,7 +1060,7 @@
                                                                         "type": "basic",
                                                                         "name": "Span",
                                                                         "props": {
-                                                                            "className": "text-primary"
+                                                                            "className": "ecommerce-text-primary"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.sample.fmt.bank_account|bank=$t:sirsoft-ecommerce.admin.sample.banks.kakaobank|account=789-012-3456"
                                                                     }
@@ -1072,14 +1072,14 @@
                                                         "type": "basic",
                                                         "name": "Div",
                                                         "props": {
-                                                            "className": "border-t border-gray-200 dark:border-gray-700 pt-3"
+                                                            "className": "ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-3"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "flex-center gap-2"
+                                                                    "className": "ecommerce-flex-center ecommerce:gap-2"
                                                                 },
                                                                 "children": [
                                                                     {
@@ -1094,7 +1094,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "btn btn-sm flex-1 text-pink-700 dark:text-pink-400 border border-pink-300 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/20 dark:border-pink-700 dark:hover:bg-pink-900/30"
+                                                                            "className": "ecommerce-btn ecommerce-btn-sm ecommerce:flex-1 ecommerce:text-pink-700 ecommerce:dark:text-pink-400 ecommerce:border ecommerce:border-pink-300 ecommerce:bg-pink-50 ecommerce:hover:bg-pink-100 ecommerce:dark:bg-pink-900/20 ecommerce:dark:border-pink-700 ecommerce:dark:hover:bg-pink-900/30"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.actions.match"
                                                                     },
@@ -1110,7 +1110,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "btn btn-sm btn-outline"
+                                                                            "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline"
                                                                         },
                                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.actions.view_history"
                                                                     }
@@ -1126,7 +1126,7 @@
                             }
                         },
                         "props": {
-                            "className": "overflow-x-auto"
+                            "className": "ecommerce:overflow-x-auto"
                         },
                         "children": [
                             {
@@ -1134,14 +1134,14 @@
                                 "type": "basic",
                                 "name": "Table",
                                 "props": {
-                                    "className": "w-full text-sm"
+                                    "className": "ecommerce:w-full ecommerce:text-sm"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Thead",
                                         "props": {
-                                            "className": "bg-gray-50 dark:bg-gray-800"
+                                            "className": "ecommerce:bg-gray-50 ecommerce:dark:bg-gray-800"
                                         },
                                         "children": [
                                             {
@@ -1152,7 +1152,7 @@
                                                         "type": "basic",
                                                         "name": "Th",
                                                         "props": {
-                                                            "className": "text-table-header px-4 py-3 text-left w-10"
+                                                            "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left ecommerce:w-10"
                                                         },
                                                         "children": [
                                                             {
@@ -1161,7 +1161,7 @@
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "aria-label": "$t:common.select_all",
-                                                                    "className": "rounded"
+                                                                    "className": "ecommerce:rounded"
                                                                 }
                                                             }
                                                         ]
@@ -1170,7 +1170,7 @@
                                                         "type": "basic",
                                                         "name": "Th",
                                                         "props": {
-                                                            "className": "text-table-header px-4 py-3 text-left"
+                                                            "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.table.columns.no"
                                                     },
@@ -1178,7 +1178,7 @@
                                                         "type": "basic",
                                                         "name": "Th",
                                                         "props": {
-                                                            "className": "text-table-header px-4 py-3 text-left"
+                                                            "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.table.columns.payment_method"
                                                     },
@@ -1186,7 +1186,7 @@
                                                         "type": "basic",
                                                         "name": "Th",
                                                         "props": {
-                                                            "className": "text-table-header px-4 py-3 text-left"
+                                                            "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.table.columns.bank_account"
                                                     },
@@ -1194,7 +1194,7 @@
                                                         "type": "basic",
                                                         "name": "Th",
                                                         "props": {
-                                                            "className": "text-table-header px-4 py-3 text-left"
+                                                            "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.table.columns.depositor_name"
                                                     },
@@ -1202,7 +1202,7 @@
                                                         "type": "basic",
                                                         "name": "Th",
                                                         "props": {
-                                                            "className": "text-table-header px-4 py-3 text-right"
+                                                            "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-right"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.table.columns.amount"
                                                     },
@@ -1210,7 +1210,7 @@
                                                         "type": "basic",
                                                         "name": "Th",
                                                         "props": {
-                                                            "className": "text-table-header px-4 py-3 text-left"
+                                                            "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.table.columns.deposit_time"
                                                     },
@@ -1218,7 +1218,7 @@
                                                         "type": "basic",
                                                         "name": "Th",
                                                         "props": {
-                                                            "className": "text-table-header px-4 py-3 text-left"
+                                                            "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.table.columns.order_number"
                                                     },
@@ -1226,7 +1226,7 @@
                                                         "type": "basic",
                                                         "name": "Th",
                                                         "props": {
-                                                            "className": "text-table-header px-4 py-3 text-left"
+                                                            "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-left"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.table.columns.member_info"
                                                     },
@@ -1234,7 +1234,7 @@
                                                         "type": "basic",
                                                         "name": "Th",
                                                         "props": {
-                                                            "className": "text-table-header px-4 py-3 text-center"
+                                                            "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-center"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.table.columns.matching_type"
                                                     },
@@ -1242,7 +1242,7 @@
                                                         "type": "basic",
                                                         "name": "Th",
                                                         "props": {
-                                                            "className": "text-table-header px-4 py-3 text-center"
+                                                            "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-center"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.table.columns.receive_status"
                                                     },
@@ -1250,7 +1250,7 @@
                                                         "type": "basic",
                                                         "name": "Th",
                                                         "props": {
-                                                            "className": "text-table-header px-4 py-3 text-center"
+                                                            "className": "ecommerce-text-table-header ecommerce:px-4 ecommerce:py-3 ecommerce:text-center"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.deposit.table.columns.actions"
                                                     }
@@ -1262,21 +1262,21 @@
                                         "type": "basic",
                                         "name": "Tbody",
                                         "props": {
-                                            "className": "divider-list bg-white dark:bg-gray-900"
+                                            "className": "ecommerce-divider-list ecommerce:bg-white ecommerce:dark:bg-gray-900"
                                         },
                                         "children": [
                                             {
                                                 "type": "basic",
                                                 "name": "Tr",
                                                 "props": {
-                                                    "className": "hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                    "className": "ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4"
                                                         },
                                                         "children": [
                                                             {
@@ -1285,7 +1285,7 @@
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "aria-label": "$t:common.select_item|name=ORD20240127-002",
-                                                                    "className": "rounded"
+                                                                    "className": "ecommerce:rounded"
                                                                 }
                                                             }
                                                         ]
@@ -1294,7 +1294,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4 text-primary"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4 ecommerce-text-primary"
                                                         },
                                                         "text": "2"
                                                     },
@@ -1302,14 +1302,14 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "badge-status badge-status-ready"
+                                                                    "className": "ecommerce-badge-status ecommerce-badge-status-ready"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.deposit.status.virtual_account"
                                                             }
@@ -1319,7 +1319,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4 text-primary"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4 ecommerce-text-primary"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.sample.fmt.bank_account|bank=$t:sirsoft-ecommerce.admin.sample.banks.woori|account=1002-467-890123"
                                                     },
@@ -1327,7 +1327,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4 text-primary"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4 ecommerce-text-primary"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                                     },
@@ -1335,7 +1335,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4 text-right text-primary font-medium"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4 ecommerce:text-right ecommerce-text-primary ecommerce:font-medium"
                                                         },
                                                         "text": "₩159,000"
                                                     },
@@ -1343,14 +1343,14 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-primary"
+                                                                    "className": "ecommerce-text-primary"
                                                                 },
                                                                 "text": "2024-01-27"
                                                             },
@@ -1358,7 +1358,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-secondary text-xs"
+                                                                    "className": "ecommerce-text-secondary ecommerce:text-xs"
                                                                 },
                                                                 "text": "14:32:15"
                                                             }
@@ -1368,7 +1368,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4 text-primary"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4 ecommerce-text-primary"
                                                         },
                                                         "text": "ORD20240127-002"
                                                     },
@@ -1376,14 +1376,14 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-primary"
+                                                                    "className": "ecommerce-text-primary"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.sample.people.lee_younghee"
                                                             },
@@ -1391,7 +1391,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-secondary text-xs"
+                                                                    "className": "ecommerce-text-secondary ecommerce:text-xs"
                                                                 },
                                                                 "text": "user001"
                                                             }
@@ -1401,14 +1401,14 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "empty-state-cell"
+                                                            "className": "ecommerce-empty-state-cell"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "badge-status badge-status-progress"
+                                                                    "className": "ecommerce-badge-status ecommerce-badge-status-progress"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.deposit.status.manual"
                                                             }
@@ -1418,14 +1418,14 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "empty-state-cell"
+                                                            "className": "ecommerce-empty-state-cell"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "badge-status badge-status-success"
+                                                                    "className": "ecommerce-badge-status ecommerce-badge-status-success"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.deposit.status.normal"
                                                             }
@@ -1435,7 +1435,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "empty-state-cell"
+                                                            "className": "ecommerce-empty-state-cell"
                                                         },
                                                         "children": [
                                                             {
@@ -1450,7 +1450,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "btn btn-sm btn-outline"
+                                                                    "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.deposit.actions.view_history"
                                                             }
@@ -1462,14 +1462,14 @@
                                                 "type": "basic",
                                                 "name": "Tr",
                                                 "props": {
-                                                    "className": "hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                    "className": "ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
                                                 },
                                                 "children": [
                                                     {
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4"
                                                         },
                                                         "children": [
                                                             {
@@ -1478,7 +1478,7 @@
                                                                 "props": {
                                                                     "type": "checkbox",
                                                                     "aria-label": "$t:common.select_row_n|n=2",
-                                                                    "className": "rounded"
+                                                                    "className": "ecommerce:rounded"
                                                                 }
                                                             }
                                                         ]
@@ -1487,7 +1487,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4 text-primary"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4 ecommerce-text-primary"
                                                         },
                                                         "text": "3"
                                                     },
@@ -1495,14 +1495,14 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "badge-status badge-status-processing"
+                                                                    "className": "ecommerce-badge-status ecommerce-badge-status-processing"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.deposit.status.bank_transfer"
                                                             }
@@ -1512,7 +1512,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4 text-primary"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4 ecommerce-text-primary"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.sample.fmt.bank_account|bank=$t:sirsoft-ecommerce.admin.sample.banks.kakaobank|account=789-012-3456"
                                                     },
@@ -1520,7 +1520,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4 text-primary"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4 ecommerce-text-primary"
                                                         },
                                                         "text": "$t:sirsoft-ecommerce.admin.sample.people.park_minsu"
                                                     },
@@ -1528,7 +1528,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4 text-right text-primary font-medium"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4 ecommerce:text-right ecommerce-text-primary ecommerce:font-medium"
                                                         },
                                                         "text": "₩49,000"
                                                     },
@@ -1536,14 +1536,14 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-primary"
+                                                                    "className": "ecommerce-text-primary"
                                                                 },
                                                                 "text": "2024-01-27"
                                                             },
@@ -1551,7 +1551,7 @@
                                                                 "type": "basic",
                                                                 "name": "Div",
                                                                 "props": {
-                                                                    "className": "text-secondary text-xs"
+                                                                    "className": "ecommerce-text-secondary ecommerce:text-xs"
                                                                 },
                                                                 "text": "11:25:45"
                                                             }
@@ -1561,7 +1561,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4"
                                                         },
                                                         "children": [
                                                             {
@@ -1576,7 +1576,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "btn btn-sm text-pink-700 dark:text-pink-300 border border-pink-300 bg-pink-50 hover:bg-pink-100 dark:bg-pink-900/20 dark:border-pink-700 dark:hover:bg-pink-900/30"
+                                                                    "className": "ecommerce-btn ecommerce-btn-sm ecommerce:text-pink-700 ecommerce:dark:text-pink-300 ecommerce:border ecommerce:border-pink-300 ecommerce:bg-pink-50 ecommerce:hover:bg-pink-100 ecommerce:dark:bg-pink-900/20 ecommerce:dark:border-pink-700 ecommerce:dark:hover:bg-pink-900/30"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.deposit.actions.match"
                                                             }
@@ -1586,7 +1586,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "px-4 py-4 text-secondary"
+                                                            "className": "ecommerce:px-4 ecommerce:py-4 ecommerce-text-secondary"
                                                         },
                                                         "text": "-"
                                                     },
@@ -1594,7 +1594,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "empty-state-cell text-secondary"
+                                                            "className": "ecommerce-empty-state-cell ecommerce-text-secondary"
                                                         },
                                                         "text": "-"
                                                     },
@@ -1602,14 +1602,14 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "empty-state-cell"
+                                                            "className": "ecommerce-empty-state-cell"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
                                                                 "props": {
-                                                                    "className": "badge-status badge-status-success"
+                                                                    "className": "ecommerce-badge-status ecommerce-badge-status-success"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.deposit.status.normal"
                                                             }
@@ -1619,7 +1619,7 @@
                                                         "type": "basic",
                                                         "name": "Td",
                                                         "props": {
-                                                            "className": "empty-state-cell"
+                                                            "className": "ecommerce-empty-state-cell"
                                                         },
                                                         "children": [
                                                             {
@@ -1634,7 +1634,7 @@
                                                                 ],
                                                                 "props": {
                                                                     "type": "button",
-                                                                    "className": "btn btn-sm btn-outline"
+                                                                    "className": "ecommerce-btn ecommerce-btn-sm ecommerce-btn-outline"
                                                                 },
                                                                 "text": "$t:sirsoft-ecommerce.admin.deposit.actions.view_history"
                                                             }
@@ -1653,14 +1653,14 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "flex justify-center mt-6"
+                            "className": "ecommerce:flex ecommerce:justify-center ecommerce:mt-6"
                         },
                         "children": [
                             {
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "pagination"
+                                    "className": "ecommerce-pagination"
                                 },
                                 "children": [
                                     {
@@ -1669,7 +1669,7 @@
                                         "props": {
                                             "aria-label": "$t:common.first_page",
                                             "type": "button",
-                                            "className": "pagination-btn",
+                                            "className": "ecommerce-pagination-btn",
                                             "disabled": true
                                         },
                                         "children": [
@@ -1678,7 +1678,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "angles-left",
-                                                    "className": "text-base"
+                                                    "className": "ecommerce:text-base"
                                                 }
                                             }
                                         ]
@@ -1689,7 +1689,7 @@
                                         "props": {
                                             "aria-label": "$t:common.prev_page",
                                             "type": "button",
-                                            "className": "pagination-btn",
+                                            "className": "ecommerce-pagination-btn",
                                             "disabled": true
                                         },
                                         "children": [
@@ -1698,7 +1698,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "chevron-left",
-                                                    "className": "text-base"
+                                                    "className": "ecommerce:text-base"
                                                 }
                                             }
                                         ]
@@ -1708,7 +1708,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "pagination-btn active"
+                                            "className": "ecommerce-pagination-btn ecommerce-active"
                                         },
                                         "text": "1"
                                     },
@@ -1717,7 +1717,7 @@
                                         "name": "Button",
                                         "props": {
                                             "type": "button",
-                                            "className": "pagination-btn"
+                                            "className": "ecommerce-pagination-btn"
                                         },
                                         "text": "2"
                                     },
@@ -1727,7 +1727,7 @@
                                         "props": {
                                             "aria-label": "$t:common.next_page",
                                             "type": "button",
-                                            "className": "pagination-btn"
+                                            "className": "ecommerce-pagination-btn"
                                         },
                                         "children": [
                                             {
@@ -1735,7 +1735,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "chevron-right",
-                                                    "className": "text-base"
+                                                    "className": "ecommerce:text-base"
                                                 }
                                             }
                                         ]
@@ -1746,7 +1746,7 @@
                                         "props": {
                                             "aria-label": "$t:common.last_page",
                                             "type": "button",
-                                            "className": "pagination-btn"
+                                            "className": "ecommerce-pagination-btn"
                                         },
                                         "children": [
                                             {
@@ -1754,7 +1754,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "angles-right",
-                                                    "className": "text-base"
+                                                    "className": "ecommerce:text-base"
                                                 }
                                             }
                                         ]

@@ -5,6 +5,34 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.86.0] - 2026-10-27
+
+### Added
+
+- 핸들러 이름 소유권 경고를 추가했습니다. `registerHandler` 가 다른 주인의 이름을 덮는 등록을 `[G7]` 접두 `console.warn` 으로 알립니다 — 디버그 모드와 무관하게 항상 내고, 같은 (이름, 등록자) 쌍은 1회만 냅니다. 대상은 ① `executeAction` 의 switch 가 직접 처리하는 이름 33종(`navigate`·`setState`·`toast`·`openModal` 등 — 등록해도 호출되지 않음) ② 엔진 기본 핸들러 18종(`refresh`·`refetchDataSource` 등)을 엔진이 아닌 쪽이 덮음 ③ 다른 등록자가 등록한 이름을 다른 함수로 덮음 ④ 점 있는 이름의 접두어가 등록자와 다름(남의 이름공간)이며, 사유가 겹치면 한 건으로 묶습니다. 등록 동작은 종전과 같습니다(마지막 등록이 이김). 같은 등록자의 재등록(언어 전환 재등록·`reloadPluginHandlers`)과 같은 함수 재등록은 경고하지 않습니다. 등록자는 `registerHandler(name, fn, { source })` 의 `source` 이며 없으면 `'unknown'`(이름공간 판정 제외)으로 기록합니다. `unregisterHandler(name, { source })` 는 엔진 기본 핸들러를 엔진이 아닌 쪽이 지우면 경고하고 해제는 그대로 합니다. 등록자 조회 `getHandlerSource(name)` 과 엔진 이름 목록 `ENGINE_MAP_HANDLERS`·`ENGINE_SWITCH_HANDLERS`·`ENGINE_MAP_HANDLER_META`·`ENGINE_HANDLER_SOURCE` 를 내보냅니다 (ActionDispatcher.ts `warnHandlerOwnership`·`unregisterHandler`·`getHandlerSource`, 회귀: `template-engine/__tests__/ActionDispatcher.handlerOwnership.test.ts`)
+- `G7Core.componentEvent.off(name, callback)` 을 추가했습니다. 그 콜백만 지우고 같은 이벤트의 다른 구독자는 그대로 받습니다. DevTools 에는 구독 1건 해제로 기록됩니다 (G7CoreGlobals.ts `initComponentEventSystem`, 회귀: `__tests__/G7CoreGlobals.componentEventOff.test.ts`)
+- 색상 테마 중립 표식을 추가했습니다. 템플릿이 `template.json` 의 `features.color_scheme`(`ancestor-class`+`selector` · `media-query` · `none`)으로 다크 방식을 선언하면 서버가 `G7Config.colorScheme` 으로 싣고, 엔진이 부팅 초반(확장 자산 로드 전)부터 `<html data-g7-color-scheme="dark|light">` 를 그 방식에 맞춰 갱신합니다(`ancestor-class` 는 `<html>`·`<body>` 클래스 변경을 관찰, `media-query` 는 `prefers-color-scheme` 변경을 구독, 미선언·`none` 은 항상 light). 확장 CSS 는 템플릿 다크 방식을 몰라도 이 표식만 보면 됩니다. `G7Core.colorScheme.get()`·`getDeclaration()` 을 노출합니다. 편집기 프리뷰 프레임도 프리뷰 테마를 같은 표식으로 달아, 관리자 화면 테마와 무관하게 프리뷰 안 확장 화면이 프리뷰 테마를 따릅니다 (theme/ColorSchemeSignal.ts 신설, TemplateApp.ts `startColorSchemeSignal`, layout-editor/components/PreviewCanvas.tsx, 회귀: `theme/__tests__/ColorSchemeSignal.test.ts`·`layout-editor/__tests__/components/PreviewCanvas.colorSchemeSignal.test.tsx`)
+- `G7Core.style.splitExtensionClassPrefix(token)` 을 추가했습니다. 확장은 자기 CSS 를 접두 빌드 클래스(`ecommerce:px-2`, `ecommerce:md:hidden`)로 공급하는데, className 을 Tailwind 이름으로 해석하는 코드는 앞글자를 떼고 읽어야 확장 클래스를 템플릿 클래스와 같은 뜻으로 다룹니다. 앞글자 목록은 서버가 활성 확장의 `assets.css.namespace` 로 계산해 `G7Config.extensionClassPrefixes` 로 내려 주며, 목록에 없는 첫 구간(`md:`·`hover:`)은 변형으로 남깁니다. `mergeClasses` 는 확장 클래스가 같은 속성·같은 변형의 기본 클래스를 대체하도록, 로딩 블러 래퍼(`blur_until_loaded`)는 확장 그리드 아이템 클래스(`ecommerce:col-span-2`)를 바깥 래퍼로 옮기도록 이 해석을 씁니다(종전에는 앞글자 때문에 그리드 칸 폭이 빠져 대시보드 조각 칸이 1120→265px 로 줄었음) (helpers/StyleHelpers.ts `splitExtensionClassPrefix`·`findClassGroup`·`extractVariant`, DynamicRenderer.tsx `getBlurWrapperClasses`, G7CoreGlobals.ts `initStyleAPI`, 회귀: `helpers/__tests__/StyleHelpers.extensionPrefix.test.ts`)
+- 템플릿의 확장 CSS 덮기 파일을 싣습니다. 서버가 호환 판정을 끝낸 `G7Config.extensionCssOverrides`(`[{ target, url }]`)를 확장 번들 CSS **뒤**, 운영자 추가 자산 **앞**에 붙입니다(개별 로딩 폴백 경로도 같은 순서). 로드 실패는 부팅을 막지 않고 자산 실패 안내로 표면화합니다 (modules/ModuleAssetLoader.ts `loadExtensionCssOverrides`·`parseExtensionCssOverridesFromConfig`, TemplateApp.ts `loadExtensionAssets`, 회귀: `__tests__/ModuleAssetLoader.extensionCssOverrides.test.ts`)
+
+### Changed
+
+- WebSocket `subscribe()` 가 구독마다 고유 키 `channel:event#n` 을 돌려줍니다(종전 `channel:event`). `unsubscribe(key)` 는 그 구독만 지우고, 같은 `channel:event` 의 마지막 구독이 빠질 때만 Echo 리스너를 해제(`stopListening`)합니다. Echo `listen` 은 `channel:event` 당 1회만 걸고 등록된 콜백을 모두 부르며, 한 콜백의 예외가 다른 구독자 수신을 막지 않습니다. `getSubscriptionCount()` 는 구독(콜백) 단위로 셉니다. `leaveChannel(channel)` 은 채널명이 정확히 같은 구독만 지웁니다(종전 `channel:` 접두 일치라 `a` 를 떠나면 `a:b` 채널 구독까지 지워졌음). 키를 그대로 저장했다가 넘기는 웹소켓 데이터소스는 변경이 없습니다 (websocket/WebSocketManager.ts, 회귀: `websocket/__tests__/WebSocketManager.multiSubscriber.test.ts`·`WebSocketManager.test.ts`)
+- 템플릿 핸들러 등록에 등록자를 표시합니다. 엔진의 템플릿 핸들러 재등록은 `{ category: 'custom', source: <활성 템플릿 식별자> }`(설정의 `templateId`, 없으면 `#app[data-template-id]`)로 등록합니다. 엔진 기본 핸들러 18종은 `{ category: 'built-in', source: 'engine' }` 로 등록합니다. 레이아웃 편집기 프리뷰가 호스트 핸들러를 복제할 때도 원래 등록자를 넘깁니다(종전 복제 표기를 등록자로 쓰면 확장 핸들러마다 이름공간 경고가 났음) (TemplateApp.ts `reinitializeTemplateHandlers`, ActionDispatcher.ts `registerDefaultHandlers`, layout-editor/components/PreviewCanvas.tsx)
+
+### Deprecated
+
+- 콜백 없는 `G7Core.componentEvent.off(name)` 과 `componentEvent.clear()` 는 폐지 예정입니다. 다른 컴포넌트·확장의 구독까지 지우므로, 지금은 구독이 1개 이상이면 `[G7]` 경고를 내고 종전대로 전부 지웁니다. `on()` 이 돌려준 해제 함수나 `off(name, callback)` 을 쓰세요 (G7CoreGlobals.ts, 회귀: `__tests__/G7CoreGlobals.componentEventOff.test.ts`)
+- WebSocket `unsubscribe()` 에 `channel:event`(`#` 없는 키)를 넘기는 사용은 폐지 예정입니다. 지금은 그 키의 구독을 전부 지우고 `[G7]` 경고를 냅니다. `subscribe()` 가 돌려준 키를 넘기세요 (websocket/WebSocketManager.ts)
+
+### Fixed
+
+- 확장점(`extension_point`) 호스트 `<div>` 의 `className`·통과 DOM 속성(`data-*`·`aria-*`·`role`·`title` 등)에 든 `{{…}}` 가 평가되지 않고 식 원문 그대로 붙던 문제를 고쳤습니다. 게시판 관리자 글 상세의 본문 확장점 래퍼에 `{{post?.data?.content_mode`·`===`·`'html'` 같은 식 조각이 클래스로 붙어 있었습니다. 반복 컨텍스트(`renderItemChildren`)의 확장점은 처음부터(engine-v1.73.0) 평가한 props 로 호스트를 만들었는데 일반 경로만 평가 전 원본을 넘긴 비대칭이었고, 확장점 도입 때(2025-12)부터 있던 결함입니다. 이제 일반 경로도 평가·번역을 마친 props 로 호스트를 만듭니다(검색엔진용 렌더러는 원래 평가하고 있어 두 렌더러가 같아집니다). 주입 자식에게 가는 확장점 props 는 변경이 없습니다 (DynamicRenderer.tsx 확장점 분기, 회귀: `__tests__/DynamicRenderer.hostPropLeak.test.tsx` extension_point_host_class_expression_evaluated)
+- 같은 `channel:event` 를 두 곳이 WebSocket 구독하면 두 번째 콜백이 연결되지 않고, 한쪽이 해제하면 다른 쪽 수신도 끊기던 문제를 고쳤습니다. 이제 각 구독이 따로 수신하고 해제됩니다 (websocket/WebSocketManager.ts `subscribe`·`unsubscribe`, 회귀: `websocket/__tests__/WebSocketManager.multiSubscriber.test.ts`)
+- 언어 전환 뒤 핸들러 재등록 순서가 부트와 달라(부트: 모듈 → 플러그인 → 템플릿, 전환 뒤: 모듈 → 템플릿 → 플러그인) 같은 이름의 핸들러가 전환 전에는 템플릿, 전환 뒤에는 플러그인으로 바뀌던 문제를 고쳤습니다. 전환 뒤에도 모듈 → 플러그인 → 템플릿 순서로 재등록합니다 (TemplateApp.ts 언어 전환 재초기화, 회귀: `__tests__/TemplateApp.reinitOrder.test.ts`)
+- 화면 전환 직후 WebSocket 데이터소스 구독을 준비하는 사이(모듈 import 대기) 새 화면 전환이 시작되면, 옛 화면 구독이 해제 목록 밖에 남아 계속 수신하던 문제를 고쳤습니다. 같은 `channel:event` 다중 구독이 각각 수신되는 지금은 새 화면 구독과 겹쳐 같은 이벤트를 두 번 받을 수 있었습니다. 구독을 마친 시점에 화면 전환이 바뀌었으면 그 구독을 바로 해제하고 목록에 싣지 않습니다 (TemplateApp.ts `handleRouteChange` WebSocket 구독부)
+- DevTools 의 엔진 기본 핸들러 목록이 13종만 보이던 문제를 고쳤습니다(`scrollIntoView`·`reloadExtensions`·`reloadModuleHandlers`·`reloadPluginHandlers`·`suppress` 누락). 기본 등록과 DevTools 목록이 한 목록(`ENGINE_MAP_HANDLER_META`)에서 나옵니다 (ActionDispatcher.ts `registerBuiltInHandlerMetadata`)
+
 ## [engine-v1.85.0] - 2026-10-27
 
 ### Added

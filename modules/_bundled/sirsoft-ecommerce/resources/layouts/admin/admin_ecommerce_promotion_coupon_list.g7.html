@@ -184,7 +184,7 @@
     </api-call>
   </init>
   <slot name="content">
-    <div data-ref="coupon_list_content" class="admin-page-content">
+    <div data-ref="coupon_list_content" class="ecommerce-admin-page-content">
       <filter-visibility-selector data-type="composite" data-ref="filter_visibility_selector" id="admin_ecommerce_promotion_coupon_filters" visibleFilters="{{_local.visibleFilters}}">
         <prop name="defaultFilters">
           <item>searchField</item>
@@ -198,19 +198,19 @@
           <set-state target="_local" visibleFilters="{{$args[0]}}"/>
         </on>
       </filter-visibility-selector>
-      <div data-ref="page_header" class="flex-between mb-6">
+      <div data-ref="page_header" class="ecommerce-flex-between ecommerce:mb-6">
         <div>
-          <h1 class="page-title">$t:sirsoft-ecommerce.admin.promotion_coupon.title</h1>
-          <p class="text-label-subtle mt-1">$t:sirsoft-ecommerce.admin.promotion_coupon.description</p>
+          <h1 class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.promotion_coupon.title</h1>
+          <p class="ecommerce-text-label-subtle ecommerce:mt-1">$t:sirsoft-ecommerce.admin.promotion_coupon.description</p>
         </div>
-        <a href="/admin/ecommerce/promotion-coupon-create" :mergeQuery="true" class="button btn btn-primary aria-disabled:opacity-50 aria-disabled:cursor-not-allowed" disabled="{{coupons?.data?.abilities?.can_create !== true}}">
+        <a href="/admin/ecommerce/promotion-coupon-create" :mergeQuery="true" class="ecommerce-button ecommerce-btn ecommerce-btn-primary ecommerce:aria-disabled:opacity-50 ecommerce:aria-disabled:cursor-not-allowed" disabled="{{coupons?.data?.abilities?.can_create !== true}}">
           <on type="click">
             <!-- 쿠폰 등록 폼 진입 — 폼에서 취소하고 돌아왔을 때 보던 목록으로 복귀하려면 진입 시점에 목록 상태를 넘겨야 한다 (#75). -->
             <navigate :mergeQuery="true">
               <query/>
             </navigate>
           </on>
-          <icon name="plus" class="text-base mr-2"/>
+          <icon name="plus" class="ecommerce:text-base ecommerce:mr-2"/>
           <span>$t:sirsoft-ecommerce.admin.promotion_coupon.actions.create</span>
         </a>
       </div>

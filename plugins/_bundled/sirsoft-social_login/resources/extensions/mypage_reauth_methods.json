@@ -21,14 +21,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-3"
+                "className": "sl:space-y-3"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300",
+                        "className": "sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:text-sm sl:text-blue-700 sl:dark:text-blue-300",
                         "role": "status"
                     },
                     "text": "$t:sirsoft-social_login.reauth.notice"
@@ -47,7 +47,7 @@
                     "name": "P",
                     "if": "{{!!socialReauthAccounts?.data && (socialReauthAccounts?.data?.accounts ?? []).length === 0}}",
                     "props": {
-                        "className": "text-sm text-yellow-800 dark:text-yellow-300"
+                        "className": "sl:text-sm sl:text-yellow-800 sl:dark:text-yellow-300"
                     },
                     "text": "$t:sirsoft-social_login.reauth.unavailable"
                 }

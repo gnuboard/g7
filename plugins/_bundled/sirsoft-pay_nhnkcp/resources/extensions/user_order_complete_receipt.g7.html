@@ -2,33 +2,33 @@
      e2e:allow S4-D13 — 자동 취소 경고에 입금 전 조건만 더했다. 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측(이커머스 전수 실측 S4). 테스트 결제창이 실제 카드사·은행 인증으로 이어져 결제 상태를 전제로 한 Playwright E2E 를 만들 수 없다. -->
 <extension target-layout="shop/order_complete">
   <inject target-id="order_complete_payment_summary" position="append_child">
-    <div data-if="{{orderData?.data?.payment?.pg_provider === 'nhnkcp' &amp;&amp; orderData?.data?.payment?.vbank_name}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-3">
-      <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:sirsoft-pay_nhnkcp.user.vbank_title</p>
-      <div class="space-y-1.5">
-        <div class="flex-between text-sm">
-          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_bank_name</span>
-          <span class="text-gray-900 dark:text-white font-medium">{{orderData?.data?.payment?.vbank_name}}</span>
+    <div data-if="{{orderData?.data?.payment?.pg_provider === 'nhnkcp' &amp;&amp; orderData?.data?.payment?.vbank_name}}" class="paynhnkcp:pt-4 paynhnkcp:mt-2 paynhnkcp:border-t paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700 paynhnkcp:space-y-3">
+      <p class="paynhnkcp:text-sm paynhnkcp:font-semibold paynhnkcp:text-gray-800 paynhnkcp:dark:text-gray-200">$t:sirsoft-pay_nhnkcp.user.vbank_title</p>
+      <div class="paynhnkcp:space-y-1.5">
+        <div class="pay-nhnkcp-flex-between paynhnkcp:text-sm">
+          <span class="paynhnkcp:text-gray-500 paynhnkcp:dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_bank_name</span>
+          <span class="paynhnkcp:text-gray-900 paynhnkcp:dark:text-white paynhnkcp:font-medium">{{orderData?.data?.payment?.vbank_name}}</span>
         </div>
-        <div class="flex-between text-sm">
-          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_account</span>
-          <span class="text-gray-900 dark:text-white font-medium font-mono tracking-wide">{{orderData?.data?.payment?.vbank_number}}</span>
+        <div class="pay-nhnkcp-flex-between paynhnkcp:text-sm">
+          <span class="paynhnkcp:text-gray-500 paynhnkcp:dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_account</span>
+          <span class="paynhnkcp:text-gray-900 paynhnkcp:dark:text-white paynhnkcp:font-medium paynhnkcp:font-mono paynhnkcp:tracking-wide">{{orderData?.data?.payment?.vbank_number}}</span>
         </div>
-        <div class="flex-between text-sm">
-          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_holder</span>
-          <span class="text-gray-900 dark:text-white font-medium">{{orderData?.data?.payment?.vbank_holder}}</span>
+        <div class="pay-nhnkcp-flex-between paynhnkcp:text-sm">
+          <span class="paynhnkcp:text-gray-500 paynhnkcp:dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_holder</span>
+          <span class="paynhnkcp:text-gray-900 paynhnkcp:dark:text-white paynhnkcp:font-medium">{{orderData?.data?.payment?.vbank_holder}}</span>
         </div>
-        <div class="flex-between text-sm">
-          <span class="text-gray-500 dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_due</span>
-          <span class="text-gray-900 dark:text-white font-medium">{{orderData?.data?.payment?.due_date_formatted}}</span>
+        <div class="pay-nhnkcp-flex-between paynhnkcp:text-sm">
+          <span class="paynhnkcp:text-gray-500 paynhnkcp:dark:text-gray-400">$t:sirsoft-pay_nhnkcp.user.vbank_due</span>
+          <span class="paynhnkcp:text-gray-900 paynhnkcp:dark:text-white paynhnkcp:font-medium">{{orderData?.data?.payment?.due_date_formatted}}</span>
         </div>
       </div>
-      <p data-if="{{!orderData?.data?.payment?.paid_at}}" class="text-xs text-amber-700 dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
+      <p data-if="{{!orderData?.data?.payment?.paid_at}}" class="paynhnkcp:text-xs paynhnkcp:text-amber-700 paynhnkcp:dark:text-amber-400">$t:sirsoft-pay_nhnkcp.user.vbank_notice</p>
     </div>
-    <div data-if="{{orderData?.data?.payment?.pg_provider === 'nhnkcp' &amp;&amp; orderData?.data?.payment?.transaction_id &amp;&amp; !orderData?.data?.payment?.vbank_name}}" class="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700">
-      <div class="flex-between">
-        <span class="text-gray-600 dark:text-gray-400 text-sm">$t:sirsoft-pay_nhnkcp.user.receipt_label</span>
-        <div class="flex items-center gap-3">
-          <button data-if="{{!_local._kcpOcReceiptLoaded}}" type="button" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50" disabled="{{_local._kcpOcReceiptLoading === true}}">
+    <div data-if="{{orderData?.data?.payment?.pg_provider === 'nhnkcp' &amp;&amp; orderData?.data?.payment?.transaction_id &amp;&amp; !orderData?.data?.payment?.vbank_name}}" class="paynhnkcp:pt-4 paynhnkcp:mt-2 paynhnkcp:border-t paynhnkcp:border-gray-200 paynhnkcp:dark:border-gray-700">
+      <div class="pay-nhnkcp-flex-between">
+        <span class="paynhnkcp:text-gray-600 paynhnkcp:dark:text-gray-400 paynhnkcp:text-sm">$t:sirsoft-pay_nhnkcp.user.receipt_label</span>
+        <div class="paynhnkcp:flex paynhnkcp:items-center paynhnkcp:gap-3">
+          <button data-if="{{!_local._kcpOcReceiptLoaded}}" type="button" class="paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:gap-1 paynhnkcp:text-sm paynhnkcp:text-blue-600 paynhnkcp:dark:text-blue-400 paynhnkcp:hover:underline paynhnkcp:disabled:opacity-50" disabled="{{_local._kcpOcReceiptLoading === true}}">
             <on type="click">
               <!-- 매출전표 불러오기 — 받아 온 전표를 팝업으로 띄우고, 한 번 불러온 뒤에는 버튼을 감춘다 -->
               <sequence>
@@ -47,16 +47,16 @@
                 </api-call>
               </sequence>
             </on>
-            <icon data-if="{{_local._kcpOcReceiptLoading === true}}" name="spinner" class="text-sm animate-spin"/>
-            <icon data-if="{{!_local._kcpOcReceiptLoading}}" name="file-text" class="text-sm"/>
+            <icon data-if="{{_local._kcpOcReceiptLoading === true}}" name="spinner" class="paynhnkcp:text-sm paynhnkcp:leading-none paynhnkcp:animate-spin"/>
+            <icon data-if="{{!_local._kcpOcReceiptLoading}}" name="file-text" class="paynhnkcp:text-sm paynhnkcp:leading-none"/>
             <span>$t:sirsoft-pay_nhnkcp.user.receipt_view</span>
           </button>
-          <a data-if="{{_local._kcpOcReceiptLoaded &amp;&amp; _local._kcpOcReceiptUrl}}" href="{{_local._kcpOcReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            <icon name="file-text" class="text-sm"/>
+          <a data-if="{{_local._kcpOcReceiptLoaded &amp;&amp; _local._kcpOcReceiptUrl}}" href="{{_local._kcpOcReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:gap-1 paynhnkcp:text-sm paynhnkcp:text-blue-600 paynhnkcp:dark:text-blue-400 paynhnkcp:hover:underline">
+            <icon name="file-text" class="paynhnkcp:text-sm paynhnkcp:leading-none"/>
             <span>$t:sirsoft-pay_nhnkcp.user.receipt_view</span>
           </a>
-          <a data-if="{{_local._kcpOcReceiptLoaded &amp;&amp; _local._kcpOcCashReceiptUrl}}" href="{{_local._kcpOcCashReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm text-green-700 dark:text-green-400 hover:underline">
-            <icon name="receipt" class="text-sm"/>
+          <a data-if="{{_local._kcpOcReceiptLoaded &amp;&amp; _local._kcpOcCashReceiptUrl}}" href="{{_local._kcpOcCashReceiptUrl}}" target="_blank" rel="noopener noreferrer" class="paynhnkcp:inline-flex paynhnkcp:items-center paynhnkcp:gap-1 paynhnkcp:text-sm paynhnkcp:text-green-700 paynhnkcp:dark:text-green-400 paynhnkcp:hover:underline">
+            <icon name="receipt" class="paynhnkcp:text-sm paynhnkcp:leading-none"/>
             <span>$t:sirsoft-pay_nhnkcp.user.cash_receipt_view</span>
           </a>
         </div>

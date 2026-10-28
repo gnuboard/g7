@@ -11,7 +11,7 @@
     "if": "{{_local.editingKey === provider.key}}",
     "dataKey": "providerForm",
     "props": {
-        "className": "mt-2 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-4"
+        "className": "sl:mt-2 sl:pt-4 sl:border-t sl:border-gray-200 sl:dark:border-gray-700 sl:space-y-4"
     },
     "children": [
         {
@@ -19,7 +19,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-start gap-3"
+                "className": "sl-flex-start sl:gap-3"
             },
             "children": [
                 {
@@ -28,7 +28,7 @@
                     "props": {
                         "type": "checkbox",
                         "name": "enabled",
-                        "className": "mt-1 h-4 w-4 rounded text-blue-600"
+                        "className": "sl:mt-1 sl:h-4 sl:w-4 sl:rounded sl:text-blue-600"
                     }
                 },
                 {
@@ -39,7 +39,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "sl-form-label"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.fields.enabled"
                         },
@@ -47,7 +47,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "sl-form-hint"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.hints.enabled"
                         },
@@ -56,7 +56,7 @@
                             "name": "P",
                             "if": "{{!!_local.providerErrors?.enabled}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "sl-form-error"
                             },
                             "text": "{{_local.providerErrors?.enabled?.[0] ?? ''}}"
                         }
@@ -74,7 +74,7 @@
                     "type": "basic",
                     "name": "Label",
                     "props": {
-                        "className": "form-label"
+                        "className": "sl-form-label"
                     },
                     "text": "$t:sirsoft-social_login.admin.providers.fields.label"
                 },
@@ -91,7 +91,7 @@
                     "name": "P",
                     "if": "{{!!_local.providerErrors && Object.keys(_local.providerErrors).some((k) => k === 'label' || k.startsWith('label.'))}}",
                     "props": {
-                        "className": "form-error"
+                        "className": "sl-form-error"
                     },
                     "text": "{{_local.providerErrors ? Object.entries(_local.providerErrors).find(([k]) => k === 'label' || k.startsWith('label.'))?.[1]?.[0] : ''}}"
                 }
@@ -102,7 +102,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "grid-2col-responsive"
+                "className": "sl-grid-2col-responsive"
             },
             "children": [
                 {
@@ -113,7 +113,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "sl-form-label"
                             },
                             "text": "{{$t('sirsoft-social_login.admin.providers.fields.client_id_' + provider.driver)}}"
                         },
@@ -123,7 +123,7 @@
                             "props": {
                                 "type": "text",
                                 "name": "client_id",
-                                "className": "input",
+                                "className": "sl-input",
                                 "autoComplete": "off"
                             }
                         },
@@ -132,7 +132,7 @@
                             "name": "P",
                             "if": "{{!!_local.providerErrors?.client_id}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "sl-form-error"
                             },
                             "text": "{{_local.providerErrors?.client_id?.[0] ?? ''}}"
                         }
@@ -146,7 +146,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "sl-form-label"
                             },
                             "text": "{{$t('sirsoft-social_login.admin.providers.fields.client_secret_' + provider.driver)}}"
                         },
@@ -156,7 +156,7 @@
                             "props": {
                                 "type": "password",
                                 "name": "client_secret",
-                                "className": "input",
+                                "className": "sl-input",
                                 "autoComplete": "new-password"
                             }
                         },
@@ -164,7 +164,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "sl-form-hint"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.hints.secret"
                         },
@@ -173,7 +173,7 @@
                             "name": "P",
                             "if": "{{!!_local.providerErrors?.client_secret}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "sl-form-error"
                             },
                             "text": "{{_local.providerErrors?.client_secret?.[0] ?? ''}}"
                         }
@@ -188,7 +188,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "sl-form-label"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.fields.admin_key"
                         },
@@ -198,7 +198,7 @@
                             "props": {
                                 "type": "password",
                                 "name": "admin_key",
-                                "className": "input",
+                                "className": "sl-input",
                                 "autoComplete": "new-password"
                             }
                         },
@@ -206,7 +206,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "sl-form-hint"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.hints.admin_key"
                         }
@@ -221,7 +221,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "sl-form-label"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.fields.graph_api_version"
                         },
@@ -231,7 +231,7 @@
                             "props": {
                                 "type": "text",
                                 "name": "graph_api_version",
-                                "className": "input",
+                                "className": "sl-input",
                                 "placeholder": "v26.0"
                             }
                         },
@@ -240,7 +240,7 @@
                             "name": "P",
                             "if": "{{!!_local.providerErrors?.graph_api_version}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "sl-form-error"
                             },
                             "text": "{{_local.providerErrors?.graph_api_version?.[0] ?? ''}}"
                         }
@@ -254,7 +254,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "sl-form-label"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.fields.scopes"
                         },
@@ -264,7 +264,7 @@
                             "props": {
                                 "type": "text",
                                 "name": "scopes_text",
-                                "className": "input",
+                                "className": "sl-input",
                                 "placeholder": "$t:sirsoft-social_login.admin.providers.hints.scopes_placeholder"
                             }
                         },
@@ -272,7 +272,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "sl-form-hint"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.hints.scopes"
                         }
@@ -286,28 +286,28 @@
             "name": "Div",
             "if": "{{provider.type === 'custom'}}",
             "props": {
-                "className": "space-y-3"
+                "className": "sl:space-y-3"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex flex-col sm:flex-row sm:items-end gap-2"
+                        "className": "sl:flex sl:flex-col sl:sm:flex-row sl:sm:items-end sl:gap-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-1"
+                                "className": "sl:flex-1"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sl-form-label"
                                     },
                                     "text": "$t:sirsoft-social_login.admin.providers.fields.discovery_url"
                                 },
@@ -317,7 +317,7 @@
                                     "props": {
                                         "type": "url",
                                         "name": "discovery_url",
-                                        "className": "input",
+                                        "className": "sl-input",
                                         "placeholder": "https://"
                                     }
                                 },
@@ -326,7 +326,7 @@
                                     "name": "P",
                                     "if": "{{!!_local.providerErrors?.discovery_url}}",
                                     "props": {
-                                        "className": "form-error"
+                                        "className": "sl-form-error"
                                     },
                                     "text": "{{_local.providerErrors?.discovery_url?.[0] ?? ''}}"
                                 }
@@ -376,7 +376,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary text-sm"
+                                "className": "sl-btn sl-btn-secondary sl:text-sm"
                             },
                             "children": [
                                 {
@@ -392,7 +392,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid-2col-responsive"
+                        "className": "sl-grid-2col-responsive"
                     },
                     "children": [
                         {
@@ -403,7 +403,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sl-form-label"
                                     },
                                     "text": "$t:sirsoft-social_login.admin.providers.fields.issuer"
                                 },
@@ -413,7 +413,7 @@
                                     "props": {
                                         "type": "text",
                                         "name": "issuer",
-                                        "className": "input"
+                                        "className": "sl-input"
                                     }
                                 }
                             ]
@@ -426,7 +426,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sl-form-label"
                                     },
                                     "text": "$t:sirsoft-social_login.admin.providers.fields.authorize_url"
                                 },
@@ -436,7 +436,7 @@
                                     "props": {
                                         "type": "url",
                                         "name": "authorize_url",
-                                        "className": "input"
+                                        "className": "sl-input"
                                     }
                                 }
                             ]
@@ -449,7 +449,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sl-form-label"
                                     },
                                     "text": "$t:sirsoft-social_login.admin.providers.fields.token_url"
                                 },
@@ -459,7 +459,7 @@
                                     "props": {
                                         "type": "url",
                                         "name": "token_url",
-                                        "className": "input"
+                                        "className": "sl-input"
                                     }
                                 }
                             ]
@@ -472,7 +472,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sl-form-label"
                                     },
                                     "text": "$t:sirsoft-social_login.admin.providers.fields.userinfo_url"
                                 },
@@ -482,7 +482,7 @@
                                     "props": {
                                         "type": "url",
                                         "name": "userinfo_url",
-                                        "className": "input"
+                                        "className": "sl-input"
                                     }
                                 }
                             ]
@@ -495,7 +495,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sl-form-label"
                                     },
                                     "text": "$t:sirsoft-social_login.admin.providers.fields.jwks_url"
                                 },
@@ -505,7 +505,7 @@
                                     "props": {
                                         "type": "url",
                                         "name": "jwks_url",
-                                        "className": "input"
+                                        "className": "sl-input"
                                     }
                                 }
                             ]
@@ -516,7 +516,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "grid grid-cols-3 gap-3"
+                        "className": "sl:grid sl:grid-cols-3 sl:gap-3"
                     },
                     "children": [
                         {
@@ -527,7 +527,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sl-form-label"
                                     },
                                     "text": "$t:sirsoft-social_login.admin.providers.fields.button_bg"
                                 },
@@ -547,7 +547,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "input",
+                                        "className": "sl-input",
                                         "placeholder": "#1F2937",
                                         "value": "{{_local.providerForm?.button_style?.bg ?? ''}}",
                                         "autoBinding": false
@@ -563,7 +563,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sl-form-label"
                                     },
                                     "text": "$t:sirsoft-social_login.admin.providers.fields.button_fg"
                                 },
@@ -583,7 +583,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "input",
+                                        "className": "sl-input",
                                         "placeholder": "#FFFFFF",
                                         "value": "{{_local.providerForm?.button_style?.fg ?? ''}}",
                                         "autoBinding": false
@@ -599,7 +599,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sl-form-label"
                                     },
                                     "text": "$t:sirsoft-social_login.admin.providers.fields.button_border"
                                 },
@@ -619,7 +619,7 @@
                                     ],
                                     "props": {
                                         "type": "text",
-                                        "className": "input",
+                                        "className": "sl-input",
                                         "placeholder": "#1F2937",
                                         "value": "{{_local.providerForm?.button_style?.border ?? ''}}",
                                         "autoBinding": false
@@ -636,14 +636,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "grid-2col-responsive"
+                "className": "sl-grid-2col-responsive"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-start gap-3"
+                        "className": "sl-flex-start sl:gap-3"
                     },
                     "children": [
                         {
@@ -652,7 +652,7 @@
                             "props": {
                                 "type": "checkbox",
                                 "name": "signup_allowed",
-                                "className": "mt-1 h-4 w-4 rounded text-blue-600"
+                                "className": "sl:mt-1 sl:h-4 sl:w-4 sl:rounded sl:text-blue-600"
                             }
                         },
                         {
@@ -663,7 +663,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sl-form-label"
                                     },
                                     "text": "$t:sirsoft-social_login.admin.providers.fields.signup_allowed"
                                 },
@@ -671,7 +671,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "sl-form-hint"
                                     },
                                     "text": "$t:sirsoft-social_login.admin.providers.hints.signup_allowed"
                                 }
@@ -684,7 +684,7 @@
                     "name": "Div",
                     "if": "{{provider.driver === 'kakao'}}",
                     "props": {
-                        "className": "flex-start gap-3"
+                        "className": "sl-flex-start sl:gap-3"
                     },
                     "children": [
                         {
@@ -693,7 +693,7 @@
                             "props": {
                                 "type": "checkbox",
                                 "name": "webhook_ip_allowlist_enabled",
-                                "className": "mt-1 h-4 w-4 rounded text-blue-600"
+                                "className": "sl:mt-1 sl:h-4 sl:w-4 sl:rounded sl:text-blue-600"
                             }
                         },
                         {
@@ -704,7 +704,7 @@
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "sl-form-label"
                                     },
                                     "text": "$t:sirsoft-social_login.admin.providers.fields.webhook_ip_allowlist_enabled"
                                 },
@@ -712,7 +712,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "sl-form-hint"
                                     },
                                     "text": "$t:sirsoft-social_login.admin.providers.hints.webhook_ip_allowlist_enabled"
                                 }
@@ -729,7 +729,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "sl-form-label"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.fields.webhook_app_id"
                         },
@@ -739,7 +739,7 @@
                             "props": {
                                 "type": "text",
                                 "name": "webhook_app_id",
-                                "className": "input",
+                                "className": "sl-input",
                                 "inputMode": "numeric",
                                 "autoComplete": "off"
                             }
@@ -748,7 +748,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "sl-form-hint"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.hints.webhook_app_id"
                         },
@@ -757,7 +757,7 @@
                             "name": "P",
                             "if": "{{!!_local.providerErrors?.webhook_app_id}}",
                             "props": {
-                                "className": "form-error"
+                                "className": "sl-form-error"
                             },
                             "text": "{{_local.providerErrors?.webhook_app_id?.[0] ?? ''}}"
                         }
@@ -771,7 +771,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "sl-form-label"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.fields.email_missing_policy"
                         },
@@ -780,7 +780,7 @@
                             "name": "Select",
                             "props": {
                                 "name": "email_missing_policy",
-                                "className": "focus:border-transparent"
+                                "className": "sl:focus:border-transparent"
                             },
                             "children": [
                                 {
@@ -816,7 +816,7 @@
                             "if": "{{_local.providerForm?.email_missing_policy === 'placeholder'}}",
                             "props": {
                                 "role": "alert",
-                                "className": "form-error"
+                                "className": "sl-form-error"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.hints.placeholder_warning"
                         }
@@ -830,7 +830,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "sl-form-label"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.fields.email_trust"
                         },
@@ -839,7 +839,7 @@
                             "name": "Select",
                             "props": {
                                 "name": "email_trust",
-                                "className": "focus:border-transparent"
+                                "className": "sl:focus:border-transparent"
                             },
                             "children": [
                                 {
@@ -872,7 +872,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "sl-form-hint"
                             },
                             "text": "$t:sirsoft-social_login.admin.providers.hints.email_trust"
                         }
@@ -885,7 +885,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex flex-wrap justify-end gap-2"
+                "className": "sl:flex sl:flex-wrap sl:justify-end sl:gap-2"
             },
             "children": [
                 {
@@ -910,7 +910,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-secondary text-sm"
+                        "className": "sl-btn sl-btn-secondary sl:text-sm"
                     },
                     "children": [
                         {
@@ -965,7 +965,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-primary text-sm",
+                        "className": "sl-btn sl-btn-primary sl:text-sm",
                         "disabled": "{{_local.isSavingProvider || !_computed.canEditProviders || JSON.stringify(_local.providerForm) === JSON.stringify(_local.providerFormOrigin)}}"
                     },
                     "children": [

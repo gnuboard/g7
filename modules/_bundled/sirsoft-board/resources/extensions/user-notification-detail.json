@@ -28,7 +28,7 @@
                     "name": "Div",
                     "props": {
                         "id": "ext_notification",
-                        "className": "scroll-mt-32"
+                        "className": "board:scroll-mt-32"
                     },
                     "children": [
                         {
@@ -36,21 +36,21 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "admin-card"
+                                "className": "board-admin-card"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-between mb-4"
+                                        "className": "board-flex-between board:mb-4"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-center gap-2"
+                                                "className": "board:flex board:items-center board:gap-2"
                                             },
                                             "children": [
                                                 {
@@ -58,14 +58,14 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "bell",
-                                                        "className": "text-gray-600 dark:text-gray-400 text-xl"
+                                                        "className": "board:text-gray-600 board:dark:text-gray-400 board:text-xl"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "H3",
                                                     "props": {
-                                                        "className": "section-heading"
+                                                        "className": "board-section-heading"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.form.sections.notification_settings"
                                                 }
@@ -86,7 +86,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "grid-2col-responsive"
+                                        "className": "board-grid-2col-responsive"
                                     },
                                     "children": [
                                         {
@@ -98,7 +98,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400 block font-medium mb-1"
+                                                        "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400 board:block board:font-medium board:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.form.notifications.post_complete"
                                                 },
@@ -106,7 +106,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-gray-900 dark:text-white text-sm"
+                                                        "className": "board:text-gray-900 board:dark:text-white board:text-sm"
                                                     },
                                                     "text": "{{user?.data?.notify_post_complete ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}"
                                                 }
@@ -121,7 +121,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400 block font-medium mb-1"
+                                                        "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400 board:block board:font-medium board:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.form.notifications.post_reply"
                                                 },
@@ -129,7 +129,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-gray-900 dark:text-white text-sm"
+                                                        "className": "board:text-gray-900 board:dark:text-white board:text-sm"
                                                     },
                                                     "text": "{{user?.data?.notify_post_reply ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}"
                                                 }
@@ -144,7 +144,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400 block font-medium mb-1"
+                                                        "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400 board:block board:font-medium board:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.form.notifications.comment"
                                                 },
@@ -152,7 +152,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-gray-900 dark:text-white text-sm"
+                                                        "className": "board:text-gray-900 board:dark:text-white board:text-sm"
                                                     },
                                                     "text": "{{user?.data?.notify_comment ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}"
                                                 }
@@ -167,7 +167,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "text-sm text-gray-500 dark:text-gray-400 block font-medium mb-1"
+                                                        "className": "board:text-sm board:text-gray-500 board:dark:text-gray-400 board:block board:font-medium board:mb-1"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.users.form.notifications.reply_comment"
                                                 },
@@ -175,7 +175,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "text-gray-900 dark:text-white text-sm"
+                                                        "className": "board:text-gray-900 board:dark:text-white board:text-sm"
                                                     },
                                                     "text": "{{user?.data?.notify_reply_comment ? '$t:admin.users.detail.enabled' : '$t:admin.users.detail.disabled'}}"
                                                 }

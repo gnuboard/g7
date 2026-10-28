@@ -93,12 +93,12 @@
                 "responsive": {
                     "portable": {
                         "props": {
-                            "className": "admin-page-content-compact"
+                            "className": "ecommerce-admin-page-content-compact"
                         }
                     }
                 },
                 "props": {
-                    "className": "admin-page-content"
+                    "className": "ecommerce-admin-page-content"
                 },
                 "children": [
                     {
@@ -108,12 +108,12 @@
                         "responsive": {
                             "portable": {
                                 "props": {
-                                    "className": "row-stack mb-6"
+                                    "className": "ecommerce-row-stack ecommerce:mb-6"
                                 }
                             }
                         },
                         "props": {
-                            "className": "flex-start justify-between gap-4 mb-6"
+                            "className": "ecommerce-flex-start ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-6"
                         },
                         "children": [
                             {
@@ -125,7 +125,7 @@
                                         "type": "basic",
                                         "name": "H1",
                                         "props": {
-                                            "className": "page-title mb-1"
+                                            "className": "ecommerce-page-title ecommerce:mb-1"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.category.title"
                                     },
@@ -133,7 +133,7 @@
                                         "type": "basic",
                                         "name": "P",
                                         "props": {
-                                            "className": "text-secondary text-sm"
+                                            "className": "ecommerce-text-secondary ecommerce:text-sm"
                                         },
                                         "text": "$t:sirsoft-ecommerce.admin.category.description"
                                     }
@@ -144,7 +144,7 @@
                                 "type": "basic",
                                 "name": "Div",
                                 "props": {
-                                    "className": "flex-center gap-2 flex-shrink-0"
+                                    "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-shrink-0"
                                 },
                                 "children": [
                                     {
@@ -162,7 +162,7 @@
                                         ],
                                         "props": {
                                             "type": "button",
-                                            "className": "btn-icon",
+                                            "className": "ecommerce-btn-icon",
                                             "aria-label": "$t:common.refresh"
                                         },
                                         "children": [
@@ -172,7 +172,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "refresh",
-                                                    "className": "text-xl"
+                                                    "className": "ecommerce:text-xl"
                                                 }
                                             }
                                         ]
@@ -231,7 +231,7 @@
                                         "props": {
                                             "type": "button",
                                             "disabled": "{{categories?.data?.abilities?.can_create !== true}}",
-                                            "className": "flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            "className": "ecommerce-flex-center ecommerce:gap-1.5 ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-sm ecommerce:bg-gray-900 ecommerce:dark:bg-white ecommerce:text-white ecommerce:dark:text-gray-900 ecommerce:rounded-lg ecommerce:hover:bg-gray-800 ecommerce:dark:hover:bg-gray-100 ecommerce:transition-colors ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed"
                                         },
                                         "children": [
                                             {
@@ -239,7 +239,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "plus",
-                                                    "className": "text-base"
+                                                    "className": "ecommerce:text-base"
                                                 }
                                             },
                                             {
@@ -259,7 +259,7 @@
                         "name": "Div",
                         "blur_until_loaded": true,
                         "props": {
-                            "className": "grid-cols-1-lg-3"
+                            "className": "ecommerce-grid-cols-1-lg-3"
                         },
                         "children": [
                             {

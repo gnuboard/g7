@@ -21,14 +21,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center gap-3"
+                        "className": "ecommerce-flex-center ecommerce:gap-3"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/20 justify-center flex-shrink-0"
+                                "className": "ecommerce-flex-center ecommerce:w-10 ecommerce:h-10 ecommerce:rounded-full ecommerce:bg-red-100 ecommerce:dark:bg-red-900/20 ecommerce:justify-center ecommerce:flex-shrink-0"
                             },
                             "children": [
                                 {
@@ -36,7 +36,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "trash",
-                                        "className": "text-xl text-red-600 dark:text-red-400"
+                                        "className": "ecommerce:text-xl ecommerce:text-red-600 ecommerce:dark:text-red-400"
                                     }
                                 }
                             ]
@@ -49,7 +49,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-primary font-medium"
+                                        "className": "ecommerce-text-primary ecommerce:font-medium"
                                     },
                                     "children": [
                                         {
@@ -58,7 +58,7 @@
                                             "name": "Badge",
                                             "props": {
                                                 "size": "md",
-                                                "className": "mr-1",
+                                                "className": "ecommerce:mr-1",
                                                 "customColor": "{{(product_labels?.data?.data ?? []).find(l => l.id === _global.labelToDeleteId)?.color ?? '#6B7280'}}"
                                             },
                                             "text": "{{$localized((product_labels?.data?.data ?? []).find(l => l.id === _global.labelToDeleteId)?.name) ?? ''}}"
@@ -74,7 +74,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-label-subtle mt-1"
+                                        "className": "ecommerce-text-label-subtle ecommerce:mt-1"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.product.labels.delete_modal.description"
                                 }
@@ -87,7 +87,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700"
+                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:gap-3 ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                     },
                     "children": [
                         {
@@ -101,7 +101,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-outline",
+                                "className": "ecommerce-btn ecommerce-btn-outline",
                                 "disabled": "{{_global.isDeletingLabel}}"
                             },
                             "text": "$t:sirsoft-ecommerce.common.cancel"
@@ -117,7 +117,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-danger",
+                                "className": "ecommerce-btn ecommerce-btn-danger",
                                 "disabled": "{{_global.isDeletingLabel}}"
                             },
                             "children": [
@@ -127,7 +127,7 @@
                                     "if": "{{_global.isDeletingLabel}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "spinner-sm mr-2"
+                                        "className": "ecommerce-spinner-sm ecommerce:mr-2"
                                     }
                                 },
                                 {

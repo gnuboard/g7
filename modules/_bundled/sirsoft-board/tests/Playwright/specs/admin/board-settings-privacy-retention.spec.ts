@@ -220,7 +220,7 @@ test('저장하면 본문에 privacy_retention 이 실리고 뱃지가 미리보
   await page.reload();
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   // 두 축의 건수는 토글 아래 줄에 있다 — 기간 칸 묶음(켰을 때만 보임) 안에 두지 않는다(#636 §1-E).
-  const badges = page.locator('#privacy_retention_targets .badge');
+  const badges = page.locator('#privacy_retention_targets .board-badge');
   await expect(badges).toHaveCount(2, { timeout: 20_000 });
   await expect(badges.nth(0)).toContainText(String(preview.body.data.ip));
   await expect(badges.nth(1)).toContainText(String(preview.body.data.guest));
@@ -241,7 +241,7 @@ test('기능이 꺼져 있어도 두 축의 건수가 보이고 「IP 대상 보
 
     await page.reload();
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
-    const badges = page.locator('#privacy_retention_targets .badge');
+    const badges = page.locator('#privacy_retention_targets .board-badge');
     await expect(badges.nth(0)).toContainText(String(preview.body.data.ip), { timeout: 20_000 });
 
     await page.locator('#view_ip_targets').click();

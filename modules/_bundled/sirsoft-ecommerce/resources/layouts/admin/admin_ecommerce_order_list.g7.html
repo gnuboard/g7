@@ -277,61 +277,61 @@
     <set-state target="global" :ecommerceExportTracking="null" :ecommerceExportTrackingDownloading="false"/>
   </init>
   <slot name="content">
-    <div data-ref="order_list_content" class="admin-page-content">
+    <div data-ref="order_list_content" class="ecommerce-admin-page-content">
       <!-- H-001 ~ H-004 -->
-      <div data-ref="page_header" class="page-header">
-        <div class="flex-center gap-3">
+      <div data-ref="page_header" class="ecommerce-page-header">
+        <div class="ecommerce-flex-center ecommerce:gap-3">
           <!-- MB-001 모바일 뒤로가기 버튼 -->
-          <button data-ref="mb_001_back_button" type="button" class="btn-icon hidden" aria-label="$t:common.back">
-            <responsive on="portable" class="btn-icon flex"/>
+          <button data-ref="mb_001_back_button" type="button" class="ecommerce-btn-icon ecommerce:hidden ecommerce-hidden" aria-label="$t:common.back">
+            <responsive on="portable" class="ecommerce-btn-icon ecommerce:flex"/>
             <on type="click">
               <!-- 브라우저 히스토리 뒤로가기 — navigate 는 path 를 주소로 해석하므로 "back" 을 주면 /back 으로 이동한다 -->
               <navigate-back/>
             </on>
-            <icon name="arrow-left" class="text-xl"/>
+            <icon name="arrow-left" class="ecommerce:text-xl"/>
           </button>
           <div>
             <!-- H-002 -->
-            <h1 data-ref="h_002_page_title" class="page-title">$t:sirsoft-ecommerce.admin.order.title</h1>
+            <h1 data-ref="h_002_page_title" class="ecommerce-page-title">$t:sirsoft-ecommerce.admin.order.title</h1>
             <!-- H-003 -->
-            <p data-ref="h_003_page_description" class="page-description">$t:sirsoft-ecommerce.admin.order.description</p>
+            <p data-ref="h_003_page_description" class="ecommerce-page-description">$t:sirsoft-ecommerce.admin.order.description</p>
           </div>
         </div>
-        <div class="page-actions">
+        <div class="ecommerce-page-actions">
           <!-- H-004 -->
-          <button data-ref="h_004_refresh_button" type="button" class="btn btn-icon" aria-label="$t:common.refresh" title="$t:common.refresh">
+          <button data-ref="h_004_refresh_button" type="button" class="ecommerce-btn ecommerce-btn-icon" aria-label="$t:common.refresh" title="$t:common.refresh">
             <on type="click">
               <!-- 새로고침은 보고 있던 목록을 그대로 다시 부르는 것이다 — 페이지와 걸어둔 필터 20여 종을 유지한다 (#75). -->
               <navigate path="/admin/ecommerce/orders" :mergeQuery="true">
                 <query/>
               </navigate>
             </on>
-            <icon name="arrows-rotate" class="text-xl"/>
+            <icon name="arrows-rotate" class="ecommerce:text-xl"/>
           </button>
         </div>
       </div>
       <!-- MB-010, MB-011 -->
-      <div data-ref="mobile_top_actions" class="hidden">
-        <responsive on="portable" class="flex gap-2 mb-4"/>
+      <div data-ref="mobile_top_actions" class="ecommerce:hidden ecommerce-hidden">
+        <responsive on="portable" class="ecommerce:flex ecommerce:gap-2 ecommerce:mb-4"/>
         <!-- MB-010 -->
-        <button data-ref="mb_010_search_edit_button" type="button" class="btn btn-outline flex-1">
+        <button data-ref="mb_010_search_edit_button" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:flex-1">
           <on type="click">
             <set-state target="_local" isEditMode="{{!_local.isEditMode}}"/>
           </on>
-          <icon name="gear" class="text-base"/>
+          <icon name="gear" class="ecommerce:text-base"/>
           <span>$t:sirsoft-ecommerce.admin.order.search.edit_search</span>
         </button>
         <!-- MB-011 -->
-        <button data-ref="mb_011_preset_manage_button" type="button" class="btn btn-outline flex-1">
+        <button data-ref="mb_011_preset_manage_button" type="button" class="ecommerce-btn ecommerce-btn-outline ecommerce:flex-1">
           <on type="click">
             <open-modal target="modal_preset_manage"/>
           </on>
-          <icon name="list" class="text-base"/>
+          <icon name="list" class="ecommerce:text-base"/>
           <span>$t:sirsoft-ecommerce.admin.order.search.preset_manage</span>
         </button>
       </div>
       <include src="partials/admin_ecommerce_order_list/_partial_filter_section.g7.html"/>
-      <div data-ref="data_table_section" class="mt-6">
+      <div data-ref="data_table_section" class="ecommerce:mt-6">
         <include src="partials/admin_ecommerce_order_list/_partial_bulk_action_section.g7.html"/>
         <include src="partials/admin_ecommerce_order_list/_partial_order_datagrid.g7.html"/>
       </div>

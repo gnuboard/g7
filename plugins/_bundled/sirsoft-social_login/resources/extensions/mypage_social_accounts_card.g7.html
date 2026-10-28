@@ -3,15 +3,15 @@
      priority 80 — 같은 자리(append)에 붙는 다른 카드(90~120)보다 아래에 놓인다(낮을수록 뒤). 해제 확인 창이 읽고 쓰는 값은 _global 이다(모달은 페이지 _local 의 낡은 값을 본다). -->
 <extension target-layout="mypage/profile" priority="80">
   <inject target-id="profile_view_bio_card" position="append">
-    <div data-ref="social_accounts_card" data-if="{{!!socialAccounts?.data}}" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      <responsive on="portable" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"/>
-      <div class="mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-social_login.mypage.title</h2>
+    <div data-ref="social_accounts_card" data-if="{{!!socialAccounts?.data}}" class="sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-gray-200 sl:dark:border-gray-700 sl:p-6">
+      <responsive on="portable" class="sl:bg-white sl:dark:bg-gray-800 sl:rounded-lg sl:shadow-sm sl:border sl:border-gray-200 sl:dark:border-gray-700 sl:p-4"/>
+      <div class="sl:mb-4 sl:pb-3 sl:border-b sl:border-gray-200 sl:dark:border-gray-700">
+        <h2 class="sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white">$t:sirsoft-social_login.mypage.title</h2>
       </div>
       <!-- 비밀번호 없는 계정 안내 — 비밀번호를 정하면 이메일로도 로그인할 수 있다 -->
-      <div data-if="{{socialAccounts?.data?.has_password === false}}" data-ref="social_accounts_no_password" class="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex flex-col gap-2 sm:flex-row sm:items-center">
-        <p class="flex-1 text-sm text-blue-700 dark:text-blue-300">$t:sirsoft-social_login.mypage.no_password</p>
-        <button type="button" class="shrink-0 px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer">
+      <div data-if="{{socialAccounts?.data?.has_password === false}}" data-ref="social_accounts_no_password" class="sl:mb-4 sl:p-3 sl:rounded-lg sl:bg-blue-50 sl:dark:bg-blue-900/20 sl:border sl:border-blue-200 sl:dark:border-blue-800 sl:flex sl:flex-col sl:gap-2 sl:sm:flex-row sl:sm:items-center">
+        <p class="sl:flex-1 sl:text-sm sl:text-blue-700 sl:dark:text-blue-300">$t:sirsoft-social_login.mypage.no_password</p>
+        <button type="button" class="sl:shrink-0 sl:px-3 sl:py-1.5 sl:text-xs sl:bg-blue-600 sl:text-white sl:rounded sl:hover:bg-blue-700 sl:cursor-pointer">
           <on type="click">
             <navigate path="/mypage/change-password"/>
           </on>
@@ -19,20 +19,20 @@
         </button>
       </div>
       <!-- 연결된 계정 -->
-      <p data-if="{{(socialAccounts?.data?.accounts ?? []).length === 0}}" class="py-4 text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-social_login.mypage.empty</p>
-      <ul data-if="{{(socialAccounts?.data?.accounts ?? []).length > 0}}" data-ref="social_accounts_list" class="divide-y divide-gray-200 dark:divide-gray-700">
-        <li data-each="account in socialAccounts?.data?.accounts ?? []" data-key="{{account.provider_key}}" class="py-3 flex items-center gap-3">
+      <p data-if="{{(socialAccounts?.data?.accounts ?? []).length === 0}}" class="sl:py-4 sl:text-sm sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.mypage.empty</p>
+      <ul data-if="{{(socialAccounts?.data?.accounts ?? []).length > 0}}" data-ref="social_accounts_list" class="sl:divide-y sl:divide-gray-200 sl:dark:divide-gray-700">
+        <li data-each="account in socialAccounts?.data?.accounts ?? []" data-key="{{account.provider_key}}" class="sl:py-3 sl:flex sl:items-center sl:gap-3">
           <!-- 제공자 심볼 — 로그인 버튼과 같은 공식 심볼을 버튼 색 원 안에 그린다 -->
           <sirsoft-social_login.provider-mark brand="{{account.brand}}" label="{{account.label}}"/>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-gray-900 dark:text-white">{{account.label}}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{account.email ?? ''}}</p>
-            <p class="text-xs text-gray-400 dark:text-gray-500">
+          <div class="sl:flex-1 sl:min-w-0">
+            <p class="sl:text-sm sl:font-medium sl:text-gray-900 sl:dark:text-white">{{account.label}}</p>
+            <p class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:truncate">{{account.email ?? ''}}</p>
+            <p class="sl:text-xs sl:text-gray-400 sl:dark:text-gray-500">
               <span>$t:sirsoft-social_login.mypage.linked_label</span>
               <span> {{account.linked_at | date}}</span>
             </p>
           </div>
-          <button type="button" data-ref="social_account_unlink_{{account.provider_key}}" class="shrink-0 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+          <button type="button" data-ref="social_account_unlink_{{account.provider_key}}" class="sl:shrink-0 sl:px-3 sl:py-1.5 sl:text-xs sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:text-gray-700 sl:dark:text-gray-300 sl:rounded sl:hover:bg-gray-50 sl:dark:hover:bg-gray-700 sl:cursor-pointer">
             <on type="click">
               <!-- 해제 — 확인 창에 대상을 넘기고 연다 -->
               <sequence>
@@ -45,19 +45,19 @@
         </li>
       </ul>
       <!-- 마지막 수단 해제 거절 안내 -->
-      <div data-if="{{_global.socialLoginUnlinkLastMethod === true}}" data-ref="social_accounts_last_method" class="mt-3 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 flex flex-col gap-2 sm:flex-row sm:items-center" role="alert">
-        <p class="flex-1 text-sm text-yellow-800 dark:text-yellow-300">$t:sirsoft-social_login.mypage.last_method</p>
-        <button type="button" data-ref="social_accounts_set_password" class="shrink-0 px-3 py-1.5 text-xs bg-yellow-600 text-white rounded hover:bg-yellow-700 cursor-pointer">
+      <div data-if="{{_global.socialLoginUnlinkLastMethod === true}}" data-ref="social_accounts_last_method" class="sl:mt-3 sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:flex sl:flex-col sl:gap-2 sl:sm:flex-row sl:sm:items-center" role="alert">
+        <p class="sl:flex-1 sl:text-sm sl:text-yellow-800 sl:dark:text-yellow-300">$t:sirsoft-social_login.mypage.last_method</p>
+        <button type="button" data-ref="social_accounts_set_password" class="sl:shrink-0 sl:px-3 sl:py-1.5 sl:text-xs sl:bg-yellow-600 sl:text-white sl:rounded sl:hover:bg-yellow-700 sl:cursor-pointer">
           <on type="click">
             <navigate path="/mypage/change-password"/>
           </on>
           $t:sirsoft-social_login.mypage.set_password
         </button>
       </div>
-      <p data-if="{{!!_global.socialLoginUnlinkError &amp;&amp; _global.socialLoginUnlinkLastMethod !== true}}" class="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">{{_global.socialLoginUnlinkError ?? ''}}</p>
+      <p data-if="{{!!_global.socialLoginUnlinkError &amp;&amp; _global.socialLoginUnlinkLastMethod !== true}}" class="sl:mt-3 sl:text-sm sl:text-red-600 sl:dark:text-red-400" role="alert">{{_global.socialLoginUnlinkError ?? ''}}</p>
       <!-- 연결할 수 있는 제공자 -->
-      <div data-if="{{(socialAccounts?.data?.available ?? []).length > 0}}" data-ref="social_accounts_available" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">$t:sirsoft-social_login.mypage.available</p>
+      <div data-if="{{(socialAccounts?.data?.available ?? []).length > 0}}" data-ref="social_accounts_available" class="sl:mt-4 sl:pt-4 sl:border-t sl:border-gray-200 sl:dark:border-gray-700">
+        <p class="sl:mb-3 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400">$t:sirsoft-social_login.mypage.available</p>
         <sirsoft-social_login.provider-buttons data-type="composite" providers="{{socialAccounts?.data?.available ?? []}}" intent="link"/>
       </div>
     </div>
@@ -72,18 +72,18 @@
   <modal>
     <!-- 해제 확인 — 확인하면 연결을 끊고 목록을 다시 받는다. 마지막 수단이면 카드에 안내를 띄운다. -->
     <modal data-type="composite" data-ref="social_unlink_confirm" title="$t:sirsoft-social_login.mypage.unlink_title" size="sm">
-      <div class="space-y-4">
-        <p class="text-sm text-gray-700 dark:text-gray-300">$t:sirsoft-social_login.mypage.unlink_confirm|provider={{_global.socialLoginUnlinkTarget?.label ?? ''}}</p>
+      <div class="sl:space-y-4">
+        <p class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300">$t:sirsoft-social_login.mypage.unlink_confirm|provider={{_global.socialLoginUnlinkTarget?.label ?? ''}}</p>
         <!-- 사이트가 마지막 수단 해제를 허용할 때만 — 끊고 나면 비밀번호 찾기로만 다시 들어올 수 있다 -->
-        <p data-if="{{_global.socialLoginUnlinkIsLast === true}}" data-ref="social_unlink_last_warning" class="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-sm text-yellow-800 dark:text-yellow-300" role="alert">$t:sirsoft-social_login.mypage.unlink_last_warning</p>
-        <div class="flex gap-2">
-          <button type="button" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+        <p data-if="{{_global.socialLoginUnlinkIsLast === true}}" data-ref="social_unlink_last_warning" class="sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:text-sm sl:text-yellow-800 sl:dark:text-yellow-300" role="alert">$t:sirsoft-social_login.mypage.unlink_last_warning</p>
+        <div class="sl:flex sl:gap-2">
+          <button type="button" class="sl:flex-1 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer">
             <on type="click">
               <close-modal/>
             </on>
             $t:common.cancel
           </button>
-          <button type="button" data-ref="social_unlink_confirm_submit" class="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg text-sm cursor-pointer disabled:opacity-50" disabled="{{_global.socialLoginUnlinking}}">
+          <button type="button" data-ref="social_unlink_confirm_submit" class="sl:flex-1 sl:px-3 sl:py-2 sl:bg-red-600 sl:text-white sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50" disabled="{{_global.socialLoginUnlinking}}">
             <on type="click">
               <!-- 연결 해제 확정 — 진행 표지를 켜고 해제를 요청한다. 성공하면 창을 닫고 연결 목록을 다시 받으며, 실패하면 사유를 카드에 남긴다 -->
               <sequence>

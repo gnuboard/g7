@@ -192,7 +192,8 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 - [ ] 평문 시크릿·백업 코드를 내려주는 응답을 추가·변경했다면 "1회 노출" 계약이 깨지지 않는지 확인 — 조회 경로로는 절대 내려가지 않습니다
 - [ ] 프론트 핸들러를 추가했다면 `resources/js/handlers/index.ts` 의 `handlerMap` 에 넣는다 — 부팅 등록과 로케일 전환 뒤 재등록(`window.__SirsoftTotp.initPlugin()`)이 모두 이 맵을 읽는다. `initPlugin()` 에는 QR 관측자 같은 1회성 부팅 작업을 넣지 않는다
 - [ ] `resources/js/` 를 고쳤다면 `php artisan plugin:build --production` 후 `dist/js/plugin.iife.js` 를 함께 커밋 (`sourceMappingURL` 잔존 금지)
-- [ ] 레이아웃의 뜻이 있는 글자색(경고 등)은 템플릿 의미 클래스(`text-warning-soft` 등)가 아니라 `resources/css/main.css` 의 `totp-tone-*`(다크 모드 짝 포함)를 쓴다. 이 파일을 고쳤다면 `php artisan plugin:build --production` 후 `dist/css/plugin.css` 를 함께 커밋
+- [ ] 레이아웃의 뜻이 있는 글자색(경고 등)은 템플릿 의미 클래스(`text-warning-soft` 등)가 아니라 `resources/css/main.css` 의 `totp-tone-*`(`@layer g7-extension` 안, 다크 모드 짝 포함)를 쓴다. 이 파일을 고쳤다면 `php artisan plugin:build --production` 후 `dist/css/plugin.css` 를 함께 커밋
+- [ ] 화면 클래스는 템플릿 CSS 에 기대지 않는다 — 배치·색 유틸리티는 `totp:` 접두 Tailwind(`totp:flex totp:dark:text-gray-400`), 템플릿 의미 클래스는 `totp-*` 사본(정의는 생성 파일 `resources/css/g7-extension.generated.css`, 손으로 고치지 않는다)을 쓴다. 다크 모드는 `.dark` 대신 중립 표식(`[data-g7-color-scheme="dark"]`)이다. 새 클래스를 쓰면 `plugin:build` 로 CSS 를 다시 만든다 — 앞글자 없는 클래스는 정적 검사가 막는다. 규약 전체는 [확장 CSS 자기 공급 규약](../../../docs/extension/module-assets.md#확장-css-자기-공급-규약)
 
 ## 6. 금지 패턴
 

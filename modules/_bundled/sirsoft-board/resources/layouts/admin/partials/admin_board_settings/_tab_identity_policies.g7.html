@@ -2,26 +2,26 @@
 <partial description="환경설정 > 인증 탭 내 S1d 정책 관리 서브섹션 (DataGrid + 편집 모달 포함 X — 모달은 별도 partial)">
   <div data-ref="tab_content_identity_policies" data-if="{{(_global.activeBoardSettingsTab || query.tab) === 'identity_policies'}}">
     <!-- 본인인증 정책 조회 권한(`sirsoft-board.identity.policies.read`)이 없으면 목록이 403 이다 — 탭 내용 대신 이유를 보인다 -->
-    <div data-ref="identity_policies_no_permission" data-if="{{_computed.identityPoliciesNoReadPermission}}" class="admin-card">
-      <div class="flex gap-2 text-tertiary">
-        <icon name="lock" size="sm" class="mt-0.5 flex-shrink-0"/>
+    <div data-ref="identity_policies_no_permission" data-if="{{_computed.identityPoliciesNoReadPermission}}" class="board-admin-card">
+      <div class="board:flex board:gap-2 board-text-tertiary">
+        <icon name="lock" size="sm" class="board:mt-0.5 board:flex-shrink-0"/>
         <span>$t:sirsoft-board.admin.settings.identity.no_read_permission</span>
       </div>
     </div>
-    <div data-ref="page_root" data-if="{{!_computed.identityPoliciesNoReadPermission}}" class="admin-card">
+    <div data-ref="page_root" data-if="{{!_computed.identityPoliciesNoReadPermission}}" class="board-admin-card">
       <!-- 수정 권한(`sirsoft-board.identity.policies.update`)이 없으면 읽기 전용이다 — 추가·토글·편집은 잠기고 삭제는 숨는다(목록 응답 abilities). 응답을 받기 전에는 띄우지 않는다 -->
-      <div data-ref="identity_policies_read_only_notice" data-if="{{boardIdentityPolicies?.data?.abilities?.can_update === false}}" class="alert-warning mb-4">
-        <icon name="lock" size="lg" class="text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-xs board-tone-warning">$t:sirsoft-board.admin.settings.identity.read_only_notice</span>
+      <div data-ref="identity_policies_read_only_notice" data-if="{{boardIdentityPolicies?.data?.abilities?.can_update === false}}" class="board-alert-warning board:mb-4">
+        <icon name="lock" size="lg" class="board:text-amber-600 board:dark:text-amber-400 board:flex-shrink-0"/>
+        <span class="board:text-xs board-tone-warning">$t:sirsoft-board.admin.settings.identity.read_only_notice</span>
       </div>
-      <div class="card-description">$t:sirsoft-board.admin.settings.identity.purposes_section_description</div>
-      <div data-ref="page_header" class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-6">
+      <div class="board-card-description">$t:sirsoft-board.admin.settings.identity.purposes_section_description</div>
+      <div data-ref="page_header" class="board:flex board:flex-col board:gap-2 board:md:flex-row board:md:items-center board:md:justify-between board:mb-6">
         <div>
-          <h3 class="section-title">$t:admin.identity.policies.page_title</h3>
-          <p class="text-label-subtle">$t:admin.identity.policies.page_description</p>
+          <h3 class="board-section-title">$t:admin.identity.policies.page_title</h3>
+          <p class="board-text-label-subtle">$t:admin.identity.policies.page_description</p>
         </div>
         <div>
-          <button type="button" class="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600 dark:disabled:hover:bg-indigo-500" disabled="{{boardIdentityPolicies?.data?.abilities?.can_create !== true}}">
+          <button type="button" class="board:px-4 board:py-2 board:text-sm board:font-medium board:bg-indigo-600 board:hover:bg-indigo-700 board:dark:bg-indigo-500 board:dark:hover:bg-indigo-600 board:text-white board:rounded-lg board:transition-colors board:whitespace-nowrap board:disabled:opacity-50 board:disabled:cursor-not-allowed board:disabled:hover:bg-indigo-600 board:dark:disabled:hover:bg-indigo-500" disabled="{{boardIdentityPolicies?.data?.abilities?.can_create !== true}}">
             <on type="click">
               <!-- 새 정책 — 빈 폼이 아니라 «기본값이 채워진» 폼 객체를 통째로 만들어 두고 창을 연다. 폼 조각은 이 객체만 읽으므로 여기서 넣지 않은 칸은 화면에서 빈 채로 시작한다 -->
               <sequence>
@@ -60,19 +60,19 @@
           </button>
         </div>
       </div>
-      <div data-ref="identity_purposes_card" class="mb-6 p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
-        <h4 class="text-primary text-sm font-semibold mb-2">$t:sirsoft-board.admin.settings.identity.purposes_section_title</h4>
-        <div class="flex flex-wrap gap-2">
-          <span data-each="purpose in (boardIdentityPurposes?.data ?? []).filter(p => p.source_identifier === 'sirsoft-board')" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300" title="{{(purpose.description ?? '') + ((purpose.allowed_channels ?? []).length > 0 ? ' [' + (purpose.allowed_channels ?? []).join(', ') + ']' : '')}}">
-            <span class="font-mono text-[10px] text-indigo-600 dark:text-indigo-400">{{purpose.id}}</span>
+      <div data-ref="identity_purposes_card" class="board:mb-6 board:p-4 board:bg-gray-50 board:dark:bg-gray-900 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg">
+        <h4 class="board-text-primary board:text-sm board:font-semibold board:mb-2">$t:sirsoft-board.admin.settings.identity.purposes_section_title</h4>
+        <div class="board:flex board:flex-wrap board:gap-2">
+          <span data-each="purpose in (boardIdentityPurposes?.data ?? []).filter(p => p.source_identifier === 'sirsoft-board')" class="board:inline-flex board:items-center board:gap-1.5 board:px-2.5 board:py-1 board:rounded-full board:text-xs board:font-medium board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:text-gray-700 board:dark:text-gray-300" title="{{(purpose.description ?? '') + ((purpose.allowed_channels ?? []).length > 0 ? ' [' + (purpose.allowed_channels ?? []).join(', ') + ']' : '')}}">
+            <span class="board:font-mono board:text-[10px] board:text-indigo-600 board:dark:text-indigo-400">{{purpose.id}}</span>
             <span>{{purpose.label ?? purpose.id}}</span>
           </span>
-          <span data-if="{{boardIdentityPurposes !== undefined &amp;&amp; ((boardIdentityPurposes?.data ?? []).filter(p => p.source_identifier === 'sirsoft-board').length === 0)}}" class="text-tertiary italic">$t:sirsoft-board.admin.settings.identity.purposes_empty</span>
+          <span data-if="{{boardIdentityPurposes !== undefined &amp;&amp; ((boardIdentityPurposes?.data ?? []).filter(p => p.source_identifier === 'sirsoft-board').length === 0)}}" class="board-text-tertiary board:italic">$t:sirsoft-board.admin.settings.identity.purposes_empty</span>
         </div>
       </div>
-      <div data-ref="filter_card" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 flex flex-col gap-2 md:flex-row md:items-center">
+      <div data-ref="filter_card" class="board:bg-gray-50 board:dark:bg-gray-900 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg board:p-4 board:mb-6 board:flex board:flex-col board:gap-2 board:md:flex-row board:md:items-center">
         <!-- 필터는 설정 폼의 일부가 아니다 — 자동바인딩되면 form.filter.* 에 남고 설정 「변경 있음」을 켜 탭 전환 확인 창까지 오탐으로 띄운다(7.1.0 실측). 값은 쿼리로만 다룬다. -->
-        <select name="filter.scope" aria-label="$t:admin.identity.policies.col.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="text-primary w-full md:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+        <select name="filter.scope" aria-label="$t:admin.identity.policies.col.scope" :autoBinding="false" value="{{query.scope ?? ''}}" class="board:text-gray-700 board:dark:text-gray-200 board:w-full board:md:w-40 board:px-3 board:py-2 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:bg-white board:dark:bg-gray-800 board:text-sm">
           <options>
             <option value="">$t:admin.identity.policies.all_scopes</option>
             <option value="route">$t:admin.identity.policies.scope.route</option>
@@ -93,7 +93,7 @@
           </on>
         </select>
         <!-- 검색칸도 설정 폼의 일부가 아니다 — 입력 중인 검색어는 로컬 상태에만 담고(자동바인딩 대신 직접 받는다), 조회는 Enter 나 검색 버튼이 쿼리로 실어 낸다. 코어 환경설정과 같은 방식. -->
-        <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="input md:flex-1 md:min-w-[200px]">
+        <input type="text" name="filter.search" :autoBinding="false" value="{{_local.identityPolicySearch ?? query.search ?? ''}}" placeholder="$t:admin.identity.policies.search_placeholder" class="board-input board:md:flex-1 board:md:min-w-[200px]">
           <on type="change">
             <!-- 입력 중인 검색어를 로컬 상태에 받아 둔다 — 조회는 Enter 나 검색 버튼이 이 값을 쿼리로 실어 낸다 -->
             <set-state target="local" identityPolicySearch="{{$event.target.value}}"/>
@@ -111,7 +111,7 @@
             </navigate>
           </on>
         </input>
-        <button type="button" class="px-4 py-2 text-sm font-medium bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100">
+        <button type="button" class="board:px-4 board:py-2 board:text-sm board:font-medium board:bg-gray-900 board:dark:bg-white board:text-white board:dark:text-gray-900 board:rounded-lg board:hover:bg-gray-800 board:dark:hover:bg-gray-100">
           <on type="click">
             <!-- Enter 키와 같이 입력값을 쿼리로 실어 옮긴다 — 다시 받기만 하면 입력 중인 검색어가 반영되지 않는다. -->
             <navigate path="/admin/boards/settings" :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="boardIdentityPolicies">
@@ -126,7 +126,7 @@
           </on>
           <span>$t:common.search</span>
         </button>
-        <button data-if="{{(query.scope ?? '') !== '' || (query.search ?? '') !== ''}}" type="button" class="px-4 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+        <button data-if="{{(query.scope ?? '') !== '' || (query.search ?? '') !== ''}}" type="button" class="board:px-4 board:py-2 board:text-sm board:font-medium board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:text-gray-700 board:dark:text-gray-200 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700">
           <on type="click">
             <!-- 입력창의 미제출 검색어도 함께 비운다 — 상태만 남으면 초기화가 안 된 것으로 보인다. -->
             <set-state target="local" identityPolicySearch=""/>
@@ -146,32 +146,32 @@
           <span>$t:admin.identity.policies.reset_filters</span>
         </button>
       </div>
-      <div data-ref="policy_table_card" class="admin-card">
-        <div data-ref="policy_table_desktop" class="overflow-x-auto">
+      <div data-ref="policy_table_card" class="board-admin-card">
+        <div data-ref="policy_table_desktop" class="board:overflow-x-auto">
           <responsive on="mobile" data-if="{{false}}"/>
-          <table class="w-full text-sm">
-            <thead class="bg-gray-50 dark:bg-gray-700/50">
+          <table class="board:w-full board:text-sm">
+            <thead class="board:bg-gray-50 board:dark:bg-gray-700/50">
               <tr>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.key</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.scope</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.target</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.purpose</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.grace_minutes</th>
-                <th class="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.priority</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.enabled</th>
-                <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300">$t:admin.identity.policies.col.source_type</th>
-                <th class="px-3 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300">$t:common.actions</th>
+                <th class="board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300">$t:admin.identity.policies.col.key</th>
+                <th class="board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300">$t:admin.identity.policies.col.scope</th>
+                <th class="board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300">$t:admin.identity.policies.col.target</th>
+                <th class="board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300">$t:admin.identity.policies.col.purpose</th>
+                <th class="board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300">$t:admin.identity.policies.col.grace_minutes</th>
+                <th class="board:px-3 board:py-2 board:text-right board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300">$t:admin.identity.policies.col.priority</th>
+                <th class="board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300">$t:admin.identity.policies.col.enabled</th>
+                <th class="board:px-3 board:py-2 board:text-left board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300">$t:admin.identity.policies.col.source_type</th>
+                <th class="board:px-3 board:py-2 board:text-right board:text-xs board:font-semibold board:text-gray-700 board:dark:text-gray-300">$t:common.actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr data-each="policy in boardIdentityPolicies?.data?.data ?? []" class="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                <td class="px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs">{{policy.key ?? ''}}</td>
-                <td class="px-3 py-2 text-gray-700 dark:text-gray-300">$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</td>
-                <td class="px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs truncate max-w-xs">{{policy.target ?? ''}}</td>
-                <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{(boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}</td>
-                <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right">{{policy.grace_minutes ?? 0}}</td>
-                <td class="px-3 py-2 text-gray-700 dark:text-gray-300 text-right tabular-nums">{{policy.priority ?? 100}}</td>
-                <td class="px-3 py-2">
+              <tr data-each="policy in boardIdentityPolicies?.data?.data ?? []" class="board:border-t board:border-gray-200 board:dark:border-gray-700 board:hover:bg-gray-50 board:dark:hover:bg-gray-700/30">
+                <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:font-mono board:text-xs">{{policy.key ?? ''}}</td>
+                <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300">$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</td>
+                <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:font-mono board:text-xs board:truncate board:max-w-xs">{{policy.target ?? ''}}</td>
+                <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300">{{(boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}</td>
+                <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:text-right">{{policy.grace_minutes ?? 0}}</td>
+                <td class="board:px-3 board:py-2 board:text-gray-700 board:dark:text-gray-300 board:text-right board:tabular-nums">{{policy.priority ?? 100}}</td>
+                <td class="board:px-3 board:py-2">
                   <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" ariaLabel="$t:common.row_cell|row={{((boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose) ? ((boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose) + ' (' + (policy.key ?? '') + ')' : (policy.key ?? '')}}|column={{$t('admin.identity.policies.col.enabled')}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                     <on type="change">
                       <!-- 표 판(넓은 화면)에서 정책을 바로 켜고 끈다. 실패해도 목록을 다시 읽는 이유는 화면의 토글이 이미 뒤집혀 있기 때문이다 — 서버 값으로 되돌려야 거짓 상태가 남지 않는다 -->
@@ -193,11 +193,11 @@
                     </on>
                   </toggle>
                 </td>
-                <td class="px-3 py-2">
-                  <span class="{{policy.source_type === 'admin' ? 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-xs board-tone-info' : 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-xs board-tone-warning'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
+                <td class="board:px-3 board:py-2">
+                  <span class="{{policy.source_type === 'admin' ? 'board:inline-block board:whitespace-nowrap board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-blue-100 board:dark:bg-blue-900 board:text-xs board-tone-info' : 'board:inline-block board:whitespace-nowrap board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-yellow-100 board:dark:bg-yellow-900 board:text-xs board-tone-warning'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
                 </td>
-                <td class="px-3 py-2 text-right whitespace-nowrap">
-                  <button type="button" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600" disabled="{{policy.abilities?.can_update !== true}}">
+                <td class="board:px-3 board:py-2 board:text-right board:whitespace-nowrap">
+                  <button type="button" class="board:text-sm board:px-3 board:py-1.5 board:rounded-md board:bg-indigo-600 board:text-white board:hover:bg-indigo-700 board:dark:bg-indigo-500 board:dark:hover:bg-indigo-600 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed board:disabled:hover:bg-indigo-600" disabled="{{policy.abilities?.can_update !== true}}">
                     <on type="click">
                       <!-- 표 판의 편집 — 이 줄을 폼 객체로 옮겨 담고 창을 연다. 「새로 만들기」와 같은 모양의 객체를 채우되 `isNew` 만 false 라, 폼 조각은 한 벌로 두 경우를 겸한다 -->
                       <sequence>
@@ -235,7 +235,7 @@
                     </on>
                     $t:common.edit
                   </button>
-                  <button data-if="{{policy.source_type === 'admin' &amp;&amp; policy.abilities?.can_delete === true}}" type="button" class="ml-2 text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
+                  <button data-if="{{policy.source_type === 'admin' &amp;&amp; policy.abilities?.can_delete === true}}" type="button" class="board:ml-2 board:text-sm board:px-3 board:py-1.5 board:rounded-md board:border board:border-red-300 board:dark:border-red-600 board:text-red-700 board:dark:text-red-400 board:hover:bg-red-50 board:dark:hover:bg-red-900/30 board:transition-colors">
                     <on type="click">
                       <!-- 표 판의 삭제 — 지울 대상을 전역에 실은 뒤 확인 창을 연다. 이 버튼은 관리자가 직접 만든 정책(`source_type=admin`)에만 나온다 — 확장이 심은 정책은 코드가 기대하는 자리라 화면에서 지우지 못하게 한다 -->
                       <sequence>
@@ -250,29 +250,29 @@
             </tbody>
           </table>
         </div>
-        <div data-ref="policy_cards_mobile" data-if="{{false}}" class="divider-list">
+        <div data-ref="policy_cards_mobile" data-if="{{false}}" class="board-divider-list">
           <responsive on="mobile" data-if="{{true}}"/>
-          <div data-each="policy in boardIdentityPolicies?.data?.data ?? []" class="p-4">
-            <div class="flex-start justify-between gap-3">
-              <div class="flex-1 min-w-0">
-                <div class="text-primary font-mono text-xs break-all">{{policy.key ?? ''}}</div>
-                <div class="form-hint">
+          <div data-each="policy in boardIdentityPolicies?.data?.data ?? []" class="board:p-4">
+            <div class="board-flex-start board:justify-between board:gap-3">
+              <div class="board:flex-1 board:min-w-0">
+                <div class="board-text-primary board:font-mono board:text-xs board:break-all board-break-all">{{policy.key ?? ''}}</div>
+                <div class="board-form-hint">
                   <span>$t:admin.identity.policies.scope.{{policy.scope ?? 'route'}}</span>
-                  <span class="mx-1.5 text-gray-500 dark:text-gray-400">·</span>
-                  <span class="font-mono break-all">{{policy.target ?? ''}}</span>
+                  <span class="board:mx-1.5 board:text-gray-500 board:dark:text-gray-400">·</span>
+                  <span class="board:font-mono board:break-all board-break-all">{{policy.target ?? ''}}</span>
                 </div>
               </div>
-              <span class="{{policy.source_type === 'admin' ? 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-xs board-tone-info flex-shrink-0' : 'inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-xs board-tone-warning flex-shrink-0'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
+              <span class="{{policy.source_type === 'admin' ? 'board:inline-block board:whitespace-nowrap board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-blue-100 board:dark:bg-blue-900 board:text-xs board-tone-info board:flex-shrink-0' : 'board:inline-block board:whitespace-nowrap board:px-2 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-yellow-100 board:dark:bg-yellow-900 board:text-xs board-tone-warning board:flex-shrink-0'}}">$t:admin.identity.policies.source.{{policy.source_type ?? 'core'}}</span>
             </div>
-            <div class="flex-between gap-3">
-              <div class="text-tertiary">
+            <div class="board-flex-between board:gap-3">
+              <div class="board-text-tertiary">
                 <span>{{(boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose ?? '-'}}</span>
-                <span class="mx-1.5 text-gray-500 dark:text-gray-400">·</span>
+                <span class="board:mx-1.5 board:text-gray-500 board:dark:text-gray-400">·</span>
                 <span>$t:admin.identity.policies.col.grace_minutes</span>
-                <span class="ml-1 font-medium text-gray-700 dark:text-gray-300">{{policy.grace_minutes ?? 0}}</span>
-                <span class="mx-1.5 text-gray-500 dark:text-gray-400">·</span>
+                <span class="board:ml-1 board:font-medium board:text-gray-700 board:dark:text-gray-300">{{policy.grace_minutes ?? 0}}</span>
+                <span class="board:mx-1.5 board:text-gray-500 board:dark:text-gray-400">·</span>
                 <span>$t:admin.identity.policies.col.priority</span>
-                <span class="ml-1 font-medium text-gray-700 dark:text-gray-300 tabular-nums">{{policy.priority ?? 100}}</span>
+                <span class="board:ml-1 board:font-medium board:text-gray-700 board:dark:text-gray-300 board:tabular-nums">{{policy.priority ?? 100}}</span>
               </div>
               <toggle data-type="composite" checked="{{Boolean(policy.enabled)}}" ariaLabel="$t:common.row_cell|row={{((boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose) ? ((boardIdentityPurposes?.data ?? []).find(p => p.id === policy.purpose)?.label ?? policy.purpose) + ' (' + (policy.key ?? '') + ')' : (policy.key ?? '')}}|column={{$t('admin.identity.policies.col.enabled')}}" size="sm" disabled="{{policy.abilities?.can_update !== true}}">
                 <on type="change">
@@ -295,8 +295,8 @@
                 </on>
               </toggle>
             </div>
-            <div class="flex-center justify-end gap-2">
-              <button type="button" class="text-sm px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600" disabled="{{policy.abilities?.can_update !== true}}">
+            <div class="board-flex-center board:justify-end board:gap-2">
+              <button type="button" class="board:text-sm board:px-3 board:py-1.5 board:rounded-md board:bg-indigo-600 board:text-white board:hover:bg-indigo-700 board:dark:bg-indigo-500 board:dark:hover:bg-indigo-600 board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed board:disabled:hover:bg-indigo-600" disabled="{{policy.abilities?.can_update !== true}}">
                 <on type="click">
                   <!-- 좁은 화면 카드 판의 편집 — 표 판과 같은 객체를 같은 값으로 채운다 -->
                   <sequence>
@@ -334,7 +334,7 @@
                 </on>
                 $t:common.edit
               </button>
-              <button data-if="{{policy.source_type === 'admin' &amp;&amp; policy.abilities?.can_delete === true}}" type="button" class="text-sm px-3 py-1.5 rounded-md border border-red-300 dark:border-red-600 text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors">
+              <button data-if="{{policy.source_type === 'admin' &amp;&amp; policy.abilities?.can_delete === true}}" type="button" class="board:text-sm board:px-3 board:py-1.5 board:rounded-md board:border board:border-red-300 board:dark:border-red-600 board:text-red-700 board:dark:text-red-400 board:hover:bg-red-50 board:dark:hover:bg-red-900/30 board:transition-colors">
                 <on type="click">
                   <!-- 좁은 화면 카드 판의 삭제 — 표 판과 같은 대상 키를 쓴다 -->
                   <sequence>
@@ -347,11 +347,11 @@
             </div>
           </div>
         </div>
-        <div data-if="{{boardIdentityPolicies !== undefined &amp;&amp; ((boardIdentityPolicies?.data?.data ?? []).length === 0)}}" class="py-10 text-center text-label-subtle">$t:admin.identity.policies.empty</div>
-        <div data-ref="policy_pagination" class="footer-buttons-between">
-          <span class="text-tertiary">$t:admin.identity.policies.pagination_summary|total={{boardIdentityPolicies?.data?.meta?.total ?? 0}}|page={{boardIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{boardIdentityPolicies?.data?.meta?.last_page ?? '-'}}</span>
-          <div class="flex-center gap-1">
-            <a href="/admin/boards/settings?tab=identity_policies&amp;page={{Math.max(1, (boardIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}" :mergeQuery="true" disabled="{{(boardIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}" class="button px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
+        <div data-if="{{boardIdentityPolicies !== undefined &amp;&amp; ((boardIdentityPolicies?.data?.data ?? []).length === 0)}}" class="board:py-10 board:text-center board-text-label-subtle">$t:admin.identity.policies.empty</div>
+        <div data-ref="policy_pagination" class="board-footer-buttons-between">
+          <span class="board-text-tertiary">$t:admin.identity.policies.pagination_summary|total={{boardIdentityPolicies?.data?.meta?.total ?? 0}}|page={{boardIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{boardIdentityPolicies?.data?.meta?.last_page ?? '-'}}</span>
+          <div class="board-flex-center board:gap-1">
+            <a href="/admin/boards/settings?tab=identity_policies&amp;page={{Math.max(1, (boardIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}" :mergeQuery="true" disabled="{{(boardIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}" class="board-button board:px-3 board:py-1.5 board:text-xs board:font-medium board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:text-gray-700 board:dark:text-gray-200 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:aria-disabled:opacity-50 board:aria-disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 이전 쪽 — 1 밑으로 내려가지 않게 바닥을 잡아 둔다(버튼 자체도 첫 쪽에서는 잠긴다). 쪽수만 URL 에 다시 적으므로 걸어 둔 범위·검색은 그대로 남는다 -->
                 <navigate :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="boardIdentityPolicies">
@@ -366,8 +366,8 @@
               </on>
               <span>$t:common.prev</span>
             </a>
-            <span class="px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-200">$t:admin.identity.policies.page_indicator|page={{boardIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{boardIdentityPolicies?.data?.meta?.last_page ?? '-'}}</span>
-            <a href="/admin/boards/settings?tab=identity_policies&amp;page={{boardIdentityPolicies?.data?.meta?.last_page ? Math.min(boardIdentityPolicies?.data?.meta?.last_page, (boardIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((boardIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}" :mergeQuery="true" disabled="{{boardIdentityPolicies?.data?.meta?.last_page ? ((boardIdentityPolicies?.data?.meta?.current_page ?? 1) >= boardIdentityPolicies?.data?.meta?.last_page) : (boardIdentityPolicies?.data?.meta?.has_more_pages !== true)}}" class="button px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
+            <span class="board:px-3 board:py-1.5 board:text-xs board:font-medium board:text-gray-700 board:dark:text-gray-200">$t:admin.identity.policies.page_indicator|page={{boardIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{boardIdentityPolicies?.data?.meta?.last_page ?? '-'}}</span>
+            <a href="/admin/boards/settings?tab=identity_policies&amp;page={{boardIdentityPolicies?.data?.meta?.last_page ? Math.min(boardIdentityPolicies?.data?.meta?.last_page, (boardIdentityPolicies?.data?.meta?.current_page ?? 1) + 1) : ((boardIdentityPolicies?.data?.meta?.current_page ?? 1) + 1)}}" :mergeQuery="true" disabled="{{boardIdentityPolicies?.data?.meta?.last_page ? ((boardIdentityPolicies?.data?.meta?.current_page ?? 1) >= boardIdentityPolicies?.data?.meta?.last_page) : (boardIdentityPolicies?.data?.meta?.has_more_pages !== true)}}" class="board-button board:px-3 board:py-1.5 board:text-xs board:font-medium board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:text-gray-700 board:dark:text-gray-200 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:aria-disabled:opacity-50 board:aria-disabled:cursor-not-allowed">
               <on type="click">
                 <!-- 다음 쪽 — 마지막 쪽을 넘지 않게 천장을 잡아 둔다. 이전 쪽 버튼과 대칭이다 -->
                 <navigate :replace="true" :mergeQuery="true" transition_overlay_target="policy_table_card" refetch_data_sources="boardIdentityPolicies">
