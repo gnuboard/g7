@@ -55,5 +55,5 @@ _프론트 엔트리포인트가 없습니다._
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-스타일은 `g7pp-` 접두의 플러그인 소유 CSS 다 — 확장 컴포넌트의 유틸리티 클래스는 템플릿 빌드에 들어 있다는 보장이 없다. 다크 모드는 `.dark` 조상 아래에서 바탕·띠·단추만 바꾼다. 배포 빌드는 `php artisan plugin:build sirsoft-popup --production`(소스맵 없음).
+스타일은 `g7pp-` 접두의 플러그인 소유 CSS 다 — 확장 컴포넌트의 유틸리티 클래스는 템플릿 빌드에 들어 있다는 보장이 없다. 관리자 미리보기(`PopupPreview`)는 같은 레이어를 기기 크기 틀 안에 줄여 그리며, 틀이 화면 높이를 CSS 변수 `--g7pp-frame-h` 로 넘기고 미리보기 본문 높이는 그 값으로 잰다. 다크 모드는 `.dark` 조상 아래에서 바탕·띠·단추만 바꾼다. 배포 빌드는 `php artisan plugin:build sirsoft-popup --production`(소스맵 없음).
 <!-- @intent END -->

@@ -42,7 +42,12 @@ export const test = base.extend<PopupFixtures>({
     const ids: number[] = [];
     await use(ids);
     for (const id of ids) {
-      await request.delete(`${API}/admin/popups/${id}`, { headers: auth(managerToken) });
+      // 연결이 끊기는 일시 오류(ECONNRESET 등)는 한 번만 다시 시도한다 — 두 번째도 실패하면 남은 데이터를 숨기지 않게 그대로 실패시킨다
+      try {
+        await request.delete(`${API}/admin/popups/${id}`, { headers: auth(managerToken) });
+      } catch {
+        await request.delete(`${API}/admin/popups/${id}`, { headers: auth(managerToken) });
+      }
     }
   },
 });

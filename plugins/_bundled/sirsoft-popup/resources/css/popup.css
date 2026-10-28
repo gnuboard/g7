@@ -378,8 +378,18 @@
   max-width: calc(100% - 32px);
 }
 
+/* 미리보기의 화면 높이는 틀이 넘겨 준 --g7pp-frame-h 로 잰다 — 대화상자 높이가 정해져 있지 않아 100% 는 풀리지 않고,
+   본문이 0px 로 접혀 이미지·본문이 보이지 않는다. vh 는 관리자 창 기준이라 쓰지 않는다 */
 .g7pp-root--preview .g7pp-body {
-  height: min(var(--g7pp-body-h), calc(100% - 160px));
+  height: min(var(--g7pp-body-h), calc(var(--g7pp-frame-h, 800px) - 160px));
+}
+
+.g7pp-root--preview .g7pp-dialog--m-center {
+  --g7pp-body-h: min(calc(var(--g7pp-frame-h, 780px) * 0.7), 420px);
+}
+
+.g7pp-root--preview .g7pp-dialog--m-sheet {
+  --g7pp-body-h: min(calc(var(--g7pp-frame-h, 780px) * 0.6), 380px);
 }
 
 .g7pp-sample {

@@ -251,6 +251,29 @@ test.describe('관리자 화면', () => {
     expect(shown.indexOf(b)).toBeLessThan(shown.indexOf(a));
   });
 
+  // @scenario flow=admin_preview_shows_content, viewport=desktop
+  // @effects test_data_cleaned_up
+  test('관리자 미리보기(수정 화면 PC·모바일, 환경설정)는 본문이 접히지 않고 이미지가 보인다', async ({ page, request, managerToken, created }) => {
+    const id = await createImagePopup(request, managerToken);
+    created.push(id);
+    const previewBodyHeight = async (): Promise<number> => (await page.locator('.g7pp-root--preview .g7pp-body').first().boundingBox())?.height ?? 0;
+
+    await authenticatePage(page, managerToken);
+    await page.goto(`${ADMIN_LIST}/${id}/edit`);
+    const img = page.locator('.g7pp-root--preview .g7pp-media__img').first();
+    await expect(img).toBeVisible();
+    expect(await previewBodyHeight()).toBeGreaterThan(20);
+    expect((await img.boundingBox())?.height ?? 0).toBeGreaterThan(20);
+
+    await page.locator('#preview_device_mobile').click();
+    await expect(page.locator('[data-preview-device="mobile"]')).toBeVisible();
+    expect(await previewBodyHeight()).toBeGreaterThan(20);
+
+    await page.goto('/admin/plugins/sirsoft-popup/settings');
+    await expect(page.locator('.g7pp-root--preview .g7pp-sample').first()).toBeVisible();
+    expect(await previewBodyHeight()).toBeGreaterThan(20);
+  });
+
   // @scenario flow=read_only_admin_cannot_edit, viewport=desktop
   // @effects user_screen_reflects_admin_change, test_data_cleaned_up
   test('조회 권한만 있는 관리자는 등록·일괄 작업·순서 변경 단추가 없다', async ({ page, request, managerToken, readerToken, created }) => {

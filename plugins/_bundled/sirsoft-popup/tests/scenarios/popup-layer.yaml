@@ -51,6 +51,7 @@ axes:
     - image_falls_back_to_pc_on_mobile
     - device_follows_engine_width
     - preview_mobile_shows_mobile_image
+    - preview_body_height_from_frame
     - controls_at_least_44px
     - link_popup_uses_covering_link_without_nested_focusables
     - link_new_window_rel_noopener

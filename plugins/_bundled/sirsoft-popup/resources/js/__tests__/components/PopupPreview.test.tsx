@@ -77,6 +77,22 @@ describe('PopupPreview', () => {
     expect(pc.querySelector('.g7pp-media img')?.getAttribute('src')).toBe('/img/pc.jpg');
   });
 
+  // @scenario surface=preview_body_height_from_frame
+  it('미리보기 본문 높이는 틀 높이(--g7pp-frame-h)로 잰다 — 100% 는 높이 없는 대화상자에서 풀리지 않아 0px 로 접힌다', async () => {
+    installCore();
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
+    const { container } = render(<PopupPreview device="mobile" settings={{}} />);
+    const screen = container.querySelector('.g7pp-frame__screen') as HTMLElement;
+    expect(screen.style.getPropertyValue('--g7pp-frame-h')).toBe('780px');
+
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+    const body = css.match(/\.g7pp-root--preview \.g7pp-body\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(body).toContain('var(--g7pp-frame-h');
+    expect(body).not.toMatch(/100%/);
+  });
+
   /** @effects preview_sample_slides */
   it('폼이 없으면(환경설정 화면) 표본 3장을 그린다', () => {
     window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;

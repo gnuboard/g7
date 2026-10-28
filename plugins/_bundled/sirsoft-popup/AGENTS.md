@@ -116,6 +116,7 @@
 |---|---|---|
 | 레이어 폭 판정에 `window.matchMedia`·`<picture media>` | `G7Core.useResponsive()` 폭(없을 때만 `window.innerWidth`), 이미지는 레이어가 판정한 기기로 `src` 를 고른다 | 경계 폭 1px 어긋남과 편집기·관리자 미리보기(창이 넓다)에서 기기가 갈린다 |
 | `PopupLayer`·`PopupPreview` 를 템플릿 basic 컴포넌트(`Div`·`Button`)로 옮김 | 이 두 컴포넌트만 HTML 태그 + `g7pp-` 소유 CSS(**예외**). 관리 화면 조각(`PopupConflictResolver`·`PopupPeriodHint`)은 basic 컴포넌트 | 레이어는 어떤 사용자 템플릿에 붙어도 같은 모양·같은 접근성 구조(dialog·포커스 가둠)여야 하고, 템플릿마다 basic 컴포넌트의 클래스·마크업이 다르다 |
+| 미리보기 틀 안 높이를 `100%`·`vh` 로 잼 | 틀이 넘긴 `--g7pp-frame-h` 로 잰다(`.g7pp-root--preview` 규칙) | 대화상자 높이가 정해져 있지 않아 `100%` 는 풀리지 않고 본문이 0px 로 접힌다. `vh` 는 관리자 창 기준이다 |
 | 레이어 문구에 한국어 대체 문구를 박음 | `support/editor.ts` 의 `translate()`(전체 키) — 번역이 없으면 키가 보인다 | 번역 누락이 한국어로 가려지면 다른 언어 방문자에게만 드러난다 |
 <!-- @intent END -->
 

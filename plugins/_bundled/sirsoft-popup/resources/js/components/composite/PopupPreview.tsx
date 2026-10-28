@@ -127,7 +127,7 @@ export const PopupPreview: React.FC<PopupPreviewProps> = ({ device = 'pc', setti
 
   return (
     <div ref={boxRef} className={`g7pp-frame g7pp-frame--${device}`} style={{ aspectRatio: `${frame.width} / ${frame.height}` }} data-preview-device={device}>
-      <div className="g7pp-frame__screen" style={{ width: frame.width, height: frame.height, transform: `scale(${scale})` }}>
+      <div className="g7pp-frame__screen" style={{ width: frame.width, height: frame.height, transform: `scale(${scale})`, ['--g7pp-frame-h' as string]: `${frame.height}px` }}>
         <div className="g7pp-frame__page" aria-hidden="true">
           <span />
           <span />

@@ -22,6 +22,7 @@ axes:
     - bot_user_agent_gets_no_layer
     - plugin_deactivate_hides_layer
     - read_only_admin_cannot_edit
+    - admin_preview_shows_content
   viewport: [desktop, mobile]
 
 exclusions:
@@ -37,6 +38,9 @@ exclusions:
   - flow: plugin_deactivate_hides_layer
     viewport: mobile
     reason: 생애주기 흐름은 폭과 무관
+  - flow: admin_preview_shows_content
+    viewport: mobile
+    reason: 미리보기 틀 높이는 관리자 창 폭과 무관(틀 안 PC·모바일 전환을 데스크톱 한 흐름에서 함께 잰다)
 
 effects:
   - user_screen_reflects_admin_change
