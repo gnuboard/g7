@@ -45,6 +45,29 @@ describe('팝업 환경설정 화면', () => {
     expect(json(findById(settings, 'settings_preview'))).toContain('sirsoft-popup.PopupPreview');
   });
 
+  // @scenario surface=settings_back_link_to_list
+  it('머리 위 「팝업 관리로」 는 링크(href + navigate)이고, PageHeader 에는 없는 돌아가기 props 를 넘기지 않는다', () => {
+    const link = findById(settings, 'back_to_list_link')!;
+    expect(link.name).toBe('A');
+    expect(link.props.href).toBe('/admin/plugins/sirsoft-popup/popups');
+    expect(actionsOf(link, 'navigate')).toHaveLength(1);
+    expect(json(link)).toContain('$t:sirsoft-popup.settings.back_to_list');
+
+    expect(findById(settings, 'settings_breadcrumb')!.text).toBe('$t:sirsoft-popup.settings.breadcrumb');
+
+    const header = findById(settings, 'page_header')!;
+    expect(header.props.backPath).toBeUndefined();
+    expect(header.props.backLabel).toBeUndefined();
+  });
+
+  // @scenario surface=settings_mobile_style_description_shown
+  it('모바일 표시 방식 설명은 RadioGroup 선택지가 아니라 아래 안내 문단으로 보인다(선택지는 설명을 그리지 않는다)', () => {
+    expect(json(findById(settings, 'mobile_card'))).not.toContain('"description"');
+    const desc = findById(settings, 'mobile_style_desc')!;
+    expect(desc.text).toContain("sirsoft-popup.settings.mobile_style.");
+    expect(desc.text).toContain('_desc');
+  });
+
   /** @effects translation_keys_present */
   it('설정 화면이 쓰는 번역 키는 ko·en 모두에 있다', () => {
     for (const key of translationKeys(settings)) {

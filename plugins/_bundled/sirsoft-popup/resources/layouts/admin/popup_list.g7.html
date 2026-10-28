@@ -108,7 +108,7 @@
           </a>
         </div>
       </div>
-      <!-- 지금 노출 중 — 캐러셀 순서대로. 경로·대상·기기는 방문자마다 달라 기기 표시만 단다(PO 결정 #812 R10) -->
+      <!-- 지금 노출 중 — 캐러셀 순서대로. 경로·대상·기기는 방문자마다 달라 기기 표시만 단다(결정 R10) -->
       <section data-ref="summary_card" aria-labelledby="popup_summary_heading" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6 flex flex-col lg:flex-row lg:items-center gap-4">
         <div class="lg:w-1/5 shrink-0">
           <h2 id="popup_summary_heading" class="text-base font-semibold text-gray-900 dark:text-white">$t:sirsoft-popup.admin.summary.title|count={{(summary?.data?.data ?? []).length}}</h2>
@@ -342,6 +342,7 @@
         <column field="created_at_display" header="$t:sirsoft-popup.admin.list.column.created_at" width="160px"/>
         <prop name="rowActions">
           <item id="edit" href="/admin/plugins/sirsoft-popup/popups/{{row.id}}/edit" :mergeQuery="true" label="$t:sirsoft-popup.admin.list.action.edit" iconName="fa-regular fa-pen-to-square" disabledField="abilities.can_update"/>
+          <item id="toggle_active" label="$t:sirsoft-popup.admin.list.action.toggle_active" iconName="fa-regular fa-eye" disabledField="abilities.can_update"/>
           <item id="copy" label="$t:sirsoft-popup.admin.list.action.copy" iconName="fa-regular fa-copy" disabledField="abilities.can_update"/>
           <item id="divider" :divider="true"/>
           <item id="delete" label="$t:sirsoft-popup.admin.list.action.delete" iconName="fa-regular fa-trash-can" variant="danger" disabledField="abilities.can_delete"/>
@@ -363,6 +364,24 @@
               <navigate path="/admin/plugins/sirsoft-popup/popups/{{$args[1].id}}/edit" :mergeQuery="true">
                 <query/>
               </navigate>
+            </case>
+            <case when="toggle_active">
+              <!-- 행 하나의 노출·비노출 전환 — 일괄 노출/비노출과 같은 API 로 그 행의 반대 상태를 보낸다 -->
+              <sequence>
+                <set-state target="global" :isBulkWorking="true"/>
+                <api-call :auth_required="true" target="/api/plugins/sirsoft-popup/admin/popups/bulk-status" method="PATCH">
+                  <success>
+                    <set-state target="global" :isBulkWorking="false" :bulkSelectedIds="[]"/>
+                    <toast type="success" message="{{response.message}}"/>
+                    <action-ref name="reloadPopups"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :isBulkWorking="false"/>
+                    <toast type="error" message="{{error.message}}"/>
+                  </fail>
+                  <body ids="{{[$args[1].id]}}" is_active="{{!$args[1].is_active}}"/>
+                </api-call>
+              </sequence>
             </case>
             <case when="copy">
               <set-state target="global" bulkSelectedIds="{{[$args[1].id]}}"/>
@@ -394,7 +413,7 @@
           </on>
           $t:common.cancel
         </button>
-        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50" disabled="{{_global.isDeleting}}">
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50" disabled="{{_global.isDeleting}}">
           <on type="click">
             <sequence>
               <set-state target="global" :isDeleting="true"/>
@@ -435,7 +454,7 @@
           </on>
           $t:common.cancel
         </button>
-        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
+        <button type="button" class="flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50" disabled="{{_global.isBulkWorking}}">
           <on type="click">
             <sequence>
               <set-state target="global" :isBulkWorking="true"/>
@@ -461,7 +480,7 @@
     </modal>
   </modal>
   <modal>
-    <!-- 복사 확인 — 복사본은 비활성으로 맨 뒤에 붙는다(같은 팝업이 사용자 화면에 두 번 뜨지 않게, PO 결정 #812 R2) -->
+    <!-- 복사 확인 — 복사본은 비활성으로 맨 뒤에 붙는다(같은 팝업이 사용자 화면에 두 번 뜨지 않게, 결정 R2) -->
     <modal data-type="composite" data-ref="popup_bulk_copy_modal" title="$t:sirsoft-popup.admin.copy.title" size="medium">
       <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-popup.admin.copy.message|count={{(_global.bulkSelectedIds ?? []).length}}</p>
       <div class="modal-footer-buttons">
@@ -501,8 +520,8 @@
     <modal data-type="composite" data-ref="popup_reorder_modal" title="$t:sirsoft-popup.admin.reorder.title" size="md">
       <on type="click" event="onClose">
         <sequence>
-          <close-modal target="popup_reorder_modal"/>
           <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
+          <close-modal target="popup_reorder_modal"/>
         </sequence>
       </on>
       <div data-ref="reorder_modal_content" class="flex flex-col gap-3">
@@ -543,8 +562,8 @@
           <button type="button" class="btn btn-secondary" disabled="{{_global.reorderSaving}}">
             <on type="click">
               <sequence>
-                <close-modal target="popup_reorder_modal"/>
                 <set-state target="global" :reorderItems="null" :reorderOriginal="null" :reorderError="null"/>
+                <close-modal target="popup_reorder_modal"/>
               </sequence>
             </on>
             <span>$t:common.cancel</span>

@@ -3,14 +3,15 @@
 namespace Plugins\Sirsoft\Popup\Http\Requests\Admin;
 
 use App\Extension\HookManager;
+use App\Helpers\ResponseHelper;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Validator;
 use Plugins\Sirsoft\Popup\Enums\ContentType;
 use Plugins\Sirsoft\Popup\Enums\ImageDevice;
 use Plugins\Sirsoft\Popup\Http\Requests\Concerns\PopupFieldRules;
 use Plugins\Sirsoft\Popup\Repositories\Contracts\PopupImageRepositoryInterface;
 use Plugins\Sirsoft\Popup\Rules\SelectablePopupImage;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
  * 팝업 수정 요청 — 등록과 같은 규칙(대칭)에, 저장 때 바꿀 이미지(`pc_image_id`·`mobile_image_id`)와 세대 번호(`revision`)를 받는다.
@@ -37,7 +38,7 @@ class UpdatePopupRequest extends FormRequest
      *
      * @return void 반환값 없음
      *
-     * @throws ConflictHttpException 세대 번호가 다를 때
+     * @throws HttpResponseException 세대 번호가 다를 때(409)
      */
     protected function prepareForValidation(): void
     {
@@ -45,7 +46,7 @@ class UpdatePopupRequest extends FormRequest
         // 옛 이미지가 지워졌어도 이미지 422 보다 먼저 수정 충돌을 알린다
         $revision = filter_var($this->input('revision'), FILTER_VALIDATE_INT);
         if ($this->has('revision') && $revision !== false && $revision >= 0 && $this->route('popup')?->lock_version !== $revision) {
-            throw new ConflictHttpException(__('sirsoft-popup::messages.popup.conflict'));
+            throw new HttpResponseException(ResponseHelper::error('sirsoft-popup::messages.popup.conflict', 409));
         }
     }
 

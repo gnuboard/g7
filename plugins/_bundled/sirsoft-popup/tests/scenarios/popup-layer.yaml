@@ -47,8 +47,11 @@ axes:
     - sheet_lifts_above_gdpr_banner
     - sheet_rests_at_bottom_without_gdpr_banner
     - z_index_below_gdpr_banner
-    - image_uses_picture_with_mobile_source
+    - image_uses_mobile_source_on_mobile
     - image_falls_back_to_pc_on_mobile
+    - device_follows_engine_width
+    - preview_mobile_shows_mobile_image
+    - controls_at_least_44px
     - link_popup_uses_covering_link_without_nested_focusables
     - link_new_window_rel_noopener
     - html_body_purified_on_render

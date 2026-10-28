@@ -23,7 +23,7 @@ use Plugins\Sirsoft\Popup\Repositories\Contracts\PopupRepositoryInterface;
 class PopupRepository implements PopupRepositoryInterface
 {
     /**
-     * 목록이 읽는 컬럼 — 화면이 그리는 것만 싣는다(본문·alt 는 상세에서).
+     * 목록이 읽는 컬럼 — 본문·alt 는 응답에 싣지 않고 채운 언어(`filled_locales`)를 계산하려고만 읽는다.
      *
      * @var array<int, string>
      */
@@ -358,12 +358,12 @@ class PopupRepository implements PopupRepositoryInterface
         $direction = $direction === 'desc' ? 'DESC' : 'ASC';
 
         return $query->orderByRaw(
-            'CASE WHEN is_active = 0 THEN ? '
+            'CASE WHEN is_active = ? THEN ? '
             .'WHEN display_period = ? AND starts_at > ? THEN ? '
             .'WHEN display_period = ? AND ends_at < ? THEN ? '
             .'ELSE ? END '.$direction,
             [
-                PopupStatus::Inactive->rank(),
+                false, PopupStatus::Inactive->rank(),
                 $range, $at, PopupStatus::Scheduled->rank(),
                 $range, $at, PopupStatus::Ended->rank(),
                 PopupStatus::Active->rank(),

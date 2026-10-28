@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Popup\Http\Controllers\Admin;
 
+use App\Exceptions\ConcurrentModificationException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -170,7 +171,12 @@ class PopupController extends AdminBaseController
      */
     public function update(UpdatePopupRequest $request, Popup $popup): JsonResponse
     {
-        $updated = $this->popups->update($popup, $request->validated(), $request->user()?->id);
+        try {
+            $updated = $this->popups->update($popup, $request->validated(), $request->user()?->id);
+        } catch (ConcurrentModificationException) {
+            // 검증 뒤 잠금을 잡기 전에 다른 관리자가 저장한 경우 — 검증 단계 409 와 같은 응답
+            return $this->error('sirsoft-popup::messages.popup.conflict', 409);
+        }
 
         return $this->success('sirsoft-popup::messages.popup.updated', $this->withSanitized($request, $updated));
     }

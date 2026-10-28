@@ -20,7 +20,7 @@ return new class extends Migration
         Schema::create('popups', function (Blueprint $table) {
             $table->id()->comment('팝업 ID');
             $table->string('title', 100)->comment('관리용 제목 (관리자 목록에만 보임, 다국어 아님)');
-            $table->boolean('is_active')->default(true)->comment('사용 여부');
+            $table->boolean('is_active')->default(true)->comment('사용 여부: true(노출 — 기간·대상 조건에 맞으면 보임), false(비노출)');
             $table->unsignedInteger('sort_order')->default(0)->comment('캐러셀 순서 (작을수록 앞)');
             $table->string('content_type', 10)->default('image')->comment('내용 유형: image(이미지형), html(직접 작성형)');
             $table->string('display_period', 10)->default('always')->comment('노출 기간: always(상시), range(기간 지정)');
@@ -32,7 +32,7 @@ return new class extends Migration
             $table->string('device', 10)->default('all')->comment('노출 기기: all(전체), pc, mobile');
             $table->text('image_alt')->nullable()->comment('이미지 대체 텍스트 (다국어 JSON)');
             $table->string('link_url', 2048)->nullable()->comment('이미지를 누르면 이동할 주소 (내부 경로 또는 http(s))');
-            $table->boolean('link_new_window')->default(false)->comment('새 창에서 열기');
+            $table->boolean('link_new_window')->default(false)->comment('링크 열기 방식: true(새 창), false(현재 창)');
             $table->longText('body_html')->nullable()->comment('직접 작성형 본문 (다국어 JSON, 저장 때 정화한 HTML)');
             $table->unsignedInteger('lock_version')->default(0)->comment('동시 수정 충돌 확인용 세대 번호');
             $table->unsignedBigInteger('created_by')->nullable()->comment('등록한 회원 ID');

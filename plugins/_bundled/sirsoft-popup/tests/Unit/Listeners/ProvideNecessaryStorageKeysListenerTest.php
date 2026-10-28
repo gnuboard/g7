@@ -10,7 +10,7 @@ use Plugins\Sirsoft\Popup\Tests\PluginTestCase;
 /**
  * GDPR 필수 저장 항목 제공 테스트 (매니페스트 listeners.yaml — GDPR 케이스)
  *
- * 「보지 않기」 쿠키 이름 하나를 GDPR 계약 훅의 cookie 스코프에 더한다(PO 결정 #812 D3·D6). GDPR 코드는 참조하지 않는다.
+ * 「보지 않기」 쿠키 이름 하나를 GDPR 계약 훅의 cookie 스코프에 더한다(결정 D3·D6). GDPR 코드는 참조하지 않는다.
  */
 class ProvideNecessaryStorageKeysListenerTest extends PluginTestCase
 {

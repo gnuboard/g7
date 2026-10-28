@@ -8,6 +8,8 @@ use Carbon\CarbonInterface;
  * 팝업 노출 상태 — 저장하지 않고 조회 시점에 기간·사용 여부로 계산한다(cron 없음, #810 과 같은 규칙).
  *
  * 판정 순서: 비활성 > 예약(시작 전) > 종료(종료 후) > 노출중. 정렬 순위도 이 Enum 의 `rank()` 를 따른다.
+ *
+ * `label()` 은 두지 않는다 — API 는 값만 싣고 화면이 값으로 프런트 다국어 키(`sirsoft-popup.…`)를 고른다.
  */
 enum PopupStatus: string
 {
@@ -69,5 +71,16 @@ enum PopupStatus: string
     public static function values(): array
     {
         return array_column(self::cases(), 'value');
+    }
+
+    /**
+     * 유효한 값인지 확인합니다.
+     *
+     * @param  string  $value  검증할 값
+     * @return bool 유효 여부
+     */
+    public static function isValid(string $value): bool
+    {
+        return in_array($value, self::values(), true);
     }
 }

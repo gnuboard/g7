@@ -445,6 +445,32 @@ class PopupControllerTest extends PluginTestCase
     }
 
     /**
+     * 검증을 통과한 뒤 잠금을 잡기 전에 다른 관리자가 저장해도 잠금 아래에서 세대 번호를 다시 확인해 409 로 막는다.
+     *
+     * 검증 단계 확인과 잠금 사이의 틈은 `filter_update_data`(트랜잭션 전에 발행) 리스너가 세대 번호를 올려 재현한다.
+     *
+     * @scenario surface=update_revision_rechecked_under_lock
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_revision_rechecked_under_lock(): void
+    {
+        $popup = Popup::factory()->withImages()->create(['title' => '처음 제목']);
+        HookManager::addFilter('sirsoft-popup.popup.filter_update_data', function (array $data) use ($popup) {
+            DB::table('popups')->where('id', $popup->id)->update(['title' => '틈에 저장', 'lock_version' => 1]);
+
+            return $data;
+        });
+
+        $this->actingAs($this->admin)->putJson($this->api('/admin/popups/'.$popup->id), $this->popupPayload(['title' => '늦은 저장', 'revision' => 0]))
+            ->assertStatus(409)
+            ->assertJsonPath('message', __('sirsoft-popup::messages.popup.conflict'));
+
+        $this->assertSame('틈에 저장', $popup->fresh()->title);
+        $this->assertSame(1, $popup->fresh()->lock_version);
+    }
+
+    /**
      * 수정 화면에서 올린 새 PC 이미지는 저장 때 붙고 옛 파일은 지워진다.
      *
      * @scenario surface=update_replaces_image_and_deletes_old_file

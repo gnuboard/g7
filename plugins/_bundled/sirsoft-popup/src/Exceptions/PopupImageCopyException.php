@@ -12,6 +12,19 @@ use RuntimeException;
 class PopupImageCopyException extends RuntimeException
 {
     /**
+     * PopupImageCopyException 생성자
+     *
+     * @param  string  $messageKey  다국어 메시지 키
+     * @param  array<string, mixed>  $messageParams  메시지 치환 파라미터
+     */
+    private function __construct(
+        private string $messageKey,
+        private array $messageParams,
+    ) {
+        parent::__construct(__($messageKey, $messageParams));
+    }
+
+    /**
      * 원본 파일이 저장소에 없을 때의 예외를 만듭니다.
      *
      * @param  int  $imageId  원본 이미지 ID
@@ -19,7 +32,7 @@ class PopupImageCopyException extends RuntimeException
      */
     public static function sourceMissing(int $imageId): self
     {
-        return new self(__('sirsoft-popup::exceptions.image_copy.source_missing', ['id' => $imageId]));
+        return new self('sirsoft-popup::exceptions.image_copy.source_missing', ['id' => $imageId]);
     }
 
     /**
@@ -30,6 +43,28 @@ class PopupImageCopyException extends RuntimeException
      */
     public static function writeFailed(int $imageId): self
     {
-        return new self(__('sirsoft-popup::exceptions.image_copy.write_failed', ['id' => $imageId]));
+        return new self('sirsoft-popup::exceptions.image_copy.write_failed', ['id' => $imageId]);
+    }
+
+    /**
+     * 다국어 메시지 키를 반환합니다.
+     *
+     * 응답·로그를 만들 때 이미 번역된 `getMessage()` 대신 이 키를 넘긴다 — 번역문을 키로 해석하면 원문이 그대로 나간다.
+     *
+     * @return string 다국어 메시지 키
+     */
+    public function getMessageKey(): string
+    {
+        return $this->messageKey;
+    }
+
+    /**
+     * 메시지 치환 파라미터를 반환합니다.
+     *
+     * @return array<string, mixed> 치환 파라미터
+     */
+    public function getMessageParams(): array
+    {
+        return $this->messageParams;
     }
 }

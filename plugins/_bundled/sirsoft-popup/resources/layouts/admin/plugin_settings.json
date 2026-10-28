@@ -84,14 +84,52 @@
                 },
                 "children": [
                     {
+                        "comment": "PageHeader 는 돌아가기 props 가 없다 — 목록으로 가는 링크를 머리 위에 따로 둔다",
+                        "id": "back_to_list_link",
+                        "type": "basic",
+                        "name": "A",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "navigate"
+                            }
+                        ],
+                        "props": {
+                            "href": "/admin/plugins/sirsoft-popup/popups",
+                            "className": "inline-flex items-center gap-1 mb-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "aria-hidden": "true"
+                                },
+                                "text": "‹"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:sirsoft-popup.settings.back_to_list"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "settings_breadcrumb",
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                            "className": "text-xs text-gray-500 dark:text-gray-400 mb-1"
+                        },
+                        "text": "$t:sirsoft-popup.settings.breadcrumb"
+                    },
+                    {
                         "id": "page_header",
                         "type": "composite",
                         "name": "PageHeader",
                         "props": {
                             "title": "$t:sirsoft-popup.settings.title",
-                            "description": "$t:sirsoft-popup.settings.description",
-                            "backPath": "/admin/plugins/sirsoft-popup/popups",
-                            "backLabel": "$t:sirsoft-popup.settings.back_to_list"
+                            "description": "$t:sirsoft-popup.settings.description"
                         }
                     },
                     {
@@ -392,16 +430,24 @@
                                                     "options": [
                                                         {
                                                             "label": "$t:sirsoft-popup.settings.mobile_style.center",
-                                                            "description": "$t:sirsoft-popup.settings.mobile_style.center_desc",
                                                             "value": "center"
                                                         },
                                                         {
                                                             "label": "$t:sirsoft-popup.settings.mobile_style.sheet",
-                                                            "description": "$t:sirsoft-popup.settings.mobile_style.sheet_desc",
                                                             "value": "sheet"
                                                         }
                                                     ]
                                                 }
+                                            },
+                                            {
+                                                "comment": "RadioGroup 선택지는 설명을 그리지 않는다 — 고른 방식의 설명을 아래에 둔다",
+                                                "id": "mobile_style_desc",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "form-hint mt-2"
+                                                },
+                                                "text": "{{$t('sirsoft-popup.settings.mobile_style.' + (_local.form?.mobile_style === 'center' ? 'center' : 'sheet') + '_desc')}}"
                                             }
                                         ]
                                     },
@@ -521,7 +567,7 @@
                                         ]
                                     },
                                     {
-                                        "comment": "닫기 옵션 — 「보지 않기」는 그때 보이던 팝업들을 그 기간 동안 숨기고, 그 뒤 새로 등록한 팝업은 바로 보인다(PO 결정 #812 D3)",
+                                        "comment": "닫기 옵션 — 「보지 않기」는 그때 보이던 팝업들을 그 기간 동안 숨기고, 그 뒤 새로 등록한 팝업은 바로 보인다(결정 D3)",
                                         "id": "dismiss_card",
                                         "type": "basic",
                                         "name": "Section",
@@ -605,7 +651,7 @@
                                                         "props": {
                                                             "className": "form-error"
                                                         },
-                                                        "text": "{{_local.errors?.dismiss_days?.[0]}}"
+                                                        "text": "{{_local.errors?.dismiss_days?.[0] ?? ''}}"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -685,7 +731,7 @@
                                                                 "props": {
                                                                     "className": "form-error"
                                                                 },
-                                                                "text": "{{_local.errors?.max_upload_mb?.[0]}}"
+                                                                "text": "{{_local.errors?.max_upload_mb?.[0] ?? ''}}"
                                                             },
                                                             {
                                                                 "id": "server_upload_limit",
@@ -752,7 +798,7 @@
                                                                 "props": {
                                                                     "className": "form-error"
                                                                 },
-                                                                "text": "{{_local.errors?.public_cache_minutes?.[0]}}"
+                                                                "text": "{{_local.errors?.public_cache_minutes?.[0] ?? ''}}"
                                                             }
                                                         ]
                                                     }

@@ -36,6 +36,18 @@ axes:
     - settings_interval_locked_without_autoplay
     - settings_days_input_only_for_days_mode
     - settings_save_has_on_error
+    - conflict_resolver_defaults_by_side
+    - conflict_resolver_both_changed_requires_choice
+    - conflict_resolver_apply_merges_onto_latest
+    - conflict_resolver_stale_image_not_selectable
+    - period_hint_status_boundaries
+    - period_hint_clock_loading
+    - settings_back_link_to_list
+    - settings_mobile_style_description_shown
+    - reorder_close_clears_state_before_closing
+    - form_image_and_body_changes_mark_dirty
+    - row_menu_toggles_active
+    - form_preview_sticky_and_alt_placeholder
     - overlay_fragment_targets_user_global_overlay
     - overlay_fragment_hidden_when_empty
     - overlay_fragment_passes_route_path
@@ -50,4 +62,6 @@ test_files:
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/popup_list.test.tsx
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/popup_form.test.tsx
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/plugin_settings.test.tsx
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupConflictResolver.test.tsx
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupPeriodHint.test.tsx
   - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/popup_layer_extension.test.tsx

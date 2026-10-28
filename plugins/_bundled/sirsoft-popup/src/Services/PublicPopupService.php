@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Popup\Services;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Extension\HookManager;
+use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -50,19 +51,26 @@ class PublicPopupService
     /**
      * 요청자에게 보일 수 있는 노출 후보와 표시 방식을 반환합니다.
      *
-     * @param  bool  $isMember  로그인한 회원인지
+     * 조회 결과 훅(`before_public_list` → `filter_public_list_result` → `after_public_list`)은 캐시에서 꺼내 지금 시각으로
+     * 다시 판정한 뒤에 발행한다 — 캐시 안의 값은 요청자와 무관하게 두고, 한 요청자의 가공이 다른 방문자에게 나가지 않게.
+     * 봇 응답은 늘 빈 목록이라 훅을 발행하지 않는다.
+     *
+     * @param  User|null  $user  요청한 회원 (손님은 null)
      * @param  string  $locale  요청 언어
      * @param  bool  $isBot  검색엔진 봇 요청인지
      * @return array{settings: array<string, mixed>, popups: array<int, array<string, mixed>>} 공개 응답 본문
      */
-    public function forRequest(bool $isMember, string $locale, bool $isBot = false): array
+    public function forRequest(?User $user, string $locale, bool $isBot = false): array
     {
         if ($isBot) {
             return ['settings' => DisplaySettings::current(), 'popups' => []];
         }
 
+        $context = ['user' => $user, 'locale' => $locale];
+        HookManager::doAction('sirsoft-popup.popup.before_public_list', $context);
+
         $now = now();
-        $candidates = $this->candidates($isMember, $locale, $now);
+        $candidates = $this->candidates($user !== null, $locale, $now);
 
         // 2겹: 꺼낸 뒤 지금 시각으로 다시 판정 — 시작 전·종료 후 팝업은 캐시에 있어도 나가지 않는다
         $exposed = array_values(array_filter($candidates['popups'], fn (array $row) => $this->isExposedAt($row['_period'], $now)));
@@ -72,11 +80,13 @@ class PublicPopupService
             return $row;
         }, $exposed);
 
-        $popups = HookManager::applyFilters('sirsoft-popup.public.filter_popups', $popups, $isMember, $locale);
+        $popups = array_values(HookManager::applyFilters('sirsoft-popup.popup.filter_public_list_result', $popups, $context));
+
+        HookManager::doAction('sirsoft-popup.popup.after_public_list', $popups, $context);
 
         return [
             'settings' => $candidates['settings'],
-            'popups' => array_values($popups),
+            'popups' => $popups,
         ];
     }
 

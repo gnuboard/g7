@@ -75,7 +75,11 @@ const SAMPLES: PublicPopup[] = [1, 2, 3].map((n) => ({
  * @param props 미리보기 props
  * @returns 미리보기
  */
-export const PopupPreview: React.FC<PopupPreviewProps> = ({ device = 'pc', settings, form, locale = 'ko', defaultLocale = 'ko' }) => {
+export const PopupPreview: React.FC<PopupPreviewProps> = ({ device = 'pc', settings, form, locale: localeProp, defaultLocale: defaultLocaleProp }) => {
+  // 언어를 받지 못했으면(설정 조회 실패 등) 특정 언어로 고정하지 않고 지금 화면 언어를 쓴다
+  const currentLocale = (window as { G7Core?: { locale?: { current?: () => string } } }).G7Core?.locale?.current?.() ?? '';
+  const locale = localeProp || currentLocale;
+  const defaultLocale = defaultLocaleProp || currentLocale;
   const frame = FRAMES[device];
   const boxRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.4);

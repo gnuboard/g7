@@ -9,6 +9,7 @@ import React from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup, fireEvent } from '@testing-library/react';
 import { PopupPreview } from '../../components/composite/PopupPreview';
+import { installCore, setViewportMobile } from './core';
 
 describe('PopupPreview', () => {
   afterEach(() => {
@@ -20,7 +21,7 @@ describe('PopupPreview', () => {
   // @effects accessible_modal_carousel
   it('폼 값(현재 언어 탭)을 레이어 마크업으로 그리되 링크·닫기·포커스 가둠은 없다', () => {
     const dispatch = vi.fn();
-    (window as any).G7Core = { dispatch };
+    installCore({ dispatch });
     window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
 
     const { container, getByText } = render(
@@ -49,12 +50,31 @@ describe('PopupPreview', () => {
     expect(link.getAttribute('aria-label')).toBe('Autumn');
     expect(link.getAttribute('tabindex')).toBe('-1');
     // 모바일 이미지가 없으면 PC 이미지
-    expect(container.querySelector('picture source')).toBeNull();
+    expect(container.querySelector('.g7pp-media img')?.getAttribute('src')).toBe('/img/pc.jpg');
 
     fireEvent.click(link);
     fireEvent.click(getByText('닫기'));
     expect(dispatch).not.toHaveBeenCalled();
     expect(container.querySelector('.g7pp-dialog')).not.toBeNull();
+  });
+
+  // @scenario surface=preview_mobile_shows_mobile_image
+  it('모바일 미리보기는 관리자 창이 넓어도 모바일 이미지를 보인다', () => {
+    setViewportMobile(false);
+    installCore();
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
+    const form = {
+      content_type: 'image',
+      image_alt: { ko: '가을' },
+      images: { pc: { url: '/img/pc.jpg', width: 480, height: 520 }, mobile: { url: '/img/m.jpg', width: 750, height: 900 } },
+    };
+
+    const { container } = render(<PopupPreview device="mobile" settings={{}} locale="ko" defaultLocale="ko" form={form as any} />);
+    expect(container.querySelector('.g7pp-media img')?.getAttribute('src')).toBe('/img/m.jpg');
+    cleanup();
+
+    const { container: pc } = render(<PopupPreview device="pc" settings={{}} locale="ko" defaultLocale="ko" form={form as any} />);
+    expect(pc.querySelector('.g7pp-media img')?.getAttribute('src')).toBe('/img/pc.jpg');
   });
 
   /** @effects preview_sample_slides */

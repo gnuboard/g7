@@ -1,7 +1,7 @@
 /**
  * 사용자 레이어 노출 판정 — 경로·기기·「보지 않기」·이번 페이지에서 닫음.
  *
- * 경로 규칙은 서버 `Plugins\Sirsoft\Popup\Support\RoutePath` 와 같다(PO 결정 #812 D2): 경로 경계 하위 포함 —
+ * 경로 규칙은 서버 `Plugins\Sirsoft\Popup\Support\RoutePath` 와 같다(결정 D2): 경로 경계 하위 포함 —
  * `/shop` 은 `/shop`·`/shop/…` 에 맞고 `/shopping` 에는 맞지 않는다. `/` 는 홈에만 맞는다. 대소문자는 구분한다.
  * 두 구현이 같은 표본에서 같은 결과를 내는지 양쪽 테스트가 잠근다.
  */

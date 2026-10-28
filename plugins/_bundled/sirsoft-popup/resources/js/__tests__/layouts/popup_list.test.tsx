@@ -157,6 +157,40 @@ describe('팝업 관리 목록 화면', () => {
     expect(save.props.disabled).toContain('JSON.stringify((_global.reorderItems ?? []).map(i => i.id)) === JSON.stringify(_global.reorderOriginal ?? [])');
   });
 
+  // @scenario surface=reorder_close_clears_state_before_closing
+  it('순서 변경 창을 닫을 때(닫기·취소·저장 성공) 상태를 먼저 비우고 창을 닫는다', () => {
+    const sequences = collect(doc.modals, (n) => n.handler === 'sequence' || Array.isArray(n.actions))
+      .map((n) => (n.actions ?? []) as any[])
+      .filter((acts) => acts.some((a) => a.handler === 'closeModal' && a.target === 'popup_reorder_modal'));
+    const success = collect(doc.modals, (n) => Array.isArray(n.onSuccess))
+      .map((n) => n.onSuccess as any[])
+      .filter((acts) => acts.some((a) => a.handler === 'closeModal' && a.target === 'popup_reorder_modal'));
+
+    expect(sequences.length + success.length).toBeGreaterThanOrEqual(3);
+    for (const acts of [...sequences, ...success]) {
+      const set = acts.findIndex((a) => a.handler === 'setState');
+      const close = acts.findIndex((a) => a.handler === 'closeModal');
+      expect(set, json(acts)).toBeGreaterThanOrEqual(0);
+      expect(set, json(acts)).toBeLessThan(close);
+    }
+  });
+
+  // @scenario surface=row_menu_toggles_active
+  it('행 메뉴 「노출/비노출 전환」 은 그 행의 반대 상태를 일괄 상태 API 로 보낸다(수정 권한 없으면 잠금)', () => {
+    const grid = findById(list, 'popup_datagrid')!;
+    const item = (grid.props.rowActions as any[]).find((a) => a.id === 'toggle_active');
+    expect(item.disabledField).toBe('abilities.can_update');
+    expect(item.label).toBe('$t:sirsoft-popup.admin.list.action.toggle_active');
+
+    const rowAction = (grid.actions as any[]).find((a) => a.event === 'onRowAction');
+    const call = actionsOf(rowAction.cases.toggle_active, 'apiCall')[0];
+    expect(call.target).toBe('/api/plugins/sirsoft-popup/admin/popups/bulk-status');
+    expect(call.params.method).toBe('PATCH');
+    expect(call.params.body).toEqual({ ids: '{{[$args[1].id]}}', is_active: '{{!$args[1].is_active}}' });
+    expect(call.onSuccess.map((a: any) => a.handler)).toContain('toast');
+    expect(call.onError.map((a: any) => a.handler)).toContain('toast');
+  });
+
   /** @effects translation_keys_present */
   it('목록이 쓰는 번역 키는 ko·en 모두에 있다', () => {
     const dynamic = ['admin.device.only_', 'admin.status', 'admin.content_type', 'admin.device', 'settings.pc_position', 'settings.mobile_style'];

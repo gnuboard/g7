@@ -1,7 +1,7 @@
 /*
  * 팝업 레이어 — 플러그인 소유 스타일(g7pp- 접두).
  * 템플릿 CSS 에 기대지 않는다: 확장 컴포넌트의 유틸리티 클래스는 템플릿 빌드에 들어 있다는 보장이 없다.
- * 층: 레이어·배경은 z-index 40 — GDPR 쿠키 배너(z-50)·템플릿 모달(z-50)·토스트 아래, 사용자 템플릿 모바일 머리(z-30) 위(PO 결정 #812 R8).
+ * 층: 레이어·배경은 z-index 40 — GDPR 쿠키 배너(z-50)·템플릿 모달(z-50)·토스트 아래, 사용자 템플릿 모바일 머리(z-30) 위(결정 R8).
  * 다크 모드: 템플릿이 <html class="dark"> 를 붙이면 바탕·띠·단추만 바꾼다(이미지·작성 본문 색은 그대로).
  */
 .g7pp-root {
@@ -227,6 +227,7 @@
 /* 위치 표시 줄 — 점(현재 장은 넓은 막대)·「n / N」·일시정지 */
 .g7pp-nav {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 2px;
@@ -235,7 +236,8 @@
 }
 
 .g7pp-dot {
-  min-width: 24px;
+  /* 단추는 44px 이상(명세 접근성) — 팝업이 많아 넘치면 점 줄이 줄바꿈된다 */
+  min-width: 44px;
   height: 44px;
   padding: 0 3px;
   border: 0;
@@ -408,4 +410,6 @@
 .g7pp-conflict__option { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .g7pp-conflict__value { overflow-wrap: anywhere; }
 .dark .g7pp-conflict__row { border-color: #374151; }
+/* 다크의 행 테두리(0,2,0)가 「둘 다 바꿈」 강조(0,1,0)를 덮지 않게 같은 우선순위로 다시 준다 */
+.dark .g7pp-conflict__row--both { border-color: #f59e0b; }
 .dark .g7pp-conflict__badge { background: #374151; color: #f9fafb; }

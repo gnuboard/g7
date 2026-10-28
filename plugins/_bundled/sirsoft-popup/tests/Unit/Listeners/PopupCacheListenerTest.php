@@ -212,6 +212,28 @@ class PopupCacheListenerTest extends PluginTestCase
     }
 
     /**
+     * 플러그인 삭제(데이터 유지 포함) 때 캐시를 비운다 — 코어 삭제는 비활성화를 먼저 거치지 않을 수 있다.
+     *
+     * @scenario surface=cache_cleared_on_plugin_uninstall
+     *
+     * @effects public_cache_cleared
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cleared_on_plugin_uninstall(): void
+    {
+        $popup = Popup::factory()->html()->create();
+        $this->ids();
+        $this->staleUpdate($popup->id, ['is_active' => false]);
+
+        HookManager::doAction('core.plugins.before_uninstall', 'sirsoft-other', false);
+        $this->assertSame([$popup->id], $this->ids(), '다른 플러그인 삭제는 캐시를 건드리지 않는다');
+
+        HookManager::doAction('core.plugins.before_uninstall', 'sirsoft-popup', false);
+        $this->assertSame([], $this->ids());
+    }
+
+    /**
      * 손님·한국어 공개 응답의 팝업 id 를 돌려줍니다.
      *
      * @return array<int, int> 팝업 id
@@ -228,7 +250,7 @@ class PopupCacheListenerTest extends PluginTestCase
      */
     private function rows(): array
     {
-        return app(PublicPopupService::class)->forRequest(false, 'ko')['popups'];
+        return app(PublicPopupService::class)->forRequest(null, 'ko')['popups'];
     }
 
     /**

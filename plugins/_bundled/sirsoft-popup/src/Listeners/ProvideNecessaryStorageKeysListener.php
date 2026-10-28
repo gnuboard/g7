@@ -3,10 +3,9 @@
 namespace Plugins\Sirsoft\Popup\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
-use Plugins\Sirsoft\Popup\Plugin;
 
 /**
- * GDPR 필수 저장 항목 제공 — 「보지 않기」 기록 쿠키를 strictly necessary 로 등록한다(PO 결정 #812 D3·D6).
+ * GDPR 필수 저장 항목 제공 — 「보지 않기」 기록 쿠키를 strictly necessary 로 등록한다(결정 D3·D6).
  *
  * GDPR 플러그인의 계약 훅(`sirsoft-gdpr.necessary_storage.filter_provided_keys`)에 쿠키 이름 하나를 더할 뿐 GDPR 코드는 참조하지 않는다.
  * GDPR 이 없거나 꺼져 있으면 훅이 불리지 않고, 팝업은 쿠키를 그대로 쓴다(차단기가 없으므로).
@@ -19,8 +18,9 @@ class ProvideNecessaryStorageKeysListener implements HookListenerInterface
      */
     private const KEYS = [
         'cookie' => [
-            // 「오늘 하루 / N일간 보지 않기」 기록 — 그때 보이던 팝업 id 마다 만료 시각({id: 만료})
-            Plugin::DISMISS_COOKIE,
+            // 「오늘 하루 / N일간 보지 않기」 기록 — 그때 보이던 팝업 id 마다 만료 시각({id: 만료}).
+            // 리터럴로 적는다: GDPR 의 제공 키 커버리지 검사가 이 블록의 문자열만 읽는다. `Plugin::DISMISS_COOKIE` 와 같은 값은 테스트가 잠근다
+            'g7_popup_dismissed',
         ],
     ];
 

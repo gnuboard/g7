@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Popup\Http\Resources;
 use App\Helpers\TimezoneHelper;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Plugins\Sirsoft\Popup\Enums\ContentType;
 use Plugins\Sirsoft\Popup\Models\Popup;
 use Plugins\Sirsoft\Popup\Models\PopupImage;
 
@@ -78,7 +79,7 @@ class PopupResource extends BaseApiResource
      */
     private function baseFields(): array
     {
-        $translations = $this->content_type === 'html' ? $this->body_html : $this->image_alt;
+        $translations = $this->content_type === ContentType::Html->value ? $this->body_html : $this->image_alt;
         $filled = is_array($translations)
             ? array_keys(array_filter($translations, fn ($v) => is_string($v) && trim($v) !== ''))
             : [];

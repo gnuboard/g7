@@ -4,7 +4,6 @@ namespace Plugins\Sirsoft\Popup\Http\Resources;
 
 use App\Http\Resources\BaseApiCollection;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * 팝업 목록 컬렉션 — 목록 행·쪽·컬렉션 능력·통계.
@@ -53,24 +52,11 @@ class PopupCollection extends BaseApiCollection
      */
     public function toArray(Request $request): array
     {
-        $result = [
+        return [
             'data' => $this->collection->map(fn ($popup) => (new PopupResource($popup))->toListArray($request))->values()->all(),
             'abilities' => $this->resolveCollectionAbilities($request),
             'statistics' => $this->statistics,
+            ...$this->paginationMeta(),
         ];
-
-        if ($this->resource instanceof LengthAwarePaginator) {
-            $result['pagination'] = [
-                'current_page' => $this->resource->currentPage(),
-                'last_page' => $this->resource->lastPage(),
-                'per_page' => $this->resource->perPage(),
-                'total' => $this->resource->total(),
-                'from' => $this->resource->firstItem(),
-                'to' => $this->resource->lastItem(),
-                'has_more_pages' => $this->resource->hasMorePages(),
-            ];
-        }
-
-        return $result;
     }
 }

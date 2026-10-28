@@ -136,6 +136,23 @@ describe('팝업 등록·수정 화면', () => {
     expect(findById(form, 'preview_card')!.props.className).toContain('order-first');
   });
 
+  // @scenario surface=form_image_and_body_changes_mark_dirty
+  it('이미지 올림·뺌과 본문 입력은 값을 직접 넘기는 경로라 hasChanges 를 직접 올린다(떠날 때 확인)', () => {
+    const writes = actionsOf(doc, 'setState').filter((a) => Object.keys(a.params ?? {}).some((k) => /^form\.(images\.(pc|mobile)|body_html)$/.test(k)));
+
+    expect(writes).toHaveLength(5);
+    for (const write of writes) {
+      expect(write.params.hasChanges, json(write)).toBe(true);
+    }
+  });
+
+  // @scenario surface=form_preview_sticky_and_alt_placeholder
+  it('넓은 화면에서 미리보기는 따라 내려오고(sticky), 대체 텍스트 칸은 기본 언어 값을 자리표시로 보인다', () => {
+    expect(findById(form, 'preview_card')!.props.className).toContain('lg:sticky');
+    const alt = collect(doc, (n) => n.name === 'MultilingualInput' && n.props?.name === 'image_alt')[0];
+    expect(alt.props.placeholder).toContain('_local.form?.image_alt?.[display_settings?.data?.editor?.default_locale ?? $locale]');
+  });
+
   /** @effects translation_keys_present */
   it('폼이 쓰는 번역 키는 ko·en 모두에 있다', () => {
     const dynamic = ['admin.form.route_errors', 'settings.mobile_style', 'settings.pc_position'];

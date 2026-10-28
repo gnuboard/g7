@@ -6,7 +6,7 @@
 
 ```text
 1. 유형: 플러그인 (sirsoft-popup) — 사용자 화면 위에 덮는 공지·프로모션 팝업 레이어(등록·예약 노출·전역 표시 방식·캐러셀)
-2. 확장 방식: 발행 훅(`sirsoft-popup.popup.*`·`sirsoft-popup.public.filter_popups`·`sirsoft-popup.popup.filter_sanitize_config`)을 구독하거나, 템플릿이 `src/components/overrides/sirsoft-popup/PopupLayer.tsx` 로 레이어를 대체한다
+2. 확장 방식: 발행 훅(`sirsoft-popup.popup.*`·`sirsoft-popup.popup.filter_sanitize_config`)을 구독하거나, 템플릿이 `src/components/overrides/sirsoft-popup/PopupLayer.tsx` 로 레이어를 대체한다
 3. 건드리면 안 되는 것: 사용자 템플릿·GDPR 플러그인 수정(공통 확장점·계약 훅으로만 붙는다), 상태 컬럼 저장(조회 시점 SQL 판정), 경로 판정 규칙을 한쪽(PHP `RoutePath` / TS `popupVisibility`)만 고치기
 4. 작업 위치: `plugins/_bundled/sirsoft-popup` — 활성 디렉토리 직접 수정 금지
 5. 반영: `php artisan plugin:update sirsoft-popup --force`
@@ -70,7 +70,7 @@
 <!-- @generated:extension-points-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 확장점 | 수 | 상세 |
 |---|---|---|
-| 발행 훅 | 25개 | [발행 훅](docs/extension-points.md#발행-훅) |
+| 발행 훅 | 27개 | [발행 훅](docs/extension-points.md#발행-훅) |
 | 구독 훅 | 21개 | [구독 훅](docs/extension-points.md#구독-훅) |
 | 훅 리스너 | 5개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 1개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
@@ -81,7 +81,7 @@
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
-- 노출 후보를 더하거나 빼려면 `sirsoft-popup.public.filter_popups`(filter, 인자 `$popups, $isMember, $locale`).
+- 노출 후보를 더하거나 빼려면 `sirsoft-popup.popup.filter_public_list_result`(filter, 인자 `$popups, $context` — `user`·`locale`).
 - 본문 정화 허용 목록을 바꾸려면 `sirsoft-popup.popup.filter_sanitize_config`(filter, HTMLPurifier 설정 키 → 값).
 - 등록·수정 값·검증 규칙은 `sirsoft-popup.popup.filter_create_data`·`filter_update_data`·`store_validation_rules`·`update_validation_rules`.
 - 레이어 모양을 템플릿에 맞추려면 템플릿이 `PopupLayer` 를 오버라이드한다 — props 계약은 [docs/extension-points.md](docs/extension-points.md).
@@ -114,7 +114,9 @@
 
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
-| - | - | - |
+| 레이어 폭 판정에 `window.matchMedia`·`<picture media>` | `G7Core.useResponsive()` 폭(없을 때만 `window.innerWidth`), 이미지는 레이어가 판정한 기기로 `src` 를 고른다 | 경계 폭 1px 어긋남과 편집기·관리자 미리보기(창이 넓다)에서 기기가 갈린다 |
+| `PopupLayer`·`PopupPreview` 를 템플릿 basic 컴포넌트(`Div`·`Button`)로 옮김 | 이 두 컴포넌트만 HTML 태그 + `g7pp-` 소유 CSS(**예외**). 관리 화면 조각(`PopupConflictResolver`·`PopupPeriodHint`)은 basic 컴포넌트 | 레이어는 어떤 사용자 템플릿에 붙어도 같은 모양·같은 접근성 구조(dialog·포커스 가둠)여야 하고, 템플릿마다 basic 컴포넌트의 클래스·마크업이 다르다 |
+| 레이어 문구에 한국어 대체 문구를 박음 | `support/editor.ts` 의 `translate()`(전체 키) — 번역이 없으면 키가 보인다 | 번역 누락이 한국어로 가려지면 다른 언어 방문자에게만 드러난다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -122,8 +124,8 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 15개 | `plugins/_bundled/sirsoft-popup/tests` |
-| Vitest | 8개 | `vitest.config.ts` |
+| PHPUnit | 16개 | `plugins/_bundled/sirsoft-popup/tests` |
+| Vitest | 10개 | `vitest.config.ts` |
 | Playwright | 2개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 11개 | `tests/scenarios` |
 

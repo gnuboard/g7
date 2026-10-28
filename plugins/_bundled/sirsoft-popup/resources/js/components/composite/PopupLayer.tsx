@@ -3,11 +3,9 @@ import DOMPurify from 'dompurify';
 import { DEFAULT_SETTINGS, type PopupDisplaySettings, type PublicPopup } from '../../lib/types';
 import { MOBILE_MAX_WIDTH, rememberClosed, visiblePopups } from '../../lib/popupVisibility';
 import { readDismissed, rememberDismissed } from '../../lib/dismissCookie';
+import { translate as t } from '../../support/editor';
 
-/** 플러그인 식별자 — 번역 키 접두 */
-const PLUGIN = 'sirsoft-popup';
-
-/** GDPR 쿠키 배너 요소 id — GDPR 조각의 `data-ref` 가 DOM id 가 된다(공개 계약 아님, PO 결정 #812 R8). */
+/** GDPR 쿠키 배너 요소 id — GDPR 조각의 `data-ref` 가 DOM id 가 된다(공개 계약 아님, 결정 R8). */
 export const GDPR_BANNER_ID = 'gdpr_cookie_banner';
 
 /** 본문 HTML 출력 정화 — 템플릿 HtmlContent 와 같은 금지 목록(저장 때 HTMLPurifier 로 이미 걸렀고 여기서 한 번 더) */
@@ -44,25 +42,6 @@ export interface PopupLayerProps {
 }
 
 /**
- * 번역 문구를 고릅니다 — 코어 번역이 없으면 대체 문구(테스트·미설치 언어).
- *
- * @param key 번역 키
- * @param fallback 대체 문구
- * @param params 치환 값
- * @returns 문구
- */
-export function t(key: string, fallback: string, params?: Record<string, string | number>): string {
-  const core = (window as { G7Core?: { t?: (k: string, p?: Record<string, string | number>) => string } }).G7Core;
-  const translated = core?.t?.(key, params);
-
-  if (translated && translated !== key && !translated.startsWith(`${PLUGIN}.`)) {
-    return translated;
-  }
-
-  return Object.entries(params ?? {}).reduce((text, [name, value]) => text.split(`{{${name}}}`).join(String(value)), fallback);
-}
-
-/**
  * 사이트 안 링크인지 판정합니다(`/` 로 시작하고 `//` 가 아님).
  *
  * @param url 링크 주소
@@ -75,25 +54,31 @@ function isInternal(url: string): boolean {
 /**
  * 폭이 모바일인지 지켜봅니다(767px 이하).
  *
+ * 엔진 `ResponsiveManager` 와 같은 값을 쓴다 — `G7Core.useResponsive()` 의 폭(레이아웃 편집기 미리보기에서는 기기 폭),
+ * 훅이 없을 때만 `window.innerWidth`. `matchMedia` 는 소수 배율 화면의 경계 폭에서 1px 어긋나 쓰지 않는다
+ * (docs/frontend/responsive-layout.md 「확장 코드에서 같은 경계를 판정할 때」).
+ *
  * @returns 모바일이면 true
  */
 function useIsMobile(): boolean {
-  const query = `(max-width: ${MOBILE_MAX_WIDTH}px)`;
-  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' && window.matchMedia ? window.matchMedia(query).matches : false));
+  const useResponsive = (window as { G7Core?: { useResponsive?: () => { width?: number } | null } }).G7Core?.useResponsive;
+  // G7Core 는 페이지가 뜰 때 한 번 정해진다 — 렌더마다 훅 호출 여부가 바뀌지 않는다
+  const responsive = useResponsive?.();
+  const [innerWidth, setInnerWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : MOBILE_MAX_WIDTH + 1));
+  const hasEngineWidth = typeof responsive?.width === 'number';
 
   useEffect(() => {
-    if (!window.matchMedia) {
+    if (hasEngineWidth) {
       return undefined;
     }
-    const list = window.matchMedia(query);
-    const onChange = () => setIsMobile(list.matches);
-    onChange();
-    list.addEventListener?.('change', onChange);
+    const onResize = () => setInnerWidth(window.innerWidth);
+    onResize();
+    window.addEventListener('resize', onResize);
 
-    return () => list.removeEventListener?.('change', onChange);
-  }, [query]);
+    return () => window.removeEventListener('resize', onResize);
+  }, [hasEngineWidth]);
 
-  return isMobile;
+  return (hasEngineWidth ? (responsive?.width as number) : innerWidth) <= MOBILE_MAX_WIDTH;
 }
 
 /**
@@ -364,14 +349,14 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
   }
 
   const dismissLabel = config.dismiss_mode === 'days'
-    ? t('sirsoft-popup.layer.dismiss_days', '{{days}}일간 보지 않기', { days: config.dismiss_days })
-    : t('sirsoft-popup.layer.dismiss_today', '오늘 하루 보지 않기');
-  const counter = t('sirsoft-popup.layer.counter', '{{n}} / {{total}}', { n: current + 1, total: count });
+    ? t('sirsoft-popup.layer.dismiss_days', { days: config.dismiss_days })
+    : t('sirsoft-popup.layer.dismiss_today');
+  const counter = t('sirsoft-popup.layer.counter', { n: current + 1, total: count });
 
   const navigation = count > 1 ? (
     <div className="g7pp-nav">
       {isMobile && (
-        <button type="button" className="g7pp-nav__arrow" aria-label={t('sirsoft-popup.layer.previous', '이전 팝업')} onClick={() => go(-1)}>
+        <button type="button" className="g7pp-nav__arrow" aria-label={t('sirsoft-popup.layer.previous')} onClick={() => go(-1)}>
           <span aria-hidden="true">‹</span>
         </button>
       )}
@@ -380,7 +365,7 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
           key={popup.id}
           type="button"
           className={`g7pp-dot${i === current ? ' g7pp-dot--current' : ''}`}
-          aria-label={t('sirsoft-popup.layer.go_to', '{{n}}번째 팝업 보기', { n: i + 1 })}
+          aria-label={t('sirsoft-popup.layer.go_to', { n: i + 1 })}
           aria-current={i === current ? 'true' : undefined}
           onClick={() => setIndex(i)}
         >
@@ -393,14 +378,14 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
           type="button"
           className="g7pp-nav__pause"
           aria-pressed={paused}
-          aria-label={paused ? t('sirsoft-popup.layer.play', '자동 넘김 재생') : t('sirsoft-popup.layer.pause', '자동 넘김 일시정지')}
+          aria-label={paused ? t('sirsoft-popup.layer.play') : t('sirsoft-popup.layer.pause')}
           onClick={() => setPaused((p) => !p)}
         >
           <span aria-hidden="true">{paused ? '▶' : 'Ⅱ'}</span>
         </button>
       )}
       {isMobile && (
-        <button type="button" className="g7pp-nav__arrow" aria-label={t('sirsoft-popup.layer.next', '다음 팝업')} onClick={() => go(1)}>
+        <button type="button" className="g7pp-nav__arrow" aria-label={t('sirsoft-popup.layer.next')} onClick={() => go(1)}>
           <span aria-hidden="true">›</span>
         </button>
       )}
@@ -421,14 +406,19 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
         ref={dialogRef}
         role={preview ? 'group' : 'dialog'}
         aria-modal={preview ? undefined : 'true'}
-        aria-label={preview ? t('sirsoft-popup.admin.preview.region', '팝업 미리보기') : t('sirsoft-popup.layer.region', '공지 팝업')}
+        aria-label={preview ? t('sirsoft-popup.admin.preview.region') : t('sirsoft-popup.layer.region')}
         tabIndex={preview ? undefined : -1}
         className={`g7pp-dialog g7pp-dialog--${variant}`}
         style={dialogStyle}
         onKeyDown={onKeyDown}
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
-        onFocus={() => setFocusWithin(true)}
+        onFocus={(event) => {
+          // 열릴 때 레이어 자체로 옮긴 포커스는 멈춤 사유가 아니다 — 안의 단추·링크로 간 포커스만 멈춘다
+          if (event.target !== dialogRef.current) {
+            setFocusWithin(true);
+          }
+        }}
         onBlur={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
             setFocusWithin(false);
@@ -442,22 +432,22 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
               <div
                 key={popup.id}
                 role="group"
-                aria-roledescription={t('sirsoft-popup.layer.slide', '팝업')}
-                aria-label={t('sirsoft-popup.layer.counter', '{{n}} / {{total}}', { n: i + 1, total: count })}
+                aria-roledescription={t('sirsoft-popup.layer.slide')}
+                aria-label={t('sirsoft-popup.layer.counter', { n: i + 1, total: count })}
                 className="g7pp-slide"
                 hidden={i !== current}
                 data-popup-id={popup.id}
               >
-                <PopupContent popup={popup} eager={i === 0} onNavigate={close} inert={!!preview} />
+                <PopupContent popup={popup} eager={i === 0} isMobile={isMobile} onNavigate={close} inert={!!preview} />
               </div>
             ))}
           </div>
           {!isMobile && count > 1 && (
             <>
-              <button type="button" className="g7pp-arrow g7pp-arrow--prev" aria-label={t('sirsoft-popup.layer.previous', '이전 팝업')} onClick={() => go(-1)}>
+              <button type="button" className="g7pp-arrow g7pp-arrow--prev" aria-label={t('sirsoft-popup.layer.previous')} onClick={() => go(-1)}>
                 <span aria-hidden="true">‹</span>
               </button>
-              <button type="button" className="g7pp-arrow g7pp-arrow--next" aria-label={t('sirsoft-popup.layer.next', '다음 팝업')} onClick={() => go(1)}>
+              <button type="button" className="g7pp-arrow g7pp-arrow--next" aria-label={t('sirsoft-popup.layer.next')} onClick={() => go(1)}>
                 <span aria-hidden="true">›</span>
               </button>
             </>
@@ -468,7 +458,7 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
           {config.dismiss_mode !== 'close' && (
             <button type="button" className="g7pp-footer__dismiss" onClick={dismiss}>{dismissLabel}</button>
           )}
-          <button type="button" className="g7pp-footer__close" onClick={close}>{t('sirsoft-popup.layer.close', '닫기')}</button>
+          <button type="button" className="g7pp-footer__close" onClick={close}>{t('sirsoft-popup.layer.close')}</button>
         </div>
       </div>
     </div>
@@ -483,6 +473,9 @@ interface PopupContentProps {
   /** 첫 장인지 (이미지를 바로 받는다) */
   eager: boolean;
 
+  /** 레이어가 판정한 기기가 모바일인지 (모바일 이미지가 있으면 그것을 쓴다) */
+  isMobile?: boolean;
+
   /** 사이트 안 링크로 이동할 때 (레이어를 닫는다) */
   onNavigate?: () => void;
 
@@ -496,7 +489,7 @@ interface PopupContentProps {
  * @param props 내용 props
  * @returns 내용
  */
-export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, onNavigate, inert = false }) => {
+export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, isMobile = false, onNavigate, inert = false }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [overflowing, setOverflowing] = useState(false);
   const isHtml = popup.content_type === 'html';
@@ -525,7 +518,7 @@ export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, onNavi
         className="g7pp-html ck-content"
         data-popup-scroll=""
         role={overflowing ? 'region' : undefined}
-        aria-label={overflowing ? t('sirsoft-popup.layer.scroll_region', '팝업 본문') : undefined}
+        aria-label={overflowing ? t('sirsoft-popup.layer.scroll_region') : undefined}
         tabIndex={overflowing && !inert ? 0 : undefined}
         // 저장 때 HTMLPurifier, 출력 때 DOMPurify 로 거른 본문
         dangerouslySetInnerHTML={{ __html: cleanHtml }}
@@ -535,6 +528,8 @@ export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, onNavi
 
   const pc = popup.image?.pc ?? null;
   const mobile = popup.image?.mobile ?? null;
+  // 레이어 판정(엔진 폭·미리보기 기기)과 같은 기준으로 고른다 — `<picture media>` 는 창 폭으로 판정해 어긋난다
+  const shown = isMobile ? (mobile ?? pc) : pc;
   const alt = popup.image_alt ?? '';
   const link = popup.link_url ?? '';
   const newWindow = !!popup.link_new_window;
@@ -558,20 +553,17 @@ export const PopupContent: React.FC<PopupContentProps> = ({ popup, eager, onNavi
 
   return (
     <div className="g7pp-media">
-      {pc && (
-        <picture>
-          {mobile && <source media={`(max-width: ${MOBILE_MAX_WIDTH}px)`} srcSet={mobile.url} width={mobile.width ?? undefined} height={mobile.height ?? undefined} />}
-          <img
-            src={pc.url}
-            alt={link ? '' : alt}
-            width={pc.width ?? undefined}
-            height={pc.height ?? undefined}
-            loading={eager ? 'eager' : 'lazy'}
-            fetchPriority={eager ? 'high' : 'auto'}
-            className="g7pp-media__img"
-            draggable={false}
-          />
-        </picture>
+      {shown && (
+        <img
+          src={shown.url}
+          alt={link ? '' : alt}
+          width={shown.width ?? undefined}
+          height={shown.height ?? undefined}
+          loading={eager ? 'eager' : 'lazy'}
+          fetchPriority={eager ? 'high' : 'auto'}
+          className="g7pp-media__img"
+          draggable={false}
+        />
       )}
       {link && (
         <a

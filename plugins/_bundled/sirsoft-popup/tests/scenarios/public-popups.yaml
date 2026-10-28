@@ -39,6 +39,7 @@ axes:
     - cache_ttl_capped_at_next_transition
     - cache_read_refilters_by_period
     - cache_disabled_when_zero_minutes
+    - result_hook_after_cache_with_context
     - site_timezone_boundary_consistent
 
 effects:

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\Popup\Enums\ImageDevice;
+use Plugins\Sirsoft\Popup\Exceptions\PopupImageAttachedException;
 use Plugins\Sirsoft\Popup\Exceptions\PopupImageCopyException;
 use Plugins\Sirsoft\Popup\Models\Popup;
 use Plugins\Sirsoft\Popup\Models\PopupImage;
@@ -129,6 +130,23 @@ class PopupImageService
     }
 
     /**
+     * 아직 팝업에 붙지 않은 임시 이미지를 지웁니다(관리 화면의 임시 이미지 삭제).
+     *
+     * @param  PopupImage  $image  대상 이미지
+     * @return bool 파일·행 모두 지웠으면 true
+     *
+     * @throws PopupImageAttachedException 팝업에 붙은 이미지일 때 — 붙은 이미지는 팝업 저장만 바꾼다
+     */
+    public function deleteTempImage(PopupImage $image): bool
+    {
+        if ($image->popup_id !== null) {
+            throw new PopupImageAttachedException($image->id);
+        }
+
+        return $this->deleteImage($image);
+    }
+
+    /**
      * 등록 화면 임시 묶음에서 기기별로 붙일 이미지를 고릅니다 — 보낸 ID 가 있으면 그것(null 이면 없음), 없으면 묶음의 가장 최근 이미지.
      *
      * 기기마다 한 장만 고르므로, 교체 업로드 때 앞 이미지 삭제가 실패해 묶음에 같은 기기 이미지가 둘 남아도 하나만 붙는다.
@@ -210,7 +228,7 @@ class PopupImageService
      * 이미지 파일을 새 해시로 복제해 다른 팝업에 붙입니다(복사) — 원본을 지워도 복사본이 깨지지 않게 파일까지 따로 둔다.
      *
      * 호출한 쪽 트랜잭션 안에서 부른다. 파일을 읽거나 쓰지 못하면 예외를 던져 그 팝업 복사를 되돌리게 하고,
-     * 이미 쓴 파일은 호출한 쪽이 `deleteImage()` 로 지운다.
+     * 이미 쓴 파일은 호출한 쪽이 `discardFile()` 로 지운다(행은 트랜잭션과 함께 되돌려진다).
      *
      * @param  PopupImage  $source  원본 이미지
      * @param  int  $popupId  복사본 팝업 ID

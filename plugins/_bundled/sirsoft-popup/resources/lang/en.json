@@ -119,6 +119,7 @@
             },
             "action": {
                 "edit": "Edit",
+                "toggle_active": "Toggle shown/hidden",
                 "copy": "Copy",
                 "delete": "Delete"
             }
@@ -259,6 +260,7 @@
         }
     },
     "settings": {
+        "breadcrumb": "Plugins › Popups › Settings",
         "title": "Popup plugin settings",
         "description": "The display set here applies to every popup.",
         "back_to_list": "Back to popups",

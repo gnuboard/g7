@@ -3,6 +3,8 @@
 namespace Plugins\Sirsoft\Popup\Tests\Unit\Services;
 
 use App\Contracts\Extension\CacheInterface;
+use App\Extension\HookManager;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Plugins\Sirsoft\Popup\Models\Popup;
@@ -59,10 +61,10 @@ class PublicPopupServiceTest extends PluginTestCase
         Popup::factory()->html()->create();
         $cache = $this->cacheOf($this->service());
 
-        $this->assertSame([], $this->service()->forRequest(false, 'ko', isBot: true)['popups']);
+        $this->assertSame([], $this->service()->forRequest(null, 'ko', isBot: true)['popups']);
         $this->assertNull($cache->get($this->cacheKey($cache, 'guest', 'ko')), '봇은 캐시를 만들지 않는다');
 
-        $this->service()->forRequest(false, 'ko');
+        $this->service()->forRequest(null, 'ko');
         $this->assertNotNull($cache->get($this->cacheKey($cache, 'guest', 'ko')));
     }
 
@@ -77,9 +79,9 @@ class PublicPopupServiceTest extends PluginTestCase
     {
         $memberOnly = Popup::factory()->html(['ko' => '<p>회원</p>', 'en' => '<p>Member</p>'])->audience('member')->create();
 
-        $this->assertSame([$memberOnly->id], array_column($this->service()->forRequest(true, 'en')['popups'], 'id'));
-        $this->assertSame([], $this->service()->forRequest(false, 'en')['popups'], '손님 캐시는 따로');
-        $this->assertSame('<p>회원</p>', $this->service()->forRequest(true, 'ko')['popups'][0]['body_html'], '언어 캐시도 따로');
+        $this->assertSame([$memberOnly->id], array_column($this->service()->forRequest(User::factory()->make(), 'en')['popups'], 'id'));
+        $this->assertSame([], $this->service()->forRequest(null, 'en')['popups'], '손님 캐시는 따로');
+        $this->assertSame('<p>회원</p>', $this->service()->forRequest(User::factory()->make(), 'ko')['popups'][0]['body_html'], '언어 캐시도 따로');
 
         $cache = $this->cacheOf($this->service());
         foreach ([['member', 'en'], ['guest', 'en'], ['member', 'ko']] as [$audience, $locale]) {
@@ -123,7 +125,7 @@ class PublicPopupServiceTest extends PluginTestCase
     public function test_read_refilters_by_period(): void
     {
         $popup = Popup::factory()->html(['ko' => '<p>곧 끝남</p>'])->period(now()->subDay(), now()->addMinute())->create();
-        $this->assertSame([$popup->id], array_column($this->service()->forRequest(false, 'ko')['popups'], 'id'));
+        $this->assertSame([$popup->id], array_column($this->service()->forRequest(null, 'ko')['popups'], 'id'));
 
         // 캐시 수명이 경계를 넘도록 같은 키를 1시간짜리로 다시 담는다(만료 계산이 어긋난 상황을 흉내)
         $cache = $this->cacheOf($this->service());
@@ -132,7 +134,7 @@ class PublicPopupServiceTest extends PluginTestCase
 
         Carbon::setTestNow(now()->addMinutes(2));
         $this->assertNotNull($cache->get($key), '캐시는 아직 살아 있다');
-        $this->assertSame([], $this->service()->forRequest(false, 'ko')['popups'], '꺼낼 때 다시 판정해 뺀다');
+        $this->assertSame([], $this->service()->forRequest(null, 'ko')['popups'], '꺼낼 때 다시 판정해 뺀다');
     }
 
     /**
@@ -146,11 +148,43 @@ class PublicPopupServiceTest extends PluginTestCase
     {
         $this->setPluginSettings(['public_cache_minutes' => 0]);
         $popup = Popup::factory()->html(['ko' => '<p>처음</p>'])->create();
-        $this->assertSame('<p>처음</p>', $this->service()->forRequest(false, 'ko')['popups'][0]['body_html']);
+        $this->assertSame('<p>처음</p>', $this->service()->forRequest(null, 'ko')['popups'][0]['body_html']);
 
         DB::table('popups')->where('id', $popup->id)->update(['body_html' => json_encode(['ko' => '<p>바로 반영</p>'])]);
 
-        $this->assertSame('<p>바로 반영</p>', $this->service()->forRequest(false, 'ko')['popups'][0]['body_html']);
+        $this->assertSame('<p>바로 반영</p>', $this->service()->forRequest(null, 'ko')['popups'][0]['body_html']);
+    }
+
+    /**
+     * 조회 결과 훅은 캐시에서 꺼낸 뒤 요청 정보(user·locale)와 함께 불리고, 가공한 값은 캐시에 들어가지 않는다.
+     *
+     * @scenario surface=result_hook_after_cache_with_context
+     *
+     * @return void 반환값 없음
+     */
+    public function test_result_hook_after_cache_with_context(): void
+    {
+        Popup::factory()->html()->create();
+        $member = User::factory()->make();
+        $seen = [];
+        HookManager::addAction('sirsoft-popup.popup.before_public_list', function (array $context) use (&$seen) {
+            $seen[] = 'before';
+        });
+        HookManager::addFilter('sirsoft-popup.popup.filter_public_list_result', function (array $popups, array $context) use (&$seen) {
+            $seen[] = ['user' => $context['user'], 'locale' => $context['locale']];
+
+            return $context['user'] === null ? $popups : array_map(fn (array $row) => $row + ['member_badge' => true], $popups);
+        });
+        HookManager::addAction('sirsoft-popup.popup.after_public_list', function (array $popups) use (&$seen) {
+            $seen[] = 'after:'.count($popups);
+        });
+
+        $forMember = $this->service()->forRequest($member, 'ko')['popups'];
+
+        $this->assertTrue($forMember[0]['member_badge']);
+        $this->assertSame(['before', ['user' => $member, 'locale' => 'ko'], 'after:1'], $seen);
+        $cache = $this->cacheOf($this->service());
+        $this->assertArrayNotHasKey('member_badge', $cache->get($this->cacheKey($cache, 'member', 'ko'))['popups'][0], '가공 값은 캐시에 들어가지 않는다');
     }
 
     /**

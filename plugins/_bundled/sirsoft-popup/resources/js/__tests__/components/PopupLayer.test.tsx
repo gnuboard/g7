@@ -12,14 +12,20 @@ import { PopupLayer, GDPR_BANNER_ID } from '../../components/composite/PopupLaye
 import { resetClosedThisPage } from '../../lib/popupVisibility';
 import { DISMISS_COOKIE } from '../../lib/dismissCookie';
 import type { PopupDisplaySettings, PublicPopup } from '../../lib/types';
+import { installCore, setViewportMobile } from './core';
 
-/** 화면 폭·움직임 줄이기 흉내 상태 */
-const media = { mobile: false, reduced: false };
+/** 화면 폭·움직임 줄이기 흉내 상태 — 폭은 `window.innerWidth`(레이어가 엔진 훅 없이 읽는 값)로 흉내 낸다 */
+const media = {
+  reduced: false,
+  set mobile(value: boolean) {
+    setViewportMobile(value);
+  },
+};
 
-/** matchMedia 대역 — 질의에 따라 흉내 상태를 돌려준다 */
+/** matchMedia 대역 — 움직임 줄이기 질의에 흉내 상태를 돌려준다 */
 function installMatchMedia(): void {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-    matches: query.includes('prefers-reduced-motion') ? media.reduced : media.mobile,
+    matches: query.includes('prefers-reduced-motion') ? media.reduced : false,
     media: query,
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
@@ -67,6 +73,7 @@ describe('PopupLayer', () => {
     media.mobile = false;
     media.reduced = false;
     installMatchMedia();
+    installCore();
     resetClosedThisPage();
     clearCookie();
     document.getElementById(GDPR_BANNER_ID)?.remove();
@@ -76,6 +83,7 @@ describe('PopupLayer', () => {
     cleanup();
     vi.useRealTimers();
     clearCookie();
+    delete (window as any).G7Core;
   });
 
   // @scenario surface=renders_nothing_when_no_visible_popup
@@ -182,11 +190,8 @@ describe('PopupLayer', () => {
   it('자동 넘김은 설정 간격마다 다음 장으로', () => {
     vi.useFakeTimers();
     const { container } = show([htmlPopup(1), htmlPopup(2)], { autoplay: true, autoplay_interval: 4 });
-    // 열릴 때 레이어로 간 포커스가 자동 넘김을 멈추지 않게 밖으로 뺀다
-    act(() => {
-      (container.querySelector('[role="dialog"]') as HTMLElement).blur();
-      fireEvent.blur(container.querySelector('[role="dialog"]') as HTMLElement, { relatedTarget: document.body });
-    });
+    // 열릴 때 포커스는 레이어로 가지만(접근성) 그것만으로 멈추지 않는다
+    expect(document.activeElement).toBe(container.querySelector('[role="dialog"]'));
 
     act(() => { vi.advanceTimersByTime(3999); });
     expect(currentId(container)).toBe(1);
@@ -200,11 +205,13 @@ describe('PopupLayer', () => {
     const { container } = show([htmlPopup(1), htmlPopup(2)], { autoplay: true, autoplay_interval: 4 });
     const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
 
-    // 열릴 때 포커스가 레이어로 간다 → 멈춤
+    // 레이어 안 단추로 포커스가 가면 멈춘다
+    const closeButton = container.querySelector('.g7pp-footer__close') as HTMLElement;
+    act(() => { closeButton.focus(); });
     act(() => { vi.advanceTimersByTime(8000); });
     expect(currentId(container)).toBe(1);
 
-    act(() => { fireEvent.blur(dialog, { relatedTarget: document.body }); });
+    act(() => { fireEvent.blur(closeButton, { relatedTarget: document.body }); });
     fireEvent.mouseEnter(dialog);
     act(() => { vi.advanceTimersByTime(8000); });
     expect(currentId(container)).toBe(1);
@@ -288,12 +295,13 @@ describe('PopupLayer', () => {
     const first = buttons[0];
     const last = buttons[buttons.length - 1];
 
-    last.focus();
-    fireEvent.keyDown(last, { key: 'Tab' });
+    // 안의 단추로 간 포커스는 자동 넘김 멈춤 상태를 바꾼다 — act 로 감싼다
+    act(() => { last.focus(); });
+    act(() => { fireEvent.keyDown(last, { key: 'Tab' }); });
     expect(document.activeElement).toBe(first);
 
-    first.focus();
-    fireEvent.keyDown(first, { key: 'Tab', shiftKey: true });
+    act(() => { first.focus(); });
+    act(() => { fireEvent.keyDown(first, { key: 'Tab', shiftKey: true }); });
     expect(document.activeElement).toBe(last);
   });
 
@@ -465,6 +473,18 @@ describe('PopupLayer', () => {
     expect((container.querySelector('[role="dialog"]') as HTMLElement).style.bottom).toBe('0px');
   });
 
+  // @scenario surface=controls_at_least_44px
+  it('위치 점 단추는 가로·세로 44px 이상이고, 점이 많으면 줄을 바꾼다', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+    const rule = (selector: string) => css.match(new RegExp(`\\${selector}\\s*\\{[^}]*\\}`))?.[0] ?? '';
+
+    expect(rule('.g7pp-dot')).toMatch(/min-width:\s*44px;/);
+    expect(rule('.g7pp-dot')).toMatch(/height:\s*44px;/);
+    expect(rule('.g7pp-nav')).toMatch(/flex-wrap:\s*wrap;/);
+  });
+
   // @scenario surface=z_index_below_gdpr_banner
   // @effects gdpr_banner_not_covered
   it('레이어는 GDPR 배너(z-50) 아래 층 — 스타일 파일이 z-index 40 을 준다', async () => {
@@ -476,33 +496,47 @@ describe('PopupLayer', () => {
     expect(root).toMatch(/z-index:\s*40;/);
   });
 
-  // @scenario surface=image_uses_picture_with_mobile_source
-  it('이미지는 picture — 모바일 source(767px 이하)와 PC img(크기 포함)', () => {
+  // @scenario surface=image_uses_mobile_source_on_mobile
+  it('이미지는 레이어가 판정한 기기로 고른다 — PC 는 PC 이미지(크기 포함), 모바일은 모바일 이미지', () => {
     const { container } = show([imagePopup(1)]);
-    const source = container.querySelector('picture source') as HTMLSourceElement;
-    const img = container.querySelector('picture img') as HTMLImageElement;
+    const img = container.querySelector('.g7pp-media img') as HTMLImageElement;
 
-    expect(source.getAttribute('media')).toBe('(max-width: 767px)');
-    expect(source.getAttribute('srcset')).toBe('/img/m-1.jpg');
+    expect(container.querySelector('picture')).toBeNull();
     expect(img.getAttribute('src')).toBe('/img/pc-1.jpg');
     expect(img.getAttribute('width')).toBe('480');
     expect(img.getAttribute('alt')).toBe('대체 1');
     expect(img.getAttribute('loading')).toBe('eager');
+    cleanup();
+
+    media.mobile = true;
+    const { container: mobile } = show([imagePopup(1)]);
+    const mobileImg = mobile.querySelector('.g7pp-media img') as HTMLImageElement;
+    expect(mobileImg.getAttribute('src')).toBe('/img/m-1.jpg');
+    expect(mobileImg.getAttribute('width')).toBe('750');
   });
 
   // @scenario surface=image_falls_back_to_pc_on_mobile
-  it('모바일 이미지가 없으면 source 를 빼 PC 이미지를 쓴다', () => {
+  it('모바일 이미지가 없으면 모바일에서도 PC 이미지를 쓴다', () => {
+    media.mobile = true;
     const { container } = show([imagePopup(1, { image: { pc: { url: '/img/pc-1.jpg', width: 480, height: 520 }, mobile: null } })]);
 
-    expect(container.querySelector('picture source')).toBeNull();
-    expect(container.querySelector('picture img')?.getAttribute('src')).toBe('/img/pc-1.jpg');
+    expect(container.querySelector('.g7pp-media img')?.getAttribute('src')).toBe('/img/pc-1.jpg');
+  });
+
+  // @scenario surface=device_follows_engine_width
+  it('엔진 반응형 폭(G7Core.useResponsive)이 있으면 창 폭 대신 그 폭으로 기기를 판정한다', () => {
+    installCore({ useResponsive: () => ({ width: 390 }) });
+    const popups = [htmlPopup(1, '<p>pc</p>', { device: 'pc' }), htmlPopup(2, '<p>m</p>', { device: 'mobile' })];
+    const { container } = show(popups);
+
+    expect([...container.querySelectorAll('.g7pp-slide')].map((el) => Number(el.getAttribute('data-popup-id')))).toEqual([2]);
   });
 
   // @scenario surface=link_popup_uses_covering_link_without_nested_focusables
   // @effects accessible_modal_carousel
   it('링크 팝업은 덮는 빈 링크(이름 = alt), 링크 안에 포커스 요소가 없고 이미지 alt 는 비운다', () => {
     const dispatch = vi.fn();
-    (window as any).G7Core = { dispatch };
+    installCore({ dispatch });
     const { container } = show([imagePopup(1, { link_url: '/event/autumn' }), imagePopup(2)]);
     const link = container.querySelector('.g7pp-cover-link') as HTMLAnchorElement;
 
@@ -515,13 +549,12 @@ describe('PopupLayer', () => {
     fireEvent.click(link);
     expect(dispatch).toHaveBeenCalledWith({ handler: 'navigate', params: { path: '/event/autumn' } });
     expect(container.querySelector('[role="dialog"]')).toBeNull();
-    delete (window as any).G7Core;
   });
 
   // @scenario surface=link_new_window_rel_noopener
   it('새 창 링크는 target=_blank + rel=noopener noreferrer, SPA 이동을 가로채지 않는다', () => {
     const dispatch = vi.fn();
-    (window as any).G7Core = { dispatch };
+    installCore({ dispatch });
     const { container } = show([imagePopup(1, { link_url: 'https://example.com/promo', link_new_window: true })]);
     const link = container.querySelector('.g7pp-cover-link') as HTMLAnchorElement;
 
@@ -529,7 +562,6 @@ describe('PopupLayer', () => {
     expect(link.getAttribute('rel')).toBe('noopener noreferrer');
     fireEvent.click(link);
     expect(dispatch).not.toHaveBeenCalled();
-    delete (window as any).G7Core;
   });
 
   // @scenario surface=html_body_purified_on_render

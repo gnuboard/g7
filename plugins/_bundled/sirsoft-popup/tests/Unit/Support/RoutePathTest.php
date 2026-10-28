@@ -2,13 +2,13 @@
 
 namespace Plugins\Sirsoft\Popup\Tests\Unit\Support;
 
-use Plugins\Sirsoft\Popup\Tests\PluginTestCase;
 use Plugins\Sirsoft\Popup\Support\RoutePath;
+use Plugins\Sirsoft\Popup\Tests\PluginTestCase;
 
 /**
  * 노출 페이지 경로 판정 테스트 — 서버 층 (매니페스트 route-matching.yaml, layer=php)
  *
- * 브라우저 판정(`resources/js/lib/popupVisibility.ts`)과 같은 표본에서 같은 결과를 내야 한다(PO 결정 #812 D2).
+ * 브라우저 판정(`resources/js/lib/popupVisibility.ts`)과 같은 표본에서 같은 결과를 내야 한다(결정 D2).
  * 쿼리·해시 제거는 브라우저가 경로를 받을 때만 하므로 이 층에는 그 케이스가 없다.
  */
 class RoutePathTest extends PluginTestCase

@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Popup\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Plugins\Sirsoft\Popup\Enums\PopupDevice;
 use Plugins\Sirsoft\Popup\Enums\PopupStatus;
 
 /**
@@ -30,7 +31,8 @@ class PopupListRequest extends FormRequest
     {
         return [
             'status' => ['nullable', Rule::enum(PopupStatus::class)],
-            'device' => ['nullable', Rule::in(['pc', 'mobile'])],
+            // 「PC + 모바일」 팝업은 어느 기기로 걸러도 나온다 — 필터 값은 PC·모바일만 받는다
+            'device' => ['nullable', Rule::enum(PopupDevice::class)->only([PopupDevice::Pc, PopupDevice::Mobile])],
             'search' => ['nullable', 'string', 'max:100'],
             'sort_by' => ['nullable', Rule::in(['sort_order', 'created_at', 'status'])],
             'sort_order' => ['nullable', Rule::in(['asc', 'desc'])],

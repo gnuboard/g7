@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
  * 직접 작성형 팝업 본문 정화기 — 저장할 때 언어별 HTML 을 HTMLPurifier 로 거른다(저장본 = 정화본).
  *
  * 코어에는 저장 시 HTML 정화기가 없다(게시판·페이지는 출력 때만 거른다). 팝업은 모든 사용자 화면 위에 뜨므로
- * 저장 때 한 번 거르고, 사용자 레이어가 출력 때 DOMPurify 로 한 번 더 거른다(PO 결정 #812 R6, 이커머스 상품 설명 선례).
+ * 저장 때 한 번 거르고, 사용자 레이어가 출력 때 DOMPurify 로 한 번 더 거른다(결정 R6, 이커머스 상품 설명 선례).
  * 허용 목록은 `sirsoft-popup.popup.filter_sanitize_config` 필터로 다른 확장이 넓히거나 좁힐 수 있다.
  */
 class PopupHtmlSanitizer

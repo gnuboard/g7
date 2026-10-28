@@ -119,6 +119,7 @@
             },
             "action": {
                 "edit": "수정",
+                "toggle_active": "노출/비노출 전환",
                 "copy": "복사",
                 "delete": "삭제"
             }
@@ -259,6 +260,7 @@
         }
     },
     "settings": {
+        "breadcrumb": "플러그인 관리 › 팝업 › 설정",
         "title": "팝업 플러그인 환경설정",
         "description": "여기서 정한 표시 방식은 모든 팝업에 똑같이 적용됩니다.",
         "back_to_list": "팝업 관리로",

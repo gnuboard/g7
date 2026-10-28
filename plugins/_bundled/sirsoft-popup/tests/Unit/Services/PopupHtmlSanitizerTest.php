@@ -8,7 +8,7 @@ use Plugins\Sirsoft\Popup\Tests\PluginTestCase;
 /**
  * 직접 작성형 본문 정화 테스트 (매니페스트 html-sanitizer.yaml)
  *
- * 저장본 = 정화본. 위험 요소는 지우고 CKEditor 서식은 남긴다(PO 결정 #812 R6).
+ * 저장본 = 정화본. 위험 요소는 지우고 CKEditor 서식은 남긴다(결정 R6).
  */
 class PopupHtmlSanitizerTest extends PluginTestCase
 {

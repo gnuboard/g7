@@ -8,7 +8,7 @@ namespace Plugins\Sirsoft\Popup\Support;
  * 사용자 레이어(`resources/js/lib/popupVisibility.ts` 의 `matchesRoute`)가 같은 규칙으로 판정한다. 두 구현이 같은 표본에서
  * 같은 결과를 내는지 양쪽 테스트(`tests/Unit/Support/RoutePathTest.php`·`popupVisibility.test.ts`)가 잠근다.
  *
- * 매칭(PO 결정 #812 D2): 경로 경계 하위 포함 — `/shop` 은 `/shop`·`/shop/…` 에 맞고 `/shopping` 에는 맞지 않는다.
+ * 매칭(결정 D2): 경로 경계 하위 포함 — `/shop` 은 `/shop`·`/shop/…` 에 맞고 `/shopping` 에는 맞지 않는다.
  * `/` 는 홈(`/`)에만 맞는다(「전체 페이지」 선택과 구분). 대소문자는 구분한다.
  */
 class RoutePath

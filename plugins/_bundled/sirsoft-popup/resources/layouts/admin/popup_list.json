@@ -307,7 +307,7 @@
                         ]
                     },
                     {
-                        "comment": "지금 노출 중 — 캐러셀 순서대로. 경로·대상·기기는 방문자마다 달라 기기 표시만 단다(PO 결정 #812 R10)",
+                        "comment": "지금 노출 중 — 캐러셀 순서대로. 경로·대상·기기는 방문자마다 달라 기기 표시만 단다(결정 R10)",
                         "id": "summary_card",
                         "type": "basic",
                         "name": "Section",
@@ -1092,6 +1092,67 @@
                                             "query": {}
                                         }
                                     },
+                                    "toggle_active": {
+                                        "comment": "행 하나의 노출·비노출 전환 — 일괄 노출/비노출과 같은 API 로 그 행의 반대 상태를 보낸다",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isBulkWorking": true
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "target": "/api/plugins/sirsoft-popup/admin/popups/bulk-status",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "PATCH",
+                                                    "body": {
+                                                        "ids": "{{[$args[1].id]}}",
+                                                        "is_active": "{{!$args[1].is_active}}"
+                                                    }
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isBulkWorking": false,
+                                                            "bulkSelectedIds": []
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "{{response.message}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "actionRef": "reloadPopups"
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "isBulkWorking": false
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
                                     "copy": {
                                         "handler": "sequence",
                                         "actions": [
@@ -1149,6 +1210,12 @@
                                     "mergeQuery": true,
                                     "label": "$t:sirsoft-popup.admin.list.action.edit",
                                     "iconName": "fa-regular fa-pen-to-square",
+                                    "disabledField": "abilities.can_update"
+                                },
+                                {
+                                    "id": "toggle_active",
+                                    "label": "$t:sirsoft-popup.admin.list.action.toggle_active",
+                                    "iconName": "fa-regular fa-eye",
                                     "disabledField": "abilities.can_update"
                                 },
                                 {
@@ -1499,7 +1566,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50",
                                 "disabled": "{{_global.isDeleting}}"
                             },
                             "children": [
@@ -1668,7 +1735,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50",
+                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50",
                                 "disabled": "{{_global.isBulkWorking}}"
                             },
                             "children": [
@@ -1693,7 +1760,7 @@
             ]
         },
         {
-            "comment": "복사 확인 — 복사본은 비활성으로 맨 뒤에 붙는다(같은 팝업이 사용자 화면에 두 번 뜨지 않게, PO 결정 #812 R2)",
+            "comment": "복사 확인 — 복사본은 비활성으로 맨 뒤에 붙는다(같은 팝업이 사용자 화면에 두 번 뜨지 않게, 결정 R2)",
             "id": "popup_bulk_copy_modal",
             "type": "composite",
             "name": "Modal",
@@ -1840,10 +1907,6 @@
                     "handler": "sequence",
                     "actions": [
                         {
-                            "handler": "closeModal",
-                            "target": "popup_reorder_modal"
-                        },
-                        {
                             "handler": "setState",
                             "params": {
                                 "target": "global",
@@ -1851,6 +1914,10 @@
                                 "reorderOriginal": null,
                                 "reorderError": null
                             }
+                        },
+                        {
+                            "handler": "closeModal",
+                            "target": "popup_reorder_modal"
                         }
                     ]
                 }
@@ -2069,10 +2136,6 @@
                                             "handler": "sequence",
                                             "actions": [
                                                 {
-                                                    "handler": "closeModal",
-                                                    "target": "popup_reorder_modal"
-                                                },
-                                                {
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
@@ -2080,6 +2143,10 @@
                                                         "reorderOriginal": null,
                                                         "reorderError": null
                                                     }
+                                                },
+                                                {
+                                                    "handler": "closeModal",
+                                                    "target": "popup_reorder_modal"
                                                 }
                                             ]
                                         }

@@ -1,7 +1,7 @@
 /**
  * @file popupVisibility.test.ts
  * @description 노출 페이지 경로 판정 — 브라우저 층(매니페스트 route-matching.yaml, layer=ts).
- * 서버 `RoutePathTest`(layer=php)와 같은 표본에서 같은 결과를 내야 한다(PO 결정 #812 D2).
+ * 서버 `RoutePathTest`(layer=php)와 같은 표본에서 같은 결과를 내야 한다(결정 D2).
  */
 import { describe, it, expect } from 'vitest';
 import { matchesPage, matchesRoute, normalizeRoute } from '../../lib/popupVisibility';

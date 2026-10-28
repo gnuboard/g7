@@ -32,7 +32,16 @@
   </permissions>
   <slot name="content">
     <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
-      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-popup.settings.title" description="$t:sirsoft-popup.settings.description" backPath="/admin/plugins/sirsoft-popup/popups" backLabel="$t:sirsoft-popup.settings.back_to_list"/>
+      <!-- PageHeader 는 돌아가기 props 가 없다 — 목록으로 가는 링크를 머리 위에 따로 둔다 -->
+      <a data-ref="back_to_list_link" href="/admin/plugins/sirsoft-popup/popups" class="inline-flex items-center gap-1 mb-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+        <on type="click">
+          <navigate/>
+        </on>
+        <span aria-hidden="true">‹</span>
+        <span>$t:sirsoft-popup.settings.back_to_list</span>
+      </a>
+      <p data-ref="settings_breadcrumb" class="text-xs text-gray-500 dark:text-gray-400 mb-1">$t:sirsoft-popup.settings.breadcrumb</p>
+      <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-popup.settings.title" description="$t:sirsoft-popup.settings.description"/>
       <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
         <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
         <span class="text-xs text-yellow-700 dark:text-yellow-300">$t:sirsoft-popup.plugin_read_only</span>
@@ -82,10 +91,12 @@
             <h2 class="card-title">$t:sirsoft-popup.settings.mobile.title</h2>
             <radio-group data-type="composite" name="mobile_style" :inline="true" disabled="{{_computed.isPluginReadOnly}}" label="$t:sirsoft-popup.settings.mobile.title">
               <prop name="options">
-                <item label="$t:sirsoft-popup.settings.mobile_style.center" description="$t:sirsoft-popup.settings.mobile_style.center_desc" value="center"/>
-                <item label="$t:sirsoft-popup.settings.mobile_style.sheet" description="$t:sirsoft-popup.settings.mobile_style.sheet_desc" value="sheet"/>
+                <item label="$t:sirsoft-popup.settings.mobile_style.center" value="center"/>
+                <item label="$t:sirsoft-popup.settings.mobile_style.sheet" value="sheet"/>
               </prop>
             </radio-group>
+            <!-- RadioGroup 선택지는 설명을 그리지 않는다 — 고른 방식의 설명을 아래에 둔다 -->
+            <p data-ref="mobile_style_desc" class="form-hint mt-2">{{$t('sirsoft-popup.settings.mobile_style.' + (_local.form?.mobile_style === 'center' ? 'center' : 'sheet') + '_desc')}}</p>
           </section>
           <!-- 배경·캐러셀 — 자동 넘김을 끄면 간격을 잠근다 -->
           <section data-ref="behavior_card" class="admin-card">
@@ -111,7 +122,7 @@
               </div>
             </div>
           </section>
-          <!-- 닫기 옵션 — 「보지 않기」는 그때 보이던 팝업들을 그 기간 동안 숨기고, 그 뒤 새로 등록한 팝업은 바로 보인다(PO 결정 #812 D3) -->
+          <!-- 닫기 옵션 — 「보지 않기」는 그때 보이던 팝업들을 그 기간 동안 숨기고, 그 뒤 새로 등록한 팝업은 바로 보인다(결정 D3) -->
           <section data-ref="dismiss_card" class="admin-card">
             <h2 class="card-title">$t:sirsoft-popup.settings.dismiss.title</h2>
             <div class="row-stack">
@@ -126,7 +137,7 @@
                 <input type="number" id="popup_dismiss_days" name="dismiss_days" :min="1" :max="30" aria-label="$t:sirsoft-popup.settings.dismiss.days_label" class="input w-24" disabled="{{_computed.isPluginReadOnly}}"/>
                 <span>$t:sirsoft-popup.settings.dismiss.days_unit</span>
               </label>
-              <p data-if="{{_local.errors?.dismiss_days}}" class="form-error">{{_local.errors?.dismiss_days?.[0]}}</p>
+              <p data-if="{{_local.errors?.dismiss_days}}" class="form-error">{{_local.errors?.dismiss_days?.[0] ?? ''}}</p>
               <p class="form-hint">$t:sirsoft-popup.settings.dismiss.hint</p>
             </div>
           </section>
@@ -138,7 +149,7 @@
                 <label class="form-label" htmlFor="popup_max_upload_mb">$t:sirsoft-popup.settings.fields.max_upload_mb.label</label>
                 <input type="number" id="popup_max_upload_mb" name="max_upload_mb" :min="1" :max="10" class="input w-32" disabled="{{_computed.isPluginReadOnly}}"/>
                 <p class="form-hint">$t:sirsoft-popup.settings.fields.max_upload_mb.hint</p>
-                <p data-if="{{_local.errors?.max_upload_mb}}" class="form-error">{{_local.errors?.max_upload_mb?.[0]}}</p>
+                <p data-if="{{_local.errors?.max_upload_mb}}" class="form-error">{{_local.errors?.max_upload_mb?.[0] ?? ''}}</p>
                 <p data-ref="server_upload_limit" data-if="{{!!upload_limit?.data?.upload?.server_limit_mb}}" class="form-hint">$t:sirsoft-popup.settings.fields.max_upload_mb.server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}</p>
                 <p data-ref="server_upload_limit_warning" data-if="{{!!upload_limit?.data?.upload?.server_limit_mb &amp;&amp; Number(_local.form?.max_upload_mb ?? 0) &gt; upload_limit.data.upload.server_limit_mb}}" role="status" class="text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-popup.settings.fields.max_upload_mb.over_server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}</p>
               </div>
@@ -146,7 +157,7 @@
                 <label class="form-label" htmlFor="popup_public_cache_minutes">$t:sirsoft-popup.settings.fields.public_cache_minutes.label</label>
                 <input type="number" id="popup_public_cache_minutes" name="public_cache_minutes" :min="0" :max="60" class="input w-32" disabled="{{_computed.isPluginReadOnly}}"/>
                 <p class="form-hint">$t:sirsoft-popup.settings.fields.public_cache_minutes.hint</p>
-                <p data-if="{{_local.errors?.public_cache_minutes}}" class="form-error">{{_local.errors?.public_cache_minutes?.[0]}}</p>
+                <p data-if="{{_local.errors?.public_cache_minutes}}" class="form-error">{{_local.errors?.public_cache_minutes?.[0] ?? ''}}</p>
               </div>
             </div>
           </section>

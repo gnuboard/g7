@@ -306,7 +306,7 @@
                                 "props": {
                                     "id": "popup_form_preview",
                                     "aria-labelledby": "popup_form_preview_heading",
-                                    "className": "admin-card self-start order-first lg:order-last"
+                                    "className": "admin-card self-start order-first lg:order-last lg:sticky top-4"
                                 },
                                 "children": [
                                     {
@@ -410,7 +410,7 @@
                                                 "props": {
                                                     "id": "popup_preview_locale",
                                                     "className": "px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs",
-                                                    "value": "{{_local.previewLocale || display_settings?.data?.editor?.default_locale || 'ko'}}",
+                                                    "value": "{{_local.previewLocale || display_settings?.data?.editor?.default_locale || $locale}}",
                                                     "options": "{{(display_settings?.data?.editor?.locales ?? []).map(l => ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}"
                                                 }
                                             }
@@ -424,8 +424,8 @@
                                             "form": "{{_local.form}}",
                                             "settings": "{{display_settings?.data?.settings ?? null}}",
                                             "device": "{{_local.previewDevice}}",
-                                            "locale": "{{_local.previewLocale || display_settings?.data?.editor?.default_locale || 'ko'}}",
-                                            "defaultLocale": "{{display_settings?.data?.editor?.default_locale ?? 'ko'}}"
+                                            "locale": "{{_local.previewLocale || display_settings?.data?.editor?.default_locale || $locale}}",
+                                            "defaultLocale": "{{display_settings?.data?.editor?.default_locale ?? $locale}}"
                                         }
                                     },
                                     {
@@ -709,7 +709,8 @@
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
-                                                                            "form.images.pc": "{{$args[0]?.[0] ?? null}}"
+                                                                            "form.images.pc": "{{$args[0]?.[0] ?? null}}",
+                                                                            "hasChanges": true
                                                                         }
                                                                     },
                                                                     {
@@ -728,7 +729,8 @@
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
-                                                                            "form.images.pc": null
+                                                                            "form.images.pc": null,
+                                                                            "hasChanges": true
                                                                         }
                                                                     }
                                                                 ],
@@ -836,7 +838,8 @@
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
-                                                                            "form.images.mobile": "{{$args[0]?.[0] ?? null}}"
+                                                                            "form.images.mobile": "{{$args[0]?.[0] ?? null}}",
+                                                                            "hasChanges": true
                                                                         }
                                                                     },
                                                                     {
@@ -855,7 +858,8 @@
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
-                                                                            "form.images.mobile": null
+                                                                            "form.images.mobile": null,
+                                                                            "hasChanges": true
                                                                         }
                                                                     }
                                                                 ],
@@ -899,12 +903,14 @@
                                                                 "text": "$t:sirsoft-popup.admin.form.image_alt"
                                                             },
                                                             {
+                                                                "comment": "비운 언어는 기본 언어 대체 텍스트로 나간다 — 그 값을 자리표시로 보여 대체됨을 알린다",
                                                                 "type": "composite",
                                                                 "name": "MultilingualInput",
                                                                 "props": {
                                                                     "name": "image_alt",
                                                                     "layout": "tabs",
                                                                     "maxLength": 200,
+                                                                    "placeholder": "{{_local.form?.image_alt?.[display_settings?.data?.editor?.default_locale ?? $locale] ?? ''}}",
                                                                     "error": "{{_local.errors?.image_alt?.[0] ?? ''}}"
                                                                 }
                                                             },
@@ -1054,12 +1060,13 @@
                                                                         "name": "HtmlEditor",
                                                                         "actions": [
                                                                             {
-                                                                                "comment": "본문 — 편집기 교체 여부와 무관하게 폼 상태 한 곳으로만 모은다",
+                                                                                "comment": "본문 — 편집기 교체 여부와 무관하게 폼 상태 한 곳으로만 모은다. value 를 직접 넘겨 자동 변경 감지가 없으므로 hasChanges 를 직접 올린다",
                                                                                 "type": "change",
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "local",
-                                                                                    "form.body_html": "{{$event.target.value}}"
+                                                                                    "form.body_html": "{{$event.target.value}}",
+                                                                                    "hasChanges": true
                                                                                 }
                                                                             }
                                                                         ],
@@ -1078,11 +1085,11 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "P",
-                                                                "if": "{{_local.errors?.body_html || _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? 'ko')]}}",
+                                                                "if": "{{_local.errors?.body_html || _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? $locale)]}}",
                                                                 "props": {
                                                                     "className": "form-error"
                                                                 },
-                                                                "text": "{{_local.errors?.body_html?.[0] ?? _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? 'ko')]?.[0] ?? ''}}"
+                                                                "text": "{{_local.errors?.body_html?.[0] ?? _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? $locale)]?.[0] ?? ''}}"
                                                             },
                                                             {
                                                                 "type": "basic",

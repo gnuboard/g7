@@ -27,6 +27,7 @@ axes:
     - cache_cleared_on_image_change
     - cache_cleared_on_plugin_setting_change
     - cache_cleared_on_plugin_deactivate
+    - cache_cleared_on_plugin_uninstall
     - gdpr_cookie_added_to_cookie_scope
     - gdpr_existing_keys_preserved
     - gdpr_cookie_name_passes_gdpr_pattern

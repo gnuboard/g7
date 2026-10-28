@@ -4,6 +4,7 @@ namespace Plugins\Sirsoft\Popup\Http\Controllers\Admin;
 
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
+use Plugins\Sirsoft\Popup\Exceptions\PopupImageAttachedException;
 use Plugins\Sirsoft\Popup\Http\Requests\Admin\PopupImageUploadRequest;
 use Plugins\Sirsoft\Popup\Http\Resources\PopupImageResource;
 use Plugins\Sirsoft\Popup\Models\PopupImage;
@@ -48,11 +49,13 @@ class PopupImageController extends AdminBaseController
      */
     public function destroy(PopupImage $image): JsonResponse
     {
-        if ($image->popup_id !== null) {
-            return $this->error('sirsoft-popup::messages.image.attached_not_deletable', 422);
+        try {
+            $deleted = $this->images->deleteTempImage($image);
+        } catch (PopupImageAttachedException $e) {
+            return $this->error($e->getMessageKey(), 422);
         }
 
-        if (! $this->images->deleteImage($image)) {
+        if (! $deleted) {
             return $this->error('sirsoft-popup::messages.image.delete_failed', 500);
         }
 

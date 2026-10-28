@@ -39,7 +39,7 @@ class PopupController extends PublicBaseController
 
         return $this->success(
             'sirsoft-popup::messages.popup.fetched',
-            $this->popups->forRequest($request->user() !== null, app()->getLocale(), $isBot),
+            $this->popups->forRequest($request->user(), app()->getLocale(), $isBot),
         );
     }
 }

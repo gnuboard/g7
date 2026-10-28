@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Popup\Services;
 
+use App\Exceptions\ConcurrentModificationException;
 use App\Extension\HookManager;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -11,7 +12,6 @@ use Plugins\Sirsoft\Popup\Enums\ContentType;
 use Plugins\Sirsoft\Popup\Models\Popup;
 use Plugins\Sirsoft\Popup\Models\PopupImage;
 use Plugins\Sirsoft\Popup\Repositories\Contracts\PopupRepositoryInterface;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
  * 팝업 서비스 — 훅 발행·트랜잭션·순서·복사·영구 삭제·본문 정화를 맡는다. 검증은 FormRequest, 쿼리는 Repository 가 한다.
@@ -155,7 +155,7 @@ class PopupService
      * @param  int|null  $actorId  수정한 회원 ID
      * @return Popup 고친 팝업
      *
-     * @throws ConflictHttpException 다른 관리자가 먼저 저장했을 때
+     * @throws ConcurrentModificationException 다른 관리자가 먼저 저장했을 때(컨트롤러가 409 로 바꾼다)
      */
     public function update(Popup $popup, array $data, ?int $actorId): Popup
     {
@@ -169,7 +169,7 @@ class PopupService
         [$updated, $images, $snapshot] = DB::transaction(function () use ($popup, $data, $actorId, $expectedRevision) {
             $popup = $this->popups->findForUpdate($popup->id);
             if ($popup->lock_version !== $expectedRevision) {
-                throw new ConflictHttpException(__('sirsoft-popup::messages.popup.conflict'));
+                throw new ConcurrentModificationException($popup->lock_version, $expectedRevision, 'popup');
             }
 
             $selection = $this->takeImageSelection($data);
@@ -249,7 +249,7 @@ class PopupService
     /**
      * 여러 팝업을 복사합니다 — 복사본은 비활성으로 맨 뒤에(원래 순서 유지), 관리용 제목 뒤 「 (복사)」, 이미지 파일까지 복제.
      *
-     * 비활성으로 만드는 이유: 복사 즉시 같은 팝업이 사용자 화면에 두 번 뜨지 않게(PO 결정 #812 R2).
+     * 비활성으로 만드는 이유: 복사 즉시 같은 팝업이 사용자 화면에 두 번 뜨지 않게(결정 R2).
      * 한 건 복사가 실패하면(이미지 파일 복제 실패 등) 그 건만 되돌리고 나머지는 계속한다 — 실패 id 는 결과로 돌려준다.
      *
      * @param  array<int, int>  $ids  원본 팝업 ID 목록

@@ -44,6 +44,7 @@ axes:
     - admin_period_display_in_site_timezone
     - update_detects_changes_for_log
     - update_revision_mismatch_returns_409
+    - update_revision_rechecked_under_lock
     - update_replaces_image_and_deletes_old_file
     - update_switch_to_html_removes_images
     - show_returns_raw_translations_images_revision
@@ -63,6 +64,7 @@ axes:
     - image_upload_php_limit_message
     - image_delete_only_temp
     - display_settings_returns_settings_and_upload_limits
+    - settings_ranges_match_schema
     - hooks_fire_before_and_after
 
 effects:
@@ -75,3 +77,4 @@ test_files:
   - plugins/_bundled/sirsoft-popup/tests/Feature/Admin/PopupControllerTest.php
   - plugins/_bundled/sirsoft-popup/tests/Feature/Admin/PopupImageControllerTest.php
   - plugins/_bundled/sirsoft-popup/tests/Unit/Requests/PopupRequestTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Support/SettingsParityTest.php

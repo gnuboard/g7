@@ -127,7 +127,7 @@
       </div>
       <div data-ref="popup_form_columns" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- 미리보기 — 휴대폰 폭에서는 맨 위(시안 모바일 보드), 넓은 화면에서는 오른쪽 -->
-        <section id="popup_form_preview" data-ref="preview_card" aria-labelledby="popup_form_preview_heading" class="admin-card self-start order-first lg:order-last">
+        <section id="popup_form_preview" data-ref="preview_card" aria-labelledby="popup_form_preview_heading" class="admin-card self-start order-first lg:order-last lg:sticky top-4">
           <div class="flex-between flex-wrap gap-2 mb-3">
             <h2 id="popup_form_preview_heading" class="card-title">$t:sirsoft-popup.admin.preview.title</h2>
             <div role="group" aria-label="$t:sirsoft-popup.admin.preview.device_label" class="flex gap-1">
@@ -147,13 +147,13 @@
           </div>
           <label data-if="{{(display_settings?.data?.editor?.locales ?? []).length &gt; 1}}" class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 mb-2" htmlFor="popup_preview_locale">
             <span>$t:sirsoft-popup.admin.preview.locale</span>
-            <select id="popup_preview_locale" class="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs" value="{{_local.previewLocale || display_settings?.data?.editor?.default_locale || 'ko'}}" options="{{(display_settings?.data?.editor?.locales ?? []).map(l =&gt; ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}">
+            <select id="popup_preview_locale" class="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-xs" value="{{_local.previewLocale || display_settings?.data?.editor?.default_locale || $locale}}" options="{{(display_settings?.data?.editor?.locales ?? []).map(l =&gt; ({ value: l, label: _global.appConfig?.localeNames?.[l] ?? l }))}}">
               <on type="change">
                 <set-state target="local" previewLocale="{{$event.target.value}}"/>
               </on>
             </select>
           </label>
-          <sirsoft-popup.popup-preview data-type="composite" data-ref="form_preview" form="{{_local.form}}" settings="{{display_settings?.data?.settings ?? null}}" device="{{_local.previewDevice}}" locale="{{_local.previewLocale || display_settings?.data?.editor?.default_locale || 'ko'}}" defaultLocale="{{display_settings?.data?.editor?.default_locale ?? 'ko'}}"/>
+          <sirsoft-popup.popup-preview data-type="composite" data-ref="form_preview" form="{{_local.form}}" settings="{{display_settings?.data?.settings ?? null}}" device="{{_local.previewDevice}}" locale="{{_local.previewLocale || display_settings?.data?.editor?.default_locale || $locale}}" defaultLocale="{{display_settings?.data?.editor?.default_locale ?? $locale}}"/>
           <p data-if="{{_local.previewDevice === 'mobile' &amp;&amp; _computed.isImage &amp;&amp; !!_local.form?.images?.pc &amp;&amp; !_local.form?.images?.mobile}}" class="form-hint mt-2">$t:sirsoft-popup.admin.preview.mobile_falls_back</p>
           <p data-if="{{!!display_settings?.data?.settings}}" class="form-hint mt-2">$t:sirsoft-popup.admin.preview.based_on|summary={{_local.previewDevice === 'mobile' ? $t('sirsoft-popup.settings.mobile_style.' + display_settings.data.settings.mobile_style) : $t('sirsoft-popup.settings.pc_position.' + display_settings.data.settings.pc_position) + ' · ' + display_settings.data.settings.pc_width + '×' + display_settings.data.settings.pc_height}}</p>
           <a data-if="{{display_settings?.data?.can_update_settings === true}}" href="/admin/plugins/sirsoft-popup/settings" class="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
@@ -212,13 +212,13 @@
                     <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
                   </on>
                   <on type="change" event="onUploadComplete">
-                    <set-state target="local" form.images.pc="{{$args[0]?.[0] ?? null}}"/>
+                    <set-state target="local" form.images.pc="{{$args[0]?.[0] ?? null}}" :hasChanges="true"/>
                   </on>
                   <on type="change" event="onUploadError">
                     <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
                   </on>
                   <on type="change" event="onRemove">
-                    <set-state target="local" :form.images.pc="null"/>
+                    <set-state target="local" :form.images.pc="null" :hasChanges="true"/>
                   </on>
                 </file-uploader>
                 <p data-if="{{_computed.pcSizeMismatch}}" data-ref="pc_size_warning" class="mt-2 text-sm text-amber-700 dark:text-amber-300">$t:sirsoft-popup.admin.form.image.size_mismatch|width={{_local.form?.images?.pc?.width}}|height={{_local.form?.images?.pc?.height}}|recommended={{_computed.pcWidth + '×' + _computed.pcHeight}}</p>
@@ -240,20 +240,21 @@
                     <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
                   </on>
                   <on type="change" event="onUploadComplete">
-                    <set-state target="local" form.images.mobile="{{$args[0]?.[0] ?? null}}"/>
+                    <set-state target="local" form.images.mobile="{{$args[0]?.[0] ?? null}}" :hasChanges="true"/>
                   </on>
                   <on type="change" event="onUploadError">
                     <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
                   </on>
                   <on type="change" event="onRemove">
-                    <set-state target="local" :form.images.mobile="null"/>
+                    <set-state target="local" :form.images.mobile="null" :hasChanges="true"/>
                   </on>
                 </file-uploader>
                 <p data-if="{{_local.errors?.mobile_image_id}}" class="form-error">{{_local.errors?.mobile_image_id?.[0] ?? ''}}</p>
               </div>
               <div data-ref="field_image_alt">
                 <label class="form-label">$t:sirsoft-popup.admin.form.image_alt</label>
-                <multilingual-input data-type="composite" name="image_alt" layout="tabs" :maxLength="200" error="{{_local.errors?.image_alt?.[0] ?? ''}}"/>
+                <!-- 비운 언어는 기본 언어 대체 텍스트로 나간다 — 그 값을 자리표시로 보여 대체됨을 알린다 -->
+                <multilingual-input data-type="composite" name="image_alt" layout="tabs" :maxLength="200" placeholder="{{_local.form?.image_alt?.[display_settings?.data?.editor?.default_locale ?? $locale] ?? ''}}" error="{{_local.errors?.image_alt?.[0] ?? ''}}"/>
                 <p class="form-hint">$t:sirsoft-popup.admin.form.image_alt_hint</p>
               </div>
               <div data-ref="field_link_url">
@@ -282,13 +283,13 @@
                   <default>
                     <html-editor data-type="composite" name="body_html" :multilingual="true" value="{{_local.form?.body_html}}" :isHtml="true" :showHtmlModeToggle="false" :rows="12" placeholder="$t:sirsoft-popup.admin.form.body_placeholder">
                       <on type="change">
-                        <!-- 본문 — 편집기 교체 여부와 무관하게 폼 상태 한 곳으로만 모은다 -->
-                        <set-state target="local" form.body_html="{{$event.target.value}}"/>
+                        <!-- 본문 — 편집기 교체 여부와 무관하게 폼 상태 한 곳으로만 모은다. value 를 직접 넘겨 자동 변경 감지가 없으므로 hasChanges 를 직접 올린다 -->
+                        <set-state target="local" form.body_html="{{$event.target.value}}" :hasChanges="true"/>
                       </on>
                     </html-editor>
                   </default>
                 </extension-point>
-                <p data-if="{{_local.errors?.body_html || _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? 'ko')]}}" class="form-error">{{_local.errors?.body_html?.[0] ?? _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? 'ko')]?.[0] ?? ''}}</p>
+                <p data-if="{{_local.errors?.body_html || _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? $locale)]}}" class="form-error">{{_local.errors?.body_html?.[0] ?? _local.errors?.['body_html.' + (display_settings?.data?.editor?.default_locale ?? $locale)]?.[0] ?? ''}}</p>
                 <p class="form-hint">$t:sirsoft-popup.admin.form.editor_hint</p>
               </div>
             </div>
