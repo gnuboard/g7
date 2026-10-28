@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Popup\Tests;
 
+use App\Contracts\Extension\StorageInterface;
 use App\Enums\PermissionType;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
@@ -266,6 +267,28 @@ abstract class PluginTestCase extends TestCase
         $storage = (new \ReflectionProperty($service, 'storage'))->getValue($service);
 
         return Storage::disk($storage->getDisk());
+    }
+
+    /**
+     * 이미지 폴더의 파일 목록을 반환합니다 — 드라이버가 폴더를 만들 때 두는 표시 파일은 뺀다.
+     *
+     * @return array<int, string> 이미지 파일 경로
+     */
+    protected function imageFiles(): array
+    {
+        return $this->imageStorage()->allFiles('sirsoft-popup/images');
+    }
+
+    /**
+     * 이미지 서비스가 쓰는 스토리지 드라이버를 반환합니다 — 저장소만 바꾼 서비스를 만들 때.
+     *
+     * @return StorageInterface 플러그인 스토리지 드라이버
+     */
+    protected function imageStorageDriver(): StorageInterface
+    {
+        $service = $this->app->make(PopupImageService::class);
+
+        return (new \ReflectionProperty($service, 'storage'))->getValue($service);
     }
 
     /**

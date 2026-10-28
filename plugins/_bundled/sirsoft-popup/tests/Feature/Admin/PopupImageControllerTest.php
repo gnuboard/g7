@@ -2,10 +2,13 @@
 
 namespace Plugins\Sirsoft\Popup\Tests\Feature\Admin;
 
+use App\Contracts\Extension\StorageInterface;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\Popup\Models\PopupImage;
+use Plugins\Sirsoft\Popup\Repositories\Contracts\PopupImageRepositoryInterface;
+use Plugins\Sirsoft\Popup\Services\PopupImageService;
 use Plugins\Sirsoft\Popup\Support\UploadLimit;
 use Plugins\Sirsoft\Popup\Tests\PluginTestCase;
 
@@ -120,5 +123,50 @@ class PopupImageControllerTest extends PluginTestCase
         $attached = PopupImage::query()->where('popup_id', $popupId)->first();
         $this->actingAs($this->admin)->deleteJson($this->api('/admin/popup-images/'.$attached->id))->assertStatus(422);
         $this->assertNotNull(PopupImage::query()->find($attached->id));
+    }
+
+    /**
+     * 파일을 쓰지 못하면 행을 만들지 않고 500 과 안내를 돌려준다 — 파일 없는 이미지가 팝업에 붙지 않게.
+     *
+     * @scenario surface=image_upload_write_failure_leaves_no_row
+     *
+     * @effects files_created_or_removed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_upload_write_failure_leaves_no_row(): void
+    {
+        $storage = \Mockery::mock(StorageInterface::class);
+        $storage->shouldReceive('put')->andReturn(false);
+        $storage->shouldReceive('getDisk')->andReturn('local');
+        $this->app->instance(PopupImageService::class, new PopupImageService(app(PopupImageRepositoryInterface::class), $storage));
+        $before = PopupImage::query()->count();
+
+        $this->uploadImage($this->admin, 'pc', (string) Str::uuid())
+            ->assertStatus(500)
+            ->assertJsonPath('message', __('sirsoft-popup::messages.image.upload_failed'));
+        $this->assertSame($before, PopupImage::query()->count());
+    }
+
+    /**
+     * 파일을 쓴 뒤 행 저장이 실패하면 쓴 파일을 지운다 — 행이 없는 파일은 임시 이미지 정리도 찾지 못한다.
+     *
+     * @scenario surface=image_upload_db_failure_removes_file
+     *
+     * @effects files_created_or_removed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_upload_db_failure_removes_written_file(): void
+    {
+        $repository = \Mockery::mock(app(PopupImageRepositoryInterface::class));
+        $repository->shouldReceive('create')->andThrow(new \RuntimeException('DB 연결 끊김'));
+        $this->app->instance(PopupImageService::class, new PopupImageService($repository, $this->imageStorageDriver()));
+        $before = $this->imageFiles();
+
+        $this->uploadImage($this->admin, 'pc', (string) Str::uuid())
+            ->assertStatus(500)
+            ->assertJsonPath('message', __('sirsoft-popup::messages.image.upload_failed'));
+        $this->assertSame($before, $this->imageFiles());
     }
 }

@@ -11,7 +11,7 @@
 ## 계층 지도
 
 <!-- @intent START -->
-Controller(`Admin\PopupController`·`PopupImageController`·`DisplaySettingsController`, `Public\PopupController`·`PopupImageController`) → FormRequest(`StorePopupRequest`·`UpdatePopupRequest` 가 `PopupFieldRules` 공유) → Service(`PopupService` 훅·트랜잭션·복사·정화 호출, `PopupImageService` 파일, `PublicPopupService` 캐시, `PopupHtmlSanitizer`) → RepositoryInterface → Repository(`PopupRepository` 상태 SQL 판정 한 곳) → Model(`Popup`·`PopupImage`). 판정 규칙의 공유 지점: 상태 = `PopupStatus::resolve` ↔ `PopupRepository::applyStatusFilter`, 경로 = `Support\RoutePath` ↔ `resources/js/lib/popupVisibility.ts`.
+Controller(`Admin\PopupController`·`PopupImageController`·`DisplaySettingsController`, `Public\PopupController`·`PopupImageController`) → FormRequest(`StorePopupRequest`·`UpdatePopupRequest` 가 `PopupFieldRules` 공유, Rule `SafeLinkUrl`·`PopupRoute`·`SanitizedBodyNotEmpty`·`SelectablePopupImage` 등) → Service(`PopupService` 훅·트랜잭션·복사·정화 호출, `PopupImageService` 파일, `PublicPopupService` 캐시, `PopupHtmlSanitizer`) → RepositoryInterface → Repository(`PopupRepository` 상태 SQL 판정 한 곳) → Model(`Popup`·`PopupImage`). 예외는 메시지 키를 들고 다닌다(`PopupImageAttachedException` 422, `PopupImageCopyException` 복사 실패, `PopupImageUploadException` 업로드 저장 실패 500). 판정 규칙의 공유 지점: 상태 = `PopupStatus::resolve` ↔ `PopupRepository::applyStatusFilter`, 경로 = `Support\RoutePath` ↔ `resources/js/lib/popupVisibility.ts`.
 <!-- @intent END -->
 
 ## 디렉토리

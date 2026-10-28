@@ -7,6 +7,7 @@ return [
         'created' => 'Popup created.',
         'updated' => 'Popup updated.',
         'deleted' => 'Popup deleted.',
+        'upload_failed' => 'The image could not be saved. Please upload it again in a moment. If this keeps happening, check the server storage space.',
         'reordered' => 'Popup order changed.',
         'bulk_status' => 'Changed visibility of :count popups.',
         'bulk_copied' => 'Copied :count popups. Copies were added inactive at the end.',

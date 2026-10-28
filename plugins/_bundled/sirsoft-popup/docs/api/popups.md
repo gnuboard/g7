@@ -18,7 +18,8 @@
 
 - 관리자 API 는 모두 `auth:sanctum` + 관리자(`admin`) 미들웨어 뒤에 있고, 권한은 조회(`sirsoft-popup.popups.read`) · 등록·수정(`sirsoft-popup.popups.update`) · 삭제(`sirsoft-popup.popups.delete`) 셋입니다. 관리자가 아니면 403 `관리자 권한이 필요합니다.`, 관리자이지만 권한이 없으면 403 `해당 권한이 없습니다.` 입니다.
 - 기간 입력(`starts_at`·`ends_at`)은 사이트 시간대의 `YYYY-MM-DDTHH:mm`(datetime-local) 로 받아 UTC 로 저장하고, 응답의 `*_display`·`*_local` 은 다시 사이트 시간대로 돌려 줍니다.
-- 다국어 값(`image_alt`·`body_html`)은 `{언어 코드: 값}` 객체이며 사이트 지원 언어만 받습니다. 비운 언어는 사용자 화면에서 사이트 기본 언어 값으로 대체됩니다.
+- 다국어 값(`image_alt`·`body_html`)은 `{언어 코드: 값}` 객체이며 사이트 지원 언어만 받습니다. 비운 언어는 사용자 화면에서 사이트 기본 언어 값으로 대체됩니다. 수정 때는 언어팩을 꺼서 지원 목록에서 빠진 언어라도 이미 저장된 번역이면 받고(보내지 않아도 지우지 않음), 저장돼 있지 않던 지원 밖 언어만 422 입니다.
+- 직접 작성형 본문은 정화한 뒤에도 내용이 남아야 합니다 — 허용하지 않는 요소(`iframe`·`script`·`form` 등)만 있는 언어가 있으면 422(`body_html`)입니다.
 - 응답 예시의 ID·날짜·해시는 설명용 예시 값입니다(`{hash}` 는 64자 영숫자 이미지 해시 자리).
 
 ---
@@ -340,7 +341,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-popup.popups.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지). 이미지형인데 임시 묶음에 PC 이미지가 없음, 다른 묶음·다른 기기의 이미지 ID, 안전하지 않은 링크·경로, 기본 언어 본문 누락 포함 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지). 이미지형인데 임시 묶음에 PC 이미지가 없음, 다른 묶음·다른 기기의 이미지 ID, 안전하지 않은 링크·경로, 기본 언어 본문 누락, 지원 밖 언어 키, 정화 뒤 비는 본문 포함 |
 
 <!-- @generated:end -->
 
@@ -1275,7 +1276,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-popup.popups.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지). 이미지형인데 PC 이미지가 없음(`pc_image`), 다른 팝업·다른 묶음·다른 기기의 이미지 ID 포함 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지). 이미지형인데 PC 이미지가 없음(`pc_image`), 다른 팝업·다른 묶음·다른 기기의 이미지 ID, 저장돼 있지 않던 지원 밖 언어 키, 정화 뒤 비는 본문 포함 |
 | 404 | Not Found | 해당 ID 의 팝업이 없는 경우(라우트 모델 바인딩) |
 | 409 | Conflict | 보낸 `revision` 이 지금 세대 번호와 다른 경우 — 다른 관리자가 먼저 저장함(`sirsoft-popup::messages.popup.conflict`). 검증 오류보다 먼저 판정하고, 잠금을 잡은 뒤 한 번 더 확인합니다 |
 

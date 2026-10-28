@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Plugins\Sirsoft\Popup\Enums\ImageDevice;
 use Plugins\Sirsoft\Popup\Exceptions\PopupImageAttachedException;
 use Plugins\Sirsoft\Popup\Exceptions\PopupImageCopyException;
+use Plugins\Sirsoft\Popup\Exceptions\PopupImageUploadException;
 use Plugins\Sirsoft\Popup\Models\Popup;
 use Plugins\Sirsoft\Popup\Models\PopupImage;
 use Plugins\Sirsoft\Popup\Repositories\Contracts\PopupImageRepositoryInterface;
@@ -63,6 +64,8 @@ class PopupImageService
      * @param  string  $tempKey  등록·수정 화면 임시 묶음 키
      * @param  int|null  $actorId  올린 회원 ID
      * @return PopupImage 올린 이미지
+     *
+     * @throws PopupImageUploadException 파일을 쓰지 못했거나 행 저장이 실패했을 때(쓴 파일은 지운다)
      */
     public function upload(UploadedFile $file, string $device, string $tempKey, ?int $actorId): PopupImage
     {
@@ -78,12 +81,14 @@ class PopupImageService
         }
         [$width, $height] = $this->dimensions($file->getRealPath());
 
-        $this->storage->put(self::CATEGORY, $path, file_get_contents($file->getRealPath()));
+        if (! $this->storage->put(self::CATEGORY, $path, file_get_contents($file->getRealPath()))) {
+            throw new PopupImageUploadException;
+        }
 
         $previous = $this->images->findByOwnerAndDevice(null, $tempKey, $device);
 
-        $image = DB::transaction(function () use ($tempKey, $device, $hash, $path, $file, $mime, $width, $height, $actorId) {
-            return $this->images->create([
+        try {
+            $image = DB::transaction(fn () => $this->images->create([
                 'popup_id' => null,
                 'temp_key' => $tempKey,
                 'device' => $device,
@@ -96,8 +101,14 @@ class PopupImageService
                 'width' => $width,
                 'height' => $height,
                 'created_by' => $actorId,
-            ]);
-        });
+            ]));
+        } catch (\Throwable $e) {
+            // 행이 없는 파일은 임시 이미지 정리도 찾지 못한다 — 여기서 지운다
+            $this->deletePath($path, ['temp_key' => $tempKey]);
+            Log::error('팝업 이미지 행 저장 실패 — 쓴 파일을 지웠습니다', ['temp_key' => $tempKey, 'error' => $e->getMessage()]);
+
+            throw new PopupImageUploadException($e);
+        }
 
         if ($previous !== null) {
             $this->deleteImage($previous);
@@ -250,20 +261,27 @@ class PopupImageService
             throw PopupImageCopyException::writeFailed($source->id);
         }
 
-        return $this->images->create([
-            'popup_id' => $popupId,
-            'temp_key' => null,
-            'device' => $source->device,
-            'hash' => $hash,
-            'disk' => $this->storage->getDisk(),
-            'path' => $path,
-            'original_name' => $source->original_name,
-            'mime' => $source->mime,
-            'size' => $source->size,
-            'width' => $source->width,
-            'height' => $source->height,
-            'created_by' => $actorId,
-        ]);
+        try {
+            return $this->images->create([
+                'popup_id' => $popupId,
+                'temp_key' => null,
+                'device' => $source->device,
+                'hash' => $hash,
+                'disk' => $this->storage->getDisk(),
+                'path' => $path,
+                'original_name' => $source->original_name,
+                'mime' => $source->mime,
+                'size' => $source->size,
+                'width' => $source->width,
+                'height' => $source->height,
+                'created_by' => $actorId,
+            ]);
+        } catch (\Throwable $e) {
+            // 행이 되돌려지면 호출자는 이 파일을 모른다 — 여기서 지운다
+            $this->deletePath($path, ['source_image_id' => $source->id]);
+
+            throw $e;
+        }
     }
 
     /**
@@ -360,14 +378,26 @@ class PopupImageService
      */
     private function deleteFile(PopupImage $image): bool
     {
+        return $this->deletePath($image->path, ['image_id' => $image->id]);
+    }
+
+    /**
+     * 경로로 파일을 지웁니다 — 이미 없는 파일은 지운 것으로 봅니다.
+     *
+     * @param  string  $path  카테고리 안 파일 경로
+     * @param  array<string, mixed>  $context  실패 로그에 남길 값
+     * @return bool 파일이 없거나 지웠으면 true
+     */
+    private function deletePath(string $path, array $context): bool
+    {
         try {
-            if (! $this->storage->exists(self::CATEGORY, $image->path)) {
+            if (! $this->storage->exists(self::CATEGORY, $path)) {
                 return true;
             }
 
-            return $this->storage->delete(self::CATEGORY, $image->path);
+            return $this->storage->delete(self::CATEGORY, $path);
         } catch (\Throwable $e) {
-            Log::warning('팝업 이미지 파일 삭제 실패(정리 명령이 다시 시도)', ['image_id' => $image->id, 'error' => $e->getMessage()]);
+            Log::warning('팝업 이미지 파일 삭제 실패(정리 명령이 다시 시도)', $context + ['error' => $e->getMessage()]);
 
             return false;
         }

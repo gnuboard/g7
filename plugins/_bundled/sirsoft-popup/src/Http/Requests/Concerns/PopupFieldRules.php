@@ -13,12 +13,13 @@ use Plugins\Sirsoft\Popup\Enums\PageScope;
 use Plugins\Sirsoft\Popup\Enums\PopupDevice;
 use Plugins\Sirsoft\Popup\Rules\PopupRoute;
 use Plugins\Sirsoft\Popup\Rules\SafeLinkUrl;
+use Plugins\Sirsoft\Popup\Rules\SanitizedBodyNotEmpty;
 use Plugins\Sirsoft\Popup\Support\RoutePath;
 
 /**
  * 팝업 등록·수정 공통 규칙 — 두 요청이 같은 규칙을 쓰도록 한 곳에 둔다(Store/Update 대칭).
  *
- * 내용 유형에 따라 쓰는 필드가 갈린다: 이미지형은 alt·링크·이미지, 직접 작성형은 언어별 본문(기본 언어 필수).
+ * 내용 유형에 따라 쓰는 필드가 갈린다: 이미지형은 alt·링크·이미지, 직접 작성형은 언어별 본문(기본 언어 필수, 정화 뒤에도 남아야 함).
  * 쓰지 않는 유형의 필드는 검증에서 빼고(`exclude_unless`) 서비스가 비운다.
  * 기간은 사이트 시간대 `datetime-local` 로 받아 검증 뒤 UTC 로 바꾼다(#810·이커머스 쿠폰과 같은 규약).
  */
@@ -46,7 +47,7 @@ trait PopupFieldRules
             'image_alt' => ['exclude_unless:content_type,image', 'nullable', 'array', new TranslatableField(maxLength: 200, strictLocales: true)],
             'link_url' => ['exclude_unless:content_type,image', 'nullable', 'string', 'max:2048', new SafeLinkUrl],
             'link_new_window' => ['exclude_unless:content_type,image', 'sometimes', 'boolean'],
-            'body_html' => ['exclude_unless:content_type,html', 'required', 'array', new LocaleRequiredTranslatable(maxLength: 65535, strictLocales: true)],
+            'body_html' => ['exclude_unless:content_type,html', 'required', 'array', new LocaleRequiredTranslatable(maxLength: 65535, strictLocales: true), new SanitizedBodyNotEmpty],
         ];
     }
 

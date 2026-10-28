@@ -31,11 +31,11 @@
 | `sirsoft-popup.popup.filter_sanitize_config` | filter | 직접 작성형 본문 정화 허용 목록 가공. 인자: (array $config — HTMLPurifier 설정 키 => 값) | `src/Services/PopupHtmlSanitizer.php:100` |
 | `sirsoft-popup.popup.filter_update_data` | filter | 수정 값 가공. 인자: (array $data, Popup $popup) | `src/Services/PopupService.php:167` |
 | `sirsoft-popup.popup.store_validation_rules` | filter | 등록 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/StorePopupRequest.php:57` |
-| `sirsoft-popup.popup.update_validation_rules` | filter | 수정 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/UpdatePopupRequest.php:70` |
+| `sirsoft-popup.popup.update_validation_rules` | filter | 수정 검증 규칙 가공. 인자: (array $rules, FormRequest $request) | `src/Http/Requests/Admin/UpdatePopupRequest.php:81` |
 | `sirsoft-popup.popup_image.after_change` | action | 팝업 수정 저장으로 기기별 이미지가 바뀐 직후. 인자: (Popup $popup, string $device, string $change — replaced·removed) | `src/Services/PopupService.php:189` |
-| `sirsoft-popup.popup_image.after_delete` | action | 팝업 이미지 삭제 직후. 인자: (array $snapshot) | `src/Services/PopupImageService.php:126` |
-| `sirsoft-popup.popup_image.after_upload` | action | 팝업 이미지 임시 업로드 직후(팝업에는 저장 때 붙는다). 인자: (PopupImage $image) | `src/Services/PopupImageService.php:106` |
-| `sirsoft-popup.popup_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/PopupImageService.php:69` |
+| `sirsoft-popup.popup_image.after_delete` | action | 팝업 이미지 삭제 직후. 인자: (array $snapshot) | `src/Services/PopupImageService.php:137` |
+| `sirsoft-popup.popup_image.after_upload` | action | 팝업 이미지 임시 업로드 직후(팝업에는 저장 때 붙는다). 인자: (PopupImage $image) | `src/Services/PopupImageService.php:117` |
+| `sirsoft-popup.popup_image.filter_upload_file` | filter | 올린 이미지 파일 가공(압축 등). 인자: (UploadedFile $file) | `src/Services/PopupImageService.php:72` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->

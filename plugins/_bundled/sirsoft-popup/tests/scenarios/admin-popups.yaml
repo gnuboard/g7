@@ -7,6 +7,8 @@ description: |
   영구 삭제는 PC·모바일 파일 모두, 일괄 노출/비노출·복사(비활성·맨 뒤·이미지 파일 복제)·삭제, 순서는 전체 집합.
   모든 변경은 before/after 훅·활동 로그(항목별)·공개 캐시 무효화로 이어진다(각 리스너 매니페스트가 따로 잠금).
   기간 입력은 사이트 시간대 → UTC 저장, 표시는 사이트 시간대.
+  수정은 언어팩을 꺼 지원 목록에서 빠진 언어의 저장된 번역을 막지도 지우지도 않는다(새 지원 밖 언어만 422). 정화 뒤 비는 본문은 422.
+  이미지 파일 쓰기 실패·행 저장 실패(업로드·복사)는 행도 파일도 남기지 않는다.
 
 axes:
   surface:
@@ -40,10 +42,12 @@ axes:
     - link_url_rejects_backslash_variant
     - body_html_sanitized_on_store
     - body_html_sanitized_flag_in_response
+    - body_emptied_by_sanitize_rejected
     - period_site_timezone_stored_utc
     - admin_period_display_in_site_timezone
     - update_detects_changes_for_log
     - update_revision_mismatch_returns_409
+    - update_keeps_inactive_locale_translations
     - update_revision_rechecked_under_lock
     - update_replaces_image_and_deletes_old_file
     - update_switch_to_html_removes_images
@@ -55,6 +59,7 @@ axes:
     - bulk_copy_duplicates_image_files
     - bulk_copy_title_suffix_truncated_to_limit
     - bulk_copy_file_failure_rolls_back_that_item
+    - bulk_copy_db_failure_removes_copied_file
     - bulk_delete_removes_each_with_files
     - bulk_ids_validation
     - reorder_requires_complete_set
@@ -63,6 +68,8 @@ axes:
     - image_upload_rejects_oversize
     - image_upload_php_limit_message
     - image_delete_only_temp
+    - image_upload_write_failure_leaves_no_row
+    - image_upload_db_failure_removes_file
     - display_settings_returns_settings_and_upload_limits
     - settings_ranges_match_schema
     - hooks_fire_before_and_after

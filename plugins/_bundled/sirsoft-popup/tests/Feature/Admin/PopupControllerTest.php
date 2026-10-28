@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\Popup\Models\Popup;
 use Plugins\Sirsoft\Popup\Models\PopupImage;
+use Plugins\Sirsoft\Popup\Repositories\Contracts\PopupImageRepositoryInterface;
+use Plugins\Sirsoft\Popup\Services\PopupImageService;
 use Plugins\Sirsoft\Popup\Tests\PluginTestCase;
 
 /**
@@ -356,6 +358,34 @@ class PopupControllerTest extends PluginTestCase
     }
 
     /**
+     * 정화하고 나면 비는 본문(허용하지 않는 요소만 있음)은 등록·수정 모두 422 이고 저장하지 않는다 — 빈 팝업이 뜨지 않게.
+     *
+     * @scenario surface=body_emptied_by_sanitize_rejected
+     *
+     * @return void 반환값 없음
+     */
+    public function test_body_emptied_by_sanitize_is_rejected(): void
+    {
+        $before = Popup::query()->count();
+        $this->actingAs($this->admin)->postJson($this->api('/admin/popups'), $this->htmlPopupPayload([
+            'body_html' => ['ko' => '<iframe src="https://evil.example"></iframe>'],
+        ]))->assertStatus(422)->assertJsonValidationErrors([
+            'body_html' => __('sirsoft-popup::validation.body_html.emptied_by_sanitize', ['locale' => 'ko']),
+        ]);
+        $this->assertSame($before, Popup::query()->count());
+
+        // 기본 언어가 아닌 언어도 정화 뒤 비면 막는다(그 언어 방문자에게 빈 팝업이 뜬다)
+        $popup = Popup::factory()->html()->create();
+        $this->actingAs($this->admin)->putJson($this->api('/admin/popups/'.$popup->id), $this->htmlPopupPayload([
+            'body_html' => ['ko' => '<p>정상 본문</p>', 'en' => '<script>alert(1)</script>'],
+            'revision' => 0,
+        ]))->assertStatus(422)->assertJsonValidationErrors([
+            'body_html' => __('sirsoft-popup::validation.body_html.emptied_by_sanitize', ['locale' => 'en']),
+        ]);
+        $this->assertSame(['ko' => '<p>공지</p>'], $popup->fresh()->body_html);
+    }
+
+    /**
      * 사이트 시간대로 받은 기간은 UTC 로 저장된다.
      *
      * @scenario surface=period_site_timezone_stored_utc
@@ -423,6 +453,49 @@ class PopupControllerTest extends PluginTestCase
         $log = DB::table('activity_logs')->where('action', 'popup.update')->where('loggable_id', $popup->id)->first();
         $this->assertNotNull($log);
         $this->assertStringContainsString('link_url', (string) $log->changes);
+    }
+
+    /**
+     * 언어팩을 꺼서 지원 목록에서 빠진 언어의 번역이 저장돼 있어도 수정이 막히지 않고, 그 번역은 지우지 않는다.
+     *
+     * 수정 화면은 불러온 본문·대체 문구를 언어 키째 다시 보낸다. 저장돼 있지 않던 지원 밖 언어를 새로 넣는 것은
+     * 등록처럼 막는다(`store_rejects_inactive_locale_key`).
+     *
+     * @scenario surface=update_keeps_inactive_locale_translations
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_keeps_inactive_locale_translations(): void
+    {
+        config(['app.translatable_locales' => ['ko', 'en']]);
+        $html = Popup::factory()->html(['ko' => '<p>공지</p>', 'ja' => '<p>お知らせ</p>'])->create();
+
+        $this->actingAs($this->admin)->putJson($this->api('/admin/popups/'.$html->id), $this->htmlPopupPayload([
+            'title' => '제목만 바꿈',
+            'body_html' => ['ko' => '<p>공지</p>', 'ja' => '<p>お知らせ</p>'],
+            'revision' => 0,
+        ]))->assertOk();
+        $this->assertSame('제목만 바꿈', $html->fresh()->title);
+        $this->assertSame('<p>お知らせ</p>', $html->fresh()->body_html['ja']);
+
+        // 화면이 그 언어를 빼고 보내도 지우지 않는다 — 언어팩을 다시 켜면 그대로 보인다
+        $this->actingAs($this->admin)->putJson($this->api('/admin/popups/'.$html->id), $this->htmlPopupPayload([
+            'body_html' => ['ko' => '<p>공지 수정</p>'],
+            'revision' => 1,
+        ]))->assertOk();
+        $this->assertSame(['ko' => '<p>공지 수정</p>', 'ja' => '<p>お知らせ</p>'], $html->fresh()->body_html);
+
+        $this->actingAs($this->admin)->putJson($this->api('/admin/popups/'.$html->id), $this->htmlPopupPayload([
+            'body_html' => ['ko' => '<p>공지 수정</p>', 'xx' => '<p>새 언어</p>'],
+            'revision' => 2,
+        ]))->assertStatus(422)->assertJsonValidationErrors('body_html');
+
+        $image = Popup::factory()->withImages()->create(['image_alt' => ['ko' => '대체', 'ja' => '代替']]);
+        $this->actingAs($this->admin)->putJson($this->api('/admin/popups/'.$image->id), $this->popupPayload([
+            'image_alt' => ['ko' => '대체 수정', 'ja' => '代替'],
+            'revision' => 0,
+        ]))->assertOk();
+        $this->assertSame(['ko' => '대체 수정', 'ja' => '代替'], $image->fresh()->image_alt);
     }
 
     /**
@@ -702,6 +775,29 @@ class PopupControllerTest extends PluginTestCase
         $this->assertSame([$broken->id], $response->json('data.failed_ids'));
         $this->assertSame($before + 1, Popup::query()->count());
         $this->assertSame(0, Popup::query()->where('title', '깨진 이미지 (복사)')->count());
+    }
+
+    /**
+     * 복사 파일을 쓴 뒤 이미지 행 저장이 실패하면 그 복사 파일도 지운다 — 행이 없는 파일은 정리 명령이 찾지 못한다.
+     *
+     * @scenario surface=bulk_copy_db_failure_removes_copied_file
+     *
+     * @effects files_created_or_removed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bulk_copy_db_failure_removes_copied_file(): void
+    {
+        $popupId = $this->createPopupViaApi($this->admin)->assertCreated()->json('data.id');
+        $files = $this->imageFiles();
+        $repository = \Mockery::mock(app(PopupImageRepositoryInterface::class));
+        $repository->shouldReceive('create')->andThrow(new \RuntimeException('DB 연결 끊김'));
+        $this->app->instance(PopupImageService::class, new PopupImageService($repository, $this->imageStorageDriver()));
+
+        $this->actingAs($this->admin)->postJson($this->api('/admin/popups/bulk-copy'), ['ids' => [$popupId]])
+            ->assertOk()
+            ->assertJsonPath('data.failed_ids', [$popupId]);
+        $this->assertSame($files, $this->imageFiles());
     }
 
     /**

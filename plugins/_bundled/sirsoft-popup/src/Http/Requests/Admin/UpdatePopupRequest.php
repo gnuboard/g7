@@ -18,10 +18,20 @@ use Plugins\Sirsoft\Popup\Rules\SelectablePopupImage;
  *
  * 수정 화면은 이미지를 임시 묶음(`temp_key`)에 올려 두고 저장 때 화면에 남은 이미지 ID 를 보낸다. 키를 보내지 않은
  * 기기는 그대로 두고, `mobile_image_id: null` 은 모바일 이미지를 뺀다. PC 이미지는 이미지형에 필수라 null 을 받지 않는다.
+ *
+ * 언어팩을 꺼서 지원 목록에서 빠진 언어의 번역은 저장된 값 그대로 보존한다 — 화면이 그 키를 다시 보내도 막지 않고
+ * 빼고 보내도 지우지 않는다(언어팩을 다시 켜면 그대로 보인다). 저장돼 있지 않던 지원 밖 언어는 등록처럼 막는다.
  */
 class UpdatePopupRequest extends FormRequest
 {
     use PopupFieldRules;
+
+    /**
+     * 검증에서 빼 두었다가 되돌려 넣을 지원 밖 언어의 저장된 번역 (필드 => 언어 => 값)
+     *
+     * @var array<string, array<string, string>>
+     */
+    private array $keptTranslations = [];
 
     /**
      * 권한은 라우트 permission 미들웨어가 판정합니다.
@@ -43,6 +53,7 @@ class UpdatePopupRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->normalizePopupInput();
+        $this->holdInactiveLocaleTranslations();
         // 옛 이미지가 지워졌어도 이미지 422 보다 먼저 수정 충돌을 알린다
         $revision = filter_var($this->input('revision'), FILTER_VALIDATE_INT);
         if ($this->has('revision') && $revision !== false && $revision >= 0 && $this->route('popup')?->lock_version !== $revision) {
@@ -102,8 +113,48 @@ class UpdatePopupRequest extends FormRequest
     public function validated($key = null, $default = null): mixed
     {
         $data = parent::validated($key, $default);
+        if ($key !== null) {
+            return $data;
+        }
 
-        return $key === null ? $this->convertPopupInput($data) : $data;
+        // 이번 내용 유형이 쓰는 필드에만 보존한 번역을 되돌린다(안 쓰는 필드는 서비스가 비운다)
+        foreach ($this->keptTranslations as $field => $kept) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = (is_array($data[$field]) ? $data[$field] : []) + $kept;
+            }
+        }
+
+        return $this->convertPopupInput($data);
+    }
+
+    /**
+     * 지원 목록 밖 언어 중 이미 저장된 번역을 입력에서 빼 두고, 저장된 값으로 되돌려 넣을 목록에 담습니다.
+     *
+     * @return void 반환값 없음
+     */
+    private function holdInactiveLocaleTranslations(): void
+    {
+        $popup = $this->route('popup');
+        if ($popup === null) {
+            return;
+        }
+
+        $active = config('app.translatable_locales', ['ko', 'en']);
+        $merged = [];
+        foreach (['image_alt', 'body_html'] as $field) {
+            $stored = is_array($popup->{$field}) ? $popup->{$field} : [];
+            $kept = array_diff_key($stored, array_flip($active));
+            if ($kept === []) {
+                continue;
+            }
+            $this->keptTranslations[$field] = $kept;
+            $input = $this->input($field);
+            if (is_array($input)) {
+                $merged[$field] = array_diff_key($input, $kept);
+            }
+        }
+
+        $this->merge($merged);
     }
 
     /**

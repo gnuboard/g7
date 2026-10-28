@@ -5,6 +5,7 @@ namespace Plugins\Sirsoft\Popup\Http\Controllers\Admin;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
 use Plugins\Sirsoft\Popup\Exceptions\PopupImageAttachedException;
+use Plugins\Sirsoft\Popup\Exceptions\PopupImageUploadException;
 use Plugins\Sirsoft\Popup\Http\Requests\Admin\PopupImageUploadRequest;
 use Plugins\Sirsoft\Popup\Http\Resources\PopupImageResource;
 use Plugins\Sirsoft\Popup\Models\PopupImage;
@@ -36,7 +37,12 @@ class PopupImageController extends AdminBaseController
     public function store(PopupImageUploadRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $image = $this->images->upload($request->file('file'), $data['device'], $data['temp_key'], $request->user()?->id);
+        try {
+            $image = $this->images->upload($request->file('file'), $data['device'], $data['temp_key'], $request->user()?->id);
+        } catch (PopupImageUploadException $e) {
+            // 저장소·DB 장애라 입력 오류(4xx)가 아니다 — 남은 파일·행은 서비스가 정리했다
+            return $this->error($e->getMessageKey(), 500);
+        }
 
         return $this->successWithResource('sirsoft-popup::messages.image.uploaded', new PopupImageResource($image), 201);
     }
