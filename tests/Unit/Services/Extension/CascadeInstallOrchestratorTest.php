@@ -10,6 +10,7 @@ use App\Services\ModuleService;
 use App\Services\PluginService;
 use App\Services\TemplateService;
 use Mockery;
+use Mockery\MockInterface;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -27,10 +28,10 @@ class CascadeInstallOrchestratorTest extends TestCase
     /** @var array<string, array<string, mixed>> 식별자 → 플러그인 정보 */
     private array $plugins = [];
 
-    /** @var \Mockery\MockInterface&ModuleService 모듈 서비스 대역 */
+    /** @var MockInterface&ModuleService 모듈 서비스 대역 */
     private $moduleService;
 
-    /** @var \Mockery\MockInterface&PluginService 플러그인 서비스 대역 */
+    /** @var MockInterface&PluginService 플러그인 서비스 대역 */
     private $pluginService;
 
     /**
