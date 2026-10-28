@@ -172,7 +172,6 @@ return [
         'zip_file_not_found' => '指定された ZIP ファイルが見つかりません: :path',
         'source_vendor_missing' => 'ソースディレクトリに vendor がありません。composer install が実行されていない可能性があります。',
         'composer_failed_with_output' => 'composer install 実行に失敗しました。:output',
-        // `core:update` コマンドのコンソール出力
         'console' => [
             'source_zip_conflict' => '--source と --zip は同時に指定できません。どちらか一方を選択してください。',
             'local_source_conflict' => '--local は --source / --zip と同時に使用できません。',
@@ -340,7 +339,6 @@ return [
     'queue_status_loaded' => 'キューワーカーの状態を読み込みました。',
     'static_cache_republished' => 'ホーム画面の静的ファイルを再作成しました。',
     'static_cache_republish_failed' => 'ホーム画面の静的ファイルを再作成できませんでした。サイトは正常に動作しています。',
-    // `settings:*` コマンド出力
     'console' => [
         'install' => [
             'defaults_not_found' => 'デフォルト設定ファイルが見つかりません: :path',
@@ -359,6 +357,7 @@ return [
             'summary_installed' => 'インストール済み: :count 個',
             'summary_merged' => 'マージ済み: :count 個',
             'summary_skipped' => 'スキップ: :count 個',
+            'cache_refresh_failed' => '設定はインストールしましたが、キャッシュを再作成できませんでした(管理画面で保存するか php artisan config:cache で再作成してください): :error',
         ],
         'migrate_to_json' => [
             'start' => '設定のマイグレーションを開始します...',
@@ -371,6 +370,32 @@ return [
             'category_saved' => ':category カテゴリの保存完了',
             'done' => 'マイグレーションが完了しました!',
             'location' => '設定ファイルの場所: :path',
+        ],
+        'cli' => [
+            'scope_conflict' => '--plugin と --module は同時に使えません。',
+            'unknown_key' => '不明な設定キーです: :key',
+            'key_format' => '設定キーは「カテゴリ.項目」の形式です (例: mail.host): :key',
+            'computed_key' => ':key は他の値から計算される値のため指定できません。',
+            'env_locked' => ':key は .env が値を決めているため、ここでは変更できません。.env の :env を修正してください。',
+            'sensitive_positional' => ':key は機密値のためコマンドライン引数では受け付けません — 環境変数 G7_SETTING_VALUE、--value-file、非表示入力のいずれかを使ってください。',
+            'value_missing' => '値を指定してください — 位置引数、--value-file、環境変数 G7_SETTING_VALUE のいずれか。',
+            'value_file_unreadable' => '値ファイルを読み込めません: :path',
+            'invalid_json' => '--json-value の値が正しい JSON ではありません: :error',
+            'ask_secret' => ':key の値 (入力した文字は表示されません)',
+            'array_replaced' => '配列の値は丸ごと置き換わります (既存の項目とは統合しません)。',
+            'validation_failed' => '検証を通過しなかったため保存しませんでした:',
+            'save_failed' => '保存できませんでした: :reason',
+            'saved' => '保存しました: :key',
+            'changed' => '   :before → :after',
+            'cache_rebuilt' => '設定キャッシュを再作成しました。',
+            'plugin_not_found' => 'インストールされているプラグインではありません: :id',
+            'plugin_unknown_key' => ':id プラグインの設定にないキーです: :key',
+            'module_unsupported' => 'このモジュールはターミナルからの設定指定に対応していません: :id',
+            'admin_screen_only' => ':key は管理画面でのみ変更できます。',
+            'secrets_shown' => '機密値をそのまま表示します — 画面の記録・共有に注意してください。',
+            'computed_marker' => '(計算値)',
+            'env_locked_marker' => '(.env で固定)',
+            'no_settings' => '表示する設定がありません。',
         ],
     ],
 ];

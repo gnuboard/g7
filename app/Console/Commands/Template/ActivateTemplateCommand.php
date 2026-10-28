@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Template;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 
 class ActivateTemplateCommand extends Command
 {
+    use LocalizesDescription;
     use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
     use ReportsStuckUpdateRecovery;
@@ -22,11 +24,6 @@ class ActivateTemplateCommand extends Command
      * The name and signature of the console command.
      */
     protected $signature = 'template:activate {identifier : 템플릿 식별자} {--force : 의존성 미충족 시 강제 활성화}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '템플릿을 활성화합니다';
 
     /**
      * 템플릿 관리자 및 리포지토리

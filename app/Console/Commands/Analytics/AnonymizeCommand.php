@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Analytics;
 
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\Analytics\ArchiveRunStatus;
 use App\Services\Analytics\AnonymizeService;
 use Illuminate\Console\Command;
@@ -19,6 +20,7 @@ use Illuminate\Console\Command;
 class AnonymizeCommand extends Command
 {
     use HasUnifiedConfirm;
+    use LocalizesDescription;
 
     /**
      * 커맨드 이름 및 시그니처
@@ -31,13 +33,6 @@ class AnonymizeCommand extends Command
                             {--from= : 시작일 (Y-m-d)}
                             {--to= : 종료일 (Y-m-d)}
                             {--force : 확인 없이 진행}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '이미 쌓인 방문 기록에 마스킹·해시를 소급 적용합니다.';
 
     /**
      * 커맨드 실행

@@ -9,7 +9,7 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 40개 | 정상 |
+| [백엔드](backend/) | 41개 | 정상 |
 | [프론트엔드](frontend/) | 49개 | 정상 |
 | [확장 시스템](extension/) | 38개 | 정상 |
 | 공통 | 21개 | 정상 |
@@ -129,7 +129,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (40개)
+### 백엔드 (41개)
 
 | 문서 | 제목 |
 |------|------|
@@ -154,6 +154,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [identity-messages.md](backend/identity-messages.md) | 본인인증 알림 (Identity Notifications) |
 | [identity-policies.md](backend/identity-policies.md) | 본인인증 정책 시스템 (Identity Policies) |
 | [identity-providers.md](backend/identity-providers.md) | IDV Provider 작성 가이드 (Identity Verification Providers) |
+| [installer-cli.md](backend/installer-cli.md) | 터미널 설치·운영 명령 (installer CLI) |
 | [language-pack-service.md](backend/language-pack-service.md) | LanguagePackService (백엔드 Service 레이어) |
 | [middleware.md](backend/middleware.md) | 미들웨어 등록 규칙 |
 | [notification-system.md](backend/notification-system.md) | 알림 시스템 (Notification System) |

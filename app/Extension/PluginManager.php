@@ -22,6 +22,7 @@ use App\Enums\LayoutSyncMode;
 use App\Enums\PermissionType;
 use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\ExtensionUpdateFailedException;
+use App\Extension\Concerns\ChecksDependencyVersions;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
@@ -68,7 +69,6 @@ use App\Providers\CoreServiceProvider;
 use App\Services\DriverRegistryService;
 use App\Services\LayoutExtensionService;
 use App\Support\AssetUrl;
-use App\Support\ExtensionDependencies;
 use App\Support\ExtensionStoragePath;
 use App\Support\LocalizedValue;
 use App\Support\RouteCacheHelper;
@@ -85,6 +85,7 @@ use Illuminate\Support\Facades\Schema;
 
 class PluginManager implements PluginManagerInterface
 {
+    use ChecksDependencyVersions;
     use ResolvesExtensionIcons;
     use ResolvesExtensionSharedRecords;
     use ResolvesUpdateCoreCompatibility;
@@ -704,45 +705,10 @@ class PluginManager implements PluginManagerInterface
         // 전역 상태 공개 계약 이름 충돌 검증 — 꺼져 있던 사이 다른 확장이 같은 이름을 가졌을 수 있다 (#639)
         $this->validateStateContracts('plugin:'.$plugin->getIdentifier(), $plugin->getStateContracts());
 
-        // 의존성 검증: 필요한 모듈/플러그인이 활성화되어 있는지 확인
-        // 중첩 구조 ['modules' => [...], 'plugins' => [...]] 를 순회
-        $missingModules = [];
-        $missingPlugins = [];
-
-        $dependencies = $plugin->getDependencies();
-        foreach ($this->iterateNestedDependencies($dependencies) as $depIdentifier => $declaredType) {
-            if ($declaredType === 'module') {
-                $depModule = $this->moduleRepository->findByIdentifier($depIdentifier);
-                if (! $depModule) {
-                    $missingModules[] = [
-                        'identifier' => $depIdentifier,
-                        'name' => $depIdentifier,
-                        'status' => 'not_installed',
-                    ];
-                } elseif ($depModule->status !== ExtensionStatus::Active->value) {
-                    $missingModules[] = [
-                        'identifier' => $depModule->identifier,
-                        'name' => $depModule->getLocalizedName(),
-                        'status' => 'inactive',
-                    ];
-                }
-            } else {
-                $depPlugin = $this->pluginRepository->findByIdentifier($depIdentifier);
-                if (! $depPlugin) {
-                    $missingPlugins[] = [
-                        'identifier' => $depIdentifier,
-                        'name' => $depIdentifier,
-                        'status' => 'not_installed',
-                    ];
-                } elseif ($depPlugin->status !== ExtensionStatus::Active->value) {
-                    $missingPlugins[] = [
-                        'identifier' => $depPlugin->identifier,
-                        'name' => $depPlugin->getLocalizedName(),
-                        'status' => 'inactive',
-                    ];
-                }
-            }
-        }
+        // 의존성 검증: 필요한 모듈/플러그인이 활성 상태이고 버전 제약을 충족하는지 확인 (--force 는 우회)
+        $unmet = $this->collectUnmetDependencies($plugin->getDependencies());
+        $missingModules = $unmet['modules'];
+        $missingPlugins = $unmet['plugins'];
 
         $hasMissingDependencies = ! empty($missingModules) || ! empty($missingPlugins);
 
@@ -1846,62 +1812,12 @@ class PluginManager implements PluginManagerInterface
      */
     protected function checkDependencies(PluginInterface $plugin): void
     {
-        $dependencies = $plugin->getDependencies();
-        $unmetDependencies = [];
-
-        // 중첩 구조 ['modules' => [...], 'plugins' => [...]] 를 순회
-        foreach ($this->iterateNestedDependencies($dependencies) as $identifier => $declaredType) {
-            if (! $this->isDependencySatisfied($identifier, $declaredType)) {
-                $unmetDependencies[] = __('plugins.dependency_not_active', ['dependency' => $identifier]);
-            }
-        }
+        // 활성 여부 + 버전 제약까지 본다 (템플릿 의존성 검사와 같은 기준 — ChecksDependencyVersions)
+        $unmetDependencies = $this->unmetDependencyMessages($plugin->getDependencies(), 'plugins');
 
         if (! empty($unmetDependencies)) {
             throw new \Exception(implode("\n", $unmetDependencies));
         }
-    }
-
-    /**
-     * 중첩 구조 의존성 배열을 순회하며 (identifier => declaredType) 를 yield 합니다.
-     *
-     * @param  array  $dependencies  ['modules' => [...], 'plugins' => [...]] 형식
-     * @return \Generator<string, string> identifier => 'module'|'plugin'
-     */
-    private function iterateNestedDependencies(array $dependencies): \Generator
-    {
-        // 목록형(`["sirsoft-board"]`)도 받는다 — 키로 순회하면 식별자 자리에 0·1 이 들어간다(#822 D6)
-        $constraints = ExtensionDependencies::constraints($dependencies);
-
-        foreach (array_keys($constraints['modules']) as $identifier) {
-            yield (string) $identifier => 'module';
-        }
-        foreach (array_keys($constraints['plugins']) as $identifier) {
-            yield (string) $identifier => 'plugin';
-        }
-    }
-
-    /**
-     * 의존성이 활성 상태로 설치되어 있는지 확인합니다.
-     *
-     * declaredType 이 'module' 이면 modules 테이블만, 'plugin' 이면 plugins 테이블만 검색.
-     *
-     * @param  string  $identifier  확장 식별자
-     * @param  string  $declaredType  'module' | 'plugin'
-     * @return bool 활성 상태로 설치되어 있으면 true
-     */
-    private function isDependencySatisfied(string $identifier, string $declaredType): bool
-    {
-        if ($declaredType === 'module') {
-            $record = app(ModuleRepositoryInterface::class)->findByIdentifier($identifier);
-        } else {
-            $record = $this->pluginRepository->findByIdentifier($identifier);
-        }
-
-        if (! $record) {
-            return false;
-        }
-
-        return $record->status === ExtensionStatus::Active->value;
     }
 
     /**

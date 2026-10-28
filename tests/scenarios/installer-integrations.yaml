@@ -9,7 +9,8 @@ description: |
 
   `surface` 가 축인 이유는 같은 선언을 **세 경로가 서로 다른 방식으로** 다루기 때문이다 —
   카드 데이터를 만드는 스캔(Laravel 없이 순수 PHP, 정규식 버전식 판정), 저장 API 의 설치 순서
-  위상 정렬(D7), 브라우저 Step 4 의 선택 상태(installer.js).
+  위상 정렬(D7 — 웹·터미널 설치가 함께 쓰는 확장 선택 해석기 `installer_topological_order()`),
+  브라우저 Step 4 의 선택 상태(installer.js).
 
   `owner_type` 이 축인 이유는 연동을 선언한 쪽이 템플릿이면 단일 선택(템플릿 교체 시 이전 템플릿의
   자동 체크를 정리)이고, 모듈·플러그인이면 다중 선택(해제 시 그 owner 의 자동 체크만 정리)이라
@@ -38,8 +39,8 @@ effects:
   # 저장 — 같은 유형 설치 순서 (D7)
   - install_order_dependency_first
   - install_order_stable_for_unrelated
-  - install_order_cycle_keeps_original_and_logs
-  - install_order_reads_bundled_manifests
+  - install_order_cycle_keeps_scan_order_and_reports
+  - resolver_on_bundled_manifests_adds_ecommerce_for_payment_plugin
   - save_extensions_sorts_before_storing
   # Step 4 — 선택 상태 (P9·D8)
   - step4_integration_autoselect_on_user_pick
@@ -54,7 +55,7 @@ effects:
 
 test_files:
   - tests/Unit/Installer/ScanExtensionsIntegrationsTest.php
-  - tests/Unit/Installer/InstallOrderTopologicalTest.php
+  - tests/Unit/Installer/ExtensionSelectionResolverTest.php
   # Step 4 브라우저 로직은 installer.js 함수 단위 추출 + 가짜 DOM 으로 node 에서 잰다
   # (실행: node --test tests/installer/installer-integrations-autoselect.test.cjs).
   - tests/installer/installer-integrations-autoselect.test.cjs

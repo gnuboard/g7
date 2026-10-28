@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 
 class ActivatePluginCommand extends Command
 {
+    use LocalizesDescription;
     use RendersLayoutSyncResult;
     use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
@@ -25,11 +27,6 @@ class ActivatePluginCommand extends Command
      * The name and signature of the console command.
      */
     protected $signature = 'plugin:activate {identifier : 활성화할 플러그인 식별자} {--force : 의존성 미충족 시 강제 활성화}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '플러그인을 활성화합니다';
 
     /**
      * 플러그인 관리자 및 리포지토리

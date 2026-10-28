@@ -18,6 +18,15 @@ _`getSettingsSchema()` 선언이 없습니다._
 정의하는 상수(첨부 저장 디스크, 게시판별 동적 권한 정의 템플릿)이며, 이 값은 `.env` 로만
 바꿉니다.
 
+### 터미널에서 설정 지정 (`settings:set --module=sirsoft-board`, 1.2.2 · 코어 7.1.4)
+
+코어 `php artisan settings:set --module=sirsoft-board {범주.항목} {값}` 은 이 모듈 설정 서비스의 선택 메서드
+`BoardSettingsService::settingsSaveRequestClass()` 가 돌려주는 `StoreBoardSettingsRequest` 로 관리자 화면 저장과
+같은 규칙을 검증한 뒤 `saveSettings()` 로 저장하고, 화면 저장과 같은 코어 훅 `core.module_settings.after_save`
+(활동 로그)를 발화합니다. 키는 `config/settings/defaults.json` 에 선언된 항목만 받습니다 — 신고 관리 권한(역할
+동기화)·반응 유형 목록(DB 행)처럼 설정 파일에 두지 않는 항목은 「관리자 화면 전용」으로 거부됩니다.
+`settingsSaveRequestClass()` 를 지우거나 다른 FormRequest 로 바꾸면 터미널 경로의 검증도 함께 바뀝니다.
+
 ### 개인정보 보유기간 (`privacy_retention`, 이슈 #636)
 
 모듈 환경설정의 「개인정보 보유기간」 탭(`?tab=privacy_retention`, 저장 `_tab=privacy_retention`)이 저장하는

@@ -131,6 +131,8 @@ class StateManagementApi
             'log_total' => $logTotal,
             'error' => $state['error'] ?? null,
             'last_updated' => $state['last_updated'] ?? null,
+            // completed 뒤 마무리 작업(설정·라우트 캐시·정적 게시)이 끝났는지 — 필드가 없는 이전 상태 파일은 끝난 것으로 본다
+            'tasks_finished' => (bool) ($state['tasks_finished'] ?? true),
 
             // 실패 정보 (새로고침 후에도 표시용)
             'failed_task' => $state['failed_task'] ?? null,
@@ -371,6 +373,11 @@ class StateManagementApi
 
         if (! installer_state_is_claimed($state) || isInstallationCompleted()) {
             installer_json_error(400, 'recovery_unavailable', lang('error_recovery_unavailable'));
+        }
+
+        // 터미널 설치는 복구 토큰을 발급하지 않는다 — 브라우저가 넘겨받는 경로를 두지 않는다.
+        if (($state['owner_kind'] ?? null) === 'cli') {
+            installer_json_error(403, 'recovery_cli_owned', lang('error_recovery_cli_owned'));
         }
 
         if (! installer_session_is_owner($state)) {

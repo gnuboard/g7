@@ -443,6 +443,13 @@ cp .env.example .env
 
 The setup wizard creates the application key, configures the database connection, runs the migrations, and lets you choose which modules, plugins, templates, and language packs to install. Once setup completes, the installer endpoints are blocked automatically (HTTP 410).
 
+You can run the same installation from a server terminal without a browser — interactively, or non-interactively with options and environment variables only:
+
+```bash
+php g7-install                       # interactive
+php g7-install --no-interaction ...  # automation — see "방법 5" in INSTALL.md
+```
+
 > Detailed installation guide (Korean): [INSTALL.md](INSTALL.md)
 
 ---

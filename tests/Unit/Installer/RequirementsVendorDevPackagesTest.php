@@ -24,6 +24,11 @@ class RequirementsVendorDevPackagesTest extends TestCase
 
     private static string $skipReason = '';
 
+    /**
+     * 클래스 공통 준비 — 검사 대상 파일을 한 번 로드한다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -63,6 +68,11 @@ class RequirementsVendorDevPackagesTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/api/check-configuration.php';
     }
 
+    /**
+     * 테스트 준비.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -76,6 +86,8 @@ class RequirementsVendorDevPackagesTest extends TestCase
      * vendor 가 없는 신규 설치: 판정 불가로 두고, 마법사가 자동 설치한다는 안내만 낸다.
      *
      * @effects installer_env_check_shows_dev_vendor_card_without_gating
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function vendor_가_없으면_자동_설치_안내로_보고한다(): void
@@ -91,6 +103,10 @@ class RequirementsVendorDevPackagesTest extends TestCase
 
     /**
      * dev vendor 를 감지하면 목록과 함께 보고하되 `required` 는 그대로 false 다.
+     *
+     * @effects installer_env_check_shows_dev_vendor_card_without_gating
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function dev_vendor_를_감지해도_필수_항목으로_승격되지_않는다(): void
@@ -107,6 +123,10 @@ class RequirementsVendorDevPackagesTest extends TestCase
 
     /**
      * `--no-dev` vendor 는 통과로 보고한다.
+     *
+     * @effects installer_env_check_shows_dev_vendor_card_without_gating
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 운영용_vendor_는_통과로_보고한다(): void
@@ -126,13 +146,18 @@ class RequirementsVendorDevPackagesTest extends TestCase
      *
      * 반환값 검사만으로는 부족하다: 게이트가 나중에 이 키를 참조하도록 바뀌어도
      * `required=false` 자체는 그대로라 행위 테스트가 통과한다.
+     *
+     * @effects installer_env_check_shows_dev_vendor_card_without_gating
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 필수_통과_판정이_이_항목을_참조하지_않는다(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/api/check-configuration.php');
+        // 게이트 본문은 웹·터미널 공유 함수로 옮겨졌다 (includes/requirements.php).
+        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/requirements.php');
 
-        $start = strpos($source, 'private function isAllRequiredPassed(');
+        $start = strpos($source, 'function installer_requirements_all_passed(');
         $this->assertNotFalse($start, '전제: 게이트 메서드가 존재한다');
 
         $end = strpos($source, "\n    }", $start);
@@ -149,6 +174,10 @@ class RequirementsVendorDevPackagesTest extends TestCase
 
     /**
      * 화면 카드가 존재하고 실패 목록에 넣지 않는다 — 소스 계약.
+     *
+     * @effects installer_env_check_shows_dev_vendor_card_without_gating
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 설치_화면_카드가_실패_목록에_넣지_않는다(): void
@@ -188,6 +217,8 @@ class RequirementsVendorDevPackagesTest extends TestCase
      * 임시 BASE_PATH 아래에 vendor 픽스처를 만듭니다.
      *
      * @param  array<string, mixed>  $installedJson  installed.json 내용
+     *
+     * @return void 반환값 없음
      */
     private function writeVendor(array $installedJson): void
     {

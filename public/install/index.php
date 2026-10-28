@@ -199,6 +199,8 @@ $stepFile = $ownershipLocked
         window.INSTALLER_BLOCKED_DB_ACCOUNTS = <?= installer_json_encode(PrivilegedDatabaseAccounts::BLOCKED) ?>;
     </script>
     <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installation-monitor.js?v=<?= time() ?>"></script>
+    <!-- 확장 선택 해석기 — 서버(확장 저장·사전 검증·터미널 설치)와 같은 규칙. installer.js 보다 먼저 로드 -->
+    <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installer-extension-resolver.js?v=<?= time() ?>"></script>
     <script src="<?= INSTALLER_BASE_URL ?>/assets/js/installer.js?v=<?= time() ?>"></script>
 </body>
 </html>

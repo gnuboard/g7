@@ -4,6 +4,7 @@ return [
     // Common messages
     'not_found' => 'Module ":module" not found.',
     'dependency_not_active' => 'Dependency module ":dependency" is not installed or inactive.',
+    'dependency_version_unmet' => 'The installed version (:installed) of dependency ":dependency" does not satisfy the required version (:required). Update the dependency or bypass with --force.',
 
     'status' => [
         'active' => 'Active',

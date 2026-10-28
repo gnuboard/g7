@@ -1139,10 +1139,10 @@ function generateEnvContent(): ?string
     $replacements['APP_ENV=production'] = 'APP_ENV='.serializeEnvValue((string) ($config['app_env'] ?? 'production'));
     $replacements['APP_URL=http://localhost'] = 'APP_URL='.serializeEnvValue((string) ($config['app_url'] ?? 'http://localhost'));
 
-    // 언어 설정
-    $currentLang = getCurrentLanguage();
-    $replacements['APP_LOCALE=ko'] = 'APP_LOCALE='.$currentLang;
-    $replacements['APP_FAKER_LOCALE=ko_KR'] = 'APP_FAKER_LOCALE='.($currentLang === 'ko' ? 'ko_KR' : 'en_US');
+    // 언어 설정 — 세션이 아니라 state 에서 정한다(설정 general.language 와 같은 값).
+    $siteLang = installer_site_language($state);
+    $replacements['APP_LOCALE=ko'] = 'APP_LOCALE='.$siteLang;
+    $replacements['APP_FAKER_LOCALE=ko_KR'] = 'APP_FAKER_LOCALE='.($siteLang === 'ko' ? 'ko_KR' : 'en_US');
 
     if (isset($config['app_env']) && $config['app_env'] !== 'production') {
         $replacements['APP_DEBUG=false'] = 'APP_DEBUG=true';

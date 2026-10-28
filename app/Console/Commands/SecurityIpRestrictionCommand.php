@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Enums\ActivityLogType;
 use App\Services\SettingsService;
@@ -25,6 +26,7 @@ use Illuminate\Console\Command;
  */
 class SecurityIpRestrictionCommand extends Command
 {
+    use LocalizesDescription;
     use ResolvesActivityLogType;
 
     /**
@@ -35,13 +37,6 @@ class SecurityIpRestrictionCommand extends Command
     protected $signature = 'security:ip-restriction
         {--status : 상태만 보고 아무것도 바꾸지 않습니다 (옵션을 주지 않아도 상태는 표시합니다)}
         {--disable : IP 접근 제한을 끕니다 (관리자 잠금 구제)}';
-
-    /**
-     * 커맨드 설명.
-     *
-     * @var string
-     */
-    protected $description = 'IP 접근 제한 설정을 점검하거나 비상 해제합니다 (관리자 잠금 구제)';
 
     /**
      * 커맨드를 실행합니다.

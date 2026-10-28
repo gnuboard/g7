@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\ApiDoc\ApiDocSampleSeeder;
 use App\Models\Module;
 use App\Models\Plugin;
@@ -30,6 +31,8 @@ use Illuminate\Support\Str;
  */
 class ApiDocgenCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * @var string 커맨드 시그니처
      */
@@ -41,11 +44,6 @@ class ApiDocgenCommand extends Command
         {--check : 생성하지 않고 누락/미실측만 리포트}
         {--examples-only : 기존 문서에 요청/응답 예시 블록만 in-place 삽입 (표·서술 불가침, 재생성 금지)}
         {--dry-run : 생성 대상만 출력}';
-
-    /**
-     * @var string 커맨드 설명
-     */
-    protected $description = 'API 레퍼런스 문서를 실측 기반으로 생성/갱신합니다';
 
     /**
      * 커맨드를 실행합니다.

@@ -58,9 +58,12 @@ class SettingsService
      * 하면 config:cache 가 비워진 채 재생성되지 않아 이후 모든 요청이 config 파일을
      * 재파싱하는 성능 손실이 발생하기 때문이다.
      *
+     * 저장소에 직접 쓰는 경로(`settings:install`)도 쓰기를 마친 뒤 이 메서드를 부른다 — 부르지 않으면
+     * 캐시·미러·설정 버전이 옛 값에 머문다.
+     *
      * @return void 반환값 없음
      */
-    private function invalidateSettingsCache(): void
+    public function invalidateSettingsCache(): void
     {
         $this->cache->forget('settings.system');
         ConfigCacheHelper::rebuild();

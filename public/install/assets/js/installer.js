@@ -2993,38 +2993,23 @@
             });
         });
 
-        // 고정점(fixed-point)까지 반복 — 추이적 의존성 자동 해결
-        let changed = true;
-        let iteration = 0;
-        while (changed && iteration < 10) {
-            changed = false;
-            iteration++;
-            const missing = computeMissingDependencies();
-            if (missing.length === 0) break;
+        // 추이적 의존성 자동 해결 — 서버와 같은 해석기(고정점 10회)가 정한 자동 포함 목록을 화면에 반영한다.
+        // 서버(확장 저장 API)도 같은 해석으로 의존 확장을 채우므로 화면과 저장 결과가 어긋나지 않는다.
+        const resolution = window.G7ExtensionResolver.resolveExtensionSelection(extensionsData, selectedExtensions);
+        resolution.auto_added.forEach((added) => {
+            const targetCat = added.category || idToCategory[added.identifier];
+            if (!targetCat || selectedExtensions[targetCat].includes(added.identifier)) return;
 
-            missing.forEach((m) => {
-                // 의존성 type을 카테고리로 매핑 (modules → modules, plugins → plugins)
-                // detailed에 타입이 없는 레거시인 경우 identifier 역인덱스에서 조회
-                let targetCat = null;
-                if (m.depType === 'modules') targetCat = 'modules';
-                else if (m.depType === 'plugins') targetCat = 'plugins';
-                else if (idToCategory[m.depIdentifier]) targetCat = idToCategory[m.depIdentifier];
+            autoSelectedSet.add(added.identifier);
 
-                if (targetCat && !selectedExtensions[targetCat].includes(m.depIdentifier)) {
-                    // 자동 선택 추적
-                    autoSelectedSet.add(m.depIdentifier);
+            // toggleExtension을 호출하여 selectedExtensions 배열 추가와 카드 UI
+            // (selected 클래스 + extension-card-select 아이콘)을 한 번에 동기화.
+            const isSingleSelect = (targetCat === 'admin_templates' || targetCat === 'user_templates');
+            window.toggleExtension(targetCat, added.identifier, isSingleSelect, true);
 
-                    // toggleExtension을 호출하여 selectedExtensions 배열 추가와 카드 UI
-                    // (selected 클래스 + extension-card-select 아이콘)을 한 번에 동기화.
-                    const isSingleSelect = (targetCat === 'admin_templates' || targetCat === 'user_templates');
-                    window.toggleExtension(targetCat, m.depIdentifier, isSingleSelect, true);
-
-                    // 자동 선택 시각적 표시 추가
-                    applyAutoSelectedUI(m.depIdentifier, m.ownerName);
-                    changed = true;
-                }
-            });
-        }
+            const owner = findExtensionById(added.required_by);
+            applyAutoSelectedUI(added.identifier, (owner && getLocalizedText(owner.name)) || added.required_by);
+        });
 
         updateSelectionSummary();
         validateExtensionSelection();
@@ -3459,53 +3444,8 @@
      * @returns {boolean} 제약 조건 충족 여부
      */
     function satisfiesVersionConstraint(available, constraint) {
-        if (!constraint || constraint === '*') return true;
-
-        // 버전 문자열을 숫자 배열로 파싱
-        function parseVersion(v) {
-            const clean = v.replace(/^[v=]/, '');
-            const parts = clean.split('.').map(Number);
-            return [parts[0] || 0, parts[1] || 0, parts[2] || 0];
-        }
-
-        // 두 버전 비교: -1(a<b), 0(같음), 1(a>b)
-        function compareVersions(a, b) {
-            for (let i = 0; i < 3; i++) {
-                if (a[i] < b[i]) return -1;
-                if (a[i] > b[i]) return 1;
-            }
-            return 0;
-        }
-
-        const avail = parseVersion(available);
-
-        // 연산자 + 버전 분리
-        const match = constraint.match(/^([><=^~!]*)\s*(.+)$/);
-        if (!match) return true;
-
-        const op = match[1] || '>=';
-        const req = parseVersion(match[2]);
-        const cmp = compareVersions(avail, req);
-
-        switch (op) {
-            case '>=': return cmp >= 0;
-            case '>':  return cmp > 0;
-            case '<=': return cmp <= 0;
-            case '<':  return cmp < 0;
-            case '=':
-            case '==': return cmp === 0;
-            case '!=': return cmp !== 0;
-            case '^':
-                // ^1.2.3 → >=1.2.3, <2.0.0 (major 고정)
-                if (cmp < 0) return false;
-                return avail[0] === req[0];
-            case '~':
-                // ~1.2.3 → >=1.2.3, <1.3.0 (minor 고정)
-                if (cmp < 0) return false;
-                return avail[0] === req[0] && avail[1] === req[1];
-            default:
-                return cmp >= 0;
-        }
+        // 판정식은 서버와 공유하는 해석기(installer-extension-resolver.js)가 소유한다.
+        return window.G7ExtensionResolver.satisfiesVersionConstraint(available, constraint);
     }
 
     /**
@@ -4417,7 +4357,8 @@
         // keepalive: 탭 닫힘에도 요청 유지. catch: 워커 재시작으로 인한
         // connection abort 를 에러로 표시하지 않는다 (의도된 동작).
         try {
-            fetch('/install/api/finalize-env.php', {
+            // 하위 폴더 설치(/g7/install 등)에서도 맞도록 다른 API 호출처럼 INSTALLER_BASE_URL 기준으로 만든다.
+            fetch(`${window.location.origin}${window.INSTALLER_BASE_URL}/api/finalize-env.php`, {
                 method: 'POST',
                 keepalive: true,
                 headers: {
@@ -4660,6 +4601,38 @@
     }
 
     /**
+     * 완료 표식 뒤 마무리 작업(설정·라우트 캐시 굽기·정적 게시)이 끝날 때까지 기다린다.
+     *
+     * 폴링 워커는 브라우저와 무관하게 계속 돌므로, 새로고침 직후 완료 화면을 열면 finalize-env 가 상태 파일을 지워
+     * 워커가 lock lost 로 끝난다. 상태 갱신이 30초 멈추거나 90초가 지나면(워커가 사라진 경우) 그대로 진행한다.
+     *
+     * @param {object} state 상태 조회 응답
+     * @returns {Promise<object>} 마지막으로 받은 상태
+     */
+    async function waitForFinalTasks(state) {
+        const deadline = Date.now() + 90000;
+        let current = state;
+        let lastUpdated = state.last_updated;
+        let lastChangedAt = Date.now();
+
+        while (current.status === 'completed' && current.tasks_finished === false && Date.now() < deadline) {
+            if (Date.now() - lastChangedAt >= 30000) break;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            try {
+                current = await fetchInstallationState();
+            } catch (e) {
+                break;
+            }
+            if (current.last_updated !== lastUpdated) {
+                lastUpdated = current.last_updated;
+                lastChangedAt = Date.now();
+            }
+        }
+
+        return current.status === 'completed' ? current : state;
+    }
+
+    /**
      * 재진입 감지 및 확인
      */
     async function checkAndStartInstallation() {
@@ -4668,9 +4641,9 @@
             const state = await fetchInstallationState();
 
 
-            // 설치가 이미 완료된 경우
+            // 설치가 이미 완료된 경우 — 마무리 작업이 도는 중이면 끝날 때까지 기다린 뒤 완료 화면(→ finalize-env)
             if (state.status === 'completed') {
-                showCompletionSection(state);
+                showCompletionSection(await waitForFinalTasks(state));
                 return;
             }
 
@@ -4729,7 +4702,7 @@
                 }).then(() => {
 
                     // 상태를 다시 가져와서 중단 섹션 표시
-                    fetch(apiUrl)
+                    fetch(getStateApiUrl('get'))
                         .then(res => res.json())
                         .then(updatedState => {
                             showAbortedInstallationSection(updatedState);

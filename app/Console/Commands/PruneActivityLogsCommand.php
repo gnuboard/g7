@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ParsesDaysOption;
 use App\Services\ActivityLogService;
 use Illuminate\Console\Command;
@@ -11,17 +12,13 @@ use Illuminate\Console\Command;
  */
 class PruneActivityLogsCommand extends Command
 {
+    use LocalizesDescription;
     use ParsesDaysOption;
 
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'activity-log:prune {--days= : 보관 기간(일). 생략하면 환경설정 > 보안 「활동 로그 보관 기간」, 어느 쪽이든 최소 365일}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '보관 기간이 지난 활동 로그를 삭제합니다';
 
     /**
      * Execute the console command.

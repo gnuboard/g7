@@ -1,7 +1,5 @@
 <?php
 
-use App\Support\PrivilegedDatabaseAccounts;
-
 /**
  * 그누보드7 웹 인스톨러 요청 처리 핸들러
  *
@@ -9,6 +7,7 @@ use App\Support\PrivilegedDatabaseAccounts;
  */
 
 require_once __DIR__.'/installer-ownership.php';
+require_once __DIR__.'/config-validation.php';
 
 /**
  * 설치 흐름 검증 및 리다이렉트
@@ -116,10 +115,23 @@ function handleStep1Post(string $currentLang, ?string &$error = null): void
 
 /**
  * Step 2 POST 처리 (요구사항 검증)
+ *
+ * 화면은 차단 항목이 있으면 다음 버튼을 숨기지만, POST 를 직접 보내면 그대로 넘어갔다.
+ * 다음 단계로 가기 전에 서버가 요구사항을 다시 검사한다(터미널 설치와 같은 함수).
+ *
+ * @param  string|null  &$error  화면에 표시할 오류 (참조)
  */
-function handleStep2Post(): void
+function handleStep2Post(?string &$error = null): void
 {
     if (isset($_POST['proceed'])) {
+        require_once __DIR__.'/requirements.php';
+
+        if (installer_collect_requirements()['blocking']) {
+            $error = lang('requirements_not_met');
+
+            return;
+        }
+
         updateStepStatus(2, 3);
         redirectToStep(3);
     }
@@ -128,9 +140,8 @@ function handleStep2Post(): void
 /**
  * DB 사용자명을 검증해 에러 배열에 결과를 기록합니다.
  *
- * 빈 값(설정 누락)과 DB 최고권한 계정을 모두 거부합니다. 최고권한 계정 자격증명이
- * 유출되면 데이터베이스 전체가 위험해지므로 설치 단계에서 차단합니다.
- * 판정은 App\Support\PrivilegedDatabaseAccounts 가 SSoT 입니다.
+ * 빈 값(설정 누락)과 DB 최고권한 계정을 모두 거부합니다. 판정 본문은 웹·터미널 공유 함수
+ * `installer_validate_db_username()` 이 소유합니다 — 이 이름은 하위 호환 별칭입니다.
  *
  * @param  string  $username  입력된 DB 사용자명
  * @param  string  $field  에러 배열에 사용할 필드명 (db_write_username 등)
@@ -138,17 +149,7 @@ function handleStep2Post(): void
  */
 function validateDbUsername(string $username, string $field, array &$errors): void
 {
-    $username = trim($username);
-
-    if ($username === '') {
-        $errors[$field] = lang('error_db_username_required');
-
-        return;
-    }
-
-    if (PrivilegedDatabaseAccounts::isBlocked($username)) {
-        $errors[$field] = lang('error_db_username_privileged', ['username' => $username]);
-    }
+    installer_validate_db_username($username, $field, $errors);
 }
 
 /**
@@ -171,125 +172,12 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
     }
 
     $formData = array_merge($formData, $_POST);
-    unset($formData['csrf_token']);
     $formData['use_read_db'] = isset($_POST['use_read_db']) ? true : false;
 
-    // Write DB 검증
-    if (empty($formData['db_write_host'])) {
-        $errors['db_write_host'] = lang('error_db_host_required');
-    }
-    if (empty($formData['db_write_database'])) {
-        $errors['db_write_database'] = lang('error_db_name_required');
-    }
-    validateDbUsername($formData['db_write_username'] ?? '', 'db_write_username', $errors);
-
-    // Read DB 검증 (사용하는 경우)
-    if (! empty($formData['use_read_db'])) {
-        if (empty($formData['db_read_host'])) {
-            $errors['db_read_host'] = lang('error_db_host_required');
-        }
-        if (empty($formData['db_read_database'])) {
-            $errors['db_read_database'] = lang('error_db_name_required');
-        }
-        validateDbUsername($formData['db_read_username'] ?? '', 'db_read_username', $errors);
-    }
-
-    // 관리자 정보 검증
-    if (empty($formData['admin_email']) || ! filter_var($formData['admin_email'], FILTER_VALIDATE_EMAIL)) {
-        $errors['admin_email'] = lang('error_admin_email_invalid');
-    }
-    if (! array_key_exists($formData['admin_language'] ?? '', SUPPORTED_LANGUAGES)) {
-        $errors['admin_language'] = lang('error_admin_language_invalid');
-    }
-    if (empty($formData['admin_password']) || strlen($formData['admin_password']) < 8) {
-        $errors['admin_password'] = lang('error_admin_password_min');
-    }
-    if ($formData['admin_password'] !== $formData['admin_password_confirm']) {
-        $errors['admin_password_confirm'] = lang('error_password_mismatch');
-    }
-
-    // PHP CLI / Composer 경로 처리 — 저장 시점에 허용 형태를 강제한다.
-    // 이 값들은 설치 워커에서 실제 명령의 실행 바이너리가 되므로, 형태 위반 값이
-    // 애초에 .env / 설치 상태에 기록되지 않게 여기서 막는다.
-    require_once __DIR__.'/binary-path-policy.php';
-
-    $phpBinary = trim($formData['php_binary'] ?? 'php');
-    $phpBinary = $phpBinary !== '' ? $phpBinary : 'php';
-    if ($phpBinary !== 'php' && ! installer_binary_path_shape_ok($phpBinary)) {
-        $errors['php_binary'] = lang('error_php_binary_path_not_allowed', ['path' => $phpBinary]);
-    }
-    $formData['php_binary'] = $phpBinary;
-
-    $composerBinary = trim($formData['composer_binary'] ?? '');
-    if ($composerBinary !== '' && $composerBinary !== 'composer') {
-        // 단일 토큰이면 Composer 자리 규칙, 공백 분리 입력이면 (PHP, Composer) 쌍 해석.
-        $allowed = str_contains($composerBinary, ' ')
-            ? installer_resolve_php_composer_pair($composerBinary) !== null
-            : installer_is_composer_binary_path($composerBinary);
-
-        if (! $allowed) {
-            $errors['composer_binary'] = lang('error_composer_binary_path_not_allowed', ['path' => $composerBinary]);
-        }
-    }
-    $formData['composer_binary'] = $composerBinary;
-
-    // Vendor 설치 모드 처리 (auto|composer|bundled)
-    $vendorMode = trim($formData['vendor_mode'] ?? 'auto');
-    if (! in_array($vendorMode, ['auto', 'composer', 'bundled'], true)) {
-        $vendorMode = 'auto';
-    }
-    $formData['vendor_mode'] = $vendorMode;
-
-    // 자산 URL 방식 (이슈 #486) — Step 3 의 브라우저 프로브가 채운 hidden 필드.
-    // 정적 최적화 블록이 있는 서버는 확장자 붙은 동적 응답이 PHP 에 도달하지 못하므로
-    // 설치 시점에 확장자 없는 형태로 확정해야 첫 화면부터 정상 동작한다.
-    // 판정 불가(프로브 실패·JS 미실행)면 키를 비워 defaults.json 기본값을 따르게 한다.
-    $assetUrlMode = trim($formData['asset_url_mode'] ?? '');
-    $formData['asset_url_mode'] = in_array($assetUrlMode, ['extension', 'extensionless'], true)
-        ? $assetUrlMode
-        : '';
-
-    // .env 로 기록되는 사용자 입력의 사전 거부 (KVE-2026-2042)
-    // 직렬화기가 최종 관문이지만, 그 단계의 실패는 설치 진행 중에 예외로 드러나 운영자가
-    // 어느 입력이 문제인지 알기 어렵다. 여기서 필드별로 거부해 화면에 사유를 표시한다.
-    require_once __DIR__.'/env-value.php';
-
-    foreach (['app_name', 'app_url', 'core_update_github_url'] as $envField) {
-        if (! installer_env_value_is_single_line((string) ($formData[$envField] ?? ''))) {
-            $errors[$envField] = lang('error_env_value_line_break');
-        }
-    }
-
-    // URL 필드는 형태까지 확인한다 — 개행이 없어도 스킴이 없는 값이 그대로 기록되면
-    // 배포 후 절대 URL 생성이 어긋난다.
-    foreach (['app_url', 'core_update_github_url'] as $urlField) {
-        $urlValue = trim((string) ($formData[$urlField] ?? ''));
-        if ($urlValue === '' || isset($errors[$urlField])) {
-            continue;
-        }
-
-        // FILTER_VALIDATE_URL 은 호스트명의 밑줄(예: my_site.test)을 거부하므로 쓰지 않는다 —
-        // 로컬 개발 도메인에 흔한 형태라 스킴·호스트 존재와 공백 부재만 확인한다.
-        $parts = parse_url($urlValue);
-        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
-        $host = (string) ($parts['host'] ?? '');
-        if (! in_array($scheme, ['http', 'https'], true) || $host === '' || preg_match('/\s/', $urlValue)) {
-            $errors[$urlField] = lang('error_env_value_invalid_url', ['value' => $urlValue]);
-        }
-    }
-
-    // 코어 업데이트 _pending 경로 검증 (입력된 경우만)
-    $corePendingPath = trim($formData['core_update_pending_path'] ?? '');
-    if ($corePendingPath !== '') {
-        // 절대 경로 변환
-        $absolutePath = str_starts_with($corePendingPath, '/')
-            ? $corePendingPath
-            : BASE_PATH.'/'.$corePendingPath;
-
-        if (file_exists($absolutePath) && ! is_dir($absolutePath)) {
-            $errors['core_update_pending_path'] = lang('error_core_pending_not_directory');
-        }
-    }
+    // 입력 검증 본문은 웹·터미널 공유 함수가 소유한다 — 규칙을 바꿀 때는 config-validation.php 에서 바꾼다.
+    $validated = installer_validate_config($formData, $currentLang);
+    $formData = $validated['config'];
+    $errors = array_merge($errors, $validated['errors']);
 
     // DB 테스트 완료 확인 — 통과 기록(`=== true`)과 함께, 이 세션이 검사한 연결설정과
     // 지금 제출한 연결설정이 같은지 지문으로 대조한다. 실패 기록·미검사·검사 후 설정 변경은 모두 거부.
@@ -388,7 +276,7 @@ function handlePostRequest(int $currentStep, string $currentLang, array &$formDa
     match ($currentStep) {
         0 => handleStep0Post(),
         1 => handleStep1Post($currentLang, $error),
-        2 => handleStep2Post(),
+        2 => handleStep2Post($error),
         3 => handleStep3Post($currentLang, $formData, $errors),
         default => null
     };

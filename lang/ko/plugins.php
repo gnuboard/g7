@@ -60,6 +60,7 @@ return [
 
     // 의존성 관련 메시지
     'dependency_not_active' => '의존하는 ":dependency" 확장이 설치되지 않았거나 비활성 상태입니다.',
+    'dependency_version_unmet' => '의존하는 ":dependency" 의 설치 버전(:installed)이 요구 버전(:required)을 충족하지 않습니다. 의존 확장을 업데이트하거나 --force 로 우회하세요.',
 
     // 플러그인 서비스 오류 메시지
     'installation_failed' => '플러그인 설치에 실패했습니다: :error',

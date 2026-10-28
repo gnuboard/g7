@@ -8,6 +8,7 @@ use App\Benchmark\Contracts\BenchmarkAxisRunner;
 use App\Benchmark\DTO\BenchmarkProfile;
 use App\Benchmark\DTO\BenchmarkResult;
 use App\Benchmark\DTO\BenchmarkRunOptions;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\BenchmarkAxis;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,8 @@ use Illuminate\Support\Facades\DB;
  */
 class BenchCommand extends Command
 {
+    use LocalizesDescription;
+
     protected $signature = 'g7:bench
         {--profile=* : 계측할 프로파일 키 (짧은 키 또는 출처/키 형태). 다중 지정 가능}
         {--axis= : 축 단위 실행 (list|screen|write|batch)}
@@ -43,8 +46,6 @@ class BenchCommand extends Command
         {--json : 기계 판독용 JSON 출력}
         {--report= : 마크다운 리포트 저장 경로 (값 없이 --report 만 주면 storage/app/benchmarks/ 아래 자동 생성)}
         {--list-profiles : 등록된 프로파일 목록 출력}';
-
-    protected $description = '목록 조회·화면 응답·쓰기·배치 4축 성능을 계측합니다 (대상은 코어 config + 확장 선언에서 수집)';
 
     protected $aliases = ['g7:bench:pagination'];
 

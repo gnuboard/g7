@@ -4,6 +4,7 @@ namespace App\Console\Commands\Core;
 
 use App\Console\Commands\Core\Concerns\BundledExtensionUpdatePrompt;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Exceptions\UpgradeHandoffException;
 use App\Extension\ExtensionManager;
@@ -46,6 +47,7 @@ class ExecuteUpgradeStepsCommand extends Command
     use BundledExtensionUpdatePrompt;
     use ClearsTemplateCaches;
     use HasUnifiedConfirm;
+    use LocalizesDescription;
     use ReportsLifecycleWarnings;
 
     protected $signature = 'core:execute-upgrade-steps
@@ -58,8 +60,6 @@ class ExecuteUpgradeStepsCommand extends Command
         {--skip-version-env : .env APP_VERSION 갱신 생략 (부모 Step 11 가 처리)}
         {--skip-cache-clear : 캐시 정리 생략 (부모 Step 11 가 처리)}
         {--skip-bundled-updates : 번들 확장 일괄 업데이트 생략 (부모가 prompt 로 처리)}';
-
-    protected $description = '코어 업그레이드 스텝을 별도 프로세스에서 실행합니다. 단독 실행 시 사전/사후 단계를 자동 수행하며, --steps-only 로 스텝만 실행할 수 있습니다.';
 
     /**
      * 재동기화·오토로드 갱신 실패 경고는 표로만 보이고 종료코드는 바꾸지 않습니다 — 부모(core:update)는 종료코드 0 만 성공으로 본다.

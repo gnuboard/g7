@@ -32,7 +32,7 @@ require_once dirname(__DIR__).'/includes/config.php';
 require_once dirname(__DIR__).'/includes/installer-state.php';
 require_once dirname(__DIR__).'/includes/functions.php';
 require_once dirname(__DIR__).'/includes/installer-ownership.php';
-require_once dirname(__DIR__).'/includes/install-order.php';
+require_once dirname(__DIR__).'/includes/extension-selection.php';
 require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
@@ -134,33 +134,31 @@ foreach ($identifierGroups as $groupKey => $ids) {
     }
 }
 
-// 같은 유형 안 설치 순서 — 의존 대상이 먼저 설치·활성화되도록 dependencies 로 위상 정렬한다.
-// Step 4 의 자동 선택은 의존 대상을 배열 끝에 붙이고, 설치 작업은 배열 순서를 그대로 따른다.
-// 순환이면 원래 순서를 지키고 로그만 남긴다(차단은 dependencyPrecheckSSE 의 몫).
-$sortInstallOrder = static function (array $ids, string $orderType): array {
-    return installerSortSameTypeByDependencies(
-        $ids,
-        installerLoadBundledDependencyMap(BASE_PATH, $orderType),
-        static function (array $cycle) use ($orderType): void {
-            addLog(lang('log_install_order_cycle', [
-                'type' => $orderType,
-                'cycle' => implode(' → ', $cycle),
-            ]));
-        }
-    );
-};
-$modules = $sortInstallOrder($modules, 'modules');
-$plugins = $sortInstallOrder($plugins, 'plugins');
-
 try {
-    // selected_extensions 업데이트
-    $state['selected_extensions'] = [
-        'admin_templates' => $adminTemplates,
-        'user_templates' => $userTemplates,
-        'modules' => $modules,
-        'plugins' => $plugins,
-        'language_packs' => $languagePacks,
-    ];
+    // 서버 검증 — 화면(JS)과 같은 규칙의 공유 해석기로 존재·의존 자동 포함·버전·단일 선택·언어팩 대상을 확인한다.
+    // 종전에는 형식만 보고 저장해, 없는 확장·의존 누락이 설치 단계에서 늦게 실패했다(터미널 설치와 같은 함수).
+    $resolution = installer_resolve_extension_selection(installer_scan_extensions(), $identifierGroups);
+
+    if (! empty($resolution['errors'])) {
+        $messages = installer_extension_error_messages($resolution['errors']);
+        http_response_code(422);
+        echo installer_json_encode([
+            'success' => false,
+            'error' => $messages[0],
+            'message' => $messages[0],
+            'message_key' => $resolution['errors'][0]['key'],
+            'errors' => $messages,
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // selected_extensions 업데이트 — 해석 결과(의존 확장 포함·설치 순서 정렬)를 저장한다.
+    $state['selected_extensions'] = $resolution['selection'];
+    $adminTemplates = $resolution['selection']['admin_templates'];
+    $userTemplates = $resolution['selection']['user_templates'];
+    $modules = $resolution['selection']['modules'];
+    $plugins = $resolution['selection']['plugins'];
+    $languagePacks = $resolution['selection']['language_packs'];
 
     // 확장 이름 매핑 저장 (설치 시 표시용)
     $state['extension_names'] = $extensionNames;
@@ -194,6 +192,8 @@ try {
         'message' => lang('log_extensions_saved'),
         'data' => [
             'selected_extensions' => $state['selected_extensions'],
+            'auto_added' => $resolution['auto_added'],
+            'install_order' => $resolution['install_order'],
             'next_step' => 5,
         ],
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);

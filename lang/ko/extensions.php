@@ -32,6 +32,13 @@ return [
         'zip_missing_version' => 'ZIP 내부의 :file 매니페스트에 version 필드가 없습니다.',
         'not_found' => '확장(:identifier) 을 찾을 수 없습니다.',
         'cascade_dependency_failed' => '동반 설치할 :type (:identifier) 의 설치에 실패했습니다: :message',
+        'unknown_error' => '알 수 없는 오류가 발생했습니다.',
+        'cascade_dependency_activation_failed' => '의존 확장 :identifier 활성화에 실패했습니다: :reason',
+        'cascade_dependencies_kept' => '함께 설치·활성화한 의존 확장은 되돌리지 않고 남겨 두었습니다: :list',
+        'cascade_dependency_unmet_list' => '필요한 의존 확장이 충족되지 않았습니다 — :list',
+        'cascade_dependency_cycle' => '의존 관계가 순환합니다: :cycle',
+        'cascade_dependency_not_found' => ':required_by 에 필요한 의존 확장 :identifier 을(를) 찾을 수 없습니다.',
+        'cascade_dependency_version' => ':required_by 에 필요한 :identifier 의 버전(:required)을 :version 이(가) 충족하지 않습니다.',
         'cascade_permission_denied' => '함께 설치할 :type (:identifier) 을(를) 설치하거나 활성화할 권한이 없습니다.',
         'invalid_type' => '유효하지 않은 확장 타입입니다.',
         'not_auto_deactivated' => '이 확장은 코어 버전 호환성 문제로 자동 비활성화된 상태가 아닙니다.',
@@ -140,6 +147,19 @@ return [
     ],
 
     'commands' => [
+        // 설치 명령의 연쇄 설치 옵션 (--with-dependencies · --with-language-packs)
+        'cascade' => [
+            'dependency_unmet' => '의존 확장 미충족: :identifier (필요 :required, 현재 :state)',
+            'use_with_dependencies' => '--with-dependencies 로 함께 설치·활성화할 수 있습니다.',
+            'state_install_activate' => '미설치',
+            'state_activate' => '비활성',
+            'dependency_step' => '의존 확장 :identifier — :action 상태라 함께 처리합니다 (필요: :required_by)',
+            'dependencies_done' => '의존 확장 처리 완료 — 설치 :installed건, 활성화 :activated건',
+            'language_pack_failed' => '언어팩 :identifier 설치 실패: :reason',
+            'language_pack_awaiting' => '언어팩 :identifier 은(는) 대상 확장을 활성화할 때 함께 켜집니다.',
+            'language_packs_done' => '언어팩 :count건 설치',
+            'language_pack_not_candidate' => '함께 설치할 수 있는 언어팩이 아닙니다: :list',
+        ],
         'clear_cache_success' => '확장 버전 검증 캐시가 삭제되었습니다.',
 
         // module:update · plugin:update · template:update 공통 옵션 검증·ZIP 안내

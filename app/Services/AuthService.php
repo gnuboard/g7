@@ -58,6 +58,7 @@ class AuthService
      * @param  PasswordChangeService  $passwordChangeService  비밀번호 변경 기록 서비스
      * @param  PasswordExpiryService  $passwordExpiryService  비밀번호 만료 정책 서비스
      * @param  PasswordChangeChallengeService  $passwordChangeChallengeService  로그인 변경 단계 식별자 서비스
+     * @param  PasswordResetService  $passwordResetService  비밀번호 재설정 실행 (메일·터미널 공통)
      */
     public function __construct(
         private UserRepositoryInterface $userRepository,
@@ -69,6 +70,7 @@ class AuthService
         private PasswordChangeService $passwordChangeService,
         private PasswordExpiryService $passwordExpiryService,
         private PasswordChangeChallengeService $passwordChangeChallengeService,
+        private PasswordResetService $passwordResetService,
     ) {}
 
     /**
@@ -1266,47 +1268,15 @@ class AuthService
             ]);
         }
 
-        // 재설정 메일을 받아 링크를 연 것 자체가 본인 확인이므로 로그인 잠금도 함께 푼다.
-        // 잠금은 이메일만 알면 남이 걸 수 있어, 이 경로가 없으면 피해자는 차단 시간이 끝나기를
-        // 기다리거나(공격자가 다시 걸면 끝이 없다) 관리자 해제를 받아야 한다 — 관리자가 한 명뿐인
-        // 사이트에서 그 관리자가 잠기면 복구 수단이 없다. 무기한 잠금도 같은 이유로 푼다.
-        $wasLocked = $this->userRepository->isLocked($user);
-        $oldPasswordHash = $user->getRawOriginal('password');
-
-        // 비밀번호를 바꾼 뒤 토큰 삭제가 실패하면 그 재설정 토큰이 계속 유효한 채로
-        // 남아 재사용된다(보안). 두 단계를 하나로 묶는다.
-        DB::transaction(function () use ($user, $password, $record, $oldPasswordHash) {
-            // Hook 발생 (비밀번호 재설정 시작)
-            HookManager::doAction('core.auth.before_reset_password', $user);
-
-            // 비밀번호 업데이트
-            $this->userRepository->update($user, [
-                'password' => Hash::make($password),
-            ]);
-
-            // 변경 기록 + 모든 기기 로그아웃(D17) — 메일 링크로 바꾼 것은 탈취 대응일 수 있어 현재 기기도 남기지 않는다.
-            $this->passwordChangeService->recordChange(
-                $user,
-                is_string($oldPasswordHash) ? $oldPasswordHash : null,
-                PasswordChangeSource::Reset,
-            );
-
-            // 로그인 실패 횟수·잠금 초기화
-            $this->userRepository->resetLoginAttempts($user);
-
-            // 사용된 토큰 삭제
-            $record->delete();
-        });
-
-        if ($wasLocked) {
-            HookManager::doAction('core.auth.account_unlocked', $user->fresh(), [
-                'ip_address' => request()->ip(),
-                'reason' => 'password_reset',
-            ]);
-        }
-
-        // Hook 발생 (비밀번호 변경 완료) — 알림 발송은 NotificationHookListener가 처리
-        HookManager::doAction('core.auth.after_password_changed', $user);
+        // 재설정 실행 본문(잠금 해제·변경 기록·모든 기기 로그아웃·완료 훅)은 터미널 재설정과 같은 서비스가 소유한다.
+        // 비밀번호를 바꾼 뒤 토큰 삭제가 실패하면 그 재설정 토큰이 계속 유효한 채로 남아 재사용된다(보안) —
+        // 토큰 삭제를 같은 트랜잭션에 묶는다.
+        $this->passwordResetService->resetByOperator(
+            $user,
+            $password,
+            PasswordChangeSource::Reset,
+            insideTransaction: static fn () => $record->delete(),
+        );
     }
 
     /**

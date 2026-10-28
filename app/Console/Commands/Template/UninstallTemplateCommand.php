@@ -4,6 +4,7 @@ namespace App\Console\Commands\Template;
 
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
@@ -15,6 +16,7 @@ class UninstallTemplateCommand extends Command
 {
     use HasProgressBar;
     use HasUnifiedConfirm;
+    use LocalizesDescription;
     use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
 
@@ -25,11 +27,6 @@ class UninstallTemplateCommand extends Command
         {identifier : 템플릿 식별자}
         {--force : 확인 없이 삭제}
         {--delete-data : 「데이터도 삭제」를 선택한 것으로 제거 (활동 로그·제거 구독 확장에 전달)}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '템플릿을 삭제합니다';
 
     /**
      * 템플릿 관리자 및 리포지토리

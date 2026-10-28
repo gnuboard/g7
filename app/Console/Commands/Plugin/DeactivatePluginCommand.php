@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Contracts\Repositories\PluginRepositoryInterface;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 
 class DeactivatePluginCommand extends Command
 {
+    use LocalizesDescription;
     use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
 
@@ -20,11 +22,6 @@ class DeactivatePluginCommand extends Command
      * The name and signature of the console command.
      */
     protected $signature = 'plugin:deactivate {identifier : 비활성화할 플러그인 식별자} {--force : 의존 확장이 있어도 강제 비활성화}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '플러그인을 비활성화합니다';
 
     /**
      * 플러그인 관리자 및 리포지토리

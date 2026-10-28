@@ -758,7 +758,8 @@
       "uninstalling": "削除中",
       "updating": "アップデート中",
       "stuck_update": "更新停止",
-      "active_label": "有効化"
+      "active_label": "有効化",
+      "version_mismatch": "バージョン不足"
     },
     "stuck_update_hint": "更新が途中で止まりました。「整理して再更新」を押すと整理してから更新を最後まで完了し、スイッチを入れると整理してから有効化します。",
     "stuck_update_reactivate_hint": "止まっていた更新を整理しました。整理したモジュールは無効状態のため、スイッチで再度有効にしてください。",
@@ -975,7 +976,8 @@
       "installing": "インストール中",
       "uninstalling": "削除中",
       "updating": "アップデート中",
-      "stuck_update": "更新停止"
+      "stuck_update": "更新停止",
+      "version_mismatch": "バージョン不足"
     },
     "stuck_update_hint": "更新が途中で止まりました。「整理して再更新」を押すと整理してから更新を最後まで完了し、スイッチを入れると整理してから有効化します。",
     "stuck_update_reactivate_hint": "止まっていた更新を整理しました。整理したプラグインは無効状態のため、スイッチで再度有効にしてください。",

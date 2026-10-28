@@ -15,7 +15,7 @@ return [
     'stuck_update_activate_hint' => '整理した拡張機能は無効状態です。再度有効にするには: :command',
     'stuck_update_unfinished_hint' => 'この更新(:from → :to)は完了していません — ファイルは新しいバージョンに替わっている可能性があるため、記録バージョンを :from に戻しました。更新をもう一度実行すると、終わっていない段階だけを続けて完了します: :command',
     'errors' => [
-        'state_contract_conflict' => "':name' 状態契約は :owner が所有しています。:extension は同じ名前を宣言できません。",
+        'state_contract_conflict' => '\':name\' 状態契約は :owner が所有しています。:extension は同じ名前を宣言できません。',
         'core_version_mismatch' => ':extension (:type)はグヌボード7コアバージョン :required 以上が必要です。(現在: :installed)',
         'version_check_failed' => 'バージョン検証に失敗しました。',
         'operation_in_progress' => '":name"に対して進行中の処理(:status)があるため、リクエストを処理できません。',
@@ -38,6 +38,13 @@ return [
         'upgrade_step_interface_missing' => 'アップグレードステップ :file のクラス :class が :interface を実装していないため、更新を中止しました',
         'entry_class_missing_on_update' => '新しいバージョンの :file でクラス :class が見つからないため、更新を中止しました',
         'unsafe_archive_entry' => '圧縮ファイルに許可されていないパスがあります: :entry',
+        'unknown_error' => '不明なエラーが発生しました。',
+        'cascade_dependency_activation_failed' => '依存する拡張 :identifier の有効化に失敗しました: :reason',
+        'cascade_dependency_unmet_list' => '必要な依存する拡張が要件を満たしていません — :list',
+        'cascade_dependency_cycle' => '依存関係が循環しています: :cycle',
+        'cascade_dependency_not_found' => ':required_by に必要な依存する拡張 :identifier が見つかりません。',
+        'cascade_dependency_version' => ':required_by に必要な :identifier のバージョン(:required)を :version が満たしていません。',
+        'cascade_dependencies_kept' => '一緒にインストール・有効化した依存拡張は元に戻さず残しました: :list',
     ],
     'warnings' => [
         'auto_deactivated' => ':type ":identifier"がコアバージョン互換性の問題により自動無効化されました。',
@@ -166,7 +173,7 @@ return [
                 'plugin' => '[プラグイン] :identifier',
                 'template' => '[テンプレート] :identifier',
             ],
-            'override_notice' => "例外の拡張には ':strategy' 戦略が適用されます。",
+            'override_notice' => '例外の拡張には \':strategy\' 戦略が適用されます。',
             'override_ask' => '例外の拡張を選択 (カンマ区切り、空欄の場合はスキップ)',
             'running' => '── 一括アップデート実行 ──',
             'child_running' => '── バンドル一括アップデート実行 (spawn child) ──',
@@ -185,7 +192,6 @@ return [
             'manifest_parse_failed' => 'マニフェスト JSON の解析に失敗しました: :path',
             'lang_pack_phase_in_process' => '言語パックの段階を別プロセスに分離できなかったため、このプロセスで続行します — 拡張データの翻訳が空の場合は、完了後に php artisan language-pack:update <パック> --force を実行してください。',
         ],
-        // `extension:composer-install`・`extension:update-autoload`・vendor バンドルコマンドの出力
         'composer_install' => [
             'start' => 'すべての拡張の Composer 依存関係のインストールを開始',
             'section_modules' => 'モジュール',
@@ -215,7 +221,6 @@ return [
             'check_skipped_no_dependencies' => ':label: SKIPPED (外部 composer 依存関係なし)',
             'stale' => ':label: STALE — 再ビルドが必要',
         ],
-        // `ext-static:*`・`ext-bundles:cleanup` コマンド出力
         'ext_static_status' => [
             'title' => 'ブートストラップリソースの静的公開状態',
             'labels' => [
@@ -276,7 +281,6 @@ return [
         'ext_bundles_cleanup' => [
             'done' => '古い拡張バンドル :count 件を削除しました。(現在の version: :version)',
         ],
-        // `ext:docgen` コマンド出力
         'ext_docgen' => [
             'conflict_check_dry_run' => '--check と --dry-run は同時に使用できません (dry-run は検査を行いません)。',
             'conflict_init_dry_run' => '--init と --dry-run は同時に使用できません (dry-run はファイルを作成しません)。',
@@ -298,9 +302,20 @@ return [
             'summary' => '拡張 :count 個を処理しました (scope=:scope, mode=:mode) — 問題 :issues 件',
             'check_hint' => '`php artisan ext:docgen --init` で骨格を作成し、`php artisan ext:docgen` でブロックを更新してください。',
         ],
-        // module:build・plugin:build・template:build 共通のビルド成果物クリーンアップ案内
         'prune_build_output' => [
             'active_dir_skipped' => 'アクティブディレクトリでのビルド — 以前の成果物はクリーンアップしません (クリーンアップするとビルド完了まで配信が途切れます)。古い成果物が蓄積する可能性があるため、開発は _bundled で行い、アクティブへの反映は update コマンドで行ってください。',
+        ],
+        'cascade' => [
+            'dependency_unmet' => '依存する拡張が未充足: :identifier (必要 :required、現在 :state)',
+            'use_with_dependencies' => '--with-dependencies で一緒にインストール・有効化できます。',
+            'state_install_activate' => '未インストール',
+            'state_activate' => '無効',
+            'dependency_step' => '依存する拡張 :identifier — :action 状態のため一緒に処理します (必要: :required_by)',
+            'dependencies_done' => '依存する拡張の処理完了 — インストール :installed件、有効化 :activated件',
+            'language_pack_failed' => '言語パック :identifier のインストールに失敗: :reason',
+            'language_pack_awaiting' => '言語パック :identifier は対象の拡張を有効化するときに一緒に有効になります。',
+            'language_packs_done' => '言語パック :count件をインストール',
+            'language_pack_not_candidate' => '一緒にインストールできる言語パックではありません: :list',
         ],
     ],
     'progress' => [
@@ -370,7 +385,6 @@ return [
             'manifest_icon_missing' => '設定ファイルの icon が指すファイルがありません。',
         ],
     ],
-    // 拡張の更新・有効化時のレイアウト3者マージ結果 (#727)
     'layout_sync' => [
         'message' => ':message :summary',
         'summary' => 'レイアウト: 新バージョンの変更 :applied 箇所を自動反映し、運営者の修正と重なった :conflicts 箇所は運営者の内容を維持しました。',
@@ -398,7 +412,13 @@ return [
         ],
         'cli' => [
             'header' => 'レイアウト処理結果 (修正を維持)',
-            'columns' => ['画面', '種類', '結果', '自動反映', '重なり'],
+            'columns' => [
+                '0' => '画面',
+                '1' => '種類',
+                '2' => '結果',
+                '3' => '自動反映',
+                '4' => '重なり',
+            ],
             'kind' => [
                 'layout' => 'レイアウト',
                 'extension' => '拡張フラグメント',

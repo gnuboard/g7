@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.2] - 2026-10-26
+
+### Added
+
+- 2단계 인증 1.0.2 에서 추가된 터미널 비밀번호 재설정 안내 문구(인증 앱 초기화 명령 안내)의 일본어 번역을 추가했습니다.
+
 ## [1.0.1] - 2026-10-21
 
 ### Added

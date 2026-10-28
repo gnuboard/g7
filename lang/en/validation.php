@@ -876,6 +876,7 @@ return [
             'max' => 'Setting value may not be greater than :max characters.',
             'array_max' => 'Setting value may not be larger than :max characters.',
             'server_only' => 'This setting is recorded by the server and cannot be saved directly.',
+            'env_locked' => 'This setting is set by .env and cannot be changed here. Edit :env in .env instead.',
         ],
     ],
 

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Core;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Extension\ExtensionManager;
@@ -49,6 +50,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ExecuteBundledUpdatesCommand extends Command
 {
+    use LocalizesDescription;
     use RendersLayoutSyncResult;
     use ReportsLifecycleWarnings;
 
@@ -58,8 +60,6 @@ class ExecuteBundledUpdatesCommand extends Command
         {--manifest= : 업데이트 매니페스트 JSON 파일 경로 (필수)}
         {--force : 강제 업데이트 플래그 (확장 매니저 update 호출에 전달)}
         {--rebuild-search-index : 일괄 업데이트 후 검색 인덱스 재생성 (매니페스트의 선택보다 우선)}';
-
-    protected $description = '번들 확장 일괄 업데이트를 실행합니다 (CoreUpdateCommand 내부용 — fresh PHP 프로세스에서 호출)';
 
     /**
      * 부분 실패 경고는 표로만 보이고 종료코드는 바꾸지 않습니다 — 부모는 종료코드와 결과 페이로드로 성공·실패를 판정한다.

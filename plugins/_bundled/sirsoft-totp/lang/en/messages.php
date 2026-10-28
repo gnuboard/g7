@@ -43,5 +43,6 @@ return [
             'done' => 'The authenticator app has been unenrolled: :email',
             'next_login_notice' => 'From the next login, this user will not be asked for an authenticator app code (if email fallback is on, the code is sent by email).',
         ],
+        'password_reset_notice' => 'This user has an authenticator app enrolled — if it was lost, reset it: php artisan totp:reset :email',
     ],
 ];

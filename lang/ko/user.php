@@ -40,6 +40,7 @@ return [
         'install' => '설치',
         'register' => '회원가입',
         'admin_create' => '관리자 등록',
+        'console' => '서버 터미널 재설정',
     ],
 
     // 비밀번호 만료 대상 명단 (관리자 환경설정 > 보안)
@@ -235,5 +236,24 @@ return [
         'filter_operator' => '검색 연산자',
         'sort_by' => '정렬 기준',
         'sort_order' => '정렬 순서',
+    ],
+
+    // `user:reset-password` (서버 터미널 비밀번호 재설정) 출력
+    'commands' => [
+        'reset_password' => [
+            'not_found' => '회원을 찾을 수 없습니다: :email',
+            'no_source' => '새 비밀번호가 없습니다. 환경변수 G7_RESET_PASSWORD, --password-file, --generate 중 하나를 쓰거나 터미널에서 실행하세요.',
+            'file_unreadable' => '비밀번호 파일을 읽을 수 없습니다: :path',
+            'ask' => '새 비밀번호',
+            'ask_confirm' => '새 비밀번호 확인',
+            'mismatch' => '두 비밀번호가 일치하지 않습니다.',
+            'done' => ':email 의 비밀번호를 재설정했습니다.',
+            'unlocked' => '로그인 실패 횟수·잠금을 풀었습니다.',
+            'sessions_revoked' => '모든 기기에서 로그아웃했습니다.',
+            'notified' => '비밀번호 변경 알림을 보냈습니다(알림 설정에 따름).',
+            'change_required' => '다음 로그인 때 비밀번호를 바꾸도록 했습니다.',
+            'generated_once' => '아래 비밀번호는 다시 볼 수 없습니다 — 지금 안전한 곳에 옮기세요.',
+            'failed' => '비밀번호를 재설정하지 못했습니다(아무것도 바뀌지 않았습니다): :reason',
+        ],
     ],
 ];

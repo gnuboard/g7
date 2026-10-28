@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\GeoIp;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\GeoIpDatabaseService;
 use Illuminate\Console\Command;
 
@@ -13,11 +14,11 @@ use Illuminate\Console\Command;
  */
 class UpdateGeoLiteDatabaseCommand extends Command
 {
+    use LocalizesDescription;
+
     protected $signature = 'geoip:update
         {--force : 파일이 이미 존재해도 재다운로드}
         {--dry-run : 실제 다운로드 없이 키/URL만 검증}';
-
-    protected $description = 'MaxMind GeoLite2-City DB를 다운로드하여 storage/app/geoip/에 배치합니다.';
 
     /**
      * 커맨드를 실행합니다.

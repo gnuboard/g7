@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Layout;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
@@ -46,6 +47,7 @@ use Illuminate\Console\Command;
 class LayoutCheckInstalledCommand extends Command
 {
     use CollectsFragmentSources;
+    use LocalizesDescription;
     use ValidatesLayoutFiles;
 
     /**
@@ -54,11 +56,6 @@ class LayoutCheckInstalledCommand extends Command
     protected $signature = 'layout:check-installed
                             {--template= : 점검할 템플릿 식별자 (기본: 설치된 템플릿 전부)}
                             {--json : 기계 판독용 JSON 출력}';
-
-    /**
-     * @var string
-     */
-    protected $description = '설치된 레이아웃·확장 조각(DB 행)을 역변환→프로덕션 컴파일→왕복 대조하고 조각 등록 정합성을 점검합니다';
 
     /**
      * 행 단위 결과.

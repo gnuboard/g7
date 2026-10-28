@@ -3,6 +3,7 @@
 namespace App\Console\Commands\LanguagePack;
 
 use App\Console\Commands\Traits\HasUnifiedConfirm;
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
@@ -17,6 +18,7 @@ use Throwable;
 class UninstallLanguagePackCommand extends Command
 {
     use HasUnifiedConfirm;
+    use LocalizesDescription;
     use ReportsLifecycleWarnings;
 
     /**
@@ -26,11 +28,6 @@ class UninstallLanguagePackCommand extends Command
         {identifier : 언어팩 식별자}
         {--cascade : 코어 팩 제거 시 동일 locale 의 module/plugin/template 팩도 inactive 로 강등}
         {--force : 확인 없이 즉시 제거}';
-
-    /**
-     * @var string
-     */
-    protected $description = '언어팩을 제거합니다.';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service

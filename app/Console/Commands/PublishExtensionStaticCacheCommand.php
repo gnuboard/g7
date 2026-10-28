@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Services\ExtensionStaticCacheService;
 use Illuminate\Console\Command;
 
@@ -14,15 +15,12 @@ use Illuminate\Console\Command;
  */
 class PublishExtensionStaticCacheCommand extends Command
 {
+    use LocalizesDescription;
+
     /**
      * The name and signature of the console command.
      */
     protected $signature = 'ext-static:publish {--force : 게시 완료 상태여도 강제 재게시}';
-
-    /**
-     * The console command description.
-     */
-    protected $description = '부트스트랩 리소스(다국어·컴포넌트·라우트·번들·템플릿 에셋)를 정적 파일로 게시합니다';
 
     /**
      * Execute the console command.

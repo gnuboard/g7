@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Traits\LocalizesDescription;
 use App\Extension\Traits\ValidatesLayoutFiles;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\File;
  */
 class GenerateLayoutTestFixture extends Command
 {
+    use LocalizesDescription;
     use ValidatesLayoutFiles;
 
     /**
@@ -25,13 +27,6 @@ class GenerateLayoutTestFixture extends Command
                             {layout : 레이아웃 파일 경로 (modules/sirsoft-ecommerce/resources/layouts/admin/admin_ecommerce_promotion_coupon_list.json)}
                             {--output= : 출력 파일명 (기본: 레이아웃 이름)}
                             {--dir= : 출력 디렉토리 (기본: resources/js/core/template-engine/__tests__/fixtures)}';
-
-    /**
-     * 커맨드 설명
-     *
-     * @var string
-     */
-    protected $description = '레이아웃 JSON을 partial 병합하여 테스트 fixture로 저장합니다';
 
     /**
      * 커맨드 실행
