@@ -38,6 +38,7 @@ require_once dirname(__DIR__).'/config-validation.php';
 require_once dirname(__DIR__).'/requirements.php';
 require_once dirname(__DIR__).'/db-check.php';
 require_once dirname(__DIR__).'/extension-selection.php';
+require_once dirname(__DIR__).'/php-extension-requirements.php';
 require_once dirname(__DIR__).'/install-plan.php';
 require_once dirname(__DIR__).'/env-finalize.php';
 require_once dirname(__DIR__).'/progress-emitter.php';

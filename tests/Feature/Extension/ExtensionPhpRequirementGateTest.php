@@ -82,6 +82,38 @@ class ExtensionPhpRequirementGateTest extends TestCase
     }
 
     /**
+     * 확장 이름을 클로저로 넘기면 미충족일 때만 읽습니다 — 충족한 확장의 설치·활성화는 이름을 묻지 않습니다.
+     *
+     * @scenario level=require, path=install_activate
+     *
+     * @effects require_gate_reads_name_only_when_missing
+     *
+     * @return void 반환값 없음
+     */
+    public function test_name_closure_is_read_only_when_missing(): void
+    {
+        $calls = 0;
+        $name = function () use (&$calls): array {
+            $calls++;
+
+            return ['ko' => '테스트 결제', 'en' => 'Test Pay'];
+        };
+
+        $this->writeComposer(['require' => ['php' => '^8.2']]);
+        app(ExtensionManager::class)->assertPhpExtensionRequirements('plugin', 'acme-soap', $this->dir, $name);
+        $this->assertSame(0, $calls, '충족하면 이름을 읽지 않아야 합니다.');
+
+        $this->writeComposer(['require' => ['ext-soap' => '*']]);
+        try {
+            app(ExtensionManager::class)->assertPhpExtensionRequirements('plugin', 'acme-soap', $this->dir, $name);
+            $this->fail('PhpExtensionRequirementException 이 발생해야 합니다.');
+        } catch (PhpExtensionRequirementException $e) {
+            $this->assertSame(1, $calls);
+            $this->assertStringContainsString(app()->getLocale() === 'en' ? 'Test Pay' : '테스트 결제', $e->getMessage());
+        }
+    }
+
+    /**
      * 게이트 예외는 전역 핸들러에서 422 + error_code php_extension_missing 으로 응답합니다.
      *
      * @scenario level=require, path=http

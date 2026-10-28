@@ -28,11 +28,13 @@ effects:
   - installer_constants_follow_ssot
   - installer_marks_require_missing_and_suggest_missing
   - installer_server_skips_require_missing
+  - installer_resolution_excludes_require_missing
   - installer_scan_and_card_disable_wiring
   - composer_ext_declarations_are_read
   - missing_lists_follow_probe
   - composer_dependency_judgement_unchanged
   - require_missing_blocks_install_and_activate
+  - require_gate_reads_name_only_when_missing
   - require_missing_responds_422
   - update_only_warns
   - suggest_never_blocks_or_warns

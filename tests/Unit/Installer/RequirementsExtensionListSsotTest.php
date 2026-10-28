@@ -117,10 +117,69 @@ class RequirementsExtensionListSsotTest extends TestCase
 
         $this->assertSame(['g7test-plain', 'g7test-suggests'], $filtered['kept']);
         $this->assertSame(['g7test-needs_fake' => ['g7fakeext']], $filtered['skipped']);
+    }
 
-        $save = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/api/save-extensions.php');
-        $this->assertStringContainsString("\$skipMissingPhpExtensions(\$modules, 'modules')", $save, '모듈 서버 측 재검증 배선 누락');
-        $this->assertStringContainsString("\$skipMissingPhpExtensions(\$plugins, 'plugins')", $save, '플러그인 서버 측 재검증 배선 누락');
+    /**
+     * 공유 해석기 결과에서 필수 미충족 모듈·플러그인을 빼고 설치 순서도 같은 집합으로 맞추며, 웹 저장과 터미널 설치가 같은 함수를 씁니다.
+     *
+     * @scenario surface=installer_save_extensions, entry=web_and_cli
+     *
+     * @effects installer_resolution_excludes_require_missing
+     *
+     * @return void 반환값 없음
+     */
+    public function test_resolution_exclusion_is_shared_by_web_and_cli(): void
+    {
+        $this->writeBundled('modules', 'g7test-needs_fake', ['require' => ['ext-g7fakeext' => '*']]);
+        $this->writeBundled('modules', 'g7test-plain', ['require' => ['php' => '^8.2']]);
+        $this->writeBundled('plugins', 'g7test-plugin_needs', ['require' => ['ext-g7fakesoap' => '*']]);
+        $this->writeBundled('plugins', 'g7test-plugin_plain', []);
+
+        $resolution = [
+            'selection' => [
+                'admin_templates' => ['g7test-admin'],
+                'user_templates' => [],
+                'modules' => ['g7test-plain', 'g7test-needs_fake'],
+                'plugins' => ['g7test-plugin_needs', 'g7test-plugin_plain'],
+                'language_packs' => [],
+            ],
+            'install_order' => [
+                'admin_templates:g7test-admin',
+                'modules:g7test-plain',
+                'modules:g7test-needs_fake',
+                'plugins:g7test-plugin_needs',
+                'plugins:g7test-plugin_plain',
+            ],
+        ];
+
+        $result = $this->runInstallerScript(
+            "require_once \$projectRoot.'/public/install/includes/php-extension-requirements.php';"
+            .'echo json_encode(installer_exclude_selection_missing_php('.var_export($resolution, true).', BASE_PATH));'
+        );
+        $excluded = json_decode(strtok($result['raw'], "\n"), true);
+
+        $this->assertSame(['g7test-plain'], $excluded['resolution']['selection']['modules']);
+        $this->assertSame(['g7test-plugin_plain'], $excluded['resolution']['selection']['plugins']);
+        $this->assertSame(['g7test-admin'], $excluded['resolution']['selection']['admin_templates']);
+        $this->assertSame(
+            ['admin_templates:g7test-admin', 'modules:g7test-plain', 'plugins:g7test-plugin_plain'],
+            $excluded['resolution']['install_order']
+        );
+        $this->assertSame(['g7test-needs_fake' => ['g7fakeext'], 'g7test-plugin_needs' => ['g7fakesoap']], $excluded['skipped']);
+
+        // 두 진입점 모두 해석(의존 자동 포함) 뒤, 저장·설치 전에 거른다.
+        $root = dirname(__DIR__, 3);
+        foreach ([
+            'public/install/api/save-extensions.php' => "\$state['selected_extensions'] = \$resolution['selection'];",
+            'public/install/includes/cli/install-flow.php' => "return ['selection' => \$resolution['selection'], 'names' => \$names];",
+        ] as $path => $storeLine) {
+            $source = (string) file_get_contents($root.'/'.$path);
+            $resolvePos = strpos($source, 'installer_resolve_extension_selection(');
+            $excludePos = strpos($source, 'installer_exclude_selection_missing_php($resolution, BASE_PATH)');
+            $this->assertNotFalse($excludePos, $path.': 필수 PHP 확장 재검증 배선 누락');
+            $this->assertLessThan($excludePos, $resolvePos, $path.': 해석보다 먼저 거르면 의존 자동 포함이 다시 넣습니다.');
+            $this->assertLessThan(strpos($source, $storeLine), $excludePos, $path.': 저장·설치 전에 걸러야 합니다.');
+        }
     }
 
     /**

@@ -506,7 +506,7 @@ class ModuleManager implements ModuleManagerInterface
                 'module',
                 $module->getIdentifier(),
                 $this->modulesPath.DIRECTORY_SEPARATOR.$module->getIdentifier(),
-                $module->getName(),
+                fn () => $module->getName(),
             );
 
             // 의존성 확인 (트랜잭션 외부에서 먼저 검증)
@@ -730,7 +730,7 @@ class ModuleManager implements ModuleManagerInterface
         // 강제 활성화·코어 업데이트 중에는 경고만 남긴다(#151)
         $phpExtensionPath = $this->modulesPath.DIRECTORY_SEPARATOR.$module->getIdentifier();
         if (! $force && ! CoreServiceProvider::isCoreUpdateInProgress()) {
-            $this->extensionManager->assertPhpExtensionRequirements('module', $module->getIdentifier(), $phpExtensionPath, $module->getName());
+            $this->extensionManager->assertPhpExtensionRequirements('module', $module->getIdentifier(), $phpExtensionPath, fn () => $module->getName());
         } else {
             $this->extensionManager->warnPhpExtensionRequirements('module', $module->getIdentifier(), $phpExtensionPath);
         }

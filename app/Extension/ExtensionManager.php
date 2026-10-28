@@ -12,6 +12,7 @@ use App\Extension\Support\LifecycleWarnings;
 use App\Rules\ValidExtensionIdentifier;
 use App\Support\ConfigCacheHelper;
 use App\Support\PhpExtensionProbe;
+use Closure;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -1243,16 +1244,17 @@ PHP;
      * @param  string  $extensionType  확장 타입 (module|plugin)
      * @param  string  $identifier  확장 식별자
      * @param  string  $path  composer.json 이 있는 확장 디렉토리
-     * @param  string|array<string, string>  $name  사람이 읽는 확장 이름 (매니페스트 name — 다국어 배열이면 현재 로케일, 비우면 식별자)
+     * @param  string|array<string, string>|Closure(): (string|array<string, string>)  $name  사람이 읽는 확장 이름 (매니페스트 name — 다국어 배열이면 현재 로케일, 비우면 식별자). 클로저면 미충족일 때만 호출한다
      * @return void 반환값 없음
      *
      * @throws PhpExtensionRequirementException 필수 PHP 확장이 없을 때
      */
-    public function assertPhpExtensionRequirements(string $extensionType, string $identifier, string $path, string|array $name = ''): void
+    public function assertPhpExtensionRequirements(string $extensionType, string $identifier, string $path, string|array|Closure $name = ''): void
     {
         $missing = $this->checkPhpExtensionRequirementsAt($path)['missing_required'];
 
         if ($missing !== []) {
+            $name = $name instanceof Closure ? $name() : $name;
             $label = is_array($name) ? (string) ($name[app()->getLocale()] ?? reset($name) ?: '') : $name;
 
             throw new PhpExtensionRequirementException($extensionType, $identifier, $missing, $label);

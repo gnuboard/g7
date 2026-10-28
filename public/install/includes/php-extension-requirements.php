@@ -85,3 +85,38 @@ if (! function_exists('installer_filter_extensions_missing_php')) {
         return ['kept' => $kept, 'skipped' => $skipped];
     }
 }
+
+if (! function_exists('installer_exclude_selection_missing_php')) {
+    /**
+     * 공유 해석기 결과에서 필수 PHP 확장이 없는 모듈·플러그인을 빼고 설치 순서도 같은 집합으로 맞춥니다.
+     *
+     * 확장 저장 API(웹)와 터미널 설치가 함께 쓴다. 해석기가 의존 확장을 자동으로 넣은 뒤에 걸러야 하므로
+     * 요청이 아니라 해석 결과에 건다 — 요청에서 먼저 빼면 해석기가 의존 확장으로 다시 넣는다.
+     *
+     * @param  array{selection: array<string, list<string>>, install_order: list<string>}  $resolution  `installer_resolve_extension_selection()` 결과
+     * @param  string  $basePath  프로젝트 루트 (`{type}/_bundled` 를 찾는 기준)
+     * @param  callable|null  $extensionLoaded  확장 로드 여부 판정 콜백 (기본: extension_loaded)
+     * @return array{resolution: array, skipped: array<string, list<string>>} 거른 해석 결과 / 뺀 식별자 => 없는 PHP 확장
+     */
+    function installer_exclude_selection_missing_php(array $resolution, string $basePath, ?callable $extensionLoaded = null): array
+    {
+        $skipped = [];
+
+        foreach (['modules', 'plugins'] as $type) {
+            $filtered = installer_filter_extensions_missing_php($resolution['selection'][$type] ?? [], $basePath.'/'.$type.'/_bundled', $extensionLoaded);
+            $resolution['selection'][$type] = $filtered['kept'];
+            $skipped += $filtered['skipped'];
+        }
+
+        $resolution['install_order'] = array_values(array_filter(
+            $resolution['install_order'] ?? [],
+            static function (string $entry) use ($resolution): bool {
+                [$category, $identifier] = explode(':', $entry, 2);
+
+                return in_array($identifier, $resolution['selection'][$category] ?? [], true);
+            }
+        ));
+
+        return ['resolution' => $resolution, 'skipped' => $skipped];
+    }
+}

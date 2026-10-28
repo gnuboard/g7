@@ -487,7 +487,7 @@ class PluginManager implements PluginManagerInterface
                 'plugin',
                 $plugin->getIdentifier(),
                 $this->pluginsPath.DIRECTORY_SEPARATOR.$plugin->getIdentifier(),
-                $plugin->getName(),
+                fn () => $plugin->getName(),
             );
 
             // 의존성 확인 (트랜잭션 외부에서 먼저 검증)
@@ -714,7 +714,7 @@ class PluginManager implements PluginManagerInterface
         // 강제 활성화·코어 업데이트 중에는 경고만 남긴다(#151)
         $phpExtensionPath = $this->pluginsPath.DIRECTORY_SEPARATOR.$plugin->getIdentifier();
         if (! $force && ! CoreServiceProvider::isCoreUpdateInProgress()) {
-            $this->extensionManager->assertPhpExtensionRequirements('plugin', $plugin->getIdentifier(), $phpExtensionPath, $plugin->getName());
+            $this->extensionManager->assertPhpExtensionRequirements('plugin', $plugin->getIdentifier(), $phpExtensionPath, fn () => $plugin->getName());
         } else {
             $this->extensionManager->warnPhpExtensionRequirements('plugin', $plugin->getIdentifier(), $phpExtensionPath);
         }
