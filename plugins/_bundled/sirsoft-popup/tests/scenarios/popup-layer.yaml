@@ -4,7 +4,10 @@ description: |
   PopupLayer 가 공개 API 배열을 받아 경로·기기·보지 않기·이번 페이지에서 닫음으로 거른 뒤 한 레이어 안 캐러셀로 보인다.
   「보지 않기」는 그때 보이던 팝업 전부의 id 를 만료와 함께 쿠키 하나(g7_popup_dismissed)에 기록하고(D3),
   「닫기」는 새로고침 전까지 같은 팝업을 다시 띄우지 않는다(모듈 메모리). 모바일 하단 시트는 GDPR 배너 높이만큼 올라간다.
-  접근성: dialog·aria-modal·포커스 가둠·ESC·←→·포커스 복귀·자동 넘김 멈춤(마우스·포커스·일시정지·reduced-motion)·aria-live 전환.
+  접근성: dialog·aria-modal·포커스 가둠·ESC·←→·포커스 복귀·자동 넘김 멈춤(마우스·포커스·일시정지·누름·reduced-motion)·aria-live 전환.
+  장 전환은 가로 이동 — 현재 장과 들어올 옆 장 하나만 ±100% 에 두고 옮긴다(끝 ↔ 처음도 한 칸). 마우스·손가락으로 끌면 두 장이 함께
+  밀리고, 폭의 20% 이상 또는 빠른 휙 넘김이면 넘기고 아니면 제자리. 세로 의도는 무시, 끈 뒤의 click 은 링크로 가지 않는다.
+  끄는 동안 보이는 옆 장은 aria-hidden + inert, 화면 밖 장은 hidden. 끈 거리는 실제 표시 폭 대비 비율(축소 미리보기 틀 포함).
   본문 HTML 은 DOMPurify 로 한 번 더 거르고, 덮는 링크 안에 포커스 요소가 없다.
 
 axes:
@@ -19,6 +22,7 @@ axes:
     - prev_next_wrap_around
     - dot_buttons_select_and_mark_current
     - counter_shows_position
+    - many_popups_show_counter_without_dots
     - autoplay_advances_at_interval
     - autoplay_pauses_on_hover_and_focus
     - pause_button_toggles_autoplay
@@ -58,6 +62,19 @@ axes:
     - html_body_purified_on_render
     - html_body_scroll_region_only_when_overflowing
     - preview_renders_same_markup_with_links_inert
+    - drag_mouse_moves_to_next_and_previous
+    - drag_touch_moves_to_next
+    - drag_below_threshold_springs_back
+    - drag_flick_moves_even_if_short
+    - drag_vertical_intent_ignored
+    - drag_wraps_as_single_step
+    - buttons_keys_autoplay_use_slide_transition
+    - drag_release_suppresses_link_click
+    - single_popup_drag_disabled
+    - reduced_motion_switches_without_sliding
+    - autoplay_paused_while_pressing
+    - offscreen_slides_not_focusable
+    - preview_drag_uses_rendered_width
 
 effects:
   - accessible_modal_carousel

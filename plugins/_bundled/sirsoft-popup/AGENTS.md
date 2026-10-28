@@ -118,6 +118,8 @@
 | `PopupLayer`·`PopupPreview` 를 템플릿 basic 컴포넌트(`Div`·`Button`)로 옮김 | 이 두 컴포넌트만 HTML 태그 + `g7pp-` 소유 CSS(**예외**). 관리 화면 조각(`PopupConflictResolver`·`PopupPeriodHint`)은 basic 컴포넌트 | 레이어는 어떤 사용자 템플릿에 붙어도 같은 모양·같은 접근성 구조(dialog·포커스 가둠)여야 하고, 템플릿마다 basic 컴포넌트의 클래스·마크업이 다르다 |
 | 미리보기 틀 안 높이를 `100%`·`vh` 로 잼 | 틀이 넘긴 `--g7pp-frame-h` 로 잰다(`.g7pp-root--preview` 규칙) | 대화상자 높이가 정해져 있지 않아 `100%` 는 풀리지 않고 본문이 0px 로 접힌다. `vh` 는 관리자 창 기준이다 |
 | 레이어 문구에 한국어 대체 문구를 박음 | `support/editor.ts` 의 `translate()`(전체 키) — 번역이 없으면 키가 보인다 | 번역 누락이 한국어로 가려지면 다른 언어 방문자에게만 드러난다 |
+| 장 전환에 모든 장을 한 줄로 놓은 트랙을 되감거나, 외부 슬라이더 라이브러리(Swiper 등)를 싣음 | 현재 장 + 들어올 옆 장 하나만 ±100% 자리에 두고 `transform` 으로 옮긴다(`PopupLayer` 의 `moveTo`·끌기 처리) | 끝 → 처음이 N장을 거꾸로 되감는 움직임이 된다. 같은 페이지의 다른 확장(히어로 섹션 등)이 자기 번들에 슬라이더 라이브러리를 이미 실어 두 번 받게 된다 |
+| 끌기 영역에서 올라온 `lostpointercapture` 로 끌기를 끝냄 | 영역 자신이 포인터를 잃었을 때(`event.target === event.currentTarget`)만 끝낸다 | 터치는 브라우저가 누른 자식에 포인터를 잡아 두므로, 영역이 넘겨받는 순간 자식의 `lostpointercapture` 가 올라와 휴대폰에서만 끌기가 끊긴다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행

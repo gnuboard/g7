@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { DEFAULT_SETTINGS, type PopupDisplaySettings, type PublicPopup } from '../../lib/types';
 import { MOBILE_MAX_WIDTH, rememberClosed, visiblePopups } from '../../lib/popupVisibility';
@@ -19,6 +19,74 @@ const PURIFY_CONFIG = {
   FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'ontoggle', 'oncanplay', 'onloadstart', 'formaction', 'xlink:href', 'action'],
   ADD_ATTR: ['target'],
 };
+
+/** 장 전환 시간(ms) — `popup.css` 의 `.g7pp-slide--moving` transition 과 같은 값 */
+export const SLIDE_MS = 300;
+
+/** 끌기 시작 판정 거리(px) — 이만큼 움직인 뒤 가로 성분이 세로보다 크면 끌기, 아니면 세로 스크롤에 맡긴다 */
+const DRAG_START_PX = 8;
+
+/** 놓았을 때 옆 장으로 넘기는 거리 — 표시 폭 대비 비율 */
+const DRAG_COMMIT_RATIO = 0.2;
+
+/** 빠른 휙 넘김 — 이 속도(px/ms) 이상이고 표시 폭의 이 비율 이상 움직였으면 짧아도 넘긴다 */
+const FLICK_SPEED = 0.5;
+const FLICK_MIN_RATIO = 0.04;
+
+/** 점 단추를 그리는 최대 장 수 — 넘으면 점(각 44px)이 여러 줄로 늘어 띠가 길어지므로 「지금 / 전체」 숫자만 둔다 */
+export const MAX_DOTS = 8;
+
+/**
+ * 장 위치 상태 — 현재 장과 함께 보이는 옆 장 하나만 ±100% 에 두고 옮긴다(전체 트랙 없음).
+ * 끝 → 처음 넘김도 옆 장 하나만 들어오므로 한 칸 넘김으로 보인다.
+ */
+interface SlideMotion {
+  /** 현재 장과 함께 보이는 옆 장 (없으면 null) */
+  peer: number | null;
+
+  /** 옆 장이 놓인 쪽 — 1 = 오른쪽, -1 = 왼쪽 */
+  side: 1 | -1;
+
+  /** 현재 장의 가로 위치 (장 폭 대비 %) — 옆 장은 여기에 side × 100 을 더한 자리 */
+  offset: number;
+
+  /** 위치를 미끄러지듯 옮기는 중 (transition 적용) */
+  moving: boolean;
+}
+
+/** 멈춘 상태 — 현재 장만 제자리 */
+const REST: SlideMotion = { peer: null, side: 1, offset: 0, moving: false };
+
+/** 진행 중인 끌기 */
+interface DragState {
+  /** 포인터 id */
+  id: number;
+
+  /** 누른 위치 (화면 px) */
+  x: number;
+  y: number;
+
+  /** 누른 시각 (ms) */
+  at: number;
+
+  /** 누를 때 잰 슬라이드 영역의 실제 표시 폭 — 축소된 미리보기 틀 안에서도 비율이 맞는다 */
+  width: number;
+
+  /** 가로 끌기로 판정됨 */
+  dragging: boolean;
+}
+
+/**
+ * 값을 범위 안으로 자릅니다.
+ *
+ * @param value 값
+ * @param min 최솟값
+ * @param max 최댓값
+ * @returns 자른 값
+ */
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
 
 /** 사용자 레이어 props */
 export interface PopupLayerProps {
@@ -190,8 +258,19 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
   const [paused, setPaused] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
+  // 장 전환 — 움직임 줄이기면 미끄러짐 없이 바로 바꾼다(미리보기도 같은 움직임을 보인다)
+  const animate = !systemReducedMotion;
+  const [motion, setMotion] = useState<SlideMotion>(REST);
+  const [pressing, setPressing] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const indexRef = useRef(0);
+  const slideStartRef = useRef(false);
+  const dragRef = useRef<DragState | null>(null);
+  // 끈 뒤 따라오는 click 은 링크 이동이 아니다 — 다음 click 하나를 막는다
+  const draggedRef = useRef(false);
 
   const visible = useMemo(() => {
     if (preview) {
@@ -215,10 +294,47 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
   const isSheet = isMobile && config.mobile_style === 'sheet';
   const gdprHeight = useGdprBannerHeight(open && isSheet && !preview);
 
+  const current = count > 0 ? Math.min(index, count - 1) : 0;
+  indexRef.current = current;
+
   // 목록이 바뀌면(경로 이동·기기 전환) 처음 장부터
   useEffect(() => {
     setIndex(0);
+    setMotion(REST);
   }, [visibleKey]);
+
+  // 들어올 장을 시작 자리에 그린 직후(그리기 전) 목표 자리로 옮긴다 — 시작 자리를 먼저 확정해야 transition 이 일어난다
+  useLayoutEffect(() => {
+    if (!slideStartRef.current) {
+      return;
+    }
+    slideStartRef.current = false;
+    // 시작 자리 배치를 강제로 확정한다(읽기만 해도 스타일이 계산된다)
+    void bodyRef.current?.offsetWidth;
+    setMotion((m) => ({ ...m, offset: 0, moving: true }));
+  }, [motion]);
+
+  // 미끄러짐이 끝나면 옆 장을 숨긴다 — transitionend 가 오지 않아도(탭 숨김 등) 시간이 지나면 끝낸다
+  useEffect(() => {
+    if (!motion.moving) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setMotion(REST), SLIDE_MS + 80);
+
+    return () => window.clearTimeout(timer);
+  }, [motion]);
+
+  // 포커스가 화면 밖으로 나간 장에 남지 않게 레이어로 옮긴다
+  useEffect(() => {
+    if (preview) {
+      return;
+    }
+    const slide = (document.activeElement as HTMLElement | null)?.closest?.('.g7pp-slide');
+    if (slide && dialogRef.current?.contains(slide) && slide.getAttribute('data-popup-id') !== String(visible[current]?.id)) {
+      dialogRef.current.focus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current]);
 
   // 열릴 때 레이어로 포커스, 닫힐 때 열기 전 포커스로
   useEffect(() => {
@@ -236,18 +352,44 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     };
   }, [open, preview]);
 
-  const autoplaying = open && config.autoplay && count > 1 && !paused && !hovering && !focusWithin && !reducedMotion;
+  const autoplaying = open && config.autoplay && count > 1 && !paused && !hovering && !focusWithin && !pressing && !reducedMotion;
+
+  /**
+   * 다른 장으로 옮긴다 — 들어올 장 하나만 옆(±100%)에서 미끄러져 들어온다.
+   *
+   * @param target 옮길 장
+   * @param dir 넘기는 방향 (1 = 다음 장처럼 오른쪽에서, -1 = 이전 장처럼 왼쪽에서)
+   * @param startOffset 들어올 장의 시작 위치(%) — 끌다 놓았으면 그 자리, 아니면 dir × 100
+   */
+  const moveTo = useCallback((target: number, dir: 1 | -1, startOffset?: number) => {
+    const from = indexRef.current;
+    if (target === from) {
+      return;
+    }
+    setIndex(target);
+    if (!animate) {
+      setMotion(REST);
+
+      return;
+    }
+    slideStartRef.current = true;
+    setMotion({ peer: from, side: dir === 1 ? -1 : 1, offset: startOffset ?? dir * 100, moving: false });
+  }, [animate]);
+
+  const go = useCallback((step: 1 | -1) => {
+    if (count > 1) {
+      moveTo((indexRef.current + step + count) % count, step);
+    }
+  }, [count, moveTo]);
 
   useEffect(() => {
     if (!autoplaying) {
       return undefined;
     }
-    const timer = window.setInterval(() => setIndex((i) => (i + 1) % count), Math.max(1, config.autoplay_interval) * 1000);
+    const timer = window.setInterval(() => go(1), Math.max(1, config.autoplay_interval) * 1000);
 
     return () => window.clearInterval(timer);
-  }, [autoplaying, count, config.autoplay_interval]);
-
-  const go = useCallback((step: number) => setIndex((i) => (i + step + count) % count), [count]);
+  }, [autoplaying, go, config.autoplay_interval]);
 
   const close = useCallback(() => {
     if (preview) {
@@ -287,7 +429,7 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     if (event.key === 'Tab' && !preview) {
       const focusables = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>(
         'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      ) ?? []).filter((el) => !el.closest('[hidden]'));
+      ) ?? []).filter((el) => !el.closest('[hidden], [inert], [aria-hidden="true"]'));
       if (focusables.length === 0) {
         event.preventDefault();
 
@@ -306,22 +448,105 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     }
   }, [close, count, go, preview]);
 
-  // 손가락 좌우 넘기기 — 40px 넘게 가로로 끌면 넘긴다
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const onPointerDown = (event: React.PointerEvent) => {
-    if (event.pointerType !== 'mouse') {
-      touchStart.current = { x: event.clientX, y: event.clientY };
-    }
-  };
-  const onPointerUp = (event: React.PointerEvent) => {
-    const start = touchStart.current;
-    touchStart.current = null;
-    if (!start || count < 2) {
+  /**
+   * 끌기를 끝낸다 — 일정 거리(폭의 20%) 또는 빠른 휙 넘김이면 옆 장으로, 아니면 제자리로.
+   *
+   * @param event 놓음·취소 포인터 이벤트
+   * @param cancelled 브라우저가 포인터를 가져갔으면(스크롤 등) true — 넘기지 않는다
+   */
+  const endDrag = (event: React.PointerEvent<HTMLDivElement>, cancelled: boolean) => {
+    const drag = dragRef.current;
+    if (!drag || drag.id !== event.pointerId) {
       return;
     }
-    const dx = event.clientX - start.x;
-    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(event.clientY - start.y)) {
-      go(dx < 0 ? 1 : -1);
+    dragRef.current = null;
+    setPressing(false);
+    if (!drag.dragging) {
+      return;
+    }
+    setDragging(false);
+    try {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    } catch {
+      // 이미 풀린 포인터
+    }
+    // 끈 뒤 같은 동작에서 오는 click 만 막는다 — 그 뒤 키보드·다음 누름의 click 은 막지 않는다
+    window.setTimeout(() => {
+      draggedRef.current = false;
+    }, 0);
+
+    const dx = event.clientX - drag.x;
+    const ratio = clamp(dx / drag.width, -1, 1);
+    const speed = Math.abs(dx) / Math.max(1, Date.now() - drag.at);
+    const commit = !cancelled && ratio !== 0
+      && (Math.abs(ratio) >= DRAG_COMMIT_RATIO || (Math.abs(ratio) >= FLICK_MIN_RATIO && speed >= FLICK_SPEED));
+    if (commit) {
+      const dir = ratio < 0 ? 1 : -1;
+      // 들어올 장은 지금 옆 장 자리(현재 위치 + dir × 100)에서 이어서 들어온다
+      moveTo((indexRef.current + dir + count) % count, dir, ratio * 100 + dir * 100);
+
+      return;
+    }
+    setMotion((m) => (animate && m.peer !== null && m.offset !== 0 ? { ...m, offset: 0, moving: true } : REST));
+  };
+
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (count < 2 || dragRef.current || (event.pointerType === 'mouse' && event.button !== 0)) {
+      return;
+    }
+    // 넘김 단추 누름은 끌기가 아니다
+    if ((event.target as Element).closest?.('.g7pp-arrow')) {
+      return;
+    }
+    draggedRef.current = false;
+    const width = bodyRef.current?.getBoundingClientRect().width ?? 0;
+    if (width <= 0) {
+      return;
+    }
+    dragRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, at: Date.now(), width, dragging: false };
+    setPressing(true);
+  };
+
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.id !== event.pointerId) {
+      return;
+    }
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    if (!drag.dragging) {
+      if (Math.abs(dx) < DRAG_START_PX && Math.abs(dy) < DRAG_START_PX) {
+        return;
+      }
+      if (Math.abs(dx) <= Math.abs(dy)) {
+        // 세로 의도 — 본문 스크롤에 맡긴다
+        dragRef.current = null;
+        setPressing(false);
+
+        return;
+      }
+      drag.dragging = true;
+      draggedRef.current = true;
+      setDragging(true);
+      try {
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+      } catch {
+        // 합성 이벤트 등 잡을 수 없는 포인터
+      }
+    }
+    // 누르는 동안 생긴 글자 선택을 걷어낸다
+    window.getSelection?.()?.removeAllRanges();
+    const ratio = clamp(dx / drag.width, -1, 1);
+    const dir: 1 | -1 = ratio < 0 ? 1 : -1;
+    setMotion({ peer: (indexRef.current + dir + count) % count, side: dir, offset: ratio * 100, moving: false });
+  };
+
+  const onClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (draggedRef.current) {
+      // 끌다 놓은 자리의 링크(덮는 링크·본문 링크)로 이동하지 않는다
+      event.preventDefault();
+      event.stopPropagation();
+      draggedRef.current = false;
     }
   };
 
@@ -329,7 +554,6 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     return null;
   }
 
-  const current = Math.min(index, count - 1);
   const dialogStyle: React.CSSProperties = {};
   let variant = 'pc-center';
   if (isMobile) {
@@ -360,14 +584,14 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
           <span aria-hidden="true">‹</span>
         </button>
       )}
-      {visible.map((popup, i) => (
+      {count <= MAX_DOTS && visible.map((popup, i) => (
         <button
           key={popup.id}
           type="button"
           className={`g7pp-dot${i === current ? ' g7pp-dot--current' : ''}`}
           aria-label={t('sirsoft-popup.layer.go_to', { n: i + 1 })}
           aria-current={i === current ? 'true' : undefined}
-          onClick={() => setIndex(i)}
+          onClick={() => moveTo(i, i > current ? 1 : -1)}
         >
           <span aria-hidden="true" />
         </button>
@@ -426,21 +650,54 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
         }}
       >
         {isSheet && <div className="g7pp-handle" aria-hidden="true" />}
-        <div className="g7pp-body" onPointerDown={onPointerDown} onPointerUp={onPointerUp}>
+        <div
+          ref={bodyRef}
+          className={`g7pp-body${dragging ? ' g7pp-body--dragging' : ''}`}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={(event) => endDrag(event, false)}
+          onPointerCancel={(event) => endDrag(event, true)}
+          onLostPointerCapture={(event) => {
+            // 터치는 브라우저가 누른 자식에 포인터를 잡아 두므로, 레이어가 넘겨받을 때 자식의 lostpointercapture 가
+            // 올라온다 — 이 영역 자신이 잡은 포인터를 잃었을 때만 끌기를 끝낸다
+            if (event.target === event.currentTarget) {
+              endDrag(event, true);
+            }
+          }}
+          onClickCapture={onClickCapture}
+          // 링크·이미지를 끌어 옮기는 브라우저 기본 동작이 끌기를 가로채지 않게
+          onDragStart={count > 1 ? (event) => event.preventDefault() : undefined}
+        >
           <div className="g7pp-slides" aria-live={autoplaying ? 'off' : 'polite'}>
-            {visible.map((popup, i) => (
-              <div
-                key={popup.id}
-                role="group"
-                aria-roledescription={t('sirsoft-popup.layer.slide')}
-                aria-label={t('sirsoft-popup.layer.counter', { n: i + 1, total: count })}
-                className="g7pp-slide"
-                hidden={i !== current}
-                data-popup-id={popup.id}
-              >
-                <PopupContent popup={popup} eager={i === 0} isMobile={isMobile} onNavigate={close} inert={!!preview} />
-              </div>
-            ))}
+            {visible.map((popup, i) => {
+              const isCurrent = i === current;
+              const isPeer = !isCurrent && i === motion.peer;
+              const x = isCurrent ? motion.offset : motion.offset + motion.side * 100;
+              const placed = isPeer || (isCurrent && (motion.peer !== null || motion.offset !== 0));
+
+              return (
+                <div
+                  key={popup.id}
+                  role="group"
+                  aria-roledescription={t('sirsoft-popup.layer.slide')}
+                  aria-label={t('sirsoft-popup.layer.counter', { n: i + 1, total: count })}
+                  className={`g7pp-slide${motion.moving && (isCurrent || isPeer) ? ' g7pp-slide--moving' : ''}`}
+                  // 화면 밖 장은 숨기고, 끄는 동안·넘기는 동안 잠깐 보이는 옆 장은 보조기술·포커스에서 뺀다
+                  hidden={!isCurrent && !isPeer}
+                  aria-hidden={isPeer ? 'true' : undefined}
+                  inert={isPeer}
+                  style={placed ? { transform: `translateX(${x}%)` } : undefined}
+                  onTransitionEnd={isCurrent ? (event) => {
+                    if (event.target === event.currentTarget && event.propertyName === 'transform') {
+                      setMotion(REST);
+                    }
+                  } : undefined}
+                  data-popup-id={popup.id}
+                >
+                  <PopupContent popup={popup} eager={i === 0} isMobile={isMobile} onNavigate={close} inert={!!preview} />
+                </div>
+              );
+            })}
           </div>
           {!isMobile && count > 1 && (
             <>

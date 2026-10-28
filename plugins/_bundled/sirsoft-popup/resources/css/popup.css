@@ -103,10 +103,24 @@
 .g7pp-body {
   position: relative;
   height: min(var(--g7pp-body-h), calc(100vh - 160px));
-  touch-action: pan-y;
+  /* 가로 끌기는 레이어가 받고 세로 스크롤·확대는 브라우저에 맡긴다 */
+  touch-action: pan-y pinch-zoom;
 }
 
-.g7pp-slides,
+/* 끄는 동안 글자 선택·텍스트 커서가 생기지 않게 */
+.g7pp-body--dragging {
+  cursor: grabbing;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.g7pp-slides {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* 장 전환은 가로 이동 — 현재 장과 들어올 옆 장 하나만 ±100% 자리에 두고 옮긴다(위치는 인라인 transform) */
 .g7pp-slide {
   position: absolute;
   inset: 0;
@@ -116,15 +130,11 @@
   display: none;
 }
 
+/* 움직임 줄이기면 미끄러짐 없이 바로 바뀐다(레이어도 같은 설정을 읽어 옮기지 않는다) — 시간은 PopupLayer SLIDE_MS 와 같다 */
 @media (prefers-reduced-motion: no-preference) {
-  .g7pp-slide:not([hidden]) {
-    animation: g7pp-fade 0.25s ease-out;
+  .g7pp-slide--moving {
+    transition: transform 0.3s ease-out;
   }
-}
-
-@keyframes g7pp-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 /* 이미지형 — 잘리지 않게 담고, 덮는 링크를 그 위에(링크 안에 포커스 요소를 넣지 않는다) */

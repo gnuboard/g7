@@ -1,6 +1,6 @@
 /**
  * @file PopupLayer.test.tsx
- * @description 사용자 팝업 레이어 — 판정(경로·기기·보지 않기·닫음)·캐러셀·자동 넘김·접근성·닫기·보지 않기·배치·GDPR 공존·이미지·링크·본문.
+ * @description 사용자 팝업 레이어 — 판정(경로·기기·보지 않기·닫음)·캐러셀·자동 넘김·접근성·닫기·보지 않기·배치·GDPR 공존·이미지·링크·본문·끌기 슬라이드.
  * (매니페스트 popup-layer.yaml)
  *
  * @vitest-environment jsdom
@@ -8,7 +8,7 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, cleanup, fireEvent, act } from '@testing-library/react';
-import { PopupLayer, GDPR_BANNER_ID } from '../../components/composite/PopupLayer';
+import { PopupLayer, GDPR_BANNER_ID, SLIDE_MS, MAX_DOTS } from '../../components/composite/PopupLayer';
 import { resetClosedThisPage } from '../../lib/popupVisibility';
 import { DISMISS_COOKIE } from '../../lib/dismissCookie';
 import type { PopupDisplaySettings, PublicPopup } from '../../lib/types';
@@ -61,7 +61,53 @@ const show = (popups: PublicPopup[], settings: Partial<PopupDisplaySettings> = {
 );
 
 /** 지금 보이는 장의 팝업 id */
-const currentId = (container: HTMLElement) => Number(container.querySelector('.g7pp-slide:not([hidden])')?.getAttribute('data-popup-id'));
+const currentId = (container: HTMLElement) => Number(container.querySelector('.g7pp-slide:not([hidden]):not([aria-hidden="true"])')?.getAttribute('data-popup-id'));
+
+/** 보이는 장(현재 장 + 넘기는 동안의 옆 장)의 팝업 id — DOM 순서 */
+const shownIds = (container: HTMLElement) => [...container.querySelectorAll('.g7pp-slide:not([hidden])')].map((el) => Number(el.getAttribute('data-popup-id')));
+
+/** 장의 가로 위치(인라인 transform, 없으면 '') */
+const slideX = (container: HTMLElement, id: number) => (container.querySelector(`.g7pp-slide[data-popup-id="${id}"]`) as HTMLElement).style.transform;
+
+/** jsdom 에 없는 PointerEvent 대역 — 좌표(MouseEvent)·포인터 id·종류를 싣는다 */
+class TestPointerEvent extends MouseEvent {
+  pointerId: number;
+  pointerType: string;
+
+  constructor(type: string, init: PointerEventInit = {}) {
+    super(type, init);
+    this.pointerId = init.pointerId ?? 1;
+    this.pointerType = init.pointerType ?? 'mouse';
+  }
+}
+
+/** 슬라이드 영역의 실제 표시 폭(getBoundingClientRect)을 정한다 — jsdom 은 0 을 준다 */
+const mockBodyWidth = (width: number) => vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+  const w = this.classList.contains('g7pp-body') ? width : 0;
+
+  return { width: w, height: 0, top: 0, left: 0, right: w, bottom: 0, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+});
+
+/**
+ * 포인터로 가로·세로로 끈다.
+ *
+ * @param target 누르는 요소
+ * @param dx 가로 이동(px, 왼쪽이 음수)
+ * @param options dy 세로 이동, type 포인터 종류, release 놓기까지, wait 놓기 전 기다림(ms, 가짜 시계)
+ */
+const dragOn = (target: Element, dx: number, options: { dy?: number; type?: 'mouse' | 'touch'; release?: boolean; wait?: number } = {}) => {
+  const { dy = 0, type = 'mouse', release = true, wait = 0 } = options;
+  const base = { pointerId: 7, pointerType: type, button: 0, bubbles: true };
+  fireEvent.pointerDown(target, { ...base, clientX: 300, clientY: 200 });
+  if (wait > 0) {
+    act(() => { vi.advanceTimersByTime(wait); });
+  }
+  fireEvent.pointerMove(target, { ...base, clientX: 300 + dx / 2, clientY: 200 + dy / 2 });
+  fireEvent.pointerMove(target, { ...base, clientX: 300 + dx, clientY: 200 + dy });
+  if (release) {
+    fireEvent.pointerUp(target, { ...base, clientX: 300 + dx, clientY: 200 + dy });
+  }
+};
 
 /** 쿠키를 지운다 */
 const clearCookie = () => {
@@ -184,6 +230,20 @@ describe('PopupLayer', () => {
     expect(container.querySelector('.g7pp-counter')?.textContent).toBe('1 / 2');
     fireEvent.click(getByLabelText('다음 팝업'));
     expect(container.querySelector('.g7pp-counter')?.textContent).toBe('2 / 2');
+  });
+
+  // @scenario surface=many_popups_show_counter_without_dots
+  it(`${MAX_DOTS}장을 넘으면 점 단추 없이 「n / N」만 둔다 — 점이 여러 줄로 늘어 띠가 길어지지 않게`, () => {
+    const ids = Array.from({ length: MAX_DOTS + 1 }, (_, i) => i + 1);
+    const many = show(ids.map((id) => htmlPopup(id)));
+    expect(many.container.querySelectorAll('.g7pp-dot')).toHaveLength(0);
+    expect(many.container.querySelector('.g7pp-counter')?.textContent).toBe(`1 / ${MAX_DOTS + 1}`);
+    fireEvent.click(many.getByLabelText('다음 팝업'));
+    expect(many.container.querySelector('.g7pp-counter')?.textContent).toBe(`2 / ${MAX_DOTS + 1}`);
+    cleanup();
+
+    const edge = show(ids.slice(0, MAX_DOTS).map((id) => htmlPopup(id)));
+    expect(edge.container.querySelectorAll('.g7pp-dot')).toHaveLength(MAX_DOTS);
   });
 
   // @scenario surface=autoplay_advances_at_interval
@@ -599,5 +659,282 @@ describe('PopupLayer', () => {
 
     scrollSpy.mockRestore();
     clientSpy.mockRestore();
+  });
+  describe('끌기 슬라이드', () => {
+    let rectSpy: ReturnType<typeof mockBodyWidth>;
+
+    beforeEach(() => {
+      (window as any).PointerEvent = TestPointerEvent;
+      rectSpy = mockBodyWidth(400);
+    });
+
+    afterEach(() => {
+      rectSpy.mockRestore();
+      delete (window as any).PointerEvent;
+    });
+
+    // @scenario surface=drag_mouse_moves_to_next_and_previous
+    // @effects accessible_modal_carousel
+    it('마우스로 왼쪽으로 끌면 손을 따라 현재 장과 다음 장이 함께 밀리고, 놓으면 다음 장 — 오른쪽으로 끌면 이전 장', () => {
+      const { container } = show([htmlPopup(1), htmlPopup(2), htmlPopup(3)]);
+      const body = container.querySelector('.g7pp-body') as HTMLElement;
+
+      dragOn(body, -120, { release: false });
+      // 폭 400px 의 30% — 현재 장 -30%, 다음 장은 그 오른쪽(+70%)
+      expect(slideX(container, 1)).toBe('translateX(-30%)');
+      expect(slideX(container, 2)).toBe('translateX(70%)');
+      expect(body.className).toContain('g7pp-body--dragging');
+      fireEvent.pointerUp(body, { pointerId: 7, pointerType: 'mouse', clientX: 180, clientY: 200 });
+      expect(currentId(container)).toBe(2);
+      expect(body.className).not.toContain('g7pp-body--dragging');
+
+      dragOn(body, 120);
+      expect(currentId(container)).toBe(1);
+    });
+
+    // @scenario surface=drag_touch_moves_to_next
+    it('손가락(터치 포인터)으로 끌어도 넘긴다 — 누른 자식이 놓친 포인터 잡기(lostpointercapture)로 끌기가 끊기지 않는다', () => {
+      const { container } = show([htmlPopup(1), htmlPopup(2)]);
+      const html = container.querySelector('.g7pp-html') as HTMLElement;
+      const base = { pointerId: 5, pointerType: 'touch' };
+
+      fireEvent.pointerDown(html, { ...base, clientX: 300, clientY: 200 });
+      fireEvent.pointerMove(html, { ...base, clientX: 280, clientY: 200 });
+      // 터치는 브라우저가 누른 요소에 포인터를 잡아 두었다가, 레이어가 잡으면 그 요소에서 lostpointercapture 가 올라온다
+      fireEvent.lostPointerCapture(html, base);
+      fireEvent.pointerMove(html, { ...base, clientX: 150, clientY: 200 });
+      fireEvent.pointerUp(html, { ...base, clientX: 150, clientY: 200 });
+
+      expect(currentId(container)).toBe(2);
+    });
+
+    // @scenario surface=drag_below_threshold_springs_back
+    it('천천히 폭의 20% 미만만 끌고 놓으면 제자리로 돌아오고, 옆 장은 다시 숨는다', () => {
+      vi.useFakeTimers();
+      const { container } = show([htmlPopup(1), htmlPopup(2)]);
+      const body = container.querySelector('.g7pp-body') as HTMLElement;
+
+      dragOn(body, -60, { wait: 600 });
+
+      expect(currentId(container)).toBe(1);
+      expect(slideX(container, 1)).toBe('translateX(0%)');
+      expect(slideX(container, 2)).toBe('translateX(100%)');
+      act(() => { vi.advanceTimersByTime(SLIDE_MS + 80); });
+      expect(shownIds(container)).toEqual([1]);
+    });
+
+    // @scenario surface=drag_flick_moves_even_if_short
+    it('짧아도 빠르게 휙 넘기면 넘긴다(폭의 4% 이상)', () => {
+      vi.useFakeTimers();
+      const { container } = show([htmlPopup(1), htmlPopup(2)]);
+
+      dragOn(container.querySelector('.g7pp-body') as HTMLElement, -40, { wait: 0 });
+
+      expect(currentId(container)).toBe(2);
+    });
+
+    // @scenario surface=drag_vertical_intent_ignored
+    it('세로 성분이 더 크면 끌기를 시작하지 않는다(본문 스크롤에 맡김) — 슬라이드 영역은 touch-action: pan-y', async () => {
+      const { container } = show([htmlPopup(1), htmlPopup(2)]);
+      const body = container.querySelector('.g7pp-body') as HTMLElement;
+
+      dragOn(body, -100, { dy: 160, type: 'touch' });
+
+      expect(currentId(container)).toBe(1);
+      expect(shownIds(container)).toEqual([1]);
+      expect(slideX(container, 1)).toBe('');
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+      expect(css.match(/\.g7pp-body\s*\{[^}]*\}/)?.[0] ?? '').toMatch(/touch-action:\s*pan-y/);
+    });
+
+    // @scenario surface=drag_wraps_as_single_step
+    it('끝 → 처음, 처음 → 끝도 옆 장 하나만 들어오는 한 칸 넘김이다(가운데 장을 거쳐 되감지 않음)', () => {
+      const { container } = show([htmlPopup(1), htmlPopup(2), htmlPopup(3)]);
+      const body = container.querySelector('.g7pp-body') as HTMLElement;
+
+      // 처음에서 오른쪽으로 끌면 마지막 장이 왼쪽에서 따라 들어온다
+      dragOn(body, 100, { release: false });
+      expect(shownIds(container)).toEqual([1, 3]);
+      expect(slideX(container, 3)).toBe('translateX(-75%)');
+      fireEvent.pointerUp(body, { pointerId: 7, pointerType: 'mouse', clientX: 400, clientY: 200 });
+      expect(currentId(container)).toBe(3);
+      // 마지막 장은 0 으로, 처음 장은 오른쪽 밖으로 — 2번 장은 끝까지 숨어 있다
+      expect(shownIds(container)).toEqual([1, 3]);
+      expect(slideX(container, 3)).toBe('translateX(0%)');
+      expect(slideX(container, 1)).toBe('translateX(100%)');
+
+      // 마지막에서 왼쪽으로 끌면 처음 장이 오른쪽에서 들어온다
+      dragOn(body, -100);
+      expect(currentId(container)).toBe(1);
+      expect(shownIds(container)).toEqual([1, 3]);
+      expect(slideX(container, 1)).toBe('translateX(0%)');
+      expect(slideX(container, 3)).toBe('translateX(-100%)');
+    });
+
+    // @scenario surface=buttons_keys_autoplay_use_slide_transition
+    it('이전·다음·점·←→ 도 들어올 장이 옆(±100%)에서 미끄러져 들어오고, 끝나면 옆 장을 숨긴다', () => {
+      vi.useFakeTimers();
+      const starts: string[] = [];
+      // 들어올 장을 시작 자리에 둔 뒤 배치를 확정하는 순간의 위치를 기록한다
+      const layoutSpy = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(function (this: HTMLElement) {
+        const incoming = this.querySelector?.('.g7pp-slide:not([hidden]):not([aria-hidden="true"])') as HTMLElement | null;
+        if (incoming) {
+          starts.push(`${incoming.getAttribute('data-popup-id')}@${incoming.style.transform}${incoming.className.includes('--moving') ? ' moving' : ''}`);
+        }
+
+        return 400;
+      });
+      const { container, getByLabelText } = show([htmlPopup(1), htmlPopup(2), htmlPopup(3)]);
+      const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
+
+      fireEvent.click(getByLabelText('다음 팝업'));
+      expect(starts.pop()).toBe('2@translateX(100%)');
+      expect(container.querySelector('.g7pp-slide[data-popup-id="2"]')?.className).toContain('g7pp-slide--moving');
+      expect(slideX(container, 2)).toBe('translateX(0%)');
+      expect(slideX(container, 1)).toBe('translateX(-100%)');
+      act(() => { vi.advanceTimersByTime(SLIDE_MS + 80); });
+      expect(shownIds(container)).toEqual([2]);
+
+      fireEvent.keyDown(dialog, { key: 'ArrowLeft' });
+      expect(starts.pop()).toBe('1@translateX(-100%)');
+      act(() => { vi.advanceTimersByTime(SLIDE_MS + 80); });
+
+      // 점으로 멀리 건너뛰어도 옆 장 하나만 들어온다
+      fireEvent.click(getByLabelText('3번째 팝업 보기'));
+      expect(starts.pop()).toBe('3@translateX(100%)');
+      expect(shownIds(container)).toEqual([1, 3]);
+      layoutSpy.mockRestore();
+    });
+
+    // @scenario surface=drag_release_suppresses_link_click
+    // @effects accessible_modal_carousel
+    it('링크 장을 끌다 놓으면 뒤따르는 click 으로 이동하지 않는다(새 창 링크도) — 끌지 않은 클릭은 그대로 이동', () => {
+      const dispatch = vi.fn();
+      installCore({ dispatch });
+      const { container } = show([imagePopup(1, { link_url: '/event/autumn' }), imagePopup(2, { link_url: 'https://example.com/promo', link_new_window: true })]);
+      const inner = container.querySelector('.g7pp-slide[data-popup-id="1"] .g7pp-cover-link') as HTMLAnchorElement;
+      const external = container.querySelector('.g7pp-slide[data-popup-id="2"] .g7pp-cover-link') as HTMLAnchorElement;
+
+      dragOn(inner, -160);
+      expect(fireEvent.click(inner)).toBe(false);
+      expect(dispatch).not.toHaveBeenCalled();
+      expect(currentId(container)).toBe(2);
+
+      dragOn(external, 160);
+      // 새 창 링크의 기본 동작(새 창 열기)도 막힌다
+      expect(fireEvent.click(external)).toBe(false);
+      expect(currentId(container)).toBe(1);
+
+      // 누르고 그대로 놓은 클릭은 링크로 간다
+      fireEvent.pointerDown(inner, { pointerId: 8, pointerType: 'mouse', button: 0, clientX: 300, clientY: 200 });
+      fireEvent.pointerUp(inner, { pointerId: 8, pointerType: 'mouse', button: 0, clientX: 302, clientY: 201 });
+      fireEvent.click(inner);
+      expect(dispatch).toHaveBeenCalledWith({ handler: 'navigate', params: { path: '/event/autumn' } });
+    });
+
+    // @scenario surface=single_popup_drag_disabled
+    it('한 건이면 끌어도 움직이지 않고 클릭을 막지 않는다', () => {
+      const dispatch = vi.fn();
+      installCore({ dispatch });
+      const { container } = show([imagePopup(1, { link_url: '/event/autumn' })]);
+      const link = container.querySelector('.g7pp-cover-link') as HTMLAnchorElement;
+
+      dragOn(link, -200);
+
+      expect(slideX(container, 1)).toBe('');
+      expect(container.querySelector('.g7pp-body--dragging')).toBeNull();
+      fireEvent.click(link);
+      expect(dispatch).toHaveBeenCalledTimes(1);
+    });
+
+    // @scenario surface=reduced_motion_switches_without_sliding
+    it('움직임 줄이기면 단추·끌기 모두 미끄러짐 없이 바로 바뀐다 — 스타일도 이동 전환을 그 설정에서만 준다', async () => {
+      media.reduced = true;
+      installMatchMedia();
+      const { container, getByLabelText } = show([htmlPopup(1), htmlPopup(2), htmlPopup(3)]);
+
+      fireEvent.click(getByLabelText('다음 팝업'));
+      expect(shownIds(container)).toEqual([2]);
+      expect(container.querySelector('.g7pp-slide--moving')).toBeNull();
+
+      dragOn(container.querySelector('.g7pp-body') as HTMLElement, -200);
+      expect(shownIds(container)).toEqual([3]);
+      expect(container.querySelector('.g7pp-slide--moving')).toBeNull();
+
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      const css = fs.readFileSync(path.resolve(__dirname, '../../../css/popup.css'), 'utf8');
+      expect(css).toMatch(/@media \(prefers-reduced-motion: no-preference\)\s*\{\s*\.g7pp-slide--moving\s*\{\s*transition:\s*transform/);
+      expect(css).not.toMatch(/g7pp-fade/);
+    });
+
+    // @scenario surface=autoplay_paused_while_pressing
+    it('누르고 있는 동안(누름~놓음) 자동 넘김이 멈춘다', () => {
+      vi.useFakeTimers();
+      const { container } = show([htmlPopup(1), htmlPopup(2), htmlPopup(3)], { autoplay: true, autoplay_interval: 4 });
+      const body = container.querySelector('.g7pp-body') as HTMLElement;
+      act(() => { fireEvent.blur(container.querySelector('[role="dialog"]') as HTMLElement, { relatedTarget: document.body }); });
+
+      fireEvent.pointerDown(body, { pointerId: 3, pointerType: 'touch', clientX: 100, clientY: 100 });
+      // 간격 두 번(2 → 3 으로 갈 시간)이 지나도 그대로
+      act(() => { vi.advanceTimersByTime(9000); });
+      expect(currentId(container)).toBe(1);
+
+      fireEvent.pointerUp(body, { pointerId: 3, pointerType: 'touch', clientX: 100, clientY: 100 });
+      act(() => { vi.advanceTimersByTime(4000); });
+      expect(currentId(container)).toBe(2);
+    });
+
+    // @scenario surface=offscreen_slides_not_focusable
+    // @effects accessible_modal_carousel
+    it('화면 밖 장은 hidden, 넘기는 동안 보이는 옆 장은 aria-hidden + inert — 포커스 가둠에서도 빠지고, 떠나는 장의 포커스는 레이어로 옮긴다', () => {
+      vi.useFakeTimers();
+      const { container } = show([imagePopup(1, { link_url: '/a' }), imagePopup(2, { link_url: '/b' }), imagePopup(3, { link_url: '/c' })]);
+      const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
+      const links = [...container.querySelectorAll<HTMLElement>('.g7pp-cover-link')];
+
+      act(() => { links[0].focus(); });
+      act(() => { fireEvent.keyDown(links[0], { key: 'ArrowRight' }); });
+
+      expect(document.activeElement).toBe(dialog);
+      const leaving = container.querySelector('.g7pp-slide[data-popup-id="1"]') as HTMLElement;
+      expect(leaving.getAttribute('aria-hidden')).toBe('true');
+      expect(leaving.hasAttribute('inert')).toBe(true);
+      expect(leaving.hasAttribute('hidden')).toBe(false);
+      expect((container.querySelector('.g7pp-slide[data-popup-id="3"]') as HTMLElement).hasAttribute('hidden')).toBe(true);
+
+      // Tab 순환의 첫 요소는 지금 장의 링크 — 옆 장 링크로 가지 않는다
+      const buttons = [...dialog.querySelectorAll<HTMLElement>('button')];
+      const last = buttons[buttons.length - 1];
+      act(() => { last.focus(); });
+      act(() => { fireEvent.keyDown(last, { key: 'Tab' }); });
+      expect(document.activeElement).toBe(links[1]);
+
+      act(() => { vi.advanceTimersByTime(SLIDE_MS + 80); });
+      expect(leaving.hasAttribute('hidden')).toBe(true);
+      expect(leaving.hasAttribute('inert')).toBe(false);
+    });
+
+    // @scenario surface=preview_drag_uses_rendered_width
+    it('축소 미리보기 틀에서도 끈 거리는 실제 표시 폭 대비 비율로 잰다', () => {
+      vi.useFakeTimers();
+      rectSpy.mockRestore();
+      // 480px 레이어가 0.25 배로 줄어 120px 로 보인다 — 30px 은 25%
+      rectSpy = mockBodyWidth(120);
+      const { container } = render(<PopupLayer popups={[htmlPopup(1), htmlPopup(2)]} settings={{ autoplay: false }} preview="pc" />);
+
+      dragOn(container.querySelector('.g7pp-body') as HTMLElement, -30, { wait: 600 });
+      expect(currentId(container)).toBe(2);
+      cleanup();
+
+      // 같은 30px 도 줄이지 않은 480px 폭이면 6% — 천천히 끌면 제자리
+      rectSpy.mockRestore();
+      rectSpy = mockBodyWidth(480);
+      const { container: full } = render(<PopupLayer popups={[htmlPopup(1), htmlPopup(2)]} settings={{ autoplay: false }} preview="pc" />);
+      dragOn(full.querySelector('.g7pp-body') as HTMLElement, -30, { wait: 600 });
+      expect(currentId(full)).toBe(1);
+    });
   });
 });

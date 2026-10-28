@@ -1,7 +1,7 @@
 /**
  * @file admin-popup-to-user.spec.ts
  * @description 관리자가 등록·수정·순서를 바꾼 팝업이 사용자 화면에 조건대로 뜨는지 — 이미지형·직접 작성형, 노출 페이지 경계,
- * 회원만, 모바일만, 순서 변경, 오늘 하루 보지 않기 뒤 새 팝업, 닫기 뒤 SPA 이동, 조회 전용 관리자. (매니페스트 e2e-flows.yaml)
+ * 회원만, 모바일만, 순서 변경, 오늘 하루 보지 않기 뒤 새 팝업, 닫기 뒤 SPA 이동, 끌어서 넘기기(마우스·터치), 조회 전용 관리자. (매니페스트 e2e-flows.yaml)
  */
 import { test, expect, auth, authenticatePage, createHtmlPopup, createImagePopup, gotoUser, layer, layerIds, navigateSpa, uniqueTitle, ADMIN_LIST, API, VIEWPORTS } from '../fixtures/popup-auth';
 
@@ -115,11 +115,91 @@ async function flow_html_popup_with_editor_content({ page, request, managerToken
     created.push(id);
 
     await gotoUser(page, '/');
+    await expect(page.locator(`.g7pp-slide[data-popup-id="${id}"]`)).toHaveCount(1);
+    await goToSlide(page, id);
     const body = page.locator(`.g7pp-slide[data-popup-id="${id}"] .g7pp-html`);
     await expect(body.locator('h2')).toHaveText('점검 안내');
     await body.locator('p').click();
     expect(await page.evaluate(() => (window as any).__popupXss)).toBeUndefined();
     expect(await body.innerHTML()).not.toContain('onclick');
+}
+
+/** 지금 장(보조기술에 보이는 장)의 팝업 id — 넘기는 동안의 옆 장은 aria-hidden 이다 */
+async function currentSlideId(page: any): Promise<number> {
+  return Number(await page.locator('[data-popup-layer=""] .g7pp-slide:not([hidden]):not([aria-hidden="true"])').getAttribute('data-popup-id'));
+}
+
+/**
+ * 사양이 만든 장으로 간다 — 사이트에 다른 팝업이 먼저 떠 있을 수 있고, 장이 많으면 점 단추 없이 「n / N」만 있으므로
+ * [다음 팝업]으로 한 장씩 넘긴다.
+ */
+async function goToSlide(page: any, id: number): Promise<void> {
+  const total = (await layerIds(page)).length;
+  for (let i = 0; i < total && (await currentSlideId(page)) !== id; i++) {
+    await layer(page).getByRole('button', { name: '다음 팝업' }).first().click();
+    await expect(page.locator('[data-popup-layer=""] .g7pp-slide[aria-hidden="true"]')).toHaveCount(0);
+  }
+  await expect.poll(() => currentSlideId(page)).toBe(id);
+}
+
+/**
+ * 끌어서 넘긴다 — 데스크톱은 마우스로 끌고(끌다 놓은 새 창 링크는 열리지 않는다), 모바일은 손가락(실제 터치 입력)으로 끈다.
+ * 다른 팝업이 앞에 있을 수 있어 사양이 만든 첫 장으로 넘겨 간 뒤 끈다.
+ */
+async function flow_drag_to_next_slide({ page, request, managerToken, created }: Ctx, viewport: Viewport): Promise<void> {
+  const linked = await createImagePopup(request, managerToken, { link_url: 'https://example.com/popup-drag', link_new_window: true });
+  const next = await createHtmlPopup(request, managerToken, { body_html: { ko: '<p>끌어서 넘긴 두 번째 장 본문입니다. 글자를 끌어도 선택되지 않아야 합니다.</p>' } });
+  created.push(linked, next);
+
+  await gotoUser(page, '/');
+  await expect(page.locator(`.g7pp-slide[data-popup-id="${next}"]`)).toHaveCount(1);
+  const ids = await layerIds(page);
+  expect(ids.indexOf(next)).toBe(ids.indexOf(linked) + 1);
+  await goToSlide(page, linked);
+  await expect(page.locator('[data-popup-layer=""] .g7pp-slide[aria-hidden="true"]')).toHaveCount(0);
+
+  const opened: unknown[] = [];
+  page.context().on('page', (p: unknown) => opened.push(p));
+  const startUrl = page.url();
+  const box = (await page.locator('[data-popup-layer=""] .g7pp-body').boundingBox())!;
+  const y = box.y + box.height / 2;
+  const fromX = box.x + box.width * 0.75;
+  const toX = box.x + box.width * 0.25;
+
+  if (viewport === 'desktop') {
+    // 덮는 링크(새 창) 위에서 눌러 왼쪽으로 끌고 놓는다
+    await page.mouse.move(fromX, y);
+    await page.mouse.down();
+    await page.mouse.move(toX, y, { steps: 12 });
+    await page.mouse.up();
+  } else {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: fromX, y }] });
+    for (let i = 1; i <= 10; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: fromX + ((toX - fromX) * i) / 10, y }] });
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  }
+
+  await expect.poll(() => currentSlideId(page)).toBe(next);
+  // 미끄러짐이 끝나면 옆 장이 숨는다
+  await expect(page.locator(`.g7pp-slide[data-popup-id="${linked}"]`)).toHaveAttribute('hidden', '');
+  await page.waitForTimeout(500);
+  expect(opened).toHaveLength(0);
+  expect(page.url()).toBe(startUrl);
+
+  if (viewport === 'desktop') {
+    // 본문 글자 위에서 오른쪽으로 끌어 되돌린다 — 끄는 동안 글자가 선택되지 않는다
+    const text = page.locator(`.g7pp-slide[data-popup-id="${next}"] .g7pp-html p`);
+    const textBox = (await text.boundingBox())!;
+    await page.mouse.move(textBox.x + 8, textBox.y + textBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(textBox.x + 8 + box.width * 0.5, textBox.y + textBox.height / 2, { steps: 12 });
+    expect(await page.evaluate(() => window.getSelection()?.toString() ?? '')).toBe('');
+    await page.mouse.up();
+    await expect.poll(() => currentSlideId(page)).toBe(linked);
+    expect(opened).toHaveLength(0);
+  }
 }
 
 test.describe('팝업 → 사용자 화면', () => {
@@ -219,6 +299,24 @@ test.describe('팝업 → 사용자 화면', () => {
   test('직접 작성형 본문이 정화된 채로 뜬다 (mobile)', async ({ page, request, managerToken, created }) => {
     await page.setViewportSize(VIEWPORTS.mobile);
     await flow_html_popup_with_editor_content({ page, request, managerToken, created } as Ctx, 'mobile');
+  });
+
+  // @scenario flow=drag_to_next_slide, viewport=desktop
+  // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+  test('마우스로 끌어 다음 장으로 넘기고, 끌다 놓은 링크는 열리지 않는다 (desktop)', async ({ page, request, managerToken, created }) => {
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await flow_drag_to_next_slide({ page, request, managerToken, created } as Ctx, 'desktop');
+  });
+});
+
+test.describe('팝업 → 사용자 화면 (터치)', () => {
+  // 실제 터치 입력(CDP touch)을 받으려면 터치 지원 문맥이어야 한다
+  test.use({ hasTouch: true, viewport: VIEWPORTS.mobile });
+
+  // @scenario flow=drag_to_next_slide, viewport=mobile
+  // @effects user_screen_reflects_admin_change, test_data_cleaned_up
+  test('손가락으로 끌어 다음 장으로 넘긴다 (mobile)', async ({ page, request, managerToken, created }) => {
+    await flow_drag_to_next_slide({ page, request, managerToken, created } as Ctx, 'mobile');
   });
 });
 

@@ -5,6 +5,7 @@ description: |
   사양이 만든 데이터만 바꾸고 fixture 가 지운다(운영 팝업을 다시 저장하지 않음). 공개 API 응답이 아니라 그 응답이 그린 요소를 기다린다.
   ko-KR 로케일·실제 UA 고정, trace on-first-retry. 봇 UA 는 서버 렌더 화면에 레이어가 없음을, GDPR 동시 흐름은 배너가 가려지지 않음을,
   비활성화 흐름은 플러그인을 끄면 레이어가 즉시 사라짐을 본다. 다크 모드는 데스크톱·모바일 각 1회 대비를 본다.
+  끌어서 넘기기는 데스크톱 마우스(끌다 놓은 새 창 링크가 열리지 않고 글자가 선택되지 않음)·모바일 실제 터치 입력으로 본다.
 
 axes:
   flow:
@@ -23,6 +24,7 @@ axes:
     - plugin_deactivate_hides_layer
     - read_only_admin_cannot_edit
     - admin_preview_shows_content
+    - drag_to_next_slide
   viewport: [desktop, mobile]
 
 exclusions:
